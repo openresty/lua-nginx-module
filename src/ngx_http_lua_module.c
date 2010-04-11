@@ -1,6 +1,5 @@
 #include <ndk.h>
 #include <lua.h>
-#include "ddebug.h"
 
 static ngx_int_t ngx_http_set_var_by_lua(
 		ngx_http_request_t *r,
@@ -68,7 +67,6 @@ ngx_http_set_var_by_lua(
 		ngx_http_variable_value_t *v
 		)
 {
-	dd("*** ngx_http_set_var_by_lua() called");
 #define NOT_IMPL_YET "(sorry, not implemented yet)"
 	val->data = (u_char*)NOT_IMPL_YET;
 	val->len = sizeof(NOT_IMPL_YET)-1;
