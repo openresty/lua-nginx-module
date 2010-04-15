@@ -3,4 +3,6 @@ HTTP_MODULES="$HTTP_MODULES ngx_http_lua_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c"
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h"
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
+CORE_INCS="$CORE_INCS -I/usr/local/include/luajit-2.0"
+CORE_LIBS="$CORE_LIBS -L/usr/local/lib -lluajit-5.1"
 
