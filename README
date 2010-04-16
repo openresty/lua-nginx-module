@@ -14,13 +14,13 @@ Status
 Synopsis
 
    server {
-        location /inline_concat {
+		location /inline_concat {
 			set $a "hello";
 			set $b "world";
 			# inline lua script
 			set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
 			echo $res;
-        }
+		}
 
 		location /rel_file_concat {
 			set $a "foo";
