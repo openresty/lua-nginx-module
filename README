@@ -26,6 +26,10 @@ Synopsis
 			set $a "foo";
 			set $b "bar";
 			# script path relative to nginx prefix
+			# $ngx_prefix/conf/concat.lua contents:
+			#
+			#	return ngx.arg[1]..ngx.arg[2]
+			#
 			set_by_lua_file $res conf/concat.lua $a $b;
 			echo $res;
 		}
