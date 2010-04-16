@@ -84,7 +84,17 @@ ngx_http_lua_set_by_chunk(
 
 	lua_setfenv(l, -2);	// set new running env for the loaded code	sp = 1
 
+#ifdef NGX_HTTP_LUA_USE_ELLIPSIS
+	{
+		size_t i;
+		for(i = 0; i < nargs; ++i) {
+			lua_pushlstring(l, (const char*)args[i].data, args[i].len);
+		}
+		rc = lua_pcall(l, nargs, 1, 0);
+	}
+#else
 	rc = lua_pcall(l, 0, 1, 0);
+#endif
 	if(rc) {
 		// error occured when running loaded code
 		const char *err_msg = lua_tostring(l, -1);
