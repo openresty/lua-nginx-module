@@ -1,0 +1,124 @@
+Name
+    lua-nginx-module - embed power of Lua into NginX
+
+Status
+    This module is at its very early phase of development and
+    consideredehighly experimental. But you're encouraged to
+    test it out on your side and report any quirks that you
+    experience.
+
+    We need your help! If you find this module useful and/or
+    interesting, please consider joining the development!
+    Commit bit can be freely delivered at your request ;)
+
+Synopsis
+
+   server {
+        location /inline_concat {
+			set $a "hello";
+			set $b "world";
+			# inline lua script
+			set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
+			echo $res;
+        }
+
+		location /rel_file_concat {
+			set $a "foo";
+			set $b "bar";
+			# script path relative to nginx prefix
+			set_by_lua_file $res conf/concat.lua $a $b;
+			echo $res;
+		}
+
+		location /abs_file_concat {
+			set $a "fee";
+			set $b "baz";
+			# absolute script path not modified
+			set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
+			echo 
+        ...
+    }
+
+Description
+
+Installation
+    Grab the nginx source code from nginx.net (<http://nginx.net/>), for
+    example, the version 0.8.30 (see nginx compatibility), and then build
+    the source with this module:
+
+        $ wget 'http://sysoev.ru/nginx/nginx-0.8.30.tar.gz'
+        $ tar -xzvf nginx-0.8.30.tar.gz
+        $ cd nginx-0.8.30/
+
+        # Here we assume you would install you nginx under /opt/nginx/.
+        $ ./configure --prefix=/opt/nginx \
+			--add-module=/path/to/ndk_devel_kit \
+            --add-module=/path/to/echo-nginx-module \
+            --add-module=/path/to/lua-nginx-module
+
+        $ make -j2
+        $ make install
+
+	Download the latest version of the release tarball of this module from
+	lua-nginx-module file list
+	(<http://github.com/chaoslawful/lua-nginx-module/downloads>).
+
+Compatibility
+    The following versions of Nginx should work with this module:
+
+    *   0.8.x (last tested version is 0.8.33)
+
+    *   0.7.x >= 0.7.46 (last tested version is 0.7.65)
+
+    Earlier versions of Nginx like 0.6.x and 0.5.x will *not* work.
+
+    If you find that any particular version of Nginx above 0.7.44 does not
+    work with this module, please consider reporting a bug.
+
+TODO
+
+Known Issues
+
+See Also
+
+    * ngx_devel_kit ( http://github.com/simpl-it/ngx_devel_kit )
+	* echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
+
+Author
+    chaoslawful (王晓哲) <chaoslawful at gmail dot com>
+
+Copyright & License
+    This module is licenced under the BSD license.
+
+    Copyright (c) 2009, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
+
+    Copyright (C) 2009 by chaoslawful <chaoslawful@gmail.com>.
+
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+        * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+        * Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+        * Neither the name of the Taobao Inc. nor the names of its
+        contributors may be used to endorse or promote products derived from
+        this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+    TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
