@@ -66,7 +66,7 @@ ngx_http_lua_set_by_chunk(
 
 	lua_newtable(l);	// {}										sp = 3
 
-	lua_newtable(l);	// .param table aka {}						sp = 4
+	lua_newtable(l);	// .arg table aka {}						sp = 4
 	lua_newtable(l);	// the metatable for new param table		sp = 5
 	lua_pushinteger(l, nargs);	//									sp = 6
 	lua_pushlightuserdata(l, args);	//								sp = 7
