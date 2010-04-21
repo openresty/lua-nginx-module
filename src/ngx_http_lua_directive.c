@@ -21,6 +21,14 @@ ngx_http_lua_set_by_lua(
 	args = cf->args->elts;
 	target = args[1];
 
+	// prevent variable appearing in Lua inline script/file path
+	if(ngx_http_lua_has_inline_var(&args[2])) {
+		ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+				"Lua inline script or file path should not has inline variable: %V",
+				&args[2]);
+		return NGX_CONF_ERROR;
+	}
+
 	filter.type = NDK_SET_VAR_MULTI_VALUE_DATA;
 	filter.func = cmd->post;
 	filter.size = cf->args->nelts - 2;	// get number of real params + 1 (lua script)
@@ -53,7 +61,7 @@ ngx_http_lua_filter_set_by_lua_inline(
 	if(rc != 0) {
 		// Oops! error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %.*s", rc, v[0].len, v[0].data);
+				"Failed to load Lua script (rc = %d): %v", rc, &v[0]);
 
 		lua_close(l);
 
@@ -104,7 +112,7 @@ ngx_http_lua_filter_set_by_lua_file(
 	if(rc != 0) {
 		// Oops! error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %.*s", rc, v[0].len, v[0].data);
+				"Failed to load Lua script (rc = %d): %v", rc, &v[0]);
 
 		lua_close(l);
 

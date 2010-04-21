@@ -12,5 +12,7 @@ extern ngx_int_t ngx_http_lua_set_by_chunk(
 		size_t nargs
 		);
 
+extern ngx_int_t ngx_http_lua_has_inline_var(ngx_str_t *s);
+
 #endif
 

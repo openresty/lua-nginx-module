@@ -133,3 +133,9 @@ ngx_http_lua_set_by_chunk(
 	return NGX_OK;
 }
 
+ngx_int_t
+ngx_http_lua_has_inline_var(ngx_str_t *s)
+{
+	return (ngx_http_script_variables_count(s) != 0);
+}
+
