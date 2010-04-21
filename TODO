@@ -1,0 +1,6 @@
+* add Lua byte code cache
+* add Lua VM active yield and resume (through Coco patch)
+* add Lua VM passive yield and resume (using debug hook)
+* add trace-back message in Lua runtime error
+* integrate echo module's mechanism into Lua VM
+
