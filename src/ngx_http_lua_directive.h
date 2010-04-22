@@ -23,5 +23,7 @@ extern ngx_int_t ngx_http_lua_filter_set_by_lua_file(
 		void *data
 		);
 
+extern ngx_int_t ngx_http_lua_init_vm(ngx_conf_t *cf);
+
 #endif
 

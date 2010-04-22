@@ -3,8 +3,11 @@
 
 // longjmp mark for restoring nginx execution after Lua VM crashing
 jmp_buf ngx_http_lua_exception;
+// FIXME: global Lua VM instance
+lua_State *ngx_http_lua_vm;
 
-static int ngx_http_lua_param_get(lua_State *l)
+static int
+ngx_http_lua_param_get(lua_State *l)
 {
 	int idx = luaL_checkint(l, 2);
 	int n = luaL_checkint(l, lua_upvalueindex(1));	// get number of args from closure
@@ -129,6 +132,9 @@ ngx_http_lua_set_by_chunk(
 		// } catch
 		dd("NginX execution restored");
 	}
+
+	// clear Lua stack
+	lua_settop(l, 0);
 
 	return NGX_OK;
 }

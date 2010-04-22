@@ -3,6 +3,9 @@
 
 #include "ngx_http_lua_common.h"
 
+// FIXME: find a way to store Lua state into module config context!
+extern lua_State* ngx_http_lua_vm;
+
 extern lua_State* ngx_http_lua_newstate();
 extern ngx_int_t ngx_http_lua_set_by_chunk(
 		lua_State *l,

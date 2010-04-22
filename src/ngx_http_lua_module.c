@@ -27,7 +27,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 };
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-	NULL,	// preconfiguration
+	ngx_http_lua_init_vm,	// preconfiguration
 	NULL,	// postconfiguration
 
 	NULL,	// create main configuration
