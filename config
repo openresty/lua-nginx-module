@@ -2,9 +2,9 @@ ngx_feature="lua library"
 ngx_feature_libs="-llua"
 ngx_feature_name=
 ngx_feature_run=no
-ngx_feature_incs="#include <lua.h>"
+ngx_feature_incs="#include <lauxlib.h>"
 ngx_feature_path=
-ngx_feature_test="(void) lua_newstate();"
+ngx_feature_test="(void) luaL_newstate();"
 
 if [ -n "$LUA_LIB" ]; then
     # explicit set lua lib path
