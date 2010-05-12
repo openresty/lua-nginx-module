@@ -1,4 +1,5 @@
-#include "openssl/md5.h"
+#include <unistd.h>
+#include <openssl/md5.h>
 #include "ngx_http_lua_cache.h"
 
 static const char*
