@@ -10,7 +10,7 @@ root=$(readlink -f $script_dir/..)
 mkdir -p $root/{build,work}
 
 cd $root/build
-lwp-mirror "http://sysoev.ru/nginx/nginx-$version.tar.gz" nginx-$version.tar.gz
+#lwp-mirror "http://sysoev.ru/nginx/nginx-$version.tar.gz" nginx-$version.tar.gz
 tar -xzvf nginx-$version.tar.gz
 
 cd nginx-$version/
@@ -19,6 +19,7 @@ if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$
 				--add-module=$root/../ngx_devel_kit \
 				--add-module=$root/../echo-nginx-module \
 				--add-module=$root \
+				--with-http_stub_status_module \
 				--with-debug \
 				$opts
 fi
