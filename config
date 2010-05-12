@@ -1,3 +1,76 @@
+ngx_feature="lua library"
+ngx_feature_libs="-llua"
+ngx_feature_name=
+ngx_feature_run=no
+ngx_feature_incs="#include <lua.h>"
+ngx_feature_path=
+ngx_feature_test="(void) lua_newstate();"
+
+if [ -n "$LUA_LIB" ]; then
+    # explicit set lua lib path
+    ngx_feature="lua library in $LUA_LIB (specified by the LUA_LIB env)"
+    ngx_feature_path="$LUA_INC"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R$LUA_LIB -L$LUA_LIB -llua"
+    else
+        ngx_feature_libs="-L$LUA_LIB -llua"
+    fi
+    . auto/feature
+fi
+
+if [ $ngx_found = no ]; then
+    ngx_feature="lua library"
+    ngx_feature_libs="-llua"
+    . auto/feature
+fi
+
+if [ $ngx_found = no ]; then
+    # FreeBSD, OpenBSD
+    ngx_feature="lua library in /usr/local/"
+    ngx_feature_path="/usr/local/include"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -llua"
+    else
+        ngx_feature_libs="-L/usr/local/lib -llua"
+    fi
+    . auto/feature
+fi
+
+if [ $ngx_found = no ]; then
+    # NetBSD
+    ngx_feature="lua library in /usr/pkg/"
+    ngx_feature_path="/usr/pkg/include/"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R/usr/pkg/lib -L/usr/pkg/lib -llua"
+    else
+        ngx_feature_libs="-L/usr/pkg/lib -llua"
+    fi
+    . auto/feature
+fi
+
+if [ $ngx_found = no ]; then
+    # MacPorts
+    ngx_feature="lua library in /opt/local/"
+    ngx_feature_path="/opt/local/include"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R/opt/local/lib -L/opt/local/lib -llua"
+    else
+        ngx_feature_libs="-L/opt/local/lib -llua"
+    fi
+    . auto/feature
+fi
+
+if [ $ngx_found = yes ]; then
+    CORE_INCS="$CORE_INCS $ngx_feature_path"
+    CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
+else
+ cat << END
+ $0: error: the ngx_lua addon requires the lua library.
+END
+ exit 1
+fi
+
+
 ngx_addon_name=ngx_http_lua_module
 HTTP_MODULES="$HTTP_MODULES ngx_http_lua_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c $ngx_addon_dir/src/ngx_http_lua_directive.c $ngx_addon_dir/src/ngx_http_lua_hook.c $ngx_addon_dir/src/ngx_http_lua_util.c $ngx_addon_dir/src/ngx_http_lua_cache.c"
