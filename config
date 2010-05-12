@@ -1,5 +1,5 @@
 ngx_feature="lua library"
-ngx_feature_libs="-llua"
+ngx_feature_libs="-llua -lm"
 ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs="#include <lauxlib.h>"
