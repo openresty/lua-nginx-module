@@ -3,8 +3,6 @@
 
 // longjmp mark for restoring nginx execution after Lua VM crashing
 jmp_buf ngx_http_lua_exception;
-// FIXME: global Lua VM instance
-lua_State *ngx_http_lua_vm;
 
 static int
 ngx_http_lua_param_get(lua_State *l)
@@ -25,10 +23,11 @@ ngx_http_lua_param_get(lua_State *l)
 lua_State*
 ngx_http_lua_newstate()
 {
-    lua_State *l = luaL_newstate();
-    luaL_openlibs(l);
-    
-    return l;
+	lua_State *l = luaL_newstate();
+	//luaL_openlibs(l);
+	luaopen_base(l);
+
+	return l;
 }
 
 ngx_int_t
@@ -143,5 +142,28 @@ ngx_int_t
 ngx_http_lua_has_inline_var(ngx_str_t *s)
 {
     return (ngx_http_script_variables_count(s) != 0);
+}
+
+char*
+ngx_http_lua_rebase_path(ngx_pool_t *pool, ngx_str_t *str)
+{
+	char *path;
+	u_char *tmp;
+
+	if(str->data[0] != '/') {
+		// make relative path based on NginX default prefix
+		ndk_pallocpn_rn(path, pool, ngx_cycle->prefix.len + str->len + 1);
+		tmp = ngx_cpymem(
+				ngx_cpymem(path, ngx_cycle->prefix.data, ngx_cycle->prefix.len),
+				str->data, str->len
+				);
+	} else {
+		// copy absolute path directly
+		ndk_pallocpn_rn(path, pool, str->len + 1);
+		tmp = ngx_cpymem(path, str->data, str->len);
+	}
+	*tmp = '\0';
+
+	return path;
 }
 
