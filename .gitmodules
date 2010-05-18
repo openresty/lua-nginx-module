@@ -1,0 +1,3 @@
+[submodule "test/test-nginx"]
+	path = test/test-nginx
+	url = git://github.com/agentzh/test-nginx.git
