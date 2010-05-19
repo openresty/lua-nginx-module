@@ -10,7 +10,7 @@ root=$(readlink -f $script_dir/..)
 mkdir -p $root/{build,work}
 
 cd $root/build
-#lwp-mirror "http://sysoev.ru/nginx/nginx-$version.tar.gz" nginx-$version.tar.gz
+lwp-mirror "http://sysoev.ru/nginx/nginx-$version.tar.gz" nginx-$version.tar.gz
 tar -xzvf nginx-$version.tar.gz
 
 cd nginx-$version/

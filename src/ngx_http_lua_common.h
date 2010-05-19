@@ -13,5 +13,7 @@
 
 #include <ndk.h>
 
+extern ngx_module_t ngx_http_lua_module;
+
 #endif
 
