@@ -104,7 +104,7 @@ ngx_http_lua_filter_set_by_lua_file(
 	if(rc != NGX_OK) {
 		// Oops! error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %s", rc, script_path);
+				"Failed to load Lua script file (rc = %d): %s", rc, script_path);
 		return NGX_ERROR;
 	}
 
@@ -180,7 +180,8 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 	if(rc != NGX_OK) {
 		// Oops...Error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %v", rc, &(llcf->src));
+				"Failed to load Lua script chunk (rc = %d): %v", rc, &(llcf->src));
+
 		return NGX_ERROR;
 	}
 
@@ -223,7 +224,8 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 	if(rc != NGX_OK) {
 		// Oops! error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %s", rc, script_path);
+				"Failed to load Lua script file (rc = %d): %s", rc, script_path);
+
 		return NGX_ERROR;
 	}
 
