@@ -1,5 +1,8 @@
 #include "ngx_http_lua_hook.h"
 
+// longjmp mark for restoring nginx execution after Lua VM crashing
+jmp_buf ngx_http_lua_exception;
+
 /**
  * Override default Lua panic handler, output VM crash reason to NginX error
  * log, and restore execution to the nearest jmp-mark.

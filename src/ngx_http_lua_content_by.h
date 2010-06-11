@@ -1,5 +1,5 @@
-#ifndef NGX_HTTP_LUA_CONTENT_H__
-#define NGX_HTTP_LUA_CONTENT_H__
+#ifndef NGX_HTTP_LUA_CONTENT_BY_H__
+#define NGX_HTTP_LUA_CONTENT_BY_H__
 
 #include "ngx_http_lua_common.h"
 
