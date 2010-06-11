@@ -1,7 +1,10 @@
 #ifndef NGX_HTTP_LUA_COMMON_H__
 #define NGX_HTTP_LUA_COMMON_H__
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
+
 #include "ddebug.h"
 
 #include <assert.h>

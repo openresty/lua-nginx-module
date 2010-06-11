@@ -51,16 +51,29 @@ ngx_http_lua_filter_set_by_lua_inline(
 	lua_State *l;
 	ngx_int_t rc;
 	ngx_http_lua_main_conf_t *lmcf;
+    const char *err;
 
 	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 	l = lmcf->lua;
 
 	// load Lua inline script (w/ cache)        sp = 1
 	rc = ngx_http_lua_cache_loadbuffer(l, (const char*)(v[0].data), v[0].len, "set_by_lua_inline");
+
 	if(rc != NGX_OK) {
 		// Oops! error occured when loading Lua script
+        if (rc == LUA_ERRMEM) {
+            err = "memory allocation error";
+        } else {
+            if (lua_isstring(l, -1)) {
+                err = lua_tostring(l, -1);
+            } else {
+                err = "syntax error";
+            }
+        }
+
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script (rc = %d): %v", rc, &v[0]);
+				"Failed to load Lua script chunk (rc = %d): %s %v", rc, err, &v[0]);
+
 		return NGX_ERROR;
 	}
 
@@ -80,20 +93,23 @@ ngx_http_lua_filter_set_by_lua_file(
 		void *data
 		)
 {
-	lua_State *l;
-	ngx_int_t rc;
-	char *script_path;
-	ngx_http_lua_main_conf_t *lmcf;
-	ngx_str_t tmp;
+	lua_State                   *l;
+	ngx_int_t                    rc;
+	char                        *script_path;
+	ngx_http_lua_main_conf_t    *lmcf;
+	ngx_str_t                    tmp;
+    const char                  *err;
 
 	tmp.data = v[0].data;
 	tmp.len = v[0].len;
 
 	script_path = ngx_http_lua_rebase_path(r->pool, &tmp);
-	if(script_path == NULL) {
+	if (script_path == NULL) {
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
 				"Failed to allocate memory to store absolute path: raw path='%v'",
 				&v[0]);
+
+        return NGX_ERROR;
 	}
 
 	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -101,10 +117,24 @@ ngx_http_lua_filter_set_by_lua_file(
 
 	// load Lua script file (w/ cache)		sp = 1
 	rc = ngx_http_lua_cache_loadfile(l, script_path);
-	if(rc != NGX_OK) {
+
+	if (rc != NGX_OK) {
 		// Oops! error occured when loading Lua script
+        if (rc == LUA_ERRMEM) {
+            err = "memory allocation error";
+
+        } else {
+            if (lua_isstring(l, -1)) {
+                err = lua_tostring(l, -1);
+
+            } else {
+                err = "syntax error";
+            }
+        }
+
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-				"Failed to load Lua script file (rc = %d): %s", rc, script_path);
+				"Failed to load Lua script file (rc = %d): %s: %s", rc, err, script_path);
+
 		return NGX_ERROR;
 	}
 
@@ -116,7 +146,7 @@ ngx_http_lua_filter_set_by_lua_file(
 	return rc;
 }
 
-char*
+char *
 ngx_http_lua_content_by_lua(
 		ngx_conf_t *cf,
 		ngx_command_t *cmd,

@@ -1,3 +1,6 @@
+#define DDEBUG 0
+#include "ddebug.h"
+
 #include <unistd.h>
 #include <openssl/md5.h>
 #include "ngx_http_lua_cache.h"
@@ -154,7 +157,8 @@ ngx_http_lua_cache_loadbuffer(
 
 	// load inline script to the top of lua stack, sp++
 	rc = luaL_loadbuffer(l, buf, buf_len, name);
-	if(rc) {
+
+	if (rc != 0) {
 		dd("Failed to load inline script: script='%.*s'", buf_len, buf);
 		return rc;
 	}
