@@ -2,7 +2,7 @@
 script_dir=$(dirname $0)
 root=$(readlink -f $script_dir/..)
 cd $root
-git submodule update
+git submodule update --init
 $script_dir/reindex $root/t/*.t
 export PATH=$root/work/sbin:$PATH
 killall nginx
