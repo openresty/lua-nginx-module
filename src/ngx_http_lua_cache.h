@@ -16,3 +16,5 @@ extern ngx_int_t ngx_http_lua_cache_loadfile(
 
 #endif
 
+// vi:ts=4 sw=4 fdm=marker
+

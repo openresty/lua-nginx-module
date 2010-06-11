@@ -10,3 +10,5 @@ extern int ngx_http_lua_print(lua_State *l);
 
 #endif
 
+// vi:ts=4 sw=4 fdm=marker
+

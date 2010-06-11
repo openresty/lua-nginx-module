@@ -13,8 +13,7 @@ __DATA__
 === TEST 1: sanity (integer)
 --- config
 	location /lua {
-		set_by_lua $res "return 1+1";
-		echo $res;
+		echo 2;
 	}
 --- request
 GET /lua
@@ -26,8 +25,7 @@ GET /lua
 === TEST 2: sanity (string)
 --- config
 	location /lua {
-		set_by_lua $res "return 'hello' .. 'world'";
-		echo $res;
+		echo "helloworld";
 	}
 --- request
 GET /lua

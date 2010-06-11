@@ -29,36 +29,36 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 		ngx_string("content_by_lua"),
 		NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
 		ngx_http_lua_content_by_lua,
+		NGX_HTTP_LOC_CONF_OFFSET,
 		0,
-		0,
-		NULL
+		ngx_http_lua_content_handler_inline
 	},
 
 	/* content_by_lua_file rel/or/abs/path/to/script */
 	{
 		ngx_string("content_by_lua_file"),
 		NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
-		ngx_http_lua_content_by_lua_file,
+		ngx_http_lua_content_by_lua,
+		NGX_HTTP_LOC_CONF_OFFSET,
 		0,
-		0,
-		NULL
+		ngx_http_lua_content_handler_file
 	},
 
 	ngx_null_command
 };
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-	NULL,	// preconfiguration
-	NULL,	// postconfiguration
+	NULL,							// preconfiguration
+	NULL,							// postconfiguration
 
 	ngx_http_lua_create_main_conf,	// create main configuration
 	ngx_http_lua_init_main_conf,	// init main configuration
 
-    NULL,    // create server configuration
-    NULL,    // merge server configuration
+    NULL,    						// create server configuration
+    NULL,    						// merge server configuration
 
-    NULL,    // create location configuration
-    NULL    // merge location configuration
+    ngx_http_lua_create_loc_conf,	// create location configuration
+    ngx_http_lua_merge_loc_conf		// merge location configuration
 };
 
 ngx_module_t ngx_http_lua_module = {
@@ -75,4 +75,6 @@ ngx_module_t ngx_http_lua_module = {
     NULL,                        // exit master
     NGX_MODULE_V1_PADDING
 };
+
+// vi:ts=4 sw=4 fdm=marker
 

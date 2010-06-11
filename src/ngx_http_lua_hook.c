@@ -61,3 +61,5 @@ ngx_http_lua_print(lua_State *l)
     return 0;
 }
 
+// vi:ts=4 sw=4 fdm=marker
+

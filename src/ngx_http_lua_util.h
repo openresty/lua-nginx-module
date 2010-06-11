@@ -17,3 +17,5 @@ extern char* ngx_http_lua_rebase_path(ngx_pool_t *pool, ngx_str_t *str);
 
 #endif
 
+// vi:ts=4 sw=4 fdm=marker
+
