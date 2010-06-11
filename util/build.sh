@@ -2,7 +2,7 @@
 
 # this file is mostly meant to be used by the author himself.
 
-version=${1:-0.8.30}
+version=${1:-0.8.40}
 opts=$2
 
 script_dir=$(dirname $0)
@@ -10,7 +10,9 @@ root=$(readlink -f $script_dir/..)
 mkdir -p $root/{build,work}
 
 cd $root/build
-lwp-mirror "http://sysoev.ru/nginx/nginx-$version.tar.gz" nginx-$version.tar.gz
+if [ ! -s nginx-$version.tar.gz ]; then
+    wget "http://sysoev.ru/nginx/nginx-$version.tar.gz" -O nginx-$version.tar.gz
+fi
 tar -xzvf nginx-$version.tar.gz
 
 cd nginx-$version/
