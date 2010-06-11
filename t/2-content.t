@@ -10,20 +10,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: content simple
---- config
-	location /lua {
-		content_by_lua 'dummy';
-	}
---- request
-GET /lua
---- response_body
-Hello Lua!
---- SKIP
-
-
-
-=== TEST 2: basic
+=== TEST 1: basic
 --- config
 	location /lua {
 		content_by_lua 'ngx.echo("Hello, Lua!")';
@@ -35,7 +22,7 @@ GET /lua
 
 
 
-=== TEST 3: capture location
+=== TEST 2: capture location
 --- config
 	location /other {
 		echo "hello, world";
