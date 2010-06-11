@@ -7,7 +7,10 @@ repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
 
-$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
+#$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
+
+no_long_string();
+
 run_tests();
 
 __DATA__
@@ -45,7 +48,9 @@ GET /lua
 --- config
     location /lua {
         set $res '[{"a":32},{"b":64}]';
+        #set $res '[{"friend_userid":1750146},{"friend_userid":1750150},{"friend_userid":1750153},{"friend_userid":1750166},{"friend_userid":1750181},{"friend_userid":1750186},{"friend_userid":1750195},{"friend_userid":1750232}]';
         set_by_lua_file $list 'html/test.lua' $res;
+        #set_by_lua_file $list 'html/feed.lua' $res;
         echo $list;
     }
 --- user_files
@@ -53,6 +58,30 @@ GET /lua
 -- local j = require('json')
 local p = ngx.arg[1]
 return p
+>>> feed.lua
+local s = require("json")
+local function explode(d,p)
+   local t, ll
+   t={}
+   ll=0
+   if(#p == 1) then return p end
+       while true do
+       l=string.find(p,d,ll+1,true) 
+           if l~=nil then 
+         table.insert(t, string.sub(p,ll,l-1)) 
+         ll=l+1 
+           else
+         table.insert(t, string.sub(p,ll)) 
+         break 
+         end
+     end
+return t
+ end
+
+local a = explode(',', string.sub(ngx.arg[1], 2, -1))
+local x = {}
+for i,v in ipairs(a) do table.insert(x,s.decode(v).friend_userid) end
+return table.concat(x,',')
 --- request
 GET /lua
 --- response_body
