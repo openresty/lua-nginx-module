@@ -32,6 +32,28 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 	return NGX_CONF_OK;
 }
 
+void*
+ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
+{
+	ngx_http_lua_loc_conf_t *conf;
+	conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_loc_conf_t));
+	if(conf == NULL) {
+		return NGX_CONF_ERROR;
+	}
+	return conf;
+}
+
+char*
+ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+{
+	ngx_http_lua_loc_conf_t *prev = parent;
+	ngx_http_lua_loc_conf_t *conf = child;
+
+	ngx_conf_merge_str_value(conf->src, prev->src, "");
+
+	return NGX_CONF_OK;
+}
+
 static void
 ngx_http_lua_cleanup_vm(void *data)
 {
@@ -67,4 +89,6 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
 	return NGX_CONF_OK;
 }
+
+// vi:ts=4 sw=4 fdm=marker
 

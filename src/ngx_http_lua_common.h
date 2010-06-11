@@ -17,3 +17,5 @@ extern ngx_module_t ngx_http_lua_module;
 
 #endif
 
+// vi:ts=4 sw=4 fdm=marker
+
