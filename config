@@ -73,8 +73,8 @@ fi
 
 ngx_addon_name=ngx_http_lua_module
 HTTP_MODULES="$HTTP_MODULES ngx_http_lua_module"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c $ngx_addon_dir/src/ngx_http_lua_directive.c $ngx_addon_dir/src/ngx_http_lua_hook.c $ngx_addon_dir/src/ngx_http_lua_util.c $ngx_addon_dir/src/ngx_http_lua_cache.c $ngx_addon_dir/src/ngx_http_lua_conf.c $ngx_addon_dir/src/ngx_http_lua_content.c"
-NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h $ngx_addon_dir/src/ngx_http_lua_common.h $ngx_addon_dir/src/ngx_http_lua_directive.h $ngx_addon_dir/src/ngx_http_lua_hook.h $ngx_addon_dir/src/ngx_http_lua_util.h $ngx_addon_dir/src/ngx_http_lua_cache.h $ngx_addon_dir/src/ngx_http_lua_conf.h $ngx_addon_dir/src/ngx_http_lua_content.h"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c $ngx_addon_dir/src/ngx_http_lua_directive.c $ngx_addon_dir/src/ngx_http_lua_hook.c $ngx_addon_dir/src/ngx_http_lua_util.c $ngx_addon_dir/src/ngx_http_lua_cache.c $ngx_addon_dir/src/ngx_http_lua_conf.c $ngx_addon_dir/src/ngx_http_lua_content_by.c $ngx_addon_dir/src/ngx_http_lua_set_by.c"
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h $ngx_addon_dir/src/ngx_http_lua_common.h $ngx_addon_dir/src/ngx_http_lua_directive.h $ngx_addon_dir/src/ngx_http_lua_hook.h $ngx_addon_dir/src/ngx_http_lua_util.h $ngx_addon_dir/src/ngx_http_lua_cache.h $ngx_addon_dir/src/ngx_http_lua_conf.h $ngx_addon_dir/src/ngx_http_lua_content_by.h $ngx_addon_dir/src/ngx_http_lua_set_by.h"
 CFLAGS="$CFLAGS -DNDK_SET_VAR -DNGX_HTTP_LUA_USE_ELLIPSIS"
 # link with official Lua 5.1.4
 #CORE_INCS="$CORE_INCS -I/usr/local/include"

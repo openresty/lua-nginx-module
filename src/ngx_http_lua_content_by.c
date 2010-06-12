@@ -1,4 +1,4 @@
-#include "ngx_http_lua_content.h"
+#include "ngx_http_lua_content_by.h"
 
 ngx_int_t
 ngx_http_lua_content_by_chunk(
