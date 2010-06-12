@@ -14,32 +14,32 @@ Status
 Synopsis
 
    server {
-		location /inline_concat {
-			set $a "hello";
-			set $b "world";
-			# inline lua script
-			set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
-			echo $res;
-		}
+        location /inline_concat {
+            set $a "hello";
+            set $b "world";
+            # inline lua script
+            set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
+            echo $res;
+        }
 
-		location /rel_file_concat {
-			set $a "foo";
-			set $b "bar";
-			# script path relative to nginx prefix
-			# $ngx_prefix/conf/concat.lua contents:
-			#
-			#	return ngx.arg[1]..ngx.arg[2]
-			#
-			set_by_lua_file $res conf/concat.lua $a $b;
-			echo $res;
-		}
+        location /rel_file_concat {
+            set $a "foo";
+            set $b "bar";
+            # script path relative to nginx prefix
+            # $ngx_prefix/conf/concat.lua contents:
+            #
+            #    return ngx.arg[1]..ngx.arg[2]
+            #
+            set_by_lua_file $res conf/concat.lua $a $b;
+            echo $res;
+        }
 
-		location /abs_file_concat {
-			set $a "fee";
-			set $b "baz";
-			# absolute script path not modified
-			set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
-			echo 
+        location /abs_file_concat {
+            set $a "fee";
+            set $b "baz";
+            # absolute script path not modified
+            set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
+            echo 
         ...
     }
 
@@ -56,23 +56,23 @@ Installation
 
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
-			--add-module=/path/to/ndk_devel_kit \
+            --add-module=/path/to/ndk_devel_kit \
             --add-module=/path/to/echo-nginx-module \
             --add-module=/path/to/lua-nginx-module
 
         $ make -j2
         $ make install
 
-	Download the latest version of the release tarball of this module from
-	lua-nginx-module file list
-	(<http://github.com/chaoslawful/lua-nginx-module/downloads>).
+    Download the latest version of the release tarball of this module from
+    lua-nginx-module file list
+    (<http://github.com/chaoslawful/lua-nginx-module/downloads>).
 
 Compatibility
     The following versions of Nginx should work with this module:
 
-    *   0.8.x (last tested version is 0.8.33)
+    *   0.8.x (last tested version is 0.8.40)
 
-    *   0.7.x >= 0.7.46 (last tested version is 0.7.65)
+    *   0.7.x >= 0.7.46 (last tested version is 0.7.66)
 
     Earlier versions of Nginx like 0.6.x and 0.5.x will *not* work.
 
@@ -86,7 +86,7 @@ Known Issues
 See Also
 
     * ngx_devel_kit ( http://github.com/simpl-it/ngx_devel_kit )
-	* echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
+    * echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
 
 Author
     chaoslawful (王晓哲) <chaoslawful at gmail dot com>
