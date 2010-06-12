@@ -13,8 +13,6 @@ ngx_http_lua_digest_hex(char *dest, const char *buf, int buf_len)
 	return (const char*)ngx_hex_dump((u_char*)dest, (u_char*)temp, sizeof(temp));
 }
 
-#define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"
-
 /**
  * Find code chunk associated with the given key in code cache,
  * and push it to the top of Lua stack if found.
@@ -31,27 +29,16 @@ static ngx_int_t
 ngx_http_lua_cache_load_code(lua_State *l, const char *ck)
 {
 	// get code cache table
-	lua_pushstring(l, LUA_CODE_CACHE_KEY);        // sp++
-	lua_gettable(l, LUA_REGISTRYINDEX);            // sp=sp
+	lua_getfield(l, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);	// sp++
 
 	dd("Code cache table to load: %p", lua_topointer(l, -1));
 
 	if(!lua_istable(l, -1)) {
-		dd("Code cache table to load not exists, create one!");
-		lua_pop(l, 1);    // remove unused value    // sp--
-
-		lua_pushstring(l, LUA_CODE_CACHE_KEY);    // sp++
-		lua_newtable(l);                        // sp++
-		lua_settable(l, LUA_REGISTRYINDEX);        // sp-=2
-
-		// get new cache table
-		lua_pushstring(l, LUA_CODE_CACHE_KEY);    // sp++
-		lua_gettable(l, LUA_REGISTRYINDEX);        // sp=sp
-		dd("New code cache table to load: %p", lua_topointer(l, -1));
+		dd("Error: code cache table to load did not exist!!");
+		return NGX_ERROR;
 	}
 
-	lua_pushstring(l, ck);                        // sp++
-	lua_gettable(l, -2);                        // sp=sp
+	lua_getfield(l, -1, ck);	// sp++
 	if(lua_isfunction(l, -1)) {
 		// remove cache table from stack, leave code chunk at top of stack
 		lua_remove(l, -2);                        // sp--
@@ -83,50 +70,21 @@ ngx_http_lua_cache_load_code(lua_State *l, const char *ck)
 static ngx_int_t
 ngx_http_lua_cache_store_code(lua_State *l, const char *ck)
 {
-	// initial sp > 0
 	// get code cache table
-	lua_pushstring(l, LUA_CODE_CACHE_KEY);            // sp++
-	lua_gettable(l, LUA_REGISTRYINDEX);                // sp=sp
+	lua_getfield(l, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);	// sp++
 
 	dd("Code cache table to store: %p", lua_topointer(l, -1));
 
 	if(!lua_istable(l, -1)) {
-		dd("Code cache table to store not exists, create one!");
-		lua_pop(l, 1);    // remove unused value            sp--
-
-		lua_pushstring(l, LUA_CODE_CACHE_KEY);        // sp++
-		lua_newtable(l);                            // sp++
-		lua_settable(l, LUA_REGISTRYINDEX);            // sp-=2
-
-		// get new cache table
-		lua_pushstring(l, LUA_CODE_CACHE_KEY);        // sp++
-		lua_gettable(l, LUA_REGISTRYINDEX);            // sp=sp
-		dd("New code cache table to store: %p", lua_topointer(l, -1));
+		dd("Error: code cache table to load did not exist!!");
+		return NGX_ERROR;
 	}
 
-	lua_pushstring(l, ck);                            // sp++
-
-	/**
-	 * now the stack layout is:
-	 *         | cache key  | <- top
-	 *         |   table    |
-	 *         | code chunk |
-	 * */
-
-	lua_pushvalue(l, -3);                            // sp++
-
-	/**
-	 * now the stack layout is:
-	 *         | code chunk | <- top
-	 *         | cache key  |
-	 *         |   table    |
-	 *         | code chunk |
-	 * */
-
-	lua_settable(l, -3);                            // sp-=2
+	lua_pushvalue(l, -2);		// sp++
+	lua_setfield(l, -2, ck);	// sp--
 
 	// remove cache table, leave code chunk at top of stack
-	lua_pop(l, 1);                                    // sp--
+	lua_pop(l, 1);				// sp--
 
 	return NGX_OK;
 }
@@ -139,7 +97,7 @@ ngx_http_lua_cache_loadbuffer(
 		const char *name
 		)
 {
-#define IL_TAG "ngx_http_lua_il_"
+#define IL_TAG "nhli_"
 #define IL_TAG_LEN (sizeof(IL_TAG)-1)
 	char cache_key[IL_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = IL_TAG;
 	int rc;
@@ -175,7 +133,7 @@ ngx_http_lua_cache_loadfile(
 		const char *script
 		)
 {
-#define FP_TAG "ngx_http_lua_fp_"
+#define FP_TAG "nhlf_"
 #define FP_TAG_LEN (sizeof(FP_TAG)-1)
 	char cache_key[FP_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = FP_TAG;
 	int rc;

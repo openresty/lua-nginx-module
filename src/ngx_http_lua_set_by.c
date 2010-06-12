@@ -18,7 +18,15 @@ ngx_http_lua_param_get(lua_State *l)
 }
 
 /**
- * need code chunk at the top of lua stack
+ * Set environment table for the given code closure.
+ *
+ * Before:
+ * 		| code closure | <- top
+ * 		|      ...     |
+ *
+ * After:
+ * 		| code closure | <- top
+ * 		|      ...     |
  * */
 static void
 ngx_http_lua_set_by_lua_env(
@@ -28,14 +36,9 @@ ngx_http_lua_set_by_lua_env(
 		ngx_http_variable_value_t *args
 		)
 {
-	// set NginX request struct into Lua VM's registry				sp = 1
-	// FIXME: It's a quick-and-dirty way to passing NginX request to injected
-	// C-functions. But this way works, as long as 'set_by_lua' directive
-	// performing blockingly. Eventually we need to find a way to independently
-	// passing different requests to different Lua coroutines.
-	lua_pushstring(l, "ngx._req");						//			sp = 2
-	lua_pushlightuserdata(l, r);						//			sp = 3
-	lua_settable(l, LUA_REGISTRYINDEX);					//			sp = 1
+	// set NginX request pointer to current lua thread's globals table
+	lua_pushlightuserdata(l, r);
+	lua_setglobal(l, GLOBALS_SYMBOL_REQUEST);
 
 	/**
 	 * we want to create empty environment for current script
@@ -48,34 +51,37 @@ ngx_http_lua_set_by_lua_env(
 	 * all variables created in the script-env will be thrown away at the end
 	 * of the script run.
 	 * */
-	lua_newtable(l);    // new empty environment aka {}                sp = 2
+	lua_newtable(l);    // new empty environment aka {}
 
-	// override Lua VM built-in print function
-	lua_pushcfunction(l, ngx_http_lua_print);            //            sp = 3
-	lua_setfield(l, -2, "print");    // -1 is the env we want to set    sp = 2
+	// override 'print' function
+	lua_pushcfunction(l, ngx_http_lua_print);
+	lua_setfield(l, -2, "print");
 
-	lua_newtable(l);    // ngx.*                                        sp = 3
+	// {{{ initialize ngx.* namespace
+	lua_newtable(l);    // ngx.*
 
-	lua_newtable(l);    // .arg table aka {}                        sp = 4
-	lua_newtable(l);    // the metatable for new param table        sp = 5
-	// binding directive arguments to __index meta-method
-	lua_pushinteger(l, nargs);    //                                    sp = 6
-	lua_pushlightuserdata(l, args);    //                                sp = 7
-	lua_pushcclosure(l, ngx_http_lua_param_get, 2);        //            sp = 6
-	lua_setfield(l, -2, "__index");                        //            sp = 5
-	lua_setmetatable(l, -2);    // tie the metatable to param table    sp = 4
-	lua_setfield(l, -2, "arg");    // set ngx.arg table                sp = 3
+	lua_newtable(l);    // .arg table aka {}
 
-	lua_setfield(l, -2, "ngx");    //                                  sp = 2
+	lua_newtable(l);    // the metatable for new param table
+	lua_pushinteger(l, nargs);	// 1st upvalue: argument number
+	lua_pushlightuserdata(l, args);	// 2nd upvalue: pointer to arguments
+	lua_pushcclosure(l, ngx_http_lua_param_get, 2); // binding upvalues to __index meta-method closure
+	lua_setfield(l, -2, "__index");
+	lua_setmetatable(l, -2);    // tie the metatable to param table
 
-	// set new env's __index meta-method, to find unresolvable symbols in
-	// global space.
-	lua_newtable(l);    // the metatable for the new env            sp = 3
-	lua_pushvalue(l, LUA_GLOBALSINDEX);                    //            sp = 4
-	lua_setfield(l, -2, "__index");                        //            sp = 3
-	lua_setmetatable(l, -2);    // setmetatable({}, {__index = _G})    sp = 2
+	lua_setfield(l, -2, "arg");    // set ngx.arg table
 
-	lua_setfenv(l, -2);    // set new running env for the loaded code    sp = 1
+	lua_setfield(l, -2, "ngx"); 
+	// }}}
+
+	// {{{ make new env inheriting main thread's globals table
+	lua_newtable(l);    // the metatable for the new env
+	lua_pushvalue(l, LUA_GLOBALSINDEX);
+	lua_setfield(l, -2, "__index");
+	lua_setmetatable(l, -2);    // setmetatable({}, {__index = _G})
+	// }}}
+
+	lua_setfenv(l, -2);    // set new running env for the code closure
 }
 
 ngx_int_t
@@ -87,6 +93,7 @@ ngx_http_lua_set_by_chunk(
 		size_t nargs
 		)
 {
+	size_t i;
 	ngx_int_t rc;
 
 	// set Lua VM panic handler
@@ -95,17 +102,13 @@ ngx_http_lua_set_by_chunk(
 	// initialize nginx context in Lua VM, code chunk at stack top    sp = 1
 	ngx_http_lua_set_by_lua_env(l, r, nargs, args);
 
-#ifdef NGX_HTTP_LUA_USE_ELLIPSIS
-	{
-		size_t i;
-		for(i = 0; i < nargs; ++i) {
-			lua_pushlstring(l, (const char*)args[i].data, args[i].len);
-		}
-		rc = lua_pcall(l, nargs, 1, 0);
+	// passing directive arguments to the user code
+	for(i = 0; i < nargs; ++i) {
+		lua_pushlstring(l, (const char*)args[i].data, args[i].len);
 	}
-#else
-	rc = lua_pcall(l, 0, 1, 0);
-#endif
+
+	// protected call user code
+	rc = lua_pcall(l, nargs, 1, 0);
 	if(rc) {
 		// error occured when running loaded code
 		const char *err_msg = lua_tostring(l, -1);

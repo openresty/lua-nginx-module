@@ -9,8 +9,8 @@ jmp_buf ngx_http_lua_exception;
  * 
  * @param l Lua state pointer
  * @retval Long jump to the nearest jmp-mark, never returns.
- * @note NginX request pointer should be stored in Lua VM registry with key
- * 'ngx._req' in order to make logging working.
+ * @note NginX request pointer should be stored in Lua thread's globals table
+ * in order to make logging working.
  * */
 int
 ngx_http_lua_atpanic(lua_State *l)
@@ -18,8 +18,7 @@ ngx_http_lua_atpanic(lua_State *l)
     const char *s = luaL_checkstring(l, 1);
     ngx_http_request_t *r;
 
-    lua_pushstring(l, "ngx._req");
-    lua_gettable(l, LUA_REGISTRYINDEX);
+	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(l, -1);
     lua_pop(l, 1);
 
@@ -46,11 +45,12 @@ ngx_http_lua_atpanic(lua_State *l)
 int
 ngx_http_lua_print(lua_State *l)
 {
+	// TODO: allowing print() to accept multiple output args, and convert each
+	// argument by tostring() first!
     const char *s = luaL_checkstring(l, 1);
     ngx_http_request_t *r;
 
-    lua_pushstring(l, "ngx._req");
-    lua_gettable(l, LUA_REGISTRYINDEX);
+	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(l, -1);
     lua_pop(l, 1);
 
