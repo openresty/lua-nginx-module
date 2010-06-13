@@ -13,16 +13,31 @@ __DATA__
 === TEST 1: basic
 --- config
 	location /lua {
-		content_by_lua 'ngx.echo("Hello, Lua!")';
+		content_by_lua 'ngx.echo("Hello, Lua!\n")';
 	}
 --- request
 GET /lua
---- response_body eval: "Hello, Lua!"
---- SKIP
+--- response_body
+Hello, Lua!
 
 
 
-=== TEST 2: capture location
+=== TEST 2: variable
+--- config
+	location /lua1 {
+		# NOTE: the newline escape sequence must be double-escaped, as nginx config
+		# parser will unescape first!
+		content_by_lua 'v = ngx.var["request_uri"] ngx.echo("request_uri: ", v, "\\n")';
+	}
+--- request
+GET /lua1
+--- response_body
+request_uri: /lua1
+--- ONLY
+
+
+
+=== TEST 3: capture location
 --- config
 	location /other {
 		echo "hello, world";

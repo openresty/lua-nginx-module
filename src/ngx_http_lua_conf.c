@@ -78,7 +78,7 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 	}
 
 	// create new Lua VM instance
-	lmcf->lua = ngx_http_lua_newstate();
+	lmcf->lua = ngx_http_lua_new_state();
 	if(lmcf->lua == NULL) {
 		return NGX_CONF_ERROR;
 	}

@@ -1,5 +1,6 @@
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
+#include "ngx_http_lua_filter.h"
 
 static ngx_command_t ngx_http_lua_cmds[] = {
 	/* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
@@ -49,7 +50,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
 	NULL,							// preconfiguration
-	NULL,							// postconfiguration
+	ngx_http_lua_filter_init,		// postconfiguration
 
 	ngx_http_lua_create_main_conf,	// create main configuration
 	ngx_http_lua_init_main_conf,	// init main configuration
