@@ -174,6 +174,7 @@ ngx_http_lua_ngx_flush(lua_State *l)
 				ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
 						"(lua-ngx-flush) can't allocate memory for output buffer!");
 			} else {
+				buf->flush = 1;
 				buf->sync = 1;
 
 				cl = ngx_alloc_chain_link(r->pool);
