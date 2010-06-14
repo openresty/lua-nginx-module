@@ -32,6 +32,14 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l, int *ref)
 	if(cr) {
 		// new globals table for coroutine
 		lua_newtable(cr);
+
+		// {{{ inherit coroutine's globals to main thread's globals table
+		lua_newtable(cr);
+		lua_pushvalue(cr, LUA_GLOBALSINDEX);
+		lua_setfield(cr, -2, "__index");
+		lua_setmetatable(cr, -2);
+		// }}}
+
 		lua_replace(cr, LUA_GLOBALSINDEX);
 
 		*ref = luaL_ref(l, -2);

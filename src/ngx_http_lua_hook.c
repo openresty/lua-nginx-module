@@ -46,9 +46,6 @@ ngx_http_lua_atpanic(lua_State *l)
 int
 ngx_http_lua_print(lua_State *l)
 {
-	// TODO: allowing print() to accept multiple output args, and convert each
-	// argument by tostring() first!
-    const char *s = luaL_checkstring(l, 1);
     ngx_http_request_t *r;
 
 	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
@@ -56,10 +53,12 @@ ngx_http_lua_print(lua_State *l)
     lua_pop(l, 1);
 
     if(r && r->connection && r->connection->log) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-print) %s", s);
+		const char *s;
+		lua_concat(l, lua_gettop(l));
+		s = lua_tostring(l, -1);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-print) %s", (s == NULL) ? "(null)" : s);
     } else {
-        dd("(lua-print) can't output print content to error log"
-                " due to invalid logging context: %s", s);
+        dd("(lua-print) can't output print content to error log due to invalid logging context!");
     }
 
     return 0;
