@@ -207,7 +207,7 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 	l = lmcf->lua;
 
 	// load Lua inline script (w/ cache)        sp = 1
-	rc = ngx_http_lua_cache_loadbuffer(l, (const char*)(llcf->src.data), llcf->src.len, "set_by_lua_inline");
+	rc = ngx_http_lua_cache_loadbuffer(l, (const char*)(llcf->src.data), llcf->src.len, "content_by_lua_inline");
 	if(rc != NGX_OK) {
 		// Oops...Error occured when loading Lua script
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -221,7 +221,22 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 
 	rc = ngx_http_lua_content_by_chunk(l, r);
 
-	return rc;
+	if(rc == NGX_ERROR) {
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+
+	if(rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+		return rc;
+	}
+
+	if(rc == NGX_AGAIN || rc == NGX_DONE) {
+#if defined(nginx_version) && nginx_version >= 8011
+		r->main->count++;
+#endif
+		return NGX_DONE;
+	}
+
+	return NGX_OK;
 }
 
 ngx_int_t
@@ -265,7 +280,22 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
 	rc = ngx_http_lua_content_by_chunk(l, r);
 
-	return rc;
+	if(rc == NGX_ERROR) {
+		return NGX_HTTP_INTERNAL_SERVER_ERROR;
+	}
+
+	if(rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+		return rc;
+	}
+
+	if(rc == NGX_AGAIN || rc == NGX_DONE) {
+#if defined(nginx_version) && nginx_version >= 8011
+		r->main->count++;
+#endif
+		return NGX_DONE;
+	}
+
+	return NGX_OK;
 }
 
 // vi:ts=4 sw=4 fdm=marker
