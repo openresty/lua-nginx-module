@@ -34,6 +34,8 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l, int *ref)
 		lua_newtable(cr);
 
 		// {{{ inherit coroutine's globals to main thread's globals table
+		// for print() function will try to find tostring() in current globals
+		// table.
 		lua_newtable(cr);
 		lua_pushvalue(cr, LUA_GLOBALSINDEX);
 		lua_setfield(cr, -2, "__index");

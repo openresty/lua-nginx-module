@@ -1,3 +1,6 @@
+/**
+ * FIXME: needing change to the same mechanism used by content_by_lua directives
+ * */
 #include "ngx_http_lua_set_by.h"
 #include "ngx_http_lua_hook.h"
 

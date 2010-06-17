@@ -54,8 +54,11 @@ ngx_http_lua_print(lua_State *l)
 
     if(r && r->connection && r->connection->log) {
 		const char *s;
+
+		// XXX: easy way to support multiple args, any serious performance penalties?
 		lua_concat(l, lua_gettop(l));
 		s = lua_tostring(l, -1);
+
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-print) %s", (s == NULL) ? "(null)" : s);
     } else {
         dd("(lua-print) can't output print content to error log due to invalid logging context!");
@@ -111,6 +114,7 @@ ngx_http_lua_ngx_echo(lua_State *l)
 			ngx_chain_t *cl;
 
 			// concatenate all args into single string
+			// XXX: easy way to support multiple args, any serious performance penalties?
 			lua_concat(l, lua_gettop(l));
 			data = lua_tolstring(l, -1, &len);
 
