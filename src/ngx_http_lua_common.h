@@ -32,6 +32,11 @@ typedef struct {
 	int eof:1;		// 1: last_buf has been sent; 0: last_buf not sent yet
 } ngx_http_lua_ctx_t;
 
+typedef enum {
+	exec,
+	location_capture
+} ngx_http_lua_io_cmd_t;
+
 extern ngx_module_t ngx_http_lua_module;
 extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;

@@ -132,7 +132,6 @@ ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
 	if ( ! ctx->headers_sent ) {
-		ctx->headers_sent = 1;
 		r->headers_out.status = NGX_HTTP_OK;
 
 		if (ngx_http_set_content_type(r) != NGX_OK) {
@@ -143,8 +142,8 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ct
 		ngx_http_clear_accept_ranges(r);
 
 		if (r->http_version >= NGX_HTTP_VERSION_11) {
-			// XXX: moved out
-			//ctx->headers_sent = 1;
+			// Send response headers for HTTP version <= 1.0 elsewhere
+			ctx->headers_sent = 1;
 			return ngx_http_send_header(r);
 		}
 	}
@@ -230,6 +229,11 @@ init_ngx_lua_registry(lua_State *l)
 static void
 init_ngx_lua_globals(lua_State *l)
 {
+	// {{{ remove unsupported globals
+	lua_pushnil(l);
+	lua_setfield(l, LUA_GLOBALSINDEX, "coroutine");
+	// }}}
+
 	// {{{ register global hook functions
 	lua_pushcfunction(l, ngx_http_lua_print);
 	lua_setglobal(l, "print");
@@ -303,11 +307,8 @@ ngx_http_lua_var_get(lua_State *l)
 		var.len = len;
 		var.data = lowcase;
 
-#if defined(nginx_version) && nginx_version >= 8040
 		vv = ngx_http_get_variable(r, &var, hash);
-#else
-		vv = ngx_http_get_variable(r, &var, hash, 1);
-#endif
+
 		if(vv == NULL || vv->not_found) {
 			ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
 					"(lua-var-get) no such a nginx variable: varname='%.*s', len=%d",

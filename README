@@ -39,7 +39,20 @@ Synopsis
             set $b "baz";
             # absolute script path not modified
             set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
-            echo 
+            echo $res;
+        }
+
+        location /lua_content {
+            # note extra backslash before newline escape sequence, it's
+            # necessary as nginx will unescape string first before passing to lua.
+            content_by_lua "ngx.echo('Hello,world!\\n')"
+        }
+
+        location /nginx_var {
+            # try access /nginx_var?a=hello,world
+            content_by_lua "ngx.echo(ngx.var['arg_a'], '\\n')";
+        }
+
         ...
     }
 
