@@ -7,3 +7,5 @@ Future:
 * add 'lua_require_path' directive to manipulate lua module searching path
 * add trace-back message in Lua runtime error
 * add Lua VM passive yield and resume (using debug hook)
+* make set_by_lua using the same mechanism as content_by_lua
+
