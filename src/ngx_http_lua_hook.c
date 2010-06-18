@@ -124,9 +124,8 @@ ngx_http_lua_ngx_echo(lua_State *l)
 					ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
 							"(lua-ngx-echo) can't allocate memory for output buffer!");
 				} else {
-					// FIXME: is there any need to copy the content first? as
-					// lua string will be invalid when it's poped out from
-					// stack
+					// FIXME: need to copy the content first! as lua string
+					// will be invalid when it's poped out from stack
 					buf->start = buf->pos = (u_char*)data;
 					buf->last = buf->end = (u_char*)(data + len);
 					buf->memory = 1;
@@ -218,25 +217,7 @@ ngx_http_lua_ngx_eof(lua_State *l)
 		ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 		if(ctx != NULL && ctx->eof == 0) {
 			ctx->eof = 1;	// set eof flag to prevent further output
-
-			buf = ngx_calloc_buf(r->pool);
-			if(buf == NULL) {
-				ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-						"(lua-ngx-eof) can't allocate memory for output buffer!");
-			} else {
-				buf->last_buf = 1;
-
-				cl = ngx_alloc_chain_link(r->pool);
-				if(cl == NULL) {
-					ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-							"(lua-ngx-eof) can't allocate memory for output chain-link!");
-				} else {
-					cl->next = NULL;
-					cl->buf = buf;
-
-					ngx_http_lua_send_chain_link(r, ctx, cl);
-				}
-			}
+			ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
 		}
 	} else {
 		dd("(lua-ngx-eof) can't find nginx request object!");
