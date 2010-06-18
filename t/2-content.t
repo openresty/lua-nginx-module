@@ -1,8 +1,12 @@
-# vi:ft=perl
+# vi:ft=
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#worker_connections(1014);
+#master_process_enabled(1);
+log_level('warn');
+
+repeat_each(100);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -74,7 +78,7 @@ local function eval_exp(str)
 end
 
 local exp_str = ngx.var["arg_exp"]
-print("exp: '", exp_str, "'\n")
+-- print("exp: '", exp_str, "'\n")
 local status, res
 status, res = pcall(uri_unescape, exp_str)
 if not status then

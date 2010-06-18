@@ -1,4 +1,5 @@
-# vi:ft=perl
+# vi:ft=
+
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -59,4 +60,34 @@ GET /lua
 GET /lua?a=1&b=2
 --- response_body
 3
+
+
+
+=== TEST 5: fib by arg
+--- config
+    location /fib {
+        set_by_lua $res "function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(tonumber(ngx.arg[1]))" $arg_n;
+        echo $res;
+    }
+--- request
+GET /fib?n=10
+--- response_body
+55
+
+
+
+=== TEST 6: adder
+--- config
+    location = /adder {
+        set_by_lua $res
+            "local a = tonumber(ngx.arg[1])
+             local b = tonumber(ngx.arg[2])
+             return a + b" $arg_a $arg_b;
+
+        echo $res;
+    }
+--- request
+GET /adder?a=25&b=75
+--- response_body
+100
 
