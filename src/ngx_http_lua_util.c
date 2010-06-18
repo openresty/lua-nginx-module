@@ -229,6 +229,11 @@ init_ngx_lua_registry(lua_State *l)
 static void
 init_ngx_lua_globals(lua_State *l)
 {
+	// {{{ remove unsupported globals
+	lua_pushnil(l);
+	lua_setfield(l, LUA_GLOBALSINDEX, "coroutine");
+	// }}}
+
 	// {{{ register global hook functions
 	lua_pushcfunction(l, ngx_http_lua_print);
 	lua_setglobal(l, "print");
