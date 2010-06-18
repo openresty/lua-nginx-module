@@ -1,3 +1,9 @@
 [submodule "deps/test-nginx"]
 	path = deps/test-nginx
 	url = git://github.com/agentzh/test-nginx.git
+[submodule "deps/ngx_devel_kit"]
+	path = deps/ngx_devel_kit
+	url = git://github.com/simpl-it/ngx_devel_kit.git
+[submodule "deps/echo-nginx-module"]
+	path = deps/echo-nginx-module
+	url = git://github.com/agentzh/echo-nginx-module.git
