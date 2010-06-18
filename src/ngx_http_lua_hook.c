@@ -206,8 +206,6 @@ ngx_http_lua_ngx_eof(lua_State *l)
 {
 	ngx_http_request_t *r;
 	ngx_http_lua_ctx_t *ctx;
-	ngx_buf_t *buf;
-	ngx_chain_t *cl;
 
 	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(l, -1);
