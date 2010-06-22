@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <openssl/md5.h>
 #include "ngx_http_lua_cache.h"
+#include "ngx_http_lua_clfactory.h"
 
 static const char*
 ngx_http_lua_digest_hex(char *dest, const char *buf, int buf_len)
