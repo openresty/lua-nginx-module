@@ -4,6 +4,7 @@
 static void init_ngx_lua_registry(lua_State *l);
 static void init_ngx_lua_globals(lua_State *l);
 static int ngx_http_lua_var_get(lua_State *l);
+static int ngx_http_lua_var_set(lua_State *l);
 
 lua_State*
 ngx_http_lua_new_state()
@@ -269,6 +270,8 @@ init_ngx_lua_globals(lua_State *l)
 	lua_newtable(l);
 	lua_pushcfunction(l, ngx_http_lua_var_get);
 	lua_setfield(l, -2, "__index");
+	lua_pushcfunction(l, ngx_http_lua_var_set);
+	lua_setfield(l, -2, "__newindex");
 	lua_setmetatable(l, -2);
 
 	lua_setfield(l, -2, "var");
@@ -277,6 +280,13 @@ init_ngx_lua_globals(lua_State *l)
 	lua_setglobal(l, "ngx");
 }
 
+/**
+ * Get NginX internal variables content
+ *
+ * @retval Always return a string or nil on Lua stack. Return nil when failed to get
+ * content, and actual content string when found the specified variable.
+ * @seealso ngx_http_lua_var_set
+ * */
 static int
 ngx_http_lua_var_get(lua_State *l)
 {
@@ -326,6 +336,28 @@ ngx_http_lua_var_get(lua_State *l)
 	if(!got) {
 		lua_pushnil(l);
 	}
+
+	return 1;
+}
+
+/**
+ * Set NginX internal variable content
+ *
+ * @retval Always return a boolean on Lua stack. Return true when variable
+ * content was modified successfully, false otherwise.
+ * @seealso ngx_http_lua_var_get
+ * */
+static int
+ngx_http_lua_var_set(lua_State *l)
+{
+	ngx_http_request_t *r;
+
+	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
+	r = lua_touserdata(l, -1);
+	lua_pop(l, 1);
+
+	// TODO: 
+	lua_pushboolean(l, 0);	// return false
 
 	return 1;
 }
