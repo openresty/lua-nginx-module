@@ -81,6 +81,7 @@ int ngx_http_lua_clfactory_loadbuffer(lua_State *l, const char *buff, size_t siz
 	clfactory_buffer_ctx_t ls;
 	ls.s = buff;
 	ls.size = size;
+	ls.sent_begin = ls.sent_end = 0;
 	return lua_load(l, clfactory_getS, &ls, name);
 }
 

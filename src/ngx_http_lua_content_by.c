@@ -23,7 +23,13 @@ ngx_http_lua_content_by_chunk(
 				"(lua-content-by-chunk) failed to create new coroutine to handle request!");
 		return NGX_ERROR;
 	}
-	lua_xmove(l, cc, 1);	// move code chunk to new coroutine
+
+	// move code closure to new coroutine
+	lua_xmove(l, cc, 1);
+
+	// set closure's env table to new coroutine's globals table
+	lua_pushvalue(cc, LUA_GLOBALSINDEX);
+	lua_setfenv(cc, -2);
 
 	// save reference of code to ease forcing stopping
 	lua_pushvalue(cc, -1);

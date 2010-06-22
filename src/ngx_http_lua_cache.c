@@ -41,9 +41,14 @@ ngx_http_lua_cache_load_code(lua_State *l, const char *ck)
 
 	lua_getfield(l, -1, ck);	// sp++
 	if(lua_isfunction(l, -1)) {
-		// remove cache table from stack, leave code chunk at top of stack
-		lua_remove(l, -2);                        // sp--
-		return NGX_OK;
+		// call closure factory to gen new closure
+		int rc = lua_pcall(l, 0, 1, 0);
+
+		if(rc == 0) {
+			// remove cache table from stack, leave code chunk at top of stack
+			lua_remove(l, -2);                        // sp--
+			return NGX_OK;
+		}
 	}
 
 	dd("Value associated with given key in code cache table is not code chunk: stack top=%d, top value type=%s\n",
@@ -56,12 +61,12 @@ ngx_http_lua_cache_load_code(lua_State *l, const char *ck)
 }
 
 /**
- * Store the code chunk at the top of Lua stack to code cache,
- * and associate it with the given key.
+ * Store the closure factory at the top of Lua stack to code cache, and
+ * associate it with the given key. Then generate new closure.
  *
  * Stack layout before call:
- *         | code chunk | <- top
- *         |     ...    |
+ *         | code factory | <- top
+ *         |     ...      |
  *
  * Stack layout after call:
  *         | code chunk | <- top
@@ -71,6 +76,8 @@ ngx_http_lua_cache_load_code(lua_State *l, const char *ck)
 static ngx_int_t
 ngx_http_lua_cache_store_code(lua_State *l, const char *ck)
 {
+	int rc;
+
 	// get code cache table
 	lua_getfield(l, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);	// sp++
 
@@ -84,8 +91,15 @@ ngx_http_lua_cache_store_code(lua_State *l, const char *ck)
 	lua_pushvalue(l, -2);		// sp++
 	lua_setfield(l, -2, ck);	// sp--
 
-	// remove cache table, leave code chunk at top of stack
+	// remove cache table, leave closure factory at top of stack
 	lua_pop(l, 1);				// sp--
+
+	// call closure factory to generate new closure
+	rc = lua_pcall(l, 0, 1, 0);
+	if(rc != 0) {
+		dd("Error: failed to call closure factory!!");
+		return NGX_ERROR;
+	}
 
 	return NGX_OK;
 }
@@ -114,15 +128,15 @@ ngx_http_lua_cache_loadbuffer(
 
 	dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(l), buf_len, buf);
 
-	// load inline script to the top of lua stack, sp++
-	rc = luaL_loadbuffer(l, buf, buf_len, name);
+	// load closure factory of inline script to the top of lua stack, sp++
+	rc = ngx_http_lua_clfactory_loadbuffer(l, buf, buf_len, name);
 
 	if (rc != 0) {
 		dd("Failed to load inline script: script='%.*s'", buf_len, buf);
 		return rc;
 	}
 
-	// store function at the top of lua stack to code cache
+	// store closure factory and gen new closure at the top of lua stack to code cache
 	ngx_http_lua_cache_store_code(l, cache_key);
 
 	return NGX_OK;
@@ -150,14 +164,14 @@ ngx_http_lua_cache_loadfile(
 
 	dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(l), script);
 
-	// load script file to the top of lua stack, sp++
-	rc = luaL_loadfile(l, script);
+	// load closure factory of script file to the top of lua stack, sp++
+	rc = ngx_http_lua_clfactory_loadfile(l, script);
 	if(rc) {
 		dd("Failed to load script file: file path='%s'", script);
 		return rc;
 	}
 
-	// store function at the top of lua stack to code cache
+	// store closure factory and gen new closure at the top of lua stack to code cache
 	ngx_http_lua_cache_store_code(l, cache_key);
 
 	return NGX_OK;
