@@ -101,7 +101,7 @@ result: -0.4090441561579
 === TEST 5: read $arg_xxx
 --- config
     location = /lua {
-        content_by_lua 'who = ngx.var["arg_who"]
+        content_by_lua 'who = ngx.var.arg_who
             ngx.echo("Hello, ", who, "!")';
     }
 --- request
