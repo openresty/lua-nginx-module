@@ -14,6 +14,8 @@ extern int ngx_http_lua_ngx_echo(lua_State *l);
 extern int ngx_http_lua_ngx_flush(lua_State *l);
 extern int ngx_http_lua_ngx_eof(lua_State *l);
 
+extern int ngx_http_lua_ngx_location_capture(lua_State *l);
+
 #endif
 
 // vi:ts=4 sw=4 fdm=marker

@@ -7,6 +7,7 @@ extern ngx_int_t ngx_http_lua_content_by_chunk(
 		lua_State *l,
 		ngx_http_request_t *r
 		);
+extern void ngx_http_lua_wev_handler(ngx_http_request_t *r);
 
 #endif
 

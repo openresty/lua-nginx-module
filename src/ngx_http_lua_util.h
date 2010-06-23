@@ -13,6 +13,11 @@ extern char* ngx_http_lua_rebase_path(ngx_pool_t *pool, ngx_str_t *str);
 extern ngx_int_t ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx);
 extern ngx_int_t ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx_chain_t *cl);
 
+extern ngx_int_t ngx_http_lua_post_request_at_head(ngx_http_request_t *r, ngx_http_posted_request_t *pr);
+
+extern void ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in);
+extern ngx_int_t ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in);
+
 #endif
 
 // vi:ts=4 sw=4 fdm=marker

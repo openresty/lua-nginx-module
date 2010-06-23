@@ -1,5 +1,9 @@
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_content_by.h"
+
+static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
+static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 
 // longjmp mark for restoring nginx execution after Lua VM crashing
 jmp_buf ngx_http_lua_exception;
@@ -222,6 +226,162 @@ ngx_http_lua_ngx_eof(lua_State *l)
 	}
 
 	return 0;
+}
+
+int
+ngx_http_lua_ngx_location_capture(lua_State *l)
+{
+	ngx_http_request_t *r;
+    ngx_http_request_t                  *sr; /* subrequest object */
+    ngx_http_post_subrequest_t          *psr;
+	ngx_http_lua_ctx_t *sr_ctx;
+	ngx_str_t uri, args;
+	ngx_uint_t flags = 0;
+	const char *p;
+	size_t plen;
+	int rc;
+
+	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(l, -1);
+    lua_pop(l, 1);
+
+	if(r == NULL) {
+		dd("(lua-ngx-location-capture) can't find nginx request object!");
+
+		goto error;
+	}
+
+	p = luaL_checklstring(l, -1, &plen);
+	if(p == NULL) {
+		dd("(lua-ngx-location-capture) no valid uri found!");
+
+		goto error;
+	}
+
+	uri.data = ngx_palloc(r->pool, plen);
+	if(uri.data == NULL) {
+		goto error;
+	}
+	uri.len = plen;
+
+	ngx_memcpy(uri.data, p, plen);
+
+    args.data = NULL;
+    args.len = 0;
+
+    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK) {
+		goto error;
+    }
+
+    psr = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
+    if (psr == NULL) {
+		goto error;
+    }
+
+	sr_ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+	if(sr_ctx == NULL) {
+		goto error;
+	}
+	sr_ctx->capture = 1;
+
+    psr->handler = ngx_http_lua_post_subrequest;
+    psr->data = sr_ctx;
+
+    rc = ngx_http_subrequest(r, &uri, &args, &sr, psr, 0);
+
+    if (rc != NGX_OK) {
+		goto error;
+    }
+
+	ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
+
+    rc = ngx_http_lua_adjust_subrequest(sr);
+
+    if (rc != NGX_OK) {
+		goto error;
+    }
+
+	lua_pushinteger(l, location_capture);
+	return lua_yield(l, 1);
+
+error:
+	lua_pushnil(l);
+	return 1;
+}
+
+static ngx_int_t
+ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
+{
+    ngx_http_core_main_conf_t   *cmcf;
+    ngx_http_request_t          *r;
+
+
+    /* we do not inherit the parent request's variables */
+    cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
+
+    r = sr->parent;
+
+    sr->header_in = r->header_in;
+
+    /* XXX work-around a bug in ngx_http_subrequest */
+    if (r->headers_in.headers.last == &r->headers_in.headers.part) {
+        sr->headers_in.headers.last = &sr->headers_in.headers.part;
+    }
+
+    sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
+                                        * sizeof(ngx_http_variable_value_t));
+
+    if (sr->variables == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+static ngx_int_t
+ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
+{
+    ngx_http_request_t          *pr;
+    ngx_http_lua_ctx_t         *pr_ctx;
+	ngx_http_lua_ctx_t	*ctx = data;
+
+    pr = r->parent;
+
+    pr_ctx = ngx_http_get_module_ctx(pr, ngx_http_lua_module);
+    if (pr_ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    pr_ctx->waiting = 0;
+    pr_ctx->done = 1;
+
+    pr->write_event_handler = ngx_http_lua_wev_handler;
+
+	// capture subrequest response status
+	if(rc == NGX_ERROR) {
+		pr_ctx->sr_status = NGX_HTTP_INTERNAL_SERVER_ERROR;
+	} else if(rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+		pr_ctx->sr_status = rc;
+	} else {
+		pr_ctx->sr_status = r->headers_out.status;
+	}
+
+	// copy subrequest response body
+	pr_ctx->sr_body = ctx->body;
+
+    /* ensure that the parent request is (or will be)
+     *  posted out the head of the r->posted_requests chain */
+
+    if (r->main->posted_requests
+            && r->main->posted_requests->request != pr)
+    {
+        rc = ngx_http_lua_post_request_at_head(pr, NULL);
+        if (rc != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    return rc;
 }
 
 // vi:ts=4 sw=4 fdm=marker

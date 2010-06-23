@@ -251,6 +251,11 @@ init_ngx_lua_globals(lua_State *l)
 	lua_setfield(l, -2, "flush");
 	lua_pushcfunction(l, ngx_http_lua_ngx_eof);
 	lua_setfield(l, -2, "eof");
+
+	lua_newtable(l);
+	lua_pushcfunction(l, ngx_http_lua_ngx_location_capture);
+	lua_setfield(l, -2, "capture");
+	lua_setfield(l, -2, "location");
 	// }}}
 
 	// {{{ register nginx constants
@@ -360,6 +365,77 @@ ngx_http_lua_var_set(lua_State *l)
 	lua_pushboolean(l, 0);	// return false
 
 	return 1;
+}
+
+ngx_int_t
+ngx_http_lua_post_request_at_head(ngx_http_request_t *r,
+        ngx_http_posted_request_t *pr)
+{
+    if (pr == NULL) {
+        pr = ngx_palloc(r->pool, sizeof(ngx_http_posted_request_t));
+        if (pr == NULL) {
+            return NGX_ERROR;
+        }
+    }
+
+    pr->request = r;
+    pr->next = r->main->posted_requests;
+    r->main->posted_requests = pr;
+
+    return NGX_OK;
+}
+
+void
+ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
+{
+    ngx_chain_t         *cl;
+
+    for (cl = in; cl; cl = cl->next) {
+        cl->buf->pos = cl->buf->last;
+    }
+}
+
+ngx_int_t
+ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
+{
+    ngx_chain_t     *cl, **ll;
+    size_t           len;
+
+    ll = chain;
+
+    for (cl = *chain; cl; cl = cl->next) {
+        ll = &cl->next;
+    }
+
+    while (in) {
+        cl = ngx_alloc_chain_link(pool);
+        if (cl == NULL) {
+            return NGX_ERROR;
+        }
+
+        if (ngx_buf_special(in->buf)) {
+            cl->buf = in->buf;
+        } else {
+            if (ngx_buf_in_memory(in->buf)) {
+                len = ngx_buf_size(in->buf);
+                cl->buf = ngx_create_temp_buf(pool, len);
+                dd("buf: %.*s", (int) len, in->buf->pos);
+
+                cl->buf->last = ngx_copy(cl->buf->pos, in->buf->pos, len);
+
+            } else {
+                return NGX_ERROR;
+            }
+        }
+
+        *ll = cl;
+        ll = &cl->next;
+        in = in->next;
+    }
+
+    *ll = NULL;
+
+    return NGX_OK;
 }
 
 // vi:ts=4 sw=4 fdm=marker

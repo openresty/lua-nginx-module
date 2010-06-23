@@ -2,6 +2,12 @@
 #include "ngx_http_lua_util.h"
 
 static void ngx_http_lua_request_cleanup(void *data);
+static ngx_int_t ngx_http_lua_run_thread(
+		lua_State *l,
+		ngx_http_request_t *r,
+		ngx_http_lua_ctx_t *ctx,
+		int nret
+		);
 
 ngx_int_t
 ngx_http_lua_content_by_chunk(
@@ -9,12 +15,10 @@ ngx_http_lua_content_by_chunk(
         ngx_http_request_t *r
         )
 {
-    int rc;
     int cc_ref;
     lua_State *cc;
     ngx_http_lua_ctx_t *ctx;
     ngx_http_cleanup_t *cln;
-    const char *err, *msg;
 
     // {{{ new coroutine to handle request
     cc = ngx_http_lua_new_thread(r, l, &cc_ref);
@@ -60,12 +64,33 @@ ngx_http_lua_content_by_chunk(
     cln->handler = ngx_http_lua_request_cleanup;
     // }}}
 
+	return ngx_http_lua_run_thread(l, r, ctx, 0);
+}
+
+static ngx_int_t
+ngx_http_lua_run_thread(
+		lua_State *l,
+		ngx_http_request_t *r,
+		ngx_http_lua_ctx_t *ctx,
+		int nret
+		)
+{
+    int rc;
+    int cc_ref;
+    lua_State *cc;
+    const char *err, *msg;
+
+	cc = ctx->cc;
+	cc_ref = ctx->cc_ref;
+
     // run code
-    rc = lua_resume(cc, 0);
+    rc = lua_resume(cc, nret);
 
     switch(rc) {
         case LUA_YIELD:
             // yielded, let event handler do the rest job
+			// FIXME: add io cmd dispatcher here
+			lua_settop(cc, 0);
             return NGX_AGAIN;
         case 0:
             // normal end
@@ -131,6 +156,94 @@ ngx_http_lua_request_cleanup(void *data)
 
         lua_pop(l, 2);
     }
+}
+
+void
+ngx_http_lua_wev_handler(ngx_http_request_t *r)
+{
+    ngx_int_t                    rc;
+    ngx_http_lua_ctx_t         *ctx;
+	ngx_http_lua_main_conf_t *lmcf;
+	lua_State *cc;
+	ngx_chain_t	*cl;
+	size_t len;
+	u_char *pos, *last;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+		goto error;
+    }
+
+    if (ctx->waiting && ! ctx->done) {
+        if (r->main->posted_requests
+                && r->main->posted_requests->request != r)
+        {
+#if defined(nginx_version) && nginx_version >= 8012
+            ngx_http_post_request(r, NULL);
+#else
+            ngx_http_post_request(r);
+#endif
+
+            return;
+        }
+    }
+
+    ctx->done = 0;
+
+	len = 0;
+	for(cl = ctx->sr_body; cl; cl = cl->next) {
+		// ignore all non-memory buffers
+		len += cl->buf->last - cl->buf->pos;
+	}
+
+	if(len == 0) {
+		pos = NULL;
+	} else {
+		last = pos = ngx_palloc(r->pool, len);
+		if(pos == NULL) {
+			goto error;
+		}
+
+		for(cl = ctx->sr_body; cl; cl = cl->next) {
+			// ignore all non-memory buffers
+			last = ngx_copy(last, cl->buf->pos, cl->buf->last - cl->buf->pos);
+		}
+	}
+
+	cc = ctx->cc;
+
+	// {{{ construct ret value
+	lua_newtable(cc);
+
+	// copy captured status
+	lua_pushinteger(cc, ctx->sr_status);
+	lua_setfield(cc, -2, "status");
+
+	// copy captured body
+	lua_pushlstring(cc, (const char*)pos, len);
+	lua_setfield(cc, -2, "body");
+	// }}}
+
+	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 1);
+
+    if (rc == NGX_AGAIN || rc == NGX_DONE) {
+        ctx->waiting = 1;
+        ctx->done = 0;
+
+    } else {
+        ctx->waiting = 0;
+        ctx->done = 1;
+
+        ngx_http_finalize_request(r, rc);
+    }
+
+	return;
+
+error:
+	ngx_http_finalize_request(r, NGX_ERROR);
+	return;
 }
 
 // vi:ts=4 sw=4 fdm=marker

@@ -28,8 +28,14 @@ typedef struct {
 typedef struct {
 	lua_State *cc;	// coroutine to handle request
 	int cc_ref;		// reference to anchor coroutine in lua registry
-	int headers_sent:1;	// 1: response header has been sent; 0: header not sent yet
-	int eof:1;		// 1: last_buf has been sent; 0: last_buf not sent yet
+	ngx_flag_t headers_sent:1;	// 1: response header has been sent; 0: header not sent yet
+	ngx_flag_t eof:1;		// 1: last_buf has been sent; 0: last_buf not sent yet
+	ngx_flag_t waiting:1;	// 1: subrequest is still running; 0: subrequest is not running
+	ngx_flag_t done:1;	// 1: subrequest is just done; 0: subrequest is not done yet or has already done
+	ngx_flag_t capture:1;	// 1: body of current request is to be captured; 0: not captured
+	ngx_chain_t *sr_body;	// all captured subrequest bodies
+	ngx_chain_t *body;	// captured current request body
+	ngx_int_t sr_status;	// captured subrequest status
 } ngx_http_lua_ctx_t;
 
 typedef enum {

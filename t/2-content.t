@@ -6,10 +6,11 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(100);
+repeat_each(120);
 
 plan tests => blocks() * repeat_each() * 2;
 
+no_long_string();
 run_tests();
 
 __DATA__
@@ -118,11 +119,10 @@ Hello, agentzh!
     }
 
     location /lua {
-        content_by_lua 'res = ngx.location.capture("/other"); if res.status == "200" then ngx.echo(res.body) end';
+        content_by_lua 'res = ngx.location.capture("/other"); ngx.echo("status=", res.status, " "); ngx.echo("body=", res.body)';
     }
 --- request
 GET /lua
 --- response_body
-hello, world
---- SKIP
+status=200 body=hello, world
 

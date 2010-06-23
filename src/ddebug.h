@@ -7,7 +7,7 @@
 
 #   if (NGX_HAVE_VARIADIC_MACROS)
 
-#       define dd(...) fprintf(stderr, "lua *** "); \
+#       define dd(...) fprintf(stderr, "lua *** %s: ", __func__); \
             fprintf(stderr, __VA_ARGS__); \
             fprintf(stderr, " at %s line %d.\n", __FILE__, __LINE__)
 
