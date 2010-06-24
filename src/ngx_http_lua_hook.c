@@ -123,28 +123,26 @@ ngx_http_lua_ngx_echo(lua_State *l)
 			data = lua_tolstring(l, -1, &len);
 
 			if(data) {
-				buf = ngx_calloc_buf(r->pool);
+				buf = ngx_create_temp_buf(r->pool, len);
 				if(buf == NULL) {
 					ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
 							"(lua-ngx-echo) can't allocate memory for output buffer!");
-				} else {
-					// FIXME: need to copy the content first! as lua string
-					// will be invalid when it's poped out from stack
-					buf->start = buf->pos = (u_char*)data;
-					buf->last = buf->end = (u_char*)(data + len);
-					buf->memory = 1;
-
-					cl = ngx_alloc_chain_link(r->pool);
-					if(cl == NULL) {
-						ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-								"(lua-ngx-echo) can't allocate memory for output chain-link!");
-					} else {
-						cl->next = NULL;
-						cl->buf = buf;
-
-						ngx_http_lua_send_chain_link(r, ctx, cl);
-					}
+                    return 0;
 				}
+
+                buf->last = ngx_copy(buf->last, (u_char *) data, len);
+
+                cl = ngx_alloc_chain_link(r->pool);
+                if(cl == NULL) {
+                    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                            "(lua-ngx-echo) can't allocate memory for output chain-link!");
+                    return 0;
+                }
+
+                cl->next = NULL;
+                cl->buf = buf;
+
+                ngx_http_lua_send_chain_link(r, ctx, cl);
 			}
 
 			// clear args
