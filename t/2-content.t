@@ -126,3 +126,27 @@ GET /lua
 --- response_body
 status=200 body=hello, world
 
+
+
+=== TEST 7: capture non-existed location
+--- config
+	location /lua {
+		content_by_lua 'res = ngx.location.capture("/other"); ngx.echo("status=", res.status)';
+	}
+--- request
+GET /lua
+--- response_body: status=404
+
+
+
+=== TEST 8: invalid capture location (not as expected...)
+--- config
+	location /lua {
+		content_by_lua 'res = ngx.location.capture("*(#*"); ngx.echo("res=", res)';
+	}
+--- request
+GET /lua
+--- response_body
+res=nil
+--- SKIP
+
