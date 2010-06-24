@@ -2,8 +2,8 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_conf.h"
-#include "ngx_http_lua_set_by.h"
-#include "ngx_http_lua_content_by.h"
+#include "ngx_http_lua_setby.h"
+#include "ngx_http_lua_contentby.h"
 
 char*
 ngx_http_lua_set_by_lua(

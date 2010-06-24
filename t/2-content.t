@@ -7,9 +7,11 @@ use Test::Nginx::Socket;
 log_level('warn');
 
 repeat_each(120);
+#repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
 
+no_diff();
 no_long_string();
 run_tests();
 
@@ -148,5 +150,57 @@ GET /lua
 GET /lua
 --- response_body
 res=nil
+--- SKIP
+
+
+
+=== TEST 9: capture location (default 0);
+--- config
+ location /recur {
+       content_by_lua '
+           local num = tonumber(ngx.var.arg_num) or 0;
+           ngx.echo("num is: ", num, "\\n");
+
+           if (num > 0) then
+               res = ngx.location.capture("/recur?num="..tostring(num - 1));
+               ngx.echo("status=", res.status, " ");
+               ngx.echo("body=", res.body, "\\n");
+           else
+               ngx.echo("end\\n");
+           end
+           ';
+   }
+--- request
+GET /recur
+--- response_body
+num is: 0
+end
+
+
+
+=== TEST 10: capture location
+--- config
+ location /recur {
+       content_by_lua '
+           local num = tonumber(ngx.var.arg_num) or 0;
+           ngx.echo("num is: ", num, "\\n");
+
+           if (num > 0) then
+               res = ngx.location.capture("/recur?num="..tostring(num - 1));
+               ngx.echo("status=", res.status, " ");
+               ngx.echo("body=", res.body);
+           else
+               ngx.echo("end\\n");
+           end
+           ';
+   }
+--- request
+GET /recur?num=3
+--- response_body
+num is: 3
+status=200 body=num is: 2
+status=200 body=num is: 1
+status=200 body=num is: 0
+end
 --- SKIP
 

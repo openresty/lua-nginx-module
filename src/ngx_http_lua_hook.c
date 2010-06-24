@@ -1,6 +1,6 @@
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_content_by.h"
+#include "ngx_http_lua_contentby.h"
 
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);

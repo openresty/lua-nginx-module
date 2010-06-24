@@ -1,4 +1,4 @@
-#include "ngx_http_lua_content_by.h"
+#include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 
 static void ngx_http_lua_request_cleanup(void *data);
