@@ -9,6 +9,9 @@ script_dir=$(dirname $0)
 root=$(readlink -f $script_dir/..)
 mkdir -p $root/{build,work}
 
+cd $root
+git submodule update
+
 cd $root/build
 if [ ! -s nginx-$version.tar.gz ]; then
     wget "http://sysoev.ru/nginx/nginx-$version.tar.gz" -O nginx-$version.tar.gz
@@ -18,9 +21,9 @@ tar -xzvf nginx-$version.tar.gz
 cd nginx-$version/
 if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$root/util/build.sh" -nt Makefile ]]; then
 	./configure --prefix=$root/work \
+				--add-module=$root \
 				--add-module=$root/deps/ngx_devel_kit \
 				--add-module=$root/deps/echo-nginx-module \
-				--add-module=$root \
 				--with-http_stub_status_module #\
 				#--with-debug \
 				$opts
