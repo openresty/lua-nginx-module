@@ -330,7 +330,7 @@ ngx_http_lua_var_get(lua_State *l)
         var.len = len;
         var.data = lowcase;
 
-#if defined(nginx_version) && ngx_version > 8040
+#if defined(nginx_version) && ngx_version > 8036
         vv = ngx_http_get_variable(r, &var, hash);
 #else
         vv = ngx_http_get_variable(r, &var, hash, 1);
