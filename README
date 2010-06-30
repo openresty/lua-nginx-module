@@ -111,15 +111,19 @@ See Also
     * ngx_devel_kit ( http://github.com/simpl-it/ngx_devel_kit )
     * echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
 
-Author
+Authors
     chaoslawful (王晓哲) <chaoslawful at gmail dot com>
+
+    agentzh (章亦春) <agentzh at gmail dot com>
 
 Copyright & License
     This module is licenced under the BSD license.
 
     Copyright (c) 2009, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
 
-    Copyright (C) 2009 by chaoslawful <chaoslawful@gmail.com>.
+    Copyright (C) 2009 by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+
+    Copyright (C) 2009 by Yichun Zhang (agentzh) <agentzh@gmail.com>.
 
     All rights reserved.
 
