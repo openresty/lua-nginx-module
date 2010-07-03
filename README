@@ -62,6 +62,7 @@ Synopsis
                 end';
         }
 
+        # GET /recur?num=5
         location /recur {
            content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
