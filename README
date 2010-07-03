@@ -53,8 +53,29 @@ Synopsis
             content_by_lua "ngx.echo(ngx.var['arg_a'], '\\n')";
         }
 
-        ...
-    }
+        # transparent non-blocking I/O in Lua via subrequests
+        location /lua {
+            content_by_lua '
+                local res = ngx.location.capture("/some_other_location")
+                if res.status == 200 then
+                    ngx.echo(res.body)
+                end';
+        }
+
+        location /recur {
+           content_by_lua '
+               local num = tonumber(ngx.var.arg_num) or 0
+               ngx.echo("num is: ", num, "\\n")
+
+               if num > 0 then
+                   res = ngx.location.capture("/recur?num=" .. tostring(num - 1))
+                   ngx.echo("status=", res.status, " ")
+                   ngx.echo("body=", res.body)
+               else
+                   ngx.echo("end\\n")
+               end
+               ';
+        }
 
 Description
 
