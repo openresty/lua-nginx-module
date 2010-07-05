@@ -1,8 +1,7 @@
 #define DDEBUG 0
 #include "ddebug.h"
 
-#include <unistd.h>
-#include <openssl/md5.h>
+#include <ngx_md5.h>
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_clfactory.h"
 
