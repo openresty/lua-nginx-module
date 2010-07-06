@@ -5,7 +5,7 @@
 
 extern ngx_int_t ngx_http_lua_cache_loadbuffer(
         lua_State *l,
-        const char *buf,
+        const u_char *buf,
         int buf_len,
         const char *name
         );

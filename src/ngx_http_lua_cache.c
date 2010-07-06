@@ -1,17 +1,19 @@
-#define DDEBUG 0
+#define DDEBUG 1
 #include "ddebug.h"
 
 #include <ngx_md5.h>
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_clfactory.h"
 
-static const char*
-ngx_http_lua_digest_hex(char *dest, const char *buf, int buf_len)
+
+static u_char *
+ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
 {
-	char temp[MD5_DIGEST_LENGTH];
-	MD5((const u_char*)buf, buf_len, (u_char*)temp);
-	return (const char*)ngx_hex_dump((u_char*)dest, (u_char*)temp, sizeof(temp));
+	u_char digest[MD5_DIGEST_LENGTH];
+	MD5(buf, buf_len, digest);
+	return ngx_hex_dump(dest, digest, sizeof(digest));
 }
+
 
 /**
  * Find code chunk associated with the given key in code cache,
@@ -106,20 +108,25 @@ ngx_http_lua_cache_store_code(lua_State *l, const char *ck)
 ngx_int_t
 ngx_http_lua_cache_loadbuffer(
 		lua_State *l,
-		const char *buf,
+		const u_char *buf,
 		int buf_len,
 		const char *name
 		)
 {
-#define IL_TAG "nhli_"
-#define IL_TAG_LEN (sizeof(IL_TAG)-1)
-	char cache_key[IL_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = IL_TAG;
-	int rc;
+#define IL_TAG ((const u_char*) "nhli_")
+#define IL_TAG_LEN (sizeof(IL_TAG) - 1)
+	int          rc;
+    u_char      *p;
+	u_char       cache_key[IL_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1];
+
+    p = ngx_copy(cache_key, IL_TAG, IL_TAG_LEN);
 
 	// calculate digest of inline script
-	ngx_http_lua_digest_hex(&cache_key[IL_TAG_LEN], buf, buf_len);
+	p = ngx_http_lua_digest_hex(p, buf, buf_len);
 
-	if(ngx_http_lua_cache_load_code(l, cache_key) == NGX_OK) {
+    *p = '\0';
+
+	if (ngx_http_lua_cache_load_code(l, (char *) cache_key) == NGX_OK) {
 		// code chunk loaded from cache, sp++
 		dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(l), buf_len, buf);
 		return NGX_OK;
@@ -128,7 +135,7 @@ ngx_http_lua_cache_loadbuffer(
 	dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(l), buf_len, buf);
 
 	// load closure factory of inline script to the top of lua stack, sp++
-	rc = ngx_http_lua_clfactory_loadbuffer(l, buf, buf_len, name);
+	rc = ngx_http_lua_clfactory_loadbuffer(l, (char *) buf, buf_len, name);
 
 	if (rc != 0) {
 		dd("Failed to load inline script: script='%.*s'", buf_len, buf);
@@ -136,7 +143,7 @@ ngx_http_lua_cache_loadbuffer(
 	}
 
 	// store closure factory and gen new closure at the top of lua stack to code cache
-	ngx_http_lua_cache_store_code(l, cache_key);
+	ngx_http_lua_cache_store_code(l, (char *) cache_key);
 
 	return NGX_OK;
 }
@@ -149,13 +156,13 @@ ngx_http_lua_cache_loadfile(
 {
 #define FP_TAG "nhlf_"
 #define FP_TAG_LEN (sizeof(FP_TAG)-1)
-	char cache_key[FP_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = FP_TAG;
+	u_char cache_key[FP_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = FP_TAG;
 	int rc;
 
 	// calculate digest of script file path
-	ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], script, ngx_strlen(script));
+	ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], (u_char *) script, ngx_strlen(script));
 
-	if(ngx_http_lua_cache_load_code(l, cache_key) == NGX_OK) {
+	if(ngx_http_lua_cache_load_code(l, (char *) cache_key) == NGX_OK) {
 		// code chunk loaded from cache, sp++
 		dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(l), script);
 		return NGX_OK;
@@ -171,7 +178,7 @@ ngx_http_lua_cache_loadfile(
 	}
 
 	// store closure factory and gen new closure at the top of lua stack to code cache
-	ngx_http_lua_cache_store_code(l, cache_key);
+	ngx_http_lua_cache_store_code(l, (char *) cache_key);
 
 	return NGX_OK;
 }

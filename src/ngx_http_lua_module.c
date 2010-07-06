@@ -49,33 +49,31 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 };
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-	NULL,							// preconfiguration
-	ngx_http_lua_filter_init,		// postconfiguration
+	NULL,							/*  preconfiguration */
+	ngx_http_lua_filter_init,		/*  postconfiguration */
 
-	ngx_http_lua_create_main_conf,	// create main configuration
-	ngx_http_lua_init_main_conf,	// init main configuration
+	ngx_http_lua_create_main_conf,	/*  create main configuration */
+	ngx_http_lua_init_main_conf,	/*  init main configuration */
 
-    NULL,    						// create server configuration
-    NULL,    						// merge server configuration
+    NULL,    						/*  create server configuration */
+    NULL,    						/*  merge server configuration */
 
-    ngx_http_lua_create_loc_conf,	// create location configuration
-    ngx_http_lua_merge_loc_conf		// merge location configuration
+    ngx_http_lua_create_loc_conf,	/*  create location configuration */
+    ngx_http_lua_merge_loc_conf		/*  merge location configuration */
 };
 
 ngx_module_t ngx_http_lua_module = {
     NGX_MODULE_V1,
-    &ngx_http_lua_module_ctx,   // module context
-    ngx_http_lua_cmds,          // module directives
-    NGX_HTTP_MODULE,			// module type
-    NULL,                       // init master
-    NULL,                       // init module
-    NULL,                       // init process
-    NULL,                       // init thread
-    NULL,                       // exit thread
-    NULL,                       // exit process
-    NULL,                       // exit master
+    &ngx_http_lua_module_ctx,   /*  module context */
+    ngx_http_lua_cmds,          /*  module directives */
+    NGX_HTTP_MODULE,			/*  module type */
+    NULL,                       /*  init master */
+    NULL,                       /*  init module */
+    NULL,                       /*  init process */
+    NULL,                       /*  init thread */
+    NULL,                       /*  exit thread */
+    NULL,                       /*  exit process */
+    NULL,                       /*  exit master */
     NGX_MODULE_V1_PADDING
 };
-
-// vi:ts=4 sw=4 fdm=marker
 
