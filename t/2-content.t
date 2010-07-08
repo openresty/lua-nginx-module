@@ -161,9 +161,9 @@ status=200 body=hello, world
 
 === TEST 9: capture non-existed location
 --- config
-	location /lua {
-		content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
-	}
+    location /lua {
+        content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
+    }
 --- request
 GET /lua
 --- response_body: status=404
@@ -172,18 +172,41 @@ GET /lua
 
 === TEST 10: invalid capture location (not as expected...)
 --- config
-	location /lua {
-		content_by_lua 'res = ngx.location.capture("*(#*"); ngx.print("res=", res)';
-	}
+    location /lua {
+        content_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
+    }
 --- request
 GET /lua
 --- response_body
-res=nil
---- SKIP
+res=404
 
 
 
-=== TEST 11: capture location (default 0);
+=== TEST 11: bad argument type to ngx.print
+--- config
+    location /lua {
+        content_by_lua 'ngx.print(nil)';
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 12: bad argument type to ngx.location.capture
+--- config
+    location /lua {
+        content_by_lua 'ngx.location.capture(nil)';
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 13: capture location (default 0);
 --- config
  location /recur {
        content_by_lua '
@@ -207,7 +230,7 @@ end
 
 
 
-=== TEST 12: capture location
+=== TEST 14: capture location
 --- config
  location /recur {
        content_by_lua '
