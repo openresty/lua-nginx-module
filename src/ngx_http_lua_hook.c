@@ -5,29 +5,29 @@
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 
-// longjmp mark for restoring nginx execution after Lua VM crashing
+/*  longjmp mark for restoring nginx execution after Lua VM crashing */
 jmp_buf ngx_http_lua_exception;
 
 /**
  * Override default Lua panic handler, output VM crash reason to NginX error
  * log, and restore execution to the nearest jmp-mark.
  * 
- * @param l Lua state pointer
+ * @param L Lua state pointer
  * @retval Long jump to the nearest jmp-mark, never returns.
  * @note NginX request pointer should be stored in Lua thread's globals table
  * in order to make logging working.
  * */
 int
-ngx_http_lua_atpanic(lua_State *l)
+ngx_http_lua_atpanic(lua_State *L)
 {
-    const char *s = luaL_checkstring(l, 1);
+    const char *s = luaL_checkstring(L, 1);
     ngx_http_request_t *r;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
-    // log Lua VM crashing reason to error log
+    /*  log Lua VM crashing reason to error log */
     if(r && r->connection && r->connection->log) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-atpanic) Lua VM crashed, reason: %s", s);
     } else {
@@ -35,33 +35,33 @@ ngx_http_lua_atpanic(lua_State *l)
                 " due to invalid logging context: %s", s);
     }
 
-    // restore nginx execution
+    /*  restore nginx execution */
     longjmp(ngx_http_lua_exception, 1);
 }
 
 /**
  * Override Lua print function, output message to NginX error logs.
  *
- * @param l Lua state pointer
+ * @param L Lua state pointer
  * @retval always 0 (don't return values to Lua)
  * @note NginX request pointer should be stored in Lua VM registry with key
  * 'ngx._req' in order to make logging working.
  * */
 int
-ngx_http_lua_print(lua_State *l)
+ngx_http_lua_print(lua_State *L)
 {
     ngx_http_request_t *r;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
     if(r && r->connection && r->connection->log) {
 		const char *s;
 
-		// XXX: easy way to support multiple args, any serious performance penalties?
-		lua_concat(l, lua_gettop(l));
-		s = lua_tostring(l, -1);
+		/*  XXX: easy way to support multiple args, any serious performance penalties? */
+		lua_concat(L, lua_gettop(L));
+		s = lua_tostring(L, -1);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-print) %s", (s == NULL) ? "(null)" : s);
     } else {
@@ -75,14 +75,14 @@ ngx_http_lua_print(lua_State *l)
  * Send out headers
  * */
 int
-ngx_http_lua_ngx_send_headers(lua_State *l)
+ngx_http_lua_ngx_send_headers(lua_State *L)
 {
 	ngx_http_request_t *r;
 	ngx_http_lua_ctx_t *ctx;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
 	if(r) {
 		ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -96,79 +96,99 @@ ngx_http_lua_ngx_send_headers(lua_State *l)
 	return 0;
 }
 
+
 /**
  * Output response body
  * */
 int
-ngx_http_lua_ngx_echo(lua_State *l)
+ngx_http_lua_ngx_echo(lua_State *L)
 {
-	ngx_http_request_t *r;
-	ngx_http_lua_ctx_t *ctx;
+	ngx_http_request_t          *r;
+	ngx_http_lua_ctx_t          *ctx;
+    const char                  *p;
+    size_t                       len;
+    size_t                       size;
+    ngx_buf_t                   *b;
+    ngx_chain_t                 *cl;
+    ngx_int_t                    rc;
+    int                          i;
+    int                          nargs;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
-	if(r) {
-		ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-		if(ctx != NULL && ctx->eof == 0) {
-			const char *data;
-			size_t len;
-			ngx_buf_t *buf;
-			ngx_chain_t *cl;
+	if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
 
-			// concatenate all args into single string
-			// XXX: easy way to support multiple args, any serious performance penalties?
-			lua_concat(l, lua_gettop(l));
-			data = lua_tolstring(l, -1, &len);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-			if(data) {
-				buf = ngx_create_temp_buf(r->pool, len);
-				if(buf == NULL) {
-					ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-							"(lua-ngx-echo) can't allocate memory for output buffer!");
-                    return 0;
-				}
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
 
-                buf->last = ngx_copy(buf->last, (u_char *) data, len);
+    if (ctx->eof) {
+        return luaL_error(L, "seen eof already");
+    }
 
-                cl = ngx_alloc_chain_link(r->pool);
-                if(cl == NULL) {
-                    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                            "(lua-ngx-echo) can't allocate memory for output chain-link!");
-                    return 0;
-                }
+    nargs = lua_gettop(L);
+    size = 0;
 
-                cl->next = NULL;
-                cl->buf = buf;
+    for (i = 1; i <= nargs; i++) {
+        if (! lua_isstring(L, i)) {
+            return luaL_argerror(L, i, "string expected");
+        }
 
-                ngx_http_lua_send_chain_link(r, ctx, cl);
-			}
+        (void) lua_tolstring(L, i, &len);
+        size += len;
+    }
 
-			// clear args
-			lua_settop(l, 0);
-		}
-	} else {
-		dd("(lua-ngx-echo) can't find nginx request object!");
-	}
+    b = ngx_create_temp_buf(r->pool, size);
+    if (b == NULL) {
+        return luaL_error(L, "memory error");
+    }
+
+    for (i = 1; i <= nargs; i++) {
+        p = lua_tolstring(L, i, &len);
+        b->last = ngx_copy(b->last, p, len);
+    }
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return luaL_error(L, "memory error");
+    }
+
+    cl->next = NULL;
+    cl->buf = b;
+
+    rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        ctx->bad_rc = rc;
+        return luaL_error(L, "failed to send data through the output filters");
+    }
+
+    lua_settop(L, 0);
 
 	return 0;
 }
+
 
 /**
  * Force flush out response content
  * */
 int
-ngx_http_lua_ngx_flush(lua_State *l)
+ngx_http_lua_ngx_flush(lua_State *L)
 {
 	ngx_http_request_t *r;
 	ngx_http_lua_ctx_t *ctx;
 	ngx_buf_t *buf;
 	ngx_chain_t *cl;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
 	if(r) {
 		ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -204,19 +224,19 @@ ngx_http_lua_ngx_flush(lua_State *l)
  * Send last_buf, terminate output stream
  * */
 int
-ngx_http_lua_ngx_eof(lua_State *l)
+ngx_http_lua_ngx_eof(lua_State *L)
 {
 	ngx_http_request_t *r;
 	ngx_http_lua_ctx_t *ctx;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
 	if(r) {
 		ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 		if(ctx != NULL && ctx->eof == 0) {
-			ctx->eof = 1;	// set eof flag to prevent further output
+			ctx->eof = 1;	/*  set eof flag to prevent further output */
 			ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
 		}
 	} else {
@@ -227,7 +247,7 @@ ngx_http_lua_ngx_eof(lua_State *l)
 }
 
 int
-ngx_http_lua_ngx_location_capture(lua_State *l)
+ngx_http_lua_ngx_location_capture(lua_State *L)
 {
 	ngx_http_request_t *r;
     ngx_http_request_t                  *sr; /* subrequest object */
@@ -239,9 +259,9 @@ ngx_http_lua_ngx_location_capture(lua_State *l)
 	size_t plen;
 	int rc;
 
-	lua_getglobal(l, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(l, -1);
-    lua_pop(l, 1);
+	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
 	if(r == NULL) {
 		dd("(lua-ngx-location-capture) can't find nginx request object!");
@@ -249,7 +269,7 @@ ngx_http_lua_ngx_location_capture(lua_State *l)
 		goto error;
 	}
 
-	p = luaL_checklstring(l, -1, &plen);
+	p = luaL_checklstring(L, -1, &plen);
 	if(p == NULL) {
 		dd("(lua-ngx-location-capture) no valid uri found!");
 
@@ -299,11 +319,11 @@ ngx_http_lua_ngx_location_capture(lua_State *l)
 		goto error;
     }
 
-	lua_pushinteger(l, location_capture);
-	return lua_yield(l, 1);
+	lua_pushinteger(L, location_capture);
+	return lua_yield(L, 1);
 
 error:
-	lua_pushnil(l);
+	lua_pushnil(L);
 	return 1;
 }
 
@@ -355,7 +375,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     pr->write_event_handler = ngx_http_lua_wev_handler;
 
-	// capture subrequest response status
+	/*  capture subrequest response status */
 	if(rc == NGX_ERROR) {
 		pr_ctx->sr_status = NGX_HTTP_INTERNAL_SERVER_ERROR;
 	} else if(rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -364,7 +384,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 		pr_ctx->sr_status = r->headers_out.status;
 	}
 
-	// copy subrequest response body
+	/*  copy subrequest response body */
 	pr_ctx->sr_body = ctx->body;
 
     /* ensure that the parent request is (or will be)
@@ -382,5 +402,5 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     return rc;
 }
 
-// vi:ts=4 sw=4 fdm=marker
+/*  vi:ts=4 sw=4 fdm=marker */
 
