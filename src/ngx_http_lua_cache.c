@@ -5,6 +5,8 @@
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_clfactory.h"
 
+#define IL_TAG "nhli_"
+#define IL_TAG_LEN (sizeof(IL_TAG) - 1)
 
 static u_char *
 ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
@@ -113,8 +115,6 @@ ngx_http_lua_cache_loadbuffer(
 		const char *name
 		)
 {
-#define IL_TAG ((const u_char*) "nhli_")
-#define IL_TAG_LEN (sizeof(IL_TAG) - 1)
 	int          rc;
     u_char      *p;
 	u_char       cache_key[IL_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1];
@@ -125,6 +125,8 @@ ngx_http_lua_cache_loadbuffer(
 	p = ngx_http_lua_digest_hex(p, buf, buf_len);
 
     *p = '\0';
+
+    dd("XXX cache key: [%s]", cache_key);
 
 	if (ngx_http_lua_cache_load_code(l, (char *) cache_key) == NGX_OK) {
 		// code chunk loaded from cache, sp++
@@ -161,6 +163,8 @@ ngx_http_lua_cache_loadfile(
 
 	// calculate digest of script file path
 	ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], (u_char *) script, ngx_strlen(script));
+
+    dd("XXX cache key for file: [%s]", cache_key);
 
 	if(ngx_http_lua_cache_load_code(l, (char *) cache_key) == NGX_OK) {
 		// code chunk loaded from cache, sp++

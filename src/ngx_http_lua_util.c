@@ -338,7 +338,7 @@ ngx_http_lua_var_get(lua_State *L)
 
     if(r != NULL && p != NULL) {
         lowcase = ngx_pnalloc(r->pool, len);
-        if(lowcase == NULL) {
+        if (lowcase == NULL) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                     "(lua-var-get) can't allocate memory to hold lower-cased variable name: varname='%.*s', len=%d",
                     len, p, len);

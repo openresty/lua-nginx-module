@@ -343,7 +343,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
     ngx_http_core_main_conf_t   *cmcf;
     ngx_http_request_t          *r;
 
-
     /* we do not inherit the parent request's variables */
     cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
 
