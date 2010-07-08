@@ -44,66 +44,52 @@ ngx_http_lua_set_by_lua(
 
 
 ngx_int_t
-ngx_http_lua_filter_set_by_lua_inline(
-        ngx_http_request_t *r,
-        ngx_str_t *val,
-        ngx_http_variable_value_t *v,
-        void *data
-        )
+ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
+        ngx_http_variable_value_t *v, void *data)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
-    const char                  *err;
+    char                        *err = NULL;
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, v[0].data, v[0].len, "set_by_lua_inline");
+    rc = ngx_http_lua_cache_loadbuffer(L, v[0].data, v[0].len, "set_by_lua_inline", &err);
 
     if (rc != NGX_OK) {
-        /*  Oops! error occured when loading Lua script */
-        if (rc == LUA_ERRMEM) {
-            err = "memory allocation error";
-        } else {
-            if (lua_isstring(L, -1)) {
-                err = lua_tostring(L, -1);
-            } else {
-                err = "syntax error";
-            }
+        if (err == NULL) {
+            err = "unknown error";
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua script chunk (rc = %d): %s %v", rc, err, &v[0]);
+                "Failed to load Lua inlined code: %s", err);
 
         return NGX_ERROR;
     }
 
-    /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
 
-    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t)data);
-
-    return rc;
+    return NGX_OK;
 }
 
 
 ngx_int_t
-ngx_http_lua_filter_set_by_lua_file(
-        ngx_http_request_t *r,
-        ngx_str_t *val,
-        ngx_http_variable_value_t *v,
-        void *data
-        )
+ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
+        ngx_http_variable_value_t *v, void *data)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
     u_char                      *script_path;
     ngx_http_lua_main_conf_t    *lmcf;
-    const char                  *err;
+    char                        *err;
 
     script_path = ngx_http_lua_rebase_path(r->pool, v[0].data, v[0].len);
+
     if (script_path == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "Failed to allocate memory to store absolute path: raw path='%v'",
@@ -116,47 +102,34 @@ ngx_http_lua_filter_set_by_lua_file(
     L = lmcf->lua;
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, (char *)script_path);
+    rc = ngx_http_lua_cache_loadfile(L, (char *)script_path, &err);
 
     if (rc != NGX_OK) {
-        /*  Oops! error occured when loading Lua script */
-        if (rc == LUA_ERRMEM) {
-            err = "memory allocation error";
-
-        } else {
-            if (lua_isstring(L, -1)) {
-                err = lua_tostring(L, -1);
-
-            } else {
-                err = "syntax error";
-            }
+        if (err == NULL) {
+            err = "unknown error";
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua script file (rc = %d): %s: %s", rc, err, script_path);
+                "Failed to load Lua file: %s", err);
 
         return NGX_ERROR;
     }
 
-    /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
 
-    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t)data);
-
-    return rc;
+    return NGX_OK;
 }
 
 
 char *
-ngx_http_lua_content_by_lua(
-        ngx_conf_t *cf,
-        ngx_command_t *cmd,
-        void *conf
-        )
+ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t *args;
-    ngx_http_core_loc_conf_t *clcf;
-    ngx_http_lua_loc_conf_t *llcf = conf;
+    ngx_str_t                   *args;
+    ngx_http_core_loc_conf_t    *clcf;
+    ngx_http_lua_loc_conf_t     *llcf = conf;
 
     /*  must specifiy a content handler */
     if (cmd->post == NULL) {
@@ -169,13 +142,16 @@ ngx_http_lua_content_by_lua(
      * args[1] = lua script to be executed
      * */
     args = cf->args->elts;
+
     /*  prevent variable appearing in Lua inline script/file path */
     if (ngx_http_lua_has_inline_var(&args[1])) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Lua inline script or file path should not has inline variable: %V",
                 &args[1]);
+
         return NGX_CONF_ERROR;
     }
+
     if (args[1].len == 0) {
         /*  Oops...Invalid location conf */
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
@@ -203,6 +179,7 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
+    char                        *err;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -210,10 +187,16 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->src.data,
-            llcf->src.len, "content_by_lua");
+            llcf->src.len, "content_by_lua", &err);
 
     if (rc != NGX_OK) {
-        /*  Oops...Error occured when loading Lua script */
+        if (err == NULL) {
+            err = "unknown error";
+        }
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Failed to load Lua inlined code: %s", err);
+
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -250,6 +233,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     u_char                          *script_path;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf;
+    char                            *err;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -268,14 +252,17 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, (char *) script_path);
+    rc = ngx_http_lua_cache_loadfile(L, (char *) script_path, &err);
 
     if (rc != NGX_OK) {
-        /*  Oops! error occured when loading Lua script */
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua script file (rc = %d): %s", rc, script_path);
+        if (err == NULL) {
+            err = "unknown error";
+        }
 
-        return NGX_ERROR;
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Failed to load Lua inlined code: %s", err);
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     /*  make sure we have a valid code chunk */
