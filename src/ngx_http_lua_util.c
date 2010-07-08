@@ -272,6 +272,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_say);
     lua_setfield(L, -2, "say");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_throw_error);
+    lua_setfield(L, -2, "throw_error");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_flush);
     lua_setfield(L, -2, "flush");
 

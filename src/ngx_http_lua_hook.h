@@ -14,6 +14,8 @@ int ngx_http_lua_ngx_send_headers(lua_State *L);
 int ngx_http_lua_ngx_say(lua_State *L);
 int ngx_http_lua_ngx_print(lua_State *L);
 
+int ngx_http_lua_ngx_throw_error(lua_State *L);
+
 int ngx_http_lua_ngx_flush(lua_State *L);
 int ngx_http_lua_ngx_eof(lua_State *L);
 

@@ -202,11 +202,7 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 
     rc = ngx_http_lua_content_by_chunk(L, r);
 
-    if (rc == NGX_ERROR) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
     }
 
@@ -270,17 +266,13 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
     rc = ngx_http_lua_content_by_chunk(L, r);
 
-    if (rc == NGX_ERROR) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
     }
 
-        if (rc == NGX_DONE) {
-            return NGX_DONE;
-        }
+    if (rc == NGX_DONE) {
+        return NGX_DONE;
+    }
 
     if (rc == NGX_AGAIN) {
 #if defined(nginx_version) && nginx_version >= 8011

@@ -1,4 +1,4 @@
-# vi:ft=perl
+# vi:ft=
 
 use lib 'lib';
 use Test::Nginx::Socket;

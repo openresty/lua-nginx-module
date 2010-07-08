@@ -5,16 +5,14 @@ static void ngx_http_lua_request_cleanup(void *data);
 static ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 		ngx_http_lua_ctx_t *ctx, int nret);
 
+
 ngx_int_t
-ngx_http_lua_content_by_chunk(
-        lua_State *L,
-        ngx_http_request_t *r
-        )
+ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
-    int cc_ref;
-    lua_State *cc;
-    ngx_http_lua_ctx_t *ctx;
-    ngx_http_cleanup_t *cln;
+    int                      cc_ref;
+    lua_State               *cc;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_http_cleanup_t      *cln;
 
     /*  {{{ new coroutine to handle request */
     cc = ngx_http_lua_new_thread(r, L, &cc_ref);
@@ -50,8 +48,10 @@ ngx_http_lua_content_by_chunk(
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
+
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
+
     /*  }}} */
 
     /*  {{{ register request cleanup hooks */
@@ -119,6 +119,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         msg = lua_tostring(cc, -1);
 
     } else {
+        if (lua_isnil(cc, -1) && ctx->error_rc != 0) {
+            return ctx->error_rc;
+        }
+
         msg = "unknown reason";
     }
 

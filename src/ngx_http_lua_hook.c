@@ -182,7 +182,6 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        ctx->bad_rc = rc;
         return luaL_error(L, "failed to send data through the output filters");
     }
 
@@ -192,50 +191,96 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 }
 
 
+int
+ngx_http_lua_ngx_throw_error(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ctx->headers_sent) {
+        ctx->error_rc = NGX_ERROR;
+
+        lua_pushnil(L);
+        return lua_error(L);
+    }
+
+    ctx->error_rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
+    lua_pushnil(L);
+    return lua_error(L);
+}
+
+
 /**
  * Force flush out response content
  * */
 int
 ngx_http_lua_ngx_flush(lua_State *L)
 {
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
-    ngx_buf_t *buf;
-    ngx_chain_t *cl;
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_buf_t                   *buf;
+    ngx_chain_t                 *cl;
+    ngx_int_t                    rc;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if(r) {
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if(ctx != NULL && ctx->eof == 0) {
-            buf = ngx_calloc_buf(r->pool);
-            if(buf == NULL) {
-                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                        "(lua-ngx-flush) can't allocate memory for output buffer!");
-            } else {
-                buf->flush = 1;
-                buf->sync = 1;
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
 
-                cl = ngx_alloc_chain_link(r->pool);
-                if(cl == NULL) {
-                    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                            "(lua-ngx-flush) can't allocate memory for output chain-link!");
-                } else {
-                    cl->next = NULL;
-                    cl->buf = buf;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
 
-                    ngx_http_lua_send_chain_link(r, ctx, cl);
-                }
-            }
-        }
-    } else {
-        dd("(lua-ngx-flush) can't find nginx request object!");
+    if (ctx->eof == 0) {
+        return luaL_error(L, "already seen eof");
+    }
+
+    buf = ngx_calloc_buf(r->pool);
+    if (buf == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
+
+    buf->flush = 1;
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
+
+    cl->next = NULL;
+    cl->buf = buf;
+
+    rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return luaL_error(L, "failed to send chain link: %d", (int) rc);
     }
 
     return 0;
 }
+
 
 /**
  * Send last_buf, terminate output stream
@@ -250,14 +295,18 @@ ngx_http_lua_ngx_eof(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if(r) {
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if(ctx != NULL && ctx->eof == 0) {
-            ctx->eof = 1;    /*  set eof flag to prevent further output */
-            ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
-        }
-    } else {
-        dd("(lua-ngx-eof) can't find nginx request object!");
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 0) {
+        return luaL_error(L, "no argument is expected");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx != NULL && ctx->eof == 0) {
+        ctx->eof = 1;    /*  set eof flag to prevent further output */
+        ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
     }
 
     return 0;
@@ -283,6 +332,10 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
     if (r == NULL) {
         return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
     }
 
     p = luaL_checklstring(L, 1, &len);

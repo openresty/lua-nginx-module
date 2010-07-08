@@ -36,7 +36,7 @@ typedef struct {
 	ngx_chain_t *sr_body;	/*  all captured subrequest bodies */
 	ngx_chain_t *body;	/*  captured current request body */
 	ngx_int_t sr_status;	/*  captured subrequest status */
-    ngx_int_t           bad_rc;
+    ngx_int_t           error_rc;
 } ngx_http_lua_ctx_t;
 
 typedef enum {
