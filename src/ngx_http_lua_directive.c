@@ -210,7 +210,8 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 
 	/*  load Lua inline script (w/ cache)        sp = 1 */
 	rc = ngx_http_lua_cache_loadbuffer(L, llcf->src.data,
-            llcf->src.len, "content_by_lua_inline");
+            llcf->src.len, "content_by_lua");
+
 	if (rc != NGX_OK) {
 		/*  Oops...Error occured when loading Lua script */
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -270,6 +271,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
 	/*  load Lua script file (w/ cache)		sp = 1 */
 	rc = ngx_http_lua_cache_loadfile(L, (char *) script_path);
+
 	if (rc != NGX_OK) {
 		/*  Oops! error occured when loading Lua script */
 		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,

@@ -265,10 +265,16 @@ init_ngx_lua_globals(lua_State *L)
     /* {{{ register nginx hook functions */
     lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
     lua_setfield(L, -2, "send_headers");
-    lua_pushcfunction(L, ngx_http_lua_ngx_echo);
-    lua_setfield(L, -2, "echo");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_print);
+    lua_setfield(L, -2, "print");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_say);
+    lua_setfield(L, -2, "say");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_flush);
     lua_setfield(L, -2, "flush");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_eof);
     lua_setfield(L, -2, "eof");
 

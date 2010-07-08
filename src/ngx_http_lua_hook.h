@@ -1,22 +1,24 @@
-#ifndef NGX_HTTP_LUA_HOOK_H__
-#define NGX_HTTP_LUA_HOOK_H__
+#ifndef NGX_HTTP_LUA_HOOK_H
+#define NGX_HTTP_LUA_HOOK_H
 
 #include "ngx_http_lua_common.h"
 
-extern jmp_buf ngx_http_lua_exception;
 
-extern int ngx_http_lua_atpanic(lua_State *l);
-extern int ngx_http_lua_print(lua_State *l);
+jmp_buf ngx_http_lua_exception;
 
-extern int ngx_http_lua_ngx_send_headers(lua_State *l);
+int ngx_http_lua_atpanic(lua_State *L);
+int ngx_http_lua_print(lua_State *L);
 
-extern int ngx_http_lua_ngx_echo(lua_State *l);
-extern int ngx_http_lua_ngx_flush(lua_State *l);
-extern int ngx_http_lua_ngx_eof(lua_State *l);
+int ngx_http_lua_ngx_send_headers(lua_State *L);
 
-extern int ngx_http_lua_ngx_location_capture(lua_State *l);
+int ngx_http_lua_ngx_say(lua_State *L);
+int ngx_http_lua_ngx_print(lua_State *L);
 
-#endif
+int ngx_http_lua_ngx_flush(lua_State *L);
+int ngx_http_lua_ngx_eof(lua_State *L);
 
-// vi:ts=4 sw=4 fdm=marker
+int ngx_http_lua_ngx_location_capture(lua_State *L);
+
+
+#endif /* NGX_HTTP_LUA_HOOK_H */
 

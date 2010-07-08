@@ -4,6 +4,7 @@
 
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
+static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
 jmp_buf ngx_http_lua_exception;
@@ -97,11 +98,22 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
 }
 
 
-/**
- * Output response body
- * */
 int
-ngx_http_lua_ngx_echo(lua_State *L)
+ngx_http_lua_ngx_print(lua_State *L)
+{
+    return ngx_http_lua_ngx_echo(L, 0);
+}
+
+
+int
+ngx_http_lua_ngx_say(lua_State *L)
+{
+    return ngx_http_lua_ngx_echo(L, 1);
+}
+
+
+static int
+ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 {
 	ngx_http_request_t          *r;
 	ngx_http_lua_ctx_t          *ctx;
@@ -144,6 +156,10 @@ ngx_http_lua_ngx_echo(lua_State *L)
         size += len;
     }
 
+    if (newline) {
+        size += sizeof("\n") - 1;
+    }
+
     b = ngx_create_temp_buf(r->pool, size);
     if (b == NULL) {
         return luaL_error(L, "memory error");
@@ -152,6 +168,10 @@ ngx_http_lua_ngx_echo(lua_State *L)
     for (i = 1; i <= nargs; i++) {
         p = lua_tolstring(L, i, &len);
         b->last = ngx_copy(b->last, p, len);
+    }
+
+    if (newline) {
+        *b->last++ = '\n';
     }
 
     cl = ngx_alloc_chain_link(r->pool);
@@ -246,18 +266,19 @@ ngx_http_lua_ngx_eof(lua_State *L)
 	return 0;
 }
 
+
 int
 ngx_http_lua_ngx_location_capture(lua_State *L)
 {
-	ngx_http_request_t *r;
-    ngx_http_request_t                  *sr; /* subrequest object */
-    ngx_http_post_subrequest_t          *psr;
-	ngx_http_lua_ctx_t *sr_ctx;
-	ngx_str_t uri, args;
-	ngx_uint_t flags = 0;
-	const char *p;
-	size_t plen;
-	int rc;
+	ngx_http_request_t              *r;
+    ngx_http_request_t              *sr; /* subrequest object */
+    ngx_http_post_subrequest_t      *psr;
+	ngx_http_lua_ctx_t              *sr_ctx;
+	ngx_str_t                        uri, args;
+	ngx_uint_t                       flags = 0;
+	const char                      *p;
+	size_t                           plen;
+	int                              rc;
 
 	lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -327,6 +348,7 @@ error:
 	return 1;
 }
 
+
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
 {
@@ -356,12 +378,13 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
     return NGX_OK;
 }
 
+
 static ngx_int_t
 ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
     ngx_http_request_t          *pr;
-    ngx_http_lua_ctx_t         *pr_ctx;
-	ngx_http_lua_ctx_t	*ctx = data;
+    ngx_http_lua_ctx_t          *pr_ctx;
+	ngx_http_lua_ctx_t	        *ctx = data;
 
     pr = r->parent;
 
@@ -401,6 +424,4 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     return rc;
 }
-
-/*  vi:ts=4 sw=4 fdm=marker */
 

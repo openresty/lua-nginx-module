@@ -45,12 +45,12 @@ Synopsis
         location /lua_content {
             # note extra backslash before newline escape sequence, it's
             # necessary as nginx will unescape string first before passing to lua.
-            content_by_lua "ngx.echo('Hello,world!\\n')"
+            content_by_lua "ngx.say('Hello,world!')"
         }
 
         location /nginx_var {
             # try access /nginx_var?a=hello,world
-            content_by_lua "ngx.echo(ngx.var['arg_a'], '\\n')";
+            content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
         }
 
         # transparent non-blocking I/O in Lua via subrequests
@@ -58,7 +58,7 @@ Synopsis
             content_by_lua '
                 local res = ngx.location.capture("/some_other_location")
                 if res.status == 200 then
-                    ngx.echo(res.body)
+                    ngx.print(res.body)
                 end';
         }
 
@@ -66,14 +66,14 @@ Synopsis
         location /recur {
            content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
-               ngx.echo("num is: ", num, "\\n")
+               ngx.say("num is: ", num)
 
                if num > 0 then
                    res = ngx.location.capture("/recur?num=" .. tostring(num - 1))
-                   ngx.echo("status=", res.status, " ")
-                   ngx.echo("body=", res.body)
+                   ngx.print("status=", res.status, " ")
+                   ngx.print("body=", res.body)
                else
-                   ngx.echo("end\\n")
+                   ngx.say("end")
                end
                ';
         }

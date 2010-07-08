@@ -6,23 +6,23 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(120);
-#repeat_each(1);
+#repeat_each(120);
+repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
 
-no_diff();
-no_long_string();
+#no_diff();
+#no_long_string();
 run_tests();
 
 __DATA__
 
-=== TEST 1: basic
+=== TEST 1: basic print
 --- config
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'ngx.echo("Hello, Lua!\\n")';
+        content_by_lua 'ngx.print("Hello, Lua!\\n")';
     }
 --- request
 GET /lua
@@ -31,12 +31,41 @@ Hello, Lua!
 
 
 
-=== TEST 2: variable
+=== TEST 2: basic say
+--- config
+    location /say {
+        # NOTE: the newline escape sequence must be double-escaped, as nginx config
+        # parser will unescape first!
+        content_by_lua '
+            ngx.say("Hello, Lua!")
+            ngx.say("Yay! ", 123)';
+    }
+--- request
+GET /say
+--- response_body
+Hello, Lua!
+Yay! 123
+
+
+
+=== TEST 3: no ngx.echo
+--- config
+    location /lua {
+        content_by_lua 'ngx.echo("Hello, Lua!\\n")';
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 4: variable
 --- config
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'v = ngx.var["request_uri"] ngx.echo("request_uri: ", v, "\\n")';
+        content_by_lua 'v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
     }
 --- request
 GET /lua?a=1&b=2
@@ -45,7 +74,7 @@ request_uri: /lua?a=1&b=2
 
 
 
-=== TEST 3: variable (file)
+=== TEST 5: variable (file)
 --- config
     location /lua {
         content_by_lua_file html/test.lua;
@@ -53,7 +82,7 @@ request_uri: /lua?a=1&b=2
 --- user_files
 >>> test.lua
 v = ngx.var["request_uri"]
-ngx.echo("request_uri: ", v, "\n")
+ngx.print("request_uri: ", v, "\n")
 --- request
 GET /lua?a=1&b=2
 --- response_body
@@ -61,7 +90,7 @@ request_uri: /lua?a=1&b=2
 
 
 
-=== TEST 4: calc expression
+=== TEST 6: calc expression
 --- config
     location /lua {
         content_by_lua_file html/calc.lua;
@@ -85,14 +114,14 @@ local exp_str = ngx.var["arg_exp"]
 local status, res
 status, res = pcall(uri_unescape, exp_str)
 if not status then
-    ngx.echo("error: ", res, "\n")
+    ngx.print("error: ", res, "\n")
     return
 end
 status, res = pcall(eval_exp, res)
 if status then
-    ngx.echo("result: ", res, "\n")
+    ngx.print("result: ", res, "\n")
 else
-    ngx.echo("error: ", res, "\n")
+    ngx.print("error: ", res, "\n")
 end
 --- request
 GET /lua?exp=1%2B2*math.sin(3)%2Fmath.exp(4)-math.sqrt(2)
@@ -101,11 +130,11 @@ result: -0.4090441561579
 
 
 
-=== TEST 5: read $arg_xxx
+=== TEST 7: read $arg_xxx
 --- config
     location = /lua {
         content_by_lua 'who = ngx.var.arg_who
-            ngx.echo("Hello, ", who, "!")';
+            ngx.print("Hello, ", who, "!")';
     }
 --- request
 GET /lua?who=agentzh
@@ -114,14 +143,14 @@ Hello, agentzh!
 
 
 
-=== TEST 6: capture location
+=== TEST 8: capture location
 --- config
     location /other {
         echo "hello, world";
     }
 
     location /lua {
-        content_by_lua 'res = ngx.location.capture("/other"); ngx.echo("status=", res.status, " "); ngx.echo("body=", res.body)';
+        content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status, " "); ngx.print("body=", res.body)';
     }
 --- request
 GET /lua
@@ -130,10 +159,10 @@ status=200 body=hello, world
 
 
 
-=== TEST 7: capture non-existed location
+=== TEST 9: capture non-existed location
 --- config
 	location /lua {
-		content_by_lua 'res = ngx.location.capture("/other"); ngx.echo("status=", res.status)';
+		content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
 	}
 --- request
 GET /lua
@@ -141,10 +170,10 @@ GET /lua
 
 
 
-=== TEST 8: invalid capture location (not as expected...)
+=== TEST 10: invalid capture location (not as expected...)
 --- config
 	location /lua {
-		content_by_lua 'res = ngx.location.capture("*(#*"); ngx.echo("res=", res)';
+		content_by_lua 'res = ngx.location.capture("*(#*"); ngx.print("res=", res)';
 	}
 --- request
 GET /lua
@@ -154,19 +183,19 @@ res=nil
 
 
 
-=== TEST 9: capture location (default 0);
+=== TEST 11: capture location (default 0);
 --- config
  location /recur {
        content_by_lua '
            local num = tonumber(ngx.var.arg_num) or 0;
-           ngx.echo("num is: ", num, "\\n");
+           ngx.print("num is: ", num, "\\n");
 
            if (num > 0) then
                res = ngx.location.capture("/recur?num="..tostring(num - 1));
-               ngx.echo("status=", res.status, " ");
-               ngx.echo("body=", res.body, "\\n");
+               ngx.print("status=", res.status, " ");
+               ngx.print("body=", res.body, "\\n");
            else
-               ngx.echo("end\\n");
+               ngx.print("end\\n");
            end
            ';
    }
@@ -178,19 +207,19 @@ end
 
 
 
-=== TEST 10: capture location
+=== TEST 12: capture location
 --- config
  location /recur {
        content_by_lua '
            local num = tonumber(ngx.var.arg_num) or 0;
-           ngx.echo("num is: ", num, "\\n");
+           ngx.print("num is: ", num, "\\n");
 
            if (num > 0) then
                res = ngx.location.capture("/recur?num="..tostring(num - 1));
-               ngx.echo("status=", res.status, " ");
-               ngx.echo("body=", res.body);
+               ngx.print("status=", res.status, " ");
+               ngx.print("body=", res.body);
            else
-               ngx.echo("end\\n");
+               ngx.print("end\\n");
            end
            ';
    }
