@@ -63,6 +63,7 @@ ngx_http_lua_content_by_chunk(
 	return ngx_http_lua_run_thread(L, r, ctx, 0);
 }
 
+
 static ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 		ngx_http_lua_ctx_t *ctx, int nret)
@@ -150,7 +151,7 @@ ngx_http_lua_request_cleanup(void *data)
         lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
         lua_rawgeti(L, -1, ctx->cc_ref);
 
-        if(lua_isthread(L, -1)) {
+        if (lua_isthread(L, -1)) {
             /*  coroutine not finished yet, force quit */
             ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
             ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
@@ -165,12 +166,12 @@ void
 ngx_http_lua_wev_handler(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
-    ngx_http_lua_ctx_t         *ctx;
-	ngx_http_lua_main_conf_t *lmcf;
-	lua_State *cc;
-	ngx_chain_t	*cl;
-	size_t len;
-	u_char *pos, *last;
+    ngx_http_lua_ctx_t          *ctx;
+	ngx_http_lua_main_conf_t    *lmcf;
+	lua_State                   *cc;
+	ngx_chain_t	                *cl;
+	size_t                       len;
+	u_char                      *pos, *last;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
