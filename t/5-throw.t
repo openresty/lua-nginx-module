@@ -50,3 +50,50 @@ GET /lua
 --- response_body
 hi
 
+
+
+=== TEST 4: working with ngx_auth_request (succeeded)
+--- config
+    location /auth {
+        content_by_lua "
+            if ngx.var.user == 'agentzh' then
+                ngx.eof();
+            else
+                ngx.throw_error(403)
+            end";
+    }
+    location /api {
+        set $user $arg_user;
+        auth_request /auth;
+
+        echo "Logged in";
+    }
+--- request
+GET /api?user=agentzh
+--- error_code: 200
+--- response_body
+Logged in
+
+
+
+=== TEST 5: working with ngx_auth_request (failed)
+--- config
+    location /auth {
+        content_by_lua "
+            if ngx.var.user == 'agentzh' then
+                ngx.eof();
+            else
+                ngx.throw_error(403)
+            end";
+    }
+    location /api {
+        set $user $arg_user;
+        auth_request /auth;
+
+        echo "Logged in";
+    }
+--- request
+GET /api?user=agentz
+--- error_code: 403
+--- response_body_like: 403 Forbidden
+

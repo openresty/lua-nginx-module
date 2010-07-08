@@ -325,56 +325,45 @@ init_ngx_lua_globals(lua_State *L)
 static int
 ngx_http_lua_var_get(lua_State *L)
 {
-    ngx_http_request_t *r;
-    u_char *p, *lowcase;
-    size_t len;
-    ngx_uint_t hash;
-    ngx_str_t var;
-    ngx_http_variable_value_t *vv;
-    int got = 0;
+    ngx_http_request_t          *r;
+    u_char                      *p, *lowcase;
+    size_t                       len;
+    ngx_uint_t                   hash;
+    ngx_str_t                    var;
+    ngx_http_variable_value_t   *vv;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
     p = (u_char*)luaL_checklstring(L, -1, &len);
 
-    if(r != NULL && p != NULL) {
-        lowcase = ngx_pnalloc(r->pool, len);
-        if (lowcase == NULL) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "(lua-var-get) can't allocate memory to hold lower-cased variable name: varname='%.*s', len=%d",
-                    len, p, len);
-        }
+    lowcase = ngx_pnalloc(r->pool, len);
+    if (lowcase == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
 
-        hash = ngx_hash_strlow(lowcase, p, len);
+    hash = ngx_hash_strlow(lowcase, p, len);
 
-        var.len = len;
-        var.data = lowcase;
+    var.len = len;
+    var.data = lowcase;
 
 #if defined(nginx_version) && nginx_version > 8036
-        vv = ngx_http_get_variable(r, &var, hash);
+    vv = ngx_http_get_variable(r, &var, hash);
 #else
-        vv = ngx_http_get_variable(r, &var, hash, 1);
+    vv = ngx_http_get_variable(r, &var, hash, 1);
 #endif
 
-        if(vv == NULL || vv->not_found) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "(lua-var-get) no such a nginx variable: varname='%.*s', len=%d",
-                    len, lowcase, len);
-        } else {
-            /*  found the specified var */
-            lua_pushlstring(L, (const char*)vv->data, (size_t)vv->len);
-            got = 1;
-        }
-    } else {
-        dd("(lua-var-get) no valid nginx request pointer or variable name: r=%p, p=%p", r, p);
+    if (vv == NULL || vv->not_found) {
+        lua_pushnil(L);
+        return 1;
     }
 
-    /* return nil if no data were found */
-    if(!got) {
-        lua_pushnil(L);
-    }
+    lua_pushlstring(L, (const char*) vv->data, (size_t) vv->len);
 
     return 1;
 }
