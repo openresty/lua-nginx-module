@@ -31,16 +31,21 @@ __DATA__
     }
 
     location /load {
-        content_by_lua 'package.loaded.foo = null; require "foo";';
+        content_by_lua '
+            package.loaded.foo = null;
+            local foo = require "foo";
+            foo.hi()';
     }
 
     location /check {
         content_by_lua '
-            if package.loaded.foo then
+            local foo = package.loaded.foo
+            if foo then
                 ngx.say("found")
             else
                 ngx.say("not found")
             end
+            foo.hi()
         ';
     }
 --- request
@@ -56,6 +61,9 @@ function hi ()
 end;
 --- response_body
 loading
+hello, foo
 found
+hello, foo
 found
+hello, foo
 
