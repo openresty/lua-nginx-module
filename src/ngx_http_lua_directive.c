@@ -233,7 +233,11 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 		return rc;
 	}
 
-	if (rc == NGX_AGAIN || rc == NGX_DONE) {
+        if (rc == NGX_DONE) {
+            return NGX_DONE;
+        }
+
+	if (rc == NGX_AGAIN) {
 #if defined(nginx_version) && nginx_version >= 8011
 		r->main->count++;
 #endif
@@ -293,7 +297,11 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 		return rc;
 	}
 
-	if (rc == NGX_AGAIN || rc == NGX_DONE) {
+        if (rc == NGX_DONE) {
+            return NGX_DONE;
+        }
+
+	if (rc == NGX_AGAIN) {
 #if defined(nginx_version) && nginx_version >= 8011
 		r->main->count++;
 #endif
