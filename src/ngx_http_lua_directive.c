@@ -199,29 +199,23 @@ ngx_http_lua_content_by_lua(
 ngx_int_t
 ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 {
-    lua_State *L;
-    ngx_int_t rc;
-    ngx_http_lua_main_conf_t *lmcf;
-    ngx_http_lua_loc_conf_t *llcf;
+    lua_State                   *L;
+    ngx_int_t                    rc;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     L = lmcf->lua;
 
-    /*  load Lua inline script (w/ cache)        sp = 1 */
+    /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->src.data,
             llcf->src.len, "content_by_lua");
 
     if (rc != NGX_OK) {
         /*  Oops...Error occured when loading Lua script */
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua script chunk (rc = %d): %v", rc, &(llcf->src));
-
-        return NGX_ERROR;
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
-
-    /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
 
     rc = ngx_http_lua_content_by_chunk(L, r);
 

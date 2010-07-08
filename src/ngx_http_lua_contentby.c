@@ -42,7 +42,7 @@ ngx_http_lua_content_by_chunk(
 
     /*  {{{ initialize request context */
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if(ctx == NULL) {
+    if (ctx == NULL) {
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
         if (ctx == NULL) {
             return NGX_ERROR;
@@ -251,5 +251,6 @@ error:
 	return;
 }
 
-/*  vi:ts=4 sw=4 fdm=marker */
+/*  vi:ts=4 sw=4 fdm=marker
+*/
 
