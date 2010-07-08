@@ -95,3 +95,5 @@ src/clfactory.h
 src/filter.c
 src/filter.h
 src/contentby.c
+pack
+b.sh
