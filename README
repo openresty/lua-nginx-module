@@ -15,6 +15,9 @@ Synopsis
 
    server {
         location /inline_concat {
+            # MIME type determined by default_type:
+            default_type 'text/plain';
+
             set $a "hello";
             set $b "world";
             # inline lua script
@@ -43,18 +46,25 @@ Synopsis
         }
 
         location /lua_content {
-            # note extra backslash before newline escape sequence, it's
-            # necessary as nginx will unescape string first before passing to lua.
+            # MIME type determined by default_type:
+            default_type 'text/plain';
+
             content_by_lua "ngx.say('Hello,world!')"
         }
 
         location /nginx_var {
+            # MIME type determined by default_type:
+            default_type 'text/plain';
+
             # try access /nginx_var?a=hello,world
             content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
         }
 
         # transparent non-blocking I/O in Lua via subrequests
         location /lua {
+            # MIME type determined by default_type:
+            default_type 'text/plain';
+
             content_by_lua '
                 local res = ngx.location.capture("/some_other_location")
                 if res.status == 200 then
@@ -64,6 +74,9 @@ Synopsis
 
         # GET /recur?num=5
         location /recur {
+            # MIME type determined by default_type:
+            default_type 'text/plain';
+
            content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
                ngx.say("num is: ", num)
