@@ -3,6 +3,7 @@
 
 #include "ngx_http_lua_common.h"
 
+
 lua_State * ngx_http_lua_new_state();
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
         int *ref);
@@ -23,6 +24,10 @@ ngx_int_t ngx_http_lua_post_request_at_head(ngx_http_request_t *r,
 void ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in);
 ngx_int_t ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
         ngx_chain_t *in);
+
+int ngx_http_lua_var_get(lua_State *L);
+int ngx_http_lua_var_set(lua_State *L);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

@@ -4,8 +4,7 @@
 
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
-static int ngx_http_lua_var_get(lua_State *L);
-static int ngx_http_lua_var_set(lua_State *L);
+
 
 lua_State *
 ngx_http_lua_new_state()
@@ -322,7 +321,7 @@ init_ngx_lua_globals(lua_State *L)
  * content, and actual content string when found the specified variable.
  * @seealso ngx_http_lua_var_set
  * */
-static int
+int
 ngx_http_lua_var_get(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -376,7 +375,7 @@ ngx_http_lua_var_get(lua_State *L)
  * content was modified successfully, false otherwise.
  * @seealso ngx_http_lua_var_get
  * */
-static int
+int
 ngx_http_lua_var_set(lua_State *L)
 {
     ngx_http_request_t *r;

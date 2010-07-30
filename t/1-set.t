@@ -3,7 +3,8 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
+repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -90,4 +91,34 @@ GET /fib?n=10
 GET /adder?a=25&b=75
 --- response_body
 100
+
+
+
+=== TEST 7: read nginx variables directly from within Lua
+--- config
+    location = /set-both {
+        set $b 32;
+        set_by_lua $a "return tonumber(ngx.var.b) + 1";
+
+        echo "a = $a";
+    }
+--- request
+GET /set-both
+--- response_body
+a = 33
+
+
+
+=== TEST 8: set nginx variables directly from within Lua
+--- config
+    location = /set-both {
+        set $b "";
+        set_by_lua $a "ngx.var.b = 32; return 7";
+
+        echo "a = $a";
+        echo "b = $b";
+    }
+--- request
+GET /set-both
+--- response_body
 
