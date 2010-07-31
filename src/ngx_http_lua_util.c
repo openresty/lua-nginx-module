@@ -380,7 +380,7 @@ int
 ngx_http_lua_var_set(lua_State *L)
 {
     ngx_http_variable_value_t   *vv;
-    u_char                      *p, *lowcase;
+    u_char                      *p, *lowcase, *val;
     size_t                       len;
     ngx_str_t                    name;
     ngx_uint_t                   hash;
@@ -421,9 +421,16 @@ ngx_http_lua_var_set(lua_State *L)
 
     p = (u_char*)luaL_checklstring(L, 3, &len);
 
+    val = ngx_palloc(r->pool, len);
+    if (val == NULL) {
+        return luaL_error(L, "memory allocation erorr");
+    }
+
+    ngx_memcpy(val, p, len);
+
     vv->valid = 1;
     vv->not_found = 0;
-    vv->data = p;
+    vv->data = val;
     vv->len = len;
 
     return 0;
