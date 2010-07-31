@@ -416,7 +416,9 @@ ngx_http_lua_var_set(lua_State *L)
 #endif
 
     if (vv == NULL || vv->not_found) {
-        return luaL_error(L, "variable \"%s\" not defined yet; you sould have used \"set $%s '';\" earlier in the config file", lowcase, lowcase);
+        return luaL_error(L, "variable \"%s\" not defined yet; "
+                "you sould have used \"set $%s '';\" earlier "
+                "in the config file", lowcase, lowcase);
     }
 
     p = (u_char*)luaL_checklstring(L, 3, &len);
