@@ -281,6 +281,12 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_eof);
     lua_setfield(L, -2, "eof");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
+    lua_setfield(L, -2, "escape_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
+    lua_setfield(L, -2, "unescape_uri");
+
     lua_newtable(L);
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");

@@ -2,9 +2,15 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
 
+#define NGX_UNESCAPE_URI_COMPONENT  0
+
+
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
+static void ngx_unescape_uri_patched(u_char **dst, u_char **src,
+        size_t size, ngx_uint_t type);
+
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
 jmp_buf ngx_http_lua_exception;
@@ -422,8 +428,8 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
 static ngx_int_t
 ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
-    ngx_http_request_t          *pr;
-    ngx_http_lua_ctx_t          *pr_ctx;
+    ngx_http_request_t            *pr;
+    ngx_http_lua_ctx_t            *pr_ctx;
     ngx_http_lua_ctx_t            *ctx = data;
 
     pr = r->parent;
@@ -463,5 +469,232 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     return rc;
+}
+
+
+int
+ngx_http_lua_ngx_escape_uri(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    size_t                   len, dlen;
+    uintptr_t                escape;
+    u_char                  *src, *dst;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (len == 0) {
+        lua_pushlstring(L, NULL, 0);
+        return 1;
+    }
+
+    escape = 2 * ngx_escape_uri(NULL, src, len, NGX_ESCAPE_URI);
+
+    dlen = escape + len;
+
+    dst = ngx_palloc(r->pool, dlen);
+
+    if (dst == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (escape == 0) {
+        ngx_memcpy(dst, src, len);
+
+    } else {
+        ngx_escape_uri(dst, src, len, NGX_ESCAPE_URI);
+    }
+
+    lua_pushlstring(L, (char *) dst, dlen);
+
+    return 1;
+}
+
+
+int
+ngx_http_lua_ngx_unescape_uri(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    size_t                   len, dlen;
+    u_char                  *p;
+    u_char                  *src, *dst;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &len);
+
+    /* the unescaped string can only be smaller */
+    dlen = len;
+
+    p = ngx_palloc(r->pool, dlen);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    dst = p;
+
+    ngx_unescape_uri_patched(&dst, &src, len, NGX_UNESCAPE_URI_COMPONENT);
+
+    lua_pushlstring(L, (char *) p, dst - p);
+
+    return 1;
+}
+
+
+/* XXX we also decode '+' to ' ' */
+static void
+ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size,
+        ngx_uint_t type)
+{
+    u_char  *d, *s, ch, c, decoded;
+    enum {
+        sw_usual = 0,
+        sw_quoted,
+        sw_quoted_second
+    } state;
+
+    d = *dst;
+    s = *src;
+
+    state = 0;
+    decoded = 0;
+
+    while (size--) {
+
+        ch = *s++;
+
+        switch (state) {
+        case sw_usual:
+            if (ch == '?'
+                && (type & (NGX_UNESCAPE_URI|NGX_UNESCAPE_REDIRECT)))
+            {
+                *d++ = ch;
+                goto done;
+            }
+
+            if (ch == '%') {
+                state = sw_quoted;
+                break;
+            }
+
+            if (ch == '+') {
+                *d++ = ' ';
+                break;
+            }
+
+            *d++ = ch;
+            break;
+
+        case sw_quoted:
+
+            if (ch >= '0' && ch <= '9') {
+                decoded = (u_char) (ch - '0');
+                state = sw_quoted_second;
+                break;
+            }
+
+            c = (u_char) (ch | 0x20);
+            if (c >= 'a' && c <= 'f') {
+                decoded = (u_char) (c - 'a' + 10);
+                state = sw_quoted_second;
+                break;
+            }
+
+            /* the invalid quoted character */
+
+            state = sw_usual;
+
+            *d++ = ch;
+
+            break;
+
+        case sw_quoted_second:
+
+            state = sw_usual;
+
+            if (ch >= '0' && ch <= '9') {
+                ch = (u_char) ((decoded << 4) + ch - '0');
+
+                if (type & NGX_UNESCAPE_REDIRECT) {
+                    if (ch > '%' && ch < 0x7f) {
+                        *d++ = ch;
+                        break;
+                    }
+
+                    *d++ = '%'; *d++ = *(s - 2); *d++ = *(s - 1);
+
+                    break;
+                }
+
+                *d++ = ch;
+
+                break;
+            }
+
+            c = (u_char) (ch | 0x20);
+            if (c >= 'a' && c <= 'f') {
+                ch = (u_char) ((decoded << 4) + c - 'a' + 10);
+
+                if (type & NGX_UNESCAPE_URI) {
+                    if (ch == '?') {
+                        *d++ = ch;
+                        goto done;
+                    }
+
+                    *d++ = ch;
+                    break;
+                }
+
+                if (type & NGX_UNESCAPE_REDIRECT) {
+                    if (ch == '?') {
+                        *d++ = ch;
+                        goto done;
+                    }
+
+                    if (ch > '%' && ch < 0x7f) {
+                        *d++ = ch;
+                        break;
+                    }
+
+                    *d++ = '%'; *d++ = *(s - 2); *d++ = *(s - 1);
+                    break;
+                }
+
+                *d++ = ch;
+
+                break;
+            }
+
+            /* the invalid quoted character */
+
+            break;
+        }
+    }
+
+done:
+
+    *dst = d;
+    *src = s;
 }
 

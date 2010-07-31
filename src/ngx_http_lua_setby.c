@@ -84,6 +84,12 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_setfield(L, -2, "var");
     /*  }}} */
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
+    lua_setfield(L, -2, "escape_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
+    lua_setfield(L, -2, "unescape_uri");
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 

@@ -19,6 +19,9 @@ int ngx_http_lua_ngx_throw_error(lua_State *L);
 int ngx_http_lua_ngx_flush(lua_State *L);
 int ngx_http_lua_ngx_eof(lua_State *L);
 
+int ngx_http_lua_ngx_escape_uri(lua_State *L);
+int ngx_http_lua_ngx_unescape_uri(lua_State *L);
+
 int ngx_http_lua_ngx_location_capture(lua_State *L);
 
 
