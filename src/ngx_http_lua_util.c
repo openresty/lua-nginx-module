@@ -1,3 +1,4 @@
+#define DDEBUG 0
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 
@@ -315,7 +316,7 @@ init_ngx_lua_globals(lua_State *L)
 
 
 /**
- * Get NginX internal variables content
+ * Get nginx internal variables content
  *
  * @retval Always return a string or nil on Lua stack. Return nil when failed to get
  * content, and actual content string when found the specified variable.
@@ -328,7 +329,7 @@ ngx_http_lua_var_get(lua_State *L)
     u_char                      *p, *lowcase;
     size_t                       len;
     ngx_uint_t                   hash;
-    ngx_str_t                    var;
+    ngx_str_t                    name;
     ngx_http_variable_value_t   *vv;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -348,13 +349,13 @@ ngx_http_lua_var_get(lua_State *L)
 
     hash = ngx_hash_strlow(lowcase, p, len);
 
-    var.len = len;
-    var.data = lowcase;
+    name.len = len;
+    name.data = lowcase;
 
 #if defined(nginx_version) && nginx_version > 8036
-    vv = ngx_http_get_variable(r, &var, hash);
+    vv = ngx_http_get_variable(r, &name, hash);
 #else
-    vv = ngx_http_get_variable(r, &var, hash, 1);
+    vv = ngx_http_get_variable(r, &name, hash, 1);
 #endif
 
     if (vv == NULL || vv->not_found) {
@@ -369,7 +370,7 @@ ngx_http_lua_var_get(lua_State *L)
 
 
 /**
- * Set NginX internal variable content
+ * Set nginx internal variable content
  *
  * @retval Always return a boolean on Lua stack. Return true when variable
  * content was modified successfully, false otherwise.
@@ -378,16 +379,54 @@ ngx_http_lua_var_get(lua_State *L)
 int
 ngx_http_lua_var_set(lua_State *L)
 {
-    ngx_http_request_t *r;
+    ngx_http_variable_value_t   *vv;
+    u_char                      *p, *lowcase;
+    size_t                       len;
+    ngx_str_t                    name;
+    ngx_uint_t                   hash;
+    ngx_http_request_t          *r;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    /* TODO: */
-    lua_pushboolean(L, 0);    /* return false */
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
 
-    return 1;
+    /* we skip the first argument that is the table */
+    p = (u_char*)luaL_checklstring(L, 2, &len);
+
+    lowcase = ngx_palloc(r->pool, len + 1);
+    if (lowcase == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
+
+    lowcase[len] = '\0';
+
+    hash = ngx_hash_strlow(lowcase, p, len);
+
+    name.len = len;
+    name.data = lowcase;
+
+#if defined(nginx_version) && nginx_version > 8036
+    vv = ngx_http_get_variable(r, &name, hash);
+#else
+    vv = ngx_http_get_variable(r, &name, hash, 1);
+#endif
+
+    if (vv == NULL) {
+        return luaL_error(L, "variable \"%s\" not defined yet; you sould have used \"set $foo '';\" earlier", lowcase);
+    }
+
+    p = (u_char*)luaL_checklstring(L, 3, &len);
+
+    vv->valid = 1;
+    vv->not_found = 0;
+    vv->data = p;
+    vv->len = len;
+
+    return 0;
 }
 
 

@@ -3,10 +3,12 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
-repeat_each(1);
+repeat_each(2);
+#repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
+
+no_long_string();
 
 run_tests();
 
@@ -121,4 +123,6 @@ a = 33
 --- request
 GET /set-both
 --- response_body
+a = 7
+b = 32
 
