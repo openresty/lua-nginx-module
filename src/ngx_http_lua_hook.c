@@ -505,7 +505,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
 
     dst = ngx_palloc(r->pool, dlen);
     if (dst == NULL) {
-        return luaL_error("memory allocation error");
+        return luaL_error(L, "memory allocation error");
     }
 
     if (escape == 0) {
@@ -548,7 +548,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
     p = ngx_palloc(r->pool, dlen);
     if (p == NULL) {
-        return luaL_error("memory allocation error");
+        return luaL_error(L, "memory allocation error");
     }
 
     dst = p;
