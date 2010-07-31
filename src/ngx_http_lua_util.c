@@ -293,10 +293,19 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushinteger(L, 201);
     lua_setfield(L, -2, "HTTP_CREATED");
 
+    lua_pushinteger(L, 301);
+    lua_setfield(L, -2, "HTTP_MOVED_PERMANENTLY");
+
+    lua_pushinteger(L, 302);
+    lua_setfield(L, -2, "HTTP_MOVED_TEMPORARILY");
+
+    lua_pushinteger(L, 304);
+    lua_setfield(L, -2, "HTTP_NOT_MODIFIED");
+
     lua_pushinteger(L, 400);
     lua_setfield(L, -2, "HTTP_BAD_REQUEST");
 
-    lua_pushinteger(L, 401);
+    lua_pushinteger(L, 410);
     lua_setfield(L, -2, "HTTP_GONE");
 
     lua_pushinteger(L, 404);
@@ -313,9 +322,6 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_pushinteger(L, 503);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
-
-    lua_pushinteger(L, 302);
-    lua_setfield(L, -2, "HTTP_LOCATION");
 
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */
