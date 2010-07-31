@@ -287,16 +287,35 @@ init_ngx_lua_globals(lua_State *L)
     lua_setfield(L, -2, "location");
     /* }}} */
 
-    /* {{{ register nginx constants */
-    lua_newtable(L);    /* .status */
-
     lua_pushinteger(L, 200);
     lua_setfield(L, -2, "HTTP_OK");
+
+    lua_pushinteger(L, 201);
+    lua_setfield(L, -2, "HTTP_CREATED");
+
+    lua_pushinteger(L, 400);
+    lua_setfield(L, -2, "HTTP_BAD_REQUEST");
+
+    lua_pushinteger(L, 401);
+    lua_setfield(L, -2, "HTTP_GONE");
+
+    lua_pushinteger(L, 404);
+    lua_setfield(L, -2, "HTTP_NOT_FOUND");
+
+    lua_pushinteger(L, 405);
+    lua_setfield(L, -2, "HTTP_NOT_ALLOWED");
+
+    lua_pushinteger(L, 403);
+    lua_setfield(L, -2, "HTTP_FORBIDDEN");
+
+    lua_pushinteger(L, 500);
+    lua_setfield(L, -2, "HTTP_INTERNAL_SERVER_ERROR");
+
+    lua_pushinteger(L, 503);
+    lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
+
     lua_pushinteger(L, 302);
     lua_setfield(L, -2, "HTTP_LOCATION");
-
-    lua_setfield(L, -2, "status");
-    /* }}} */
 
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */
