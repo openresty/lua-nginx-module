@@ -256,7 +256,8 @@ status=200 body=num is: 0
 end
 
 
-=== TEST 14: setting nginx variables from within Lua
+
+=== TEST 15: setting nginx variables from within Lua
 --- config
  location /set {
        set $a "";

@@ -126,3 +126,18 @@ GET /set-both
 a = 7
 b = 32
 
+
+
+=== TEST 9: set non-existent nginx variables
+--- config
+    location = /set-both {
+        #set $b "";
+        set_by_lua $a "ngx.var.b = 32; return 7";
+
+        echo "a = $a";
+    }
+--- request
+GET /set-both
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
