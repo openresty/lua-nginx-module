@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(120);
 #repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 #no_long_string();
@@ -254,4 +254,19 @@ status=200 body=num is: 2
 status=200 body=num is: 1
 status=200 body=num is: 0
 end
+
+
+=== TEST 14: setting nginx variables from within Lua
+--- config
+ location /set {
+       set $a "";
+       content_by_lua 'ngx.var.a = 32; ngx.say(ngx.var.a)';
+       add_header Foo $a;
+   }
+--- request
+GET /set
+--- response_headers
+Foo: 32
+--- response_body
+32
 
