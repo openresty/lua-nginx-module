@@ -340,7 +340,7 @@ ngx_http_lua_var_get(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    p = (u_char*)luaL_checklstring(L, -1, &len);
+    p = (u_char*) luaL_checklstring(L, -1, &len);
 
     lowcase = ngx_pnalloc(r->pool, len);
     if (lowcase == NULL) {
@@ -395,7 +395,7 @@ ngx_http_lua_var_set(lua_State *L)
     }
 
     /* we skip the first argument that is the table */
-    p = (u_char*)luaL_checklstring(L, 2, &len);
+    p = (u_char*) luaL_checklstring(L, 2, &len);
 
     lowcase = ngx_palloc(r->pool, len + 1);
     if (lowcase == NULL) {
@@ -421,7 +421,7 @@ ngx_http_lua_var_set(lua_State *L)
                 "in the config file", lowcase, lowcase);
     }
 
-    p = (u_char*)luaL_checklstring(L, 3, &len);
+    p = (u_char*) luaL_checklstring(L, 3, &len);
 
     val = ngx_palloc(r->pool, len);
     if (val == NULL) {
