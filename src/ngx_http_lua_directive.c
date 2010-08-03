@@ -18,6 +18,8 @@ ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
+    dd("enter");
+
     value = cf->args->elts;
 
     lmcf->lua_cpath.len = value[1].len;
