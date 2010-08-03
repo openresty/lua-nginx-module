@@ -11,10 +11,10 @@ repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
 
-my $html_dir = html_dir;
+our $HtmlDir = html_dir;
 #warn $html_dir;
 
-$ENV{LUA_PATH} = "$html_dir/?.lua";
+#$ENV{LUA_PATH} = "$html_dir/?.lua";
 
 #no_diff();
 #no_long_string();
@@ -23,6 +23,8 @@ run_tests();
 __DATA__
 
 === TEST 1: sanity
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
     location /main {
         echo_location /load;
@@ -66,4 +68,20 @@ found
 hello, foo
 found
 hello, foo
+
+
+
+=== TEST 2: sanity
+--- http_config eval
+    "lua_package_cpath '$::HtmlDir/?.so';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.cpath);
+        ';
+    }
+--- request
+GET /main
+--- user_files
+--- response_body_like: ^[^;]+/t/servroot/html/\?.so$
 

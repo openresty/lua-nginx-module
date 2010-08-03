@@ -8,7 +8,7 @@ static void init_ngx_lua_globals(lua_State *L);
 
 
 lua_State *
-ngx_http_lua_new_state()
+ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     lua_State *L = luaL_newstate();
     if(L == NULL) {
@@ -16,6 +16,29 @@ ngx_http_lua_new_state()
     }
 
     luaL_openlibs(L);
+
+    lua_getglobal(L, "package");
+
+    if (! lua_istable(L, -1)) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                "the \"package\" table does not exist");
+        return NULL;
+    }
+
+    if (lmcf->lua_path.len != 0) {
+        lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
+
+        lua_setfield(L, -2, "path");
+    }
+
+    if (lmcf->lua_cpath.len != 0) {
+        lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
+
+        lua_setfield(L, -2, "cpath");
+    }
+
+
+    lua_remove(L, -1); /* remove the "package" table */
 
     init_ngx_lua_registry(L);
     init_ngx_lua_globals(L);
@@ -58,6 +81,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     lua_pop(L, 1);
     return cr;
 }
+
 
 void
 ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,

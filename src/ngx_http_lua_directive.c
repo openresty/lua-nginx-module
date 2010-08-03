@@ -1,3 +1,5 @@
+#define DDEBUG 0
+
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_cache.h"
@@ -7,11 +9,47 @@
 
 
 char *
-ngx_http_lua_set_by_lua(
-        ngx_conf_t *cf,
-        ngx_command_t *cmd,
-        void *conf
-        )
+ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t *lmcf = conf;
+    ngx_str_t                *value;
+
+    if (lmcf->lua_cpath.len != 0) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    lmcf->lua_cpath.len = value[1].len;
+    lmcf->lua_cpath.data = value[1].data;
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t *lmcf = conf;
+    ngx_str_t                *value;
+
+    if (lmcf->lua_path.len != 0) {
+        return "is duplicate";
+    }
+
+    dd("enter");
+
+    value = cf->args->elts;
+
+    lmcf->lua_path.len = value[1].len;
+    lmcf->lua_path.data = value[1].data;
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_str_t           *args;
     ngx_str_t            target;
@@ -130,6 +168,8 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                   *args;
     ngx_http_core_loc_conf_t    *clcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    dd("enter");
 
     /*  must specifiy a content handler */
     if (cmd->post == NULL) {

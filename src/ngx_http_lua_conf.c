@@ -1,10 +1,12 @@
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_util.h"
 
-static void ngx_http_lua_cleanup_vm(void *data);
-static char* ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
 
-void*
+static void ngx_http_lua_cleanup_vm(void *data);
+static char * ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
+
+
+void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_main_conf_t *lmcf;
@@ -14,18 +16,24 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
+    /* set by ngx_pcalloc:
+     *      lmcf->lua = NULL;
+     *      lmcf->lua_path = { 0, NULL };
+     *      lmcf->lua_cpath = { 0, NULL };
+     */
+
     dd("NginX Lua module main config structure initialized!");
 
     return lmcf;
 }
 
-char*
+char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
     ngx_http_lua_main_conf_t *lmcf = conf;
 
-    if(lmcf->lua == NULL) {
-        if(ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
+    if (lmcf->lua == NULL) {
+        if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
             ngx_conf_log_error(NGX_ERROR, cf, 0, "Failed to initialize Lua VM!");
             return NGX_CONF_ERROR;
         }
@@ -40,10 +48,16 @@ void*
 ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_loc_conf_t *conf;
+
     conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_loc_conf_t));
-    if(conf == NULL) {
+    if (conf == NULL) {
         return NGX_CONF_ERROR;
     }
+
+    /* set by ngx_pcalloc:
+     *      conf->src = { 0, NULL };
+     */
+
     return conf;
 }
 
@@ -77,13 +91,13 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     // add new cleanup handler to config mem pool
     cln = ngx_pool_cleanup_add(cf->pool, 0);
-    if(cln == NULL) {
+    if (cln == NULL) {
         return NGX_CONF_ERROR;
     }
 
     // create new Lua VM instance
-    lmcf->lua = ngx_http_lua_new_state();
-    if(lmcf->lua == NULL) {
+    lmcf->lua = ngx_http_lua_new_state(cf, lmcf);
+    if (lmcf->lua == NULL) {
         return NGX_CONF_ERROR;
     }
 

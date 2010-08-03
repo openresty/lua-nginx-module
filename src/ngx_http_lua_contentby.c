@@ -1,3 +1,4 @@
+#define DDEBUG 0
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 
@@ -131,6 +132,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             err, msg);
 
     ngx_http_lua_del_thread(r, L, cc_ref, 0);
+
+    dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
     return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 }
