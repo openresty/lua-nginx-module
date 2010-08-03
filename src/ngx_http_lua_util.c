@@ -407,7 +407,9 @@ ngx_http_lua_var_get(lua_State *L)
     name.len = len;
     name.data = lowcase;
 
-#if defined(nginx_version) && nginx_version > 8036
+#if defined(nginx_version) && \
+    (nginx_version >= 8036 || \
+     (nginx_version < 8000 && nginx_version >= 7066))
     vv = ngx_http_get_variable(r, &name, hash);
 #else
     vv = ngx_http_get_variable(r, &name, hash, 1);
@@ -464,7 +466,9 @@ ngx_http_lua_var_set(lua_State *L)
     name.len = len;
     name.data = lowcase;
 
-#if defined(nginx_version) && nginx_version > 8036
+#if defined(nginx_version) && \
+    (nginx_version >= 8036 || \
+     (nginx_version < 8000 && nginx_version >= 7066))
     vv = ngx_http_get_variable(r, &name, hash);
 #else
     vv = ngx_http_get_variable(r, &name, hash, 1);
