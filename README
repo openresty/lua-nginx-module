@@ -125,14 +125,17 @@ APIs
 
         ngx.send_headers() -- explicitly send headers
 
-        ngx.print(a, b, ...) -- emit args concatenated to the HTTP client (as response body)
+        ngx.print(a, b, ...) -- emit args concatenated to the HTTP client
+                -- (as response body)
 
         ngx.say(a, b, ...) -- just as ngx.print but also emit a trailing newline
 
         ngx.flush() -- force flushing the response outputs
 
-        ngx.throw_error(status) -- throw out an error page and interrupts the execution of the current Lua thread,
-            -- status can be ngx.HTTP_NOT_FOUND or other HTTP status numbers
+        ngx.throw_error(status) -- throw out an error page and interrupts
+                -- the execution of the current Lua thread,
+                -- status can be ngx.HTTP_NOT_FOUND or other
+                -- HTTP status numbers
 
         ngx.eof() -- explicitly specify the end of the response output stream
 
@@ -140,8 +143,10 @@ APIs
 
         newstr = ngx.unescape_uri(str) -- unescape str as a escaped URI component
 
-        res = ngx.location.capture(uri) -- issue a synchronous but still non-blocking subrequest using uri (for example, /foo/bar)
-            -- returns a Lua table with two slots, res.status and res.body
+        res = ngx.location.capture(uri) -- issue a synchronous but still
+                -- non-blocking subrequest using uri (for example, /foo/bar)
+                -- returns a Lua table with two slots,
+                -- i.e., res.status and res.body.
 
 Installation
     1. Install lua into your system. At least Lua 5.1 is required.
