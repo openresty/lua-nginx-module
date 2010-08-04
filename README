@@ -97,13 +97,17 @@ Description
 
 APIs
     Nginx APIs for set_by_lua*
+        -- read and write arbitrary nginx variables by name:
         value = ngx.var.some_nginx_variable_name
         ngx.var.some_nginx_variable_name = value
-        value = ngx.arg[n]
+
+        value = ngx.arg[n]  -- index the input arguments to the directive
 
     Nginx APIs for content_by_lua*
+        -- read and write arbitrary nginx variables by name:
         value = ngx.var.some_nginx_variable_name
         ngx.var.some_nginx_variable_name = value
+
         value = ngx.HTTP_OK
         value = ngx.HTTP_CREATED
         value = ngx.HTTP_MOVED_PERMANENTLY
