@@ -170,7 +170,7 @@ Installation
     lua-nginx-module file list
     (<http://github.com/chaoslawful/lua-nginx-module/downloads >).
 
-    3. Grab the nginx source code from nginx.net (<http://nginx.net/>), for
+    3. Grab the nginx source code from nginx.net (<http://nginx.net/ >), for
     example, the version 0.8.41 (see nginx compatibility), and then build
     the source with this module:
 
@@ -189,7 +189,7 @@ Installation
 
     2. Download the latest version of the release tarball of this module from
     lua-nginx-module file list
-    (<http://github.com/chaoslawful/lua-nginx-module/downloads>).
+    (<http://github.com/chaoslawful/lua-nginx-module/downloads >).
 
 Compatibility
     The following versions of Nginx should work with this module:
