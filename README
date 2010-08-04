@@ -99,6 +99,50 @@ Synopsis
 
 Description
 
+APIs
+    Nginx APIs for set_by_lua*
+        value = ngx.var.some_nginx_variable_name
+        ngx.var.some_nginx_variable_name = value
+        value = ngx.arg[n]
+
+    Nginx APIs for content_by_lua*
+        value = ngx.var.some_nginx_variable_name
+        ngx.var.some_nginx_variable_name = value
+        value = ngx.HTTP_OK
+        value = ngx.HTTP_CREATED
+        value = ngx.HTTP_MOVED_PERMANENTLY
+        value = ngx.HTTP_MOVED_TEMPORARILY
+        value = ngx.HTTP_NOT_MODIFIED
+        value = ngx.HTTP_BAD_REQUEST
+        value = ngx.HTTP_GONE
+        value = ngx.HTTP_NOT_FOUND
+        value = ngx.HTTP_NOT_ALLOWED
+        value = ngx.HTTP_FORBIDDEN
+        value = ngx.HTTP_INTERNAL_SERVER_ERROR
+        value = ngx.HTTP_SERVICE_UNAVAILABLE
+
+        print(a, b, ...) -- emit args concatenated to error.log
+
+        ngx.send_headers() -- explicitly send headers
+
+        ngx.print(a, b, ...) -- emit args concatenated to the HTTP client (as response body)
+
+        ngx.say(a, b, ...) -- just as ngx.print but also emit a trailing newline
+
+        ngx.flush() -- force flushing the response outputs
+
+        ngx.throw_error(status) -- throw out an error page and interrupts the execution of the current Lua thread,
+            -- status can be ngx.HTTP_NOT_FOUND or other HTTP status numbers
+
+        ngx.eof() -- explicitly specify the end of the response output stream
+
+        newstr = ngx.escape_uri(str) -- escape str as a URI component
+
+        newstr = ngx.unescape_uri(str) -- unescape str as a escaped URI component
+
+        res = ngx.location.capture(uri) -- issue a synchronous but still non-blocking subrequest using uri (for example, /foo/bar)
+            -- returns a Lua table with two slots, res.status and res.body
+
 Installation
     1. Install lua into your system. At least Lua 5.1 is required.
 
