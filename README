@@ -1,5 +1,5 @@
 Name
-    lua-nginx-module - embed power of Lua into NginX
+    lua-nginx-module - Embed the power of Lua into nginx
 
 Status
     This module is at its early phase of development
