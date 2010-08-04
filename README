@@ -2,13 +2,9 @@ Name
     lua-nginx-module - embed power of Lua into NginX
 
 Status
-    This module is at its very early phase of development and
-    consideredehighly experimental. But you're encouraged to
-    test it out on your side and report any quirks that you
-    experience.
+    This module is at its early phase of development
+    but is already production ready :)
 
-    We need your help! If you find this module useful and/or
-    interesting, please consider joining the development!
     Commit bit can be freely delivered at your request ;)
 
 Synopsis
