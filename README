@@ -13,6 +13,12 @@ Status
 
 Synopsis
 
+   # set search paths for pure Lua external libraries:
+   lua_package_path '/foo/bar/?.lua;/blah/?.lua';
+
+   # set search paths for Lua external libraries written in C:
+   lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so';
+
    server {
         location /inline_concat {
             # MIME type determined by default_type:
