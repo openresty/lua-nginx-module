@@ -155,9 +155,8 @@ Performance
     On a ThinkPad T400 2.96 GHz laptop, it's easy to achieve 25k req/sec using ab
     w/o keepalive and 37k+ req/sec with keepalive.
 
-    It's also possible to make this module work with LuaJIT 2.0
-    by manually updating the "config" file by
-    replacing "-llua" with "-lluajit".
+    You can get better performance when building this module
+    with LuaJIT 2.0.
 
 Installation
     1. Install lua into your system. At least Lua 5.1 is required.
@@ -177,6 +176,14 @@ Installation
         $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
         $ tar -xzvf nginx-0.8.41.tar.gz
         $ cd nginx-0.8.41/
+
+        # tell nginx's build system where to find lua:
+        export LUA_LIB=/path/to/lua/lib
+        export LUA_INC=/path/to/lua/include
+
+        # or tell where to find LuaJIT when you want to use JIT instead
+        # export LUAJIT_LIB=/path/to/luajit/lib
+        # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
 
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
