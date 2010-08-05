@@ -6,16 +6,44 @@ ngx_feature_incs="#include <lauxlib.h>"
 ngx_feature_path=
 ngx_feature_test="(void) luaL_newstate();"
 
-if [ -n "$LUA_LIB" ]; then
+if [ -n "$LUAJIT_LIB" ]; then
     # explicit set lua lib path
-    ngx_feature="lua library in $LUA_LIB (specified by the LUA_LIB env)"
-    ngx_feature_path="$LUA_INC"
+    ngx_feature="lua library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
+    ngx_feature_path="$LUAJIT_INC"
     if [ $NGX_RPATH = YES ]; then
-        ngx_feature_libs="-R$LUA_LIB -L$LUA_LIB -llua -lm"
+        ngx_feature_libs="-R$LUAJIT_LIB -L$LUAJIT_LIB -lluajit-5.1 -lm"
     else
-        ngx_feature_libs="-L$LUA_LIB -llua -lm"
+        ngx_feature_libs="-L$LUAJIT_LIB -lluajit-5.1 -lm"
     fi
+
     . auto/feature
+
+    if [ $ngx_found = no ]; then
+        cat << END
+        $0: error: the ngx_lua addon requires the lua or luajit library and LUAJIT_LIB is defined as $LUAJIT_LIB and LUAJIT_INC $LUAJIT_INC, but we cannot find LuaJIT there.
+END
+        exit 1
+    fi
+else
+    if [ -n "$LUA_LIB" ]; then
+        # explicit set lua lib path
+        ngx_feature="lua library in $LUA_LIB and $LUA_INC (specified by the LUA_LIB and LUA_INC env)"
+        ngx_feature_path="$LUA_INC"
+        if [ $NGX_RPATH = YES ]; then
+            ngx_feature_libs="-R$LUA_LIB -L$LUA_LIB -llua -lm"
+        else
+            ngx_feature_libs="-L$LUA_LIB -llua -lm"
+        fi
+
+        . auto/feature
+
+        if [ $ngx_found = no ]; then
+            cat << END
+            $0: error: the ngx_lua addon requires the lua and luajit library and LUA_LIB is defined as $LUA_LIB and LUA_INC is $LUA_INC, but we cannot find standard Lua there.
+END
+            exit 1
+        fi
+    fi
 fi
 
 if [ $ngx_found = no ]; then
