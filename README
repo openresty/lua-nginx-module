@@ -210,6 +210,12 @@ Compatibility
     If you find that any particular version of Nginx above 0.7.44 does not
     work with this module, please consider reporting a bug.
 
+Test Suite
+
+    To run the test suite, you need the following nginx modules:
+
+    ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
+
 TODO
 
 Known Issues
