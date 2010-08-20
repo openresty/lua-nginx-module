@@ -1,4 +1,5 @@
 #define DDEBUG 0
+
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 
@@ -17,10 +18,10 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  {{{ new coroutine to handle request */
     cc = ngx_http_lua_new_thread(r, L, &cc_ref);
-    if(cc == NULL) {
+    if (cc == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "(lua-content-by-chunk) failed to create new coroutine to handle request!");
-        return NGX_ERROR;
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     /*  move code closure to new coroutine */
@@ -44,7 +45,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx == NULL) {
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
         if (ctx == NULL) {
-            return NGX_ERROR;
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
@@ -57,8 +58,13 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  {{{ register request cleanup hooks */
     cln = ngx_http_cleanup_add(r, 0);
-    cln->data = r;
+    if (cln == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
     cln->handler = ngx_http_lua_request_cleanup;
+    cln->data = r;
+    ctx->cleanup = &cln->handler;
     /*  }}} */
 
 	return ngx_http_lua_run_thread(L, r, ctx, 0);
@@ -91,6 +97,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         case 0:
             /*  normal end */
             ngx_http_lua_del_thread(r, L, cc_ref, 0);
+
+            if (ctx->cleanup) {
+                *ctx->cleanup = NULL;
+                ctx->cleanup = NULL;
+            }
+
             ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
             return NGX_OK;
             break;
@@ -133,6 +145,11 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
     ngx_http_lua_del_thread(r, L, cc_ref, 0);
 
+    if (ctx->cleanup) {
+        *ctx->cleanup = NULL;
+        ctx->cleanup = NULL;
+    }
+
     dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
     return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -142,10 +159,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 static void
 ngx_http_lua_request_cleanup(void *data)
 {
-    ngx_http_request_t *r = data;
-    ngx_http_lua_main_conf_t *lmcf;
-    ngx_http_lua_ctx_t *ctx;
-    lua_State *L;
+    ngx_http_request_t          *r = data;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_ctx_t          *ctx;
+    lua_State                   *L;
 
     dd("(lua-request-cleanup) force request coroutine quit");
 
@@ -154,18 +171,28 @@ ngx_http_lua_request_cleanup(void *data)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     /*  force coroutine handling the request quit */
-    if (ctx != NULL) {
-        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
-        lua_rawgeti(L, -1, ctx->cc_ref);
-
-        if (lua_isthread(L, -1)) {
-            /*  coroutine not finished yet, force quit */
-            ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
-            ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
-        }
-
-        lua_pop(L, 2);
+    if (ctx == NULL) {
+        return;
     }
+
+    if (ctx->cleanup) {
+        *ctx->cleanup = NULL;
+        ctx->cleanup = NULL;
+    }
+
+    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_rawgeti(L, -1, ctx->cc_ref);
+
+    if (lua_isthread(L, -1)) {
+        /*  coroutine not finished yet, force quit */
+        ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
+
+#if 0
+        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+#endif
+    }
+
+    lua_pop(L, 2);
 }
 
 
@@ -185,10 +212,21 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 		goto error;
     }
 
+    dd("request done: %d", (int) r->done);
+    dd("cleanup done: %p", ctx->cleanup);
+
+#if 1
+    if (r->done || ctx->cleanup == NULL) {
+        return;
+    }
+#endif
+
     if (ctx->waiting && ! ctx->done) {
         if (r->main->posted_requests
                 && r->main->posted_requests->request != r)
         {
+            dd("postpone our wev handler");
+
 #if defined(nginx_version) && nginx_version >= 8012
             ngx_http_post_request(r, NULL);
 #else
@@ -202,20 +240,21 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ctx->done = 0;
 
 	len = 0;
-	for(cl = ctx->sr_body; cl; cl = cl->next) {
+	for (cl = ctx->sr_body; cl; cl = cl->next) {
 		/*  ignore all non-memory buffers */
 		len += cl->buf->last - cl->buf->pos;
 	}
 
-	if(len == 0) {
+	if (len == 0) {
 		pos = NULL;
+
 	} else {
 		last = pos = ngx_palloc(r->pool, len);
-		if(pos == NULL) {
+		if (pos == NULL) {
 			goto error;
 		}
 
-		for(cl = ctx->sr_body; cl; cl = cl->next) {
+		for (cl = ctx->sr_body; cl; cl = cl->next) {
 			/*  ignore all non-memory buffers */
 			last = ngx_copy(last, cl->buf->pos, cl->buf->last - cl->buf->pos);
 		}
@@ -237,7 +276,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
 	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
+    dd("about to run thread...");
+
     rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 1);
+
+    dd("already run thread...");
 
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         ctx->waiting = 1;
