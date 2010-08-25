@@ -2,6 +2,7 @@
 
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_hook.h"
 
 static void ngx_http_lua_request_cleanup(void *data);
 static ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
@@ -80,79 +81,88 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     lua_State               *cc;
     const char              *err, *msg;
 
-	cc = ctx->cc;
-	cc_ref = ctx->cc_ref;
+	/* set Lua VM panic handler */
+	lua_atpanic(L, ngx_http_lua_atpanic);
 
-    /*  run code */
-    rc = lua_resume(cc, nret);
+	NGX_LUA_EXCEPTION_TRY {
+		cc = ctx->cc;
+		cc_ref = ctx->cc_ref;
 
-    switch (rc) {
-        case LUA_YIELD:
-            /*  yielded, let event handler do the rest job */
-			/*  FIXME: add io cmd dispatcher here */
-			lua_settop(cc, 0);
-            return NGX_AGAIN;
-            break;
+		/*  run code */
+		rc = lua_resume(cc, nret);
 
-        case 0:
-            /*  normal end */
-            ngx_http_lua_del_thread(r, L, cc_ref, 0);
+		switch (rc) {
+			case LUA_YIELD:
+				/*  yielded, let event handler do the rest job */
+				/*  FIXME: add io cmd dispatcher here */
+				lua_settop(cc, 0);
+				return NGX_AGAIN;
+				break;
 
-            if (ctx->cleanup) {
-                *ctx->cleanup = NULL;
-                ctx->cleanup = NULL;
-            }
+			case 0:
+				/*  normal end */
+				ngx_http_lua_del_thread(r, L, cc_ref, 0);
 
-            ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
-            return NGX_OK;
-            break;
+				if (ctx->cleanup) {
+					*ctx->cleanup = NULL;
+					ctx->cleanup = NULL;
+				}
 
-        case LUA_ERRRUN:
-            err = "runtime error";
-            break;
+				ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+				return NGX_OK;
+				break;
 
-        case LUA_ERRSYNTAX:
-            err = "syntax error";
-            break;
+			case LUA_ERRRUN:
+				err = "runtime error";
+				break;
 
-        case LUA_ERRMEM:
-            err = "memory allocation error";
-            break;
+			case LUA_ERRSYNTAX:
+				err = "syntax error";
+				break;
 
-        case LUA_ERRERR:
-            err = "error handler error";
-            break;
+			case LUA_ERRMEM:
+				err = "memory allocation error";
+				break;
 
-        default:
-            err = "unknown error";
-            break;
-    }
+			case LUA_ERRERR:
+				err = "error handler error";
+				break;
 
-    if (lua_isstring(cc, -1)) {
-        msg = lua_tostring(cc, -1);
+			default:
+				err = "unknown error";
+				break;
+		}
 
-    } else {
-        if (lua_isnil(cc, -1) && ctx->error_rc != 0) {
-            return ctx->error_rc;
-        }
+		if (lua_isstring(cc, -1)) {
+			msg = lua_tostring(cc, -1);
 
-        msg = "unknown reason";
-    }
+		} else {
+			if (lua_isnil(cc, -1) && ctx->error_rc != 0) {
+				return ctx->error_rc;
+			}
 
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-            "content_by_lua prematurely ended: %s: %s",
-            err, msg);
+			msg = "unknown reason";
+		}
 
-    ngx_http_lua_del_thread(r, L, cc_ref, 0);
+		ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+				"content_by_lua prematurely ended: %s: %s",
+				err, msg);
 
-    if (ctx->cleanup) {
-        *ctx->cleanup = NULL;
-        ctx->cleanup = NULL;
-    }
+		ngx_http_lua_del_thread(r, L, cc_ref, 0);
 
-    dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+		if (ctx->cleanup) {
+			*ctx->cleanup = NULL;
+			ctx->cleanup = NULL;
+		}
 
-    return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
+		dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+
+		return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
+	} NGX_LUA_EXCEPTION_CATCH {
+		dd("NginX execution restored");
+	}
+
+	return NGX_ERROR;
 }
 
 

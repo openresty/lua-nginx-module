@@ -121,12 +121,10 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
 
     upstream memc_a {
         server 127.0.0.1:11984;
-        keepalive 300 single;
     }
 
     upstream memc_b {
         server 127.0.0.1:11211;
-        keepalive 300 single;
     }
 
     upstream_list memc_cluster memc_a memc_b;
@@ -190,10 +188,11 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
+--- SKIP
 
 
 
-=== TEST 6: working with ngx_auth_request
+=== TEST 7: working with ngx_auth_request
 --- http_config
     upstream backend {
         drizzle_server 127.0.0.1:3306 dbname=test

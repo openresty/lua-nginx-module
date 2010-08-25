@@ -3,6 +3,9 @@
 
 #include "ngx_http_lua_common.h"
 
+#define NGX_LUA_EXCEPTION_TRY if(setjmp(ngx_http_lua_exception) == 0)
+#define NGX_LUA_EXCEPTION_CATCH else
+#define NGX_LUA_EXCEPTION_THROW(x) longjmp(ngx_http_lua_exception, (x))
 
 jmp_buf ngx_http_lua_exception;
 

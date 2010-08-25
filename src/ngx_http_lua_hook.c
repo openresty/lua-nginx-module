@@ -43,7 +43,7 @@ ngx_http_lua_atpanic(lua_State *L)
     }
 
     /*  restore nginx execution */
-    longjmp(ngx_http_lua_exception, 1);
+	NGX_LUA_EXCEPTION_THROW(1);
 }
 
 /**

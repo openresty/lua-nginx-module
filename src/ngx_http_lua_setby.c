@@ -135,8 +135,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-    if (setjmp(ngx_http_lua_exception) == 0) {
-        /*  try { */
+	NGX_LUA_EXCEPTION_TRY {
         size_t rlen;
         const char *rdata = lua_tolstring(L, -1, &rlen);
 
@@ -154,10 +153,9 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
             val->data = NULL;
             val->len = 0;
         }
-    } else {
-        /*  } catch */
+	} NGX_LUA_EXCEPTION_CATCH {
         dd("NginX execution restored");
-    }
+	}
 
     /*  clear Lua stack */
     lua_settop(L, 0);
