@@ -4,7 +4,8 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #repeat_each(20000);
-repeat_each(2);
+#repeat_each(2);
+repeat_each(1);
 master_on();
 workers(1);
 #log_level('debug');
@@ -104,7 +105,13 @@ GET /api?user=agentz
 
 
 
-=== TEST 6: working with ngx_auth_request (failed)
+=== TEST 6: working with ngx_auth_request
+db init:
+
+create table conv_uid(id serial primary key, new_uid integer, old_uid integer);
+
+insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
+
 --- http_config
     upstream backend {
         drizzle_server 127.0.0.1:3306 dbname=test
@@ -183,5 +190,89 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
+
+
+
+=== TEST 6: working with ngx_auth_request
+--- http_config
+    upstream backend {
+        drizzle_server 127.0.0.1:3306 dbname=test
+             password=some_pass user=monty protocol=mysql;
+        drizzle_keepalive max=300 mode=single overflow=ignore;
+    }
+
+    upstream memc_a {
+        server 127.0.0.1:11984;
+        keepalive 300 single;
+    }
+
+    #upstream_list memc_cluster memc_a memc_b;
+
+    lua_package_cpath '/home/lz/luax/?.so';
+--- config
+    location /memc {
+        internal;
+
+        set $memc_key $arg_key;
+        set $memc_exptime $arg_exptime;
+
+        #set_hashed_upstream $backend memc_cluster $arg_key;
+        memc_pass memc_a;
+    }
+
+    location /conv-mysql {
+        internal;
+
+        set $key "conv-uri-$query_string";
+
+        srcache_fetch GET /memc key=$key;
+        srcache_store PUT /memc key=$key;
+
+        default_type 'application/json';
+
+        set_quote_sql_str $seo_uri $query_string;
+        drizzle_query "select url from my_url_map where seo_url=$seo_uri";
+        drizzle_pass backend;
+
+        rds_json on;
+    }
+
+    location /conv-uid {
+        internal;
+        content_by_lua_file 'html/foo.lua';
+    }
+
+    location /baz {
+        set $my_uri $uri;
+        auth_request /conv-uid;
+
+        echo_exec /jump $my_uri;
+    }
+
+    location /jump {
+        internal;
+        rewrite ^ $query_string? redirect;
+    }
+--- user_files
+>>> foo.lua
+local yajl = require('yajl');
+local seo_uri = ngx.var.my_uri
+-- print('about to run sr')
+local res = ngx.location.capture('/conv-mysql?' .. seo_uri)
+if (res.status ~= ngx.HTTP_OK) then
+    ngx.throw_error(res.status)
+end
+res = yajl.to_value(res.body)
+if (not res or not res[1] or not res[1].url) then
+    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+end
+ngx.var.my_uri = res[1].url;
+-- print('done')
+--- request
+GET /baz
+--- response_body_like: 302
+--- error_code: 302
+--- response_headers
+Location: http://localhost:1984/foo/bar
 --- SKIP
 
