@@ -10,7 +10,7 @@ master_on();
 workers(1);
 #log_level('debug');
 log_level('warn');
-worker_connections(1000);
+#worker_connections(1024);
 
 plan tests => blocks() * repeat_each() * 2;
 
