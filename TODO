@@ -1,7 +1,10 @@
 Problems:
-	* nginx crashed with luajit-2.0beta5 on mac (luajit related)
+	* nginx crashed with luajit-2.0beta5 on mac (luajit related, need to report to Mike Pall)
 
 Current:
+	* include original path/cpath instead of override them all for lua_package_path/cpath
+	* add directives to run lua codes when nginx stops/reloads
+	* implement ngx.exec() functionality
 	* deal with TCP 3-second delay problem under great connection harness
 
 Future:
