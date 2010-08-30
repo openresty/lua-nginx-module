@@ -83,5 +83,5 @@ hello, foo
 --- request
 GET /main
 --- user_files
---- response_body_like: ^[^;]+/t/servroot/html/\?.so$
+--- response_body_like: ^[^;]+/servroot/html/\?.so$
 

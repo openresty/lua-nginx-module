@@ -271,3 +271,28 @@ Foo: 32
 --- response_body
 32
 
+
+
+=== TEST 16: nginx quote sql string 1
+--- config
+ location /set {
+       set $a 'hello\n\r\'"\\';
+       content_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
+   }
+--- request
+GET /set
+--- response_body
+hello\n\r\'\"\\
+
+
+
+=== TEST 17: nginx quote sql string 2
+--- config
+location /set {
+    set $a "hello\n\r'\"\\";
+    content_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
+}
+--- request
+GET /set
+--- response_body
+hello\n\r\'\"\\

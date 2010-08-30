@@ -10,7 +10,7 @@ master_on();
 workers(1);
 #log_level('debug');
 log_level('warn');
-worker_connections(1000);
+#worker_connections(1024);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -197,12 +197,10 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
 
     upstream memc_a {
         server 127.0.0.1:11984;
-        keepalive 300 single;
     }
 
     upstream memc_b {
         server 127.0.0.1:11211;
-        keepalive 300 single;
     }
 
     upstream_list memc_cluster memc_a memc_b;

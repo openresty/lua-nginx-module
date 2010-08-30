@@ -67,12 +67,15 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     target = args[1];
 
     /*  prevent variable appearing in Lua inline script/file path */
+
+#if 0
     if (ngx_http_lua_has_inline_var(&args[2])) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Lua inline script or file path should not has inline variable: %V",
                 &args[2]);
         return NGX_CONF_ERROR;
     }
+#endif
 
     filter.type = NDK_SET_VAR_MULTI_VALUE_DATA;
     filter.func = cmd->post;
@@ -186,6 +189,8 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     args = cf->args->elts;
 
     /*  prevent variable appearing in Lua inline script/file path */
+
+#if 0
     if (ngx_http_lua_has_inline_var(&args[1])) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Lua inline script or file path should not has inline variable: %V",
@@ -193,6 +198,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         return NGX_CONF_ERROR;
     }
+#endif
 
     if (args[1].len == 0) {
         /*  Oops...Invalid location conf */
