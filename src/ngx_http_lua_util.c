@@ -311,6 +311,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
     lua_setfield(L, -2, "unescape_uri");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
+    lua_setfield(L, -2, "quote_sql_str");
+
     lua_newtable(L);
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");
