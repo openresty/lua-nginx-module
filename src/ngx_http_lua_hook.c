@@ -10,8 +10,7 @@ static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data,
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src,
         size_t size, ngx_uint_t type);
-uintptr_t
-ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
+uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
         size_t size);
 
 
@@ -700,6 +699,7 @@ done:
     *src = s;
 }
 
+
 int
 ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 {
@@ -749,6 +749,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     return 1;
 }
+
 
 uintptr_t
 ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,

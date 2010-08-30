@@ -296,3 +296,17 @@ location /set {
 GET /set
 --- response_body
 hello\n\r\'\"\\
+
+
+
+=== TEST 18: use dollar
+--- config
+location /set {
+    content_by_lua '
+        local s = "hello 112";
+        ngx.say(string.find(s, "%d+$"))';
+}
+--- request
+GET /set
+--- response_body
+79
