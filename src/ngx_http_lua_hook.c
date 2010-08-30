@@ -10,6 +10,9 @@ static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data,
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src,
         size_t size, ngx_uint_t type);
+uintptr_t
+ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
+        size_t size);
 
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
@@ -697,3 +700,132 @@ done:
     *src = s;
 }
 
+int
+ngx_http_lua_ngx_quote_sql_str(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    size_t                   len, dlen, escape;
+    u_char                  *p;
+    u_char                  *src, *dst;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &len);
+
+    escape = ngx_http_lua_ngx_escape_sql_str(NULL, src, len);
+
+    dlen = len + escape;
+
+    p = ngx_palloc(r->pool, dlen);
+    if (p == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
+
+    dst = p;
+
+    if (escape == 0) {
+        p = ngx_copy(p, src, len);
+    } else {
+        p = (u_char *) ngx_http_lua_ngx_escape_sql_str(p, src, len);
+    }
+
+    if (p != dst + dlen) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "ngx.quote_sql_str: buffer error");
+        return NGX_ERROR;
+    }
+
+    lua_pushlstring(L, (char *) dst, p - dst);
+
+    return 1;
+}
+
+uintptr_t
+ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
+        size_t size)
+{
+    ngx_uint_t               n;
+
+    if (dst == NULL) {
+        /* find the number of chars to be escaped */
+        n = 0;
+        while (size) {
+            /* the highest bit of all the UTF-8 chars
+             * is always 1 */
+            if ((*src & 0x80) == 0) {
+                switch (*src) {
+                    case '\r':
+                    case '\n':
+                    case '\\':
+                    case '\'':
+                    case '"':
+                    case '\032':
+                        n++;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            src++;
+            size--;
+        }
+
+        return (uintptr_t) n;
+    }
+
+    while (size) {
+        if ((*src & 0x80) == 0) {
+            switch (*src) {
+                case '\r':
+                    *dst++ = '\\';
+                    *dst++ = 'r';
+                    break;
+
+                case '\n':
+                    *dst++ = '\\';
+                    *dst++ = 'n';
+                    break;
+
+                case '\\':
+                    *dst++ = '\\';
+                    *dst++ = '\\';
+                    break;
+
+                case '\'':
+                    *dst++ = '\\';
+                    *dst++ = '\'';
+                    break;
+
+                case '"':
+                    *dst++ = '\\';
+                    *dst++ = '"';
+                    break;
+
+                case '\032':
+                    *dst++ = '\\';
+                    *dst++ = *src;
+                    break;
+
+                default:
+                    *dst++ = *src;
+                    break;
+            }
+        } else {
+            *dst++ = *src;
+        }
+        src++;
+        size--;
+    } /* while (size) */
+
+    return (uintptr_t) dst;
+}
