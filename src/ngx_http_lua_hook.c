@@ -416,9 +416,12 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
         sr->headers_in.headers.last = &sr->headers_in.headers.part;
     }
 
+#if 0
     sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
+#endif
 
+    sr->variables = r->variables;
     if (sr->variables == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

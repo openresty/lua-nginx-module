@@ -53,18 +53,26 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t           *args;
-    ngx_str_t            target;
-    ndk_set_var_t        filter;
+    ngx_str_t                       *args;
+    ngx_str_t                        target;
+    ndk_set_var_t                    filter;
+    ngx_http_lua_setby_data_t       *data = NULL;
+    ngx_str_t                        pad;
 
+    data = ngx_palloc(cf->pool, sizeof(ngx_http_lua_setby_data_t));
+    if (data == NULL) {
+        return NGX_CONF_ERROR;
+    }
     /*
      * args[0] = "set_by_lua"
      * args[1] = target variable name
      * args[2] = lua script to be executed
      * args[3..] = real params
      * */
-    args = cf->args->elts;
-    target = args[1];
+
+    args        = cf->args->elts;
+    target      = args[1];
+    data->str   = args[2];
 
     /*  prevent variable appearing in Lua inline script/file path */
 
@@ -79,27 +87,35 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     filter.type = NDK_SET_VAR_MULTI_VALUE_DATA;
     filter.func = cmd->post;
-    filter.size = cf->args->nelts - 2;    /*  get number of real params + 1 (lua script) */
-    filter.data = (void*)filter.size;
 
-    return ndk_set_var_multi_value_core(cf, &target, &args[2], &filter);
+    if (cf->args->nelts > 3) {
+        filter.size = cf->args->nelts - 3;
+    } else {
+        filter.size = 1;
+        args[3] = pad;
+    }
+
+    filter.data = data;
+    data->nargs = filter.size;
+    return ndk_set_var_multi_value_core(cf, &target, &args[3], &filter);
 }
 
 
 ngx_int_t
 ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
-        ngx_http_variable_value_t *v, void *data)
+        ngx_http_variable_value_t *v, void *d)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     char                        *err = NULL;
+    ngx_http_lua_setby_data_t   *data = d;
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, v[0].data, v[0].len, "set_by_lua_inline", &err);
+    rc = ngx_http_lua_cache_loadbuffer(L, data->str.data, data->str.len, "set_by_lua_inline", &err);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -112,7 +128,7 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data);
+    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data->nargs, data->str);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -123,13 +139,14 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
 
 ngx_int_t
 ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
-        ngx_http_variable_value_t *v, void *data)
+        ngx_http_variable_value_t *v, void *d)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
     u_char                      *script_path;
     ngx_http_lua_main_conf_t    *lmcf;
     char                        *err;
+    ngx_http_lua_setby_data_t   *data = d;
 
     script_path = ngx_http_lua_rebase_path(r->pool, v[0].data, v[0].len);
 
@@ -158,7 +175,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data);
+    rc = ngx_http_lua_set_by_chunk(L, r, val, v, (size_t) data->nargs, data->str);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

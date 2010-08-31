@@ -8,7 +8,8 @@ extern ngx_int_t ngx_http_lua_set_by_chunk(
 		ngx_http_request_t *r,
 		ngx_str_t *val,
 		ngx_http_variable_value_t *args,
-		size_t nargs
+		size_t nargs,
+        ngx_str_t data
 		);
 
 #endif

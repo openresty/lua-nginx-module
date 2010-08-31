@@ -310,3 +310,19 @@ location /set {
 GET /set
 --- response_body
 79
+
+
+
+=== TEST 19: subrequest share variables
+--- config
+location /sub {
+    echo $a;
+}
+location /parent {
+    set $a 12;
+    content_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
+}
+--- request
+GET /parent
+--- response_body
+12
