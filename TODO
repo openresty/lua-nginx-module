@@ -1,5 +1,6 @@
 Problems:
-	* nginx crashed with luajit-2.0beta5 on mac (luajit related, need to report to Mike Pall)
+	* can't access $request_body in content_by_lua
+	* package globals occasional missing in content_by_lua
 
 Current:
 	* include original path/cpath instead of override them all for lua_package_path/cpath
