@@ -141,16 +141,3 @@ GET /set-both
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 
-
-
-=== TEST 10: use dollar in inline lua
---- config
-    location = /set {
-        set $a 12;
-        set_by_lua $a "return 'x$$x'";
-        echo "a = $a";
-    }
---- request
-GET /set
---- response_body
-a = x$$x
