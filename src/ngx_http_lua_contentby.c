@@ -1,4 +1,4 @@
-#define DDEBUG 1
+#define DDEBUG 0
 
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
