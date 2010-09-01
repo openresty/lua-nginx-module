@@ -722,6 +722,13 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     src = (u_char *) luaL_checklstring(L, 1, &len);
 
+    if (len == 0) {
+        dst = (u_char *) "''";
+        dlen = sizeof("''") - 1;
+        lua_pushlstring(L, (char *) dst, dlen);
+        return 1;
+    }
+
     escape = ngx_http_lua_ngx_escape_sql_str(NULL, src, len);
 
     dlen = len + escape;

@@ -141,3 +141,16 @@ GET /set-both
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 
+
+
+=== TEST 10: set quote sql str
+--- config
+    location = /set {
+        set $a "";
+        set_by_lua $a "return ngx.quote_sql_str(ngx.var.a)";
+        echo $a;
+    }
+--- request
+GET /set
+--- response_body
+''
