@@ -93,6 +93,9 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
+    lua_setfield(L, -2, "md5");
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 
@@ -109,10 +112,24 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
 ngx_int_t
 ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
-        ngx_http_variable_value_t *args, size_t nargs)
+        ngx_http_variable_value_t *v, size_t nargs, ngx_str_t data)
 {
     size_t i;
     ngx_int_t rc;
+    ngx_http_variable_value_t       *args, *pad;
+    pad = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
+    if (pad == NULL) {
+        return NGX_ERROR;
+    }
+
+    pad->data   = data.data;
+    pad->len    = data.len;
+    args        = pad;
+    nargs ++;
+
+    for (i = 0; i < nargs; i++) {
+        args[i+1] = v[i];
+    }
 
     /*  set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
