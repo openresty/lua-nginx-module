@@ -26,11 +26,6 @@ typedef struct {
 } ngx_http_lua_main_conf_t;
 
 typedef struct {
-    ngx_str_t        str;
-    ngx_uint_t       nargs;
-} ngx_http_lua_setby_data_t;
-
-typedef struct {
     ngx_str_t src;    /*  content_by_lua inline script / script file path */
 } ngx_http_lua_loc_conf_t;
 

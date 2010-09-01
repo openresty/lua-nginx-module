@@ -27,8 +27,6 @@ int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 
 int ngx_http_lua_ngx_quote_sql_str(lua_State *L);
 
-int ngx_http_lua_ngx_md5(lua_State *L);
-
 int ngx_http_lua_ngx_location_capture(lua_State *L);
 
 

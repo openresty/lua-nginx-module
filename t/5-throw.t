@@ -1,11 +1,11 @@
-# vi:ft=
+# vi:ft=perl
 
 use lib 'lib';
 use Test::Nginx::Socket;
 
 #repeat_each(20000);
+#repeat_each(2);
 repeat_each(2);
-#repeat_each(1);
 master_on();
 workers(1);
 #log_level('debug');
@@ -13,6 +13,9 @@ log_level('warn');
 #worker_connections(1024);
 
 plan tests => blocks() * repeat_each() * 2;
+
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -105,17 +108,81 @@ GET /api?user=agentz
 
 
 
-=== TEST 6: working with ngx_auth_request (simplest form)
-db init:
-
-create table conv_uid(id serial primary key, new_uid integer, old_uid integer);
-
-insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
-
+=== TEST 6: working with ngx_auth_request (simplest form, w/o ngx_memc)
 --- http_config
     upstream backend {
-        drizzle_server 127.0.0.1:3306 dbname=test
-             password=some_pass user=monty protocol=mysql;
+        drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
+                       dbname=ngx_test user=ngx_test password=ngx_test;
+        drizzle_keepalive max=300 mode=single overflow=ignore;
+    }
+
+    lua_package_cpath '/home/lz/luax/?.so';
+--- config
+    location /memc {
+        internal;
+
+        set $memc_key $arg_key;
+        set $memc_exptime $arg_exptime;
+
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /conv-uid-mysql {
+        internal;
+
+        set $key "conv-uid-$arg_uid";
+
+        #srcache_fetch GET /memc key=$key;
+        #srcache_store PUT /memc key=$key;
+
+        default_type 'application/json';
+
+        drizzle_query "select new_uid as uid from conv_uid where old_uid=$arg_uid";
+        drizzle_pass backend;
+
+        rds_json on;
+    }
+
+    location /conv-uid {
+        internal;
+        content_by_lua_file 'html/foo.lua';
+    }
+    location /api {
+        set $uid $arg_uid;
+        auth_request /conv-uid;
+
+        echo "Logged in $uid";
+    }
+--- user_files
+>>> foo.lua
+local yajl = require('yajl');
+local old_uid = ngx.var.uid
+-- print('about to run sr')
+local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
+-- print('just have run sr' .. res.body)
+if (res.status ~= ngx.HTTP_OK) then
+    ngx.throw_error(res.status)
+end
+res = yajl.to_value(res.body)
+if (not res or not res[1] or not res[1].uid or
+        not string.match(res[1].uid, '^%d+$')) then
+    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+end
+ngx.var.uid = res[1].uid;
+-- print('done')
+--- request
+GET /api?uid=32
+--- response_body
+Logged in 56
+--- skip_nginx: 2: >= 0.8.42
+
+
+
+=== TEST 7: working with ngx_auth_request (simplest form)
+--- http_config
+    upstream backend {
+        drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
+                       dbname=ngx_test user=ngx_test password=ngx_test;
         drizzle_keepalive max=300 mode=single overflow=ignore;
     }
 
@@ -127,7 +194,7 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
         set $memc_key $arg_key;
         set $memc_exptime $arg_exptime;
 
-        memc_pass 127.0.0.1:11984;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /conv-uid-mysql {
@@ -181,26 +248,20 @@ Logged in 56
 
 
 
-=== TEST 7: working with ngx_auth_request
-db init:
-
-create table conv_uid(id serial primary key, new_uid integer, old_uid integer);
-
-insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
-
+=== TEST 8: working with ngx_auth_request
 --- http_config
     upstream backend {
-        drizzle_server 127.0.0.1:3306 dbname=test
-             password=some_pass user=monty protocol=mysql;
+        drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
+                       dbname=ngx_test user=ngx_test password=ngx_test;
         drizzle_keepalive max=300 mode=single overflow=ignore;
     }
 
     upstream memc_a {
-        server 127.0.0.1:11984;
+        server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     upstream memc_b {
-        server 127.0.0.1:11211;
+        server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     upstream_list memc_cluster memc_a memc_b;
@@ -268,16 +329,16 @@ Logged in 56
 
 
 
-=== TEST 8: working with ngx_auth_request
+=== TEST 9: working with ngx_auth_request
 --- http_config
     upstream backend {
-        drizzle_server 127.0.0.1:3306 dbname=test
-             password=some_pass user=monty protocol=mysql;
+        drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
+                       dbname=ngx_test user=ngx_test password=ngx_test;
         drizzle_keepalive max=300 mode=single overflow=ignore;
     }
 
     upstream memc_a {
-        server 127.0.0.1:11984;
+        server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
         keepalive 300 single;
     }
 
