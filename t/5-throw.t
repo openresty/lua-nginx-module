@@ -116,7 +116,7 @@ GET /api?user=agentz
         drizzle_keepalive max=300 mode=single overflow=ignore;
     }
 
-    lua_package_cpath '/home/lz/luax/?.so';
+    lua_package_cpath '/home/lz/luax/?.so;/usr/local/lib/lua/5.1/?.so';
 --- config
     location /memc {
         internal;
