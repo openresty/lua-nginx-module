@@ -1,4 +1,4 @@
-# vi:ft=
+# vi:ft=perl
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -6,7 +6,7 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(120);
+repeat_each(2);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2 + 1);
