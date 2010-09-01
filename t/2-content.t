@@ -296,3 +296,45 @@ location /set {
 GET /set
 --- response_body
 hello\n\r\'\"\\
+
+
+
+=== TEST 18: use dollar
+--- config
+location /set {
+    content_by_lua '
+        local s = "hello 112";
+        ngx.say(string.find(s, "%d+$"))';
+}
+--- request
+GET /set
+--- response_body
+79
+
+
+
+=== TEST 19: subrequest share variables
+--- config
+location /sub {
+    echo $a;
+}
+location /parent {
+    set $a 12;
+    content_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
+}
+--- request
+GET /parent
+--- response_body
+12
+
+
+
+=== TEST 20: set md5
+--- config
+    location = /md5 {
+        content_by_lua 'ngx.say(ngx.md5("hello"))';
+    }
+--- request
+GET /md5
+--- response_body
+5d41402abc4b2a76b9719d911017c592

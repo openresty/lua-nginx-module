@@ -1,3 +1,6 @@
+#define DDEBUG 0
+#include "ddebug.h"
+
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -10,8 +13,7 @@ static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data,
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src,
         size_t size, ngx_uint_t type);
-uintptr_t
-ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
+uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
         size_t size);
 
 
@@ -417,9 +419,12 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
         sr->headers_in.headers.last = &sr->headers_in.headers.part;
     }
 
+#if 0
     sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
+#endif
 
+    sr->variables = r->variables;
     if (sr->variables == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -700,6 +705,7 @@ done:
     *src = s;
 }
 
+
 int
 ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 {
@@ -749,6 +755,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     return 1;
 }
+
 
 uintptr_t
 ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
@@ -828,4 +835,41 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
     } /* while (size) */
 
     return (uintptr_t) dst;
+}
+
+
+ngx_int_t
+ngx_http_lua_ngx_md5(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    u_char                  *p = NULL;
+    u_char                  *src;
+    size_t                   len, slen;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    len = MD5_DIGEST_LENGTH * 2;
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &slen);
+
+    p   = ngx_palloc(r->pool, len);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    ndk_md5_lower_hash((char *) p, (char *) src, slen);
+
+    lua_pushlstring(L, (char *) p, len);
+
+    return 1;
 }
