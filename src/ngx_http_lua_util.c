@@ -93,7 +93,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
     lua_State *cr = lua_tothread(L, -1);
     lua_pop(L, 1);
 
-    if(cr && force_quit) {
+    if (cr && force_quit) {
         /* {{{ save orig code closure's env */
         lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
         lua_getfenv(cr, -1);
@@ -108,7 +108,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
         /* {{{ blocking run code till ending */
         do {
             lua_settop(cr, 0);
-        } while(lua_resume(cr, 0) == LUA_YIELD);
+        } while (lua_resume(cr, 0) == LUA_YIELD);
         /* }}} */
 
         /* {{{ restore orig code closure's env */

@@ -4,8 +4,8 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #repeat_each(20000);
+#repeat_each(2);
 repeat_each(2);
-#repeat_each(1);
 master_on();
 workers(1);
 #log_level('debug');
@@ -135,8 +135,8 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
 
         set $key "conv-uid-$arg_uid";
 
-        srcache_fetch GET /memc key=$key;
-        srcache_store PUT /memc key=$key;
+        #srcache_fetch GET /memc key=$key;
+        #srcache_store PUT /memc key=$key;
 
         default_type 'application/json';
 
@@ -178,6 +178,7 @@ GET /api?uid=32
 --- response_body
 Logged in 56
 --- skip_nginx: 2: >= 0.8.42
+--- ONLY
 
 
 
