@@ -119,6 +119,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_set_by_lua_env(L, r, nargs, args);
+    l
 
     /*  passing directive arguments to the user code */
     for (i = 0; i < nargs; i++) {
@@ -138,7 +139,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-	NGX_LUA_EXCEPTION_TRY {
+    NGX_LUA_EXCEPTION_TRY {
         size_t rlen;
         const char *rdata = lua_tolstring(L, -1, &rlen);
 
@@ -156,9 +157,9 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
             val->data = NULL;
             val->len = 0;
         }
-	} NGX_LUA_EXCEPTION_CATCH {
-        dd("NginX execution restored");
-	}
+    } NGX_LUA_EXCEPTION_CATCH {
+    dd("NginX execution restored");
+    }
 
     /*  clear Lua stack */
     lua_settop(L, 0);
