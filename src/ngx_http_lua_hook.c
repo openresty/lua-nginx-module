@@ -838,7 +838,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
 }
 
 
-int
+ngx_int_t
 ngx_http_lua_ngx_md5(lua_State *L)
 {
     ngx_http_request_t      *r;

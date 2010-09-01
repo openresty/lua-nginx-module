@@ -57,7 +57,7 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                        target;
     ndk_set_var_t                    filter;
     ngx_http_lua_setby_data_t       *data = NULL;
-    ngx_str_t                        pad = ngx_null_string;
+    ngx_str_t                        pad;
 
     data = ngx_palloc(cf->pool, sizeof(ngx_http_lua_setby_data_t));
     if (data == NULL) {
