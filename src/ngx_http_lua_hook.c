@@ -419,7 +419,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
 #if 0
     sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
-
 #endif
 
     sr->variables   = r->variables;
@@ -833,4 +832,41 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
     } /* while (size) */
 
     return (uintptr_t) dst;
+}
+
+
+int
+ngx_http_lua_ngx_md5(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    u_char                  *p = NULL;
+    u_char                  *src;
+    size_t                   len, slen;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    len = MD5_DIGEST_LENGTH * 2;
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &slen);
+
+    p   = ngx_palloc(r->pool, len);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    ndk_md5_lower_hash((char *) p, (char *) src, slen);
+
+    lua_pushlstring(L, (char *) p, len);
+
+    return 1;
 }

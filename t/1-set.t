@@ -141,3 +141,15 @@ GET /set-both
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 
+
+
+=== TEST 10: set md5
+--- config
+    location = /md5 {
+        set_by_lua $a 'return ngx.md5("hello")';
+        echo $a;
+    }
+--- request
+GET /md5
+--- response_body
+5d41402abc4b2a76b9719d911017c592
