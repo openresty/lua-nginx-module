@@ -93,6 +93,9 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
+    lua_setfield(L, -2, "md5");
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 
