@@ -119,7 +119,7 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
         drizzle_keepalive max=300 mode=single overflow=ignore;
     }
 
-    lua_package_cpath '/home/lz/luax/?.so';
+    lua_package_cpath '/home/lz/luax/?.so;/usr/local/lib/lua/5.1/?.so';
 --- config
     location /memc {
         internal;
@@ -205,7 +205,7 @@ insert into conv_uid(old_uid,new_uid)values(32,56),(35,78);
 
     upstream_list memc_cluster memc_a memc_b;
 
-    lua_package_cpath '/home/lz/luax/?.so';
+    lua_package_cpath '/home/lz/luax/?.so;/usr/local/lib/lua/5.1/?.so';
 --- config
     location /memc {
         internal;
@@ -283,7 +283,7 @@ Logged in 56
 
     #upstream_list memc_cluster memc_a memc_b;
 
-    lua_package_cpath '/home/lz/luax/?.so';
+    lua_package_cpath '/home/lz/luax/?.so;/usr/local/lib/lua/5.1/?.so';
 --- config
     location /memc {
         internal;
