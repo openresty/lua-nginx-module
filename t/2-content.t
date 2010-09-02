@@ -313,7 +313,7 @@ GET /set
 
 
 
-=== TEST 19: subrequest share variables
+=== TEST 19: subrequest share variables of main request
 --- config
 location /sub {
     echo $a;
@@ -326,3 +326,19 @@ location /parent {
 GET /parent
 --- response_body
 12
+
+
+
+=== TEST 20: main request use subrequest's variable
+--- config
+location /sub {
+    set $a 12;
+}
+location /parent {
+    content_by_lua 'res = ngx.location.capture("/sub"); ngx.say(ngx.var.a)';
+}
+--- request
+GET /parent
+--- response_body
+12
+
