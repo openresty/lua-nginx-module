@@ -155,7 +155,9 @@ GET /set
 --- response_body
 ''
 
-=== TEST 10: set md5
+
+
+=== TEST 11: set md5
 --- config
     location = /md5 {
         set_by_lua $a 'return ngx.md5("hello")';
