@@ -857,7 +857,12 @@ ngx_http_lua_ngx_md5(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    src = (u_char *) luaL_checklstring(L, 1, &slen);
+    if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
+        src     = (u_char *) "";
+        slen    = 0;
+    } else {
+        src = (u_char *) luaL_checklstring(L, 1, &slen);
+    }
 
     p   = ngx_palloc(r->pool, len);
     if (p == NULL) {
