@@ -7,6 +7,7 @@ repeat_each(1);
 
 plan tests => repeat_each() * blocks();
 
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
 our $http_config = <<'_EOC_';
@@ -60,3 +61,18 @@ GET /init
 GET /init
 --- error_code: 200
 --- timeout: 10
+
+
+
+=== TEST 4: flush testing memcached
+--- http
+--- config
+	location = /init {
+		set $memc_cmd flush_all;
+		memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+	}
+--- request
+GET /init
+--- error_code: 200
+--- timeout: 10
+
