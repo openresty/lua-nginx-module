@@ -5,8 +5,9 @@ use Test::Nginx::Socket;
 
 repeat_each(1);
 
-plan tests => repeat_each() * blocks();
+plan tests => repeat_each() * (blocks() + 1 * 1);
 
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
 our $http_config = <<'_EOC_';
@@ -59,4 +60,20 @@ GET /init
 --- request
 GET /init
 --- error_code: 200
+--- timeout: 10
+
+
+
+=== TEST 4: flush data from memcached
+--- config
+    location /flush {
+        set $memc_cmd flush_all;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+--- request
+GET /flush
+--- error_code: 200
+--- response_body eval
+"OK\r
+"
 --- timeout: 10
