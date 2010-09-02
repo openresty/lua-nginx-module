@@ -214,6 +214,13 @@ Test Suite
 
     To run the test suite, you need the following nginx modules:
 
+	test-nginx: http://github.com/agentzh/test-nginx
+	echo-nginx-module: http://github.com/agentzh/echo-nginx-module
+	drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module
+	rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module
+	set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module
+	memc-nginx-module: http://github.com/agentzh/memc-nginx-module
+	srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
     ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
 
 TODO
