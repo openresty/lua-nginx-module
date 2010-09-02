@@ -50,3 +50,42 @@ GET /md5
 --- response_body
 d41d8cd98f00b204e9800998ecf8427e
 
+
+
+=== TEST 4: use ngx.md5 in set_by_lua
+--- config
+    location = /md5 {
+        set_by_lua $a 'return ngx.md5("hello")';
+        echo $a;
+    }
+--- request
+GET /md5
+--- response_body
+5d41402abc4b2a76b9719d911017c592
+
+
+
+=== TEST 5: use ngx.md5 in set_by_lua (nil)
+--- config
+    location = /md5 {
+        set_by_lua $a 'return ngx.md5(nil)';
+        echo $a;
+    }
+--- request
+GET /md5
+--- response_body
+d41d8cd98f00b204e9800998ecf8427e
+
+
+
+=== TEST 6: use ngx.md5 in set_by_lua (null string)
+--- config
+    location /md5 {
+        set_by_lua $a 'return ngx.md5("")';
+        echo $a;
+    }
+--- request
+GET /md5
+--- response_body
+d41d8cd98f00b204e9800998ecf8427e
+
