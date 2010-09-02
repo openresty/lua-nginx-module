@@ -243,7 +243,6 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
---- skip_nginx: 2: >= 0.8.42
 
 
 
