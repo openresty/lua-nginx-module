@@ -223,6 +223,19 @@ Test Suite
 	srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
     ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
 
+	These module's adding order is IMPORTANT! For filter modules's position in
+	filtering chain affects a lot. The correct configure adding order is:
+
+	1. ngx_devel_kit
+	2. set-misc-nginx-module
+	3. ngx_http_auth_request_module
+	4. echo-nginx-module
+	5. memc-nginx-module
+	6. lua-nginx-module (i.e. this module)
+	7. srcache-nginx-module
+	8. drizzle-nginx-module
+	9. rds-json-nginx-module
+
 TODO
 
 Known Issues
