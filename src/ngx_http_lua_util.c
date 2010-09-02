@@ -317,6 +317,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
+    lua_setfield(L, -2, "get_today");
+
     lua_newtable(L);
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");

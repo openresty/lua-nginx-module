@@ -882,3 +882,43 @@ ngx_http_lua_ngx_md5(lua_State *L)
 
     return 1;
 }
+
+
+int
+ngx_http_lua_ngx_get_today(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    u_char                  *p;
+    size_t                   len;
+    time_t                   now;
+    ngx_tm_t                 tm;
+
+    len = sizeof("xxxx-xx-xx") - 1;
+    now = ngx_time();
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    p = ngx_palloc(r->pool, len);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_gmtime(now + ngx_cached_time->gmtoff * 60, &tm);
+
+    ngx_sprintf(p, "%04d-%02d-%02d", tm.ngx_tm_year, tm.ngx_tm_mon,
+            tm.ngx_tm_mday);
+
+    if (lua_gettop(L) > 0) {
+        return luaL_error(L, "shouldn't have argument");
+    }
+
+    lua_pushlstring(L, (char *) p, len);
+
+    return 1;
+}
