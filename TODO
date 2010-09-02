@@ -3,6 +3,7 @@ Problems:
 	* package globals occasional missing in content_by_lua
 
 Current:
+	* add ngx.log(level, ...) to output contents to nginx error log, 'level' could be one of ngx.LOG_INFO/ngx.LOG_WARN/ngx.LOG_ERR
 	* include original path/cpath instead of override them all for lua_package_path/cpath
 	* add directives to run lua codes when nginx stops/reloads
 	* implement ngx.exec() functionality
