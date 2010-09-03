@@ -284,6 +284,23 @@ See TODO file.
 
 # Known Issues
 
+* Globals won't persist between requests, due to the one-coroutine-per-request
+designing. Especially watch yourself when using `require()` to import modules,
+use this form:
+
+	local xxx = require('xxx')
+
+instead of the old deprecated form:
+
+	require('xxx')
+
+The old form will cause module unusable in requests for the reason told
+previously. If you have to stick with the old form, you can always force
+loading module for every request by clean `package.loaded.<module>`, like this:
+
+	package.loaded.xxx = nil
+	require('xxx')
+
 # See Also
 
 * ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
