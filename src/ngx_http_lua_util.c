@@ -3,14 +3,14 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 
-#define LUA_PATH_SEP ";"
-#define AUX_MARK "\1"
-
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
 static void inject_log_consts(lua_State *L);
 static void setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def);
+
+#define LUA_PATH_SEP ";"
+#define AUX_MARK "\1"
 
 static void
 setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def)
@@ -311,6 +311,7 @@ init_ngx_lua_registry(lua_State *L)
 static void
 inject_http_consts(lua_State *L)
 {
+    /* {{{ HTTP status constants */
     lua_pushinteger(L, 200);
     lua_setfield(L, -2, "HTTP_OK");
 
@@ -346,11 +347,13 @@ inject_http_consts(lua_State *L)
 
     lua_pushinteger(L, 503);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
+    /* }}} */
 }
 
 static void
 inject_log_consts(lua_State *L)
 {
+    /* {{{ NginX log level constants */
     lua_pushinteger(L, NGX_LOG_STDERR);
     lua_setfield(L, -2, "STDERR");
 
@@ -377,6 +380,7 @@ inject_log_consts(lua_State *L)
 
     lua_pushinteger(L, NGX_LOG_DEBUG);
     lua_setfield(L, -2, "DEBUG");
+    /* }}} */
 }
 
 static void
