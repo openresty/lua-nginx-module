@@ -247,7 +247,7 @@ The following versions of Nginx should work with this module:
 *   0.8.x (last tested version is 0.8.47)
 *   0.7.x >= 0.7.46 (last tested version is 0.7.67)
 
-Earlier versions of Nginx like 0.6.x and 0.5.x will *not* work.
+Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 
 If you find that any particular version of Nginx above 0.7.44 does not
 work with this module, please consider reporting a bug.
@@ -256,14 +256,14 @@ work with this module, please consider reporting a bug.
 
 To run the test suite, you need the following nginx modules:
 
-test-nginx: http://github.com/agentzh/test-nginx
-echo-nginx-module: http://github.com/agentzh/echo-nginx-module
-drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module
-rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module
-set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module
-memc-nginx-module: http://github.com/agentzh/memc-nginx-module
-srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
-ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
+* test-nginx: http://github.com/agentzh/test-nginx
+* echo-nginx-module: http://github.com/agentzh/echo-nginx-module
+* drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module
+* rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module
+* set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module
+* memc-nginx-module: http://github.com/agentzh/memc-nginx-module
+* srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
+* ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
 
 These module's adding order is IMPORTANT! For filter modules's position in
 filtering chain affects a lot. The correct configure adding order is:
@@ -279,6 +279,8 @@ filtering chain affects a lot. The correct configure adding order is:
 9. rds-json-nginx-module
 
 # TODO
+
+See [TODO](/TODO) file.
 
 # Known Issues
 
