@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #ifndef NGX_HTTP_LUA_CLFACTORY_H__
 #define NGX_HTTP_LUA_CLFACTORY_H__
 

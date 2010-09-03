@@ -1,13 +1,30 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #define DDEBUG 0
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 
+#define LUA_PATH_SEP ";"
+#define AUX_MARK "\1"
 
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
 static void inject_log_consts(lua_State *L);
+static void setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def);
 
+static void
+setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def)
+{
+    const char *tmp_path;
+
+    tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
+    luaL_gsub(L, tmp_path, AUX_MARK, def);
+    lua_remove(L, -2);
+
+    /* fix negative index as there's new data on stack */
+    tab_idx = (tab_idx < 0) ? (tab_idx - 1) : tab_idx;
+    lua_setfield(L, tab_idx, fieldname);
+}
 
 lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
@@ -28,15 +45,33 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     }
 
     if (lmcf->lua_path.len != 0) {
-        lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
+        const char *old_path;
+        const char *new_path;
 
-        lua_setfield(L, -2, "path");
+        lua_getfield(L, -1, "path"); /* get original package.path */
+        old_path = lua_tostring(L, -1);
+
+        lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
+        new_path = lua_tostring(L, -1);
+
+        setpath(L, -3, "path", new_path, old_path);
+
+        lua_pop(L, 2);
     }
 
     if (lmcf->lua_cpath.len != 0) {
-        lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
+        const char *old_cpath;
+        const char *new_cpath;
 
-        lua_setfield(L, -2, "cpath");
+        lua_getfield(L, -1, "cpath"); /* get original package.cpath */
+        old_cpath = lua_tostring(L, -1);
+
+        lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
+        new_cpath = lua_tostring(L, -1);
+
+        setpath(L, -3, "cpath", new_cpath, old_cpath);
+
+        lua_pop(L, 2);
     }
 
 
@@ -316,32 +351,32 @@ inject_http_consts(lua_State *L)
 static void
 inject_log_consts(lua_State *L)
 {
-	lua_pushinteger(L, NGX_LOG_STDERR);
-	lua_setfield(L, -2, "STDERR");
+    lua_pushinteger(L, NGX_LOG_STDERR);
+    lua_setfield(L, -2, "STDERR");
 
-	lua_pushinteger(L, NGX_LOG_EMERG);
-	lua_setfield(L, -2, "EMERG");
+    lua_pushinteger(L, NGX_LOG_EMERG);
+    lua_setfield(L, -2, "EMERG");
 
-	lua_pushinteger(L, NGX_LOG_ALERT);
-	lua_setfield(L, -2, "ALERT");
+    lua_pushinteger(L, NGX_LOG_ALERT);
+    lua_setfield(L, -2, "ALERT");
 
-	lua_pushinteger(L, NGX_LOG_CRIT);
-	lua_setfield(L, -2, "CRIT");
+    lua_pushinteger(L, NGX_LOG_CRIT);
+    lua_setfield(L, -2, "CRIT");
 
-	lua_pushinteger(L, NGX_LOG_ERR);
-	lua_setfield(L, -2, "ERR");
+    lua_pushinteger(L, NGX_LOG_ERR);
+    lua_setfield(L, -2, "ERR");
 
-	lua_pushinteger(L, NGX_LOG_WARN);
-	lua_setfield(L, -2, "WARN");
+    lua_pushinteger(L, NGX_LOG_WARN);
+    lua_setfield(L, -2, "WARN");
 
-	lua_pushinteger(L, NGX_LOG_NOTICE);
-	lua_setfield(L, -2, "NOTICE");
+    lua_pushinteger(L, NGX_LOG_NOTICE);
+    lua_setfield(L, -2, "NOTICE");
 
-	lua_pushinteger(L, NGX_LOG_INFO);
-	lua_setfield(L, -2, "INFO");
+    lua_pushinteger(L, NGX_LOG_INFO);
+    lua_setfield(L, -2, "INFO");
 
-	lua_pushinteger(L, NGX_LOG_DEBUG);
-	lua_setfield(L, -2, "DEBUG");
+    lua_pushinteger(L, NGX_LOG_DEBUG);
+    lua_setfield(L, -2, "DEBUG");
 }
 
 static void
@@ -369,8 +404,8 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_say);
     lua_setfield(L, -2, "say");
 
-	lua_pushcfunction(L, ngx_http_lua_ngx_log);
-	lua_setfield(L, -2, "log");
+    lua_pushcfunction(L, ngx_http_lua_ngx_log);
+    lua_setfield(L, -2, "log");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_throw_error);
     lua_setfield(L, -2, "throw_error");
@@ -402,8 +437,8 @@ init_ngx_lua_globals(lua_State *L)
     lua_setfield(L, -2, "location");
     /* }}} */
 
-	inject_http_consts(L);
-	inject_log_consts(L);
+    inject_http_consts(L);
+    inject_log_consts(L);
 
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */

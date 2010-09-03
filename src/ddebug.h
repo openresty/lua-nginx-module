@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #ifndef DDEBUG_H
 #define DDEBUG_H
 

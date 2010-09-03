@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_filter.h"

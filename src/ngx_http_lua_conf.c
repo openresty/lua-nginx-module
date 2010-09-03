@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_util.h"
 
@@ -108,5 +109,4 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     return NGX_CONF_OK;
 }
 
-// vi:ts=4 sw=4 fdm=marker
 

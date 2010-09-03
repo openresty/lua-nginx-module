@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #define DDEBUG 0
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_hook.h"
@@ -144,7 +145,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-	NGX_LUA_EXCEPTION_TRY {
+    NGX_LUA_EXCEPTION_TRY {
         size_t rlen;
         const char *rdata = lua_tolstring(L, -1, &rlen);
 
@@ -162,9 +163,9 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
             val->data = NULL;
             val->len = 0;
         }
-	} NGX_LUA_EXCEPTION_CATCH {
+    } NGX_LUA_EXCEPTION_CATCH {
         dd("NginX execution restored");
-	}
+    }
 
     /*  clear Lua stack */
     lua_settop(L, 0);

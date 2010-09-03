@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -44,19 +45,19 @@ ngx_http_lua_atpanic(lua_State *L)
     }
 
     /*  restore nginx execution */
-	NGX_LUA_EXCEPTION_THROW(1);
+    NGX_LUA_EXCEPTION_THROW(1);
 }
 
 static void
 log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 {
-	const char *s;
+    const char *s;
 
-	/*  XXX: easy way to support multiple args, any serious performance penalties? */
-	lua_concat(L, lua_gettop(L));
-	s = lua_tostring(L, -1);
+    /*  XXX: easy way to support multiple args, any serious performance penalties? */
+    lua_concat(L, lua_gettop(L));
+    s = lua_tostring(L, -1);
 
-	ngx_log_error(level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
+    ngx_log_error(level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
 }
 
 /**
@@ -76,12 +77,12 @@ ngx_http_lua_ngx_log(lua_State *L)
     lua_pop(L, 1);
 
     if(r && r->connection && r->connection->log) {
-		int level = luaL_checkint(L, 1);
+        int level = luaL_checkint(L, 1);
 
-		// remove log-level param from stack
-		lua_remove(L, 1);
+        // remove log-level param from stack
+        lua_remove(L, 1);
 
-		log_wrapper(r, "lua-log", level, L);
+        log_wrapper(r, "lua-log", level, L);
     } else {
         dd("(lua-log) can't output log due to invalid logging context!");
     }
@@ -106,7 +107,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if(r && r->connection && r->connection->log) {
-		log_wrapper(r, "lua-print", NGX_LOG_ERR, L);
+        log_wrapper(r, "lua-print", NGX_LOG_ERR, L);
     } else {
         dd("(lua-print) can't output print content to error log due to invalid logging context!");
     }

@@ -1,4 +1,4 @@
-# vi:ft=perl
+# vim:set ft=perl ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 

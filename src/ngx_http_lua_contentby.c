@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #define DDEBUG 0
 
 #include "ngx_http_lua_contentby.h"
@@ -324,7 +325,4 @@ error:
 
     return;
 }
-
-/*  vi:ts=4 sw=4 fdm=marker
-*/
 

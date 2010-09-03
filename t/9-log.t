@@ -1,10 +1,10 @@
-# vi:ft=perl
+# vim:set ft=perl ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-log_level('debug');	# to ensure any log-level can be outputed
+log_level('debug'); # to ensure any log-level can be outputed
 
 repeat_each(1);
 
@@ -20,10 +20,10 @@ __DATA__
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.STDERR, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.STDERR, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -37,10 +37,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.EMERG, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.EMERG, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -54,10 +54,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.ALERT, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.ALERT, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -71,10 +71,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.CRIT, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.CRIT, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -88,10 +88,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.ERR, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.ERR, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -105,10 +105,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.WARN, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.WARN, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -122,10 +122,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.NOTICE, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.NOTICE, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -139,10 +139,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.INFO, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.INFO, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -156,10 +156,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			ngx.log(ngx.DEBUG, "hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            ngx.log(ngx.DEBUG, "hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log
@@ -173,10 +173,10 @@ after log
 --- config
     location /log {
         content_by_lua '
-			ngx.say("before log")
-			print("hello, log", 1234, 3.14159)
-			ngx.say("after log")
-		';
+            ngx.say("before log")
+            print("hello, log", 1234, 3.14159)
+            ngx.say("after log")
+        ';
     }
 --- request
 GET /log

@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #ifndef NGX_HTTP_LUA_FILTER_H__
 #define NGX_HTTP_LUA_FILTER_H__
 
@@ -7,5 +8,4 @@ extern ngx_int_t ngx_http_lua_filter_init(ngx_conf_t *cf);
 
 #endif
 
-// vi:ts=4 sw=4 fdm=marker
 

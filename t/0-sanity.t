@@ -1,4 +1,4 @@
-# vi:ft=perl
+# vim:set ft=perl ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -12,9 +12,9 @@ __DATA__
 
 === TEST 1: sanity (integer)
 --- config
-	location /lua {
-		echo 2;
-	}
+    location /lua {
+        echo 2;
+    }
 --- request
 GET /lua
 --- response_body
@@ -24,9 +24,9 @@ GET /lua
 
 === TEST 2: sanity (string)
 --- config
-	location /lua {
-		echo "helloworld";
-	}
+    location /lua {
+        echo "helloworld";
+    }
 --- request
 GET /lua
 --- response_body

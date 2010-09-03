@@ -1,3 +1,4 @@
+/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 #ifndef NGX_HTTP_LUA_CONF_H__
 #define NGX_HTTP_LUA_CONF_H__
 
@@ -11,5 +12,4 @@ extern char* ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *chi
 
 #endif
 
-// vi:ts=4 sw=4 fdm=marker
 

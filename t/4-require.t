@@ -1,4 +1,4 @@
-# vi:ft=
+# vim:set ft=perl ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -34,9 +34,10 @@ __DATA__
 
     location /load {
         content_by_lua '
-            package.loaded.foo = null;
+            package.loaded.foo = nil;
             local foo = require "foo";
-            foo.hi()';
+            foo.hi()
+        ';
     }
 
     location /check {
@@ -84,4 +85,64 @@ hello, foo
 GET /main
 --- user_files
 --- response_body_like: ^[^;]+/servroot/html/\?.so$
+
+
+
+=== TEST 3: expand default path (after)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;;';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.path);
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: ^[^;]+/servroot/html/\?.lua;.+\.lua;$
+
+
+
+=== TEST 4: expand default cpath (after)
+--- http_config eval
+    "lua_package_cpath '$::HtmlDir/?.so;;';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.cpath);
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: ^[^;]+/servroot/html/\?.so;.+\.so;$
+
+
+
+=== TEST 5: expand default path (before)
+--- http_config eval
+    "lua_package_path ';;$::HtmlDir/?.lua';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.path);
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: ^.+\.lua;[^;]+/servroot/html/\?.lua$
+
+
+
+=== TEST 6: expand default cpath (before)
+--- http_config eval
+    "lua_package_cpath ';;$::HtmlDir/?.so';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.cpath);
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: ^.+\.so;[^;]+/servroot/html/\?.so$
 
