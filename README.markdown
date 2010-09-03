@@ -1,7 +1,9 @@
 # Name
-## lua-nginx-module - Embed the power of Lua into nginx
+
+lua-nginx-module - Embed the power of Lua into nginx
 
 # Status
+
 This module is at its early phase of development but is already production
 ready :)
 
@@ -11,10 +13,10 @@ Commit bit can be freely delivered at your request ;)
 
    # set search paths for pure Lua external libraries (';;' is the default path):
    lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
-
+	
    # set search paths for Lua external libraries written in C (can also use ';;'):
    lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
-
+	
    server {
         location /inline_concat {
             # MIME type determined by default_type:
@@ -94,178 +96,211 @@ Commit bit can be freely delivered at your request ;)
         }
 
 # Description
-## APIs
-### Nginx APIs for set_by_lua*
 
-read and write arbitrary nginx variables by name:
+## Nginx APIs for set_by_lua*
+
+Read and write arbitrary nginx variables by name:
 
 	value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
 
-index the input arguments to the directive
+Index the input arguments to the directive:
 
     value = ngx.arg[n]
 
-### Nginx APIs for content_by_lua*
-        -- read and write arbitrary nginx variables by name:
-        value = ngx.var.some_nginx_variable_name
-        ngx.var.some_nginx_variable_name = value
+## Nginx APIs for content_by_lua*
 
-        value = ngx.HTTP_OK
-        value = ngx.HTTP_CREATED
-        value = ngx.HTTP_MOVED_PERMANENTLY
-        value = ngx.HTTP_MOVED_TEMPORARILY
-        value = ngx.HTTP_NOT_MODIFIED
-        value = ngx.HTTP_BAD_REQUEST
-        value = ngx.HTTP_GONE
-        value = ngx.HTTP_NOT_FOUND
-        value = ngx.HTTP_NOT_ALLOWED
-        value = ngx.HTTP_FORBIDDEN
-        value = ngx.HTTP_INTERNAL_SERVER_ERROR
-        value = ngx.HTTP_SERVICE_UNAVAILABLE
+### Read and write NginX variables
 
-        print(a, b, ...) -- emit args concatenated to error.log
+    value = ngx.var.some_nginx_variable_name
+    ngx.var.some_nginx_variable_name = value
 
-        ngx.send_headers() -- explicitly send headers
+### HTTP status constants
 
-        ngx.print(a, b, ...) -- emit args concatenated to the HTTP client
-                -- (as response body)
+	value = ngx.HTTP_OK
+	value = ngx.HTTP_CREATED
+	value = ngx.HTTP_MOVED_PERMANENTLY
+	value = ngx.HTTP_MOVED_TEMPORARILY
+	value = ngx.HTTP_NOT_MODIFIED
+	value = ngx.HTTP_BAD_REQUEST
+	value = ngx.HTTP_GONE
+	value = ngx.HTTP_NOT_FOUND
+	value = ngx.HTTP_NOT_ALLOWED
+	value = ngx.HTTP_FORBIDDEN
+	value = ngx.HTTP_INTERNAL_SERVER_ERROR
+	value = ngx.HTTP_SERVICE_UNAVAILABLE
 
-		log_level = ngx.STDERR
-		log_level = ngx.EMERG
-		log_level = ngx.ALERT
-		log_level = ngx.CRIT
-		log_level = ngx.ERR
-		log_level = ngx.WARN
-		log_level = ngx.NOTICE
-		log_level = ngx.INFO
-		log_level = ngx.DEBUG
+### print(a, b, ...)
 
-		ngx.log(log_level, ...) -- log args concatenated to error.log with the given log level
+Emit args concatenated to error.log
 
-        ngx.say(a, b, ...) -- just as ngx.print but also emit a trailing newline
+### ngx.send_headers()
 
-        ngx.flush() -- force flushing the response outputs
+Explicitly send headers
 
-        ngx.throw_error(status) -- throw out an error page and interrupts
-                -- the execution of the current Lua thread,
-                -- status can be ngx.HTTP_NOT_FOUND or other
-                -- HTTP status numbers
+### ngx.print(a, b, ...)
 
-        ngx.eof() -- explicitly specify the end of the response output stream
+Emit args concatenated to the HTTP client (as response body)
 
-        newstr = ngx.escape_uri(str) -- escape str as a URI component
+### NginX log level constants
 
-        newstr = ngx.unescape_uri(str) -- unescape str as a escaped URI component
+	log_level = ngx.STDERR
+	log_level = ngx.EMERG
+	log_level = ngx.ALERT
+	log_level = ngx.CRIT
+	log_level = ngx.ERR
+	log_level = ngx.WARN
+	log_level = ngx.NOTICE
+	log_level = ngx.INFO
+	log_level = ngx.DEBUG
 
-        res = ngx.location.capture(uri) -- issue a synchronous but still
-                -- non-blocking subrequest using uri (for example, /foo/bar)
-                -- returns a Lua table with two slots,
-                -- i.e., res.status and res.body.
+### ngx.log(log_level, ...)
 
-Performance
-    The Lua state (aka the Lua vm instance) is shared across all the requests
-    handled by a single nginx worker process to miminize memory use.
+Log args concatenated to error.log with the given log level
 
-    On a ThinkPad T400 2.96 GHz laptop, it's easy to achieve 25k req/sec using ab
-    w/o keepalive and 37k+ req/sec with keepalive.
+### ngx.say(a, b, ...)
 
-    You can get better performance when building this module
-    with LuaJIT 2.0.
+Just as ngx.print but also emit a trailing newline
 
-Installation
-    1. Install lua into your system. At least Lua 5.1 is required.
+### ngx.flush()
 
-    Lua can be obtained freely from its project homepage:
+Force flushing the response outputs
 
-        http://www.lua.org/
+### ngx.throw_error(status)
 
-    2. Download the latest version of the release tarball of this module from
-    lua-nginx-module file list
-    (<http://github.com/chaoslawful/lua-nginx-module/downloads >).
+Throw out an error page and interrupts the execution of the current Lua thread,
+status can be ngx.HTTP_NOT_FOUND or other HTTP status numbers
 
-    3. Grab the nginx source code from nginx.net (<http://nginx.net/ >), for
-    example, the version 0.8.41 (see nginx compatibility), and then build
-    the source with this module:
+### ngx.eof()
 
-        $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
-        $ tar -xzvf nginx-0.8.41.tar.gz
-        $ cd nginx-0.8.41/
+Explicitly specify the end of the response output stream
 
-        # tell nginx's build system where to find lua:
-        export LUA_LIB=/path/to/lua/lib
-        export LUA_INC=/path/to/lua/include
+### ngx.escape_uri(str)
 
-        # or tell where to find LuaJIT when you want to use JIT instead
-        # export LUAJIT_LIB=/path/to/luajit/lib
-        # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+Escape `str` as a URI component.
 
-        # Here we assume you would install you nginx under /opt/nginx/.
-        $ ./configure --prefix=/opt/nginx \
-            --add-module=/path/to/ndk_devel_kit \
-            --add-module=/path/to/echo-nginx-module \
-            --add-module=/path/to/lua-nginx-module
+    newstr = ngx.escape_uri(str)
 
-        $ make -j2
-        $ make install
+### ngx.unescape_uri(str)
 
-    2. Download the latest version of the release tarball of this module from
-    lua-nginx-module file list
-    (<http://github.com/chaoslawful/lua-nginx-module/downloads >).
+Unescape `str` as a escaped URI component.
 
-Compatibility
-    The following versions of Nginx should work with this module:
+	newstr = ngx.unescape_uri(str)
 
-    *   0.8.x (last tested version is 0.8.47)
+### ngx.location.capture(uri)
 
-    *   0.7.x >= 0.7.46 (last tested version is 0.7.67)
+Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
 
-    Earlier versions of Nginx like 0.6.x and 0.5.x will *not* work.
+	res = ngx.location.capture(uri)
 
-    If you find that any particular version of Nginx above 0.7.44 does not
-    work with this module, please consider reporting a bug.
+Returns a Lua table with two slots (`res.status` and `res.body`).
 
-Test Suite
+# Performance
 
-    To run the test suite, you need the following nginx modules:
+The Lua state (aka the Lua vm instance) is shared across all the requests
+handled by a single nginx worker process to miminize memory use.
 
-	test-nginx: http://github.com/agentzh/test-nginx
-	echo-nginx-module: http://github.com/agentzh/echo-nginx-module
-	drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module
-	rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module
-	set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module
-	memc-nginx-module: http://github.com/agentzh/memc-nginx-module
-	srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
-    ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
+On a ThinkPad T400 2.96 GHz laptop, it's easy to achieve 25k req/sec using ab
+w/o keepalive and 37k+ req/sec with keepalive.
 
-	These module's adding order is IMPORTANT! For filter modules's position in
-	filtering chain affects a lot. The correct configure adding order is:
+You can get better performance when building this module
+with LuaJIT 2.0.
 
-	1. ngx_devel_kit
-	2. set-misc-nginx-module
-	3. ngx_http_auth_request_module
-	4. echo-nginx-module
-	5. memc-nginx-module
-	6. lua-nginx-module (i.e. this module)
-	7. srcache-nginx-module
-	8. drizzle-nginx-module
-	9. rds-json-nginx-module
+# Installation
 
-TODO
+1. Install lua into your system. At least Lua 5.1 is required.
 
-Known Issues
+Lua can be obtained freely from its project homepage:
 
-See Also
+	http://www.lua.org/
 
-    * ngx_devel_kit ( http://github.com/simpl-it/ngx_devel_kit )
-    * echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
+2. Download the latest version of the release tarball of this module from
+lua-nginx-module file list
+(<http://github.com/chaoslawful/lua-nginx-module/downloads >).
 
-Authors
-    chaoslawful (王晓哲) <chaoslawful at gmail dot com>
+3. Grab the nginx source code from nginx.net (<http://nginx.net/ >), for
+example, the version 0.8.41 (see nginx compatibility), and then build
+the source with this module:
 
-    agentzh (章亦春) <agentzh at gmail dot com>
+	$ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
+	$ tar -xzvf nginx-0.8.41.tar.gz
+	$ cd nginx-0.8.41/
 
-Copyright & License
+	# tell nginx's build system where to find lua:
+	export LUA_LIB=/path/to/lua/lib
+	export LUA_INC=/path/to/lua/include
+
+	# or tell where to find LuaJIT when you want to use JIT instead
+	# export LUAJIT_LIB=/path/to/luajit/lib
+	# export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+
+	# Here we assume you would install you nginx under /opt/nginx/.
+	$ ./configure --prefix=/opt/nginx \
+		--add-module=/path/to/ndk_devel_kit \
+		--add-module=/path/to/echo-nginx-module \
+		--add-module=/path/to/lua-nginx-module
+
+	$ make -j2
+	$ make install
+
+2. Download the latest version of the release tarball of this module from
+lua-nginx-module file list
+(<http://github.com/chaoslawful/lua-nginx-module/downloads >).
+
+# Compatibility
+
+The following versions of Nginx should work with this module:
+
+*   0.8.x (last tested version is 0.8.47)
+*   0.7.x >= 0.7.46 (last tested version is 0.7.67)
+
+Earlier versions of Nginx like 0.6.x and 0.5.x will *not* work.
+
+If you find that any particular version of Nginx above 0.7.44 does not
+work with this module, please consider reporting a bug.
+
+# Test Suite
+
+To run the test suite, you need the following nginx modules:
+
+test-nginx: http://github.com/agentzh/test-nginx
+echo-nginx-module: http://github.com/agentzh/echo-nginx-module
+drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module
+rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module
+set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module
+memc-nginx-module: http://github.com/agentzh/memc-nginx-module
+srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module
+ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/
+
+These module's adding order is IMPORTANT! For filter modules's position in
+filtering chain affects a lot. The correct configure adding order is:
+
+1. ngx_devel_kit
+2. set-misc-nginx-module
+3. ngx_http_auth_request_module
+4. echo-nginx-module
+5. memc-nginx-module
+6. lua-nginx-module (i.e. this module)
+7. srcache-nginx-module
+8. drizzle-nginx-module
+9. rds-json-nginx-module
+
+# TODO
+
+# Known Issues
+
+# See Also
+
+* ngx_devel_kit ( http://github.com/simpl-it/ngx_devel_kit )
+* echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
+
+# Authors
+
+* chaoslawful (王晓哲) <chaoslawful at gmail dot com>
+* agentzh (章亦春) <agentzh at gmail dot com>
+
+# Copyright & License
+
     This module is licenced under the BSD license.
 
     Copyright (c) 2009, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
@@ -302,3 +337,4 @@ Copyright & License
     LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
     NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
