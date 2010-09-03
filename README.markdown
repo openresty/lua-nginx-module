@@ -351,7 +351,7 @@ Copyright & License
 
     This module is licenced under the BSD license.
 
-    Copyright (c) 2009, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
+    Copyright (C) 2009, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
 
     Copyright (C) 2009 by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
