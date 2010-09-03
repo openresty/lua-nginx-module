@@ -323,13 +323,13 @@ use this form:
 
         local xxx = require('xxx')
 
-instead of the old deprecated form:
+	instead of the old deprecated form:
 
         require('xxx')
 
-The old form will cause module unusable in requests for the reason told
-previously. If you have to stick with the old form, you can always force
-loading module for every request by clean `package.loaded.<module>`, like this:
+	The old form will cause module unusable in requests for the reason told
+	previously. If you have to stick with the old form, you can always force
+	loading module for every request by clean `package.loaded.<module>`, like this:
 
         package.loaded.xxx = nil
         require('xxx')
