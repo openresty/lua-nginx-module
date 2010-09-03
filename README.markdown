@@ -11,14 +11,14 @@ Commit bit can be freely delivered at your request ;)
 
 # Synopsis
 
-	# set search paths for pure Lua external libraries (';;' is the default path):
-	lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
-	
-	# set search paths for Lua external libraries written in C (can also use ';;'):
-	lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
-	
-	server {
-		location /inline_concat {
+    # set search paths for pure Lua external libraries (';;' is the default path):
+    lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
+    
+    # set search paths for Lua external libraries written in C (can also use ';;'):
+    lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
+    
+    server {
+        location /inline_concat {
             # MIME type determined by default_type:
             default_type 'text/plain';
 
@@ -94,7 +94,7 @@ Commit bit can be freely delivered at your request ;)
                end
                ';
         }
-	}
+    }
 
 # Description
 
@@ -102,7 +102,7 @@ Commit bit can be freely delivered at your request ;)
 
 Read and write arbitrary nginx variables by name:
 
-	value = ngx.var.some_nginx_variable_name
+    value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
 
 Index the input arguments to the directive:
@@ -118,18 +118,18 @@ Index the input arguments to the directive:
 
 ### HTTP status constants
 
-	value = ngx.HTTP_OK
-	value = ngx.HTTP_CREATED
-	value = ngx.HTTP_MOVED_PERMANENTLY
-	value = ngx.HTTP_MOVED_TEMPORARILY
-	value = ngx.HTTP_NOT_MODIFIED
-	value = ngx.HTTP_BAD_REQUEST
-	value = ngx.HTTP_GONE
-	value = ngx.HTTP_NOT_FOUND
-	value = ngx.HTTP_NOT_ALLOWED
-	value = ngx.HTTP_FORBIDDEN
-	value = ngx.HTTP_INTERNAL_SERVER_ERROR
-	value = ngx.HTTP_SERVICE_UNAVAILABLE
+    value = ngx.HTTP_OK
+    value = ngx.HTTP_CREATED
+    value = ngx.HTTP_MOVED_PERMANENTLY
+    value = ngx.HTTP_MOVED_TEMPORARILY
+    value = ngx.HTTP_NOT_MODIFIED
+    value = ngx.HTTP_BAD_REQUEST
+    value = ngx.HTTP_GONE
+    value = ngx.HTTP_NOT_FOUND
+    value = ngx.HTTP_NOT_ALLOWED
+    value = ngx.HTTP_FORBIDDEN
+    value = ngx.HTTP_INTERNAL_SERVER_ERROR
+    value = ngx.HTTP_SERVICE_UNAVAILABLE
 
 ### print(a, b, ...)
 
@@ -145,15 +145,15 @@ Emit args concatenated to the HTTP client (as response body)
 
 ### NginX log level constants
 
-	log_level = ngx.STDERR
-	log_level = ngx.EMERG
-	log_level = ngx.ALERT
-	log_level = ngx.CRIT
-	log_level = ngx.ERR
-	log_level = ngx.WARN
-	log_level = ngx.NOTICE
-	log_level = ngx.INFO
-	log_level = ngx.DEBUG
+    log_level = ngx.STDERR
+    log_level = ngx.EMERG
+    log_level = ngx.ALERT
+    log_level = ngx.CRIT
+    log_level = ngx.ERR
+    log_level = ngx.WARN
+    log_level = ngx.NOTICE
+    log_level = ngx.INFO
+    log_level = ngx.DEBUG
 
 ### ngx.log(log_level, ...)
 
@@ -186,13 +186,13 @@ Escape `str` as a URI component.
 
 Unescape `str` as a escaped URI component.
 
-	newstr = ngx.unescape_uri(str)
+    newstr = ngx.unescape_uri(str)
 
 ### ngx.location.capture(uri)
 
 Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
 
-	res = ngx.location.capture(uri)
+    res = ngx.location.capture(uri)
 
 Returns a Lua table with two slots (`res.status` and `res.body`).
 
@@ -210,43 +210,35 @@ with LuaJIT 2.0.
 # Installation
 
 1. Install lua into your system. At least Lua 5.1 is required.
+Lua can be obtained freely from its project [homepage](http://www.lua.org/).
 
-Lua can be obtained freely from its project homepage:
+1. Download the latest version of the release tarball of this module from
+lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
 
-	http://www.lua.org/
+1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
+the version 0.8.41 (see nginx compatibility), and then build the source with
+this module:
 
-2. Download the latest version of the release tarball of this module from
-lua-nginx-module file list
-(<http://github.com/chaoslawful/lua-nginx-module/downloads >).
-
-3. Grab the nginx source code from nginx.net (<http://nginx.net/ >), for
-example, the version 0.8.41 (see nginx compatibility), and then build
-the source with this module:
-
-	$ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
-	$ tar -xzvf nginx-0.8.41.tar.gz
-	$ cd nginx-0.8.41/
-
-	# tell nginx's build system where to find lua:
-	export LUA_LIB=/path/to/lua/lib
-	export LUA_INC=/path/to/lua/include
-
-	# or tell where to find LuaJIT when you want to use JIT instead
-	# export LUAJIT_LIB=/path/to/luajit/lib
-	# export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
-
-	# Here we assume you would install you nginx under /opt/nginx/.
-	$ ./configure --prefix=/opt/nginx \
-		--add-module=/path/to/ndk_devel_kit \
-		--add-module=/path/to/echo-nginx-module \
-		--add-module=/path/to/lua-nginx-module
-
-	$ make -j2
-	$ make install
-
-2. Download the latest version of the release tarball of this module from
-lua-nginx-module file list
-(<http://github.com/chaoslawful/lua-nginx-module/downloads >).
+    $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
+    $ tar -xzvf nginx-0.8.41.tar.gz
+    $ cd nginx-0.8.41/
+    
+    # tell nginx's build system where to find lua:
+    export LUA_LIB=/path/to/lua/lib
+    export LUA_INC=/path/to/lua/include
+    
+    # or tell where to find LuaJIT when you want to use JIT instead
+    # export LUAJIT_LIB=/path/to/luajit/lib
+    # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+    
+    # Here we assume you would install you nginx under /opt/nginx/.
+    $ ./configure --prefix=/opt/nginx \
+        --add-module=/path/to/ndk_devel_kit \
+        --add-module=/path/to/echo-nginx-module \
+        --add-module=/path/to/lua-nginx-module
+    
+    $ make -j2
+    $ make install
 
 # Compatibility
 
