@@ -1,15 +1,18 @@
-# Name
+Name
+====
 
 lua-nginx-module - Embed the power of Lua into nginx
 
-# Status
+Status
+======
 
 This module is at its early phase of development but is already production
 ready :)
 
 Commit bit can be freely delivered at your request ;)
 
-# Synopsis
+Synopsis
+========
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
@@ -96,9 +99,8 @@ Commit bit can be freely delivered at your request ;)
         }
     }
 
-# Description
-
-## Nginx APIs for set_by_lua*
+Nginx APIs for set_by_lua*
+==========================
 
 Read and write arbitrary nginx variables by name:
 
@@ -109,14 +111,17 @@ Index the input arguments to the directive:
 
     value = ngx.arg[n]
 
-## Nginx APIs for content_by_lua*
+Nginx APIs for content_by_lua*
+==============================
 
-### Read and write NginX variables
+Read and write NginX variables
+------------------------------
 
     value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
 
-### HTTP status constants
+HTTP status constants
+---------------------
 
     value = ngx.HTTP_OK
     value = ngx.HTTP_CREATED
@@ -131,19 +136,8 @@ Index the input arguments to the directive:
     value = ngx.HTTP_INTERNAL_SERVER_ERROR
     value = ngx.HTTP_SERVICE_UNAVAILABLE
 
-### print(a, b, ...)
-
-Emit args concatenated to error.log
-
-### ngx.send_headers()
-
-Explicitly send headers
-
-### ngx.print(a, b, ...)
-
-Emit args concatenated to the HTTP client (as response body)
-
-### NginX log level constants
+NginX log level constants
+-------------------------
 
     log_level = ngx.STDERR
     log_level = ngx.EMERG
@@ -155,40 +149,63 @@ Emit args concatenated to the HTTP client (as response body)
     log_level = ngx.INFO
     log_level = ngx.DEBUG
 
-### ngx.log(log_level, ...)
+print(a, b, ...)
+----------------
 
-Log args concatenated to error.log with the given log level
+Emit args concatenated to `error.log`.
 
-### ngx.say(a, b, ...)
+ngx.send_headers()
+------------------
 
-Just as ngx.print but also emit a trailing newline
+Explicitly send headers.
 
-### ngx.flush()
+ngx.print(a, b, ...)
+--------------------
 
-Force flushing the response outputs
+Emit args concatenated to the HTTP client (as response body).
 
-### ngx.throw_error(status)
+ngx.log(log_level, ...)
+-----------------------
+
+Log args concatenated to error.log with the given logging level.
+
+ngx.say(a, b, ...)
+------------------
+
+Just as `ngx.print` but also emit a trailing newline.
+
+ngx.flush()
+-----------
+
+Force flushing the response outputs.
+
+ngx.throw_error(status)
+-----------------------
 
 Throw out an error page and interrupts the execution of the current Lua thread,
-status can be ngx.HTTP_NOT_FOUND or other HTTP status numbers
+status can be `ngx.HTTP_NOT_FOUND` or other HTTP status numbers.
 
-### ngx.eof()
+ngx.eof()
+---------
 
-Explicitly specify the end of the response output stream
+Explicitly specify the end of the response output stream.
 
-### ngx.escape_uri(str)
+ngx.escape_uri(str)
+-------------------
 
 Escape `str` as a URI component.
 
     newstr = ngx.escape_uri(str)
 
-### ngx.unescape_uri(str)
+ngx.unescape_uri(str)
+---------------------
 
 Unescape `str` as a escaped URI component.
 
     newstr = ngx.unescape_uri(str)
 
-### ngx.location.capture(uri)
+ngx.location.capture(uri)
+-------------------------
 
 Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
 
@@ -196,7 +213,8 @@ Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar
 
 Returns a Lua table with two slots (`res.status` and `res.body`).
 
-# Performance
+Performance
+===========
 
 The Lua state (aka the Lua vm instance) is shared across all the requests
 handled by a single nginx worker process to miminize memory use.
@@ -207,7 +225,8 @@ w/o keepalive and 37k+ req/sec with keepalive.
 You can get better performance when building this module
 with LuaJIT 2.0.
 
-# Installation
+Installation
+============
 
 1. Install lua into your system. At least Lua 5.1 is required.
 Lua can be obtained freely from its project [homepage](http://www.lua.org/).
@@ -240,7 +259,8 @@ this module:
         $ make -j2
         $ make install
 
-# Compatibility
+Compatibility
+=============
 
 The following versions of Nginx should work with this module:
 
@@ -252,7 +272,8 @@ Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 If you find that any particular version of Nginx above 0.7.44 does not
 work with this module, please consider reporting a bug.
 
-# Test Suite
+Test Suite
+==========
 
 To run the test suite, you need the following nginx modules:
 
@@ -278,40 +299,55 @@ filtering chain affects a lot. The correct configure adding order is:
 8. drizzle-nginx-module
 9. rds-json-nginx-module
 
-# TODO
+Todo
+====
 
-See TODO file.
+* Add directives to run lua codes when nginx stops/reloads
+* Implement ngx.exec() functionality
+* Deal with TCP 3-second delay problem under great connection harness
 
-# Known Issues
+Future Plan
+===========
+
+* Add 'lua_require' directive to load module into main thread's globals
+* Add Lua VM passive yield and resume (using debug hook)
+* Make set_by_lua using the same mechanism as content_by_lua
+* Integrate $request_body reading functionality
+
+Known Issues
+============
 
 * Globals won't persist between requests, due to the one-coroutine-per-request
 designing. Especially watch yourself when using `require()` to import modules,
 use this form:
 
-	local xxx = require('xxx')
+        local xxx = require('xxx')
 
 instead of the old deprecated form:
 
-	require('xxx')
+        require('xxx')
 
 The old form will cause module unusable in requests for the reason told
 previously. If you have to stick with the old form, you can always force
 loading module for every request by clean `package.loaded.<module>`, like this:
 
-	package.loaded.xxx = nil
-	require('xxx')
+        package.loaded.xxx = nil
+        require('xxx')
 
-# See Also
+See Also
+========
 
 * ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
 * echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
 
-# Authors
+Authors
+=======
 
 * chaoslawful (王晓哲) <chaoslawful at gmail dot com>
 * agentzh (章亦春) <agentzh at gmail dot com>
 
-# Copyright & License
+Copyright & License
+===================
 
     This module is licenced under the BSD license.
 
