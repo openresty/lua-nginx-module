@@ -1,7 +1,3 @@
-Problems:
-	* can't access $request_body in content_by_lua
-	* package globals occasional missing in content_by_lua
-
 Current:
 	* add ngx.log(level, ...) to output contents to nginx error log, 'level' could be one of ngx.LOG_INFO/ngx.LOG_WARN/ngx.LOG_ERR
 	* include original path/cpath instead of override them all for lua_package_path/cpath
@@ -13,4 +9,16 @@ Future:
 	* add 'lua_require' directive to load module into main thread's globals
 	* add Lua VM passive yield and resume (using debug hook)
 	* make set_by_lua using the same mechanism as content_by_lua
+	* integrate $request_body reading functionality
+
+Drawbacks:
+	* Globals won't persist between requests, due to the one-coroutine-per-request designing. Especially watch yourself when using require() to import modules, use this form:
+
+		local xxx = require('xxx')
+	
+	instead of the old deprecated form:
+
+		require('xxx')
+
+	The old form will cause module unusable in requests for the reason told previously.
 
