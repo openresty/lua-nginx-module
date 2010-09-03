@@ -280,7 +280,7 @@ filtering chain affects a lot. The correct configure adding order is:
 
 # TODO
 
-See [TODO](./TODO) file.
+See TODO file.
 
 # Known Issues
 
