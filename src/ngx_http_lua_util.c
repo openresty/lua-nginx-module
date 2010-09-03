@@ -5,6 +5,8 @@
 
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
+static void inject_http_consts(lua_State *L);
+static void inject_log_consts(lua_State *L);
 
 
 lua_State *
@@ -272,60 +274,8 @@ init_ngx_lua_registry(lua_State *L)
 }
 
 static void
-init_ngx_lua_globals(lua_State *L)
+inject_http_consts(lua_State *L)
 {
-    /* {{{ remove unsupported globals */
-    lua_pushnil(L);
-    lua_setfield(L, LUA_GLOBALSINDEX, "coroutine");
-    /* }}} */
-
-    /* {{{ register global hook functions */
-    lua_pushcfunction(L, ngx_http_lua_print);
-    lua_setglobal(L, "print");
-    /* }}} */
-
-    lua_newtable(L);    /* ngx.* */
-
-    /* {{{ register nginx hook functions */
-    lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
-    lua_setfield(L, -2, "send_headers");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_print);
-    lua_setfield(L, -2, "print");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_say);
-    lua_setfield(L, -2, "say");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_throw_error);
-    lua_setfield(L, -2, "throw_error");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_flush);
-    lua_setfield(L, -2, "flush");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_eof);
-    lua_setfield(L, -2, "eof");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
-    lua_setfield(L, -2, "escape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
-    lua_setfield(L, -2, "unescape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
-    lua_setfield(L, -2, "quote_sql_str");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
-    lua_setfield(L, -2, "md5");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
-    lua_setfield(L, -2, "get_today");
-
-    lua_newtable(L);
-    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
-    lua_setfield(L, -2, "capture");
-    lua_setfield(L, -2, "location");
-    /* }}} */
-
     lua_pushinteger(L, 200);
     lua_setfield(L, -2, "HTTP_OK");
 
@@ -361,6 +311,99 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_pushinteger(L, 503);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
+}
+
+static void
+inject_log_consts(lua_State *L)
+{
+	lua_pushinteger(L, NGX_LOG_STDERR);
+	lua_setfield(L, -2, "STDERR");
+
+	lua_pushinteger(L, NGX_LOG_EMERG);
+	lua_setfield(L, -2, "EMERG");
+
+	lua_pushinteger(L, NGX_LOG_ALERT);
+	lua_setfield(L, -2, "ALERT");
+
+	lua_pushinteger(L, NGX_LOG_CRIT);
+	lua_setfield(L, -2, "CRIT");
+
+	lua_pushinteger(L, NGX_LOG_ERR);
+	lua_setfield(L, -2, "ERR");
+
+	lua_pushinteger(L, NGX_LOG_WARN);
+	lua_setfield(L, -2, "WARN");
+
+	lua_pushinteger(L, NGX_LOG_NOTICE);
+	lua_setfield(L, -2, "NOTICE");
+
+	lua_pushinteger(L, NGX_LOG_INFO);
+	lua_setfield(L, -2, "INFO");
+
+	lua_pushinteger(L, NGX_LOG_DEBUG);
+	lua_setfield(L, -2, "DEBUG");
+}
+
+static void
+init_ngx_lua_globals(lua_State *L)
+{
+    /* {{{ remove unsupported globals */
+    lua_pushnil(L);
+    lua_setfield(L, LUA_GLOBALSINDEX, "coroutine");
+    /* }}} */
+
+    /* {{{ register global hook functions */
+    lua_pushcfunction(L, ngx_http_lua_print);
+    lua_setglobal(L, "print");
+    /* }}} */
+
+    lua_newtable(L);    /* ngx.* */
+
+    /* {{{ register nginx hook functions */
+    lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
+    lua_setfield(L, -2, "send_headers");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_print);
+    lua_setfield(L, -2, "print");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_say);
+    lua_setfield(L, -2, "say");
+
+	lua_pushcfunction(L, ngx_http_lua_ngx_log);
+	lua_setfield(L, -2, "log");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_throw_error);
+    lua_setfield(L, -2, "throw_error");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_flush);
+    lua_setfield(L, -2, "flush");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_eof);
+    lua_setfield(L, -2, "eof");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
+    lua_setfield(L, -2, "escape_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
+    lua_setfield(L, -2, "unescape_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
+    lua_setfield(L, -2, "quote_sql_str");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
+    lua_setfield(L, -2, "md5");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
+    lua_setfield(L, -2, "get_today");
+
+    lua_newtable(L);
+    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
+    lua_setfield(L, -2, "capture");
+    lua_setfield(L, -2, "location");
+    /* }}} */
+
+	inject_http_consts(L);
+	inject_log_consts(L);
 
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */

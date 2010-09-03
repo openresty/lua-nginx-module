@@ -8,10 +8,9 @@
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
-static void ngx_unescape_uri_patched(u_char **dst, u_char **src,
-        size_t size, ngx_uint_t type);
-uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
-        size_t size);
+static void ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
+static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size);
+static void log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L);
 
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
@@ -48,13 +47,54 @@ ngx_http_lua_atpanic(lua_State *L)
 	NGX_LUA_EXCEPTION_THROW(1);
 }
 
+static void
+log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
+{
+	const char *s;
+
+	/*  XXX: easy way to support multiple args, any serious performance penalties? */
+	lua_concat(L, lua_gettop(L));
+	s = lua_tostring(L, -1);
+
+	ngx_log_error(level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
+}
+
 /**
- * Override Lua print function, output message to NginX error logs.
+ * Wrapper of NginX log functionality. Take a log level param and varargs of
+ * log message params.
  *
  * @param L Lua state pointer
  * @retval always 0 (don't return values to Lua)
- * @note NginX request pointer should be stored in Lua VM registry with key
- * 'ngx._req' in order to make logging working.
+ * */
+int
+ngx_http_lua_ngx_log(lua_State *L)
+{
+    ngx_http_request_t *r;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if(r && r->connection && r->connection->log) {
+		int level = luaL_checkint(L, 1);
+
+		// remove log-level param from stack
+		lua_remove(L, 1);
+
+		log_wrapper(r, "lua-log", level, L);
+    } else {
+        dd("(lua-log) can't output log due to invalid logging context!");
+    }
+
+    return 0;
+}
+
+/**
+ * Override Lua print function, output message to NginX error logs. Equal to
+ * ngx.log(ngx.ERR, ...).
+ *
+ * @param L Lua state pointer
+ * @retval always 0 (don't return values to Lua)
  * */
 int
 ngx_http_lua_print(lua_State *L)
@@ -66,13 +106,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if(r && r->connection && r->connection->log) {
-        const char *s;
-
-        /*  XXX: easy way to support multiple args, any serious performance penalties? */
-        lua_concat(L, lua_gettop(L));
-        s = lua_tostring(L, -1);
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-print) %s", (s == NULL) ? "(null)" : s);
+		log_wrapper(r, "lua-print", NGX_LOG_ERR, L);
     } else {
         dd("(lua-print) can't output print content to error log due to invalid logging context!");
     }
