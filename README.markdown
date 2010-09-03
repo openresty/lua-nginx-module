@@ -219,26 +219,26 @@ lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/down
 the version 0.8.41 (see nginx compatibility), and then build the source with
 this module:
 
-    $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
-    $ tar -xzvf nginx-0.8.41.tar.gz
-    $ cd nginx-0.8.41/
-    
-    # tell nginx's build system where to find lua:
-    export LUA_LIB=/path/to/lua/lib
-    export LUA_INC=/path/to/lua/include
-    
-    # or tell where to find LuaJIT when you want to use JIT instead
-    # export LUAJIT_LIB=/path/to/luajit/lib
-    # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
-    
-    # Here we assume you would install you nginx under /opt/nginx/.
-    $ ./configure --prefix=/opt/nginx \
-        --add-module=/path/to/ndk_devel_kit \
-        --add-module=/path/to/echo-nginx-module \
-        --add-module=/path/to/lua-nginx-module
-    
-    $ make -j2
-    $ make install
+        $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
+        $ tar -xzvf nginx-0.8.41.tar.gz
+        $ cd nginx-0.8.41/
+        
+        # tell nginx's build system where to find lua:
+        export LUA_LIB=/path/to/lua/lib
+        export LUA_INC=/path/to/lua/include
+        
+        # or tell where to find LuaJIT when you want to use JIT instead
+        # export LUAJIT_LIB=/path/to/luajit/lib
+        # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+        
+        # Here we assume you would install you nginx under /opt/nginx/.
+        $ ./configure --prefix=/opt/nginx \
+            --add-module=/path/to/ndk_devel_kit \
+            --add-module=/path/to/echo-nginx-module \
+            --add-module=/path/to/lua-nginx-module
+        
+        $ make -j2
+        $ make install
 
 # Compatibility
 
@@ -280,7 +280,7 @@ filtering chain affects a lot. The correct configure adding order is:
 
 # TODO
 
-See [TODO](/TODO) file.
+See [TODO](./TODO) file.
 
 # Known Issues
 
