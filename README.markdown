@@ -11,14 +11,14 @@ Commit bit can be freely delivered at your request ;)
 
 # Synopsis
 
-   # set search paths for pure Lua external libraries (';;' is the default path):
-   lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
+	# set search paths for pure Lua external libraries (';;' is the default path):
+	lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
 	
-   # set search paths for Lua external libraries written in C (can also use ';;'):
-   lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
+	# set search paths for Lua external libraries written in C (can also use ';;'):
+	lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
 	
-   server {
-        location /inline_concat {
+	server {
+		location /inline_concat {
             # MIME type determined by default_type:
             default_type 'text/plain';
 
@@ -94,6 +94,7 @@ Commit bit can be freely delivered at your request ;)
                end
                ';
         }
+	}
 
 # Description
 
