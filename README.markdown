@@ -317,7 +317,7 @@ Future Plan
 Known Issues
 ============
 
-* Globals won't persist between requests, due to the one-coroutine-per-request
+* **WATCH OUT: Globals WON'T persist between requests**, due to the one-coroutine-per-request
 designing. Especially watch yourself when using `require()` to import modules,
 use this form:
 
