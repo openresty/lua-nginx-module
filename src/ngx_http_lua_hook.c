@@ -57,7 +57,7 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
     lua_concat(L, lua_gettop(L));
     s = lua_tostring(L, -1);
 
-    ngx_log_error(level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
+    ngx_log_error((ngx_uint_t)level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
 }
 
 /**
