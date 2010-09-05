@@ -11,8 +11,8 @@ ready :)
 
 Commit bit can be freely delivered at your request ;)
 
-Synopsis
-========
+Example Config
+==============
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
@@ -67,6 +67,13 @@ Synopsis
             content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
         }
 
+		location /request_body {
+			# force reading request body (default off)
+			lua_need_request_body on;
+			
+			content_by_lua 'ngx.print(ngx.var.request_body)';
+		}
+
         # transparent non-blocking I/O in Lua via subrequests
         location /lua {
             # MIME type determined by default_type:
@@ -98,6 +105,106 @@ Synopsis
                ';
         }
     }
+
+Directives
+==========
+
+lua_package_path
+----------------
+
+* **Syntax:** `lua_package_path <lua-style-path-str>`
+* **Default:** The content of LUA_PATH environ variable or Lua's compiled-in
+defaults.
+* **Context:** `main`
+
+Set the Lua module searching path used by scripts specified by `set_by_lua*`
+and `content_by_lua*`. The path string is in standard Lua path form, and `;;`
+can be used to stand for the original path.
+
+lua_package_cpath
+-----------------
+
+* **Syntax:** `lua_package_cpath <lua-style-cpath-str>`
+* **Default:** The content of LUA_CPATH environ variable or Lua's compiled-in
+defaults.
+* **Context:** `main`
+
+Set the Lua C-module searching path used by scripts specified by `set_by_lua*`
+and `content_by_lua*`. The cpath string is in standard Lua cpath form, and `;;`
+can be used to stand for the original cpath.
+
+set_by_lua
+----------
+
+* **Syntax:** `set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]`
+* **Context:** `main | server | location | sif | lif`
+
+Execute user code specified by `<lua-script-str>` with input arguments `$arg1
+$arg2 ...`, and set the script's return value to `$res` in string form. In
+`<lua-script-str>` code the input arguments can be retrieved from `ngx.arg`
+table (index starts from `1` and increased sequentially).
+
+`set_by_lua*` directives are designed to execute small and quick codes. NginX
+event loop is blocked during the code execution, so you'd better **NOT** call
+anything that may be blocked or time-costy.
+
+set_by_lua_file
+---------------
+
+* **Syntax:** `set_by_lua_file $res <path-to-lua-script> [$arg1 $arg2 ...]`
+* **Context:** `main | server | location | sif | lif`
+
+Basically the same as `set_by_lua`, except the code to be executed is in the
+file specified by `<path-lua-script>`.
+
+The user code is loaded once at the first request and cached. Nginx config must
+be reloaded if you modified the file and expected to see updated behavior.
+
+content_by_lua
+--------------
+
+* **Syntax:** `content_by_lua <lua-script-str>`
+* **Context:** `location | lif`
+
+Act as a content handler and execute user code specified by `<lua-script-str>`
+for every request. The user code may call predefined APIs to generate response
+content.
+
+The use code is executed in a new spawned coroutine with independent globals
+environment (i.e. a sandbox). I/O operations in user code should only be done
+through predefined NginX APIs, otherwise NginX event loop may be blocked and
+performance may drop off dramatically.
+
+As predefined NginX I/O APIs used coroutine yielding/resuming mechanism, the
+user code should not call any modules that used coroutine API to prevent
+obfuscating the predefined NginX APIs (actually coroutine module is masked off
+in `content_by_lua*` directives). This limitation is a little crucial, but
+don't worry! We're working on a alternative coroutine implementation that can
+be fit in the NginX event framework. When it is done, the user code will be
+able to use coroutine mechanism freely as in standard Lua again!
+
+content_by_lua_file
+-------------------
+
+* **Syntax:** `content_by_lua_file <path-to-lua-script>`
+* **Context:** `location | lif`
+
+Basically the same as `content_by_lua`, except the code to be executed is in
+the file specified by `<path-lua-script>`.
+
+The user code is loaded once at the first request and cached. Nginx config must
+be reloaded if you modified the file and expected to see updated behavior.
+
+lua_need_request_body
+---------------------
+
+* **Syntax:** `lua_need_request_body <on | off>`
+* **Default:** `off`
+* **Context:** `main | server | location`
+
+Force reading request body data or not. The request data won't be read into
+$request_body NginX variable by default, so you have to explicitly force
+reading the body if you need its content.
 
 Nginx APIs for set_by_lua*
 ==========================
