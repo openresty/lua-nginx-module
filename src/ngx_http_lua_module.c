@@ -23,6 +23,16 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         NULL
     },
 
+    {
+        ngx_string("lua_need_request_body"),
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+        NGX_CONF_FLAG,
+        ngx_conf_set_flag_slot,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        offsetof(ngx_http_lua_loc_conf_t, force_read_body),
+        NULL
+    },
+
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
     {
         ngx_string("set_by_lua"),

@@ -59,6 +59,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->src = { 0, NULL };
      */
 
+    conf->force_read_body = NGX_CONF_UNSET;
+
     return conf;
 }
 
@@ -69,6 +71,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_lua_loc_conf_t *conf = child;
 
     ngx_conf_merge_str_value(conf->src, prev->src, "");
+    ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
 
     return NGX_CONF_OK;
 }

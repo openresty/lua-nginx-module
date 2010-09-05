@@ -27,21 +27,25 @@ typedef struct {
 } ngx_http_lua_main_conf_t;
 
 typedef struct {
-    ngx_str_t src;    /*  content_by_lua inline script / script file path */
+    ngx_flag_t  force_read_body;    /* 1: force request body to be read; 0: don't force reading request body */
+    ngx_str_t   src;                /*  content_by_lua inline script / script file path */
 } ngx_http_lua_loc_conf_t;
 
 typedef struct {
-    lua_State       *cc;    /*  coroutine to handle request */
-    int              cc_ref;        /*  reference to anchor coroutine in lua registry */
+    lua_State       *cc;                /*  coroutine to handle request */
+    int              cc_ref;            /*  reference to anchor coroutine in lua registry */
     ngx_flag_t       headers_sent:1;    /*  1: response header has been sent; 0: header not sent yet */
-    ngx_flag_t       eof:1;        /*  1: last_buf has been sent; 0: last_buf not sent yet */
-    ngx_flag_t       waiting:1;    /*  1: subrequest is still running; 0: subrequest is not running */
-    ngx_flag_t       done:1;    /*  1: subrequest is just done; 0: subrequest is not done yet or has already done */
-    ngx_flag_t       capture:1;    /*  1: body of current request is to be captured; 0: not captured */
-    ngx_chain_t     *sr_body;    /*  all captured subrequest bodies */
-    ngx_chain_t     *body;    /*  captured current request body */
-    ngx_int_t        sr_status;    /*  captured subrequest status */
+    ngx_flag_t       eof:1;             /*  1: last_buf has been sent; 0: last_buf not sent yet */
+    ngx_flag_t       waiting:1;         /*  1: subrequest is still running; 0: subrequest is not running */
+    ngx_flag_t       done:1;            /*  1: subrequest is just done; 0: subrequest is not done yet or has already done */
+    ngx_flag_t       capture:1;         /*  1: body of current request is to be captured; 0: not captured */
+    ngx_chain_t     *sr_body;           /*  all captured subrequest bodies */
+    ngx_chain_t     *body;              /*  captured current request body */
+    ngx_int_t        sr_status;         /*  captured subrequest status */
     ngx_int_t        error_rc;
+
+    ngx_flag_t       read_body_done:1;      /* 1: request body has been all read; 0: body has not been all read */
+    ngx_flag_t       waiting_more_body:1;   /* 1: waiting for more data; 0: no need to wait */
 
     ngx_http_cleanup_pt     *cleanup;
 } ngx_http_lua_ctx_t;
