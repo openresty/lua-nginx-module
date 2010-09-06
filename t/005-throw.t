@@ -323,7 +323,6 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
---- SKIP
 
 
 
