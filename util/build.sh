@@ -23,9 +23,6 @@ if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$
 	./configure --prefix=$root/work \
 				--add-module=$root \
 				--add-module=$root/deps/ngx_devel_kit \
-				--add-module=$root/deps/echo-nginx-module \
-				--with-http_stub_status_module #\
-				#--with-debug \
 				$opts
 fi
 

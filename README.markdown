@@ -259,7 +259,7 @@ NginX log level constants
 print(a, b, ...)
 ----------------
 
-Emit args concatenated to `error.log`.
+Emit args concatenated to `error.log`, with log level `ngx.ERR`.
 
 ngx.send_headers()
 ------------------
@@ -360,7 +360,6 @@ this module:
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ndk_devel_kit \
-            --add-module=/path/to/echo-nginx-module \
             --add-module=/path/to/lua-nginx-module
         
         $ make -j2
@@ -382,16 +381,19 @@ work with this module, please consider reporting a bug.
 Test Suite
 ==========
 
-To run the test suite, you need the following nginx modules:
+To run the test suite, you also need the following perl and nginx modules:
 
-* test-nginx: <http://github.com/agentzh/test-nginx>
-* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module>
-* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module>
-* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module>
-* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module>
-* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module>
-* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module>
-* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/>
+* Perl modules:
+	* test-nginx: <http://github.com/agentzh/test-nginx>
+
+* NginX modules:
+	* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module>
+	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module>
+	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module>
+	* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module>
+	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module>
+	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module>
+	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/>
 
 These module's adding order is IMPORTANT! For filter modules's position in
 filtering chain affects a lot. The correct configure adding order is:
@@ -445,6 +447,7 @@ See Also
 
 * ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
 * echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
+* ngx_http_js_module ( <http://github.com/kung-fu-tzu/ngx_http_js_module> )
 
 Authors
 =======
