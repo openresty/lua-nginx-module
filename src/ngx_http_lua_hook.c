@@ -769,7 +769,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     escape = ngx_http_lua_ngx_escape_sql_str(NULL, src, len);
 
-    dlen = len + escape;
+    dlen = sizeof("''") - 1 + len + escape;
 
     p = ngx_palloc(r->pool, dlen);
     if (p == NULL) {
@@ -778,11 +778,15 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     dst = p;
 
+    *p++ = '\'';
+
     if (escape == 0) {
         p = ngx_copy(p, src, len);
     } else {
         p = (u_char *) ngx_http_lua_ngx_escape_sql_str(p, src, len);
     }
+
+    *p++ = '\'';
 
     if (p != dst + dlen) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,

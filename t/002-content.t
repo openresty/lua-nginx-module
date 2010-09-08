@@ -282,7 +282,7 @@ Foo: 32
 --- request
 GET /set
 --- response_body
-hello\n\r\'\"\\
+'hello\n\r\'\"\\'
 
 
 
@@ -295,7 +295,7 @@ location /set {
 --- request
 GET /set
 --- response_body
-hello\n\r\'\"\\
+'hello\n\r\'\"\\'
 
 
 
