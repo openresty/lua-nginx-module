@@ -30,8 +30,14 @@ int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 int ngx_http_lua_ngx_quote_sql_str(lua_State *L);
 
 int ngx_http_lua_ngx_md5(lua_State *L);
+int ngx_http_lua_ngx_md5_bin(lua_State *L);
+
+int ngx_http_lua_ngx_base64_decode(lua_State *L);
+int ngx_http_lua_ngx_base64_encode(lua_State *L);
 
 int ngx_http_lua_ngx_get_today(lua_State *L);
+int ngx_http_lua_ngx_get_now(lua_State *L);
+int ngx_http_lua_ngx_get_now_ts(lua_State *L);
 
 int ngx_http_lua_ngx_location_capture(lua_State *L);
 
