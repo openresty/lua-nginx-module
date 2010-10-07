@@ -28,6 +28,7 @@ GET /base64_encode
 aGVsbG8=
 
 
+
 === TEST 2: nil string to ngx.base64_encode
 --- config
     location = /base64_encode {
@@ -91,7 +92,7 @@ leftright
 
 
 
-=== TEST 1: base64 encode hello
+=== TEST 7: base64 encode hello
 --- config
     location = /base64_decode {
         content_by_lua 'ngx.say(ngx.base64_decode("aGVsbG8="))';
@@ -102,7 +103,8 @@ GET /base64_decode
 hello
 
 
-=== TEST 2: nil string to ngx.base64_decode
+
+=== TEST 8: nil string to ngx.base64_decode
 --- config
     location = /base64_decode {
         content_by_lua 'ngx.say("left" .. ngx.base64_decode(nil) .. "right")';
@@ -114,7 +116,7 @@ leftright
 
 
 
-=== TEST 3: null string to ngx.base64_decode
+=== TEST 9: null string to ngx.base64_decode
 --- config
     location = /base64_decode {
         content_by_lua 'ngx.say("left" .. ngx.base64_decode("") .. "right")';
@@ -126,7 +128,7 @@ leftright
 
 
 
-=== TEST 4: use ngx.base64_decode in set_by_lua
+=== TEST 10: use ngx.base64_decode in set_by_lua
 --- config
     location = /base64_decode {
         set_by_lua $a 'return ngx.base64_decode("aGVsbG8=")';
@@ -139,7 +141,7 @@ hello
 
 
 
-=== TEST 5: use ngx.base64_decode in set_by_lua (nil)
+=== TEST 11: use ngx.base64_decode in set_by_lua (nil)
 --- config
     location = /base64_decode {
         set_by_lua $a 'return "left" .. ngx.base64_decode(nil) .. "right"';
@@ -152,7 +154,7 @@ leftright
 
 
 
-=== TEST 6: use ngx.base64_decode in set_by_lua (null string)
+=== TEST 12: use ngx.base64_decode in set_by_lua (null string)
 --- config
     location /base64_decode {
         set_by_lua $a 'return "left" .. ngx.base64_decode("") .. "right"';

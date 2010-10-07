@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+#define DDEBUG 1
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -910,7 +911,7 @@ ngx_http_lua_ngx_md5(lua_State *L)
         src = (u_char *) luaL_checklstring(L, 1, &slen);
     }
 
-    p   = ngx_palloc(r->pool, len);
+    p = ngx_palloc(r->pool, len);
     if (p == NULL) {
         return NGX_ERROR;
     }
@@ -952,7 +953,9 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
         src = (u_char *) luaL_checklstring(L, 1, &slen);
     }
 
-    p   = ngx_palloc(r->pool, len);
+    dd("slen: %d", (int) slen);
+
+    p = ngx_palloc(r->pool, len);
     if (p == NULL) {
         return NGX_ERROR;
     }
@@ -961,7 +964,11 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
     ngx_md5_update(&md5, (char *) src, slen);
     ngx_md5_final(p, &md5);
 
+    dd("len: %d", (int) len);
+
     lua_pushlstring(L, (char *) p, len);
+
+    ngx_pfree(r->pool, p);
 
     return 1;
 }
@@ -994,7 +1001,7 @@ ngx_http_lua_ngx_base64_decode(lua_State *L)
 
     p.len = ngx_base64_decoded_length(src.len);
 
-    p.data   = ngx_palloc(r->pool, p.len);
+    p.data = ngx_palloc(r->pool, p.len);
     if (p.data == NULL) {
         return NGX_ERROR;
     }
@@ -1009,8 +1016,11 @@ ngx_http_lua_ngx_base64_decode(lua_State *L)
         lua_pushnil(L);
     }
 
+    ngx_pfree(r->pool, p.data);
+
     return 1;
 }
+
 
 int
 ngx_http_lua_ngx_base64_encode(lua_State *L)
@@ -1039,7 +1049,7 @@ ngx_http_lua_ngx_base64_encode(lua_State *L)
 
     p.len = ngx_base64_encoded_length(src.len);
 
-    p.data   = ngx_palloc(r->pool, p.len);
+    p.data = ngx_palloc(r->pool, p.len);
     if (p.data == NULL) {
         return NGX_ERROR;
     }
@@ -1048,8 +1058,11 @@ ngx_http_lua_ngx_base64_encode(lua_State *L)
 
     lua_pushlstring(L, (char *) p.data, p.len);
 
+    ngx_pfree(r->pool, p.data);
+
     return 1;
 }
+
 
 int
 ngx_http_lua_ngx_get_today(lua_State *L)
@@ -1087,8 +1100,11 @@ ngx_http_lua_ngx_get_today(lua_State *L)
 
     lua_pushlstring(L, (char *) p, len);
 
+    ngx_pfree(r->pool, p);
+
     return 1;
 }
+
 
 int
 ngx_http_lua_ngx_get_now(lua_State *L)
@@ -1126,8 +1142,11 @@ ngx_http_lua_ngx_get_now(lua_State *L)
 
     lua_pushlstring(L, (char *) p, len);
 
+    ngx_pfree(r->pool, p);
+
     return 1;
 }
+
 
 int
 ngx_http_lua_ngx_get_now_ts(lua_State *L)
@@ -1153,3 +1172,4 @@ ngx_http_lua_ngx_get_now_ts(lua_State *L)
 
     return 1;
 }
+

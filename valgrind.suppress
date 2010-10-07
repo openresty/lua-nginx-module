@@ -3,6 +3,23 @@
    Memcheck:Leak
    fun:malloc
    fun:ngx_alloc
+   fun:ngx_palloc_large
+   fun:ngx_palloc
+   fun:ngx_array_push
+   fun:ngx_http_get_variable_index
+   fun:ngx_http_memc_add_variable
+   fun:ngx_http_memc_init
+   fun:ngx_http_block
+   fun:ngx_conf_parse
+   fun:ngx_init_cycle
+   fun:main
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:ngx_alloc
    fun:ngx_event_process_init
    fun:ngx_single_process_cycle
    fun:main

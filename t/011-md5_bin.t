@@ -22,19 +22,30 @@ __DATA__
 === TEST 1: set md5_bin hello ????xxoo
 --- config
     location = /md5_bin {
-        content_by_lua 'ngx.say(string.gsub(ngx.md5_bin("hello"), ".", function (c)
+        content_by_lua 'local a = string.gsub(ngx.md5_bin("hello"), ".", function (c)
                     return string.format("%02x", string.byte(c))
-                end))';
+                end); ngx.say(a)';
     }
 --- request
 GET /md5_bin
 --- response_body
 5d41402abc4b2a76b9719d911017c592
---- SKIP
 
 
 
-=== TEST 2: set md5_bin hello
+=== TEST 2: set md5_bin hello ????xxoo
+--- config
+    location = /md5_bin {
+        content_by_lua 'ngx.say(string.len(ngx.md5_bin("hello")))';
+    }
+--- request
+GET /md5_bin
+--- response_body
+16
+
+
+
+=== TEST 3: set md5_bin hello
 --- config
     location = /md5_bin {
         content_by_lua '
@@ -52,7 +63,7 @@ GET /md5_bin
 
 
 
-=== TEST 3: nil string to ngx.md5_bin
+=== TEST 4: nil string to ngx.md5_bin
 --- config
     location = /md5_bin {
         content_by_lua '
@@ -70,7 +81,7 @@ d41d8cd98f00b204e9800998ecf8427e
 
 
 
-=== TEST 4: null string to ngx.md5_bin
+=== TEST 5: null string to ngx.md5_bin
 --- config
     location /md5_bin {
         content_by_lua '
@@ -88,7 +99,7 @@ d41d8cd98f00b204e9800998ecf8427e
 
 
 
-=== TEST 5: use ngx.md5_bin in set_by_lua
+=== TEST 6: use ngx.md5_bin in set_by_lua
 --- config
     location = /md5_bin {
         set_by_lua $a 'return string.gsub(ngx.md5_bin("hello"), ".", function (c)
@@ -103,7 +114,7 @@ GET /md5_bin
 
 
 
-=== TEST 6: use ngx.md5_bin in set_by_lua (nil)
+=== TEST 7: use ngx.md5_bin in set_by_lua (nil)
 --- config
     location = /md5_bin {
         set_by_lua $a '
@@ -122,7 +133,7 @@ d41d8cd98f00b204e9800998ecf8427e
 
 
 
-=== TEST 7: use ngx.md5_bin in set_by_lua (null string)
+=== TEST 8: use ngx.md5_bin in set_by_lua (null string)
 --- config
     location /md5_bin {
         set_by_lua $a '
