@@ -1,5 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
-#define DDEBUG 1
+
+#define DDEBUG 0
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -922,6 +923,7 @@ ngx_http_lua_ngx_md5(lua_State *L)
 
     return 1;
 }
+
 
 int
 ngx_http_lua_ngx_md5_bin(lua_State *L)
