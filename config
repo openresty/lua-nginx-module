@@ -102,6 +102,6 @@ ngx_addon_name=ngx_http_lua_module
 HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES ngx_http_lua_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c $ngx_addon_dir/src/ngx_http_lua_directive.c $ngx_addon_dir/src/ngx_http_lua_hook.c $ngx_addon_dir/src/ngx_http_lua_util.c $ngx_addon_dir/src/ngx_http_lua_cache.c $ngx_addon_dir/src/ngx_http_lua_conf.c $ngx_addon_dir/src/ngx_http_lua_contentby.c $ngx_addon_dir/src/ngx_http_lua_setby.c $ngx_addon_dir/src/ngx_http_lua_filter.c $ngx_addon_dir/src/ngx_http_lua_clfactory.c"
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h $ngx_addon_dir/src/ngx_http_lua_common.h $ngx_addon_dir/src/ngx_http_lua_directive.h $ngx_addon_dir/src/ngx_http_lua_hook.h $ngx_addon_dir/src/ngx_http_lua_util.h $ngx_addon_dir/src/ngx_http_lua_cache.h $ngx_addon_dir/src/ngx_http_lua_conf.h $ngx_addon_dir/src/ngx_http_lua_contentby.h $ngx_addon_dir/src/ngx_http_lua_setby.h $ngx_addon_dir/src/ngx_http_lua_filter.h $ngx_addon_dir/src/ngx_http_lua_clfactory.h"
-CFLAGS="$CFLAGS -DNDK_SET_VAR -DNGX_HAVE_OPENSSL_MD5_H -DNGX_HAVE_OPENSSL_SHA1_H -DNDK_SET_VAR -DNDK_HASH -DNDK_SHA1 -DNDK_MD5"
+CFLAGS="$CFLAGS -DNDK_SET_VAR -DNGX_OPENSSL_MD5 -DNGX_HAVE_OPENSSL_MD5_H -DNGX_HAVE_OPENSSL_SHA1_H -DNDK_SET_VAR -DNDK_HASH -DNDK_SHA1 -DNDK_MD5"
 CORE_LIBS="-Wl,-E $CORE_LIBS"
 

@@ -17,6 +17,7 @@
 
 #include <nginx.h>
 #include <ndk.h>
+#include <ngx_md5.h>
 
 
 typedef struct {
