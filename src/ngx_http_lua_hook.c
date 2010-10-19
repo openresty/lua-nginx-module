@@ -919,7 +919,7 @@ ngx_http_lua_ngx_md5(lua_State *L)
         return NGX_ERROR;
     }
 
-    ndk_md5_lower_hash((char *) p, (char *) src, slen);
+    ndk_md5_hash(p, (char *) src, slen);
 
     lua_pushlstring(L, (char *) p, len);
 
