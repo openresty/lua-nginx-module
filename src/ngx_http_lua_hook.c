@@ -14,6 +14,8 @@ static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size);
 static void log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L);
+static uintptr_t ngx_escape_uri_patched(u_char *dst, u_char *src,
+        size_t size, ngx_uint_t type);
 
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
@@ -78,7 +80,7 @@ ngx_http_lua_ngx_log(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if(r && r->connection && r->connection->log) {
+    if (r && r->connection && r->connection->log) {
         int level = luaL_checkint(L, 1);
 
         // remove log-level param from stack
@@ -541,7 +543,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
         return 1;
     }
 
-    escape = 2 * ngx_escape_uri(NULL, src, len, NGX_ESCAPE_URI);
+    escape = 2 * ngx_escape_uri_patched(NULL, src, len, NGX_ESCAPE_URI);
 
     dlen = escape + len;
 
@@ -554,7 +556,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
         ngx_memcpy(dst, src, len);
 
     } else {
-        ngx_escape_uri(dst, src, len, NGX_ESCAPE_URI);
+        ngx_escape_uri_patched(dst, src, len, NGX_ESCAPE_URI);
     }
 
     lua_pushlstring(L, (char *) dst, dlen);
@@ -1173,5 +1175,154 @@ ngx_http_lua_ngx_get_now_ts(lua_State *L)
     lua_pushnumber(L, (lua_Number) now);
 
     return 1;
+}
+
+
+uintptr_t
+ngx_escape_uri_patched(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
+{
+    ngx_uint_t      n;
+    uint32_t       *escape;
+    static u_char   hex[] = "0123456789abcdef";
+
+                    /* " ", "#", "%", "?", %00-%1F, %7F-%FF */
+
+    static uint32_t   uri[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x80000829, /* 1000 0000 0000 0000  0000 1000 0010 1001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "#", "%", "+", "?", %00-%1F, %7F-%FF */
+
+    static uint32_t   args[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x80000829, /* 1000 0000 0000 0000  0000 1000 0010 1001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "#", """, "%", "'", %00-%1F, %7F-%FF */
+
+    static uint32_t   html[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x000000ad, /* 0000 0000 0000 0000  0000 0000 1010 1101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", """, "%", "'", %00-%1F, %7F-%FF */
+
+    static uint32_t   refresh[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000085, /* 0000 0000 0000 0000  0000 0000 1000 0101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "%", %00-%1F */
+
+    static uint32_t   memcached[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000021, /* 0000 0000 0000 0000  0000 0000 0010 0001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+                    /* mail_auth is the same as memcached */
+
+    static uint32_t  *map[] =
+        { uri, args, html, refresh, memcached, memcached };
+
+
+    escape = map[type];
+
+    if (dst == NULL) {
+
+        /* find the number of the characters to be escaped */
+
+        n = 0;
+
+        while (size) {
+            if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
+                n++;
+            }
+            src++;
+            size--;
+        }
+
+        return (uintptr_t) n;
+    }
+
+    while (size) {
+        if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
+            *dst++ = '%';
+            *dst++ = hex[*src >> 4];
+            *dst++ = hex[*src & 0xf];
+            src++;
+
+        } else {
+            *dst++ = *src++;
+        }
+        size--;
+    }
+
+    return (uintptr_t) dst;
 }
 

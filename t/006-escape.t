@@ -62,3 +62,17 @@ GET /unescape
 --- response_body
 a 你
 
+
+
+=== TEST 5: escape uri in set_by_lua
+--- ONLY
+--- config
+    location /escape {
+        set_by_lua $res "return ngx.escape_uri('a+b')";
+        echo $res;
+    }
+--- request
+GET /escape
+--- response_body
+a%2bb
+
