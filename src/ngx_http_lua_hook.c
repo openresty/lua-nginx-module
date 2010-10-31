@@ -1326,3 +1326,63 @@ ngx_escape_uri_patched(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
     return (uintptr_t) dst;
 }
 
+
+int
+ngx_http_lua_ngx_index(lua_State *L) {
+    ngx_http_request_t          *r;
+    u_char                      *p;
+    size_t                       len;
+
+    p = (u_char *) luaL_checklstring(L, -1, &len);
+
+    if (len == sizeof("status") - 1 &&
+            ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
+    {
+        lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+        r = lua_touserdata(L, -1);
+        lua_pop(L, 1);
+
+        if (r == NULL) {
+            return luaL_error(L, "no request object found");
+        }
+
+        lua_pushnumber(L, (lua_Number) r->headers_out.status);
+
+        return 1;
+    }
+
+    dd("key %s not matched", p);
+
+    lua_pushnil(L);
+    return 1;
+}
+
+
+int
+ngx_http_lua_ngx_newindex(lua_State *L) {
+    ngx_http_request_t          *r;
+    u_char                      *p;
+    size_t                       len;
+
+    /* we skip the first argument that is the table */
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+
+    if (len == sizeof("status") - 1 &&
+            ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
+    {
+        lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+        r = lua_touserdata(L, -1);
+        lua_pop(L, 1);
+
+        if (r == NULL) {
+            return luaL_error(L, "no request object found");
+        }
+
+        /* get the value */
+        r->headers_out.status = (ngx_uint_t) luaL_checknumber(L, 3);
+        return 0;
+    }
+
+    return luaL_error(L, "Attempt to write to ngx. with the key \"%s\"", p);
+}
+

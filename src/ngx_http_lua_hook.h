@@ -41,6 +41,8 @@ int ngx_http_lua_ngx_get_now_ts(lua_State *L);
 
 int ngx_http_lua_ngx_location_capture(lua_State *L);
 
+int ngx_http_lua_ngx_index(lua_State *L);
+int ngx_http_lua_ngx_newindex(lua_State *L);
 
 #endif /* NGX_HTTP_LUA_HOOK_H */
 

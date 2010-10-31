@@ -98,7 +98,7 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
     }
 
     if(r->method != NGX_HTTP_POST && r->method != NGX_HTTP_PUT) {
-        dd("request method should not have a body: %d", r->method);
+        dd("request method should not have a body: %d", (int) r->method);
         return NGX_DECLINED;
     }
 

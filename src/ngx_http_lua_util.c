@@ -211,7 +211,9 @@ ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
     if ( ! ctx->headers_sent ) {
-        r->headers_out.status = NGX_HTTP_OK;
+        if (r->headers_out.status == 0) {
+            r->headers_out.status = NGX_HTTP_OK;
+        }
 
         if (ngx_http_set_content_type(r) != NGX_OK) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -450,10 +452,11 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
     lua_setfield(L, -2, "get_today");
 
-    lua_newtable(L);
+    lua_newtable(L); /* .location */
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");
     lua_setfield(L, -2, "location");
+
     /* }}} */
 
     inject_http_consts(L);
@@ -462,7 +465,7 @@ init_ngx_lua_globals(lua_State *L)
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */
 
-    lua_newtable(L);
+    lua_newtable(L); /* metatable for .var */
     lua_pushcfunction(L, ngx_http_lua_var_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_var_set);
@@ -470,6 +473,15 @@ init_ngx_lua_globals(lua_State *L)
     lua_setmetatable(L, -2);
 
     lua_setfield(L, -2, "var");
+
+    /* ngx. getter and setter */
+    lua_newtable(L); /* metatable for .ngx */
+    lua_pushcfunction(L, ngx_http_lua_ngx_index);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_ngx_newindex);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
     /*  }}} */
 
     lua_setglobal(L, "ngx");
@@ -501,7 +513,7 @@ ngx_http_lua_var_get(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    p = (u_char*) luaL_checklstring(L, -1, &len);
+    p = (u_char *) luaL_checklstring(L, -1, &len);
 
     lowcase = ngx_pnalloc(r->pool, len);
     if (lowcase == NULL) {
