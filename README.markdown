@@ -273,10 +273,14 @@ before sending out the response headers.
 ngx.header[HEADER_NAME]
 -----------------------
 
-Set/add response headers. Underscores (_) in the header names will be replaced by dashes (-).
+Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-).
 
     ngx.header.content_type = 'text/plain';
     ngx.header["X-My-Header"] = 'blah blah';
+
+Setting a slot to nil effectively removes it from the response headers:
+
+    ngx.header["X-My-Header"] = nil;
 
 ngx.exec(uri, args)
 ----------
