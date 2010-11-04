@@ -291,6 +291,8 @@ Does an internal redirect to uri with args.
     ngx.exec('/some-location', 'a=3&b=5&c=6');
     ngx.exec('/some-location?a=3&b=5', 'c=6');
 
+This function never returns.
+
 ngx.send_headers()
 ------------------
 
