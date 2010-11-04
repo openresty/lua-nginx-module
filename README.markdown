@@ -261,6 +261,32 @@ print(a, b, ...)
 
 Emit args concatenated to `error.log`, with log level `ngx.ERR`.
 
+ngx.status
+----------
+
+Read and write the response status. This should be called
+before sending out the response headers.
+
+    ngx.status = ngx.HTTP_CREATED
+    status = ngx.status
+
+ngx.header[HEADER_NAME]
+-----------------------
+
+Set/add response headers. Underscores (_) in the header names will be replaced by dashes (-).
+
+    ngx.header.content_type = 'text/plain';
+    ngx.header["X-My-Header"] = 'blah blah';
+
+ngx.exec(uri, args)
+----------
+
+Does an internal redirect to uri with args.
+
+    ngx.exec('/some-location');
+    ngx.exec('/some-location', 'a=3&b=5&c=6');
+    ngx.exec('/some-location?a=3&b=5', 'c=6');
+
 ngx.send_headers()
 ------------------
 
