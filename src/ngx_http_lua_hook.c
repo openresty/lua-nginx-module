@@ -53,6 +53,7 @@ ngx_http_lua_atpanic(lua_State *L)
     NGX_LUA_EXCEPTION_THROW(1);
 }
 
+
 static void
 log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 {
@@ -64,6 +65,7 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 
     ngx_log_error((ngx_uint_t)level, r->connection->log, 0, "(%s) %s", ident, (s == NULL) ? "(null)" : s);
 }
+
 
 /**
  * Wrapper of NginX log functionality. Take a log level param and varargs of
@@ -95,6 +97,7 @@ ngx_http_lua_ngx_log(lua_State *L)
     return 0;
 }
 
+
 /**
  * Override Lua print function, output message to NginX error logs. Equal to
  * ngx.log(ngx.ERR, ...).
@@ -119,6 +122,7 @@ ngx_http_lua_print(lua_State *L)
 
     return 0;
 }
+
 
 /**
  * Send out headers

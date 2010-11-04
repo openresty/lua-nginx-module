@@ -28,6 +28,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     return lmcf;
 }
 
+
 char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
@@ -44,6 +45,7 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     return NGX_CONF_OK;
 }
+
 
 void*
 ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
@@ -64,6 +66,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 
+
 char*
 ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
@@ -76,6 +79,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
+
 static void
 ngx_http_lua_cleanup_vm(void *data)
 {
@@ -87,6 +91,7 @@ ngx_http_lua_cleanup_vm(void *data)
         dd("Lua VM closed!");
     }
 }
+
 
 static char*
 ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
@@ -111,5 +116,4 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     return NGX_CONF_OK;
 }
-
 
