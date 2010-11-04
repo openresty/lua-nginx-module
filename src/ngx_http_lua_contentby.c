@@ -142,17 +142,31 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             msg = lua_tostring(cc, -1);
 
         } else {
-            if (lua_isnil(cc, -1) && ctx->error_rc != 0) {
-                dd("run here...throwing...");
+            if (lua_isnil(cc, -1)) {
+                if (ctx->error_rc != 0) {
+                    dd("run here...throwing...");
 
-                ngx_http_lua_del_thread(r, L, cc_ref, 0);
+                    ngx_http_lua_del_thread(r, L, cc_ref, 0);
 
-                if (ctx->cleanup) {
-                    *ctx->cleanup = NULL;
-                    ctx->cleanup = NULL;
+                    if (ctx->cleanup) {
+                        *ctx->cleanup = NULL;
+                        ctx->cleanup = NULL;
+                    }
+
+                    return ctx->error_rc;
                 }
 
-                return ctx->error_rc;
+                if (ctx->exec_uri.len) {
+                    ngx_http_lua_del_thread(r, L, cc_ref, 0);
+
+                    if (ctx->cleanup) {
+                        *ctx->cleanup = NULL;
+                        ctx->cleanup = NULL;
+                    }
+
+                    return ngx_http_internal_redirect(r, &ctx->exec_uri,
+                            &ctx->exec_args);
+                }
             }
 
             msg = "unknown reason";

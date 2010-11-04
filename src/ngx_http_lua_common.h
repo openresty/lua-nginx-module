@@ -44,6 +44,8 @@ typedef struct {
     ngx_chain_t     *body;              /*  captured current request body */
     ngx_int_t        sr_status;         /*  captured subrequest status */
     ngx_int_t        error_rc;
+    ngx_str_t        exec_uri;
+    ngx_str_t        exec_args;
 
     ngx_flag_t       read_body_done:1;      /* 1: request body has been all read; 0: body has not been all read */
     ngx_flag_t       waiting_more_body:1;   /* 1: waiting for more data; 0: no need to wait */

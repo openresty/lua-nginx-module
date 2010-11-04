@@ -404,6 +404,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_newtable(L);    /* ngx.* */
 
     /* {{{ register nginx hook functions */
+    lua_pushcfunction(L, ngx_http_lua_ngx_exec);
+    lua_setfield(L, -2, "exec");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
     lua_setfield(L, -2, "send_headers");
 
