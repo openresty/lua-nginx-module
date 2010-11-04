@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #define DDEBUG 0
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
@@ -215,12 +216,14 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ct
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (ngx_http_set_content_type(r) != NGX_OK) {
+        if (! ctx->headers_set && ngx_http_set_content_type(r) != NGX_OK) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        ngx_http_clear_content_length(r);
-        ngx_http_clear_accept_ranges(r);
+        if (! ctx->headers_set) {
+            ngx_http_clear_content_length(r);
+            ngx_http_clear_accept_ranges(r);
+        }
 
         if (r->http_version >= NGX_HTTP_VERSION_11) {
             /* Send response headers for HTTP version <= 1.0 elsewhere */
@@ -231,6 +234,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ct
 
     return NGX_OK;
 }
+
 
 ngx_int_t
 ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx_chain_t *cl)
@@ -474,11 +478,24 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_setfield(L, -2, "var");
 
+#if 1
+    lua_newtable(L);    /* .header */
+
+    lua_newtable(L); /* metatable for .header */
+    lua_pushcfunction(L, ngx_http_lua_header_get);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_header_set);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
+    lua_setfield(L, -2, "header");
+#endif
+
     /* ngx. getter and setter */
     lua_newtable(L); /* metatable for .ngx */
-    lua_pushcfunction(L, ngx_http_lua_ngx_index);
+    lua_pushcfunction(L, ngx_http_lua_ngx_get);
     lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_newindex);
+    lua_pushcfunction(L, ngx_http_lua_ngx_set);
     lua_setfield(L, -2, "__newindex");
     lua_setmetatable(L, -2);
 
@@ -570,7 +587,7 @@ ngx_http_lua_var_set(lua_State *L)
     }
 
     /* we skip the first argument that is the table */
-    p = (u_char*) luaL_checklstring(L, 2, &len);
+    p = (u_char *) luaL_checklstring(L, 2, &len);
 
     lowcase = ngx_palloc(r->pool, len + 1);
     if (lowcase == NULL) {

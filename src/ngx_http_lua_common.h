@@ -47,8 +47,10 @@ typedef struct {
 
     ngx_flag_t       read_body_done:1;      /* 1: request body has been all read; 0: body has not been all read */
     ngx_flag_t       waiting_more_body:1;   /* 1: waiting for more data; 0: no need to wait */
+    ngx_flag_t       headers_set:1;
 
     ngx_http_cleanup_pt     *cleanup;
+
 } ngx_http_lua_ctx_t;
 
 typedef enum {
@@ -56,9 +58,11 @@ typedef enum {
     location_capture
 } ngx_http_lua_io_cmd_t;
 
+
 extern ngx_module_t ngx_http_lua_module;
 extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
+
 
 /*  user code cache table key in Lua vm registry */
 #define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"
@@ -69,6 +73,7 @@ extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 #define GLOBALS_SYMBOL_REQUEST    "ngx._req"
 /*  globals symbol to hold code chunk handling NginX request */
 #define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
+
 
 #endif /* NGX_HTTP_LUA_COMMON_H */
 
