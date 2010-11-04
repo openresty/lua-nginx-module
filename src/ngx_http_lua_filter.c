@@ -20,7 +20,7 @@ ngx_http_lua_filter_init(ngx_conf_t *cf)
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
 
-    if(h == NULL) {
+    if (h == NULL) {
         return NGX_ERROR;
     }
 
@@ -41,7 +41,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    if(ctx && ctx->capture) {
+    if (ctx && ctx->capture) {
         // force subrequest response body buffer in memory
         r->filter_need_in_memory = 1;
 
@@ -57,7 +57,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     int rc;
     ngx_http_lua_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    if(!ctx || !ctx->capture) {
+    if (!ctx || !ctx->capture) {
         return ngx_http_lua_next_body_filter(r, in);
     }
 
@@ -82,29 +82,29 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    if(!llcf->force_read_body) {
+    if (!llcf->force_read_body) {
         dd("no need to reading request body");
         return NGX_DECLINED;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    if(ctx != NULL) {
-        if(ctx->read_body_done) {
+    if (ctx != NULL) {
+        if (ctx->read_body_done) {
             dd("request body has been read");
             return NGX_DECLINED;
         }
         return NGX_AGAIN;
     }
 
-    if(r->method != NGX_HTTP_POST && r->method != NGX_HTTP_PUT) {
+    if (r->method != NGX_HTTP_POST && r->method != NGX_HTTP_PUT) {
         dd("request method should not have a body: %d", (int) r->method);
         return NGX_DECLINED;
     }
 
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
 
-    if(ctx == NULL) {
+    if (ctx == NULL) {
         return NGX_ERROR;
     }
 
@@ -114,11 +114,11 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_post_read);
 
-    if(rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
     }
 
-    if(rc == NGX_AGAIN) {
+    if (rc == NGX_AGAIN) {
         ctx->waiting_more_body = 1;
         return NGX_AGAIN;
     }
@@ -141,7 +141,7 @@ ngx_http_lua_post_read(ngx_http_request_t *r)
     r->main->count--;
 #endif
 
-    if(ctx->waiting_more_body) {
+    if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
         ngx_http_core_run_phases(r);
     }

@@ -31,7 +31,7 @@ lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     lua_State *L = luaL_newstate();
-    if(L == NULL) {
+    if (L == NULL) {
         return NULL;
     }
 
@@ -75,7 +75,6 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         lua_pop(L, 2);
     }
 
-
     lua_remove(L, -1); /* remove the "package" table */
 
     init_ngx_lua_registry(L);
@@ -93,7 +92,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
 
     lua_State *cr = lua_newthread(L);
-    if(cr) {
+    if (cr) {
         /*  new globals table for coroutine */
         lua_newtable(cr);
 
@@ -109,7 +108,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         lua_replace(cr, LUA_GLOBALSINDEX);
 
         *ref = luaL_ref(L, -2);
-        if(*ref == LUA_NOREF) {
+        if (*ref == LUA_NOREF) {
             lua_settop(L, top);    /*  restore main trhead stack */
             return NULL;
         }

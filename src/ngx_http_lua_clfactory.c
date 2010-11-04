@@ -91,7 +91,7 @@ clfactory_getF(lua_State *l, void *ud, size_t *size)
 {
     clfactory_file_ctx_t *lf = (clfactory_file_ctx_t *)ud;
     (void)l;
-    if(lf->sent_begin == 0) {
+    if (lf->sent_begin == 0) {
         lf->sent_begin = 1;
         *size = CLFACTORY_BEGIN_SIZE;
         return CLFACTORY_BEGIN_CODE;
@@ -103,7 +103,7 @@ clfactory_getF(lua_State *l, void *ud, size_t *size)
         return "\n";
     }
     if (feof(lf->f)) {
-        if(lf->sent_end == 0) {
+        if (lf->sent_end == 0) {
             lf->sent_end = 1;
             *size = CLFACTORY_END_SIZE;
             return CLFACTORY_END_CODE;
@@ -130,13 +130,13 @@ clfactory_getS(lua_State *l, void *ud, size_t *size)
 {
     clfactory_buffer_ctx_t *ls = (clfactory_buffer_ctx_t *)ud;
     (void)l;
-    if(ls->sent_begin == 0) {
+    if (ls->sent_begin == 0) {
         ls->sent_begin = 1;
         *size = CLFACTORY_BEGIN_SIZE;
         return CLFACTORY_BEGIN_CODE;
     }
-    if(ls->size == 0) {
-        if(ls->sent_end == 0) {
+    if (ls->size == 0) {
+        if (ls->sent_end == 0) {
             ls->sent_end = 1;
             *size = CLFACTORY_END_SIZE;
             return CLFACTORY_END_CODE;

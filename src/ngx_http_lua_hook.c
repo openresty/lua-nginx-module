@@ -42,7 +42,7 @@ ngx_http_lua_atpanic(lua_State *L)
     lua_pop(L, 1);
 
     /*  log Lua VM crashing reason to error log */
-    if(r && r->connection && r->connection->log) {
+    if (r && r->connection && r->connection->log) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-atpanic) Lua VM crashed, reason: %s", s);
     } else {
         dd("(lua-atpanic) can't output Lua VM crashing reason to error log"
@@ -111,7 +111,7 @@ ngx_http_lua_print(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if(r && r->connection && r->connection->log) {
+    if (r && r->connection && r->connection->log) {
         log_wrapper(r, "lua-print", NGX_LOG_ERR, L);
     } else {
         dd("(lua-print) can't output print content to error log due to invalid logging context!");
@@ -133,9 +133,9 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if(r) {
+    if (r) {
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if(ctx != NULL && ctx->headers_sent == 0) {
+        if (ctx != NULL && ctx->headers_sent == 0) {
             ngx_http_lua_send_header_if_needed(r, ctx);
         }
     } else {
@@ -409,7 +409,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     }
 
     sr_ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
-    if(sr_ctx == NULL) {
+    if (sr_ctx == NULL) {
         return luaL_error(L, "memory allocation error");
     }
 
@@ -490,9 +490,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     pr->write_event_handler = ngx_http_lua_wev_handler;
 
     /*  capture subrequest response status */
-    if(rc == NGX_ERROR) {
+    if (rc == NGX_ERROR) {
         pr_ctx->sr_status = NGX_HTTP_INTERNAL_SERVER_ERROR;
-    } else if(rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    } else if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         pr_ctx->sr_status = rc;
     } else {
         pr_ctx->sr_status = r->headers_out.status;

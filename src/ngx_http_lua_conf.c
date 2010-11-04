@@ -81,7 +81,7 @@ ngx_http_lua_cleanup_vm(void *data)
 {
     lua_State *lua = data;
 
-    if(lua != NULL) {
+    if (lua != NULL) {
         lua_close(lua);
 
         dd("Lua VM closed!");

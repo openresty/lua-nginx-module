@@ -41,17 +41,17 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
 
     dd("Code cache table to load: %p", lua_topointer(L, -1));
 
-    if(!lua_istable(L, -1)) {
+    if (!lua_istable(L, -1)) {
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }
 
     lua_getfield(L, -1, ck);    /*  sp++ */
-    if(lua_isfunction(L, -1)) {
+    if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
         int rc = lua_pcall(L, 0, 1, 0);
 
-        if(rc == 0) {
+        if (rc == 0) {
             /*  remove cache table from stack, leave code chunk at top of stack */
             lua_remove(L, -2);                        /*  sp-- */
             return NGX_OK;
@@ -90,7 +90,7 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *ck)
 
     dd("Code cache table to store: %p", lua_topointer(L, -1));
 
-    if(! lua_istable(L, -1)) {
+    if (! lua_istable(L, -1)) {
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }

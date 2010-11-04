@@ -212,7 +212,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /*  register location content handler */
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
-    if(clcf == NULL) {
+    if (clcf == NULL) {
         return NGX_CONF_ERROR;
     }
     clcf->handler = cmd->post;
