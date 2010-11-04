@@ -42,7 +42,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx && ctx->capture) {
-        // force subrequest response body buffer in memory
+        /* force subrequest response body buffer in memory */
         r->filter_need_in_memory = 1;
 
         return NGX_OK;

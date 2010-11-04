@@ -49,8 +49,8 @@ ngx_http_lua_clfactory_loadfile(lua_State *l, const char *filename)
     }
 
     if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-        // no binary file supported as closure factory code needs to be
-        // compiled to bytecode along with user code
+        /* no binary file supported as closure factory code needs to be */
+        /* compiled to bytecode along with user code */
         return clfactory_errfile(l, "load binary file", fnameindex);
     }
 

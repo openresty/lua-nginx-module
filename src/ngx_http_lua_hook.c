@@ -86,7 +86,7 @@ ngx_http_lua_ngx_log(lua_State *L)
     if (r && r->connection && r->connection->log) {
         int level = luaL_checkint(L, 1);
 
-        // remove log-level param from stack
+        /* remove log-level param from stack */
         lua_remove(L, 1);
 
         log_wrapper(r, "lua-log", level, L);

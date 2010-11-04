@@ -98,19 +98,19 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     ngx_pool_cleanup_t *cln;
 
-    // add new cleanup handler to config mem pool
+    /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    // create new Lua VM instance
+    /* create new Lua VM instance */
     lmcf->lua = ngx_http_lua_new_state(cf, lmcf);
     if (lmcf->lua == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    // register cleanup handler for Lua VM
+    /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
     cln->data = lmcf->lua;
 
