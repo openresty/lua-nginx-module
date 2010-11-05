@@ -76,7 +76,8 @@ GET /escape
 a%2bb
 
 
-=== TEST 5: escape uri in set_by_lua
+
+=== TEST 6: escape uri in set_by_lua
 --- config
     location /escape {
         set_by_lua $res "return ngx.escape_uri('a/b')";
