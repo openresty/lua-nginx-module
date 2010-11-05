@@ -282,7 +282,7 @@ Multi-value headers can be set this way:
 
     ngx.header['Set-Cookie'] = {'a=32; path=/', 'b=4; path=/'}
 
-Will yield
+will yield
 
     Set-Cookie: a=32; path=/
     Set-Cookie: b=4; path=/
