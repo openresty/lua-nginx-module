@@ -289,12 +289,27 @@ Will yield
 
 in the response headers. Only array-like tables are accepted.
 
+Note that, for those standard headers that only accepts a single value, like Content-Type, only the last element
+in the (array) table will take effect. So
+
+    ngx.header.content_type = {'a', 'b'}
+
+is equivalent to
+
+    ngx.header.content_type = 'b'
+
 Setting a slot to nil effectively removes it from the response headers:
 
     ngx.header["X-My-Header"] = nil;
 
+same does assigning an empty table:
+
+    ngx.header["X-My-Header"] = {};
+
+Reading values from ngx.header.HEADER is not implemented yet.
+
 ngx.exec(uri, args)
-----------
+-------------------
 
 Does an internal redirect to uri with args.
 

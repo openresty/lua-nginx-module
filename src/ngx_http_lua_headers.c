@@ -153,7 +153,8 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
                 *output_header = &h[i];
             }
 
-            return NGX_OK;
+            /* return NGX_OK; */
+            matched = 1;
         }
     }
 

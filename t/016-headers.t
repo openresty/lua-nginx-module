@@ -105,7 +105,7 @@ Hello
 
 
 
-=== TEST 6: set response content-type header
+=== TEST 6: set multi response content-type header
 --- config
     location /read {
         content_by_lua '
@@ -122,7 +122,7 @@ Hello
 
 
 
-=== TEST 6: set response content-type header
+=== TEST 7: set response content-type header
 --- config
     location /read {
         content_by_lua '
@@ -134,6 +134,60 @@ Hello
 GET /read
 --- response_headers
 Content-Type: bc
+--- response_body
+Hello
+
+
+
+=== TEST 8: set multi response content-type header and clears it
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header["X-Foo"] = {"a", "bc"}
+            ngx.header["X-Foo"] = {}
+            ngx.say("Hello")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+!X-Foo
+--- response_body
+Hello
+
+
+
+=== TEST 9: set multi response content-type header and clears it
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header["X-Foo"] = {"a", "bc"}
+            ngx.header["X-Foo"] = nil
+            ngx.say("Hello")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+!X-Foo
+--- response_body
+Hello
+
+
+
+=== TEST 10: set multi response content-type header (multiple times)
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header["X-Foo"] = {"a", "bc"}
+            ngx.header["X-Foo"] = {"a", "abc"}
+            ngx.say("Hello")
+        ';
+    }
+--- request
+GET /read
+--- raw_response_headers_like chomp
+X-Foo: a\r\n.*?X-Foo: abc$
 --- response_body
 Hello
 
