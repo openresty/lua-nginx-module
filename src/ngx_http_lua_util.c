@@ -401,6 +401,21 @@ init_ngx_lua_globals(lua_State *L)
     lua_setglobal(L, "print");
     /* }}} */
 
+    lua_newtable(L);    /* ndk.* */
+
+    lua_newtable(L);    /* .set_var */
+
+    lua_newtable(L); /* metatable for .set_var */
+    lua_pushcfunction(L, ngx_http_lua_ndk_set_var_get);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_ndk_set_var_set);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
+    lua_setfield(L, -2, "set_var");
+
+    lua_setglobal(L, "ndk");
+
     lua_newtable(L);    /* ngx.* */
 
     /* {{{ register nginx hook functions */
