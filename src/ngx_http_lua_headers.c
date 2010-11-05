@@ -293,47 +293,42 @@ ngx_int_t
 ngx_http_lua_set_header(ngx_http_request_t *r, ngx_str_t key, ngx_str_t value,
         ngx_flag_t override)
 {
-    ngx_http_lua_header_val_t        *hv;
+    ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
 
     ngx_uint_t                        i;
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    hv = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_header_val_t));
-    if (hv == NULL) {
-        return NGX_ERROR;
-    }
+    hv.hash = 1;
+    hv.key = key;
 
-    hv->hash = 1;
-    hv->key = key;
-
-    hv->offset = 0;
-    hv->no_override = ! override;
+    hv.offset = 0;
+    hv.no_override = ! override;
 
     for (i = 0; handlers[i].name.len; i++) {
-        if (hv->key.len != handlers[i].name.len
-                || ngx_strncasecmp(hv->key.data, handlers[i].name.data,
+        if (hv.key.len != handlers[i].name.len
+                || ngx_strncasecmp(hv.key.data, handlers[i].name.data,
                     handlers[i].name.len) != 0)
         {
-            dd("hv key comparison: %s <> %s", handlers[i].name.data, hv->key.data);
+            dd("hv key comparison: %s <> %s", handlers[i].name.data, hv.key.data);
 
             continue;
         }
 
-        dd("Matched handler: %s %s", handlers[i].name.data, hv->key.data);
+        dd("Matched handler: %s %s", handlers[i].name.data, hv.key.data);
 
-        hv->offset = handlers[i].offset;
-        hv->handler = handlers[i].handler;
+        hv.offset = handlers[i].offset;
+        hv.handler = handlers[i].handler;
 
         break;
     }
 
     if (handlers[i].name.len == 0 && handlers[i].handler) {
-        hv->offset = handlers[i].offset;
-        hv->handler = handlers[i].handler;
+        hv.offset = handlers[i].offset;
+        hv.handler = handlers[i].handler;
     }
 
-    return hv->handler(r, hv, &value);
+    return hv.handler(r, &hv, &value);
 }
 
