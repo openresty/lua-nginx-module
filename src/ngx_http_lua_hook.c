@@ -1624,6 +1624,8 @@ ngx_http_lua_ndk_set_var_get(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
+    dd("ndk.set_var metatable __index: %s", p);
+
     func = ngx_http_lookup_ndk_set_var_directive(p, len);
 
     if (func == NULL) {
@@ -1633,8 +1635,15 @@ ngx_http_lua_ndk_set_var_get(lua_State *L)
 
     }
 
-    lua_pushlightuserdata(L, func);
-    lua_pushcclosure(L, ngx_http_lua_run_set_var_directive, 2);
+    lua_pushvalue(L, -1); /* table key key */
+    lua_pushvalue(L, -1); /* table key key key */
+
+    lua_pushlightuserdata(L, func); /* table key key key func */
+    lua_pushcclosure(L, ngx_http_lua_run_set_var_directive, 2); /* table key key closure */
+
+    lua_rawset(L, 1); /* table key */
+
+    lua_rawget(L, 1); /* table closure */
 
     return 1;
 }
@@ -1718,6 +1727,8 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
     }
 
     p = (u_char *) luaL_checklstring(L, lua_upvalueindex(1), &len);
+
+    dd("calling set_var func for %s", p);
 
     func = lua_touserdata(L, lua_upvalueindex(2));
 

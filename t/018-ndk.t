@@ -19,13 +19,16 @@ __DATA__
     location /read {
         content_by_lua '
             local s = ndk.set_var.set_escape_uri(" :")
+            local r = ndk.set_var.set_unescape_uri("a%20b")
             ngx.say(s)
+            ngx.say(r)
         ';
     }
 --- request
 GET /read
 --- response_body
 %20:
+a b
 
 
 
