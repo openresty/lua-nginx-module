@@ -278,6 +278,17 @@ Set/add/clear response headers. Underscores (_) in the header names will be repl
     ngx.header.content_type = 'text/plain';
     ngx.header["X-My-Header"] = 'blah blah';
 
+Multi-value headers can be set this way:
+
+    ngx.header['Set-Cookie'] = {'a=32; path=/', 'b=4; path=/'}
+
+Will yield
+
+    Set-Cookie: a=32; path=/
+    Set-Cookie: b=4; path=/
+
+in the response headers. Only array-like tables are accepted.
+
 Setting a slot to nil effectively removes it from the response headers:
 
     ngx.header["X-My-Header"] = nil;
