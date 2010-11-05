@@ -36,11 +36,14 @@ GET /lua
     }
 --- user_files
 >>> test.lua
-return 1+
+local a
+a = 3 +;
+return a
 --- request
 GET /lua
 --- error_code: 500
 --- response_body_like: 500 Internal Server Error
+--- ONLY
 
 
 
