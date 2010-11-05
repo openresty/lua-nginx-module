@@ -250,6 +250,7 @@ ngx_http_lua_ngx_throw_error(lua_State *L)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t                    rc;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -268,12 +269,13 @@ ngx_http_lua_ngx_throw_error(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    if (ctx->headers_sent) {
-        return luaL_error(L, "attempt to call ngx.throw_error "
-                "after sending out response headers");
+    rc = (ngx_int_t) luaL_checkinteger(L, 1);
+    if (rc >= 200 && ctx->headers_sent) {
+        return luaL_error(L, "attempt to call ngx.throw_error after sending out the headers");
     }
 
-    ctx->error_rc = (ngx_int_t) luaL_checkinteger(L, 1);
+    ctx->error_rc = rc;
+    ctx->error_thrown = 1;
 
     lua_pushnil(L);
     return lua_error(L);
@@ -1368,6 +1370,7 @@ ngx_http_lua_ngx_set(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *p;
     size_t                       len;
+    ngx_http_lua_ctx_t          *ctx;
 
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
@@ -1381,6 +1384,12 @@ ngx_http_lua_ngx_set(lua_State *L) {
 
         if (r == NULL) {
             return luaL_error(L, "no request object found");
+        }
+
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+        if (ctx->headers_sent) {
+            return luaL_error(L, "attempt to set ngx.status after "
+                    "sending out response headers");
         }
 
         /* get the value */

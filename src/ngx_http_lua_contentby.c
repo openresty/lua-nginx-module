@@ -143,7 +143,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         } else {
             if (lua_isnil(cc, -1)) {
-                if (ctx->error_rc != 0) {
+                if (ctx->error_thrown) {
                     dd("run here...throwing...");
 
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);

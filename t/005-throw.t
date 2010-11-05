@@ -409,3 +409,16 @@ GET /baz
 Location: http://localhost:1984/foo/bar
 --- SKIP
 
+
+
+=== TEST 10: throw 0
+--- config
+    location /lua {
+        content_by_lua "ngx.say('Hi'); ngx.eof(); ngx.throw_error(0);ngx.say('world')";
+    }
+--- request
+GET /lua
+--- error_code: 200
+--- response_body
+Hi
+
