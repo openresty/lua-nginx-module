@@ -1183,7 +1183,7 @@ ngx_http_lua_ngx_get_now_ts(lua_State *L)
 }
 
 
-uintptr_t
+static uintptr_t
 ngx_escape_uri_patched(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
 {
     ngx_uint_t      n;
