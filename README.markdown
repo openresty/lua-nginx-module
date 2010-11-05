@@ -390,6 +390,19 @@ Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar
 
 Returns a Lua table with two slots (`res.status` and `res.body`).
 
+ndk.set_var.DIRECTIVE
+---------------------
+
+This mechanism allows calling other nginx C modules' directives that are
+implemented by Nginx Devel Kit (NDK)'s set_var submodule's ndk_set_var_value.
+
+For example, ngx_set_misc module's set_escape_uri, set_quote_sql_str, and etc.
+
+For instance,
+
+    local res = ndk.set_var.set_escape_uri('a/b');
+    -- now res == 'a%2fb'
+
 Performance
 ===========
 
