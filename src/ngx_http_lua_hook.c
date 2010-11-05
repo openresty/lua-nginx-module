@@ -269,8 +269,8 @@ ngx_http_lua_ngx_throw_error(lua_State *L)
     }
 
     if (ctx->headers_sent) {
-        return luaL_error(L, "attempt to call ngx.throw after sending out "
-                "response headers");
+        return luaL_error(L, "attempt to call ngx.throw_error "
+                "after sending out response headers");
     }
 
     ctx->error_rc = (ngx_int_t) luaL_checkinteger(L, 1);
@@ -1594,7 +1594,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     }
 
     if (ctx->headers_sent) {
-        return luaL_error(L, "attemp to call ngx.exec after "
+        return luaL_error(L, "attempt to call ngx.exec after "
                 "sending out response headers");
     }
 

@@ -43,7 +43,6 @@ return a
 GET /lua
 --- error_code: 500
 --- response_body_like: 500 Internal Server Error
---- ONLY
 
 
 
