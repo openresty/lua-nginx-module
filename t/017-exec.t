@@ -156,3 +156,21 @@ GET /read
 --- response_body
 Hello a=Yichun&b=Zhang
 
+
+
+=== TEST 9: args in uri and user args
+--- config
+    location /read {
+        content_by_lua '
+            ngx.exec("@hi?a=Yichun", "b=Zhang")
+            ngx.say("Hi")
+        ';
+    }
+    location @hi {
+        echo Hello $query_string;
+    }
+--- request
+GET /read
+--- response_body
+Hello 
+

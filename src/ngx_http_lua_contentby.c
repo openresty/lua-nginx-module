@@ -164,6 +164,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         ctx->cleanup = NULL;
                     }
 
+                    if (ctx->exec_uri.data[0] == '@') {
+                        if (ctx->exec_args.len > 0) {
+                            ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                                    "query strings %V ignored when exec'ing named location %V",
+                                    &ctx->exec_args, &ctx->exec_uri);
+                        }
+
+                        return ngx_http_named_location(r, &ctx->exec_uri);
+                    }
+
                     return ngx_http_internal_redirect(r, &ctx->exec_uri,
                             &ctx->exec_args);
                 }

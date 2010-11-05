@@ -317,6 +317,18 @@ Does an internal redirect to uri with args.
     ngx.exec('/some-location', 'a=3&b=5&c=6');
     ngx.exec('/some-location?a=3&b=5', 'c=6');
 
+Named locations are also supported, but query strings are ignored. For example
+
+    location /foo {
+        content_by_lua '
+            ngx.exec("@bar");
+        ';
+    }
+
+    location @bar {
+        ...
+    }
+
 This function never returns.
 
 ngx.send_headers()
