@@ -16,19 +16,19 @@ struct ngx_http_lua_header_val_s {
     ngx_str_t                               key;
     ngx_http_lua_set_header_pt              handler;
     ngx_uint_t                              offset;
-    ngx_flag_t                              replace;
-    ngx_flag_t                              wildcard;
+    ngx_flag_t                              no_override;
 };
 
 typedef struct {
     ngx_str_t                               name;
     ngx_uint_t                              offset;
     ngx_http_lua_set_header_pt     handler;
+
 } ngx_http_lua_set_header_t;
 
 
 ngx_int_t ngx_http_lua_set_header(ngx_http_request_t *r, ngx_str_t key,
-        ngx_str_t value);
+        ngx_str_t value, ngx_flag_t override);
 
 
 #endif

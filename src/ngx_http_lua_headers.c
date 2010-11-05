@@ -111,6 +111,9 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     ngx_uint_t                  i;
     ngx_flag_t                  matched = 0;
 
+    if (hv->no_override) {
+        goto new_header;
+    }
 
     part = &r->headers_out.headers.part;
     h = part->elts;
@@ -126,15 +129,15 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         }
 
         if (
-            (!hv->wildcard && (h[i].key.len == hv->key.len
+            (h[i].key.len == hv->key.len
                 && ngx_strncasecmp(h[i].key.data,
                     hv->key.data,
-                                   h[i].key.len) == 0))
+                                   h[i].key.len) == 0)
             ||
-            (hv->wildcard && (h[i].key.len >= hv->key.len-1
+            (h[i].key.len >= hv->key.len-1
                 && ngx_strncasecmp(h[i].key.data,
                     hv->key.data,
-                                   hv->key.len-1) == 0))
+                                   hv->key.len-1) == 0)
             )
         {
             if (value->len == 0) {
@@ -149,11 +152,8 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
             if (output_header) {
                 *output_header = &h[i];
             }
-            if (!hv->wildcard){
-                return NGX_OK;
-            } else {
-                matched = 1;
-            }
+
+            return NGX_OK;
         }
     }
 
@@ -161,10 +161,11 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
       return NGX_OK;
     }
 
-    if ((hv->wildcard || no_create) && value->len == 0) {
+    if (no_create && value->len == 0) {
         return NGX_OK;
     }
 
+new_header:
     h = ngx_list_push(&r->headers_out.headers);
 
     if (h == NULL) {
@@ -288,12 +289,15 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *
 
 
 ngx_int_t
-ngx_http_lua_set_header(ngx_http_request_t *r, ngx_str_t key, ngx_str_t value)
+ngx_http_lua_set_header(ngx_http_request_t *r, ngx_str_t key, ngx_str_t value,
+        ngx_flag_t override)
 {
     ngx_http_lua_header_val_t        *hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
 
     ngx_uint_t                        i;
+
+    dd("set header value: %.*s", (int) value.len, value.data);
 
     hv = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_header_val_t));
     if (hv == NULL) {
@@ -304,6 +308,7 @@ ngx_http_lua_set_header(ngx_http_request_t *r, ngx_str_t key, ngx_str_t value)
     hv->key = key;
 
     hv->offset = 0;
+    hv->no_override = ! override;
 
     for (i = 0; handlers[i].name.len; i++) {
         if (hv->key.len != handlers[i].name.len

@@ -1408,6 +1408,7 @@ ngx_http_lua_header_set(lua_State *L)
     size_t                       len;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
+    ngx_uint_t                   n;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -1444,6 +1445,40 @@ ngx_http_lua_header_set(lua_State *L)
         value.data = NULL;
         value.len = 0;
 
+    } else if (lua_type(L, 3) == LUA_TTABLE) {
+        n = luaL_getn(L, 3);
+        if (n == 0) {
+            value.data = NULL;
+            value.len = 0;
+
+        } else {
+            for (i = 1; i <= n; i++) {
+                dd("header value table index %d", (int) i);
+
+                lua_rawgeti(L, 3, i);
+                p = (u_char*) luaL_checklstring(L, -1, &len);
+
+                value.data = ngx_palloc(r->pool, len);
+                if (value.data == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                ngx_memcpy(value.data, p, len);
+                value.len = len;
+
+                rc = ngx_http_lua_set_header(r, key, value,
+                        i == 1 /* override */);
+
+                if (rc != NGX_OK) {
+                    return luaL_error(L,
+                            "failed to set header %s (error: %d)",
+                            key.data, (int) rc);
+                }
+            }
+
+            goto done;
+        }
+
     } else {
         p = (u_char*) luaL_checklstring(L, 3, &len);
         value.data = ngx_palloc(r->pool, len);
@@ -1458,13 +1493,14 @@ ngx_http_lua_header_set(lua_State *L)
     dd("key: %.*s, value: %.*s",
             (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_header(r, key, value);
+    rc = ngx_http_lua_set_header(r, key, value, 1 /* override */);
+
     if (rc != NGX_OK) {
-        return luaL_error(L, "failed to set header %s (error: %d)", key.data, (int) rc);
+        return luaL_error(L, "failed to set header %s (error: %d)",
+                key.data, (int) rc);
     }
 
-    dd("DONE!");
-
+done:
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     ctx->headers_set = 1;
 

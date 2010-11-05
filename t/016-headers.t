@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 #log_level('warn');
 
 #repeat_each(120);
-repeat_each(2);
+repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 3;
 
@@ -100,6 +100,40 @@ Location: http://www.taobao.com/foo
 GET /read
 --- response_headers
 !Content-Length
+--- response_body
+Hello
+
+
+
+=== TEST 6: set response content-type header
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header["X-Foo"] = {"a", "bc"}
+            ngx.say("Hello")
+        ';
+    }
+--- request
+GET /read
+--- raw_response_headers_like chomp
+X-Foo: a\r\n.*?X-Foo: bc$
+--- response_body
+Hello
+
+
+
+=== TEST 6: set response content-type header
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.content_type = {"a", "bc"}
+            ngx.say("Hello")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Content-Type: bc
 --- response_body
 Hello
 
