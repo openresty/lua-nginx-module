@@ -227,6 +227,14 @@ Read and write NginX variables
     value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
 
+Core constants
+---------------------
+
+    ngx.OK
+    ngx.DONE
+    ngx.AGAIN
+    ngx.ERROR
+
 HTTP status constants
 ---------------------
 
@@ -363,8 +371,16 @@ Force flushing the response outputs.
 ngx.throw_error(status)
 -----------------------
 
-Throw out an error page and interrupts the execution of the current Lua thread,
-status can be `ngx.HTTP_NOT_FOUND` or other HTTP status numbers.
+This function is deprecated; use ngx.exit(status) instead.
+
+ngx.exit(status)
+----------------
+
+Interrupts the execution of the current Lua thread and returns
+status code to nginx.
+
+The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
+or other HTTP status numbers.
 
 ngx.eof()
 ---------

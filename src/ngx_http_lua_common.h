@@ -44,8 +44,8 @@ typedef struct {
     ngx_chain_t     *body;              /*  captured current request body */
     ngx_int_t        sr_status;         /*  captured subrequest status */
 
-    ngx_flag_t       error_thrown;
-    ngx_int_t        error_rc;
+    ngx_flag_t       exited;
+    ngx_int_t        exit_code;
 
     ngx_str_t        exec_uri;
     ngx_str_t        exec_args;

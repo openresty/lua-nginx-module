@@ -143,8 +143,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         } else {
             if (lua_isnil(cc, -1)) {
-                if (ctx->error_thrown) {
-                    dd("run here...throwing...");
+                if (ctx->exited) {
+                    dd("run here...exiting...");
 
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);
 
@@ -153,7 +153,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         ctx->cleanup = NULL;
                     }
 
-                    return ctx->error_rc;
+                    return ctx->exit_code;
                 }
 
                 if (ctx->exec_uri.len) {

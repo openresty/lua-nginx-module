@@ -246,7 +246,7 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 
 
 int
-ngx_http_lua_ngx_throw_error(lua_State *L)
+ngx_http_lua_ngx_exit(lua_State *L)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
@@ -271,11 +271,11 @@ ngx_http_lua_ngx_throw_error(lua_State *L)
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
     if (rc >= 200 && ctx->headers_sent) {
-        return luaL_error(L, "attempt to call ngx.throw_error after sending out the headers");
+        return luaL_error(L, "attempt to call ngx.exit after sending out the headers");
     }
 
-    ctx->error_rc = rc;
-    ctx->error_thrown = 1;
+    ctx->exit_code = rc;
+    ctx->exited = 1;
 
     lua_pushnil(L);
     return lua_error(L);

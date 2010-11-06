@@ -8,6 +8,7 @@ static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
 static void inject_log_consts(lua_State *L);
+static void inject_core_consts(lua_State *L);
 static void setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def);
 
 #define LUA_PATH_SEP ";"
@@ -313,6 +314,25 @@ init_ngx_lua_registry(lua_State *L)
     /* }}} */
 }
 
+
+static void
+inject_core_consts(lua_State *L)
+{
+    /* {{{ HTTP status constants */
+    lua_pushinteger(L, NGX_OK);
+    lua_setfield(L, -2, "OK");
+
+    lua_pushinteger(L, NGX_AGAIN);
+    lua_setfield(L, -2, "AGAIN");
+
+    lua_pushinteger(L, NGX_DONE);
+    lua_setfield(L, -2, "DONE");
+
+    lua_pushinteger(L, NGX_ERROR);
+    lua_setfield(L, -2, "ERROR");
+}
+
+
 static void
 inject_http_consts(lua_State *L)
 {
@@ -434,8 +454,11 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_log);
     lua_setfield(L, -2, "log");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_throw_error);
-    lua_setfield(L, -2, "throw_error");
+    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
+    lua_setfield(L, -2, "throw_error"); /* deprecated */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
+    lua_setfield(L, -2, "exit");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_flush);
     lua_setfield(L, -2, "flush");
@@ -482,6 +505,7 @@ init_ngx_lua_globals(lua_State *L)
 
     inject_http_consts(L);
     inject_log_consts(L);
+    inject_core_consts(L);
 
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */

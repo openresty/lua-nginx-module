@@ -28,7 +28,7 @@ __DATA__
 === TEST 1: throw 403
 --- config
     location /lua {
-        content_by_lua "ngx.throw_error(403);ngx.say('hi')";
+        content_by_lua "ngx.exit(403);ngx.say('hi')";
     }
 --- request
 GET /lua
@@ -40,7 +40,7 @@ GET /lua
 === TEST 2: throw 404
 --- config
     location /lua {
-        content_by_lua "ngx.throw_error(404);ngx.say('hi');";
+        content_by_lua "ngx.exit(404);ngx.say('hi');";
     }
 --- request
 GET /lua
@@ -52,7 +52,7 @@ GET /lua
 === TEST 3: throw 404 after sending the header and partial body
 --- config
     location /lua {
-        content_by_lua "ngx.say('hi');ngx.throw_error(404);ngx.say(', you')";
+        content_by_lua "ngx.say('hi');ngx.exit(404);ngx.say(', you')";
     }
 --- request
 GET /lua
@@ -68,7 +68,7 @@ GET /lua
             if ngx.var.user == 'agentzh' then
                 ngx.eof();
             else
-                ngx.throw_error(403)
+                ngx.exit(403)
             end";
     }
     location /api {
@@ -92,7 +92,7 @@ Logged in
             if ngx.var.user == 'agentzh' then
                 ngx.eof();
             else
-                ngx.throw_error(403)
+                ngx.exit(403)
             end";
     }
     location /api {
@@ -161,12 +161,12 @@ local old_uid = ngx.var.uid
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
 -- print('just have run sr' .. res.body)
 if (res.status ~= ngx.HTTP_OK) then
-    ngx.throw_error(res.status)
+    ngx.exit(res.status)
 end
 res = yajl.to_value(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
-    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
 ngx.var.uid = res[1].uid;
 -- print('done')
@@ -230,12 +230,12 @@ local old_uid = ngx.var.uid
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
 -- print('just have run sr' .. res.body)
 if (res.status ~= ngx.HTTP_OK) then
-    ngx.throw_error(res.status)
+    ngx.exit(res.status)
 end
 res = yajl.to_value(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
-    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
 ngx.var.uid = res[1].uid;
 -- print('done')
@@ -310,12 +310,12 @@ local old_uid = ngx.var.uid
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
 -- print('just have run sr' .. res.body)
 if (res.status ~= ngx.HTTP_OK) then
-    ngx.throw_error(res.status)
+    ngx.exit(res.status)
 end
 res = yajl.to_value(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
-    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
 ngx.var.uid = res[1].uid;
 -- print('done')
@@ -393,11 +393,11 @@ local seo_uri = ngx.var.my_uri
 -- print('about to run sr')
 local res = ngx.location.capture('/conv-mysql?' .. seo_uri)
 if (res.status ~= ngx.HTTP_OK) then
-    ngx.throw_error(res.status)
+    ngx.exit(res.status)
 end
 res = yajl.to_value(res.body)
 if (not res or not res[1] or not res[1].url) then
-    ngx.throw_error(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
 ngx.var.my_uri = res[1].url;
 -- print('done')
@@ -414,7 +414,7 @@ Location: http://localhost:1984/foo/bar
 === TEST 10: throw 0
 --- config
     location /lua {
-        content_by_lua "ngx.say('Hi'); ngx.eof(); ngx.throw_error(0);ngx.say('world')";
+        content_by_lua "ngx.say('Hi'); ngx.eof(); ngx.exit(0);ngx.say('world')";
     }
 --- request
 GET /lua
