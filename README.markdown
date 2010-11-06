@@ -425,12 +425,12 @@ Lua can be obtained freely from its project [homepage](http://www.lua.org/).
 lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
 
 1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
-the version 0.8.41 (see nginx compatibility), and then build the source with
+the version 0.8.53 (see nginx compatibility), and then build the source with
 this module:
 
-        $ wget 'http://sysoev.ru/nginx/nginx-0.8.41.tar.gz'
-        $ tar -xzvf nginx-0.8.41.tar.gz
-        $ cd nginx-0.8.41/
+        $ wget 'http://sysoev.ru/nginx/nginx-0.8.53.tar.gz'
+        $ tar -xzvf nginx-0.8.53.tar.gz
+        $ cd nginx-0.8.53/
         
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -453,8 +453,8 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   0.8.x (last tested version is 0.8.47)
-*   0.7.x >= 0.7.46 (last tested version is 0.7.67)
+*   0.8.x (last tested: 0.8.53)
+*   0.7.x >= 0.7.46 (last tested: 0.7.67)
 
 Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 
