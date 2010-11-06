@@ -259,7 +259,11 @@ NginX log level constants
 print(a, b, ...)
 ----------------
 
-Emit args concatenated to `error.log`, with log level `ngx.ERR`.
+Emit args concatenated to `error.log`, with log level `ngx.DEBUG` and prefix `lua print: `.
+
+It's equivalent to
+
+    ngx.log(ngx.DEBUG, 'lua print: ', a, b, ...)
 
 ngx.status
 ----------
