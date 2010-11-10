@@ -100,7 +100,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         /*  {{{ inherit coroutine's globals to main thread's globals table */
         /*  for print() function will try to find tostring() in current globals */
         /*  table. */
-        lua_newtable(cr);
+        lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
         lua_setfield(cr, -2, "__index");
         lua_setmetatable(cr, -2);
@@ -421,11 +421,11 @@ init_ngx_lua_globals(lua_State *L)
     lua_setglobal(L, "print");
     /* }}} */
 
-    lua_newtable(L);    /* ndk.* */
+    lua_createtable(L, 0, 1);    /* ndk.* */
 
     lua_newtable(L);    /* .set_var */
 
-    lua_newtable(L); /* metatable for .set_var */
+    lua_createtable(L, 0, 2); /* metatable for .set_var */
     lua_pushcfunction(L, ngx_http_lua_ndk_set_var_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_ndk_set_var_set);
@@ -436,7 +436,7 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_setglobal(L, "ndk");
 
-    lua_newtable(L);    /* ngx.* */
+    lua_createtable(L, 0, 20);    /* ngx.* */
 
     /* {{{ register nginx hook functions */
     lua_pushcfunction(L, ngx_http_lua_ngx_exec);
@@ -496,7 +496,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
     lua_setfield(L, -2, "get_today");
 
-    lua_newtable(L); /* .location */
+    lua_createtable(L, 0, 2); /* .location */
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");
     lua_setfield(L, -2, "location");
@@ -510,7 +510,7 @@ init_ngx_lua_globals(lua_State *L)
     /* {{{ register reference maps */
     lua_newtable(L);    /* .var */
 
-    lua_newtable(L); /* metatable for .var */
+    lua_createtable(L, 0, 2); /* metatable for .var */
     lua_pushcfunction(L, ngx_http_lua_var_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_var_set);
@@ -522,7 +522,7 @@ init_ngx_lua_globals(lua_State *L)
 #if 1
     lua_newtable(L);    /* .header */
 
-    lua_newtable(L); /* metatable for .header */
+    lua_createtable(L, 0, 2); /* metatable for .header */
     lua_pushcfunction(L, ngx_http_lua_header_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_header_set);
@@ -533,7 +533,7 @@ init_ngx_lua_globals(lua_State *L)
 #endif
 
     /* ngx. getter and setter */
-    lua_newtable(L); /* metatable for .ngx */
+    lua_createtable(L, 0, 2); /* metatable for .ngx */
     lua_pushcfunction(L, ngx_http_lua_ngx_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_ngx_set);
