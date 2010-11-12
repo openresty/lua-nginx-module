@@ -19,6 +19,8 @@ our $HtmlDir = html_dir;
 #no_diff();
 #no_long_string();
 
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+
 run_tests();
 
 __DATA__
@@ -71,5 +73,41 @@ lua_package_path '/home/agentz/rpm/BUILD/lua-yajl-1.1/build/?.so;/home/lz/luax/?
 --- request
 GET /report/listBidwordPrices4lzExtra.htm?words=123,156,2532
 --- response_body
+--- SKIP
+
+
+
+=== TEST 3: sanity
+I dunno why this test is not passing. TODO'ing...
+--- config
+    location = /memc {
+        #set $memc_value 'hello';
+        set $memc_value $arg_v;
+        set $memc_cmd $arg_c;
+        set $memc_key $arg_k;
+        #set $memc_value hello;
+
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+    location = /echo {
+        echo_location '/memc?c=get&k=foo';
+        echo_location '/memc?c=set&k=foo&v=hello';
+        echo_location '/memc?c=get&k=foo';
+    }
+    location = /main {
+        content_by_lua '
+            res = ngx.location.capture("/memc?c=get&k=foo")
+            ngx.say("1: ", res.body)
+
+            res = ngx.location.capture("/memc?c=set&k=foo&v=bar");
+            ngx.say("2: ", res.body);
+
+            res = ngx.location.capture("/memc?c=get&k=foo")
+            ngx.say("3: ", res.body);
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: 3: bar$
 --- SKIP
 

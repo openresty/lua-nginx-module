@@ -573,7 +573,7 @@ ngx_http_lua_var_get(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
 
-    lowcase = ngx_pnalloc(r->pool, len);
+    lowcase = ngx_palloc(r->pool, len);
     if (lowcase == NULL) {
         return luaL_error(L, "memory allocation error");
     }
