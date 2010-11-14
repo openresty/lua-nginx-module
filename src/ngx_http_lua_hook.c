@@ -202,9 +202,13 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     size = 0;
 
     for (i = 1; i <= nargs; i++) {
-        luaL_checkstring(L, i);
-        lua_tolstring(L, i, &len);
-        size += len;
+        if (lua_type(L, i) == LUA_TNIL) {
+            size += sizeof("nil") - 1;
+        } else {
+            luaL_checkstring(L, i);
+            lua_tolstring(L, i, &len);
+            size += len;
+        }
     }
 
     if (newline) {
@@ -217,8 +221,14 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     }
 
     for (i = 1; i <= nargs; i++) {
-        p = lua_tolstring(L, i, &len);
-        b->last = ngx_copy(b->last, p, len);
+        if (lua_type(L, i) == LUA_TNIL) {
+            *b->last++ = 'n';
+            *b->last++ = 'i';
+            *b->last++ = 'l';
+        } else {
+            p = lua_tolstring(L, i, &len);
+            b->last = ngx_copy(b->last, p, len);
+        }
     }
 
     if (newline) {
@@ -506,6 +516,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     /*  copy subrequest response body */
     pr_ctx->sr_body = ctx->body;
+
+    /* copy subrequest response headers */
+    pr_ctx->sr_headers = &r->headers_out;
 
     /* ensure that the parent request is (or will be)
      *  posted out the head of the r->posted_requests chain */
@@ -1452,6 +1465,19 @@ ngx_http_lua_header_set(lua_State *L)
 
     key.len = len;
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    if (! ctx->headers_set) {
+        rc = ngx_http_set_content_type(r);
+        if (rc != NGX_OK) {
+            return luaL_error(L,
+                    "failed to set default content type: %d",
+                    (int) rc);
+        }
+
+        ctx->headers_set = 1;
+    }
+
     if (lua_type(L, 3) == LUA_TNIL) {
         value.data = NULL;
         value.len = 0;
@@ -1487,7 +1513,7 @@ ngx_http_lua_header_set(lua_State *L)
                 }
             }
 
-            goto done;
+            return 0;
         }
 
     } else {
@@ -1510,10 +1536,6 @@ ngx_http_lua_header_set(lua_State *L)
         return luaL_error(L, "failed to set header %s (error: %d)",
                 key.data, (int) rc);
     }
-
-done:
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    ctx->headers_set = 1;
 
     return 0;
 }

@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -182,15 +182,15 @@ res=404
 
 
 
-=== TEST 11: bad argument type to ngx.print
+=== TEST 11: nil is "nil"
 --- config
     location /lua {
         content_by_lua 'ngx.print(nil)';
     }
 --- request
 GET /lua
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body chomp
+nil
 
 
 
@@ -341,4 +341,73 @@ location /parent {
 GET /parent
 --- response_body
 12
+
+
+
+=== TEST 21: capture location headers
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo "hello, world";
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other");
+            ngx.say("type: ", res.header["Content-Type"]);
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+type: foo/bar
+
+
+
+=== TEST 22: capture location headers
+--- config
+    location /other {
+        default_type 'foo/bar';
+        content_by_lua '
+            ngx.header.Bar = "Bah";
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other");
+            ngx.say("type: ", res.header["Content-Type"]);
+            ngx.say("Bar: ", res.header["Bar"]);
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+type: foo/bar
+Bar: Bah
+
+
+
+=== TEST 23: capture location headers
+--- config
+    location /other {
+        default_type 'foo/bar';
+        content_by_lua '
+            ngx.header.Bar = "Bah";
+            ngx.header.Bar = nil;
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other");
+            ngx.say("type: ", res.header["Content-Type"]);
+            ngx.say("Bar: ", res.header["Bar"]);
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+type: foo/bar
+Bar: nil
 

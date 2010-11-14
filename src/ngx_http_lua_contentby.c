@@ -251,9 +251,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
     lua_State                   *cc;
-    ngx_chain_t                    *cl;
+    ngx_chain_t                 *cl;
     size_t                       len;
     u_char                      *pos, *last;
+    ngx_http_headers_out_t      *sr_headers;
+    ngx_list_part_t             *part;
+    ngx_table_elt_t             *header;
+    ngx_uint_t                   i;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -318,8 +322,62 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     lua_setfield(cc, -2, "status");
 
     /*  copy captured body */
-    lua_pushlstring(cc, (const char*)pos, len);
+    lua_pushlstring(cc, (const char *) pos, len);
     lua_setfield(cc, -2, "body");
+
+    /* copy captured headers */
+
+    lua_newtable(cc); /* res.header */
+
+    sr_headers = ctx->sr_headers;
+
+    if (sr_headers->content_length == NULL
+        && sr_headers->content_length_n >= 0)
+    {
+        lua_pushliteral(cc, "Content-Length"); /* header key */
+        lua_pushnumber(cc, sr_headers->content_length_n); /* head key value */
+        lua_rawset(cc, -3); /* head */
+    }
+
+    if (sr_headers->content_type.len) {
+        lua_pushliteral(cc, "Content-Type"); /* header key */
+        lua_pushlstring(cc, (char *) sr_headers->content_type.data,
+                sr_headers->content_type.len); /* head key value */
+        lua_rawset(cc, -3); /* head */
+    }
+
+    part = &sr_headers->headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+#if 1
+        if (header[i].hash == 0) {
+            continue;
+        }
+#endif
+
+        lua_pushlstring(cc, (char *) header[i].key.data,
+                header[i].key.len); /* header key */
+
+        lua_pushlstring(cc, (char *) header[i].value.data,
+                header[i].value.len); /* header key value */
+
+        lua_rawset(cc, -3); /* head */
+    }
+
+    lua_setfield(cc, -2, "header");
+
     /*  }}} */
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
