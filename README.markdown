@@ -320,6 +320,9 @@ same does assigning an empty table:
 
     ngx.header["X-My-Header"] = {};
 
+`ngx.header` is not a normal Lua table so you cannot
+iterate through it.
+
 Reading values from ngx.header.HEADER is not implemented yet.
 
 ngx.exec(uri, args)
@@ -410,7 +413,10 @@ Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar
 
     res = ngx.location.capture(uri)
 
-Returns a Lua table with two slots (`res.status` and `res.body`).
+Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
+
+`res.header` holds all the response headers of the
+subrequest and it is a normal Lua table.
 
 ndk.set_var.DIRECTIVE
 ---------------------
