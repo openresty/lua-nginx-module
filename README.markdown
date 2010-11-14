@@ -282,7 +282,7 @@ before sending out the response headers.
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
 
-ngx.header[HEADER]
+ngx.header.HEADER
 -----------------------
 
 Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
