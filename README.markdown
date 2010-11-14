@@ -406,6 +406,20 @@ Unescape `str` as a escaped URI component.
 
     newstr = ngx.unescape_uri(str)
 
+ngx.encode_base64(str)
+----------------------
+
+Encode `str` to a base64 digest
+
+    newstr = ngx.encode_base64(str)
+
+ngx.decode_base64(str)
+----------------------
+
+Decode `str` as a base64 digest to the raw form
+
+    newstr = ngx.decode_base64(str)
+
 ngx.location.capture(uri)
 -------------------------
 
