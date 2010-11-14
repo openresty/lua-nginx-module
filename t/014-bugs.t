@@ -88,6 +88,7 @@ I dunno why this test is not passing. TODO'ing...
         #set $memc_value hello;
 
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+        #echo $memc_value;
     }
     location = /echo {
         echo_location '/memc?c=get&k=foo';
@@ -96,7 +97,7 @@ I dunno why this test is not passing. TODO'ing...
     }
     location = /main {
         content_by_lua '
-            res = ngx.location.capture("/memc?c=get&k=foo")
+            res = ngx.location.capture("/memc?c=get&k=foo&v=")
             ngx.say("1: ", res.body)
 
             res = ngx.location.capture("/memc?c=set&k=foo&v=bar");
@@ -109,5 +110,5 @@ I dunno why this test is not passing. TODO'ing...
 --- request
 GET /main
 --- response_body_like: 3: bar$
---- SKIP
+--- ONLY
 

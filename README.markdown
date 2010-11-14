@@ -282,12 +282,14 @@ before sending out the response headers.
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
 
-ngx.header[HEADER_NAME]
+ngx.header[HEADER]
 -----------------------
 
-Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-).
+Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
 
+    # equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
+
     ngx.header["X-My-Header"] = 'blah blah';
 
 Multi-value headers can be set this way:
