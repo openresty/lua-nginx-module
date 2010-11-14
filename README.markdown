@@ -112,7 +112,7 @@ Description
 This module embeds the Lua interpreter into the nginx core and intergrades the powerful Lua threads (aka Lua coroutines) into the nginx event model
 by means of nginx subrequests.
 
-Unlike Apache's mod_lua and Lighttpd's mod_magnet, this module can be 100% non-blocking on network traffic
+Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this module can be 100% non-blocking on network traffic
 as long as you use the `ngx.location.capture` interface
 to let the nginx core to do all your
 requests to mysql, postgresql, memcached,
