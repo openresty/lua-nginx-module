@@ -354,9 +354,10 @@ ngx.send_headers()
 Explicitly send out the response headers.
 
 Usually you don't have to send headers yourself. ngx_lua
-will automatically send out headers when you
-output contents via `ngx.say` or `ngx.print`
-or `content_by_lua` exits normally.
+will automatically send out headers right before you
+output contents via `ngx.say` or `ngx.print`.
+
+Headers will also be sent automatically when `content_by_lua` exits normally.
 
 ngx.print(a, b, ...)
 --------------------
