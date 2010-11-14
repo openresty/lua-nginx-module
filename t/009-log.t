@@ -184,3 +184,20 @@ GET /log
 before log
 after log
 
+
+
+=== TEST 11: print(nil)
+--- config
+    location /log {
+        content_by_lua '
+            print()
+            print(nil)
+            print("nil: ", nil)
+            ngx.say("hi");
+        ';
+    }
+--- request
+GET /log
+--- response_body
+hi
+

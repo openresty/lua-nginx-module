@@ -59,13 +59,53 @@ ngx_http_lua_atpanic(lua_State *L)
 static void
 log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 {
-    const char *s;
+    u_char              *buf;
+    u_char              *p;
+    u_char              *q;
+    int                  nargs, i;
+    size_t               size, len;
 
-    /*  XXX: easy way to support multiple args, any serious performance penalties? */
-    lua_concat(L, lua_gettop(L));
-    s = lua_tostring(L, -1);
+    nargs = lua_gettop(L);
+    if (nargs == 0) {
+        buf = NULL;
+        goto done;
+    }
 
-    ngx_log_error((ngx_uint_t)level, r->connection->log, 0, "%s%s", ident, (s == NULL) ? "(null)" : s);
+    size = 0;
+
+    for (i = 1; i <= nargs; i++) {
+        if (lua_type(L, i) == LUA_TNIL) {
+            size += sizeof("nil") - 1;
+        } else {
+            luaL_checkstring(L, i);
+            lua_tolstring(L, i, &len);
+            size += len;
+        }
+    }
+
+    buf = ngx_palloc(r->pool, size + 1);
+    if (buf == NULL) {
+        luaL_error(L, "out of memory");
+        return;
+    }
+
+    p = buf;
+    for (i = 1; i <= nargs; i++) {
+        if (lua_type(L, i) == LUA_TNIL) {
+            *p++ = 'n';
+            *p++ = 'i';
+            *p++ = 'l';
+        } else {
+            q = (u_char *) lua_tolstring(L, i, &len);
+            p = ngx_copy(p, q, len);
+        }
+    }
+
+    *p++ = '\0';
+
+done:
+    ngx_log_error((ngx_uint_t) level, r->connection->log, 0,
+            "%s%s", ident, (buf == NULL) ? (u_char *) "(null)" : buf);
 }
 
 
@@ -217,7 +257,7 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 
     b = ngx_create_temp_buf(r->pool, size);
     if (b == NULL) {
-        return luaL_error(L, "memory error");
+        return luaL_error(L, "out of memory");
     }
 
     for (i = 1; i <= nargs; i++) {
@@ -237,7 +277,7 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
-        return luaL_error(L, "memory error");
+        return luaL_error(L, "out of memory");
     }
 
     cl->next = NULL;
