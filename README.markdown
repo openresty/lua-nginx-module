@@ -144,7 +144,7 @@ $arg2 ...`, and set the script's return value to `$res` in string form. In
 `<lua-script-str>` code the input arguments can be retrieved from `ngx.arg`
 table (index starts from `1` and increased sequentially).
 
-`set_by_lua*` directives are designed to execute small and quick codes. NginX
+`set_by_lua*` directives are designed to execute small and quick codes. Nginx
 event loop is blocked during the code execution, so you'd better **NOT** call
 anything that may be blocked or time-costy.
 
@@ -172,15 +172,15 @@ content.
 
 The use code is executed in a new spawned coroutine with independent globals
 environment (i.e. a sandbox). I/O operations in user code should only be done
-through predefined NginX APIs, otherwise NginX event loop may be blocked and
+through predefined Nginx APIs, otherwise Nginx event loop may be blocked and
 performance may drop off dramatically.
 
-As predefined NginX I/O APIs used coroutine yielding/resuming mechanism, the
+As predefined Nginx I/O APIs used coroutine yielding/resuming mechanism, the
 user code should not call any modules that used coroutine API to prevent
-obfuscating the predefined NginX APIs (actually coroutine module is masked off
+obfuscating the predefined Nginx APIs (actually coroutine module is masked off
 in `content_by_lua*` directives). This limitation is a little crucial, but
 don't worry! We're working on a alternative coroutine implementation that can
-be fit in the NginX event framework. When it is done, the user code will be
+be fit in the Nginx event framework. When it is done, the user code will be
 able to use coroutine mechanism freely as in standard Lua again!
 
 content_by_lua_file
@@ -203,7 +203,7 @@ lua_need_request_body
 * **Context:** `main | server | location`
 
 Force reading request body data or not. The request data won't be read into
-$request_body NginX variable by default, so you have to explicitly force
+$request_body Nginx variable by default, so you have to explicitly force
 reading the body if you need its content.
 
 Nginx APIs for set_by_lua*
@@ -221,7 +221,7 @@ Index the input arguments to the directive:
 Nginx APIs for content_by_lua*
 ==============================
 
-Read and write NginX variables
+Read and write Nginx variables
 ------------------------------
 
     value = ngx.var.some_nginx_variable_name
@@ -251,7 +251,7 @@ HTTP status constants
     value = ngx.HTTP_INTERNAL_SERVER_ERROR
     value = ngx.HTTP_SERVICE_UNAVAILABLE
 
-NginX log level constants
+Nginx log level constants
 -------------------------
 
     log_level = ngx.STDERR
@@ -517,7 +517,7 @@ To run the test suite, you also need the following perl and nginx modules:
 * Perl modules:
 	* test-nginx: <http://github.com/agentzh/test-nginx>
 
-* NginX modules:
+* Nginx modules:
 	* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module>
 	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module>
 	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module>
