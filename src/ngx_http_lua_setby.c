@@ -94,11 +94,11 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_base64_decode);
-    lua_setfield(L, -2, "base64_decode");
+    lua_pushcfunction(L, ngx_http_lua_ngx_decode_base64);
+    lua_setfield(L, -2, "decode_base64");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_base64_encode);
-    lua_setfield(L, -2, "base64_encode");
+    lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64);
+    lua_setfield(L, -2, "encode_base64");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_md5_bin);
     lua_setfield(L, -2, "md5_bin");

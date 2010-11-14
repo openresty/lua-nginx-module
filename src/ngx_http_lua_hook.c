@@ -999,7 +999,7 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
 
 
 int
-ngx_http_lua_ngx_base64_decode(lua_State *L)
+ngx_http_lua_ngx_decode_base64(lua_State *L)
 {
     ngx_http_request_t      *r;
     ngx_str_t                p, src;
@@ -1047,7 +1047,7 @@ ngx_http_lua_ngx_base64_decode(lua_State *L)
 
 
 int
-ngx_http_lua_ngx_base64_encode(lua_State *L)
+ngx_http_lua_ngx_encode_base64(lua_State *L)
 {
     ngx_http_request_t      *r;
     ngx_str_t                p, src;
