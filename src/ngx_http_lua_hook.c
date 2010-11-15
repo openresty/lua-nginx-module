@@ -242,13 +242,9 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     size = 0;
 
     for (i = 1; i <= nargs; i++) {
-        if (lua_type(L, i) == LUA_TNIL) {
-            size += sizeof("nil") - 1;
-        } else {
-            luaL_checkstring(L, i);
-            lua_tolstring(L, i, &len);
-            size += len;
-        }
+        luaL_checkstring(L, i);
+        lua_tolstring(L, i, &len);
+        size += len;
     }
 
     if (newline) {
@@ -261,14 +257,8 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     }
 
     for (i = 1; i <= nargs; i++) {
-        if (lua_type(L, i) == LUA_TNIL) {
-            *b->last++ = 'n';
-            *b->last++ = 'i';
-            *b->last++ = 'l';
-        } else {
-            p = lua_tolstring(L, i, &len);
-            b->last = ngx_copy(b->last, p, len);
-        }
+        p = lua_tolstring(L, i, &len);
+        b->last = ngx_copy(b->last, p, len);
     }
 
     if (newline) {

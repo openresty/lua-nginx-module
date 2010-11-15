@@ -189,8 +189,8 @@ res=404
     }
 --- request
 GET /lua
---- response_body chomp
-nil
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
 
 
 
@@ -402,7 +402,7 @@ Bar: Bah
         content_by_lua '
             res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
-            ngx.say("Bar: ", res.header["Bar"]);
+            ngx.say("Bar: ", res.header["Bar"] or "nil");
         ';
     }
 --- request
