@@ -299,6 +299,8 @@ It's equivalent to
 
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 
+Nil arguments are accepted and result in literal "nil".
+
 ngx.status
 ----------
 
@@ -390,15 +392,21 @@ ngx.print(a, b, ...)
 
 Emit args concatenated to the HTTP client (as response body).
 
-ngx.log(log_level, ...)
------------------------
-
-Log args concatenated to error.log with the given logging level.
+Nil arguments are not allowed.
 
 ngx.say(a, b, ...)
 ------------------
 
 Just as `ngx.print` but also emit a trailing newline.
+
+Nil arguments are not allowed.
+
+ngx.log(log_level, ...)
+-----------------------
+
+Log args concatenated to error.log with the given logging level.
+
+Nil arguments are accepted and result in literal "nil".
 
 ngx.flush()
 -----------
