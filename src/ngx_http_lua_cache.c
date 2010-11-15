@@ -67,6 +67,7 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
     return NGX_DECLINED;
 }
 
+
 /**
  * Store the closure factory at the top of Lua stack to code cache, and
  * associate it with the given key. Then generate new closure.
