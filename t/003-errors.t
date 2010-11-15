@@ -18,7 +18,9 @@ __DATA__
 === TEST 1: syntax error in lua code chunk
 --- config
     location /lua {
-        set_by_lua $res "return 1+";
+        set_by_lua $res "local a
+            a = a+;
+            return a";
         echo $res;
     }
 --- request
