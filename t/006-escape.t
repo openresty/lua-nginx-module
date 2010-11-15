@@ -80,11 +80,11 @@ a%2bb
 === TEST 6: escape uri in set_by_lua
 --- config
     location /escape {
-        set_by_lua $res "return ngx.escape_uri('a/b=')";
+        set_by_lua $res "return ngx.escape_uri('\"a/b={}:<>;&[]\\\\^')";
         echo $res;
     }
 --- request
 GET /escape
 --- response_body
-a%2fb%3d
+%22a%2fb%3d%7b%7d%3a%3c%3e%3b%26%5b%5d%5c%5e
 
