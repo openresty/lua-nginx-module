@@ -608,7 +608,6 @@ TODO
 
 * Add directives to run lua codes when nginx stops/reloads.
 * Add `ngx.location.capture_multi` to allow multiple parallel subrequests.
-* Implement `ngx.subrequest.capture` to issue subrequests with arbitrary HTTP methods like POST, PUT, and DELETE.
 * Deal with TCP 3-second delay problem under great connection harness.
 * Add `lua_code_cache on|off` directive to allow .lua files updated on-the-fly during development.
 
