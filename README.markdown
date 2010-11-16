@@ -1,12 +1,12 @@
 Name
 ====
 
-lua-nginx-module - Embed the power of Lua into nginx
+ngx_lua - Embed the power of Lua into nginx
 
 Status
 ======
 
-This module is at its early phase of development but is already production
+This module is still under active development but is already production
 ready :)
 
 Commit bit can be freely delivered at your request ;)
@@ -463,7 +463,7 @@ Decode `str` as a base64 digest to the raw form
 ngx.location.capture(uri)
 -------------------------
 
-Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
+Issue a synchronous but still non-blocking (GET) subrequest using `uri` (e.g. /foo/bar).
 
     res = ngx.location.capture(uri)
 
@@ -471,6 +471,10 @@ Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`
 
 `res.header` holds all the response headers of the
 subrequest and it is a normal Lua table.
+
+URI query strings can be concatenated to URI itself, for instance,
+
+    res = ngx.location.capture('/foo/bar?a=3&b=4')
 
 ndk.set_var.DIRECTIVE
 ---------------------
@@ -573,12 +577,14 @@ filtering chain affects a lot. The correct configure adding order is:
 8. drizzle-nginx-module
 9. rds-json-nginx-module
 
-Todo
+TODO
 ====
 
-* Add directives to run lua codes when nginx stops/reloads
-* Implement ngx.exec() functionality
-* Deal with TCP 3-second delay problem under great connection harness
+* Add directives to run lua codes when nginx stops/reloads.
+* Add `ngx.location.capture_multi` to allow multiple parallel subrequests.
+* Implement `ngx.subrequest.capture` to issue subrequests with arbitrary HTTP methods like POST, PUT, and DELETE.
+* Deal with TCP 3-second delay problem under great connection harness.
+* Add `lua_code_cache on|off` directive to allow .lua files updated on-the-fly during development.
 
 Future Plan
 ===========
@@ -586,7 +592,6 @@ Future Plan
 * Add 'lua_require' directive to load module into main thread's globals
 * Add Lua VM passive yield and resume (using debug hook)
 * Make set_by_lua using the same mechanism as content_by_lua
-* Add 'ngx.location.capture_multi' to allow multiple parallel subrequests
 
 Known Issues
 ============
@@ -613,6 +618,9 @@ See Also
 
 * ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
 * echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
+* drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
+* postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
+* memc-nginx-module ( <http://github.com/agentzh/memc-nginx-module> )
 * ngx_http_js_module ( <http://github.com/kung-fu-tzu/ngx_http_js_module> )
 
 Authors
