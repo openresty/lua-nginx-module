@@ -261,6 +261,15 @@ Core constants
     ngx.AGAIN
     ngx.ERROR
 
+HTTP method constants
+---------------------
+
+    value = ngx.HTTP_GET
+    value = ngx.HTTP_HEAD
+    value = ngx.HTTP_PUT
+    value = ngx.HTTP_POST
+    value = ngx.HTTP_DELETE
+
 HTTP status constants
 ---------------------
 
@@ -460,10 +469,10 @@ Decode `str` as a base64 digest to the raw form
 
     newstr = ngx.decode_base64(str)
 
-ngx.location.capture(uri)
+ngx.location.capture(uri, options?)
 -------------------------
 
-Issue a synchronous but still non-blocking (GET) subrequest using `uri` (e.g. /foo/bar).
+Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
 
     res = ngx.location.capture(uri)
 
@@ -479,6 +488,19 @@ URI query strings can be concatenated to URI itself, for instance,
 Named locations like `@foo` are not allowed due to a limitation in
 the nginx core. Use normal locations combined with the `internal` directive to
 prepare internal-only locations.
+
+An optional option table can be fed as the second
+argument, which support various options like
+`method` and `body`. Issuing a POST subrequest, for example,
+can be done as follows
+
+    res = ngx.location.capture(
+        '/foo/bar',
+        { method = ngx.HTTP_POST, body = 'hello, world' }
+    )
+
+See HTTP method constants methods other than POST.
+The `method` option is ngx.HTTP_GET by default.
 
 ndk.set_var.DIRECTIVE
 ---------------------
