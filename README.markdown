@@ -109,7 +109,7 @@ Example Config
 Description
 ===========
 
-This module embeds the Lua interpreter into the nginx core and intergrades the powerful Lua threads (aka Lua coroutines) into the nginx event model
+This module embeds the Lua interpreter into the nginx core and integrates the powerful Lua threads (aka Lua coroutines) into the nginx event model
 by means of nginx subrequests.
 
 Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this module can be 100% non-blocking on network traffic
