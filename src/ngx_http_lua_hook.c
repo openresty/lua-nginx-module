@@ -9,7 +9,23 @@
 #define NGX_UNESCAPE_URI_COMPONENT  0
 
 
-static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr);
+#define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
+
+static ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
+static ngx_str_t  ngx_http_lua_put_method = ngx_http_lua_method_name("PUT");
+static ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
+static ngx_str_t  ngx_http_lua_head_method = ngx_http_lua_method_name("HEAD");
+static ngx_str_t  ngx_http_lua_delete_method = ngx_http_lua_method_name("DELETE");
+
+
+static ngx_str_t  ngx_http_lua_content_length_header_key =
+        ngx_string("Content-Length");
+
+
+static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
+        size_t len);
+static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
+        ngx_uint_t method, ngx_http_request_body_t *body);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
@@ -416,9 +432,15 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     ngx_http_lua_ctx_t              *sr_ctx;
     ngx_str_t                        uri, args;
     ngx_uint_t                       flags = 0;
-    const char                      *p;
+    u_char                          *p;
+    u_char                          *q;
     size_t                           len;
     int                              rc;
+    int                              n;
+    ngx_uint_t                       method;
+    ngx_http_request_body_t         *body = NULL;
+    int                              type;
+    ngx_buf_t                       *b;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -428,25 +450,83 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one argument");
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting one or two arguments");
     }
 
-    p = luaL_checklstring(L, 1, &len);
+    if (n == 2) {
+        if (lua_type(L, 2) != LUA_TTABLE) {
+            return luaL_error(L, "expecting table as the 2nd argument");
+        }
+
+        lua_getfield(L, 2, "method");
+
+        type = lua_type(L, -1);
+        if (type == LUA_TNIL) {
+            method = NGX_HTTP_GET;
+        } else {
+            if (type != LUA_TNUMBER) {
+                return luaL_error(L, "Bad http request method");
+            }
+
+            method = (ngx_uint_t) lua_tonumber(L, -1);
+        }
+
+        lua_getfield(L, 2, "body");
+
+        if (type != LUA_TNIL) {
+            if (type != LUA_TSTRING && type != LUA_TNUMBER) {
+                return luaL_error(L, "Bad http request body");
+            }
+
+            q = (u_char *) lua_tolstring(L, -1, &len);
+            if (len != 0) {
+                body = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+
+                b = ngx_create_temp_buf(r->pool, len);
+                if (b == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                b->last = ngx_copy(b->last, q, len);
+
+                body->bufs = ngx_alloc_chain_link(r->pool);
+                if (body->bufs == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                body->bufs->buf = b;
+                body->bufs->next = NULL;
+
+                body->buf = b;
+            }
+        }
+
+    } else {
+        method = NGX_HTTP_GET;
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
 
     uri.data = ngx_palloc(r->pool, len);
     if (uri.data == NULL) {
         return luaL_error(L, "memory allocation error");
     }
 
-    uri.len = len;
     ngx_memcpy(uri.data, p, len);
+
+    uri.len = len;
 
     args.data = NULL;
     args.len = 0;
 
-    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK) {
-        return luaL_argerror(L, 1, "unsafe URL");
+    rc = ngx_http_parse_unsafe_uri(r, &uri, &args, &flags);
+    if (rc != NGX_OK) {
+        dd("rc = %d", (int) rc);
+
+        return luaL_error(L, "unsafe uri in argument #1: %s", p);
     }
 
     psr = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
@@ -472,7 +552,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
     ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-    rc = ngx_http_lua_adjust_subrequest(sr);
+    rc = ngx_http_lua_adjust_subrequest(sr, method, body);
 
     if (rc != NGX_OK) {
         return luaL_error(L, "failed to adjust the subrequest: %d", (int) rc);
@@ -485,17 +565,66 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
 
 static ngx_int_t
-ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr)
+ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
+        ngx_http_request_body_t *body)
 {
-    ngx_http_core_main_conf_t   *cmcf;
     ngx_http_request_t          *r;
+    ngx_int_t                    rc;
 
     /* we do not inherit the parent request's variables */
-    cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
+    /* cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module); */
 
     r = sr->parent;
 
     sr->header_in = r->header_in;
+
+#if 1
+    /* XXX work-around a bug in ngx_http_subrequest */
+    if (r->headers_in.headers.last == &r->headers_in.headers.part) {
+        sr->headers_in.headers.last = &sr->headers_in.headers.part;
+    }
+#endif
+
+    if (body) {
+        sr->request_body = body;
+
+        rc = ngx_http_lua_set_content_length_header(sr,
+                ngx_buf_size(body->buf));
+
+        if (rc != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    sr->method = method;
+
+    switch (method) {
+        case NGX_HTTP_GET:
+            sr->method_name = ngx_http_lua_get_method;
+            break;
+
+        case NGX_HTTP_POST:
+            sr->method_name = ngx_http_lua_post_method;
+            break;
+
+        case NGX_HTTP_PUT:
+            sr->method_name = ngx_http_lua_put_method;
+            break;
+
+        case NGX_HTTP_HEAD:
+            sr->method_name = ngx_http_lua_head_method;
+            break;
+
+        case NGX_HTTP_DELETE:
+            sr->method_name = ngx_http_lua_delete_method;
+            break;
+
+        default:
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "unsupported HTTP method: %u", (unsigned) method);
+
+            return NGX_ERROR;
+    }
 
     /* XXX work-around a bug in ngx_http_subrequest */
     if (r->headers_in.headers.last == &r->headers_in.headers.part) {
@@ -1794,5 +1923,56 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
     lua_pushlstring(L, (char *) res.data, res.len);
 
     return 1;
+}
+
+
+static ngx_int_t
+ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
+{
+    ngx_table_elt_t            *h;
+
+    r->headers_in.content_length_n = len;
+    r->headers_in.content_length = ngx_pcalloc(r->pool,
+            sizeof(ngx_table_elt_t));
+
+    r->headers_in.content_length->value.data =
+        ngx_palloc(r->pool, NGX_OFF_T_LEN);
+
+    if (r->headers_in.content_length->value.data == NULL) {
+        return NGX_ERROR;
+    }
+
+    r->headers_in.content_length->value.len = ngx_sprintf(
+            r->headers_in.content_length->value.data, "%O",
+            r->headers_in.content_length_n) -
+            r->headers_in.content_length->value.data;
+
+    if (ngx_list_init(&r->headers_in.headers, r->pool, 20,
+                sizeof(ngx_table_elt_t)) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    h = ngx_list_push(&r->headers_in.headers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->hash = r->header_hash;
+
+    h->key = ngx_http_lua_content_length_header_key;
+    h->value = r->headers_in.content_length->value;
+
+    h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
+    if (h->lowcase_key == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
+
+    dd("r content length: %.*s",
+            (int)r->headers_in.content_length->value.len,
+            r->headers_in.content_length->value.data);
+
+    return NGX_OK;
 }
 

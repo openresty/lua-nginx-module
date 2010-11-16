@@ -27,7 +27,7 @@ __DATA__
 --- request
 GET /read
 --- response_body
-%20:
+%20%3a
 a b
 
 

@@ -9,7 +9,8 @@ static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
 static void inject_log_consts(lua_State *L);
 static void inject_core_consts(lua_State *L);
-static void setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def);
+static void setpath(lua_State *L, int tab_idx, const char *fieldname,
+        const char *path, const char *def);
 
 #define LUA_PATH_SEP ";"
 #define AUX_MARK "\1"
@@ -337,6 +338,21 @@ static void
 inject_http_consts(lua_State *L)
 {
     /* {{{ HTTP status constants */
+    lua_pushinteger(L, NGX_HTTP_GET);
+    lua_setfield(L, -2, "HTTP_GET");
+
+    lua_pushinteger(L, NGX_HTTP_POST);
+    lua_setfield(L, -2, "HTTP_POST");
+
+    lua_pushinteger(L, NGX_HTTP_PUT);
+    lua_setfield(L, -2, "HTTP_PUT");
+
+    lua_pushinteger(L, NGX_HTTP_DELETE);
+    lua_setfield(L, -2, "HTTP_DELETE");
+
+    lua_pushinteger(L, NGX_HTTP_HEAD);
+    lua_setfield(L, -2, "HTTP_HEAD");
+
     lua_pushinteger(L, 200);
     lua_setfield(L, -2, "HTTP_OK");
 

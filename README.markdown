@@ -476,6 +476,10 @@ URI query strings can be concatenated to URI itself, for instance,
 
     res = ngx.location.capture('/foo/bar?a=3&b=4')
 
+Named locations like `@foo` are not allowed due to a limitation in
+the nginx core. Use normal locations combined with the `internal` directive to
+prepare internal-only locations.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 
