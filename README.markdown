@@ -642,6 +642,7 @@ use this form:
 See Also
 ========
 
+* "Introduction to ngx_lua" ( <https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction> )
 * ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
 * echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
 * drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
