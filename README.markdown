@@ -510,6 +510,12 @@ Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no sys
 
 This is the local time.
 
+ngx.time()
+-------------
+Returns the elapsed seconds for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
+
+This is the local time.
+
 ngx.strtime()
 -------------
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
@@ -520,6 +526,13 @@ ngx.utc_time()
 ----------------
 
 Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
+
+This is the UTC time.
+
+ngx.utc_strtime()
+----------------
+
+Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 This is the UTC time.
 

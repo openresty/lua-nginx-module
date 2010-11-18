@@ -503,22 +503,28 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_now_ts);
+    lua_pushcfunction(L, ngx_http_lua_ngx_utc_strtime);
+    lua_setfield(L, -2, "utc_strtime");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_utc_time);
     lua_setfield(L, -2, "get_now_ts"); /* deprecated */
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_now_ts);
+    lua_pushcfunction(L, ngx_http_lua_ngx_utc_time);
     lua_setfield(L, -2, "utc_time");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_now);
+    lua_pushcfunction(L, ngx_http_lua_ngx_strtime);
     lua_setfield(L, -2, "get_now"); /* deprecated */
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_now);
+    lua_pushcfunction(L, ngx_http_lua_ngx_strtime);
     lua_setfield(L, -2, "strtime");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
+    lua_pushcfunction(L, ngx_http_lua_ngx_time);
+    lua_setfield(L, -2, "time");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_today);
     lua_setfield(L, -2, "get_today"); /* deprecated */
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_today);
+    lua_pushcfunction(L, ngx_http_lua_ngx_today);
     lua_setfield(L, -2, "today");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);

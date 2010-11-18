@@ -35,9 +35,11 @@ int ngx_http_lua_ngx_md5_bin(lua_State *L);
 int ngx_http_lua_ngx_decode_base64(lua_State *L);
 int ngx_http_lua_ngx_encode_base64(lua_State *L);
 
-int ngx_http_lua_ngx_get_today(lua_State *L);
-int ngx_http_lua_ngx_get_now(lua_State *L);
-int ngx_http_lua_ngx_get_now_ts(lua_State *L);
+int ngx_http_lua_ngx_today(lua_State *L);
+int ngx_http_lua_ngx_time(lua_State *L);
+int ngx_http_lua_ngx_strtime(lua_State *L);
+int ngx_http_lua_ngx_utc_time(lua_State *L);
+int ngx_http_lua_ngx_utc_strtime(lua_State *L);
 int ngx_http_lua_ngx_cookie_time(lua_State *L);
 
 int ngx_http_lua_ngx_location_capture(lua_State *L);

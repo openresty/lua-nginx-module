@@ -11,7 +11,7 @@ repeat_each(1);
 plan tests => repeat_each() * (blocks() * 2);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -46,7 +46,7 @@ GET /now
     }
 --- request
 GET /utc_time
---- response_body_like: ^\d{10}$
+--- response_body_like: ^\d{10,}$
 
 
 
@@ -58,5 +58,48 @@ GET /utc_time
     }
 --- request
 GET /utc_time
---- response_body_like: ^\d{10}$
+--- response_body_like: ^\d{10,}$
+
+
+
+=== TEST 5: use ngx.time in set_by_lua
+--- config
+    location = /time {
+        set_by_lua $a 'return ngx.time()';
+        echo $a;
+    }
+--- request
+GET /time
+--- response_body_like: ^\d{10,}$
+
+
+
+=== TEST 6: use ngx.time in content_by_lua
+--- config
+    location = /time {
+        content_by_lua 'ngx.say(ngx.time())';
+    }
+--- request
+GET /time
+--- response_body_like: ^\d{10,}$
+
+
+
+=== TEST 7: use ngx.time in content_by_lua
+--- config
+    location = /time {
+        content_by_lua '
+            ngx.say(ngx.time())
+            ngx.say(ngx.strtime())
+            ngx.say(ngx.utc_time())
+            ngx.say(ngx.utc_strtime())
+        ';
+    }
+--- request
+GET /time
+--- response_body_like chomp
+^\d{10,}
+\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+\d{10,}
+\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$
 
