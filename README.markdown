@@ -516,12 +516,12 @@ Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx
 
 This is the local time.
 
-ngx.time()
+ngx.utc_now()
 ----------------
 
 Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
 
-This is the GMT time.
+This is the UTC time.
 
 ngx.cookie_time(sec)
 --------------------

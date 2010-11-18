@@ -39,24 +39,24 @@ GET /now
 
 
 
-=== TEST 3: use ngx.time in content_by_lua
+=== TEST 3: use ngx.utc_now in content_by_lua
 --- config
-    location = /time {
-        content_by_lua 'ngx.say(ngx.time())';
+    location = /utc_now {
+        content_by_lua 'ngx.say(ngx.utc_now())';
     }
 --- request
-GET /time
+GET /utc_now
 --- response_body_like: ^\d{10}$
 
 
 
-=== TEST 4: use ngx.time in set_by_lua
+=== TEST 4: use ngx.utc_now in set_by_lua
 --- config
-    location = /time {
-        set_by_lua $a 'return ngx.time()';
+    location = /utc_now {
+        set_by_lua $a 'return ngx.utc_now()';
         echo $a;
     }
 --- request
-GET /time
+GET /utc_now
 --- response_body_like: ^\d{10}$
 

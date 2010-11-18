@@ -21,7 +21,7 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            ngx.say(ngx.cookie_time(ngx.time()))
+            ngx.say(ngx.cookie_time(1290079655))
         ';
     }
 --- request

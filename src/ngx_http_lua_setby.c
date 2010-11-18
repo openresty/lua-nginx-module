@@ -110,7 +110,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_setfield(L, -2, "get_now_ts"); /* deprecated */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_get_now_ts);
-    lua_setfield(L, -2, "time");
+    lua_setfield(L, -2, "utc_now");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_get_now);
     lua_setfield(L, -2, "get_now"); /* deprecated */
