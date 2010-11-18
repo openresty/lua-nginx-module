@@ -538,7 +538,7 @@ This is the UTC time.
 
 ngx.cookie_time(sec)
 --------------------
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.utc_time`).
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.utc_time` or `ngx.time`).
 
     ngx.say(ngx.cookie_time(1290079655))
         # yields "Thu, 18-Nov-10 11:27:35 GMT"
