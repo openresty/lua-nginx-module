@@ -318,7 +318,7 @@ hello
 
 
 
-=== TEST 12: POST (with body, proxy method)
+=== TEST 12: POST (with body, memc method)
 --- config
     location /flush {
         set $memc_cmd flush_all;
@@ -343,6 +343,46 @@ hello
             ngx.say("PUT: " .. res.status);
 
             res = ngx.location.capture("/memc");
+            ngx.say("cached: " .. res.body);
+
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+GET: 404
+PUT: 201
+cached: hello
+
+
+=== TEST 12: POST (with body, memc method)
+--- config
+    location /flush {
+        set $memc_cmd flush_all;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /memc {
+        set $memc_cmd "";
+        set $memc_key $echo_request_uri;
+        set $memc_exptime 600;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /lua {
+        content_by_lua '
+            ngx.location.capture("/flush",
+                { share_all_vars = true });
+
+            res = ngx.location.capture("/memc",
+                { share_all_vars = true });
+            ngx.say("GET: " .. res.status);
+
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello", share_all_vars = true });
+            ngx.say("PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc", { share_all_vars = true });
             ngx.say("cached: " .. res.body);
 
         ';

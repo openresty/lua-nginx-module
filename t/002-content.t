@@ -313,7 +313,7 @@ GET /set
 
 
 
-=== TEST 19: subrequest share variables of main request
+=== TEST 19: subrequests do not share variables of main requests by default
 --- config
 location /sub {
     echo $a;
@@ -324,18 +324,24 @@ location /parent {
 }
 --- request
 GET /parent
---- response_body
-12
+--- response_body eval: "\n"
 
 
 
-=== TEST 20: main request use subrequest's variable
+=== TEST 20: subrequests can share variables of main requests
 --- config
 location /sub {
-    set $a 12;
+    echo $a;
 }
 location /parent {
-    content_by_lua 'res = ngx.location.capture("/sub"); ngx.say(ngx.var.a)';
+    set $a 12;
+    content_by_lua '
+        res = ngx.location.capture(
+            "/sub",
+            { share_all_vars = true }
+        );
+        ngx.print(res.body)
+    ';
 }
 --- request
 GET /parent
@@ -344,7 +350,42 @@ GET /parent
 
 
 
-=== TEST 21: capture location headers
+=== TEST 21: main requests use subrequests' variables
+--- config
+location /sub {
+    set $a 12;
+}
+location /parent {
+    content_by_lua '
+        res = ngx.location.capture("/sub", { share_all_vars = true });
+        ngx.say(ngx.var.a)
+    ';
+}
+--- request
+GET /parent
+--- response_body
+12
+
+
+
+=== TEST 22: main requests do NOT use subrequests' variables
+--- config
+location /sub {
+    set $a 12;
+}
+location /parent {
+    content_by_lua '
+        res = ngx.location.capture("/sub", { share_all_vars = false });
+        ngx.say(ngx.var.a)
+    ';
+}
+--- request
+GET /parent
+--- response_body_like eval: "\n"
+
+
+
+=== TEST 23: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -364,7 +405,7 @@ type: foo/bar
 
 
 
-=== TEST 22: capture location headers
+=== TEST 24: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -388,7 +429,7 @@ Bar: Bah
 
 
 
-=== TEST 23: capture location headers
+=== TEST 25: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';

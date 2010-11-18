@@ -25,7 +25,7 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
         size_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
-        ngx_uint_t method, ngx_http_request_body_t *body);
+        ngx_uint_t method, ngx_http_request_body_t *body, ngx_flag_t share_all_vars);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
@@ -441,6 +441,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     ngx_http_request_body_t         *body = NULL;
     int                              type;
     ngx_buf_t                       *b;
+    ngx_flag_t                       share_all_vars = 0;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -459,6 +460,19 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     if (n == 2) {
         if (lua_type(L, 2) != LUA_TTABLE) {
             return luaL_error(L, "expecting table as the 2nd argument");
+        }
+
+        lua_getfield(L, 2, "share_all_vars");
+
+        type = lua_type(L, -1);
+        if (type == LUA_TNIL) {
+            /* do nothing */
+        } else {
+            if (type != LUA_TBOOLEAN) {
+                return luaL_error(L, "Bad share_all_vars option value");
+            }
+
+            share_all_vars = lua_toboolean(L, -1);
         }
 
         lua_getfield(L, 2, "method");
@@ -552,7 +566,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
     ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-    rc = ngx_http_lua_adjust_subrequest(sr, method, body);
+    rc = ngx_http_lua_adjust_subrequest(sr, method, body, share_all_vars);
 
     if (rc != NGX_OK) {
         return luaL_error(L, "failed to adjust the subrequest: %d", (int) rc);
@@ -566,14 +580,11 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-        ngx_http_request_body_t *body)
+        ngx_http_request_body_t *body, ngx_flag_t share_all_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
     ngx_http_core_main_conf_t   *cmcf;
-
-    /* we do not inherit the parent request's variables */
-    cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
 
     r = sr->parent;
 
@@ -632,15 +643,17 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->headers_in.headers.last = &sr->headers_in.headers.part;
     }
 
-#if 1
+    if (! share_all_vars) {
+        /* we do not inherit the parent request's variables */
+        cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
 
-    sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));
-    if (sr->variables == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
+                                            * sizeof(ngx_http_variable_value_t));
+
+        if (sr->variables == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
     }
-
-#endif
 
     return NGX_OK;
 }
