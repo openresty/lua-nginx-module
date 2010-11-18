@@ -16,10 +16,10 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: use ngx.get_today in content_by_lua
+=== TEST 1: use ngx.today in content_by_lua
 --- config
     location = /today {
-        content_by_lua 'ngx.say(ngx.get_today())';
+        content_by_lua 'ngx.say(ngx.today())';
     }
 --- request
 GET /today
@@ -27,10 +27,10 @@ GET /today
 
 
 
-=== TEST 2: use ngx.get_today in set_by_lua
+=== TEST 2: use ngx.today in set_by_lua
 --- config
     location = /today {
-        set_by_lua $a 'return ngx.get_today()';
+        set_by_lua $a 'return ngx.today()';
         echo $a;
     }
 --- request

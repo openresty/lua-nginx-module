@@ -503,23 +503,23 @@ Decode `str` as a base64 digest to the raw form
 
     newstr = ngx.decode_base64(str)
 
-ngx.get_today()
+ngx.today()
 ---------------
 Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no syscall involved unlike Lua's date library).
 .
 
-ngx.get_now()
+ngx.now()
 -------------
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
-ngx.get_now_ts()
+ngx.time()
 ----------------
 
 Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 ngx.cookie_time(sec)
 --------------------
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.get_now_ts`).
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.time`).
 
     ngx.say(ngx.cookie_time(1290079655))
         # yields "Thu, 18-Nov-10 11:27:35 GMT"

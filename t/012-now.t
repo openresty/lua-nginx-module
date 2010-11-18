@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -16,10 +16,10 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: use ngx.get_now in content_by_lua
+=== TEST 1: use ngx.now in content_by_lua
 --- config
     location = /now {
-        content_by_lua 'ngx.say(ngx.get_now())';
+        content_by_lua 'ngx.say(ngx.now())';
     }
 --- request
 GET /now
@@ -27,10 +27,10 @@ GET /now
 
 
 
-=== TEST 2: use ngx.get_now in set_by_lua
+=== TEST 2: use ngx.now in set_by_lua
 --- config
     location = /now {
-        set_by_lua $a 'return ngx.get_now()';
+        set_by_lua $a 'return ngx.now()';
         echo $a;
     }
 --- request
@@ -39,24 +39,24 @@ GET /now
 
 
 
-=== TEST 3: use ngx.get_now_ts in content_by_lua
+=== TEST 3: use ngx.time in content_by_lua
 --- config
-    location = /now_ts {
-        content_by_lua 'ngx.say(ngx.get_now_ts())';
+    location = /time {
+        content_by_lua 'ngx.say(ngx.time())';
     }
 --- request
-GET /now_ts
+GET /time
 --- response_body_like: ^\d{10}$
 
 
 
-=== TEST 4: use ngx.get_now_ts in set_by_lua
+=== TEST 4: use ngx.time in set_by_lua
 --- config
-    location = /now_ts {
-        set_by_lua $a 'return ngx.get_now_ts()';
+    location = /time {
+        set_by_lua $a 'return ngx.time()';
         echo $a;
     }
 --- request
-GET /now_ts
+GET /time
 --- response_body_like: ^\d{10}$
 
