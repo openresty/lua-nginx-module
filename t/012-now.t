@@ -19,7 +19,7 @@ __DATA__
 === TEST 1: use ngx.now in content_by_lua
 --- config
     location = /now {
-        content_by_lua 'ngx.say(ngx.now())';
+        content_by_lua 'ngx.say(ngx.strtime())';
     }
 --- request
 GET /now
@@ -30,7 +30,7 @@ GET /now
 === TEST 2: use ngx.now in set_by_lua
 --- config
     location = /now {
-        set_by_lua $a 'return ngx.now()';
+        set_by_lua $a 'return ngx.strtime()';
         echo $a;
     }
 --- request
@@ -39,24 +39,24 @@ GET /now
 
 
 
-=== TEST 3: use ngx.utc_now in content_by_lua
+=== TEST 3: use ngx.utc_time in content_by_lua
 --- config
-    location = /utc_now {
-        content_by_lua 'ngx.say(ngx.utc_now())';
+    location = /utc_time {
+        content_by_lua 'ngx.say(ngx.utc_time())';
     }
 --- request
-GET /utc_now
+GET /utc_time
 --- response_body_like: ^\d{10}$
 
 
 
-=== TEST 4: use ngx.utc_now in set_by_lua
+=== TEST 4: use ngx.utc_time in set_by_lua
 --- config
-    location = /utc_now {
-        set_by_lua $a 'return ngx.utc_now()';
+    location = /utc_time {
+        set_by_lua $a 'return ngx.utc_time()';
         echo $a;
     }
 --- request
-GET /utc_now
+GET /utc_time
 --- response_body_like: ^\d{10}$
 

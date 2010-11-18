@@ -510,13 +510,13 @@ Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no sys
 
 This is the local time.
 
-ngx.now()
+ngx.strtime()
 -------------
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 This is the local time.
 
-ngx.utc_now()
+ngx.utc_time()
 ----------------
 
 Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
@@ -525,7 +525,7 @@ This is the UTC time.
 
 ngx.cookie_time(sec)
 --------------------
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.time`).
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.utc_time`).
 
     ngx.say(ngx.cookie_time(1290079655))
         # yields "Thu, 18-Nov-10 11:27:35 GMT"
