@@ -505,12 +505,12 @@ Decode `str` as a base64 digest to the raw form
 
 ngx.get_today()
 ---------------
-Returns today's date (in the format yyyy-mm-dd) from nginx cached time (no syscall involved unlike Lua's date library).
+Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no syscall involved unlike Lua's date library).
 .
 
 ngx.get_now()
 -------------
-Returns the current timestamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's date library).
+Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 ngx.get_now_ts()
 ----------------
