@@ -333,7 +333,7 @@ prepare internal-only locations.
 
 An optional option table can be fed as the second
 argument, which support various options like
-`method` and `body`. Issuing a POST subrequest, for example,
+`method`, `body`, and `share_all_vars`. Issuing a POST subrequest, for example,
 can be done as follows
 
     res = ngx.location.capture(
@@ -343,6 +343,13 @@ can be done as follows
 
 See HTTP method constants methods other than POST.
 The `method` option is ngx.HTTP_GET by default.
+
+The `share_all_vars` option can control whether to share nginx variables among the current request and the new subrequest. If this option is set to `true`, then
+the subrequest can see all the variable values of the current request while the current
+requeset can also see any variable value changes made by the subrequest. Note that
+variable sharing can have unexpected side-effects
+and lead to confusing issues, use it with special
+care. So, by default, the option is set to `false1`.
 
 ngx.status
 ----------
