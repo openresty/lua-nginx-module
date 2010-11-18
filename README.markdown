@@ -311,6 +311,39 @@ It's equivalent to
 
 Nil arguments are accepted and result in literal "nil".
 
+ngx.location.capture(uri, options?)
+-------------------------
+
+Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
+
+    res = ngx.location.capture(uri)
+
+Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
+
+`res.header` holds all the response headers of the
+subrequest and it is a normal Lua table.
+
+URI query strings can be concatenated to URI itself, for instance,
+
+    res = ngx.location.capture('/foo/bar?a=3&b=4')
+
+Named locations like `@foo` are not allowed due to a limitation in
+the nginx core. Use normal locations combined with the `internal` directive to
+prepare internal-only locations.
+
+An optional option table can be fed as the second
+argument, which support various options like
+`method` and `body`. Issuing a POST subrequest, for example,
+can be done as follows
+
+    res = ngx.location.capture(
+        '/foo/bar',
+        { method = ngx.HTTP_POST, body = 'hello, world' }
+    )
+
+See HTTP method constants methods other than POST.
+The `method` option is ngx.HTTP_GET by default.
+
 ngx.status
 ----------
 
@@ -470,38 +503,26 @@ Decode `str` as a base64 digest to the raw form
 
     newstr = ngx.decode_base64(str)
 
-ngx.location.capture(uri, options?)
--------------------------
+ngx.get_today()
+---------------
+Returns today's date (in the format yyyy-mm-dd) from nginx cached time (no syscall involved unlike Lua's date library).
+.
 
-Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
+ngx.get_now()
+-------------
+Returns the current timestamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's date library).
 
-    res = ngx.location.capture(uri)
+ngx.get_now_ts()
+----------------
 
-Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
+Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
 
-`res.header` holds all the response headers of the
-subrequest and it is a normal Lua table.
+ngx.cookie_time(sec)
+--------------------
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.get_now_ts`).
 
-URI query strings can be concatenated to URI itself, for instance,
-
-    res = ngx.location.capture('/foo/bar?a=3&b=4')
-
-Named locations like `@foo` are not allowed due to a limitation in
-the nginx core. Use normal locations combined with the `internal` directive to
-prepare internal-only locations.
-
-An optional option table can be fed as the second
-argument, which support various options like
-`method` and `body`. Issuing a POST subrequest, for example,
-can be done as follows
-
-    res = ngx.location.capture(
-        '/foo/bar',
-        { method = ngx.HTTP_POST, body = 'hello, world' }
-    )
-
-See HTTP method constants methods other than POST.
-The `method` option is ngx.HTTP_GET by default.
+    ngx.say(ngx.cookie_time(1290079655))
+        # yields "Thu, 18-Nov-10 11:27:35 GMT"
 
 ndk.set_var.DIRECTIVE
 ---------------------
