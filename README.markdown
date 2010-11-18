@@ -123,7 +123,8 @@ The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
 
 Request contexts are isolated from each other
-by means of Lua (light) threads (aka Lua coroutines). And Lua modules loaded are persistent on
+by means of Lua (lightweight) threads (aka Lua coroutines).
+And Lua modules loaded are persistent on
 the nginx worker process level. So the memory
 footprint is quite small even when your
 nginx worker process is handling 10K requests at the same time.
