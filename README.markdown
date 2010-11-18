@@ -456,11 +456,6 @@ ngx.flush()
 
 Force flushing the response outputs.
 
-ngx.throw_error(status)
------------------------
-
-This function is deprecated; use ngx.exit(status) instead.
-
 ngx.exit(status)
 ----------------
 
@@ -468,6 +463,7 @@ Interrupts the execution of the current Lua thread and returns
 status code to nginx.
 
 The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
+`ngx.HTTP_MOVED_TEMPORARILY`,
 or other HTTP status numbers.
 
 ngx.eof()
