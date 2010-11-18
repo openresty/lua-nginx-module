@@ -11,6 +11,8 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+
 #no_diff();
 #no_long_string();
 run_tests();
@@ -313,4 +315,42 @@ GET /lua
 --- response_body chomp
 POST
 hello
+
+
+
+=== TEST 12: POST (with body, proxy method)
+--- config
+    location /flush {
+        set $memc_cmd flush_all;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /memc {
+        set $memc_key $echo_request_uri;
+        set $memc_exptime 600;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /lua {
+        content_by_lua '
+            ngx.location.capture("/flush");
+
+            res = ngx.location.capture("/memc");
+            ngx.say("GET: " .. res.status);
+
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello" });
+            ngx.say("PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc");
+            ngx.say("cached: " .. res.body);
+
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+GET: 404
+PUT: 201
+cached: hello
 

@@ -570,9 +570,10 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
+    ngx_http_core_main_conf_t   *cmcf;
 
     /* we do not inherit the parent request's variables */
-    /* cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module); */
+    cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
 
     r = sr->parent;
 
@@ -631,7 +632,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->headers_in.headers.last = &sr->headers_in.headers.part;
     }
 
-#if 0
+#if 1
 
     sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
