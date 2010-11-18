@@ -1976,3 +1976,35 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
     return NGX_OK;
 }
 
+
+int
+ngx_http_lua_ngx_cookie_time(lua_State *L)
+{
+    ngx_http_request_t                  *r;
+    time_t                               t;
+    u_char                              *p;
+
+    u_char   buf[sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1];
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    t = (time_t) luaL_checknumber(L, 1);
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    p = buf;
+    p = ngx_http_cookie_time(p, t);
+
+    lua_pushlstring(L, (char *) buf, p - buf);
+
+    return 1;
+}
+
