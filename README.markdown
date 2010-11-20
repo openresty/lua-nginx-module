@@ -424,7 +424,43 @@ Named locations are also supported, but query strings are ignored. For example
         ...
     }
 
-This function never returns.
+Note that this is very different from ngx.redirect() in that
+it's just an internal redirect and no new HTTP traffic is involved.
+
+This method never returns.
+
+This method MUST be called before `ngx.send_headers()` or explicit response body
+outputs by either `ngx.print` or `ngx.say`.
+
+This method is very much like the `echo_exec`
+directive in the ngx_echo module.
+
+ngx.redirect(uri, status?)
+--------------------------
+
+Issue an HTTP 301 or 302 redirection to `uri`.
+
+The optional `status` parameter specify whether
+301 or 302 to be used. It's 302 (ngx.HTTP_MOVED_TEMPORARILY) by default.
+
+This method MUST be called before `ngx.send_headers()` or explicit response body
+outputs by either `ngx.print` or `ngx.say`.
+
+Here's a small example:
+
+    return ngx.redirect("/foo")
+
+which is equivalent to
+
+    return ngx.redirect("http://<host>:<port>/foo", ngx.HTTP_MOVED_TEMPORARILY)
+
+where <host> is the current virtual server name and
+<port> is the listerning port.
+
+This method never returns.
+
+This method is very much like the `rewrite` directive with the `redirect` modifier in the standard
+`ngx_rewrite` module.
 
 ngx.send_headers()
 ------------------

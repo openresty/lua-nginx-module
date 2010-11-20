@@ -2060,3 +2060,79 @@ ngx_http_lua_ngx_cookie_time(lua_State *L)
     return 1;
 }
 
+
+int
+ngx_http_lua_ngx_redirect(lua_State *L)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t                    rc;
+    int                          n;
+    u_char                      *p;
+    u_char                      *uri;
+    size_t                       len;
+    ngx_http_request_t          *r;
+
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting one or two arguments");
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (n == 2) {
+        rc = (ngx_int_t) luaL_checknumber(L, 2);
+
+        if (rc != NGX_HTTP_MOVED_TEMPORARILY &&
+                rc != NGX_HTTP_MOVED_PERMANENTLY)
+        {
+            return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY and "
+                    "ngx.HTTP_MOVED_PERMANENTLY are allowed");
+        }
+    } else {
+        rc = NGX_HTTP_MOVED_TEMPORARILY;
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ctx->headers_sent) {
+        return luaL_error(L, "attempt to call ngx.redirect after sending out the headers");
+    }
+
+    uri = ngx_palloc(r->pool, len);
+    if (uri == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    ngx_memcpy(uri, p, len);
+
+    r->headers_out.location = ngx_list_push(&r->headers_out.headers);
+    if (r->headers_out.location == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    r->headers_out.location->hash = 1;
+    r->headers_out.location->value.len = len;
+    r->headers_out.location->value.data = uri;
+    ngx_str_set(&r->headers_out.location->key, "Location");
+
+    r->headers_out.status = rc;
+
+    ctx->exit_code = rc;
+    ctx->exited = 1;
+
+    lua_pushnil(L);
+    return lua_error(L);
+}
+

@@ -201,8 +201,8 @@ Logged in 56
 
         set $key "conv-uid-$arg_uid";
 
-        srcache_fetch GET /memc key=$key;
-        srcache_store PUT /memc key=$key;
+        #srcache_fetch GET /memc key=$key;
+        #srcache_store PUT /memc key=$key;
 
         default_type 'application/json';
 
@@ -281,8 +281,8 @@ Logged in 56
 
         set $key "conv-uid-$arg_uid";
 
-        srcache_fetch GET /memc key=$key;
-        srcache_store PUT /memc key=$key;
+        #srcache_fetch GET /memc key=$key;
+        #srcache_store PUT /memc key=$key;
 
         default_type 'application/json';
 
@@ -358,8 +358,8 @@ Logged in 56
 
         set $key "conv-uri-$query_string";
 
-        srcache_fetch GET /memc key=$key;
-        srcache_store PUT /memc key=$key;
+        #srcache_fetch GET /memc key=$key;
+        #srcache_store PUT /memc key=$key;
 
         default_type 'application/json';
 

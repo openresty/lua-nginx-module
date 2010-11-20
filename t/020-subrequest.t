@@ -355,7 +355,8 @@ PUT: 201
 cached: hello
 
 
-=== TEST 12: POST (with body, memc method)
+
+=== TEST 13: POST (with body, memc method)
 --- config
     location /flush {
         set $memc_cmd flush_all;

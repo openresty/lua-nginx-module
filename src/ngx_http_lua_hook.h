@@ -41,6 +41,7 @@ int ngx_http_lua_ngx_strtime(lua_State *L);
 int ngx_http_lua_ngx_utc_time(lua_State *L);
 int ngx_http_lua_ngx_utc_strtime(lua_State *L);
 int ngx_http_lua_ngx_cookie_time(lua_State *L);
+int ngx_http_lua_ngx_redirect(lua_State *L);
 
 int ngx_http_lua_ngx_location_capture(lua_State *L);
 

@@ -530,6 +530,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);
     lua_setfield(L, -2, "cookie_time");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
+    lua_setfield(L, -2, "redirect");
+
     lua_createtable(L, 0, 2); /* .location */
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");
