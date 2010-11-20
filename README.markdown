@@ -365,7 +365,7 @@ ngx.header.HEADER
 
 Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
 
-    # equivalent to ngx.header["Content-Type"] = 'text/plain'
+    -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
 
     ngx.header["X-My-Header"] = 'blah blah';
@@ -443,24 +443,37 @@ Issue an HTTP 301 or 302 redirection to `uri`.
 The optional `status` parameter specify whether
 301 or 302 to be used. It's 302 (ngx.HTTP_MOVED_TEMPORARILY) by default.
 
-This method MUST be called before `ngx.send_headers()` or explicit response body
-outputs by either `ngx.print` or `ngx.say`.
-
 Here's a small example:
 
     return ngx.redirect("/foo")
 
 which is equivalent to
 
-    return ngx.redirect("http://<host>:<port>/foo", ngx.HTTP_MOVED_TEMPORARILY)
+    return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
 
-where <host> is the current virtual server name and
-<port> is the listerning port.
+assuming the current server name is `localhost` and it's listening on the `1984` port.
+
+This method MUST be called before `ngx.send_headers()` or explicit response body
+outputs by either `ngx.print` or `ngx.say`.
 
 This method never returns.
 
 This method is very much like the `rewrite` directive with the `redirect` modifier in the standard
-`ngx_rewrite` module.
+`ngx_rewrite` module, for example, this nginx.conf snippet
+
+    rewrite ^ /foo redirect;  # nginx config
+
+is equivalent to the following Lua code
+
+    return ngx.redirect('/foo');  -- lua code
+
+while
+
+    rewrite ^ /foo permanent;  # nginx config
+
+is equivalent to
+
+    return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
 
 ngx.send_headers()
 ------------------
@@ -580,7 +593,7 @@ ngx.cookie_time(sec)
 Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.utc_time` or `ngx.time`).
 
     ngx.say(ngx.cookie_time(1290079655))
-        # yields "Thu, 18-Nov-10 11:27:35 GMT"
+        -- yields "Thu, 18-Nov-10 11:27:35 GMT"
 
 ndk.set_var.DIRECTIVE
 ---------------------
