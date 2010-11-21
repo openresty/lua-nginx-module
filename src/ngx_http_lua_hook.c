@@ -1,6 +1,7 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
 #define DDEBUG 0
+
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -22,16 +23,18 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
         ngx_string("Content-Length");
 
 
+static void ngx_http_lua_process_args_option(ngx_http_request_t *r,
+        lua_State *L, int table, ngx_str_t *args);
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
         size_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body, ngx_flag_t share_all_vars);
 static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
-static void ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
+static void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size);
 static void log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L);
-static uintptr_t ngx_escape_uri_patched(u_char *dst, u_char *src,
+static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
 static ndk_set_var_value_pt ngx_http_lookup_ndk_set_var_directive(u_char *name,
         size_t name_len);
@@ -430,7 +433,9 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     ngx_http_request_t              *sr; /* subrequest object */
     ngx_http_post_subrequest_t      *psr;
     ngx_http_lua_ctx_t              *sr_ctx;
-    ngx_str_t                        uri, args;
+    ngx_str_t                        uri;
+    ngx_str_t                        args;
+    ngx_str_t                        extra_args = ngx_null_string;
     ngx_uint_t                       flags = 0;
     u_char                          *p;
     u_char                          *q;
@@ -458,9 +463,41 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     }
 
     if (n == 2) {
+        /* check out the options table */
+
         if (lua_type(L, 2) != LUA_TTABLE) {
             return luaL_error(L, "expecting table as the 2nd argument");
         }
+
+        /* check the args option */
+
+        lua_getfield(L, 2, "args");
+
+        type = lua_type(L, -1);
+
+        switch (type) {
+        case LUA_TTABLE:
+            ngx_http_lua_process_args_option(r, L, -1, &extra_args);
+            break;
+
+        case LUA_TNIL:
+            /* do nothing */
+            break;
+
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            extra_args.data = (u_char *) lua_tolstring(L, -1, &len);
+            extra_args.len = len;
+
+            break;
+
+        default:
+            return luaL_error(L, "Bad args option value");
+        }
+
+        lua_pop(L, 1);
+
+        /* check the share_all_vars option */
 
         lua_getfield(L, 2, "share_all_vars");
 
@@ -475,6 +512,10 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
             share_all_vars = lua_toboolean(L, -1);
         }
 
+        lua_pop(L, 1);
+
+        /* check the method option */
+
         lua_getfield(L, 2, "method");
 
         type = lua_type(L, -1);
@@ -487,6 +528,10 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
             method = (ngx_uint_t) lua_tonumber(L, -1);
         }
+
+        lua_pop(L, 1);
+
+        /* check the body option */
 
         lua_getfield(L, 2, "body");
 
@@ -518,6 +563,8 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
             }
         }
 
+        lua_pop(L, 1);
+
     } else {
         method = NGX_HTTP_GET;
     }
@@ -541,6 +588,25 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
         dd("rc = %d", (int) rc);
 
         return luaL_error(L, "unsafe uri in argument #1: %s", p);
+    }
+
+    if (args.len == 0) {
+        args = extra_args;
+    } else if (extra_args.len) {
+        /* concatenate the two parts of args together */
+        len = args.len + (sizeof("&") - 1) + extra_args.len;
+
+        p = ngx_palloc(r->pool, len);
+        if (p == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        q = ngx_copy(p, args.data, args.len);
+        *q++ = '&';
+        q = ngx_copy(q, extra_args.data, extra_args.len);
+
+        args.data = p;
+        args.len = len;
     }
 
     psr = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
@@ -736,7 +802,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
         return 1;
     }
 
-    escape = 2 * ngx_escape_uri_patched(NULL, src, len, NGX_ESCAPE_URI);
+    escape = 2 * ngx_http_lua_escape_uri(NULL, src, len, NGX_ESCAPE_URI);
 
     dlen = escape + len;
 
@@ -749,7 +815,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
         ngx_memcpy(dst, src, len);
 
     } else {
-        ngx_escape_uri_patched(dst, src, len, NGX_ESCAPE_URI);
+        ngx_http_lua_escape_uri(dst, src, len, NGX_ESCAPE_URI);
     }
 
     lua_pushlstring(L, (char *) dst, dlen);
@@ -790,7 +856,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
     dst = p;
 
-    ngx_unescape_uri_patched(&dst, &src, len, NGX_UNESCAPE_URI_COMPONENT);
+    ngx_http_lua_unescape_uri(&dst, &src, len, NGX_UNESCAPE_URI_COMPONENT);
 
     lua_pushlstring(L, (char *) p, dst - p);
 
@@ -800,7 +866,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
 /* XXX we also decode '+' to ' ' */
 static void
-ngx_unescape_uri_patched(u_char **dst, u_char **src, size_t size,
+ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type)
 {
     u_char  *d, *s, ch, c, decoded;
@@ -1410,7 +1476,7 @@ ngx_http_lua_ngx_utc_strtime(lua_State *L)
 
 
 static uintptr_t
-ngx_escape_uri_patched(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
+ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
 {
     ngx_uint_t      n;
     uint32_t       *escape;
@@ -2134,5 +2200,101 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     lua_pushnil(L);
     return lua_error(L);
+}
+
+
+static void
+ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
+        int table, ngx_str_t *args)
+{
+    u_char              *key;
+    size_t               key_len;
+    u_char              *value;
+    size_t               value_len;
+    size_t               len = 0;
+    uintptr_t            total_escape = 0;
+    int                  n;
+    int                  i;
+    u_char              *p;
+
+    n = 0;
+    lua_pushnil(L);
+    while (lua_next(L, table - 1) != 0) {
+        if (lua_type(L, -2) != LUA_TSTRING) {
+            luaL_error(L, "attemp to use a non-string key in the "
+                    "\"args\" option table");
+            return;
+        }
+
+        key = (u_char *) lua_tolstring(L, -2, &key_len);
+
+        total_escape += 2 * ngx_http_lua_escape_uri(NULL, key, key_len, NGX_ESCAPE_URI);
+
+        value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+        total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len, NGX_ESCAPE_URI);
+
+        len += key_len + value_len + (sizeof("=") - 1);
+
+        n++;
+
+        lua_pop(L, 1);
+    }
+
+    len += (size_t) total_escape;
+
+    if (n > 1) {
+        len += (n - 1) * (sizeof("&") - 1);
+    }
+
+    dd("len 1: %d", (int) len);
+
+    p = ngx_palloc(r->pool, len);
+    if (p == 0) {
+        luaL_error(L, "out of memory");
+        return;
+    }
+
+    args->data = p;
+    args->len = len;
+
+    i = 0;
+    lua_pushnil(L);
+    while (lua_next(L, table - 1) != 0) {
+        key = (u_char *) lua_tolstring(L, -2, &key_len);
+
+        if (total_escape) {
+            p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len, NGX_ESCAPE_URI);
+
+        } else {
+            dd("shortcut: no escape required");
+
+            p = ngx_copy(p, key, key_len);
+        }
+
+        *p++ = '=';
+
+        value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+        if (total_escape) {
+            p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len, NGX_ESCAPE_URI);
+        } else {
+            p = ngx_copy(p, value, value_len);
+        }
+
+        if (i != n - 1) {
+            /* not the last pair */
+            *p++ = '&';
+        }
+
+        i++;
+        lua_pop(L, 1);
+    }
+
+    if (p - args->data != (ssize_t) len) {
+        luaL_error(L, "buffer error: %d != %d",
+                (int) (p - args->data), (int) len);
+        return;
+    }
 }
 

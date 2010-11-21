@@ -395,3 +395,144 @@ GET: 404
 PUT: 201
 cached: hello
 
+
+
+=== TEST 14: emtpy args option table
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = {} })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body eval: "\n"
+
+
+
+=== TEST 15: non-empty args option table (1 pair)
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = { ["fo="] = "=>" } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+fo%3d=%3d%3e
+
+
+
+=== TEST 16: non-empty args option table (2 pairs)
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = { ["fo="] = "=>",
+                    ["="] = ":" } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+fo%3d=%3d%3e&%3d=%3a
+
+
+
+=== TEST 17: non-empty args option table (2 pairs, no special chars)
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = { foo = 3,
+                    bar = "hello" } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+bar=hello&foo=3
+
+
+
+=== TEST 18: non-empty args option table (number key)
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = { [57] = "hi" } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 19: non-empty args option table (plain arrays)
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { args = { "hi" } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 20: more args
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo?a=3",
+                { args = { b = 4 } })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a=3&b=4
+
