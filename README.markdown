@@ -318,7 +318,7 @@ Issue a synchronous but still non-blocking "nginx subrequest" using `uri`.
 
 Nginx subrequests provide a powerful way to make
 non-blocking internal requests to other locations
-configured with disk file directory or
+configured with disk file directory or *any*
 other nginx C modules like
 `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`,
