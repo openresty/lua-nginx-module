@@ -755,8 +755,8 @@ Future Plan
 Known Issues
 ============
 
-* **WATCH OUT: Globals WON'T persist between requests**, due to the one-coroutine-per-request
-designing. Especially watch yourself when using `require()` to import modules,
+* **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request
+isolation design. Especially watch yourself when using `require()` to import modules, and
 use this form:
 
         local xxx = require('xxx')
