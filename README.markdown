@@ -326,7 +326,7 @@ other nginx C modules like
 
 Also note that subrequests just mimic the HTTP
 interface but there's *no*
-extra HTTP/TCP traffic nor IPC involved. Everything
+extra HTTP/TCP traffic `nor` IPC involved. Everything
 works internally, efficiently, on the C level.
 
 Here's a basic example:
