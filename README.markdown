@@ -1,7 +1,7 @@
 Name
 ====
 
-ngx_lua - Embed the power of Lua into nginx
+ngx_lua - Embed the power of Lua into Nginx
 
 Status
 ======
