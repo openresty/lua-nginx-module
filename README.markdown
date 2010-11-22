@@ -314,7 +314,20 @@ Nil arguments are accepted and result in literal "nil".
 ngx.location.capture(uri, options?)
 -----------------------------------
 
-Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
+Issue a synchronous but still non-blocking "nginx subrequest" using `uri`.
+
+Nginx subrequests provide a powerful way to make
+non-blocking internal requests to other locations
+configured with disk file directory or
+other nginx C modules like
+`ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
+`ngx_postgres`,
+`ngx_drizzle`, and even `ngx_lua` itself and etc etc etc. Note that subrequests just mimic the HTTP
+interface but behind the scene, there's *no*
+extra HTTP/TCP traffic nor IPC cost. Everything
+works internally, and on the C level.
+
+Here's a basic example:
 
     res = ngx.location.capture(uri)
 
