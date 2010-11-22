@@ -114,7 +114,7 @@ by means of nginx subrequests.
 
 Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this module can be 100% non-blocking on network traffic
 as long as you use the `ngx.location.capture` interface
-to let the nginx core to do all your
+to let the nginx core do all your
 requests to mysql, postgresql, memcached,
 upstream http web services, and etc etc etc (see
 ngx_drizzle, ngx_postgres, ngx_memc, and ngx_proxy modules for details).
