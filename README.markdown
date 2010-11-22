@@ -322,10 +322,12 @@ configured with disk file directory or *any*
 other nginx C modules like
 `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`,
-`ngx_drizzle`, and even `ngx_lua` itself and etc etc etc. Note that subrequests just mimic the HTTP
-interface but behind the scene, there's *no*
-extra HTTP/TCP traffic nor IPC cost. Everything
-works internally, and on the C level.
+`ngx_drizzle`, and even `ngx_lua` itself and etc etc etc.
+
+Also note that subrequests just mimic the HTTP
+interface but there's *no*
+extra HTTP/TCP traffic nor IPC involved. Everything
+works internally, efficiently, on the C level.
 
 Here's a basic example:
 
