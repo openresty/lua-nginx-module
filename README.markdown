@@ -655,7 +655,7 @@ Performance
 The Lua state (aka the Lua vm instance) is shared across all the requests
 handled by a single nginx worker process to miminize memory use.
 
-On a ThinkPad T400 2.96 GHz laptop, it's easy to achieve 25k req/sec using ab
+On a ThinkPad T400 2.80 GHz laptop, it's easy to achieve 25k req/sec using ab
 w/o keepalive and 37k+ req/sec with keepalive.
 
 You can get better performance when building this module
