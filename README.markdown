@@ -16,10 +16,10 @@ Example Config
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
-    
+
     # set search paths for Lua external libraries written in C (can also use ';;'):
     lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
-    
+
     server {
         location /inline_concat {
             # MIME type determined by default_type:
@@ -677,20 +677,20 @@ this module:
         $ wget 'http://sysoev.ru/nginx/nginx-0.8.53.tar.gz'
         $ tar -xzvf nginx-0.8.53.tar.gz
         $ cd nginx-0.8.53/
-        
+
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
         export LUA_INC=/path/to/lua/include
-        
+
         # or tell where to find LuaJIT when you want to use JIT instead
         # export LUAJIT_LIB=/path/to/luajit/lib
         # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
-        
+
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ndk_devel_kit \
             --add-module=/path/to/lua-nginx-module
-        
+
         $ make -j2
         $ make install
 
