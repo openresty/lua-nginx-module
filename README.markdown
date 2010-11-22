@@ -329,6 +329,8 @@ interface but there's *no*
 extra HTTP/TCP traffic `nor` IPC involved. Everything
 works internally, efficiently, on the C level.
 
+Subrequests are completely different from HTTP 301/302 redirection and internal redirection (via `ngx.exec()`).
+
 Here's a basic example:
 
     res = ngx.location.capture(uri)
