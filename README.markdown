@@ -326,7 +326,7 @@ other nginx C modules like
 
 Also note that subrequests just mimic the HTTP
 interface but there's *no*
-extra HTTP/TCP traffic `nor` IPC involved. Everything
+extra HTTP/TCP traffic *nor* IPC involved. Everything
 works internally, efficiently, on the C level.
 
 Subrequests are completely different from HTTP 301/302 redirection (via `ngx.redirect()`) and internal redirection (via `ngx.exec()`).
