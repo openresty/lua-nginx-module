@@ -312,7 +312,7 @@ It's equivalent to
 Nil arguments are accepted and result in literal "nil".
 
 ngx.location.capture(uri, options?)
--------------------------
+-----------------------------------
 
 Issue a synchronous but still non-blocking subrequest using `uri` (e.g. /foo/bar).
 
@@ -333,7 +333,8 @@ prepare internal-only locations.
 
 An optional option table can be fed as the second
 argument, which support various options like
-`method`, `body`, and `share_all_vars`. Issuing a POST subrequest, for example,
+`method`, `body`, `args`, and `share_all_vars`.
+Issuing a POST subrequest, for example,
 can be done as follows
 
     res = ngx.location.capture(
@@ -342,14 +343,37 @@ can be done as follows
     )
 
 See HTTP method constants methods other than POST.
-The `method` option is ngx.HTTP_GET by default.
+The `method` option is `ngx.HTTP_GET` by default.
 
-The `share_all_vars` option can control whether to share nginx variables among the current request and the new subrequest. If this option is set to `true`, then
+The `share_all_vars` option can control whether to share nginx variables
+among the current request and the new subrequest. If this option is set to `true`, then
 the subrequest can see all the variable values of the current request while the current
-requeset can also see any variable value changes made by the subrequest. Note that
-variable sharing can have unexpected side-effects
+requeset can also see any variable value changes made by the subrequest.
+Note that variable sharing can have unexpected side-effects
 and lead to confusing issues, use it with special
-care. So, by default, the option is set to `false1`.
+care. So, by default, the option is set to `false`.
+
+The `args` option can specify extra url arguments, for instance,
+
+    ngx.location.capture('/foo?a=1',
+        { args = { b = 3, c = ':' } }
+    )
+
+is equivalent to
+
+    ngx.location.capture('/foo?a=1&b=3&c=%3a')
+
+that is, this method will autmotically escape argument keys and values according to URI rules and
+concatenating them together into a complete query string. Because it's all done in hand-written C,
+it should be faster than your own Lua code.
+
+The `args` option can also take plain query string:
+
+    ngx.location.capture('/foo?a=1',
+        { args = 'b=3&c=%3a' } }
+    )
+
+This is functionally identical to the previous examples.
 
 ngx.status
 ----------

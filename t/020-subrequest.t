@@ -536,3 +536,23 @@ GET /lua
 --- response_body
 a=3&b=4
 
+
+
+=== TEST 21: more args
+--- config
+    location /foo {
+        echo $query_string;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo?a=3",
+                { args = "b=4" })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a=3&b=4
+
