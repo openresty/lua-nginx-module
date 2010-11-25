@@ -605,24 +605,15 @@ This is the local time.
 
 ngx.time()
 -------------
-Returns the elapsed seconds for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
+Returns the elapsed seconds from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-This is the local time.
-
-ngx.strtime()
--------------
+ngx.localtime()
+---------------
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 This is the local time.
 
-ngx.utc_time()
-----------------
-
-Returns the current timestamp (in seconds) of the nginx cached time (no syscall involved unlike Lua's date library).
-
-This is the UTC time.
-
-ngx.utc_strtime()
+ngx.utctime()
 ----------------
 
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
@@ -631,7 +622,7 @@ This is the UTC time.
 
 ngx.cookie_time(sec)
 --------------------
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.utc_time` or `ngx.time`).
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.time`).
 
     ngx.say(ngx.cookie_time(1290079655))
         -- yields "Thu, 18-Nov-10 11:27:35 GMT"

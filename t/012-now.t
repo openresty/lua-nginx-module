@@ -19,7 +19,7 @@ __DATA__
 === TEST 1: use ngx.now in content_by_lua
 --- config
     location = /now {
-        content_by_lua 'ngx.say(ngx.strtime())';
+        content_by_lua 'ngx.say(ngx.localtime())';
     }
 --- request
 GET /now
@@ -30,7 +30,7 @@ GET /now
 === TEST 2: use ngx.now in set_by_lua
 --- config
     location = /now {
-        set_by_lua $a 'return ngx.strtime()';
+        set_by_lua $a 'return ngx.localtime()';
         echo $a;
     }
 --- request
@@ -39,30 +39,7 @@ GET /now
 
 
 
-=== TEST 3: use ngx.utc_time in content_by_lua
---- config
-    location = /utc_time {
-        content_by_lua 'ngx.say(ngx.utc_time())';
-    }
---- request
-GET /utc_time
---- response_body_like: ^\d{10,}$
-
-
-
-=== TEST 4: use ngx.utc_time in set_by_lua
---- config
-    location = /utc_time {
-        set_by_lua $a 'return ngx.utc_time()';
-        echo $a;
-    }
---- request
-GET /utc_time
---- response_body_like: ^\d{10,}$
-
-
-
-=== TEST 5: use ngx.time in set_by_lua
+=== TEST 3: use ngx.time in set_by_lua
 --- config
     location = /time {
         set_by_lua $a 'return ngx.time()';
@@ -74,7 +51,7 @@ GET /time
 
 
 
-=== TEST 6: use ngx.time in content_by_lua
+=== TEST 4: use ngx.time in content_by_lua
 --- config
     location = /time {
         content_by_lua 'ngx.say(ngx.time())';
@@ -85,14 +62,19 @@ GET /time
 
 
 
-=== TEST 7: use ngx.time in content_by_lua
+=== TEST 5: use ngx.time in content_by_lua
 --- config
     location = /time {
         content_by_lua '
             ngx.say(ngx.time())
-            ngx.say(ngx.strtime())
-            ngx.say(ngx.utc_time())
-            ngx.say(ngx.utc_strtime())
+            ngx.say(ngx.localtime())
+            ngx.say(ngx.utctime())
+            ngx.say(ngx.cookie_time(ngx.time()))
+        ';
+    }
+--- request
+GET /time
+--- response_body_like chomp
         ';
     }
 --- request
@@ -100,6 +82,6 @@ GET /time
 --- response_body_like chomp
 ^\d{10,}
 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
-\d{10,}
-\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$
+\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+\w+, .*? GMT$
 
