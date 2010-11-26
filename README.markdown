@@ -257,7 +257,7 @@ Nginx API for Lua
 Input arguments
 ---------------
 
-Index the input arguments to the directive:
+Index the input arguments to the set_by_lua* directive:
 
     value = ngx.arg[n]
 
@@ -276,7 +276,7 @@ Here's an example
 
 that outputs 88, the sum of 32 and 56.
 
-This is only available in set_by_lua*
+This is only available in set_by_lua* directives.
 
 Read and write Nginx variables
 ------------------------------
