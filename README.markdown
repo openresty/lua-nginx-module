@@ -392,6 +392,8 @@ The `args` option can also take plain query string:
 
 This is functionally identical to the previous examples.
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.status
 ----------
 
@@ -400,6 +402,8 @@ before sending out the response headers.
 
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
+
+This function is only available in `content_by_lua` and `content_by_lua_file`.
 
 ngx.header.HEADER
 -----------------------
@@ -444,6 +448,8 @@ iterate through it.
 
 Reading values from ngx.header.HEADER is not implemented yet.
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.exec(uri, args)
 -------------------
 
@@ -475,6 +481,8 @@ outputs by either `ngx.print` or `ngx.say`.
 
 This method is very much like the `echo_exec`
 directive in the ngx_echo module.
+
+This function is only available in `content_by_lua` and `content_by_lua_file`.
 
 ngx.redirect(uri, status?)
 --------------------------
@@ -516,6 +524,8 @@ is equivalent to
 
     return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.send_headers()
 ------------------
 
@@ -527,12 +537,16 @@ output contents via `ngx.say` or `ngx.print`.
 
 Headers will also be sent automatically when `content_by_lua` exits normally.
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.print(a, b, ...)
 --------------------
 
 Emit args concatenated to the HTTP client (as response body).
 
 Nil arguments are not allowed.
+
+This function is only available in `content_by_lua` and `content_by_lua_file`.
 
 ngx.say(a, b, ...)
 ------------------
@@ -541,6 +555,8 @@ Just as `ngx.print` but also emit a trailing newline.
 
 Nil arguments are not allowed.
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.log(log_level, ...)
 -----------------------
 
@@ -548,10 +564,14 @@ Log args concatenated to error.log with the given logging level.
 
 Nil arguments are accepted and result in literal "nil".
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.flush()
 -----------
 
 Force flushing the response outputs.
+
+This function is only available in `content_by_lua` and `content_by_lua_file`.
 
 ngx.exit(status)
 ----------------
@@ -563,10 +583,14 @@ The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
 `ngx.HTTP_MOVED_TEMPORARILY`,
 or other HTTP status numbers.
 
+This function is only available in `content_by_lua` and `content_by_lua_file`.
+
 ngx.eof()
 ---------
 
 Explicitly specify the end of the response output stream.
+
+This function is only available in `content_by_lua` and `content_by_lua_file`.
 
 ngx.escape_uri(str)
 -------------------
