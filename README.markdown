@@ -175,6 +175,24 @@ table (index starts from `1` and increased sequentially).
 event loop is blocked during the code execution, so you'd better **NOT** call
 anything that may be blocked or time-costy.
 
+Note that `set_by_lua` can only output a value to a single nginx variable at
+a time. But a work-around is also available by means of the ngx.var.xxx interface,
+for example,
+
+    location /foo {
+        set $diff ''; # we have to predefine the $diff variable here
+
+        set_by_lua $sum '
+            local a = 32
+            local b = 56
+
+            ngx.var.diff = a - b;  -- write to $diff directly
+            return a + b;          -- return the $sum value normally
+        ';
+
+        echo "sum = $sum, diff = $diff";
+    }
+
 set_by_lua_file
 ---------------
 
@@ -233,26 +251,53 @@ Force reading request body data or not. The request data won't be read into
 $request_body Nginx variable by default, so you have to explicitly force
 reading the body if you need its content.
 
-Nginx APIs for set_by_lua*
-==========================
+Nginx API for Lua
+=================
 
-Read and write arbitrary nginx variables by name:
-
-    value = ngx.var.some_nginx_variable_name
-    ngx.var.some_nginx_variable_name = value
+Input arguments
+---------------
 
 Index the input arguments to the directive:
 
     value = ngx.arg[n]
 
-Nginx APIs for content_by_lua*
-==============================
+Here's an example
+
+    location /foo {
+        set $a 32;
+        set $b 56;
+
+        set_by_lua $res
+            'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
+            $a $b;
+
+        echo $sum;
+    }
+
+that outputs 88, the sum of 32 and 56.
+
+This is only available in set_by_lua*
 
 Read and write Nginx variables
 ------------------------------
 
     value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
+
+Note that you can only write to nginx variables that are already defined.
+For example:
+
+    location /foo {
+        set $my_var ''; # this line is required to create $my_var at config time
+        content_by_lua '
+            ngx.var.my_var = 123;
+            ...
+        ';
+    }
+
+That is, nginx variables cannot be created on-the-fly.
+
+This is available in both set_by_lua* and content_by_lua*
 
 Core constants
 ---------------------
