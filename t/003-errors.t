@@ -91,3 +91,40 @@ GET /lua
 --- response_body
 [{"a":32},{"b":64}]
 
+
+
+=== TEST 4: 500 in subrequest
+--- config
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/err")
+            ngx.say(res.status);
+        ';
+    }
+    location /err {
+        return 500;
+    }
+--- request
+GET /main
+--- response_body
+500
+
+
+
+=== TEST 5: drizzle_pass 500 in subrequest
+--- config
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/err")
+            ngx.say(res.status);
+        ';
+    }
+    location /err {
+        set $back 'blah-blah';
+        drizzle_pass $back;
+    }
+--- request
+GET /main
+--- response_body
+500
+
