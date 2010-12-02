@@ -39,7 +39,7 @@ else
 
         if [ $ngx_found = no ]; then
             cat << END
-            $0: error: the ngx_lua addon requires the lua and luajit library and LUA_LIB is defined as $LUA_LIB and LUA_INC is $LUA_INC, but we cannot find standard Lua there.
+            $0: error: the ngx_lua addon requires the lua or luajit library and LUA_LIB is defined as $LUA_LIB and LUA_INC is $LUA_INC, but we cannot find standard Lua there.
 END
             exit 1
         fi
@@ -84,6 +84,18 @@ if [ $ngx_found = no ]; then
         ngx_feature_libs="-R/opt/local/lib -L/opt/local/lib -lm -llua"
     else
         ngx_feature_libs="-L/opt/local/lib -lm -llua"
+    fi
+    . auto/feature
+fi
+
+if [ $ngx_found = no ]; then
+    # Debian
+    ngx_feature="lua library in /usr/"
+    ngx_feature_path="/usr/include/lua5.1"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -llua5.1"
+    else
+        ngx_feature_libs="-L/usr/lib -lm -llua5.1"
     fi
     . auto/feature
 fi
