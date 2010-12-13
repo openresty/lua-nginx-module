@@ -831,6 +831,13 @@ use this form:
 
         package.loaded.xxx = nil
         require('xxx')
+* 64-bit Darwin OS needs special linking options to use LuaJIT. Change the line at the bottom of `config` file from
+
+		CORE_LIBS="-Wl,-E $CORE_LIBS"
+
+	to
+
+		CORE_LIBS="-Wl,-E -Wl,-pagezero_size,10000 -Wl,-image_base,100000000 $CORE_LIBS"
 
 See Also
 ========
