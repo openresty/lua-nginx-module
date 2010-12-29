@@ -1,5 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
-#define DDEBUG 0
+#define DDEBUG 3
 
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
@@ -366,13 +366,35 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             continue;
         }
 #endif
-
+                      
+        // push header key on stack
         lua_pushlstring(cc, (char *) header[i].key.data,
-                header[i].key.len); /* header key */
-
-        lua_pushlstring(cc, (char *) header[i].value.data,
-                header[i].value.len); /* header key value */
-
+          header[i].key.len); /* header key */
+        
+        // check if header exists
+        u_char *header_key = ngx_pcalloc(r->pool, header[i].key.len + 1);
+        ngx_copy(header_key, header[i].key.data, header[i].key.len);
+        lua_getfield(cc, -2, (const char *)header_key);
+              
+        int value_type = lua_type(cc, -1);
+        
+        if (value_type != LUA_TNIL) {
+          if (value_type != LUA_TTABLE) {
+            lua_pop(cc, 1);
+            lua_newtable(cc);
+            lua_getfield(cc, -2, (const char *)header_key);
+            lua_rawseti(cc, -2, 1);
+          }
+          lua_pushlstring(cc, (char *) header[i].value.data,
+            header[i].value.len); /* header key value */
+          lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1);
+        } else {
+          lua_pop(cc, 1);
+                    
+          lua_pushlstring(cc, (char *) header[i].value.data,
+            header[i].value.len); /* header key value */
+        }
+        
         lua_rawset(cc, -3); /* head */
     }
 
