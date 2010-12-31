@@ -28,8 +28,14 @@ typedef struct {
 } ngx_http_lua_main_conf_t;
 
 typedef struct {
-    ngx_flag_t  force_read_body;    /* 1: force request body to be read; 0: don't force reading request body */
-    ngx_str_t   src;                /*  content_by_lua inline script / script file path */
+    ngx_flag_t  force_read_body;    /* 1: force request body to be read;
+                                       0: don't force reading request body */
+
+    ngx_str_t   rewrite_src;       /*  rewrite_by_lua
+                                       inline script/script file path */
+
+    ngx_str_t   content_src;       /*  content_by_lua
+                                       inline script/script file path */
 } ngx_http_lua_loc_conf_t;
 
 typedef struct {

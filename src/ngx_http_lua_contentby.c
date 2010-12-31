@@ -59,14 +59,16 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     /*  {{{ register request cleanup hooks */
-    cln = ngx_http_cleanup_add(r, 0);
-    if (cln == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
+    if (ctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
 
-    cln->handler = ngx_http_lua_request_cleanup;
-    cln->data = r;
-    ctx->cleanup = &cln->handler;
+        cln->handler = ngx_http_lua_request_cleanup;
+        cln->data = r;
+        ctx->cleanup = &cln->handler;
+    }
     /*  }}} */
 
     return ngx_http_lua_run_thread(L, r, ctx, 0);
@@ -100,7 +102,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 /*  FIXME: add io cmd dispatcher here */
                 lua_settop(cc, 0);
                 return NGX_AGAIN;
-                break;
 
             case 0:
                 /*  normal end */
@@ -114,7 +115,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
                 return NGX_OK;
-                break;
 
             case LUA_ERRRUN:
                 err = "runtime error";
@@ -196,6 +196,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
         return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
+
     } NGX_LUA_EXCEPTION_CATCH {
         dd("NginX execution restored");
     }

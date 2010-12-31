@@ -194,7 +194,8 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #if 0
     if (ngx_http_lua_has_inline_var(&args[1])) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                "Lua inline script or file path should not has inline variable: %V",
+                "Lua inline script or file path should not has inline "
+                "variable: %V",
                 &args[1]);
 
         return NGX_CONF_ERROR;
@@ -208,13 +209,14 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    llcf->src = args[1];
+    llcf->content_src = args[1];
 
     /*  register location content handler */
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
     if (clcf == NULL) {
         return NGX_CONF_ERROR;
     }
+
     clcf->handler = cmd->post;
 
     return NGX_CONF_OK;
@@ -235,8 +237,8 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, llcf->src.data,
-            llcf->src.len, "content_by_lua", &err);
+    rc = ngx_http_lua_cache_loadbuffer(L, llcf->content_src.data,
+            llcf->content_src.len, "content_by_lua", &err);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -282,13 +284,13 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    script_path = ngx_http_lua_rebase_path(r->pool, llcf->src.data,
-            llcf->src.len);
+    script_path = ngx_http_lua_rebase_path(r->pool, llcf->content_src.data,
+            llcf->content_src.len);
 
     if (script_path == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "Failed to allocate memory to store absolute path: raw path='%v'",
-                &(llcf->src));
+                &(llcf->content_src));
 
         return NGX_ERROR;
     }
