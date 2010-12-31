@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #define DDEBUG 0
 
 #include "ngx_http_lua_contentby.h"
@@ -8,10 +9,11 @@
 static void ngx_http_lua_request_cleanup(void *data);
 static ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret);
+static ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 
 
 ngx_int_t
-ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
+ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     int                      cc_ref;
     lua_State               *cc;
@@ -20,9 +22,12 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  {{{ new coroutine to handle request */
     cc = ngx_http_lua_new_thread(r, L, &cc_ref);
+
     if (cc == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "(lua-content-by-chunk) failed to create new coroutine to handle request!");
+                "(lua-content-by-chunk) failed to create new coroutine "
+                "to handle request");
+
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -44,19 +49,86 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  {{{ initialize request context */
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
-        if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
 
-        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        return NGX_ERROR;
     }
 
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
 
     /*  }}} */
+
+    /*  {{{ register request cleanup hooks */
+    if (ctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        cln->handler = ngx_http_lua_request_cleanup;
+        cln->data = r;
+        ctx->cleanup = &cln->handler;
+    }
+    /*  }}} */
+
+    return ngx_http_lua_run_thread(L, r, ctx, 0);
+}
+
+
+ngx_int_t
+ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
+{
+    int                      cc_ref;
+    lua_State               *cc;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_http_cleanup_t      *cln;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+        if (ctx == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        dd("setting new ctx, ctx = %p", ctx);
+
+        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    }
+
+    ctx->entered_content_phase = 1;
+
+    /*  {{{ new coroutine to handle request */
+    cc = ngx_http_lua_new_thread(r, L, &cc_ref);
+
+    if (cc == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "(lua-content-by-chunk) failed to create new coroutine "
+                "to handle request");
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    /*  move code closure to new coroutine */
+    lua_xmove(L, cc, 1);
+
+    /*  set closure's env table to new coroutine's globals table */
+    lua_pushvalue(cc, LUA_GLOBALSINDEX);
+    lua_setfenv(cc, -2);
+
+    /*  save reference of code to ease forcing stopping */
+    lua_pushvalue(cc, -1);
+    lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
+
+    /*  save nginx request in coroutine globals table */
+    lua_pushlightuserdata(cc, r);
+    lua_setglobal(cc, GLOBALS_SYMBOL_REQUEST);
+    /*  }}} */
+
+    ctx->cc = cc;
+    ctx->cc_ref = cc_ref;
 
     /*  {{{ register request cleanup hooks */
     if (ctx->cleanup == NULL) {
@@ -86,6 +158,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
     /* set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
+
+    dd("ctx = %p", ctx);
 
     NGX_LUA_EXCEPTION_TRY {
         cc = ctx->cc;
@@ -246,6 +320,13 @@ ngx_http_lua_request_cleanup(void *data)
 
 
 void
+ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
+{
+    (void) ngx_http_lua_wev_handler(r);
+}
+
+
+ngx_int_t
 ngx_http_lua_wev_handler(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
@@ -260,17 +341,20 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_table_elt_t             *header;
     ngx_uint_t                   i;
 
+    dd("wev handler");
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         goto error;
     }
 
+    dd("ctx = %p", ctx);
     dd("request done: %d", (int) r->done);
     dd("cleanup done: %p", ctx->cleanup);
 
 #if 1
     if (ctx->cleanup == NULL) {
-        return;
+        return NGX_ERROR;
     }
 #endif
 
@@ -286,7 +370,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             ngx_http_post_request(r);
 #endif
 
-            return;
+            return NGX_DONE;
         }
     }
 
@@ -393,19 +477,81 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ctx->waiting = 1;
         ctx->done = 0;
 
-    } else {
-        ctx->waiting = 0;
-        ctx->done = 1;
+        return NGX_DONE;
+    }
 
+    ctx->waiting = 0;
+    ctx->done = 1;
+
+    if (ctx->entered_content_phase) {
         ngx_http_finalize_request(r, rc);
     }
 
-    return;
+    if (rc == NGX_OK) {
+        return NGX_DECLINED;
+    }
+
+    return rc;
 
 error:
-    ngx_http_finalize_request(r,
-            ctx->headers_sent ? NGX_ERROR: NGX_HTTP_INTERNAL_SERVER_ERROR);
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r,
+                ctx->headers_sent ? NGX_ERROR: NGX_HTTP_INTERNAL_SERVER_ERROR);
+    }
 
-    return;
+    return NGX_ERROR;
+}
+
+
+ngx_int_t
+ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t                    rc;
+
+    dd("in rewrite handler");
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->rewrite_handler == NULL) {
+        dd("no rewrite handler found");
+        return NGX_DECLINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+        if (ctx == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        dd("setting new ctx: ctx = %p", ctx);
+
+        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    }
+
+    dd("entered? %d", (int) ctx->entered_rewrite_phase);
+
+    if (ctx->entered_rewrite_phase) {
+        dd("calling wev handler");
+        rc = ngx_http_lua_wev_handler(r);
+        dd("wev handler returns %d", (int) rc);
+        return rc;
+    }
+
+    dd("setting entered");
+
+    ctx->entered_rewrite_phase = 1;
+
+    if (llcf->rewrite_handler == NULL) {
+        return NGX_ERROR;
+    }
+
+    dd("calling rewrite handler");
+    return llcf->rewrite_handler(r);
 }
 

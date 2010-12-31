@@ -94,6 +94,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
 
     lua_State *cr = lua_newthread(L);
+
     if (cr) {
         /*  new globals table for coroutine */
         lua_newtable(cr);
@@ -110,6 +111,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         lua_replace(cr, LUA_GLOBALSINDEX);
 
         *ref = luaL_ref(L, -2);
+
         if (*ref == LUA_NOREF) {
             lua_settop(L, top);    /*  restore main trhead stack */
             return NULL;
@@ -118,6 +120,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
     /*  pop coroutine refernece on main thread's stack after anchoring it in registery */
     lua_pop(L, 1);
+
     return cr;
 }
 
@@ -288,9 +291,11 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
 
 #endif
 
-        rc = ngx_http_send_special(r, NGX_HTTP_LAST);
-        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-            return rc;
+        if (ctx->entered_content_phase)  {
+            rc = ngx_http_send_special(r, NGX_HTTP_LAST);
+            if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                return rc;
+            }
         }
 
         return NGX_OK;
@@ -298,6 +303,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
 
     return ngx_http_output_filter(r, cl);
 }
+
 
 static void
 init_ngx_lua_registry(lua_State *L)

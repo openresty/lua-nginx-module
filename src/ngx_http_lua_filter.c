@@ -10,6 +10,7 @@ static ngx_int_t ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in
 static ngx_int_t ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r);
 static void ngx_http_lua_post_read(ngx_http_request_t *r);
 
+
 ngx_int_t
 ngx_http_lua_filter_init(ngx_conf_t *cf)
 {
@@ -35,6 +36,7 @@ ngx_http_lua_filter_init(ngx_conf_t *cf)
 
     return NGX_OK;
 }
+
 
 static ngx_int_t
 ngx_http_lua_header_filter(ngx_http_request_t *r)
@@ -94,6 +96,7 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
             dd("request body has been read");
             return NGX_DECLINED;
         }
+
         return NGX_AGAIN;
     }
 
@@ -103,10 +106,11 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
     }
 
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
-
     if (ctx == NULL) {
         return NGX_ERROR;
     }
+
+    dd("setting new ctx, ctx = %p", ctx);
 
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 

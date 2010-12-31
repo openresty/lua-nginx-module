@@ -31,6 +31,8 @@ typedef struct {
     ngx_flag_t  force_read_body;    /* 1: force request body to be read;
                                        0: don't force reading request body */
 
+    ngx_http_handler_pt     rewrite_handler;
+
     ngx_str_t   rewrite_src;       /*  rewrite_by_lua
                                        inline script/script file path */
 
@@ -56,31 +58,33 @@ typedef struct {
     ngx_int_t        exit_code;
     ngx_flag_t       exited:1;
 
-    ngx_flag_t       headers_sent:1;    /*  1: response header has been sent;
+    unsigned       headers_sent:1;    /*  1: response header has been sent;
                                             0: header not sent yet */
 
-    ngx_flag_t       eof:1;             /*  1: last_buf has been sent;
+    unsigned       eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
 
-    ngx_flag_t       waiting:1;         /*  1: subrequest is still running;
+    unsigned       waiting:1;         /*  1: subrequest is still running;
                                             0: subrequest is not running */
 
-    ngx_flag_t       done:1;            /*  1: subrequest is just done;
+    unsigned       done:1;            /*  1: subrequest is just done;
                                             0: subrequest is not done
                                             yet or has already done */
 
-    ngx_flag_t       capture:1;         /*  1: body of current request is
+    unsigned       capture:1;         /*  1: body of current request is
                                             to be captured;
                                             0: not captured */
 
-    ngx_flag_t       read_body_done:1;      /* 1: request body has been all
+    unsigned       read_body_done:1;      /* 1: request body has been all
                                                read; 0: body has not been
                                                all read */
 
-    ngx_flag_t       waiting_more_body:1;   /* 1: waiting for more data;
+    unsigned         waiting_more_body:1;   /* 1: waiting for more data;
                                                0: no need to wait */
 
-    ngx_flag_t       headers_set:1;
+    unsigned         headers_set:1;
+    unsigned         entered_content_phase:1;
+    unsigned         entered_rewrite_phase:1;
 
     ngx_http_cleanup_pt     *cleanup;
 
