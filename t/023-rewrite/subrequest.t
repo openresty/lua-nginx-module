@@ -27,12 +27,13 @@ __DATA__
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/other",
                 { method = ngx.HTTP_DELETE });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -53,12 +54,13 @@ DELETE
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_DELETE });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -79,12 +81,13 @@ DELETE
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_POST });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -101,12 +104,13 @@ POST
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/other",
                 { method = ngx.HTTP_HEAD });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -127,12 +131,13 @@ HEAD
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_GET });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -153,11 +158,12 @@ GET
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo")
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -178,11 +184,12 @@ GET
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo", {})
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -206,12 +213,13 @@ GET
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_PUT, body = "hello" });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -233,12 +241,13 @@ hello
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/other",
                 { method = ngx.HTTP_PUT, body = "hello" });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -267,7 +276,7 @@ hello
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/other",
                 { method = ngx.HTTP_PUT, body = "hello" });
 
@@ -277,6 +286,7 @@ hello
             ngx.say(res.body)
 
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -303,12 +313,13 @@ GET
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_POST, body = "hello" });
 
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -332,7 +343,7 @@ hello
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             ngx.location.capture("/flush");
 
             res = ngx.location.capture("/memc");
@@ -346,6 +357,7 @@ hello
             ngx.say("cached: " .. res.body);
 
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -371,7 +383,7 @@ cached: hello
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             ngx.location.capture("/flush",
                 { share_all_vars = true });
 
@@ -387,6 +399,7 @@ cached: hello
             ngx.say("cached: " .. res.body);
 
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -404,11 +417,12 @@ cached: hello
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = {} })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -423,11 +437,12 @@ GET /lua
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = { ["fo="] = "=>" } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -443,12 +458,13 @@ fo%3d=%3d%3e
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = { ["fo="] = "=>",
                     ["="] = ":" } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -464,12 +480,13 @@ fo%3d=%3d%3e&%3d=%3a
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = { foo = 3,
                     bar = "hello" } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -485,11 +502,12 @@ bar=hello&foo=3
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = { [57] = "hi" } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -505,11 +523,12 @@ GET /lua
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo",
                 { args = { "hi" } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -525,11 +544,12 @@ GET /lua
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo?a=3",
                 { args = { b = 4 } })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
@@ -545,11 +565,12 @@ a=3&b=4
     }
 
     location /lua {
-        content_by_lua '
+        rewrite_by_lua '
             res = ngx.location.capture("/foo?a=3",
                 { args = "b=4" })
             ngx.print(res.body)
         ';
+        return 200;
     }
 --- request
 GET /lua
