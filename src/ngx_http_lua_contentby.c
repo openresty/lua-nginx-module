@@ -2,6 +2,7 @@
 
 #define DDEBUG 0
 
+#include "nginx.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
@@ -151,7 +152,7 @@ static ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret)
 {
-    int                      rc;
+    int                      rv;
     int                      cc_ref;
     lua_State               *cc;
     const char              *err, *msg;
@@ -166,14 +167,17 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         cc_ref = ctx->cc_ref;
 
         /*  run code */
-        rc = lua_resume(cc, nret);
+        rv = lua_resume(cc, nret);
 
-        dd("lua resume returns %d", (int) rc);
+        dd("lua resume returns %d", (int) rv);
 
-        switch (rc) {
+        switch (rv) {
             case LUA_YIELD:
                 /*  yielded, let event handler do the rest job */
                 /*  FIXME: add io cmd dispatcher here */
+
+                dd("lua coroutine yielded");
+
                 lua_settop(cc, 0);
                 return NGX_AGAIN;
 
@@ -245,8 +249,31 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                                     &ctx->exec_args, &ctx->exec_uri);
                         }
 
+#if defined(nginx_version) && nginx_version >= 8011
+                        /* ngx_http_named_location always increments
+                         * r->main->count, which is not we want for
+                         * non-content phases */
+
+                        if (! ctx->entered_content_phase) {
+                            r->main->count--;
+                        }
+#endif
+
                         return ngx_http_named_location(r, &ctx->exec_uri);
                     }
+
+                    dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
+                            ctx->exec_uri.data);
+
+#if defined(nginx_version) && nginx_version >= 8011
+                    /* ngx_http_internal_redirect always increments
+                     * r->main->count, which is not we want for
+                     * non-content phases */
+
+                    if (! ctx->entered_content_phase) {
+                        r->main->count--;
+                    }
+#endif
 
                     return ngx_http_internal_redirect(r, &ctx->exec_uri,
                             &ctx->exec_args);
@@ -510,7 +537,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
 
-    dd("in rewrite handler");
+    dd("in rewrite handler: %.*s", (int) r->uri.len, r->uri.data);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 

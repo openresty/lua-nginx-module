@@ -9,6 +9,11 @@
 
 #define NGX_UNESCAPE_URI_COMPONENT  0
 
+#ifndef ngx_str_set
+#define ngx_str_set(str, text)                                               \
+    (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+#endif
+
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 

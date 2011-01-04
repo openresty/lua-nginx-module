@@ -372,9 +372,6 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     }
 
     if (rc == NGX_AGAIN) {
-#if defined(nginx_version) && nginx_version >= 8011
-        /* r->main->count++; */
-#endif
         return NGX_DONE;
     }
 
@@ -500,9 +497,6 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     }
 
     if (rc == NGX_AGAIN) {
-#if 0 && defined(nginx_version) && nginx_version >= 8011
-        r->main->count++;
-#endif
         return NGX_DONE;
     }
 

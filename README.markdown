@@ -106,6 +106,16 @@ Example Config
         }
     }
 
+    location / {
+        rewrite_by_lua '
+            res = ngx.location.capture("/memc",
+                { args = { cmd = 'incr', key = ngx.var.uri } }
+            )
+        ';
+
+        proxy_pass http://blah.blah.com;
+    }
+
 Description
 ===========
 
@@ -144,8 +154,8 @@ lua_package_path
 defaults.
 * **Context:** `main`
 
-Set the Lua module searching path used by scripts specified by `set_by_lua*`
-and `content_by_lua*`. The path string is in standard Lua path form, and `;;`
+Set the Lua module searching path used by scripts specified by `set_by_lua*`,
+`content_by_lua*` and others. The path string is in standard Lua path form, and `;;`
 can be used to stand for the original path.
 
 lua_package_cpath
@@ -156,8 +166,8 @@ lua_package_cpath
 defaults.
 * **Context:** `main`
 
-Set the Lua C-module searching path used by scripts specified by `set_by_lua*`
-and `content_by_lua*`. The cpath string is in standard Lua cpath form, and `;;`
+Set the Lua C-module searching path used by scripts specified by `set_by_lua*`,
+`content_by_lua*` and others. The cpath string is in standard Lua cpath form, and `;;`
 can be used to stand for the original cpath.
 
 set_by_lua
@@ -210,6 +220,7 @@ content_by_lua
 
 * **Syntax:** `content_by_lua <lua-script-str>`
 * **Context:** `location | lif`
+* **Phase:** `content`
 
 Act as a content handler and execute user code specified by `<lua-script-str>`
 for every request. The user code may call predefined APIs to generate response
@@ -228,17 +239,69 @@ don't worry! We're working on a alternative coroutine implementation that can
 be fit in the Nginx event framework. When it is done, the user code will be
 able to use coroutine mechanism freely as in standard Lua again!
 
+rewrite_by_lua
+--------------
+
+* **Syntax:** `rewrite_by_lua <lua-script-str>`
+* **Context:** `location | lif`
+* **Phase:** `rewrite`
+
+Act as a rewrite phase handler and execute user code specified by `<lua-script-str>`
+for every request. The user code may call predefined APIs to generate response
+content.
+
+This hook uses exactly the same mechamism as `content_by_lua` so all the nginx APIs defined there
+are also available here.
+
+Note that this handler always runs *before* the standard nginx rewrite module. So the following won't work as expected:
+
+    ?   location /foo {
+    ?       set $a 12;
+    ?       set $b '';
+    ?       rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
+    ?       echo "res = $b";
+    ?   }
+
+because when the lua code in `rewrite_by_lua` runs, the variable `a` has not been assigned the number 12 yet.
+The right way of doing this is as follows:
+
+    location /foo {
+        set $a ''; # just define the variable $a
+        set $b ''; # just define the variable $b
+
+        rewrite_by_lua '
+            ngx.var.a = 12
+            ngx.var.b = tonumber(ngx.var.a) + 1';
+
+        echo "res = $b";
+    }
+
+This directive won't work properly with nginx 0.7.x.
+
 content_by_lua_file
 -------------------
 
 * **Syntax:** `content_by_lua_file <path-to-lua-script>`
 * **Context:** `location | lif`
+* **Phase:** `content`
 
 Basically the same as `content_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
 
 The user code is loaded once at the first request and cached. Nginx config must
 be reloaded if you modified the file and expected to see updated behavior.
+
+rewrite_by_lua_file
+-------------------
+
+* **Syntax:** `rewrite_by_lua_file <path-to-lua-script>`
+* **Context:** `location | lif`
+* **Phase:** `rewrite`
+
+Same as `rewrite_by_lua`, except the code to be executed is in
+the file specified by `<path-lua-script>`.
+
+This directive won't work properly with nginx 0.7.x.
 
 lua_need_request_body
 ---------------------
@@ -760,9 +823,11 @@ Compatibility
 The following versions of Nginx should work with this module:
 
 *   0.8.x (last tested: 0.8.53)
-*   0.7.x >= 0.7.46 (last tested: 0.7.67)
+*   0.7.x >= 0.7.46 (last tested: 0.7.68)
 
 Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
+
+Note that rewrite_by_lua will NOT work for 0.7.x.
 
 If you find that any particular version of Nginx above 0.7.44 does not
 work with this module, please consider reporting a bug.
