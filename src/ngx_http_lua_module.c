@@ -81,6 +81,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         ngx_http_lua_content_handler_inline
     },
 
+    {
+        ngx_string("rewrite_by_lua_file"),
+        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_rewrite_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_rewrite_handler_file
+    },
+
     /* content_by_lua_file rel/or/abs/path/to/script */
     {
         ngx_string("content_by_lua_file"),

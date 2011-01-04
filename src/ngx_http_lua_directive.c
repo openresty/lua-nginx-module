@@ -445,3 +445,67 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     return NGX_OK;
 }
 
+
+ngx_int_t
+ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
+{
+    lua_State                       *L;
+    ngx_int_t                        rc;
+    u_char                          *script_path;
+    ngx_http_lua_main_conf_t        *lmcf;
+    ngx_http_lua_loc_conf_t         *llcf;
+    char                            *err;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    script_path = ngx_http_lua_rebase_path(r->pool, llcf->rewrite_src.data,
+            llcf->rewrite_src.len);
+
+    if (script_path == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Failed to allocate memory to store absolute path: raw path='%v'",
+                &(llcf->rewrite_src));
+
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    L = lmcf->lua;
+
+    /*  load Lua script file (w/ cache)        sp = 1 */
+    rc = ngx_http_lua_cache_loadfile(L, (char *) script_path, &err);
+
+    if (rc != NGX_OK) {
+        if (err == NULL) {
+            err = "unknown error";
+        }
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Failed to load Lua inlined code: %s", err);
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    /*  make sure we have a valid code chunk */
+    assert(lua_isfunction(L, -1));
+
+    rc = ngx_http_lua_rewrite_by_chunk(L, r);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return rc;
+    }
+
+    if (rc == NGX_DONE) {
+        return NGX_DONE;
+    }
+
+    if (rc == NGX_AGAIN) {
+#if 0 && defined(nginx_version) && nginx_version >= 8011
+        r->main->count++;
+#endif
+        return NGX_DONE;
+    }
+
+    return NGX_DECLINED;
+}
+
