@@ -112,6 +112,8 @@ ngx_http_lua_rewrite_phase_handler(ngx_http_request_t *r)
 
     dd("setting new ctx, ctx = %p", ctx);
 
+    ctx->cc_ref = LUA_NOREF;
+
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 
     dd("start to read request body");

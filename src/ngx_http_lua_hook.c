@@ -626,6 +626,8 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
         return luaL_error(L, "memory allocation error");
     }
 
+    sr_ctx->cc_ref = LUA_NOREF;
+
     sr_ctx->capture = 1;
 
     psr->handler = ngx_http_lua_post_subrequest;

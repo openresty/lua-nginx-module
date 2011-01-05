@@ -43,7 +43,7 @@ end
             ngx.say("Hello, Lua!")
             ngx.say("Yay! ", 123)';
 
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /say
@@ -57,7 +57,7 @@ Yay! 123
 --- config
     location /lua {
         rewrite_by_lua 'ngx.echo("Hello, Lua!\\n")';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -72,7 +72,7 @@ GET /lua
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
         rewrite_by_lua 'v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua?a=1&b=2
@@ -85,7 +85,7 @@ request_uri: /lua?a=1&b=2
 --- config
     location /lua {
         rewrite_by_lua_file html/test.lua;
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- user_files
 >>> test.lua
@@ -102,7 +102,7 @@ request_uri: /lua?a=1&b=2
 --- config
     location /lua {
         rewrite_by_lua_file html/calc.lua;
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- user_files
 >>> calc.lua
@@ -144,7 +144,7 @@ result: -0.4090441561579
     location = /lua {
         rewrite_by_lua 'who = ngx.var.arg_who
             ngx.print("Hello, ", who, "!")';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua?who=agentzh
@@ -165,7 +165,7 @@ res = ngx.location.capture("/other")
 ngx.print("status=", res.status, " ")
 ngx.print("body=", res.body)
 ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -178,7 +178,7 @@ status=200 body=hello, world
 --- config
     location /lua {
         rewrite_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -190,7 +190,7 @@ GET /lua
 --- config
     location /lua {
         rewrite_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -203,7 +203,7 @@ res=404
 --- config
     location /lua {
         rewrite_by_lua 'ngx.print(nil)';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -216,7 +216,7 @@ GET /lua
 --- config
     location /lua {
         rewrite_by_lua 'ngx.location.capture(nil)';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -241,7 +241,7 @@ GET /lua
            end
            ';
 
-           return 200;
+           content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /recur
@@ -267,7 +267,7 @@ end
            end
            ';
 
-           return 200;
+           content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /recur?num=3
@@ -285,7 +285,7 @@ end
  location /set {
        set $a "";
        rewrite_by_lua 'ngx.var.a = 32; ngx.say(ngx.var.a)';
-       return 200;
+       content_by_lua 'ngx.exit(ngx.OK)';
        add_header Foo $a;
    }
 --- request
@@ -302,12 +302,12 @@ Foo: 32
  location /set {
        set $a 'hello\n\r\'"\\'; # this runs after rewrite_by_lua
        rewrite_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
-       return 200;
+       content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /set
 --- response_body
-''
+'hello\n\r\'\"\\'
 
 
 
@@ -316,7 +316,7 @@ GET /set
 location /set {
     #set $a "hello\n\r'\"\\";
     rewrite_by_lua 'ngx.say(ngx.quote_sql_str("hello\\n\\r\'\\"\\\\"))';
-    return 200;
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /set
@@ -332,7 +332,7 @@ location /set {
         local s = "hello 112";
         ngx.say(string.find(s, "%d+$"))';
 
-    return 200;
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /set
@@ -349,7 +349,7 @@ location /sub {
 location /parent {
     set $a 12;
     rewrite_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
-    return 200;
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -372,7 +372,7 @@ location /parent {
         );
         ngx.print(res.body)
     ';
-    return 200;
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -392,7 +392,7 @@ location /parent {
         ngx.say(ngx.var.a)
     ';
 
-    return 200;
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -431,7 +431,7 @@ GET /parent
             ngx.say("type: ", res.header["Content-Type"]);
         ';
 
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -447,7 +447,7 @@ type: foo/bar
         rewrite_by_lua '
             ngx.header.Bar = "Bah";
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 
     location /lua {
@@ -457,7 +457,7 @@ type: foo/bar
             ngx.say("Bar: ", res.header["Bar"]);
         ';
 
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -475,7 +475,7 @@ Bar: Bah
             ngx.header.Bar = "Bah";
             ngx.header.Bar = nil;
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 
     location /lua {
@@ -484,7 +484,7 @@ Bar: Bah
             ngx.say("type: ", res.header["Content-Type"]);
             ngx.say("Bar: ", res.header["Bar"] or "nil");
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua

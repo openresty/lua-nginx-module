@@ -1,6 +1,7 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#define DDEBUG 0
+#define DDEBUG 1
+
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 
@@ -707,6 +708,7 @@ ngx_http_lua_var_set(lua_State *L)
 
     vv->valid = 1;
     vv->not_found = 0;
+
     vv->data = val;
     vv->len = len;
 
@@ -765,6 +767,7 @@ ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
 
         if (ngx_buf_special(in->buf)) {
             cl->buf = in->buf;
+
         } else {
             if (ngx_buf_in_memory(in->buf)) {
                 len = ngx_buf_size(in->buf);
@@ -786,5 +789,25 @@ ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
     *ll = NULL;
 
     return NGX_OK;
+}
+
+
+void
+ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_ctx_t *ctx)
+{
+    if (ctx->cc_ref != LUA_NOREF) {
+        ngx_http_lua_del_thread(r, L, ctx->cc_ref, 0);
+        ctx->cc_ref = LUA_NOREF;
+    }
+
+    ctx->waiting = 0;
+    ctx->done = 0;
+    ctx->entered_rewrite_phase = 0;
+    ctx->exit_code = 0;
+    ctx->exited = 0;
+    ctx->exec_uri.data = NULL;
+    ctx->exec_uri.len = 0;
+    ctx->sr_status = 0;
 }
 

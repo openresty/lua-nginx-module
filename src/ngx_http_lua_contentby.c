@@ -1,6 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#define DDEBUG 0
+#define DDEBUG 1
 
 #include "nginx.h"
 #include "ngx_http_lua_contentby.h"
@@ -57,6 +57,10 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+#if 0
+    ngx_http_lua_reset_ctx(r, L, ctx);
+#endif
+
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
 
@@ -87,7 +91,10 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
 
+    dd("content by chunk");
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
     if (ctx == NULL) {
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
         if (ctx == NULL) {
@@ -96,7 +103,13 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
         dd("setting new ctx, ctx = %p", ctx);
 
+        ctx->cc_ref = LUA_NOREF;
+
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+
+    } else {
+        dd("reset ctx");
+        ngx_http_lua_reset_ctx(r, L, ctx);
     }
 
     ctx->entered_content_phase = 1;
@@ -182,8 +195,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 return NGX_AGAIN;
 
             case 0:
-                /*  normal end */
+                dd("normal end");
+
                 ngx_http_lua_del_thread(r, L, cc_ref, 0);
+                ctx->cc_ref = LUA_NOREF;
 
                 if (ctx->cleanup) {
                     dd("cleaning up cleanup");
@@ -222,13 +237,18 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         } else {
             if (lua_isnil(cc, -1)) {
                 if (ctx->exited) {
-                    dd("run here...exiting...");
+                    dd("run here...exiting... %d", (int) ctx->exit_code);
 
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);
+                    ctx->cc_ref = LUA_NOREF;
 
                     if (ctx->cleanup) {
                         *ctx->cleanup = NULL;
                         ctx->cleanup = NULL;
+                    }
+
+                    if (ctx->exit_code == NGX_OK) {
+                        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
                     }
 
                     return ctx->exit_code;
@@ -236,6 +256,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 if (ctx->exec_uri.len) {
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);
+                    ctx->cc_ref = LUA_NOREF;
 
                     if (ctx->cleanup) {
                         *ctx->cleanup = NULL;
@@ -288,6 +309,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 err, msg);
 
         ngx_http_lua_del_thread(r, L, cc_ref, 0);
+        ctx->cc_ref = LUA_NOREF;
 
         if (ctx->cleanup) {
             *ctx->cleanup = NULL;
@@ -317,7 +339,9 @@ ngx_http_lua_request_cleanup(void *data)
     dd("(lua-request-cleanup) force request coroutine quit");
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
     L = lmcf->lua;
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     /*  force coroutine handling the request quit */
@@ -336,6 +360,7 @@ ngx_http_lua_request_cleanup(void *data)
     if (lua_isthread(L, -1)) {
         /*  coroutine not finished yet, force quit */
         ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
+        ctx->cc_ref = LUA_NOREF;
 
 #if 0
         ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
@@ -510,6 +535,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ctx->waiting = 0;
     ctx->done = 1;
 
+    dd("entered content phase: %d", (int) ctx->entered_content_phase);
+
     if (ctx->entered_content_phase) {
         ngx_http_finalize_request(r, rc);
     }
@@ -536,8 +563,48 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
+    ngx_http_lua_main_conf_t    *lmcf;
 
     dd("in rewrite handler: %.*s", (int) r->uri.len, r->uri.data);
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    if (! lmcf->postponed_to_rewrite_phase_end) {
+        ngx_http_core_main_conf_t       *cmcf;
+        ngx_http_phase_handler_t        tmp;
+        ngx_http_phase_handler_t        *ph;
+        ngx_http_phase_handler_t        *cur_ph;
+        ngx_http_phase_handler_t        *last_ph;
+
+        lmcf->postponed_to_rewrite_phase_end = 1;
+
+        cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+        ph = cmcf->phase_engine.handlers;
+        cur_ph = &ph[r->phase_handler];
+        last_ph = &ph[cur_ph->next - 1];
+
+#if 0
+        if (cur_ph == last_ph) {
+            dd("XXX our handler is already the last rewrite phase handler");
+        }
+#endif
+
+        if (cur_ph < last_ph) {
+            dd("swaping the contents of cur_ph and last_ph...");
+
+            tmp      = *cur_ph;
+
+            memmove(cur_ph, cur_ph + 1,
+                (last_ph - cur_ph) * sizeof (ngx_http_phase_handler_t));
+
+            *last_ph = tmp;
+
+            r->phase_handler--; /* redo the current ph */
+
+            return NGX_DECLINED;
+        }
+    }
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -557,6 +624,8 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         }
 
         dd("setting new ctx: ctx = %p", ctx);
+
+        ctx->cc_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }

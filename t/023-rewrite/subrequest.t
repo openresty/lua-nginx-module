@@ -4,9 +4,9 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-log_level('warn');
+#log_level('warn');
 
-repeat_each(2);
+#repeat_each(2);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2);
@@ -33,7 +33,7 @@ __DATA__
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -60,7 +60,8 @@ DELETE
 
             ngx.print(res.body)
         ';
-        return 200;
+
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -87,7 +88,7 @@ DELETE
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -110,7 +111,7 @@ POST
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -137,7 +138,7 @@ HEAD
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -163,7 +164,7 @@ GET
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -189,7 +190,7 @@ GET
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -219,7 +220,7 @@ GET
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -247,7 +248,7 @@ hello
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -286,7 +287,7 @@ hello
             ngx.say(res.body)
 
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -319,7 +320,7 @@ GET
 
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -357,7 +358,7 @@ hello
             ngx.say("cached: " .. res.body);
 
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -399,7 +400,7 @@ cached: hello
             ngx.say("cached: " .. res.body);
 
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -422,7 +423,7 @@ cached: hello
                 { args = {} })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -442,7 +443,7 @@ GET /lua
                 { args = { ["fo="] = "=>" } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -464,7 +465,7 @@ fo%3d=%3d%3e
                     ["="] = ":" } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -486,7 +487,7 @@ fo%3d=%3d%3e&%3d=%3a
                     bar = "hello" } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -507,7 +508,7 @@ bar=hello&foo=3
                 { args = { [57] = "hi" } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -528,7 +529,7 @@ GET /lua
                 { args = { "hi" } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -549,7 +550,7 @@ GET /lua
                 { args = { b = 4 } })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -570,7 +571,7 @@ a=3&b=4
                 { args = "b=4" })
             ngx.print(res.body)
         ';
-        return 200;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua

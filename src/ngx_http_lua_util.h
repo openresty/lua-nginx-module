@@ -31,6 +31,9 @@ ngx_int_t ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
 int ngx_http_lua_var_get(lua_State *L);
 int ngx_http_lua_var_set(lua_State *L);
 
+void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_ctx_t *ctx);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

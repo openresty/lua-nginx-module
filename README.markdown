@@ -244,7 +244,7 @@ rewrite_by_lua
 
 * **Syntax:** `rewrite_by_lua <lua-script-str>`
 * **Context:** `location | lif`
-* **Phase:** `rewrite`
+* **Phase:** `rewrite tail`
 
 Act as a rewrite phase handler and execute user code specified by `<lua-script-str>`
 for every request. The user code may call predefined APIs to generate response
@@ -253,25 +253,44 @@ content.
 This hook uses exactly the same mechamism as `content_by_lua` so all the nginx APIs defined there
 are also available here.
 
-Note that this handler always runs *before* the standard nginx rewrite module. So the following won't work as expected:
+Note that this handler always runs *after* the standard nginx rewrite module. So the following will work as expected:
 
-    ?   location /foo {
-    ?       set $a 12;
-    ?       set $b '';
-    ?       rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
-    ?       echo "res = $b";
-    ?   }
+   location /foo {
+       set $a 12; # create and initialize $a
+       set $b ''; # create and initialize $b
+       rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
+       echo "res = $b";
+   }
 
-because when the lua code in `rewrite_by_lua` runs, the variable `a` has not been assigned the number 12 yet.
+because `set $a 12` and `set $b ''` run before `rewrite_by_lua`.
+
+On the other hand, the following will not work as expected:
+
+    ?  location /foo {
+    ?      set $a 12; # create and initialize $a
+    ?      set $b ''; # create and initialize $b
+    ?      rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
+    ?      if ($b = '13') {
+    ?         rewrite ^ /bar redirect;
+    ?         break;
+    ?      }
+    ?
+    ?      echo "res = $b";
+    ?  }
+
+because `if` runs *before* `rewrite_by_lua` even if it's put after `rewrite_by_lua` in the config.
+
 The right way of doing this is as follows:
 
     location /foo {
-        set $a ''; # just define the variable $a
-        set $b ''; # just define the variable $b
-
+        set $a 12; # create and initialize $a
+        set $b ''; # create and initialize $b
         rewrite_by_lua '
-            ngx.var.a = 12
-            ngx.var.b = tonumber(ngx.var.a) + 1';
+            ngx.var.b = tonumber(ngx.var.a) + 1
+            if ngx.var.b == 13 then
+                return ngx.redirect("/bar");
+            end
+        ';
 
         echo "res = $b";
     }
