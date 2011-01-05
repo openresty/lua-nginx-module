@@ -7,6 +7,9 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 
+
+static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
+static void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 static void ngx_http_lua_request_cleanup(void *data);
 static ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret);
@@ -558,6 +561,76 @@ error:
 
 
 ngx_int_t
+ngx_http_lua_content_handler(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t                    rc;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->content_handler == NULL) {
+        dd("no content handler found");
+        return NGX_DECLINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+        if (ctx == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        dd("setting new ctx: ctx = %p", ctx);
+
+        ctx->cc_ref = LUA_NOREF;
+
+        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    }
+
+    dd("entered? %d", (int) ctx->entered_content_phase);
+
+    if (ctx->waiting_more_body) {
+        return NGX_DONE;
+    }
+
+    if (ctx->entered_content_phase) {
+        dd("calling wev handler");
+        rc = ngx_http_lua_wev_handler(r);
+        dd("wev handler returns %d", (int) rc);
+        return rc;
+    }
+
+    if (llcf->force_read_body &&
+            ! ctx->read_body_done &&
+            ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
+    {
+        rc = ngx_http_read_client_request_body(r, 
+                ngx_http_lua_content_phase_post_read);
+
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return rc;
+        }
+
+        if (rc == NGX_AGAIN) {
+            ctx->waiting_more_body = 1;
+            return NGX_DONE;
+        }
+    }
+
+    dd("setting entered");
+
+    ctx->entered_content_phase = 1;
+
+    dd("calling content handler");
+    return llcf->content_handler(r);
+}
+
+
+ngx_int_t
 ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_loc_conf_t     *llcf;
@@ -632,6 +705,10 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
     dd("entered? %d", (int) ctx->entered_rewrite_phase);
 
+    if (ctx->waiting_more_body) {
+        return NGX_DECLINED;
+    }
+
     if (ctx->entered_rewrite_phase) {
         dd("calling wev handler");
         rc = ngx_http_lua_wev_handler(r);
@@ -639,15 +716,70 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         return rc;
     }
 
+    if (llcf->force_read_body &&
+            ! ctx->read_body_done &&
+            ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
+    {
+        rc = ngx_http_read_client_request_body(r, 
+                ngx_http_lua_generic_phase_post_read);
+
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return rc;
+        }
+
+        if (rc == NGX_AGAIN) {
+            ctx->waiting_more_body = 1;
+            return NGX_DONE;
+        }
+    }
+
     dd("setting entered");
 
     ctx->entered_rewrite_phase = 1;
 
-    if (llcf->rewrite_handler == NULL) {
-        return NGX_ERROR;
-    }
-
     dd("calling rewrite handler");
     return llcf->rewrite_handler(r);
+}
+
+
+/* post read callback for rewrite and access phases */
+static void
+ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
+{
+    ngx_http_lua_ctx_t  *ctx;
+
+    r->read_event_handler = ngx_http_request_empty_handler;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ctx->read_body_done = 1;
+
+#if defined(nginx_version) && nginx_version >= 8011
+    r->main->count--;
+#endif
+
+    if (ctx->waiting_more_body) {
+        ctx->waiting_more_body = 0;
+        ngx_http_core_run_phases(r);
+    }
+}
+
+
+/* post read callback for the content phase */
+static void
+ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
+{
+    ngx_http_lua_ctx_t  *ctx;
+
+    r->read_event_handler = ngx_http_request_empty_handler;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ctx->read_body_done = 1;
+
+    if (ctx->waiting_more_body) {
+        ctx->waiting_more_body = 0;
+        ngx_http_finalize_request(r, ngx_http_lua_content_handler(r));
+    }
 }
 

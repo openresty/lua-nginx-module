@@ -801,6 +801,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
         ctx->cc_ref = LUA_NOREF;
     }
 
+    ctx->waiting_more_body = 0;
     ctx->waiting = 0;
     ctx->done = 0;
     ctx->entered_rewrite_phase = 0;

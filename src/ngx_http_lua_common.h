@@ -35,6 +35,7 @@ typedef struct {
                                        0: don't force reading request body */
 
     ngx_http_handler_pt     rewrite_handler;
+    ngx_http_handler_pt     content_handler;
 
     ngx_str_t   rewrite_src;       /*  rewrite_by_lua
                                        inline script/script file path */

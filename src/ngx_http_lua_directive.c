@@ -185,6 +185,10 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    if (llcf->rewrite_handler) {
+        return "is duplicate";
+    }
+
     /*  update lua script data */
     /*
      * args[0] = "content_by_lua"
@@ -237,6 +241,10 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    if (llcf->content_handler) {
+        return "is duplicate";
+    }
+
     /*  update lua script data */
     /*
      * args[0] = "content_by_lua"
@@ -265,6 +273,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     llcf->content_src = args[1];
+    llcf->content_handler = cmd->post;
 
     /*  register location content handler */
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
@@ -272,7 +281,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    clcf->handler = cmd->post;
+    clcf->handler = ngx_http_lua_content_handler;
 
     return NGX_CONF_OK;
 }

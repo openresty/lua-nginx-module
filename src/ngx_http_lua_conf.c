@@ -60,6 +60,9 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     /* set by ngx_pcalloc:
      *      conf->rewrite_src = { 0, NULL };
      *      conf->content_src = { 0, NULL };
+     *      conf->rewrite_handler = NULL;
+     *      conf->content_handler = NULL;
+     *      conf->force_read_body = 0;
      */
 
     conf->force_read_body = NGX_CONF_UNSET;
