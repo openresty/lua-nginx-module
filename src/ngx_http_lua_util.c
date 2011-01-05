@@ -1,9 +1,10 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#define DDEBUG 1
+#define DDEBUG 0
 
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
+
 
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
@@ -13,8 +14,10 @@ static void inject_core_consts(lua_State *L);
 static void setpath(lua_State *L, int tab_idx, const char *fieldname,
         const char *path, const char *def);
 
+
 #define LUA_PATH_SEP ";"
 #define AUX_MARK "\1"
+
 
 static void
 setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def)
@@ -801,7 +804,6 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
         ctx->cc_ref = LUA_NOREF;
     }
 
-    ctx->waiting_more_body = 0;
     ctx->waiting = 0;
     ctx->done = 0;
     ctx->entered_rewrite_phase = 0;

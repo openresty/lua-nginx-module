@@ -1,6 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#define DDEBUG 1
+#define DDEBUG 0
 
 #include "nginx.h"
 #include "ngx_http_lua_contentby.h"
@@ -608,7 +608,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
             ! ctx->read_body_done &&
             ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
     {
-        rc = ngx_http_read_client_request_body(r, 
+        rc = ngx_http_read_client_request_body(r,
                 ngx_http_lua_content_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -617,7 +617,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
 
         if (rc == NGX_AGAIN) {
             ctx->waiting_more_body = 1;
-            return NGX_DONE;
+            return rc;
         }
     }
 
@@ -780,6 +780,11 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
         ngx_http_finalize_request(r, ngx_http_lua_content_handler(r));
+
+    } else {
+#if defined(nginx_version) && nginx_version >= 8011
+        r->main->count--;
+#endif
     }
 }
 

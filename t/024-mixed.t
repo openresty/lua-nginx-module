@@ -92,3 +92,75 @@ content cached: hello
 --- response_body
 64
 
+
+
+=== TEST 3: share the request body (need request body explicitly off)
+--- config
+    location /echo_body {
+        lua_need_request_body off;
+        set $res '';
+        rewrite_by_lua '
+            ngx.var.res = ngx.var.request_body or "nil"
+        ';
+        content_by_lua '
+            ngx.say(ngx.var.res or "nil")
+            ngx.say(ngx.var.request_body or "nil")
+        ';
+    }
+--- request_eval
+"POST /echo_body
+hello\x00\x01\x02
+world\x03\x04\xff"
+--- response_body
+nil
+nil
+
+
+
+=== TEST 4: share the request body (need request body off by default)
+--- config
+    location /echo_body {
+        #lua_need_request_body off;
+        set $res '';
+        rewrite_by_lua '
+            ngx.var.res = ngx.var.request_body or "nil"
+        ';
+        content_by_lua '
+            ngx.say(ngx.var.res or "nil")
+            ngx.say(ngx.var.request_body or "nil")
+        ';
+    }
+--- request_eval
+"POST /echo_body
+hello\x00\x01\x02
+world\x03\x04\xff"
+--- response_body
+nil
+nil
+
+
+
+=== TEST 5: share the request body (need request body on)
+--- config
+    location /echo_body {
+        lua_need_request_body on;
+        set $res '';
+        rewrite_by_lua '
+            ngx.var.res = ngx.var.request_body or "nil"
+        ';
+        content_by_lua '
+            ngx.say(ngx.var.res or "nil")
+            ngx.say(ngx.var.request_body or "nil")
+        ';
+    }
+--- request_eval
+"POST /echo_body
+hello\x00\x01\x02
+world\x03\x04\xff"
+--- response_body eval
+"hello\x00\x01\x02
+world\x03\x04\xff
+hello\x00\x01\x02
+world\x03\x04\xff
+"
+
