@@ -23,10 +23,6 @@ ngx_int_t ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r,
         ngx_str_t *val, ngx_http_variable_value_t *v, void *data);
 ngx_int_t ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r,
         ngx_str_t *val, ngx_http_variable_value_t *v, void *data);
-ngx_int_t ngx_http_lua_content_handler_inline(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_content_handler_file(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_content_handler(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r);
 
 
 #endif /* NGX_HTTP_LUA_DIRECTIVE_H */
