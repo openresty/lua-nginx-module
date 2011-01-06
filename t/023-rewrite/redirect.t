@@ -28,6 +28,7 @@ __DATA__
             ngx.redirect("http://www.taobao.com/foo");
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
@@ -45,6 +46,7 @@ Location: http://www.taobao.com/foo
             ngx.redirect("http://www.taobao.com/foo", ngx.HTTP_MOVED_TEMPORARILY);
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
@@ -62,6 +64,7 @@ Location: http://www.taobao.com/foo
             ngx.redirect("http://www.taobao.com/foo", ngx.HTTP_MOVED_PERMANENTLY);
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
@@ -79,6 +82,7 @@ Location: http://www.taobao.com/foo
             ngx.redirect("http://www.taobao.com/foo", 404);
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
@@ -96,6 +100,7 @@ GET /read
             ngx.redirect()
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
@@ -113,6 +118,7 @@ GET /read
             ngx.redirect("/foo")
             ngx.say("hi")
         ';
+        content_by_lua 'return';
     }
 --- request
 GET /read
