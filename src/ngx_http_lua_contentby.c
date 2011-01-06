@@ -154,7 +154,8 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
 
         if (rc == NGX_AGAIN) {
             ctx->waiting_more_body = 1;
-            return rc;
+
+            return NGX_DONE;
         }
     }
 

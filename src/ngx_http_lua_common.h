@@ -26,7 +26,7 @@ typedef struct {
     ngx_str_t        lua_cpath;
 
     unsigned    postponed_to_rewrite_phase_end:1;
-    unsigned    postponed_to_access_phase_end:1;
+    unsigned    postponed_to_access_phase_end:1; /* TODO */
 
 } ngx_http_lua_main_conf_t;
 
