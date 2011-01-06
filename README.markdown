@@ -315,7 +315,7 @@ rewrite_by_lua_file
 
 * **Syntax:** `rewrite_by_lua_file <path-to-lua-script>`
 * **Context:** `location | lif`
-* **Phase:** `rewrite`
+* **Phase:** `rewrite tail`
 
 Same as `rewrite_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
@@ -351,8 +351,9 @@ Nginx API for Lua
 
 Input arguments
 ---------------
+* **Context:** `set_by_lua*`
 
-Index the input arguments to the set_by_lua* directive:
+Index the input arguments to the set_by_lua* directives:
 
     value = ngx.arg[n]
 
@@ -371,10 +372,9 @@ Here's an example
 
 that outputs 88, the sum of 32 and 56.
 
-This is only available in set_by_lua* directives.
-
 Read and write Nginx variables
 ------------------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
     value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
@@ -392,10 +392,9 @@ For example:
 
 That is, nginx variables cannot be created on-the-fly.
 
-This is available in both set_by_lua* and content_by_lua*
-
 Core constants
 ---------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
     ngx.OK
     ngx.DONE
@@ -404,6 +403,7 @@ Core constants
 
 HTTP method constants
 ---------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
     value = ngx.HTTP_GET
     value = ngx.HTTP_HEAD
@@ -413,6 +413,7 @@ HTTP method constants
 
 HTTP status constants
 ---------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
     value = ngx.HTTP_OK
     value = ngx.HTTP_CREATED
@@ -429,6 +430,7 @@ HTTP status constants
 
 Nginx log level constants
 -------------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
     log_level = ngx.STDERR
     log_level = ngx.EMERG
@@ -442,6 +444,7 @@ Nginx log level constants
 
 print(a, b, ...)
 ----------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Emit args concatenated to `error.log`, with log level `ngx.NOTICE` and prefix `lua print: `.
 
@@ -453,6 +456,7 @@ Nil arguments are accepted and result in literal "nil".
 
 ngx.location.capture(uri, options?)
 -----------------------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Issue a synchronous but still non-blocking "nginx subrequest" using `uri`.
 
@@ -532,10 +536,9 @@ The `args` option can also take plain query string:
 
 This is functionally identical to the previous examples.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.status
 ----------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Read and write the response status. This should be called
 before sending out the response headers.
@@ -543,10 +546,9 @@ before sending out the response headers.
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.header.HEADER
 -----------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
 
@@ -586,12 +588,16 @@ same does assigning an empty table:
 `ngx.header` is not a normal Lua table so you cannot
 iterate through it.
 
-Reading values from ngx.header.HEADER is not implemented yet.
+For reading request headers, use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
+    http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
+
+Reading values from ngx.header.HEADER is not implemented yet, and usually you
+shouldn't need it.
 
 ngx.exec(uri, args)
 -------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Does an internal redirect to uri with args.
 
@@ -622,10 +628,9 @@ outputs by either `ngx.print` or `ngx.say`.
 This method is very much like the `echo_exec`
 directive in the ngx_echo module.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.redirect(uri, status?)
 --------------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Issue an HTTP 301 or 302 redirection to `uri`.
 
@@ -664,10 +669,9 @@ is equivalent to
 
     return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.send_headers()
 ------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Explicitly send out the response headers.
 
@@ -677,44 +681,39 @@ output contents via `ngx.say` or `ngx.print`.
 
 Headers will also be sent automatically when `content_by_lua` exits normally.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.print(a, b, ...)
 --------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Emit args concatenated to the HTTP client (as response body).
 
 Nil arguments are not allowed.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.say(a, b, ...)
 ------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Just as `ngx.print` but also emit a trailing newline.
 
 Nil arguments are not allowed.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.log(log_level, ...)
 -----------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Log args concatenated to error.log with the given logging level.
 
 Nil arguments are accepted and result in literal "nil".
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.flush()
 -----------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Force flushing the response outputs.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.exit(status)
 ----------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Interrupts the execution of the current Lua thread and returns
 status code to nginx.
@@ -723,17 +722,15 @@ The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
 `ngx.HTTP_MOVED_TEMPORARILY`,
 or other HTTP status numbers.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.eof()
 ---------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 Explicitly specify the end of the response output stream.
 
-This function is only available in `content_by_lua` and `content_by_lua_file`.
-
 ngx.escape_uri(str)
 -------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Escape `str` as a URI component.
 
@@ -741,6 +738,7 @@ Escape `str` as a URI component.
 
 ngx.unescape_uri(str)
 ---------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Unescape `str` as a escaped URI component.
 
@@ -748,6 +746,7 @@ Unescape `str` as a escaped URI component.
 
 ngx.encode_base64(str)
 ----------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Encode `str` to a base64 digest
 
@@ -755,6 +754,7 @@ Encode `str` to a base64 digest
 
 ngx.decode_base64(str)
 ----------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Decode `str` as a base64 digest to the raw form
 
@@ -762,6 +762,8 @@ Decode `str` as a base64 digest to the raw form
 
 ngx.today()
 ---------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
+
 Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no syscall involved unlike Lua's date library).
 .
 
@@ -769,16 +771,21 @@ This is the local time.
 
 ngx.time()
 -------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
+
 Returns the elapsed seconds from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
 ngx.localtime()
 ---------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
+
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
 This is the local time.
 
 ngx.utctime()
-----------------
+-------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
 
 Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -786,6 +793,8 @@ This is the UTC time.
 
 ngx.cookie_time(sec)
 --------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `content_by_lua*`
+
 Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from `ngx.time`).
 
     ngx.say(ngx.cookie_time(1290079655))
@@ -793,6 +802,7 @@ Returns a formated string can be used as the cookie expiration time. The paramet
 
 ndk.set_var.DIRECTIVE
 ---------------------
+* **Context:** `rewrite_by_lua*`, `content_by_lua*`
 
 This mechanism allows calling other nginx C modules' directives that are
 implemented by Nginx Devel Kit (NDK)'s set_var submodule's ndk_set_var_value.
@@ -945,7 +955,6 @@ See Also
 * drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
 * postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
 * memc-nginx-module ( <http://github.com/agentzh/memc-nginx-module> )
-* ngx_http_js_module ( <http://github.com/kung-fu-tzu/ngx_http_js_module> )
 
 Authors
 =======
