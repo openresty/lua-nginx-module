@@ -4,6 +4,7 @@
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_filter.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_rewriteby.h"
 
 
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
