@@ -215,7 +215,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (clcf == NULL) {
         return NGX_CONF_ERROR;
     }
-    clcf->handler = cmd->post;
+    clcf->handler = (ngx_http_handler_pt)(cmd->post);
 
     return NGX_CONF_OK;
 }
