@@ -132,6 +132,12 @@ Synopsis
 
             # proxy_pass/fastcgi_pass/postgres_pass/...
         }
+
+        location /mixed {
+            rewrite_by_lua_file /path/to/rewrite.lua;
+            access_by_lua_file /path/to/access.lua;
+            content_by_lua_file /path/to/content.lua;
+        }
     }
 
 Description
