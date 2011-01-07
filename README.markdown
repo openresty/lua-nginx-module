@@ -11,8 +11,8 @@ ready :)
 
 Commit bit can be freely delivered at your request ;)
 
-Example Config
-==============
+Synopsis
+========
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
@@ -104,16 +104,34 @@ Example Config
                end
                ';
         }
-    }
 
-    location / {
-        rewrite_by_lua '
-            res = ngx.location.capture("/memc",
-                { args = { cmd = 'incr', key = ngx.var.uri } }
-            )
-        ';
+        location /foo {
+            rewrite_by_lua '
+                res = ngx.location.capture("/memc",
+                    { args = { cmd = 'incr', key = ngx.var.uri } }
+                )
+            ';
 
-        proxy_pass http://blah.blah.com;
+            proxy_pass http://blah.blah.com;
+        }
+
+        location /blah {
+            access_by_lua '
+                local res = ngx.location.capture("/auth")
+
+                if res.status == ngx.HTTP_OK then
+                    return
+                end
+
+                if res.status == ngx.HTTP_FORBIDDEN then
+                    ngx.exit(res.status)
+                end
+
+                ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+            ';
+
+            # proxy_pass/fastcgi_pass/postgres_pass/...
+        }
     }
 
 Description
@@ -374,7 +392,7 @@ approximately implemented by `access_by_lua`. For example,
     location / {
         auth_request /auth;
 
-        ...
+        # proxy_pass/fastcgi_pass/postgres_pass/...
     }
 
 can be implemented in terms of `ngx_lua` like this
@@ -394,7 +412,7 @@ can be implemented in terms of `ngx_lua` like this
             ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         ';
 
-        ...
+        # proxy_pass/fastcgi_pass/postgres_pass/...
     }
 
 Just as any other access-phase handlers, `access_by_lua` will NOT run in subrequests.
