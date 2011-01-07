@@ -807,6 +807,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->waiting = 0;
     ctx->done = 0;
     ctx->entered_rewrite_phase = 0;
+    ctx->entered_access_phase = 0;
     ctx->exit_code = 0;
     ctx->exited = 0;
     ctx->exec_uri.data = NULL;

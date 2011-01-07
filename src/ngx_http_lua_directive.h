@@ -5,7 +5,8 @@
 #include "ngx_http_lua_common.h"
 
 
-extern ngx_flag_t  ngx_http_lua_requires_rewrite;
+extern unsigned  ngx_http_lua_requires_rewrite;
+extern unsigned  ngx_http_lua_requires_access;
 
 
 char * ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -18,7 +19,8 @@ char * ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
 char * ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
-ngx_int_t ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r);
+char * ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+        void *conf);
 ngx_int_t ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r,
         ngx_str_t *val, ngx_http_variable_value_t *v, void *data);
 ngx_int_t ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r,

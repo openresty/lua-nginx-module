@@ -26,7 +26,7 @@ typedef struct {
     ngx_str_t        lua_cpath;
 
     unsigned    postponed_to_rewrite_phase_end:1;
-    unsigned    postponed_to_access_phase_end:1; /* TODO */
+    unsigned    postponed_to_access_phase_end:1;
 
 } ngx_http_lua_main_conf_t;
 
@@ -35,11 +35,12 @@ typedef struct {
                                        0: don't force reading request body */
 
     ngx_http_handler_pt     rewrite_handler;
+    ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
 
     ngx_str_t   rewrite_src;       /*  rewrite_by_lua
                                        inline script/script file path */
-
+    ngx_str_t   access_src;
     ngx_str_t   content_src;       /*  content_by_lua
                                        inline script/script file path */
 
@@ -87,8 +88,9 @@ typedef struct {
                                                0: no need to wait */
 
     unsigned         headers_set:1;
-    unsigned         entered_content_phase:1;
     unsigned         entered_rewrite_phase:1;
+    unsigned         entered_access_phase:1;
+    unsigned         entered_content_phase:1;
 
     ngx_http_cleanup_pt     *cleanup;
 

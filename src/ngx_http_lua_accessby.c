@@ -3,14 +3,14 @@
 #define DDEBUG 0
 
 #include "nginx.h"
-#include "ngx_http_lua_rewriteby.h"
+#include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_cache.h"
 
 
 ngx_int_t
-ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
+ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     int                      cc_ref;
     lua_State               *cc;
@@ -55,7 +55,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ngx_http_lua_reset_ctx(r, L, ctx);
 
-    ctx->entered_rewrite_phase = 1;
+    ctx->entered_access_phase = 1;
 
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
@@ -80,7 +80,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
+ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -91,13 +91,13 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    script_path = ngx_http_lua_rebase_path(r->pool, llcf->rewrite_src.data,
-            llcf->rewrite_src.len);
+    script_path = ngx_http_lua_rebase_path(r->pool, llcf->access_src.data,
+            llcf->access_src.len);
 
     if (script_path == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "Failed to allocate memory to store absolute path: raw path='%v'",
-                &(llcf->rewrite_src));
+                &(llcf->access_src));
 
         return NGX_ERROR;
     }
@@ -122,7 +122,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     /*  make sure we have a valid code chunk */
     assert(lua_isfunction(L, -1));
 
-    rc = ngx_http_lua_rewrite_by_chunk(L, r);
+    rc = ngx_http_lua_access_by_chunk(L, r);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
@@ -141,25 +141,25 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
+ngx_http_lua_access_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    dd("in rewrite handler: %.*s", (int) r->uri.len, r->uri.data);
+    dd("in access handler: %.*s", (int) r->uri.len, r->uri.data);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (! lmcf->postponed_to_rewrite_phase_end) {
+    if (! lmcf->postponed_to_access_phase_end) {
         ngx_http_core_main_conf_t       *cmcf;
         ngx_http_phase_handler_t        tmp;
         ngx_http_phase_handler_t        *ph;
         ngx_http_phase_handler_t        *cur_ph;
         ngx_http_phase_handler_t        *last_ph;
 
-        lmcf->postponed_to_rewrite_phase_end = 1;
+        lmcf->postponed_to_access_phase_end = 1;
 
         cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
@@ -169,7 +169,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
 #if 0
         if (cur_ph == last_ph) {
-            dd("XXX our handler is already the last rewrite phase handler");
+            dd("XXX our handler is already the last access phase handler");
         }
 #endif
 
@@ -191,8 +191,8 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    if (llcf->rewrite_handler == NULL) {
-        dd("no rewrite handler found");
+    if (llcf->access_handler == NULL) {
+        dd("no access handler found");
         return NGX_DECLINED;
     }
 
@@ -213,13 +213,13 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    dd("entered? %d", (int) ctx->entered_rewrite_phase);
+    dd("entered? %d", (int) ctx->entered_access_phase);
 
     if (ctx->waiting_more_body) {
         return NGX_DECLINED;
     }
 
-    if (ctx->entered_rewrite_phase) {
+    if (ctx->entered_access_phase) {
         dd("calling wev handler");
         rc = ngx_http_lua_wev_handler(r);
         dd("wev handler returns %d", (int) rc);
@@ -243,13 +243,13 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         }
     }
 
-    dd("calling rewrite handler");
-    return llcf->rewrite_handler(r);
+    dd("calling access handler");
+    return llcf->access_handler(r);
 }
 
 
 ngx_int_t
-ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
+ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
@@ -265,8 +265,8 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.data,
-            llcf->rewrite_src.len, "rewrite_by_lua", &err);
+    rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.data,
+            llcf->access_src.len, "access_by_lua", &err);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -279,9 +279,9 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_lua_rewrite_by_chunk(L, r);
+    rc = ngx_http_lua_access_by_chunk(L, r);
 
-    dd("rewrite by chunk returns %d", (int) rc);
+    dd("access by chunk returns %d", (int) rc);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;

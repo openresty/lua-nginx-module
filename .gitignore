@@ -101,3 +101,5 @@ src/headers.c
 src/headers.h
 go
 all.sh
+src/accessby.[ch]
+src/rewriteby.[ch]
