@@ -864,6 +864,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
+*   0.9.x (last tested: 0.9.3)
 *   0.8.x (last tested: 0.8.53)
 *   0.7.x >= 0.7.46 (last tested: 0.7.68)
 
