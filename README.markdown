@@ -67,12 +67,12 @@ Synopsis
             content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
         }
 
-		location /request_body {
-			# force reading request body (default off)
-			lua_need_request_body on;
-			
-			content_by_lua 'ngx.print(ngx.var.request_body)';
-		}
+        location /request_body {
+                # force reading request body (default off)
+                lua_need_request_body on;
+
+                content_by_lua 'ngx.print(ngx.var.request_body)';
+        }
 
         # transparent non-blocking I/O in Lua via subrequests
         location /lua {
@@ -475,12 +475,14 @@ your `client_body_buffer_size` setting and
 the capacity specified should hold the biggest
 request body that your app allow.
 
-If the current location defines `rewrite_by_lua`,
-then the request body will be read just before the `rewrite_by_lua` code is run (and also at the
+If the current location defines `rewrite_by_lua` or `rewrite_by_lua_file`,
+then the request body will be read just before the `rewrite_by_lua` or `rewrite_by_lua_file` code is run (and also at the
 `rewrite` phase). Similarly, if only `content_by_lua` is specified,
 the request body won't be read until the content handler's Lua code is
 about to run (i.e., the request body will be read at the
 content phase).
+
+The same applies to `access_by_lua` and `access_by_lua_file`.
 
 Nginx API for Lua
 =================
