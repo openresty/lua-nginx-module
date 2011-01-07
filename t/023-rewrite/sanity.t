@@ -492,3 +492,21 @@ GET /lua
 type: foo/bar
 Bar: nil
 
+
+
+=== TEST 26: rewrite_by_lua runs before ngx_access
+--- config
+    location /lua {
+        deny all;
+
+        rewrite_by_lua '
+            ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        ';
+
+        content_by_lua return;
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+

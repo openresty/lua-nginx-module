@@ -490,3 +490,21 @@ GET /lua
 type: foo/bar
 Bar: nil
 
+
+
+=== TEST 26: access_by_lua runs after ngx_access
+--- config
+    location /lua {
+        deny all;
+
+        access_by_lua '
+            ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        ';
+
+        content_by_lua return;
+    }
+--- request
+GET /lua
+--- response_body_like: 403 Forbidden
+--- error_code: 403
+

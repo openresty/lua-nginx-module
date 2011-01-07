@@ -19,7 +19,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: rewrite I/O with content I/O
+=== TEST 1: access I/O with content I/O
 --- config
     location /flush {
         set $memc_cmd flush_all;
@@ -37,14 +37,14 @@ __DATA__
             ngx.location.capture("/flush");
 
             res = ngx.location.capture("/memc");
-            ngx.say("rewrite GET: " .. res.status);
+            ngx.say("access GET: " .. res.status);
 
             res = ngx.location.capture("/memc",
                 { method = ngx.HTTP_PUT, body = "hello" });
-            ngx.say("rewrite PUT: " .. res.status);
+            ngx.say("access PUT: " .. res.status);
 
             res = ngx.location.capture("/memc");
-            ngx.say("rewrite cached: " .. res.body);
+            ngx.say("access cached: " .. res.body);
 
         ';
 
@@ -66,9 +66,9 @@ __DATA__
 --- request
 GET /lua
 --- response_body
-rewrite GET: 404
-rewrite PUT: 201
-rewrite cached: hello
+access GET: 404
+access PUT: 201
+access cached: hello
 content GET: 404
 content PUT: 201
 content cached: hello
@@ -163,4 +163,79 @@ world\x03\x04\xff
 hello\x00\x01\x02
 world\x03\x04\xff
 "
+
+
+
+=== TEST 6: rewrite I/O with access I/O with content I/O
+--- config
+    location /flush {
+        set $memc_cmd flush_all;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /memc {
+        set $memc_key $echo_request_uri;
+        set $memc_exptime 600;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /lua {
+        rewrite_by_lua '
+            ngx.location.capture("/flush");
+
+            res = ngx.location.capture("/memc");
+            ngx.say("rewrite GET: " .. res.status);
+
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello" });
+            ngx.say("rewrite PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc");
+            ngx.say("rewrite cached: " .. res.body);
+
+        ';
+
+        access_by_lua '
+            ngx.location.capture("/flush");
+
+            res = ngx.location.capture("/memc");
+            ngx.say("access GET: " .. res.status);
+
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello" });
+            ngx.say("access PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc");
+            ngx.say("access cached: " .. res.body);
+
+        ';
+
+        content_by_lua '
+            ngx.location.capture("/flush");
+
+            res = ngx.location.capture("/memc");
+            ngx.say("content GET: " .. res.status);
+
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello" });
+            ngx.say("content PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc");
+            ngx.say("content cached: " .. res.body);
+
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+rewrite GET: 404
+rewrite PUT: 201
+rewrite cached: hello
+access GET: 404
+access PUT: 201
+access cached: hello
+content GET: 404
+content PUT: 201
+content cached: hello
+
 
