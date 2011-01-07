@@ -1,4 +1,4 @@
-# vim:set ft= ts=4 sw=4 et fdm=marker:
+# vim:set ft=perl ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -20,9 +20,10 @@ __DATA__
 --- config
     location /echo_body {
         lua_need_request_body on;
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -38,9 +39,10 @@ world\x03\x04\xff"
 --- config
     location /echo_body {
         lua_need_request_body off;
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -54,9 +56,10 @@ world\x03\x04\xff"
 === TEST 3: test default setting (not reading request body)
 --- config
     location /echo_body {
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -72,9 +75,10 @@ world\x03\x04\xff"
     lua_need_request_body on;
 --- config
     location /echo_body {
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -91,9 +95,10 @@ world\x03\x04\xff"
     lua_need_request_body on;
 
     location /echo_body {
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -111,9 +116,10 @@ world\x03\x04\xff"
 --- config
     location /echo_body {
         lua_need_request_body off;
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body
@@ -130,9 +136,10 @@ world\x03\x04\xff"
 
     location /echo_body {
         lua_need_request_body off;
-        content_by_lua '
+        rewrite_by_lua '
             ngx.print(ngx.var.request_body or "nil")
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request_eval
 "POST /echo_body

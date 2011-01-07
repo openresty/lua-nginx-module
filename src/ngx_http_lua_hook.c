@@ -9,6 +9,11 @@
 
 #define NGX_UNESCAPE_URI_COMPONENT  0
 
+#ifndef ngx_str_set
+#define ngx_str_set(str, text)                                               \
+    (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+#endif
+
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
@@ -214,6 +219,7 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
 int
 ngx_http_lua_ngx_print(lua_State *L)
 {
+    dd("calling lua print");
     return ngx_http_lua_ngx_echo(L, 0);
 }
 
@@ -592,6 +598,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 
     if (args.len == 0) {
         args = extra_args;
+
     } else if (extra_args.len) {
         /* concatenate the two parts of args together */
         len = args.len + (sizeof("&") - 1) + extra_args.len;
@@ -618,6 +625,8 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
     if (sr_ctx == NULL) {
         return luaL_error(L, "memory allocation error");
     }
+
+    sr_ctx->cc_ref = LUA_NOREF;
 
     sr_ctx->capture = 1;
 
@@ -742,7 +751,10 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     pr_ctx->waiting = 0;
     pr_ctx->done = 1;
 
-    pr->write_event_handler = ngx_http_lua_wev_handler;
+    if (pr_ctx->entered_content_phase) {
+        dd("setting wev handler");
+        pr->write_event_handler = ngx_http_lua_content_wev_handler;
+    }
 
     /*  capture subrequest response status */
     if (rc == NGX_ERROR) {

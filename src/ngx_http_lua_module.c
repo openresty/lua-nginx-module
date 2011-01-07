@@ -1,10 +1,17 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_filter.h"
+#include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_rewriteby.h"
+
+
+static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 
 
 static ngx_command_t ngx_http_lua_cmds[] = {
+
     {
         ngx_string("lua_package_cpath"),
         NGX_HTTP_MAIN_CONF | NGX_CONF_TAKE1,
@@ -55,6 +62,16 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         ngx_http_lua_filter_set_by_lua_file
     },
 
+    /* rewrite_by_lua <inline script> */
+    {
+        ngx_string("rewrite_by_lua"),
+        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_rewrite_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_rewrite_handler_inline
+    },
+
     /* content_by_lua <inline script> */
     {
         ngx_string("content_by_lua"),
@@ -63,6 +80,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
         ngx_http_lua_content_handler_inline
+    },
+
+    {
+        ngx_string("rewrite_by_lua_file"),
+        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_rewrite_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_rewrite_handler_file
     },
 
     /* content_by_lua_file rel/or/abs/path/to/script */
@@ -80,7 +106,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
     NULL,                             /*  preconfiguration */
-    ngx_http_lua_filter_init,         /*  postconfiguration */
+    ngx_http_lua_init,                /*  postconfiguration */
 
     ngx_http_lua_create_main_conf,    /*  create main configuration */
     ngx_http_lua_init_main_conf,      /*  init main configuration */
@@ -106,4 +132,31 @@ ngx_module_t ngx_http_lua_module = {
     NULL,                       /*  exit master */
     NGX_MODULE_V1_PADDING
 };
+
+
+static ngx_int_t
+ngx_http_lua_init(ngx_conf_t *cf)
+{
+    ngx_int_t                   rc;
+    ngx_http_handler_pt        *h;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    rc = ngx_http_lua_filter_init(cf);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    if (ngx_http_lua_requires_rewrite) {
+        cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+        h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_rewrite_handler;
+    }
+
+    return NGX_OK;
+}
 

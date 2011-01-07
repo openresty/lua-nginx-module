@@ -58,7 +58,11 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     }
 
     /* set by ngx_pcalloc:
-     *      conf->src = { 0, NULL };
+     *      conf->rewrite_src = { 0, NULL };
+     *      conf->content_src = { 0, NULL };
+     *      conf->rewrite_handler = NULL;
+     *      conf->content_handler = NULL;
+     *      conf->force_read_body = 0;
      */
 
     conf->force_read_body = NGX_CONF_UNSET;
@@ -73,7 +77,8 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
 
-    ngx_conf_merge_str_value(conf->src, prev->src, "");
+    ngx_conf_merge_str_value(conf->rewrite_src, prev->rewrite_src, "");
+    ngx_conf_merge_str_value(conf->content_src, prev->content_src, "");
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
 
     return NGX_CONF_OK;
