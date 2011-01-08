@@ -620,7 +620,17 @@ Here's a basic example:
 Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
 
 `res.header` holds all the response headers of the
-subrequest and it is a normal Lua table.
+subrequest and it is a normal Lua table. For multi-value response headers,
+the value is a Lua (array) table that holds all the values in the order that
+they appear. For instance, if the subrequest response headers contains the following
+lines:
+
+    Set-Cookie: a=3
+    Set-Cookie: foo=bar
+    Set-Cookie: baz=blah
+
+Then `res.header["Set-Cookie"]` will be evaluted to the table value
+`{"a=3", "foo=bar", "baz=blah"}`.
 
 URI query strings can be concatenated to URI itself, for instance,
 

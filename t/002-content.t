@@ -405,7 +405,34 @@ type: foo/bar
 
 
 
-=== TEST 24: capture location headers
+=== TEST 24: capture location multi-value headers
+--- config
+    location /other {
+        #echo "hello, world";
+        content_by_lua '
+            ngx.header["Set-Cookie"] = {"a", "hello, world", "foo"}
+            ngx.eof()
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other");
+            ngx.say("type: ", type(res.header["Set-Cookie"]));
+            ngx.say("len: ", #res.header["Set-Cookie"]);
+            ngx.say("value: ", table.concat(res.header["Set-Cookie"], "|"))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+type: table
+len: 3
+value: a|hello, world|foo
+
+
+
+=== TEST 25: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -429,7 +456,7 @@ Bar: Bah
 
 
 
-=== TEST 25: capture location headers
+=== TEST 26: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';

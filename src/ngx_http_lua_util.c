@@ -1178,11 +1178,40 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         lua_pushlstring(cc, (char *) header[i].key.data,
                 header[i].key.len); /* header key */
+        lua_pushvalue(cc, -1); /* stack: table key key */
 
-        lua_pushlstring(cc, (char *) header[i].value.data,
-                header[i].value.len); /* header key value */
+        /* check if header already exists */
+        lua_rawget(cc, -3); /* stack: table key value */
 
-        lua_rawset(cc, -3); /* head */
+        if (lua_isnil(cc, -1)) {
+            lua_pop(cc, 1); /* stack: table key */
+
+            lua_pushlstring(cc, (char *) header[i].value.data,
+                    header[i].value.len); /* stack: table key value */
+
+            lua_rawset(cc, -3); /* stack: table */
+
+        } else {
+            if (! lua_istable(cc, -1)) { /* already inserted one value */
+                lua_createtable(cc, 4, 0); /* stack: table key value table */
+                lua_insert(cc, -2); /* stack: table key table value */
+                lua_rawseti(cc, -2, 1); /* stack: table key table */
+
+                lua_pushlstring(cc, (char *) header[i].value.data,
+                        header[i].value.len); /* stack: table key table value */
+
+                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
+
+                lua_rawset(cc, -3); /* stack: table */
+
+            } else {
+                lua_pushlstring(cc, (char *) header[i].value.data,
+                        header[i].value.len); /* stack: table key table value */
+
+                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
+                lua_pop(cc, 2); /* stack: table */
+            }
+        }
     }
 
     lua_setfield(cc, -2, "header");
