@@ -872,10 +872,6 @@ ngx_http_lua_request_cleanup(void *data)
         /*  coroutine not finished yet, force quit */
         ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
         ctx->cc_ref = LUA_NOREF;
-
-#if 0
-        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
-#endif
     }
 
     lua_pop(L, 2);
@@ -927,7 +923,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     ctx->cleanup = NULL;
                 }
 
-                ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                if (ctx->entered_content_phase) {
+                    ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                }
+
                 return NGX_OK;
 
             case LUA_ERRRUN:
@@ -969,7 +968,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     }
 
                     if (ctx->exit_code == NGX_OK) {
-                        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                        if (ctx->entered_content_phase) {
+                            ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                        }
                     }
 
                     return ctx->exit_code;

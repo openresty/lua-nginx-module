@@ -7,10 +7,10 @@ use Test::Nginx::Socket;
 #log_level('warn');
 #no_nginx_manager();
 
-#repeat_each(2);
-repeat_each(1);
+repeat_each(2);
+#repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
 #no_long_string();
@@ -509,4 +509,50 @@ Bar: nil
 GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
+
+
+
+=== TEST 27: rewrite_by_lua shouldn't send headers automatically (on simple return)
+--- config
+    location /lua {
+        rewrite_by_lua 'return';
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location = /foo {
+        default_type 'text/css';
+        add_header Bar Baz;
+        echo foo;
+    }
+--- request
+GET /lua
+--- response_headers
+Bar: Baz
+Content-Type: text/css
+--- response_body
+foo
+
+
+
+=== TEST 28: rewrite_by_lua shouldn't send headers automatically (on simple exit)
+--- config
+    location /lua {
+        rewrite_by_lua 'ngx.exit(ngx.OK)';
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location = /foo {
+        default_type 'text/css';
+        add_header Bar Baz;
+        echo foo;
+    }
+--- request
+GET /lua
+--- response_headers
+Bar: Baz
+Content-Type: text/css
+--- response_body
+foo
 
