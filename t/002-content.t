@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
 #no_long_string();
@@ -478,4 +478,26 @@ GET /lua
 --- response_body
 type: foo/bar
 Bar: nil
+
+
+
+=== TEST 27: HTTP 1.0 rsponse
+--- config
+    location /lua {
+        content_by_lua '
+            data = "hello, world"
+            -- ngx.header["Content-Length"] = #data
+            ngx.header.content_length = #data
+            ngx.print(data)
+        ';
+    }
+    location /main {
+        proxy_pass http://127.0.0.1:$server_port/lua;
+    }
+--- request
+GET /main
+--- response_headers
+Content-Length: 12
+--- response_body chop
+hello, world
 
