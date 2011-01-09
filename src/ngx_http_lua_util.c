@@ -329,7 +329,7 @@ init_ngx_lua_registry(lua_State *L)
 static void
 inject_core_consts(lua_State *L)
 {
-    /* {{{ HTTP status constants */
+    /* {{{ core constants */
     lua_pushinteger(L, NGX_OK);
     lua_setfield(L, -2, "OK");
 
@@ -341,6 +341,7 @@ inject_core_consts(lua_State *L)
 
     lua_pushinteger(L, NGX_ERROR);
     lua_setfield(L, -2, "ERROR");
+    /* }}} */
 }
 
 
