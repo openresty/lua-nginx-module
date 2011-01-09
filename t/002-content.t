@@ -487,7 +487,7 @@ Bar: nil
         content_by_lua '
             data = "hello, world"
             -- ngx.header["Content-Length"] = #data
-            ngx.header.content_length = #data
+            -- ngx.header.content_length = #data
             ngx.print(data)
         ';
     }
@@ -500,4 +500,5 @@ GET /main
 Content-Length: 12
 --- response_body chop
 hello, world
+--- ONLY
 

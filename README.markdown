@@ -962,17 +962,20 @@ For instance,
     local res = ndk.set_var.set_escape_uri('a/b');
     -- now res == 'a%2fb'
 
-Trouble Shooting
-================
-
-HTTP 1.0 responses
-------------------
+HTTP 1.0 support
+----------------
 
 Sometimes you may want to use nginx's standard `ngx_proxy` module to proxy requests to
 another nginx machine configured by a location with `content_by_lua`. Because
-`proxy_pass` only supports the HTTP 1.0 protocol, you have to pre-calculate
+`proxy_pass` only supports the HTTP 1.0 protocol, we have to know
 the length of your response body and set the `Content-Length` header before emitting
-any data out. Here is a small example:
+any data out. `ngx_lua` will automatically recognize HTTP 1.0 requests and try to send out an appropriate `Content-Length` header for you, at the first invocation of `ngx.print()` and `ngx.say`, assuming all the response body data
+is in a single call of `ngx.print()` or `ngx.say`. So if you want to
+support HTTP 1.0 clients like `ngx_proxy`, do not
+call `ngx.print()` or `ngx.say()` multiple times,
+try buffering the output data yourself wherever needed.
+
+Here is a small example:
 
 On machine A:
 
@@ -986,17 +989,13 @@ then on machine B:
     location = /lua/foo {
         content_by_lua '
             data = "hello, world"
-            ngx.header.content_length = #data
             ngx.print(data)
         ';
     }
 
 Then accessing machine A's /internal/foo using curl gives the result that we expect.
 
-But some caveats apply here:
-
-1. Always set the `Content-Length` header *before* calling `ngx.print()` or `ngx.say()`.
-2. Only send out the response body data in a single call of `ngx.print()` or `ngx.say()`.
+One caveat apples here: always send out the response body data in a single call of `ngx.print()` or `ngx.say()`, and subsequent calls of `ngx.print()` or `ngx.say()` will take no effect on the client side.
 
 Performance
 ===========
