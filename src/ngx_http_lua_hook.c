@@ -283,7 +283,7 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 
     for (i = 1; i <= nargs; i++) {
         p = lua_tolstring(L, i, &len);
-        b->last = ngx_copy(b->last, p, len);
+        b->last = ngx_copy(b->last, (u_char*)p, len);
     }
 
     if (newline) {
@@ -1974,7 +1974,7 @@ ngx_http_lookup_ndk_set_var_directive(u_char *name,
                 continue;
             }
 
-            return filter->func;
+            return (ndk_set_var_value_pt)(filter->func);
         }
     }
 
@@ -2012,7 +2012,7 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
 
     dd("calling set_var func for %s", p);
 
-    func = lua_touserdata(L, lua_upvalueindex(2));
+    func = (ndk_set_var_value_pt)lua_touserdata(L, lua_upvalueindex(2));
 
     rc = func(r, &res, &arg);
 
