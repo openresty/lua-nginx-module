@@ -968,8 +968,8 @@ Trouble Shooting
 HTTP 1.0 responses
 ------------------
 
-Sometimes you may want to use nginx's ngx_proxy module to proxy requests to
-another nginx machine which configured a location with `content_by_lua`. Because
+Sometimes you may want to use nginx's standard `ngx_proxy` module to proxy requests to
+another nginx machine configured by a location with `content_by_lua`. Because
 `proxy_pass` only supports the HTTP 1.0 protocol, you have to pre-calculate
 the length of your response body and set the `Content-Length` header before emitting
 any data out. Here is a small example:
