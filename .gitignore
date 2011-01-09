@@ -16,7 +16,7 @@ print.txt
 .rsync
 *.tar.gz
 dist
-build[78]
+build[789]
 build
 tags
 update-readme
@@ -100,3 +100,6 @@ b.sh
 src/headers.c
 src/headers.h
 go
+all.sh
+src/accessby.[ch]
+src/rewriteby.[ch]

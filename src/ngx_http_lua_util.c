@@ -808,6 +808,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->waiting = 0;
     ctx->done = 0;
     ctx->entered_rewrite_phase = 0;
+    ctx->entered_access_phase = 0;
     ctx->exit_code = 0;
     ctx->exited = 0;
     ctx->exec_uri.data = NULL;
@@ -872,10 +873,6 @@ ngx_http_lua_request_cleanup(void *data)
         /*  coroutine not finished yet, force quit */
         ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
         ctx->cc_ref = LUA_NOREF;
-
-#if 0
-        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
-#endif
     }
 
     lua_pop(L, 2);
@@ -927,7 +924,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     ctx->cleanup = NULL;
                 }
 
-                ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                if (ctx->entered_content_phase) {
+                    ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                }
+
                 return NGX_OK;
 
             case LUA_ERRRUN:
@@ -969,7 +969,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     }
 
                     if (ctx->exit_code == NGX_OK) {
-                        ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                        if (ctx->entered_content_phase) {
+                            ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                        }
                     }
 
                     return ctx->exit_code;
@@ -1177,11 +1179,40 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         lua_pushlstring(cc, (char *) header[i].key.data,
                 header[i].key.len); /* header key */
+        lua_pushvalue(cc, -1); /* stack: table key key */
 
-        lua_pushlstring(cc, (char *) header[i].value.data,
-                header[i].value.len); /* header key value */
+        /* check if header already exists */
+        lua_rawget(cc, -3); /* stack: table key value */
 
-        lua_rawset(cc, -3); /* head */
+        if (lua_isnil(cc, -1)) {
+            lua_pop(cc, 1); /* stack: table key */
+
+            lua_pushlstring(cc, (char *) header[i].value.data,
+                    header[i].value.len); /* stack: table key value */
+
+            lua_rawset(cc, -3); /* stack: table */
+
+        } else {
+            if (! lua_istable(cc, -1)) { /* already inserted one value */
+                lua_createtable(cc, 4, 0); /* stack: table key value table */
+                lua_insert(cc, -2); /* stack: table key table value */
+                lua_rawseti(cc, -2, 1); /* stack: table key table */
+
+                lua_pushlstring(cc, (char *) header[i].value.data,
+                        header[i].value.len); /* stack: table key table value */
+
+                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
+
+                lua_rawset(cc, -3); /* stack: table */
+
+            } else {
+                lua_pushlstring(cc, (char *) header[i].value.data,
+                        header[i].value.len); /* stack: table key table value */
+
+                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
+                lua_pop(cc, 2); /* stack: table */
+            }
+        }
     }
 
     lua_setfield(cc, -2, "header");

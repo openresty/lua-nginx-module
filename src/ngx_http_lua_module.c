@@ -5,6 +5,7 @@
 #include "ngx_http_lua_filter.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
+#include "ngx_http_lua_accessby.h"
 
 
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
@@ -72,6 +73,16 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         ngx_http_lua_rewrite_handler_inline
     },
 
+    /* access_by_lua <inline script> */
+    {
+        ngx_string("access_by_lua"),
+        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_access_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_access_handler_inline
+    },
+
     /* content_by_lua <inline script> */
     {
         ngx_string("content_by_lua"),
@@ -89,6 +100,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
         ngx_http_lua_rewrite_handler_file
+    },
+
+    {
+        ngx_string("access_by_lua_file"),
+        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_access_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_access_handler_file
     },
 
     /* content_by_lua_file rel/or/abs/path/to/script */
@@ -146,15 +166,24 @@ ngx_http_lua_init(ngx_conf_t *cf)
         return rc;
     }
 
-    if (ngx_http_lua_requires_rewrite) {
-        cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+    cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
+    if (ngx_http_lua_requires_rewrite) {
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
         if (h == NULL) {
             return NGX_ERROR;
         }
 
         *h = ngx_http_lua_rewrite_handler;
+    }
+
+    if (ngx_http_lua_requires_access) {
+        h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_access_handler;
     }
 
     return NGX_OK;

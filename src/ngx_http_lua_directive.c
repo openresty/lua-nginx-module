@@ -10,7 +10,8 @@
 #include "ngx_http_lua_contentby.h"
 
 
-ngx_flag_t  ngx_http_lua_requires_rewrite = 0;
+unsigned  ngx_http_lua_requires_rewrite = 0;
+unsigned  ngx_http_lua_requires_access  = 0;
 
 
 char *
@@ -221,6 +222,62 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (! ngx_http_lua_requires_rewrite) {
         ngx_http_lua_requires_rewrite = 1;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                   *args;
+    ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    dd("enter");
+
+    /*  must specifiy a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (llcf->access_handler) {
+        return "is duplicate";
+    }
+
+    /*  update lua script data */
+    /*
+     * args[0] = "content_by_lua"
+     * args[1] = lua script to be executed
+     * */
+    args = cf->args->elts;
+
+    /*  prevent variable appearing in Lua inline script/file path */
+
+#if 0
+    if (ngx_http_lua_has_inline_var(&args[1])) {
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                "Lua inline script or file path should not has inline "
+                "variable: %V",
+                &args[1]);
+
+        return NGX_CONF_ERROR;
+    }
+#endif
+
+    if (args[1].len == 0) {
+        /*  Oops...Invalid location conf */
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                "Invalid location config: no runnable Lua code");
+
+        return NGX_CONF_ERROR;
+    }
+
+    llcf->access_src = args[1];
+    llcf->access_handler = cmd->post;
+
+    if (! ngx_http_lua_requires_access) {
+        ngx_http_lua_requires_access = 1;
     }
 
     return NGX_CONF_OK;

@@ -4,15 +4,16 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-log_level('warn');
+#log_level('warn');
+#no_nginx_manager();
 
-repeat_each(2);
 #repeat_each(1);
+repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -22,12 +23,14 @@ __DATA__
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'ngx.print("Hello, Lua!\\n")';
+        access_by_lua 'ngx.print("Hello, Lua!\\n")';
+        echo end;
     }
 --- request
 GET /lua
 --- response_body
 Hello, Lua!
+end
 
 
 
@@ -36,9 +39,11 @@ Hello, Lua!
     location /say {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua '
+        access_by_lua '
             ngx.say("Hello, Lua!")
             ngx.say("Yay! ", 123)';
+
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /say
@@ -51,7 +56,8 @@ Yay! 123
 === TEST 3: no ngx.echo
 --- config
     location /lua {
-        content_by_lua 'ngx.echo("Hello, Lua!\\n")';
+        access_by_lua 'ngx.echo("Hello, Lua!\\n")';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -65,7 +71,8 @@ GET /lua
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
+        access_by_lua 'v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua?a=1&b=2
@@ -77,7 +84,8 @@ request_uri: /lua?a=1&b=2
 === TEST 5: variable (file)
 --- config
     location /lua {
-        content_by_lua_file html/test.lua;
+        access_by_lua_file html/test.lua;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- user_files
 >>> test.lua
@@ -93,7 +101,8 @@ request_uri: /lua?a=1&b=2
 === TEST 6: calc expression
 --- config
     location /lua {
-        content_by_lua_file html/calc.lua;
+        access_by_lua_file html/calc.lua;
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- user_files
 >>> calc.lua
@@ -133,8 +142,9 @@ result: -0.4090441561579
 === TEST 7: read $arg_xxx
 --- config
     location = /lua {
-        content_by_lua 'who = ngx.var.arg_who
+        access_by_lua 'who = ngx.var.arg_who
             ngx.print("Hello, ", who, "!")';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua?who=agentzh
@@ -150,7 +160,12 @@ Hello, agentzh!
     }
 
     location /lua {
-        content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status, " "); ngx.print("body=", res.body)';
+        access_by_lua '
+res = ngx.location.capture("/other")
+ngx.print("status=", res.status, " ")
+ngx.print("body=", res.body)
+';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -162,7 +177,8 @@ status=200 body=hello, world
 === TEST 9: capture non-existed location
 --- config
     location /lua {
-        content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
+        access_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -173,7 +189,8 @@ GET /lua
 === TEST 10: invalid capture location (not as expected...)
 --- config
     location /lua {
-        content_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
+        access_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -185,7 +202,8 @@ res=404
 === TEST 11: nil is "nil"
 --- config
     location /lua {
-        content_by_lua 'ngx.print(nil)';
+        access_by_lua 'ngx.print(nil)';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -197,7 +215,8 @@ GET /lua
 === TEST 12: bad argument type to ngx.location.capture
 --- config
     location /lua {
-        content_by_lua 'ngx.location.capture(nil)';
+        access_by_lua 'ngx.location.capture(nil)';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -209,7 +228,7 @@ GET /lua
 === TEST 13: capture location (default 0);
 --- config
  location /recur {
-       content_by_lua '
+       access_by_lua '
            local num = tonumber(ngx.var.arg_num) or 0;
            ngx.print("num is: ", num, "\\n");
 
@@ -221,6 +240,8 @@ GET /lua
                ngx.print("end\\n");
            end
            ';
+
+           content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /recur
@@ -231,9 +252,10 @@ end
 
 
 === TEST 14: capture location
+access phase not running in subrequests
 --- config
  location /recur {
-       content_by_lua '
+       access_by_lua '
            local num = tonumber(ngx.var.arg_num) or 0;
            ngx.print("num is: ", num, "\\n");
 
@@ -245,15 +267,14 @@ end
                ngx.print("end\\n");
            end
            ';
+
+           content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /recur?num=3
---- response_body
+--- response_body chomp
 num is: 3
-status=200 body=num is: 2
-status=200 body=num is: 1
-status=200 body=num is: 0
-end
+status=200 body=
 
 
 
@@ -261,7 +282,8 @@ end
 --- config
  location /set {
        set $a "";
-       content_by_lua 'ngx.var.a = 32; ngx.say(ngx.var.a)';
+       access_by_lua 'ngx.var.a = 32; ngx.say(ngx.var.a)';
+       content_by_lua 'ngx.exit(ngx.OK)';
        add_header Foo $a;
    }
 --- request
@@ -276,8 +298,9 @@ Foo: 32
 === TEST 16: nginx quote sql string 1
 --- config
  location /set {
-       set $a 'hello\n\r\'"\\';
-       content_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
+       set $a 'hello\n\r\'"\\'; # this runs after access_by_lua
+       access_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
+       content_by_lua 'ngx.exit(ngx.OK)';
    }
 --- request
 GET /set
@@ -289,8 +312,9 @@ GET /set
 === TEST 17: nginx quote sql string 2
 --- config
 location /set {
-    set $a "hello\n\r'\"\\";
-    content_by_lua 'ngx.say(ngx.quote_sql_str(ngx.var.a))';
+    #set $a "hello\n\r'\"\\";
+    access_by_lua 'ngx.say(ngx.quote_sql_str("hello\\n\\r\'\\"\\\\"))';
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /set
@@ -302,9 +326,11 @@ GET /set
 === TEST 18: use dollar
 --- config
 location /set {
-    content_by_lua '
+    access_by_lua '
         local s = "hello 112";
         ngx.say(string.find(s, "%d+$"))';
+
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /set
@@ -320,7 +346,8 @@ location /sub {
 }
 location /parent {
     set $a 12;
-    content_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
+    access_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -334,14 +361,16 @@ location /sub {
     echo $a;
 }
 location /parent {
-    set $a 12;
-    content_by_lua '
+    set $a '';
+    access_by_lua '
+        ngx.var.a = 12;
         res = ngx.location.capture(
             "/sub",
             { share_all_vars = true }
         );
         ngx.print(res.body)
     ';
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -356,10 +385,12 @@ location /sub {
     set $a 12;
 }
 location /parent {
-    content_by_lua '
+    access_by_lua '
         res = ngx.location.capture("/sub", { share_all_vars = true });
         ngx.say(ngx.var.a)
     ';
+
+    content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
 GET /parent
@@ -374,7 +405,7 @@ location /sub {
     set $a 12;
 }
 location /parent {
-    content_by_lua '
+    access_by_lua '
         res = ngx.location.capture("/sub", { share_all_vars = false });
         ngx.say(ngx.var.a)
     ';
@@ -393,10 +424,12 @@ GET /parent
     }
 
     location /lua {
-        content_by_lua '
+        access_by_lua '
             res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
         ';
+
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -405,48 +438,24 @@ type: foo/bar
 
 
 
-=== TEST 24: capture location multi-value headers
---- config
-    location /other {
-        #echo "hello, world";
-        content_by_lua '
-            ngx.header["Set-Cookie"] = {"a", "hello, world", "foo"}
-            ngx.eof()
-        ';
-    }
-
-    location /lua {
-        content_by_lua '
-            res = ngx.location.capture("/other");
-            ngx.say("type: ", type(res.header["Set-Cookie"]));
-            ngx.say("len: ", #res.header["Set-Cookie"]);
-            ngx.say("value: ", table.concat(res.header["Set-Cookie"], "|"))
-        ';
-    }
---- request
-GET /lua
---- response_body
-type: table
-len: 3
-value: a|hello, world|foo
-
-
-
-=== TEST 25: capture location headers
+=== TEST 24: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
-        content_by_lua '
+        rewrite_by_lua '
             ngx.header.Bar = "Bah";
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 
     location /lua {
-        content_by_lua '
+        access_by_lua '
             res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
             ngx.say("Bar: ", res.header["Bar"]);
         ';
+
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
@@ -456,26 +465,109 @@ Bar: Bah
 
 
 
-=== TEST 26: capture location headers
+=== TEST 25: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
-        content_by_lua '
+        access_by_lua '
             ngx.header.Bar = "Bah";
             ngx.header.Bar = nil;
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 
     location /lua {
-        content_by_lua '
+        access_by_lua '
             res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
             ngx.say("Bar: ", res.header["Bar"] or "nil");
         ';
+        content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
 GET /lua
 --- response_body
 type: foo/bar
 Bar: nil
+
+
+
+=== TEST 26: access_by_lua runs after ngx_access
+--- config
+    location /lua {
+        deny all;
+
+        access_by_lua '
+            ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        ';
+
+        content_by_lua return;
+    }
+--- request
+GET /lua
+--- response_body_like: 403 Forbidden
+--- error_code: 403
+
+
+
+=== TEST 27: auth_request runs before ngx_access
+--- config
+    location /lua {
+        deny all;
+
+        auth_request /auth;
+
+        content_by_lua return;
+    }
+--- request
+GET /lua
+--- response_body_like: 403 Forbidden
+--- error_code: 403
+--- SKIP
+
+
+
+=== TEST 28: access_by_lua shouldn't send headers automatically (on simple return)
+--- config
+    location /lua {
+        access_by_lua 'return';
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location = /foo {
+        default_type 'text/css';
+        add_header Bar Baz;
+        echo foo;
+    }
+--- request
+GET /lua
+--- response_headers
+Bar: Baz
+Content-Type: text/css
+--- response_body
+foo
+
+
+
+=== TEST 29: access_by_lua shouldn't send headers automatically (on simple exit)
+--- config
+    location /lua {
+        access_by_lua 'ngx.exit(ngx.OK)';
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location = /foo {
+        default_type 'text/css';
+        add_header Bar Baz;
+        echo foo;
+    }
+--- request
+GET /lua
+--- response_headers
+Bar: Baz
+Content-Type: text/css
+--- response_body
+foo
 
