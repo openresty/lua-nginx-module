@@ -1144,7 +1144,7 @@ Authors
 =======
 
 * chaoslawful (王晓哲) <chaoslawful at gmail dot com>
-* agentzh (章亦春) <agentzh at gmail dot com>
+* Yichun "agentzh" Zhang (章亦春) <agentzh at gmail dot com>
 
 Copyright & License
 ===================
@@ -1155,7 +1155,7 @@ Copyright & License
 
     Copyright (C) 2009 by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-    Copyright (C) 2009 by Yichun Zhang (agentzh) <agentzh@gmail.com>.
+    Copyright (C) 2009 by Yichun "agentzh" Zhang <agentzh@gmail.com>.
 
     All rights reserved.
 
