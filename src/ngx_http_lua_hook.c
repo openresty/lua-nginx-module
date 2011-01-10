@@ -407,8 +407,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
 int
 ngx_http_lua_ngx_eof(lua_State *L)
 {
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
+    ngx_http_request_t      *r;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_int_t                rc;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -423,9 +424,11 @@ ngx_http_lua_ngx_eof(lua_State *L)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx != NULL && ctx->eof == 0) {
-        ctx->eof = 1;    /*  set eof flag to prevent further output */
-        ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
+
+    rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return luaL_error(L, "failed to send eof buf");
     }
 
     return 0;

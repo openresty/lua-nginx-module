@@ -556,3 +556,24 @@ Content-Type: text/css
 --- response_body
 foo
 
+
+
+=== TEST 29: short circuit
+--- config
+    location /lua {
+        rewrite_by_lua '
+            ngx.say("Hi")
+            ngx.eof()
+            ngx.exit(ngx.HTTP_OK)
+        ';
+
+        content_by_lua '
+            print("HERE")
+            ngx.print("BAD")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+Hi
+

@@ -6,8 +6,8 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(2);
-#repeat_each(1);
+#repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2 + 2);
 
@@ -500,4 +500,20 @@ GET /main
 Content-Length: 12
 --- response_body chop
 hello, world
+
+
+
+=== TEST 28: multiple eof
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("Hi")
+            ngx.eof()
+            ngx.eof()
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+Hi
 

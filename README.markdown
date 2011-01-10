@@ -353,6 +353,10 @@ can be implemented in terms of `ngx_lua` like this
 
 Just as any other rewrite-phase handlers, `rewrite_by_lua` also runs in subrequests.
 
+Note that calling `ngx.exit(ngx.OK)` just returning from the current `rewrite_by_lua` handler, and the nginx request processing
+control flow will still continue to the content handler. To terminate the current request from within the current `rewrite_by_lua` handler,
+calling `ngx.exit(ngx.HTTP_OK)` for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
+
 This directive won't work properly with nginx 0.7.x.
 
 access_by_lua
@@ -422,6 +426,10 @@ can be implemented in terms of `ngx_lua` like this
     }
 
 Just as any other access-phase handlers, `access_by_lua` will NOT run in subrequests.
+
+Note that calling `ngx.exit(ngx.OK)` just returning from the current `access_by_lua` handler, and the nginx request processing
+control flow will still continue to the content handler. To terminate the current request from within the current `access_by_lua` handler,
+calling `ngx.exit(ngx.HTTP_OK)` for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
 
 content_by_lua_file
 -------------------

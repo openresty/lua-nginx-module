@@ -251,9 +251,17 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
     size_t           size;
     ngx_chain_t     *cl;
 
+#if 1
+    if (ctx->eof) {
+        dd("ctx->eof already set");
+        return NGX_OK;
+    }
+#endif
+
     rc = ngx_http_lua_send_header_if_needed(r, ctx);
 
     if (r->header_only || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        ctx->eof = 1;
         return rc;
     }
 
@@ -264,6 +272,9 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
 
         for (cl = in; cl; cl = cl->next) {
             size += ngx_buf_size(cl->buf);
+            if (cl->next == NULL) {
+                cl->buf->last_buf = 1;
+            }
         }
 
         r->headers_out.content_length_n = (off_t) size;
@@ -274,9 +285,12 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
 
         r->headers_out.content_length = NULL;
 
+        dd("setting ctx->eof = 1");
+        ctx->eof = 1;
+
         rc = ngx_http_send_header(r);
 
-        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
     }
@@ -293,11 +307,13 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx
 
 #endif
 
-        if (ctx->entered_content_phase)  {
-            rc = ngx_http_send_special(r, NGX_HTTP_LAST);
-            if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-                return rc;
-            }
+        ctx->eof = 1;
+
+        dd("send special buf");
+
+        rc = ngx_http_send_special(r, NGX_HTTP_LAST);
+        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return rc;
         }
 
         return NGX_OK;
@@ -885,6 +901,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     int                      cc_ref;
     lua_State               *cc;
     const char              *err, *msg;
+    ngx_int_t                rc;
 
     /* set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
@@ -923,7 +940,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 }
 
                 if (ctx->entered_content_phase) {
-                    ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                    rc = ngx_http_lua_send_chain_link(r, ctx,
+                            NULL /* indicate last_buf */);
+
+                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                        return rc;
+                    }
                 }
 
                 return NGX_OK;
@@ -968,7 +990,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     if (ctx->exit_code == NGX_OK) {
                         if (ctx->entered_content_phase) {
-                            ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+                            rc = ngx_http_lua_send_chain_link(r, ctx,
+                                    NULL /* indicate last_buf */);
+
+                            if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                                return rc;
+                            }
                         }
                     }
 
