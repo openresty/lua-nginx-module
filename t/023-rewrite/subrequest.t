@@ -14,7 +14,7 @@ plan tests => repeat_each() * (blocks() * 2);
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -577,4 +577,44 @@ a=3&b=4
 GET /lua
 --- response_body
 a=3&b=4
+
+
+
+=== TEST 22: more args
+--- config
+    location /memc {
+        set $memc_cmd get;
+        set $memc_key $arg_key;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /memc_set {
+        #set $memc_cmd set;
+        #set $memc_key $arg_key;
+        #memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+        echo OK;
+    }
+
+    location /lua {
+        rewrite_by_lua '
+            print("HELLO")
+            local memc_key = "hello"
+            local res = ngx.location.capture("/memc?key=" .. memc_key )
+            ngx.say("copass: res " .. res.status)
+
+            if res.status == 404 then
+                   ngx.say("copas: capture /memc_set")
+                   res = ngx.location.capture("/memc_set?key=" .. memc_key)
+                   ngx.say("copss: status " .. res.status);
+            end
+        ';
+        content_by_lua 'return';
+        #echo Hi;
+    }
+--- request
+    GET /lua
+--- response_body
+copass: res 404
+copas: capture /memc_set
+copss: status 200
 
