@@ -138,6 +138,13 @@ Synopsis
             access_by_lua_file /path/to/access.lua;
             content_by_lua_file /path/to/content.lua;
         }
+
+		# use nginx var in code path
+		# WARN: contents in nginx var must be carefully filtered,
+		# otherwise there'll be great security risk!
+		location ~ ^/app/(.+) {
+			content_by_lua_file /path/to/lua/app/root/$1.lua;
+		}
     }
 
 Description
@@ -444,6 +451,10 @@ the file specified by `<path-lua-script>`.
 The user code is loaded once at the first request and cached. Nginx config must
 be reloaded if you modified the file and expected to see updated behavior.
 
+Nginx variables can be used in <path-to-lua-script> string, in order to provide
+greater flexibility in practice. But this feature must be used carefully, so is
+not recommend for beginners.
+
 rewrite_by_lua_file
 -------------------
 
@@ -456,6 +467,10 @@ the file specified by `<path-lua-script>`.
 
 This directive won't work properly with nginx 0.7.x.
 
+Nginx variables can be used in <path-to-lua-script> string, in order to provide
+greater flexibility in practice. But this feature must be used carefully, so is
+not recommend for beginners.
+
 access_by_lua_file
 -------------------
 
@@ -463,8 +478,12 @@ access_by_lua_file
 * **Context:** `location | lif`
 * **Phase:** `access tail`
 
-Same as `access_by_lua`, except the code to be executed is in
-the file specified by `<path-lua-script>`.
+Same as `access_by_lua`, except the code to be executed is in the file
+specified by `<path-lua-script>`.
+
+Nginx variables can be used in <path-to-lua-script> string, in order to provide
+greater flexibility in practice. But this feature must be used carefully, so is
+not recommend for beginners.
 
 lua_need_request_body
 ---------------------
@@ -474,8 +493,8 @@ lua_need_request_body
 * **Context:** `main | server | location`
 * **Phase:** `depends on usage`
 
-Force reading request body data or not. The client request body won't be read, so you have to explicitly force
-reading the body if you need its content.
+Force reading request body data or not. The client request body won't be read,
+so you have to explicitly force reading the body if you need its content.
 
 If you want to read the request body data from the `$request_body` variable, make sure that
 your `client_max_body_size` setting is equal to
@@ -1094,8 +1113,7 @@ To run the test suite, you also need the following dependencies:
 		* Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
 
 * Applications:
-	* mysql: create database 'ngx_test', grant all privileges to user
-			 'ngx_test', password is 'ngx_test'
+	* mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
 	* memcached
 
 These module's adding order is IMPORTANT! For filter modules's position in
