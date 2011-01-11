@@ -8,6 +8,8 @@
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_rewriteby.h"
 
 
 unsigned  ngx_http_lua_requires_rewrite = 0;
@@ -217,7 +219,19 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    llcf->rewrite_src = args[1];
+    if(cmd->post == ngx_http_lua_rewrite_handler_inline) {
+        /* Don't eval NginX variables for inline lua code */
+        llcf->rewrite_src.raw_value = args[1];
+        llcf->rewrite_src.lengths = NULL;
+        llcf->rewrite_src.values = NULL;
+    } else {
+        if(ngx_http_lua_arg_compile(cf, &llcf->rewrite_src, &args[1]) != NGX_CONF_OK) {
+            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                    "Failed to compile rewrite_by_lua code path: %V", &args[1]);
+
+            return NGX_CONF_ERROR;
+        }
+    }
     llcf->rewrite_handler = cmd->post;
 
     if (! ngx_http_lua_requires_rewrite) {
@@ -273,7 +287,19 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    llcf->access_src = args[1];
+    if(cmd->post == ngx_http_lua_access_handler_inline) {
+        /* Don't eval NginX variables for inline lua code */
+        llcf->access_src.raw_value = args[1];
+        llcf->access_src.lengths = NULL;
+        llcf->access_src.values = NULL;
+    } else {
+        if(ngx_http_lua_arg_compile(cf, &llcf->access_src, &args[1]) != NGX_CONF_OK) {
+            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                    "Failed to compile access_by_lua code path: %V", &args[1]);
+
+            return NGX_CONF_ERROR;
+        }
+    }
     llcf->access_handler = cmd->post;
 
     if (! ngx_http_lua_requires_access) {
@@ -329,7 +355,19 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    llcf->content_src = args[1];
+    if(cmd->post == ngx_http_lua_content_handler_inline) {
+        /* Don't eval NginX variables for inline lua code */
+        llcf->content_src.raw_value = args[1];
+        llcf->content_src.lengths = NULL;
+        llcf->content_src.values = NULL;
+    } else {
+        if(ngx_http_lua_arg_compile(cf, &llcf->content_src, &args[1]) != NGX_CONF_OK) {
+            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                    "Failed to compile content_by_lua code path: %V", &args[1]);
+
+            return NGX_CONF_ERROR;
+        }
+    }
     llcf->content_handler = cmd->post;
 
     /*  register location content handler */

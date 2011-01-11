@@ -588,7 +588,7 @@ foo
         ';
     }
 --- request
-    GET /lua
+GET /lua
 --- response_body
 Hi
 

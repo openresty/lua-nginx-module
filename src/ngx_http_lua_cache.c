@@ -6,9 +6,11 @@
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_clfactory.h"
 
+/* NginX HTTP Lua Inline tag prefix */
 #define IL_TAG "nhli_"
 #define IL_TAG_LEN (sizeof(IL_TAG) - 1)
 
+/* NginX HTTP Lua File tag prefix */
 #define FP_TAG "nhlf_"
 #define FP_TAG_LEN (sizeof(FP_TAG) - 1)
 

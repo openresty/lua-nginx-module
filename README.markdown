@@ -1069,7 +1069,7 @@ work with this module, please consider reporting a bug.
 Test Suite
 ==========
 
-To run the test suite, you also need the following perl and nginx modules:
+To run the test suite, you also need the following dependencies:
 
 * Perl modules:
 	* test-nginx: <http://github.com/agentzh/test-nginx>
@@ -1082,6 +1082,18 @@ To run the test suite, you also need the following perl and nginx modules:
 	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module>
 	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module>
 	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/>
+
+* C libraries:
+	* yajl: <https://github.com/lloyd/yajl>
+
+* Lua modules:
+	* lua-yajl: <https://github.com/brimworks/lua-yajl>
+		* Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
+
+* Applications:
+	* mysql: create database 'ngx_test', grant all privileges to user
+			 'ngx_test', password is 'ngx_test'
+	* memcached
 
 These module's adding order is IMPORTANT! For filter modules's position in
 filtering chain affects a lot. The correct configure adding order is:

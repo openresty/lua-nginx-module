@@ -513,7 +513,23 @@ hello, world
         ';
     }
 --- request
-    GET /lua
+GET /lua
 --- response_body
 Hi
+
+
+
+=== TEST 29: nginx vars in script path
+--- config
+    location ~ ^/lua/(.+)$ {
+        content_by_lua_file html/$1.lua;
+    }
+--- user_files
+>>> calc.lua
+local a,b = ngx.var.arg_a, ngx.var.arg_b
+ngx.say(a+b)
+--- request
+GET /lua/calc?a=19&b=81
+--- response_body
+100
 
