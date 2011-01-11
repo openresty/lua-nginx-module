@@ -1023,6 +1023,9 @@ Installation
 1. Install lua into your system. At least Lua 5.1 is required.
 Lua can be obtained freely from its project [homepage](http://www.lua.org/).
 
+1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from
+lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
+
 1. Download the latest version of the release tarball of this module from
 lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
 
@@ -1044,7 +1047,7 @@ this module:
 
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
-            --add-module=/path/to/ndk_devel_kit \
+            --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
 
         $ make -j2
@@ -1142,7 +1145,7 @@ See Also
 ========
 
 * "Introduction to ngx_lua" ( <https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction> )
-* ngx_devel_kit ( <http://github.com/simpl-it/ngx_devel_kit> )
+* ngx_devel_kit ( <http://github.com/simpl/ngx_devel_kit> )
 * echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
 * drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
 * postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
