@@ -1083,7 +1083,7 @@ The following versions of Nginx should work with this module:
 
 Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 
-Note that rewrite_by_lua will NOT work for 0.7.x, 0.8.41 ~ 0.8.53.
+Note that rewrite_by_lua/access_by_lua will NOT work for 0.7.x, 0.8.41 ~ 0.8.53.
 
 If you find that any particular version of Nginx above 0.7.44 does not
 work with this module, please consider reporting a bug.
@@ -1092,6 +1092,8 @@ Test Suite
 ==========
 
 To run the test suite, you also need the following dependencies:
+
+* Nginx version > 0.8.53
 
 * Perl modules:
 	* test-nginx: <http://github.com/agentzh/test-nginx>

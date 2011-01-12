@@ -2,7 +2,7 @@
 
 # this file is mostly meant to be used by the author himself.
 
-version=${1:-0.8.40}
+version=${1:-0.8.54}
 opts=$2
 
 script_dir=$(dirname $0)
