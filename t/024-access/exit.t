@@ -241,6 +241,7 @@ Logged in 56
 
 
 === TEST 8: working with ngx_auth_request
+--- ONLY
 --- http_config
     upstream backend {
         drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
