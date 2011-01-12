@@ -160,7 +160,8 @@ Synopsis
 
                -- check if the request body contains bad words
                if ngx.var.request_body and
-    string.match(ngx.var.request_body, "fuck") then
+                        string.match(ngx.var.request_body, "fsck")
+               then
                    return ngx.redirect("/terms_of_use.html")
                end
 
