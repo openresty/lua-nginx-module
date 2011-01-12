@@ -577,6 +577,8 @@ GET /lua
 --- response_body
 Hi
 
+
+
 === TEST 30: nginx vars in script path
 --- config
     location ~ /lua/(.+)$ {
