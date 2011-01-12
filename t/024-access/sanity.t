@@ -24,13 +24,12 @@ __DATA__
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
         access_by_lua 'ngx.print("Hello, Lua!\\n")';
-        echo end;
+        content_by_lua return;
     }
 --- request
 GET /lua
 --- response_body
 Hello, Lua!
-end
 
 
 
@@ -403,12 +402,15 @@ GET /parent
 --- config
 location /sub {
     set $a 12;
+    content_by_lua return;
 }
+
 location /parent {
     access_by_lua '
         res = ngx.location.capture("/sub", { share_all_vars = false });
         ngx.say(ngx.var.a)
     ';
+    content_by_lua return;
 }
 --- request
 GET /parent
