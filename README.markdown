@@ -139,12 +139,36 @@ Synopsis
             content_by_lua_file /path/to/content.lua;
         }
 
-		# use nginx var in code path
-		# WARN: contents in nginx var must be carefully filtered,
-		# otherwise there'll be great security risk!
-		location ~ ^/app/(.+) {
-			content_by_lua_file /path/to/lua/app/root/$1.lua;
-		}
+        # use nginx var in code path
+        # WARN: contents in nginx var must be carefully filtered,
+        # otherwise there'll be great security risk!
+        location ~ ^/app/(.+) {
+                content_by_lua_file /path/to/lua/app/root/$1.lua;
+        }
+
+        location / {
+           lua_need_request_body on;
+
+           client_max_body_size 100k;
+           client_body_buffer_size 100k;
+
+           access_by_lua '
+               -- check the client IP addr is in our black list
+               if ngx.var.remote_addr == "132.5.72.3" then
+                   ngx.exit(ngx.HTTP_FORBIDDEN)
+               end
+
+               -- check if the request body contains bad words
+               if ngx.var.request_body and
+    string.match(ngx.var.request_body, "fuck") then
+                   return ngx.redirect("/terms_of_use.html")
+               end
+
+               -- tests passed
+           ';
+
+           # proxy_pass/fastcgi_pass/etc settings
+        }
     }
 
 Description
