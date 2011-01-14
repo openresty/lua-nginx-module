@@ -168,7 +168,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h $ngx_addon_dir/src/n
 CFLAGS="$CFLAGS -DNDK_SET_VAR -DNGX_OPENSSL_MD5 -DNGX_HAVE_OPENSSL_MD5_H -DNGX_HAVE_OPENSSL_SHA1_H -DNDK_SET_VAR -DNDK_HASH -DNDK_SHA1 -DNDK_MD5"
 
 ngx_feature="export symbols by default"
-ngx_feature_libs=""
+ngx_feature_libs="-Wl,-E"
 ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs="#include <stdio.h>"
@@ -178,6 +178,6 @@ ngx_feature_test='printf("hello");'
 . auto/feature
 
 if [ $ngx_found = yes ]; then
-    CORE_LIB="-Wl,-E $CORE_LIBS"
+    CORE_LIBS="-Wl,-E $CORE_LIBS"
 fi
 
