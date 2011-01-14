@@ -1,5 +1,5 @@
-ngx_feature="openssl md5"
-ngx_feature_libs="-lssl"
+ngx_feature="OpenSSL md5 crypto library"
+ngx_feature_libs="-lcrypto"
 ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs="#include <openssl/md5.h>"
@@ -10,9 +10,8 @@ ngx_feature_test="MD5(NULL, 0, NULL);"
 
 if [ $ngx_found = no ]; then
     # Solaris and others
-    ngx_feature="openssl md5 against libcrypto"
-    ngx_feature="openssl MD5 by libcrypto"
-    ngx_feature_libs="-lcrypto"
+    ngx_feature="OpenSSL md5 crypto library under /lib"
+    ngx_feature_libs="-L/lib -lcrypto"
 
     . auto/feature
 
@@ -21,12 +20,10 @@ if [ $ngx_found = no ]; then
         $0: error: the ngx_lua addon requires OpenSSL library but we cannot find it.
 END
         exit 1
-    else
-        CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
     fi
-else
-    CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
 fi
+
+CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
 
 if [ $ngx_found = yes ]; then
     CORE_INCS="$CORE_INCS $ngx_feature_path"
