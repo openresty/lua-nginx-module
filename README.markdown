@@ -736,6 +736,15 @@ The `args` option can also take plain query string:
 
 This is functionally identical to the previous examples.
 
+Note that, by default, subrequests issued by `ngx.location.capture` inherit all the
+request headers of the current request. This may have unexpected side-effects on the
+subrequest responses. For example, when you're using the standard `ngx_proxy` module to serve
+your subrequests, then an "Accept-Encoding: gzip" header in your main request may result
+in gzip'd responses that your Lua code is not able to handle properly. So always set
+`proxy_pass_request_headers off` in your subrequest location to ignore the original request headers.
+See <http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers> for more
+details.
+
 ngx.status
 ----------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
