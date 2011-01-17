@@ -1172,12 +1172,13 @@ TODO
 * Add `ngx.location.capture_multi` to allow multiple parallel subrequests.
 * Deal with TCP 3-second delay problem under great connection harness.
 * Add `lua_code_cache on|off` directive to allow .lua files updated on-the-fly during development.
+* Implement a alternative pcall/xpcall supporting yielding in protected funcs
 
 Future Plan
 ===========
 
 * Add 'lua_require' directive to load module into main thread's globals
-* Add Lua VM passive yield and resume (using debug hook)
+* Add Lua VM active yield and resume (using debug hook)
 * Make set_by_lua using the same mechanism as content_by_lua
 
 Known Issues
