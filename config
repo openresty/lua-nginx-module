@@ -62,7 +62,7 @@ END
         exit 1
     fi
 else
-    if [ -n "$LUA_INC" -o -n "$LIB_LIB" ]; then
+    if [ -n "$LUA_INC" -o -n "$LUA_LIB" ]; then
         # explicit set lua lib path
         ngx_feature="lua library in $LUA_LIB and $LUA_INC (specified by the LUA_LIB and LUA_INC env)"
         ngx_feature_path="$LUA_INC"
