@@ -843,7 +843,7 @@ ngx.redirect(uri, status?)
 
 Issue an HTTP 301 or 302 redirection to `uri`.
 
-The optional `status` parameter specify whether
+The optional `status` parameter specifies whether
 301 or 302 to be used. It's 302 (ngx.HTTP_MOVED_TEMPORARILY) by default.
 
 Here's a small example:
