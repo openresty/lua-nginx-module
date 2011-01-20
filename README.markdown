@@ -202,6 +202,19 @@ Taobao.com, Alibaba Group.
 Directives
 ==========
 
+lua_code_cache
+--------------
+* **Syntax:** `lua_code_cache on | off`
+* **Default:** `lua_code_cache on`
+* **Context:** `main, server, location, location if`
+
+Enable or disable the Lua code cache for `set_by_lua_file`, `content_by_lua_file`,
+`rewrite_by_lua_file`, and `access_by_lua_file`, and also force Lua module reloading on a per-request basis.
+
+This is mainly used for Lua development only because it has great
+impact on the over-all performance and is strongly
+discouraged for production uses.
+
 lua_package_path
 ----------------
 
