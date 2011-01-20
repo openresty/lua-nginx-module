@@ -35,7 +35,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         ngx_string("lua_code_cache"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
         NGX_HTTP_LIF_CONF | NGX_CONF_FLAG,
-        ngx_conf_set_flag_slot,
+        ngx_http_lua_code_cache,
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_http_lua_loc_conf_t, enable_code_cache),
         NULL

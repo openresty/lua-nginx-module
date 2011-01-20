@@ -275,7 +275,8 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.raw_value.data,
-            llcf->access_src.raw_value.len, "access_by_lua", &err);
+            llcf->access_src.raw_value.len, "access_by_lua", &err,
+            llcf->enable_code_cache);
 
     if (rc != NGX_OK) {
         if (err == NULL) {

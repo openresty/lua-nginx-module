@@ -15,6 +15,10 @@
 #define FP_TAG "nhlf_"
 #define FP_TAG_LEN (sizeof(FP_TAG) - 1)
 
+
+static void ngx_http_lua_clear_package_loaded(lua_State *L);
+
+
 static u_char *
 ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
 {
@@ -118,7 +122,7 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *ck)
 
 ngx_int_t
 ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
-        const char *name, char **err)
+        const char *name, char **err, ngx_flag_t enabled)
 {
     int          rc;
     u_char      *p;
@@ -132,6 +136,10 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
     *p = '\0';
 
     dd("XXX cache key: [%s]", cache_key);
+
+    if (! enabled) {
+        ngx_http_lua_clear_package_loaded(L);
+    }
 
     if (ngx_http_lua_cache_load_code(L, (char *) cache_key)
             == NGX_OK)
@@ -233,8 +241,32 @@ ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err,
             dd("Error: failed to call closure factory!!");
             return NGX_ERROR;
         }
+
+        ngx_http_lua_clear_package_loaded(L);
     }
 
     return NGX_OK;
+}
+
+
+static void
+ngx_http_lua_clear_package_loaded(lua_State *L)
+{
+    dd("clear out package.loaded.* on the Lua land");
+    lua_getglobal(L, "package"); /* package */
+
+    lua_getfield(L, -1, "loaded"); /* package loaded */
+
+    lua_pushnil(L); /* package loaded nil */
+
+    while (lua_next(L, -2)) { /* package loaded key value */
+        lua_pop(L, 1);  /* package loaded key */
+        lua_pushvalue(L, -1);  /* package loaded key key */
+        lua_pushnil(L); /* package loaded key key nil */
+        lua_settable(L, -4);  /* package loaded key */
+    }
+
+    /* package loaded */
+    lua_pop(L, 2);
 }
 

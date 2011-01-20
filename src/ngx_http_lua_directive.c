@@ -17,6 +17,16 @@ unsigned  ngx_http_lua_requires_access  = 0;
 
 
 char *
+ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
+            "lua_code_cache is off, this will hurt performance");
+
+    return ngx_conf_set_flag_slot(cf, cmd, conf);
+}
+
+
+char *
 ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_lua_main_conf_t *lmcf = conf;
@@ -101,15 +111,18 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     lua_State                   *L;
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_loc_conf_t     *llcf;
     char                        *err = NULL;
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     L = lmcf->lua;
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
     /*  load Lua inline script (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, v[0].data, v[0].len,
-            "set_by_lua_inline", &err);
+            "set_by_lua_inline", &err, llcf->enable_code_cache);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
