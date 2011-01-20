@@ -214,7 +214,8 @@ updated
 102
 
 
-=== TEST 6: code cache explicitly off (affects require) + content_by_lua_file
+
+=== TEST 7: code cache explicitly off (affects require) + content_by_lua_file
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -247,4 +248,144 @@ GET /main
 32
 updated
 102
+
+
+
+=== TEST 8: code cache explicitly off (affects require) + set_by_lua_file
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /lua {
+        lua_code_cache off;
+        set_by_lua_file $a html/test.lua;
+        echo $a;
+    }
+    location /update {
+        content_by_lua '
+            -- os.execute("(echo HERE; pwd) > /dev/stderr")
+            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            f:write("module(..., package.seeall); return 102;")
+            f:close()
+            ngx.say("updated")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /update;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+return require "foo"
+>>> foo.lua
+module(..., package.seeall); return 32;
+--- request
+GET /main
+--- response_body
+32
+updated
+102
+
+
+
+=== TEST 9: code cache explicitly on (affects require) + set_by_lua_file
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /lua {
+        lua_code_cache on;
+        set_by_lua_file $a html/test.lua;
+        echo $a;
+    }
+    location /update {
+        content_by_lua '
+            -- os.execute("(echo HERE; pwd) > /dev/stderr")
+            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            f:write("module(..., package.seeall); return 102;")
+            f:close()
+            ngx.say("updated")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /update;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+return require "foo"
+>>> foo.lua
+module(..., package.seeall); return 32;
+--- request
+GET /main
+--- response_body
+32
+updated
+32
+
+
+
+=== TEST 10: code cache explicitly off + set_by_lua_file
+--- config
+    location /lua {
+        lua_code_cache off;
+        set_by_lua_file $a html/test.lua;
+        echo $a;
+    }
+    location /update {
+        content_by_lua '
+            -- os.execute("(echo HERE; pwd) > /dev/stderr")
+            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            f:write("return 101")
+            f:close()
+            ngx.say("updated")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /update;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+return 32
+--- request
+GET /main
+--- response_body
+32
+updated
+101
+
+
+
+=== TEST 11: code cache explicitly on + set_by_lua_file
+--- config
+    location /lua {
+        lua_code_cache on;
+        set_by_lua_file $a html/test.lua;
+        echo $a;
+    }
+    location /update {
+        content_by_lua '
+            -- os.execute("(echo HERE; pwd) > /dev/stderr")
+            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            f:write("return 101")
+            f:close()
+            ngx.say("updated")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /update;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+return 32
+--- request
+GET /main
+--- response_body
+32
+updated
+32
 
