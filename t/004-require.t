@@ -1,11 +1,11 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
-#master_process_enabled(1);
 #log_level('warn');
 
+#master_on();
 #repeat_each(120);
 repeat_each(1);
 

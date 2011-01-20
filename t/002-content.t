@@ -3,7 +3,7 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
-#master_process_enabled(1);
+#master_on();
 log_level('warn');
 
 #repeat_each(2);
