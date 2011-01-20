@@ -63,10 +63,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->content_src = {{ 0, NULL }, NULL, NULL};
      *      conf->rewrite_handler = NULL;
      *      conf->content_handler = NULL;
-     *      conf->force_read_body = 0;
      */
 
-    conf->force_read_body = NGX_CONF_UNSET;
+    conf->force_read_body   = NGX_CONF_UNSET;
+    conf->enable_code_cache = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -91,6 +91,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_ptr_value(conf->content_src.values, prev->content_src.values, NULL);
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
+    ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
 
     return NGX_CONF_OK;
 }

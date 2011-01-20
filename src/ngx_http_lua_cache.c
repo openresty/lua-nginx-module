@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #define DDEBUG 0
 #include "ddebug.h"
 
@@ -121,7 +122,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
 {
     int          rc;
     u_char      *p;
-    u_char       cache_key[IL_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1];
+    u_char       cache_key[IL_TAG_LEN + 2 * MD5_DIGEST_LENGTH + 1];
 
     p = ngx_copy(cache_key, IL_TAG, IL_TAG_LEN);
 
@@ -132,7 +133,9 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
 
     dd("XXX cache key: [%s]", cache_key);
 
-    if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
+    if (ngx_http_lua_cache_load_code(L, (char *) cache_key)
+            == NGX_OK)
+    {
         /*  code chunk loaded from cache, sp++ */
         dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), buf_len, buf);
         return NGX_OK;
@@ -147,6 +150,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
         /*  Oops! error occured when loading Lua script */
         if (rc == LUA_ERRMEM) {
             *err = "memory allocation error";
+
         } else {
             if (lua_isstring(L, -1)) {
                 *err = (char *) lua_tostring(L, -1);
@@ -169,25 +173,31 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
     return NGX_OK;
 }
 
+
 ngx_int_t
-ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err)
+ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err,
+        ngx_flag_t enabled)
 {
     int             rc;
 
     u_char cache_key[FP_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = FP_TAG;
 
     /*  calculate digest of script file path */
-    ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], (u_char *) script, ngx_strlen(script));
+    dd("code cache enabled: %d", (int) enabled);
 
-    dd("XXX cache key for file: [%s]", cache_key);
+    if (enabled) {
+        ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], (u_char *) script, ngx_strlen(script));
 
-    if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
-        /*  code chunk loaded from cache, sp++ */
-        dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
-        return NGX_OK;
+        dd("XXX cache key for file: [%s]", cache_key);
+
+        if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
+            /*  code chunk loaded from cache, sp++ */
+            dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
+            return NGX_OK;
+        }
+
+        dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
     }
-
-    dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
 
     /*  load closure factory of script file to the top of lua stack, sp++ */
     rc = ngx_http_lua_clfactory_loadfile(L, script);
@@ -207,12 +217,22 @@ ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err)
         return NGX_ERROR;
     }
 
-    /*  store closure factory and gen new closure at the top of lua stack to code cache */
-    rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
+    if (enabled) {
+        /*  store closure factory and gen new closure at the top of lua stack to code cache */
+        rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
 
-    if (rc != NGX_OK) {
-        *err = "fail to genearte new closutre from the closutre factory";
-        return NGX_ERROR;
+        if (rc != NGX_OK) {
+            *err = "fail to genearte new closutre from the closutre factory";
+            return NGX_ERROR;
+        }
+
+    } else {
+        /*  call closure factory to generate new closure */
+        rc = lua_pcall(L, 0, 1, 0);
+        if (rc != 0) {
+            dd("Error: failed to call closure factory!!");
+            return NGX_ERROR;
+        }
     }
 
     return NGX_OK;

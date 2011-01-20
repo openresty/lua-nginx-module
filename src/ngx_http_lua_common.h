@@ -44,8 +44,11 @@ typedef struct {
 } ngx_http_lua_arg_tmpl_t;
 
 typedef struct {
-    ngx_flag_t  force_read_body;    /* 1: force request body to be read;
-                                       0: don't force reading request body */
+    ngx_flag_t              force_read_body; /* whether force request body to
+                                                be read */
+
+    ngx_flag_t              enable_code_cache; /* whether to enable
+                                                  code cache */
 
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;

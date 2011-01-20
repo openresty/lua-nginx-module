@@ -114,7 +114,8 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, (char *) script_path, &err);
+    rc = ngx_http_lua_cache_loadfile(L, (char *) script_path, &err,
+            llcf->enable_code_cache);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
