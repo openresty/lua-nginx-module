@@ -620,7 +620,7 @@ HTTP status constants
 
 Nginx log level constants
 -------------------------
-* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     log_level = ngx.STDERR
     log_level = ngx.EMERG
@@ -908,7 +908,7 @@ Nil arguments are not allowed.
 
 ngx.log(log_level, ...)
 -----------------------
-* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Log args concatenated to error.log with the given logging level.
 

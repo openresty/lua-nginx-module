@@ -130,6 +130,11 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);
     lua_setfield(L, -2, "cookie_time");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_log);
+    lua_setfield(L, -2, "log");
+
+    ngx_http_lua_inject_log_consts(L);
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 

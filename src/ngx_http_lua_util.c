@@ -9,7 +9,6 @@
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
-static void inject_log_consts(lua_State *L);
 static void inject_core_consts(lua_State *L);
 static void setpath(lua_State *L, int tab_idx, const char *fieldname,
         const char *path, const char *def);
@@ -416,8 +415,8 @@ inject_http_consts(lua_State *L)
     /* }}} */
 }
 
-static void
-inject_log_consts(lua_State *L)
+void
+ngx_http_lua_inject_log_consts(lua_State *L)
 {
     /* {{{ NginX log level constants */
     lua_pushinteger(L, NGX_LOG_STDERR);
@@ -563,7 +562,7 @@ init_ngx_lua_globals(lua_State *L)
     /* }}} */
 
     inject_http_consts(L);
-    inject_log_consts(L);
+    ngx_http_lua_inject_log_consts(L);
     inject_core_consts(L);
 
     /* {{{ register reference maps */

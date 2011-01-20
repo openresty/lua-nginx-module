@@ -36,6 +36,7 @@ char* ngx_http_lua_arg_compile(ngx_conf_t *cf, ngx_http_lua_arg_tmpl_t *res,
         ngx_str_t *raw_val);
 ngx_int_t ngx_http_lua_arg_eval(ngx_http_request_t *r, ngx_str_t *res,
         ngx_http_lua_arg_tmpl_t *arg);
+void ngx_http_lua_inject_log_consts(lua_State *L);
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

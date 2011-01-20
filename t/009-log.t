@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -200,4 +200,20 @@ after log
 GET /log
 --- response_body
 hi
+
+
+
+=== TEST 12: regression test print()
+--- config
+    location /log {
+        set_by_lua $a '
+            ngx.log(ngx.ERR, "HELLO")
+            return 32;
+        ';
+        echo $a;
+    }
+--- request
+GET /log
+--- response_body
+32
 
