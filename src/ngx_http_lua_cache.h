@@ -9,8 +9,8 @@
 ngx_int_t ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src,
         size_t src_len, const u_char *cache_key, const char *name,
         char **err, ngx_flag_t enabled);
-ngx_int_t ngx_http_lua_cache_loadfile(lua_State *L, const char *script,
-        char **err, ngx_flag_t enabled);
+ngx_int_t ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
+        const u_char *cache_key, char **err, ngx_flag_t enabled);
 
 
 #endif /* NGX_HTTP_LUA_CACHE_H */

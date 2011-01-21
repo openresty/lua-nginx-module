@@ -124,11 +124,13 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
             == NGX_OK)
     {
         /*  code chunk loaded from cache, sp++ */
-        dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), src_len, src);
+        dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'",
+                cache_key, lua_gettop(L), (int) src_len, src);
         return NGX_OK;
     }
 
-    dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), buf_len, buf);
+    dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'",
+            cache_key, lua_gettop(L), (int) src_len, src);
 
     /*  load closure factory of inline script to the top of lua stack, sp++ */
     rc = ngx_http_lua_clfactory_loadbuffer(L, (char *) src, src_len, name);
@@ -162,24 +164,30 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
 
 ngx_int_t
-ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err,
-        ngx_flag_t enabled)
+ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
+        const u_char *cache_key, char **err, ngx_flag_t enabled)
 {
     int              rc;
 
-    u_char           cache_key[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
+    u_char           buf[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
     u_char          *p;
 
     /*  calculate digest of script file path */
     dd("code cache enabled: %d", (int) enabled);
 
     if (enabled) {
-        p = ngx_copy(cache_key, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
+        if (cache_key == NULL) {
+            dd("CACHE file key not pre-calculated...calculating");
+            p = ngx_copy(buf, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
 
-        /* FIXME, do not use ngx_strlen() because it's slow */
-        p = ngx_http_lua_digest_hex(p, (u_char *) script, ngx_strlen(script));
+            p = ngx_http_lua_digest_hex(p, script, ngx_strlen(script));
 
-        *p = '\0';
+            *p = '\0';
+
+            cache_key = buf;
+        } else {
+            dd("CACHE file key already pre-calculated");
+        }
 
         dd("XXX cache key for file: [%s]", cache_key);
 
@@ -193,12 +201,13 @@ ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err,
     }
 
     /*  load closure factory of script file to the top of lua stack, sp++ */
-    rc = ngx_http_lua_clfactory_loadfile(L, script);
+    rc = ngx_http_lua_clfactory_loadfile(L, (char *) script);
 
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */
         if (rc == LUA_ERRMEM) {
             *err = "memory allocation error";
+
         } else {
             if (lua_isstring(L, -1)) {
                 *err = (char *) lua_tostring(L, -1);

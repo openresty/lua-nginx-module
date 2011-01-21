@@ -186,8 +186,8 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, (char *)script_path, &err,
-            llcf->enable_code_cache);
+    rc = ngx_http_lua_cache_loadfile(L, script_path, filter_data->key,
+            &err, llcf->enable_code_cache);
 
     if (rc != NGX_OK) {
         if (err == NULL) {

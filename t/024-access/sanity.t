@@ -578,7 +578,7 @@ foo
 === TEST 30: short circuit
 --- config
     location /lua {
-        rewrite_by_lua '
+        access_by_lua '
             ngx.say("Hi")
             ngx.eof()
             ngx.exit(ngx.HTTP_OK)
@@ -591,6 +591,28 @@ foo
     }
 --- request
 GET /lua
+--- response_body
+Hi
+
+
+
+=== TEST 31: nginx vars in script path
+--- config
+    location ~ ^/lua/(.+)$ {
+        access_by_lua_file html/$1.lua;
+
+        content_by_lua '
+            print("HERE")
+            ngx.print("BAD")
+        ';
+    }
+--- user_files
+>>> hi.lua
+ngx.say("Hi")
+ngx.eof()
+ngx.exit(ngx.HTTP_OK)
+--- request
+GET /lua/hi
 --- response_body
 Hi
 
