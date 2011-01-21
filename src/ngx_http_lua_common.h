@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #ifndef NGX_HTTP_LUA_COMMON_H
 #define NGX_HTTP_LUA_COMMON_H
 
@@ -30,19 +31,6 @@ typedef struct {
 
 } ngx_http_lua_main_conf_t;
 
-/* compiled form of a config directive argument's value */
-typedef struct {
-    /* holds the raw string of the argument value */
-    ngx_str_t   raw_value;
-
-    /* fields "lengths" and "values" are set by
-     * the function ngx_http_script_compile,
-     * iff the argument value indeed contains
-     * nginx variables like "$foo" */
-    ngx_array_t     *lengths;
-    ngx_array_t     *values;
-} ngx_http_lua_arg_tmpl_t;
-
 typedef struct {
     ngx_flag_t              force_read_body; /* whether force request body to
                                                 be read */
@@ -54,12 +42,17 @@ typedef struct {
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
 
-    ngx_http_lua_arg_tmpl_t rewrite_src;    /*  rewrite_by_lua
-                                                inline script/script file path */
-    ngx_http_lua_arg_tmpl_t access_src;     /*  access_by_lua
-                                                inline script/script file path */
-    ngx_http_lua_arg_tmpl_t content_src;    /*  content_by_lua
-                                                inline script/script file path */
+    ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
+                                                inline script/script
+                                                file path */
+
+    ngx_http_complex_value_t access_src;     /*  access_by_lua
+                                                inline script/script
+                                                file path */
+
+    ngx_http_complex_value_t content_src;    /*  content_by_lua
+                                                inline script/script
+                                                file path */
 
 } ngx_http_lua_loc_conf_t;
 

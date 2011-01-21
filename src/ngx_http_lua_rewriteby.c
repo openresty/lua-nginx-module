@@ -92,21 +92,13 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    /* Eval NginX variables in code path string first */
-    if (ngx_http_lua_arg_eval(r, &eval_src, &llcf->rewrite_src) != NGX_OK) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to eval compiled rewrite_by_lua code path: raw path='%V'",
-                &(llcf->rewrite_src.raw_value));
+    if (ngx_http_complex_value(r, &llcf->rewrite_src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data, eval_src.len);
 
     if (script_path == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to allocate memory to store absolute path: raw path='%V'",
-                &(llcf->rewrite_src.raw_value));
-
         return NGX_ERROR;
     }
 
@@ -274,8 +266,8 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.raw_value.data,
-            llcf->rewrite_src.raw_value.len, "rewrite_by_lua", &err,
+    rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.value.data,
+            llcf->rewrite_src.value.len, "rewrite_by_lua", &err,
             llcf->enable_code_cache);
 
     if (rc != NGX_OK) {

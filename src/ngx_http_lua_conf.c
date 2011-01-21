@@ -58,9 +58,9 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     }
 
     /* set by ngx_pcalloc:
-     *      conf->access_src  = {{ 0, NULL }, NULL, NULL};
-     *      conf->rewrite_src = {{ 0, NULL }, NULL, NULL};
-     *      conf->content_src = {{ 0, NULL }, NULL, NULL};
+     *      conf->access_src  = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->rewrite_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->content_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->rewrite_handler = NULL;
      *      conf->content_handler = NULL;
      */
@@ -78,17 +78,17 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
 
-    ngx_conf_merge_str_value(conf->access_src.raw_value, prev->access_src.raw_value, "");
-    ngx_conf_merge_ptr_value(conf->access_src.lengths, prev->access_src.lengths, NULL);
-    ngx_conf_merge_ptr_value(conf->access_src.values, prev->access_src.values, NULL);
+    if (conf->rewrite_src.value.len == 0) {
+        conf->rewrite_src = prev->rewrite_src;
+    }
 
-    ngx_conf_merge_str_value(conf->rewrite_src.raw_value, prev->rewrite_src.raw_value, "");
-    ngx_conf_merge_ptr_value(conf->rewrite_src.lengths, prev->rewrite_src.lengths, NULL);
-    ngx_conf_merge_ptr_value(conf->rewrite_src.values, prev->rewrite_src.values, NULL);
+    if (conf->access_src.value.len == 0) {
+        conf->access_src = prev->access_src;
+    }
 
-    ngx_conf_merge_str_value(conf->content_src.raw_value, prev->content_src.raw_value, "");
-    ngx_conf_merge_ptr_value(conf->content_src.lengths, prev->content_src.lengths, NULL);
-    ngx_conf_merge_ptr_value(conf->content_src.values, prev->content_src.values, NULL);
+    if (conf->content_src.value.len == 0) {
+        conf->content_src = prev->content_src;
+    }
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);

@@ -158,10 +158,6 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     script_path = ngx_http_lua_rebase_path(r->pool, v[0].data, v[0].len);
 
     if (script_path == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to allocate memory to store absolute path: raw path='%v'",
-                &v[0]);
-
         return NGX_ERROR;
     }
 
@@ -198,8 +194,10 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 char *
 ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t                   *args;
+    ngx_str_t                   *value;
     ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    ngx_http_compile_complex_value_t         ccv;
 
     dd("enter");
 
@@ -212,46 +210,31 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    /*  update lua script data */
-    /*
-     * args[0] = "content_by_lua"
-     * args[1] = lua script to be executed
-     * */
-    args = cf->args->elts;
+    value = cf->args->elts;
 
-    /*  prevent variable appearing in Lua inline script/file path */
-
-#if 0
-    if (ngx_http_lua_has_inline_var(&args[1])) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                "Lua inline script or file path should not has inline "
-                "variable: %V",
-                &args[1]);
-
-        return NGX_CONF_ERROR;
-    }
-#endif
-
-    if (args[1].len == 0) {
+    if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Invalid location config: no runnable Lua code");
+
         return NGX_CONF_ERROR;
     }
 
-    if(cmd->post == ngx_http_lua_rewrite_handler_inline) {
-        /* Don't eval NginX variables for inline lua code */
-        llcf->rewrite_src.raw_value = args[1];
-        llcf->rewrite_src.lengths = NULL;
-        llcf->rewrite_src.values = NULL;
-    } else {
-        if(ngx_http_lua_arg_compile(cf, &llcf->rewrite_src, &args[1]) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                    "Failed to compile rewrite_by_lua code path: %V", &args[1]);
+    if (cmd->post == ngx_http_lua_rewrite_handler_inline) {
+        /* Don't eval nginx variables for inline lua code */
+        llcf->rewrite_src.value = value[1];
 
+    } else {
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &llcf->rewrite_src;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
     }
+
     llcf->rewrite_handler = cmd->post;
 
     if (! ngx_http_lua_requires_rewrite) {
@@ -265,8 +248,10 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t                   *args;
+    ngx_str_t                   *value;
     ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    ngx_http_compile_complex_value_t         ccv;
 
     dd("enter");
 
@@ -279,27 +264,9 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    /*  update lua script data */
-    /*
-     * args[0] = "content_by_lua"
-     * args[1] = lua script to be executed
-     * */
-    args = cf->args->elts;
+    value = cf->args->elts;
 
-    /*  prevent variable appearing in Lua inline script/file path */
-
-#if 0
-    if (ngx_http_lua_has_inline_var(&args[1])) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                "Lua inline script or file path should not has inline "
-                "variable: %V",
-                &args[1]);
-
-        return NGX_CONF_ERROR;
-    }
-#endif
-
-    if (args[1].len == 0) {
+    if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Invalid location config: no runnable Lua code");
@@ -307,19 +274,21 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if(cmd->post == ngx_http_lua_access_handler_inline) {
-        /* Don't eval NginX variables for inline lua code */
-        llcf->access_src.raw_value = args[1];
-        llcf->access_src.lengths = NULL;
-        llcf->access_src.values = NULL;
-    } else {
-        if(ngx_http_lua_arg_compile(cf, &llcf->access_src, &args[1]) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                    "Failed to compile access_by_lua code path: %V", &args[1]);
+    if (cmd->post == ngx_http_lua_access_handler_inline) {
+        /* Don't eval nginx variables for inline lua code */
+        llcf->access_src.value = value[1];
 
+    } else {
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &llcf->access_src;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
     }
+
     llcf->access_handler = cmd->post;
 
     if (! ngx_http_lua_requires_access) {
@@ -333,9 +302,11 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t                   *args;
+    ngx_str_t                   *value;
     ngx_http_core_loc_conf_t    *clcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    ngx_http_compile_complex_value_t         ccv;
 
     dd("enter");
 
@@ -348,47 +319,30 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    /*  update lua script data */
-    /*
-     * args[0] = "content_by_lua"
-     * args[1] = lua script to be executed
-     * */
-    args = cf->args->elts;
+    value = cf->args->elts;
 
-    /*  prevent variable appearing in Lua inline script/file path */
-
-#if 0
-    if (ngx_http_lua_has_inline_var(&args[1])) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                "Lua inline script or file path should not has inline "
-                "variable: %V",
-                &args[1]);
-
-        return NGX_CONF_ERROR;
-    }
-#endif
-
-    if (args[1].len == 0) {
+    if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                 "Invalid location config: no runnable Lua code");
         return NGX_CONF_ERROR;
     }
 
-    if(cmd->post == ngx_http_lua_content_handler_inline) {
-        /* Don't eval NginX variables for inline lua code */
-        llcf->content_src.raw_value = args[1];
-        llcf->content_src.lengths = NULL;
-        llcf->content_src.values = NULL;
+    if (cmd->post == ngx_http_lua_content_handler_inline) {
+        /* Don't eval nginx variables for inline lua code */
+        llcf->content_src.value = value[1];
 
     } else {
-        if(ngx_http_lua_arg_compile(cf, &llcf->content_src, &args[1]) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                    "Failed to compile content_by_lua code path: %V", &args[1]);
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &llcf->content_src;
 
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
     }
+
     llcf->content_handler = cmd->post;
 
     /*  register location content handler */
