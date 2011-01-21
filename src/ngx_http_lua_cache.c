@@ -4,28 +4,14 @@
 #include "ddebug.h"
 
 #include <ngx_md5.h>
+#include "ngx_http_lua_common.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_clfactory.h"
-
-/* NginX HTTP Lua Inline tag prefix */
-#define IL_TAG "nhli_"
-#define IL_TAG_LEN (sizeof(IL_TAG) - 1)
-
-/* NginX HTTP Lua File tag prefix */
-#define FP_TAG "nhlf_"
-#define FP_TAG_LEN (sizeof(FP_TAG) - 1)
+#include "ngx_http_lua_util.h"
 
 
 static void ngx_http_lua_clear_package_loaded(lua_State *L);
 
-
-static u_char *
-ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
-{
-    u_char digest[MD5_DIGEST_LENGTH];
-    MD5(buf, buf_len, digest);
-    return ngx_hex_dump(dest, digest, sizeof(digest));
-}
 
 
 /**
@@ -48,12 +34,13 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
 
     dd("Code cache table to load: %p", lua_topointer(L, -1));
 
-    if (!lua_istable(L, -1)) {
+    if (! lua_istable(L, -1)) {
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }
 
     lua_getfield(L, -1, ck);    /*  sp++ */
+
     if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
         int rc = lua_pcall(L, 0, 1, 0);
@@ -121,19 +108,11 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *ck)
 
 
 ngx_int_t
-ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
-        const char *name, char **err, ngx_flag_t enabled)
+ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
+        const u_char *cache_key, const char *name, char **err,
+        ngx_flag_t enabled)
 {
     int          rc;
-    u_char      *p;
-    u_char       cache_key[IL_TAG_LEN + 2 * MD5_DIGEST_LENGTH + 1];
-
-    p = ngx_copy(cache_key, IL_TAG, IL_TAG_LEN);
-
-    /*  calculate digest of inline script */
-    p = ngx_http_lua_digest_hex(p, buf, buf_len);
-
-    *p = '\0';
 
     dd("XXX cache key: [%s]", cache_key);
 
@@ -145,14 +124,14 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *buf, int buf_len,
             == NGX_OK)
     {
         /*  code chunk loaded from cache, sp++ */
-        dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), buf_len, buf);
+        dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), src_len, src);
         return NGX_OK;
     }
 
     dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'", cache_key, lua_gettop(L), buf_len, buf);
 
     /*  load closure factory of inline script to the top of lua stack, sp++ */
-    rc = ngx_http_lua_clfactory_loadbuffer(L, (char *) buf, buf_len, name);
+    rc = ngx_http_lua_clfactory_loadbuffer(L, (char *) src, src_len, name);
 
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */
@@ -186,15 +165,21 @@ ngx_int_t
 ngx_http_lua_cache_loadfile(lua_State *L, const char *script, char **err,
         ngx_flag_t enabled)
 {
-    int             rc;
+    int              rc;
 
-    u_char cache_key[FP_TAG_LEN + 2*MD5_DIGEST_LENGTH + 1] = FP_TAG;
+    u_char           cache_key[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
+    u_char          *p;
 
     /*  calculate digest of script file path */
     dd("code cache enabled: %d", (int) enabled);
 
     if (enabled) {
-        ngx_http_lua_digest_hex(&cache_key[FP_TAG_LEN], (u_char *) script, ngx_strlen(script));
+        p = ngx_copy(cache_key, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
+
+        /* FIXME, do not use ngx_strlen() because it's slow */
+        p = ngx_http_lua_digest_hex(p, (u_char *) script, ngx_strlen(script));
+
+        *p = '\0';
 
         dd("XXX cache key for file: [%s]", cache_key);
 

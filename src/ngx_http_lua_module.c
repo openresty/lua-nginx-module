@@ -148,6 +148,7 @@ ngx_http_module_t ngx_http_lua_module_ctx = {
     ngx_http_lua_merge_loc_conf       /*  merge location configuration */
 };
 
+
 ngx_module_t ngx_http_lua_module = {
     NGX_MODULE_V1,
     &ngx_http_lua_module_ctx,   /*  module context */

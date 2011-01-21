@@ -33,6 +33,9 @@ ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret);
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 void ngx_http_lua_inject_log_consts(lua_State *L);
+u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
+        int buf_len);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

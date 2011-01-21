@@ -1282,3 +1282,12 @@ error:
     return NGX_ERROR;
 }
 
+
+u_char *
+ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
+{
+    u_char digest[MD5_DIGEST_LENGTH];
+    MD5(buf, buf_len, digest);
+    return ngx_hex_dump(dest, digest, sizeof(digest));
+}
+

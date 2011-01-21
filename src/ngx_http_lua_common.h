@@ -21,6 +21,32 @@
 #include <ngx_md5.h>
 
 
+/* Nginx HTTP Lua Inline tag prefix */
+
+#define NGX_HTTP_LUA_INLINE_TAG "nhli_"
+
+#define NGX_HTTP_LUA_INLINE_TAG_LEN \
+    (sizeof(NGX_HTTP_LUA_INLINE_TAG) - 1)
+
+#define NGX_HTTP_LUA_INLINE_KEY_LEN \
+    (NGX_HTTP_LUA_INLINE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
+
+/* Nginx HTTP Lua File tag prefix */
+
+#define NGX_HTTP_LUA_FILE_TAG "nhlf_"
+
+#define NGX_HTTP_LUA_FILE_TAG_LEN \
+    (sizeof(NGX_HTTP_LUA_FILE_TAG) - 1)
+
+#define NGX_HTTP_LUA_FILE_KEY_LEN \
+    (NGX_HTTP_LUA_FILE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
+
+
+typedef struct {
+    size_t       size;
+    u_char      *key;
+} ngx_http_lua_set_var_data_t;
+
 typedef struct {
     lua_State       *lua;
     ngx_str_t        lua_path;
@@ -30,6 +56,7 @@ typedef struct {
     unsigned    postponed_to_access_phase_end:1;
 
 } ngx_http_lua_main_conf_t;
+
 
 typedef struct {
     ngx_flag_t              force_read_body; /* whether force request body to
@@ -46,15 +73,22 @@ typedef struct {
                                                 inline script/script
                                                 file path */
 
+    u_char                 *rewrite_src_key; /* cached key for rewrite_src */
+
     ngx_http_complex_value_t access_src;     /*  access_by_lua
                                                 inline script/script
                                                 file path */
+
+    u_char                  *access_src_key; /* cached key for access_src */
 
     ngx_http_complex_value_t content_src;    /*  content_by_lua
                                                 inline script/script
                                                 file path */
 
+    u_char                 *content_src_key; /* cached key for content_src */
+
 } ngx_http_lua_loc_conf_t;
+
 
 typedef struct {
     lua_State       *cc;                /*  coroutine to handle request */
@@ -105,6 +139,7 @@ typedef struct {
     ngx_http_cleanup_pt     *cleanup;
 
 } ngx_http_lua_ctx_t;
+
 
 typedef enum {
     exec,
