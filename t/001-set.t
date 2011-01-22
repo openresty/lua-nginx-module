@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
 use Test::Nginx::Socket;
@@ -167,4 +167,30 @@ GET /set
 GET /md5
 --- response_body
 5d41402abc4b2a76b9719d911017c592
+
+
+
+=== TEST 12: no ngx.print
+--- config
+    location /lua {
+        set_by_lua $res "ngx.print(32) return 1";
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+
+
+=== TEST 13: no ngx.say
+--- config
+    location /lua {
+        set_by_lua $res "ngx.say(32) return 1";
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
 

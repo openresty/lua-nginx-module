@@ -534,3 +534,27 @@ GET /lua/calc?a=19&b=81
 --- response_body
 100
 
+
+
+=== TEST 30: nginx vars in script path
+--- config
+    location ~ ^/lua/(.+)$ {
+        content_by_lua_file html/$1.lua;
+    }
+    location /main {
+        echo_location /lua/sum a=3&b=2;
+        echo_location /lua/diff a=3&b=2;
+    }
+--- user_files
+>>> sum.lua
+local a,b = ngx.var.arg_a, ngx.var.arg_b
+ngx.say(a+b)
+>>> diff.lua
+local a,b = ngx.var.arg_a, ngx.var.arg_b
+ngx.say(a-b)
+--- request
+GET /main
+--- response_body
+5
+1
+

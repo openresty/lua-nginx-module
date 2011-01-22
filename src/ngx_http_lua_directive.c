@@ -21,7 +21,7 @@ char *
 ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
-            "lua_code_cache is off, this will hurt performance");
+            "lua_code_cache is off; this will hurt performance");
 
     return ngx_conf_set_flag_slot(cf, cmd, conf);
 }
