@@ -208,8 +208,27 @@ lua_code_cache
 * **Default:** `lua_code_cache on`
 * **Context:** `main, server, location, location if`
 
-Enable or disable the Lua code cache for `set_by_lua_file`, `content_by_lua_file`,
-`rewrite_by_lua_file`, and `access_by_lua_file`, and also force Lua module reloading on a per-request basis.
+Enable or disable the Lua code cache for `set_by_lua_file`,
+`content_by_lua_file`, `rewrite_by_lua_file`, and
+`access_by_lua_file`, and also force Lua module reloading on a per-request basis.
+
+The Lua files referenced in `set_by_lua_file`,
+`content_by_lua_file`, `access_by_lua_file`,
+and `rewrite_by_lua_file` won't be cached at all,
+and Lua's `package.loaded` table will be cleared
+at every request's entry point (such that Lua modules
+won't be cached either). So developers and enjoy
+the PHP-way, i.e., edit-and-refresh.
+
+But please note that Lua code inlined into nginx.conf
+like those specified by `set_by_lua`, `content_by_lua`,
+`access_by_lua`, and `rewrite_by_lua` will *always* be
+cached because only nginx knows how to parse `nginx.conf`
+and the only way to tell it to re-load the config file
+is to send a `HUP` signal to it or just to restart it from scratch.
+
+For now, ngx_lua does not support the "stat" mode like
+Apache's `mod_lua`, but we will work on it in the future.
 
 Disabling the Lua code cache is mainly used for Lua
 development only because it has great
