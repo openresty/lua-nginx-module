@@ -282,8 +282,10 @@ set_by_lua_file
 Basically the same as `set_by_lua`, except the code to be executed is in the
 file specified by `<path-lua-script>`.
 
-The user code is loaded once at the first request and cached. Nginx config must
-be reloaded if you modified the file and expected to see updated behavior.
+When the Lua code cache is on (this is the default), the user code is loaded
+once at the first request and cached. Nginx config must be reloaded if you
+modified the file and expected to see updated behavior. You can disable the
+Lua code cache by setting `lua_code_cache off;` in your nginx.conf.
 
 content_by_lua
 --------------
@@ -487,12 +489,14 @@ content_by_lua_file
 Basically the same as `content_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
 
-The user code is loaded once at the first request and cached. Nginx config must
-be reloaded if you modified the file and expected to see updated behavior.
-
 Nginx variables can be used in <path-to-lua-script> string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
+
+When the Lua code cache is on (this is the default), the user code is loaded
+once at the first request and cached. Nginx config must be reloaded if you
+modified the file and expected to see updated behavior. You can disable the
+Lua code cache by setting `lua_code_cache off;` in your nginx.conf.
 
 rewrite_by_lua_file
 -------------------
@@ -510,6 +514,11 @@ Nginx variables can be used in <path-to-lua-script> string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
 
+When the Lua code cache is on (this is the default), the user code is loaded
+once at the first request and cached. Nginx config must be reloaded if you
+modified the file and expected to see updated behavior. You can disable the
+Lua code cache by setting `lua_code_cache off;` in your nginx.conf.
+
 access_by_lua_file
 -------------------
 
@@ -523,6 +532,11 @@ specified by `<path-lua-script>`.
 Nginx variables can be used in <path-to-lua-script> string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
+
+When the Lua code cache is on (this is the default), the user code is loaded
+once at the first request and cached. Nginx config must be reloaded if you
+modified the file and expected to see updated behavior. You can disable the
+Lua code cache by setting `lua_code_cache off;` in your nginx.conf.
 
 lua_need_request_body
 ---------------------
