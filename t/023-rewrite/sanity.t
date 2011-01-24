@@ -601,3 +601,31 @@ GET /lua/hi
 --- response_body
 Hi
 
+
+
+=== TEST 31: phase postponing works for various locations
+--- config
+    location ~ '^/lua/(.+)' {
+        set $path $1;
+        rewrite_by_lua 'ngx.say(ngx.var.path)';
+        content_by_lua return;
+    }
+    location ~ '^/lua2/(.+)' {
+        set $path $1;
+        rewrite_by_lua 'ngx.say(ngx.var.path)';
+        content_by_lua return;
+    }
+    location /main {
+        echo_location /lua/foo;
+        echo_location /lua/bar;
+        echo_location /lua2/baz;
+        echo_location /lua2/bah;
+    }
+--- request
+GET /main
+--- response_body
+foo
+bar
+baz
+bah
+
