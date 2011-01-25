@@ -1180,6 +1180,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         lua_rawset(cc, -3); /* head */
     }
 
+    dd("saving subrequest response headers");
+
     part = &sr_headers->headers.part;
     header = part->elts;
 
@@ -1195,11 +1197,15 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             i = 0;
         }
 
+        dd("checking sr header %.*s", (int) header[i].key.len, header[i].key.data);
+
 #if 1
         if (header[i].hash == 0) {
             continue;
         }
 #endif
+
+        dd("pushing sr header %.*s", (int) header[i].key.len, header[i].key.data);
 
         lua_pushlstring(cc, (char *) header[i].key.data,
                 header[i].key.len); /* header key */

@@ -189,4 +189,20 @@
    fun:ngx_init_cycle
    fun:main
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:ngx_alloc
+   fun:ngx_palloc_large
+   fun:ngx_palloc
+   fun:ngx_pcalloc
+   fun:ngx_http_drizzle_keepalive_init
+   fun:ngx_http_upstream_drizzle_init
+   fun:ngx_http_upstream_init_main_conf
+   fun:ngx_http_block
+   fun:ngx_conf_parse
+   fun:ngx_init_cycle
+   fun:main
+}
 

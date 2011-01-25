@@ -618,7 +618,7 @@ Hi
 
 
 
-=== TEST 31: phase postponing works for various locations (access phase not running in subrequest)
+=== TEST 32: phase postponing works for various locations (access phase not running in subrequest)
 --- config
     location ~ '^/lua/(.+)' {
         set $path $1;
