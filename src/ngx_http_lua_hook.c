@@ -759,14 +759,26 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         pr->write_event_handler = ngx_http_lua_content_wev_handler;
     }
 
+    dd("status rc = %d", (int) rc);
+    dd("status headers_out.status = %d", (int) r->headers_out.status);
+    dd("uri: %.*s", (int) r->uri.len, r->uri.data);
+
     /*  capture subrequest response status */
     if (rc == NGX_ERROR) {
         pr_ctx->sr_status = NGX_HTTP_INTERNAL_SERVER_ERROR;
     } else if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        dd("HERE");
         pr_ctx->sr_status = rc;
     } else {
+        dd("THERE");
         pr_ctx->sr_status = r->headers_out.status;
     }
+
+    if (pr_ctx->sr_status == 0) {
+        pr_ctx->sr_status = NGX_HTTP_OK;
+    }
+
+    dd("pr_ctx status: %d", (int) pr_ctx->sr_status);
 
     /*  copy subrequest response body */
     pr_ctx->sr_body = ctx->body;

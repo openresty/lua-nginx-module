@@ -27,9 +27,11 @@ __DATA__
     location = /mysql {
         #internal;
         drizzle_send_query_timeout 50ms;
+        #drizzle_send_query_timeout 1s;
         drizzle_query $echo_request_body;
         drizzle_pass backend;
 
+        #error_page 504 /ret/504;
         rds_json on;
         more_set_headers -s 504 "X-Mysql-Tid: $drizzle_thread_id";
     }
