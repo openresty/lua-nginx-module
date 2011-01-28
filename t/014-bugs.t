@@ -112,3 +112,41 @@ GET /main
 --- response_body_like: 3: bar$
 --- SKIP
 
+
+
+=== TEST 4: capture works for subrequests with internal redirects
+--- config
+    location /lua {
+        content_by_lua '
+            local res = ngx.location.capture("/")
+            ngx.say(res.status)
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /lua
+--- response_body_like chop
+200
+.*It works
+--- SKIP
+
+
+
+=== TEST 5: disk file bufs not working
+--- config
+    location /lua {
+        content_by_lua '
+            local res = ngx.location.capture("/test.lua")
+            ngx.say(res.status)
+            ngx.print(res.body)
+        ';
+    }
+--- user_files
+>>> test.lua
+print("Hello, world")
+--- request
+    GET /lua
+--- response_body
+200
+print("Hello, world")
+

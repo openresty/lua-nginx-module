@@ -759,6 +759,7 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
     for (cl = in; cl; cl = cl->next) {
         cl->buf->pos = cl->buf->last;
+        cl->buf->file_pos = cl->buf->file_last;
     }
 }
 
@@ -789,11 +790,12 @@ ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
             if (ngx_buf_in_memory(in->buf)) {
                 len = ngx_buf_size(in->buf);
                 cl->buf = ngx_create_temp_buf(pool, len);
-                dd("buf: %.*s", (int) len, in->buf->pos);
+                dd("buf %d: %.*s", (int) len, (int) len, in->buf->pos);
 
                 cl->buf->last = ngx_copy(cl->buf->pos, in->buf->pos, len);
 
             } else {
+                dd("ERROR: not memory buf!");
                 return NGX_ERROR;
             }
         }
