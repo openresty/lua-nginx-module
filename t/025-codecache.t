@@ -389,3 +389,84 @@ GET /main
 updated
 32
 
+
+
+=== TEST 12: no clear builtin lib "string"
+--- config
+    location /lua {
+        lua_code_cache off;
+        content_by_lua_file html/test.lua;
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+ngx.say(string.len("hello"))
+ngx.say(table.concat({1,2,3}, ", "))
+--- request
+    GET /main
+--- response_body
+5
+1, 2, 3
+5
+1, 2, 3
+
+
+
+=== TEST 13: no clear builtin lib "string"
+--- config
+    location /lua {
+        lua_code_cache off;
+        content_by_lua '
+            ngx.say(string.len("hello"))
+            ngx.say(table.concat({1,2,3}, ", "))
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /lua;
+    }
+--- request
+    GET /main
+--- response_body
+5
+1, 2, 3
+5
+1, 2, 3
+
+
+
+=== TEST 14: no clear builtin lib "string"
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    lua_code_cache off;
+    location /lua {
+        content_by_lua '
+            local test = require("test")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /lua;
+    }
+--- request
+    GET /main
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+string = require("string")
+math = require("math")
+io = require("io")
+os = require("os")
+table = require("table")
+coroutine = require("coroutine")
+package = require("package")
+ngx.say("OK")
+--- response_body
+OK
+OK
+
