@@ -1120,8 +1120,13 @@ with LuaJIT 2.0.
 Installation
 ============
 
+1. Ensure OpenSSL is installed on your system. For Ubuntu/Debian users, just install
+the `libssl-dev` package. For Fedora/RHEL/CentOS users, just install the
+`openssl-devel` package.
+
 1. Install lua into your system. At least Lua 5.1 is required.
 Lua can be obtained freely from its project [homepage](http://www.lua.org/).
+For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 
 1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from
 lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
