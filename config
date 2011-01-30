@@ -17,13 +17,11 @@ if [ $ngx_found = no ]; then
 
     if [ $ngx_found = no ]; then
         cat << END
-        $0: error: the ngx_lua addon requires OpenSSL library but we cannot find it.
+        $0: error: the ngx_lua addon requires OpenSSL crypto library but we cannot find it.
 END
         exit 1
     fi
 fi
-
-CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
 
 if [ $ngx_found = yes ]; then
     CORE_INCS="$CORE_INCS $ngx_feature_path"
