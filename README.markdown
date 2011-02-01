@@ -233,7 +233,9 @@ Apache's `mod_lua`, but we will work on it in the future.
 Disabling the Lua code cache is mainly used for Lua
 development only because it has great
 impact on the over-all performance and is strongly
-discouraged for production uses.
+discouraged for production uses. Also, race conditions
+when reloading Lua modules are common for concurrent requests
+when the code cache is off.
 
 lua_package_path
 ----------------
