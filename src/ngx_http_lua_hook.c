@@ -877,7 +877,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     dd("uri %.*s, rc:%d, waiting: %d, done:%d", (int) r->uri.len, r->uri.data,
             (int) rc, (int) ctx->waiting, (int) ctx->done);
 
+#if 0
     ngx_http_lua_dump_postponed(r);
+#endif
 
     pr = r->parent;
 

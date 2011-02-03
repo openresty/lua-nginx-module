@@ -9,6 +9,7 @@ plan tests => blocks() * repeat_each() * 2;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 no_long_string();
 
@@ -220,17 +221,17 @@ top res2.body = [2 res1.status = 200
 --- request
     GET /foo
 --- response_body eval
-"res1.status = 200
+"res1.status = 201
 res1.body = STORED\r
 
-res2.status = 200
+res2.status = 201
 res2.body = STORED\r
 
 "
---- SKIP
 
 
-=== TEST 5: memc muti + multi
+
+=== TEST 6: memc muti + multi
 --- config
     location /main {
         content_by_lua '
@@ -239,17 +240,27 @@ res2.body = STORED\r
                 { "/bar?n=2" },
             }
             ngx.say("res1.status = " .. res1.status)
-            ngx.say("res1.body = " .. res1.body)
+            ngx.say("res1.body = [" .. res1.body .. "]")
             ngx.say("res2.status = " .. res2.status)
-            ngx.say("res2.body = " .. res2.body)
+            ngx.say("res2.body = [" .. res2.body .. "]")
         ';
     }
-    location ~ '^/(?:foo|bar)$' {
+    location ~ '^/(foo|bar)$' {
+        set $tag $1;
         content_by_lua '
-            local res1, res2 = ngx.location.capture_multi{
-                { "/a" },
-                { "/b" },
-            }
+            local res1, res2
+            if ngx.var.tag == "foo" then
+                res1, res2 = ngx.location.capture_multi{
+                    { "/a" },
+                    { "/b" },
+                }
+            else
+                res1, res2 = ngx.location.capture_multi{
+                    { "/c" },
+                    { "/d" },
+                }
+            end
+            print("args: " .. ngx.var.args)
             local n = ngx.var.arg_n
             ngx.say(n .. " res1.status = " .. res1.status)
             ngx.say(n .. " res1.body = " .. res1.body)
@@ -257,21 +268,30 @@ res2.body = STORED\r
             ngx.say(n .. " res2.body = " .. res2.body)
         ';
     }
-    location ~ '^/[ab]$' {
+    location ~ '^/[abcd]$' {
         set $memc_key $uri;
         set $memc_value hello;
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 --- request
-    GET /foo
+    GET /main
 --- response_body eval
 "res1.status = 200
-res1.body = STORED\r
+res1.body = [1 res1.status = 201
+1 res1.body = STORED\r
 
+1 res2.status = 201
+1 res2.body = STORED\r
+
+]
 res2.status = 200
-res2.body = STORED\r
+res2.body = [2 res1.status = 201
+2 res1.body = STORED\r
 
+2 res2.status = 201
+2 res2.body = STORED\r
+
+]
 "
---- SKIP
 

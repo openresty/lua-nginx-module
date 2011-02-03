@@ -938,7 +938,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 dd("lua coroutine yielded");
 
+#if 0
                 ngx_http_lua_dump_postponed(r);
+#endif
 
                 ctx->waiting = 1;
                 ctx->done = 0;
@@ -949,7 +951,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             case 0:
                 dd("normal end %.*s", (int) r->uri.len, r->uri.data);
 
+#if 0
                 ngx_http_lua_dump_postponed(r);
+#endif
 
                 ngx_http_lua_del_thread(r, L, cc_ref, 0);
                 ctx->cc_ref = LUA_NOREF;
@@ -1122,8 +1126,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             ngx_cached_err_log_time.data,
             r == r->connection->data,
             r->postponed);
-
+#if 0
     ngx_http_lua_dump_postponed(r);
+#endif
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -1155,6 +1160,17 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             ctx->done);
 
     if (ctx->waiting && ! ctx->done) {
+        dd("%.*s waiting and not done", (int) r->uri.len, r->uri.data);
+
+#if 0
+        ngx_http_lua_dump_postponed(r);
+#endif
+
+        if (r == r->connection->data && r->postponed && r->postponed->request) {
+            r->connection->data = r->postponed->request;
+            ngx_http_post_request(r->postponed->request, NULL);
+        }
+
 #if 0
         if (r->main->posted_requests
                 && r->main->posted_requests->request != r)
