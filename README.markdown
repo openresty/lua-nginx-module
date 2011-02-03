@@ -1256,9 +1256,7 @@ TODO
 ====
 
 * Add directives to run lua codes when nginx stops/reloads.
-* Add `ngx.location.capture_multi` to allow multiple parallel subrequests.
 * Deal with TCP 3-second delay problem under great connection harness.
-* Add `lua_code_cache on|off` directive to allow .lua files updated on-the-fly during development.
 * Implement an alternative version of pcall()/xpcall() for Lua to support
   yielding in protected Lua function calls.
 
