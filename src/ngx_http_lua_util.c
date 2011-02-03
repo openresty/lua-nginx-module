@@ -19,11 +19,13 @@ static void setpath(lua_State *L, int tab_idx, const char *fieldname,
 
 
 static void
-setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path, const char *def)
+setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path,
+        const char *def)
 {
     const char *tmp_path;
 
-    tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
+    tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
+            LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
     luaL_gsub(L, tmp_path, AUX_MARK, def);
     lua_remove(L, -2);
 
@@ -102,9 +104,9 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         /*  new globals table for coroutine */
         lua_newtable(cr);
 
-        /*  {{{ inherit coroutine's globals to main thread's globals table */
-        /*  for print() function will try to find tostring() in current globals */
-        /*  table. */
+        /*  {{{ inherit coroutine's globals to main thread's globals table
+         *  for print() function will try to find tostring() in current
+         *  globals *  table. */
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
         lua_setfield(cr, -2, "__index");
@@ -121,7 +123,8 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         }
     }
 
-    /*  pop coroutine refernece on main thread's stack after anchoring it in registery */
+    /*  pop coroutine refernece on main thread's stack after anchoring it
+     *  in registery */
     lua_pop(L, 1);
 
     return cr;
@@ -216,7 +219,8 @@ ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 
 
 ngx_int_t
-ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx)
 {
     if ( ! ctx->headers_sent ) {
         if (r->headers_out.status == 0) {
@@ -244,7 +248,8 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r, ngx_http_lua_ctx_t *ct
 
 
 ngx_int_t
-ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx_chain_t *in)
+ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
+        ngx_chain_t *in)
 {
     ngx_int_t        rc;
     size_t           size;
@@ -555,8 +560,13 @@ init_ngx_lua_globals(lua_State *L)
     lua_setfield(L, -2, "redirect");
 
     lua_createtable(L, 0, 2); /* .location */
+
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture_multi);
+    lua_setfield(L, -2, "capture_multi");
+
     lua_setfield(L, -2, "location");
 
     /* }}} */
@@ -607,8 +617,8 @@ init_ngx_lua_globals(lua_State *L)
 /**
  * Get nginx internal variables content
  *
- * @retval Always return a string or nil on Lua stack. Return nil when failed to get
- * content, and actual content string when found the specified variable.
+ * @retval Always return a string or nil on Lua stack. Return nil when failed
+ * to get content, and actual content string when found the specified variable.
  * @seealso ngx_http_lua_var_set
  * */
 int
@@ -765,7 +775,7 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
 
 ngx_int_t
-ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
+ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_chain_t **chain,
         ngx_chain_t *in)
 {
     ngx_chain_t     *cl, **ll;
@@ -778,7 +788,7 @@ ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
     }
 
     while (in) {
-        cl = ngx_alloc_chain_link(pool);
+        cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
             return NGX_ERROR;
         }
@@ -789,8 +799,9 @@ ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
         } else {
             if (ngx_buf_in_memory(in->buf)) {
                 len = ngx_buf_size(in->buf);
-                cl->buf = ngx_create_temp_buf(pool, len);
-                dd("buf %d: %.*s", (int) len, (int) len, in->buf->pos);
+                cl->buf = ngx_create_temp_buf(r->pool, len);
+                dd("buf sz:%d, data:%.*s, uri:%.*s", (int) len, (int) len,
+                        in->buf->pos, (int) r->uri.len, r->uri.data);
 
                 cl->buf->last = ngx_copy(cl->buf->pos, in->buf->pos, len);
 
@@ -828,7 +839,9 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->exited = 0;
     ctx->exec_uri.data = NULL;
     ctx->exec_uri.len = 0;
-    ctx->sr_status = 0;
+    ctx->sr_statuses = NULL;
+    ctx->sr_bodies = NULL;
+    ctx->sr_headers = NULL;
 }
 
 
@@ -925,11 +938,18 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 dd("lua coroutine yielded");
 
+                ngx_http_lua_dump_postponed(r);
+
+                ctx->waiting = 1;
+                ctx->done = 0;
+
                 lua_settop(cc, 0);
                 return NGX_AGAIN;
 
             case 0:
-                dd("normal end");
+                dd("normal end %.*s", (int) r->uri.len, r->uri.data);
+
+                ngx_http_lua_dump_postponed(r);
 
                 ngx_http_lua_del_thread(r, L, cc_ref, 0);
                 ctx->cc_ref = LUA_NOREF;
@@ -994,7 +1014,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                             rc = ngx_http_lua_send_chain_link(r, ctx,
                                     NULL /* indicate last_buf */);
 
-                            if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                            if (rc == NGX_ERROR ||
+                                    rc >= NGX_HTTP_SPECIAL_RESPONSE)
+                            {
                                 return rc;
                             }
                         }
@@ -1015,7 +1037,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     if (ctx->exec_uri.data[0] == '@') {
                         if (ctx->exec_args.len > 0) {
                             ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                                    "query strings %V ignored when exec'ing named location %V",
+                                    "query strings %V ignored when exec'ing "
+                                    "named location %V",
                                     &ctx->exec_args, &ctx->exec_uri);
                         }
 
@@ -1085,14 +1108,22 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_lua_main_conf_t    *lmcf;
     lua_State                   *cc;
     ngx_chain_t                 *cl;
+    ngx_chain_t                 *sr_body;
     size_t                       len;
     u_char                      *pos, *last;
     ngx_http_headers_out_t      *sr_headers;
     ngx_list_part_t             *part;
     ngx_table_elt_t             *header;
-    ngx_uint_t                   i;
+    ngx_uint_t                   i, index;
 
-    dd("wev handler");
+    dd("wev handler %.*s %.*s a:%d, postponed:%p",
+            (int) r->uri.len, r->uri.data,
+            (int) ngx_cached_err_log_time.len,
+            ngx_cached_err_log_time.data,
+            r == r->connection->data,
+            r->postponed);
+
+    ngx_http_lua_dump_postponed(r);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -1103,13 +1134,28 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     dd("request done: %d", (int) r->done);
     dd("cleanup done: %p", ctx->cleanup);
 
-#if 1
     if (ctx->cleanup == NULL) {
-        return NGX_ERROR;
+        /* already done */
+        if (r == r->connection->data && r->postponed) {
+            dd("self finalizing request %.*s", (int) r->uri.len,
+                    r->uri.data);
+
+            ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+
+            return NGX_DONE;
+        }
+
+        dd("cleanup is null: %.*s", (int) r->uri.len, r->uri.data);
+
+        ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+        return NGX_DONE;
     }
-#endif
+
+    dd("waiting: %d, done: %d", (int) ctx->waiting,
+            ctx->done);
 
     if (ctx->waiting && ! ctx->done) {
+#if 0
         if (r->main->posted_requests
                 && r->main->posted_requests->request != r)
         {
@@ -1120,144 +1166,173 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 #else
             ngx_http_post_request(r);
 #endif
-
-            return NGX_DONE;
-        }
-    }
-
-    ctx->done = 0;
-
-    len = 0;
-    for (cl = ctx->sr_body; cl; cl = cl->next) {
-        /*  ignore all non-memory buffers */
-        len += cl->buf->last - cl->buf->pos;
-    }
-
-    if (len == 0) {
-        pos = NULL;
-
-    } else {
-        last = pos = ngx_palloc(r->pool, len);
-        if (pos == NULL) {
-            goto error;
-        }
-
-        for (cl = ctx->sr_body; cl; cl = cl->next) {
-            /*  ignore all non-memory buffers */
-            last = ngx_copy(last, cl->buf->pos, cl->buf->last - cl->buf->pos);
-        }
-    }
-
-    cc = ctx->cc;
-
-    /*  {{{ construct ret value */
-    lua_newtable(cc);
-
-    /*  copy captured status */
-    lua_pushinteger(cc, ctx->sr_status);
-    lua_setfield(cc, -2, "status");
-
-    /*  copy captured body */
-    lua_pushlstring(cc, (const char *) pos, len);
-    lua_setfield(cc, -2, "body");
-
-    /* copy captured headers */
-
-    lua_newtable(cc); /* res.header */
-
-    sr_headers = ctx->sr_headers;
-
-    if (sr_headers->content_length == NULL
-        && sr_headers->content_length_n >= 0)
-    {
-        lua_pushliteral(cc, "Content-Length"); /* header key */
-        lua_pushnumber(cc, sr_headers->content_length_n); /* head key value */
-        lua_rawset(cc, -3); /* head */
-    }
-
-    if (sr_headers->content_type.len) {
-        lua_pushliteral(cc, "Content-Type"); /* header key */
-        lua_pushlstring(cc, (char *) sr_headers->content_type.data,
-                sr_headers->content_type.len); /* head key value */
-        lua_rawset(cc, -3); /* head */
-    }
-
-    dd("saving subrequest response headers");
-
-    part = &sr_headers->headers.part;
-    header = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            header = part->elts;
-            i = 0;
-        }
-
-        dd("checking sr header %.*s", (int) header[i].key.len, header[i].key.data);
-
-#if 1
-        if (header[i].hash == 0) {
-            continue;
         }
 #endif
 
-        dd("pushing sr header %.*s", (int) header[i].key.len, header[i].key.data);
+        return NGX_DONE;
+    }
 
-        lua_pushlstring(cc, (char *) header[i].key.data,
-                header[i].key.len); /* header key */
-        lua_pushvalue(cc, -1); /* stack: table key key */
+#if 0
+    if (r != r->connection->data) {
+        ngx_http_finalize_request(r, NGX_OK);
+        return NGX_DONE;
+    }
+#endif
 
-        /* check if header already exists */
-        lua_rawget(cc, -3); /* stack: table key value */
+    ctx->done = 0;
 
-        if (lua_isnil(cc, -1)) {
-            lua_pop(cc, 1); /* stack: table key */
+    dd("nsubreqs: %d", (int) ctx->nsubreqs);
 
-            lua_pushlstring(cc, (char *) header[i].value.data,
-                    header[i].value.len); /* stack: table key value */
+    for (index = 0; index < ctx->nsubreqs; index++) {
+        dd("summary: subquery %d, waiting %d, req %.*s", (int) index,
+                (int) ctx->waitings[index],
+                (int) r->uri.len, r->uri.data);
 
-            lua_rawset(cc, -3); /* stack: table */
+        sr_body = ctx->sr_bodies[index];
+
+        len = 0;
+        for (cl = sr_body; cl; cl = cl->next) {
+            /*  ignore all non-memory buffers */
+            len += cl->buf->last - cl->buf->pos;
+        }
+
+        if (len == 0) {
+            pos = NULL;
 
         } else {
-            if (! lua_istable(cc, -1)) { /* already inserted one value */
-                lua_createtable(cc, 4, 0); /* stack: table key value table */
-                lua_insert(cc, -2); /* stack: table key table value */
-                lua_rawseti(cc, -2, 1); /* stack: table key table */
+            last = pos = ngx_palloc(r->pool, len);
+            if (pos == NULL) {
+                goto error;
+            }
+
+            for (cl = sr_body; cl; cl = cl->next) {
+                last = ngx_copy(last, cl->buf->pos, ngx_buf_size(cl->buf));
+            }
+        }
+
+        cc = ctx->cc;
+
+        /*  {{{ construct ret value */
+        lua_newtable(cc);
+
+        /*  copy captured status */
+        lua_pushinteger(cc, ctx->sr_statuses[index]);
+        lua_setfield(cc, -2, "status");
+
+        /*  copy captured body */
+        lua_pushlstring(cc, (const char *) pos, len);
+        lua_setfield(cc, -2, "body");
+
+        /* copy captured headers */
+
+        lua_newtable(cc); /* res.header */
+
+        sr_headers = ctx->sr_headers[index];
+
+        if (sr_headers->content_length == NULL
+            && sr_headers->content_length_n >= 0)
+        {
+            lua_pushliteral(cc, "Content-Length"); /* header key */
+
+            lua_pushnumber(cc, sr_headers->content_length_n);
+                /* head key value */
+
+            lua_rawset(cc, -3); /* head */
+        }
+
+        if (sr_headers->content_type.len) {
+            lua_pushliteral(cc, "Content-Type"); /* header key */
+            lua_pushlstring(cc, (char *) sr_headers->content_type.data,
+                    sr_headers->content_type.len); /* head key value */
+            lua_rawset(cc, -3); /* head */
+        }
+
+        dd("saving subrequest response headers");
+
+        part = &sr_headers->headers.part;
+        header = part->elts;
+
+        for (i = 0; /* void */; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                header = part->elts;
+                i = 0;
+            }
+
+            dd("checking sr header %.*s", (int) header[i].key.len,
+                    header[i].key.data);
+
+#if 1
+            if (header[i].hash == 0) {
+                continue;
+            }
+#endif
+
+            dd("pushing sr header %.*s", (int) header[i].key.len,
+                    header[i].key.data);
+
+            lua_pushlstring(cc, (char *) header[i].key.data,
+                    header[i].key.len); /* header key */
+            lua_pushvalue(cc, -1); /* stack: table key key */
+
+            /* check if header already exists */
+            lua_rawget(cc, -3); /* stack: table key value */
+
+            if (lua_isnil(cc, -1)) {
+                lua_pop(cc, 1); /* stack: table key */
 
                 lua_pushlstring(cc, (char *) header[i].value.data,
-                        header[i].value.len); /* stack: table key table value */
-
-                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
+                        header[i].value.len); /* stack: table key value */
 
                 lua_rawset(cc, -3); /* stack: table */
 
             } else {
-                lua_pushlstring(cc, (char *) header[i].value.data,
-                        header[i].value.len); /* stack: table key table value */
+                if (! lua_istable(cc, -1)) { /* already inserted one value */
+                    lua_createtable(cc, 4, 0);
+                        /* stack: table key value table */
 
-                lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1); /* stack: table key table */
-                lua_pop(cc, 2); /* stack: table */
+                    lua_insert(cc, -2); /* stack: table key table value */
+                    lua_rawseti(cc, -2, 1); /* stack: table key table */
+
+                    lua_pushlstring(cc, (char *) header[i].value.data,
+                            header[i].value.len);
+                        /* stack: table key table value */
+
+                    lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1);
+                        /* stack: table key table */
+
+                    lua_rawset(cc, -3); /* stack: table */
+
+                } else {
+                    lua_pushlstring(cc, (char *) header[i].value.data,
+                            header[i].value.len);
+                        /* stack: table key table value */
+
+                    lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1);
+                        /* stack: table key table */
+
+                    lua_pop(cc, 2); /* stack: table */
+                }
             }
         }
+
+        lua_setfield(cc, -2, "header");
+
+        /*  }}} */
     }
-
-    lua_setfield(cc, -2, "header");
-
-    /*  }}} */
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    dd("about to run thread...");
+    dd("about to run thread for %.*s...", (int) r->uri.len, r->uri.data);
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 1);
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, ctx->nsubreqs);
 
-    dd("already run thread...");
+    dd("already run thread for %.*s...", (int) r->uri.len, r->uri.data);
 
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         ctx->waiting = 1;
@@ -1297,5 +1372,50 @@ ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
     u_char digest[MD5_DIGEST_LENGTH];
     MD5(buf, buf_len, digest);
     return ngx_hex_dump(dest, digest, sizeof(digest));
+}
+
+
+void
+ngx_http_lua_dump_postponed(ngx_http_request_t *r)
+{
+    ngx_http_postponed_request_t    *pr;
+    ngx_uint_t                       i;
+    ngx_str_t                        out;
+    size_t                           len;
+    ngx_chain_t                     *cl;
+    u_char                          *p;
+    ngx_str_t                        nil_str;
+
+    ngx_str_set(&nil_str, "(nil)");
+
+    for (i = 0, pr = r->postponed; pr; pr = pr->next, i++) {
+        out.data = NULL;
+        out.len = 0;
+
+        len = 0;
+        for (cl = pr->out; cl; cl = cl->next) {
+            len += ngx_buf_size(cl->buf);
+        }
+
+        if (len) {
+            p = ngx_palloc(r->pool, len);
+            if (p == NULL) {
+                return;
+            }
+
+            out.data = p;
+
+            for (cl = pr->out; cl; cl = cl->next) {
+                p = ngx_copy(p, cl->buf->pos, ngx_buf_size(cl->buf));
+            }
+
+            out.len = len;
+        }
+
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                "postponed request for %V: c:%d, a:%d, i:%d, r:%V, out:%V",
+                &r->uri, r->main->count, r == r->connection->data, i,
+                pr->request ? &pr->request->uri : &nil_str, &out);
+    }
 }
 

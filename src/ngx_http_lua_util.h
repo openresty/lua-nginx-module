@@ -21,8 +21,8 @@ ngx_int_t ngx_http_lua_send_chain_link(ngx_http_request_t *r,
 ngx_int_t ngx_http_lua_post_request_at_head(ngx_http_request_t *r,
         ngx_http_posted_request_t *pr);
 void ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in);
-ngx_int_t ngx_http_lua_add_copy_chain(ngx_pool_t *pool, ngx_chain_t **chain,
-        ngx_chain_t *in);
+ngx_int_t ngx_http_lua_add_copy_chain(ngx_http_request_t *r,
+        ngx_chain_t **chain, ngx_chain_t *in);
 int ngx_http_lua_var_get(lua_State *L);
 int ngx_http_lua_var_set(lua_State *L);
 void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
@@ -35,6 +35,7 @@ ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 void ngx_http_lua_inject_log_consts(lua_State *L);
 u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
         int buf_len);
+void ngx_http_lua_dump_postponed(ngx_http_request_t *r);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */

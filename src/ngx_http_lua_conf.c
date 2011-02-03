@@ -4,7 +4,8 @@
 
 
 static void ngx_http_lua_cleanup_vm(void *data);
-static char * ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
+static char * ngx_http_lua_init_vm(ngx_conf_t *cf,
+        ngx_http_lua_main_conf_t *lmcf);
 
 
 void *
@@ -36,7 +37,7 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     if (lmcf->lua == NULL) {
         if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_ERROR, cf, 0, "Failed to initialize Lua VM!");
+            ngx_conf_log_error(NGX_ERROR, cf, 0, "Failed to initialize Lua VM");
             return NGX_CONF_ERROR;
         }
 

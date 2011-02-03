@@ -26,7 +26,7 @@ __DATA__
 --- config
     location = /mysql {
         #internal;
-        drizzle_send_query_timeout 50ms;
+        drizzle_send_query_timeout 100ms;
         #drizzle_send_query_timeout 1s;
         drizzle_query $echo_request_body;
         drizzle_pass backend;
@@ -83,7 +83,7 @@ kill body = {"errcode":0}$
     error_page 504 = @err;
     location = /mysql {
         #internal;
-        drizzle_send_query_timeout 50ms;
+        drizzle_send_query_timeout 100ms;
         #drizzle_send_query_timeout 1s;
         drizzle_query $echo_request_body;
         drizzle_pass backend;

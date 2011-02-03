@@ -46,13 +46,15 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
         int rc = lua_pcall(L, 0, 1, 0);
 
         if (rc == 0) {
-            /*  remove cache table from stack, leave code chunk at top of stack */
-            lua_remove(L, -2);                        /*  sp-- */
+            /*  remove cache table from stack, leave code chunk at
+             *  top of stack */
+            lua_remove(L, -2);   /*  sp-- */
             return NGX_OK;
         }
     }
 
-    dd("Value associated with given key in code cache table is not code chunk: stack top=%d, top value type=%s\n",
+    dd("Value associated with given key in code cache table is not code "
+            "chunk: stack top=%d, top value type=%s\n",
             lua_gettop(L), lua_typename(L, -1));
 
     /*  remove cache table and value from stack */
@@ -151,7 +153,8 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
         return NGX_ERROR;
     }
 
-    /*  store closure factory and gen new closure at the top of lua stack to code cache */
+    /*  store closure factory and gen new closure at the top of lua stack to
+     *  code cache */
     rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
 
     if (rc != NGX_OK) {
@@ -193,11 +196,13 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
 
         if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
             /*  code chunk loaded from cache, sp++ */
-            dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
+            dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'",
+                    cache_key, lua_gettop(L), script);
             return NGX_OK;
         }
 
-        dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'", cache_key, lua_gettop(L), script);
+        dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'",
+                cache_key, lua_gettop(L), script);
     }
 
     /*  load closure factory of script file to the top of lua stack, sp++ */
@@ -220,7 +225,8 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     }
 
     if (enabled) {
-        /*  store closure factory and gen new closure at the top of lua stack to code cache */
+        /*  store closure factory and gen new closure at the top of lua stack
+         *  to code cache */
         rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
 
         if (rc != NGX_OK) {

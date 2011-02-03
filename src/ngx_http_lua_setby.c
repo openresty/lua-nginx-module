@@ -8,12 +8,22 @@
 static int
 ngx_http_lua_param_get(lua_State *L)
 {
-    int idx = luaL_checkint(L, 2);
-    int n = luaL_checkint(L, lua_upvalueindex(1));    /*  get number of args from closure */
-    ngx_http_variable_value_t *v = lua_touserdata(L, lua_upvalueindex(2));    /*  get args from closure */
+    int         idx;
+    int         n;
+
+    ngx_http_variable_value_t       *v;
+
+    idx = luaL_checkint(L, 2);
+
+    /*  get number of args from closure */
+    n = luaL_checkint(L, lua_upvalueindex(1));
+
+    /*  get args from closure */
+    v = lua_touserdata(L, lua_upvalueindex(2));
 
     if (idx < 0 || idx > n-1) {
         lua_pushnil(L);
+
     } else {
         lua_pushlstring(L, (const char*)(v[idx].data), v[idx].len);
     }
@@ -66,7 +76,10 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_newtable(L);    /*  the metatable for new param table */
     lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
     lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
-    lua_pushcclosure(L, ngx_http_lua_param_get, 2); /*  binding upvalues to __index meta-method closure */
+
+    lua_pushcclosure(L, ngx_http_lua_param_get, 2);
+        /*  binding upvalues to __index meta-method closure */
+
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  tie the metatable to param table */
 
@@ -172,7 +185,8 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
     if (rc) {
         /*  error occured when running loaded code */
         const char *err_msg = lua_tostring(L, -1);
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-error) %s", err_msg);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-error) %s",
+                err_msg);
 
         lua_settop(L, 0);    /*  clear remaining elems on stack */
         assert(lua_gettop(L) == 0);
@@ -187,13 +201,12 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         if (rdata) {
             val->data = ngx_pcalloc(r->pool, rlen);
             if (val->data == NULL) {
-                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "Failed to allocate result buffer!");
-
                 return NGX_ERROR;
             }
 
             ngx_memcpy(val->data, rdata, rlen);
             val->len = rlen;
+
         } else {
             val->data = NULL;
             val->len = 0;

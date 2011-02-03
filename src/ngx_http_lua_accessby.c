@@ -97,7 +97,8 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data, eval_src.len);
+    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
+            eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
@@ -268,8 +269,8 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
-            llcf->access_src.value.len, llcf->access_src_key, "access_by_lua", &err,
-            llcf->enable_code_cache);
+            llcf->access_src.value.len, llcf->access_src_key,
+            "access_by_lua", &err, llcf->enable_code_cache);
 
     if (rc != NGX_OK) {
         if (err == NULL) {

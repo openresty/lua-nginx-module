@@ -209,7 +209,8 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data, eval_src.len);
+    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
+            eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
