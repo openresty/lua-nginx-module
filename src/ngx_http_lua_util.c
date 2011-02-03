@@ -839,6 +839,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->exited = 0;
     ctx->exec_uri.data = NULL;
     ctx->exec_uri.len = 0;
+    ctx->waitings = NULL;
     ctx->sr_statuses = NULL;
     ctx->sr_bodies = NULL;
     ctx->sr_headers = NULL;
@@ -1145,14 +1146,19 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             dd("self finalizing request %.*s", (int) r->uri.len,
                     r->uri.data);
 
-            ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+            if (ctx->entered_content_phase) {
+                ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+            }
 
             return NGX_DONE;
         }
 
         dd("cleanup is null: %.*s", (int) r->uri.len, r->uri.data);
 
-        ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+        if (ctx->entered_content_phase) {
+            ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+        }
+
         return NGX_DONE;
     }
 

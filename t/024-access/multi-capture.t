@@ -20,7 +20,7 @@ __DATA__
 === TEST 1: sanity
 --- config
     location /foo {
-        content_by_lua '
+        access_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -30,6 +30,7 @@ __DATA__
             ngx.say("res2.status = " .. res2.status)
             ngx.say("res2.body = " .. res2.body)
         ';
+        content_by_lua return;
     }
     location /a {
         echo -n a;
@@ -50,7 +51,7 @@ res2.body = b
 === TEST 2: 4 concurrent requests
 --- config
     location /foo {
-        content_by_lua '
+        access_by_lua '
             local res1, res2, res3, res4 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -69,6 +70,7 @@ res2.body = b
             ngx.say("res4.status = " .. res4.status)
             ngx.say("res4.body = " .. res4.body)
         ';
+        content_by_lua return;
     }
     location ~ '^/([a-d])$' {
         echo -n $1;
@@ -90,7 +92,7 @@ res4.body = d
 === TEST 3: capture multi in series
 --- config
     location /foo {
-        content_by_lua '
+        access_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -110,6 +112,7 @@ res4.body = d
             ngx.say("2 res2.body = " .. res2.body)
 
         ';
+        content_by_lua return;
     }
     location /a {
         echo -n a;
@@ -134,7 +137,7 @@ res2.body = b
 === TEST 4: capture multi in subrequest
 --- config
     location /foo {
-        content_by_lua '
+        rewrite_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -147,14 +150,16 @@ res2.body = b
             ngx.say(n .. " res2.status = " .. res2.status)
             ngx.say(n .. " res2.body = " .. res2.body)
         ';
+        content_by_lua return;
     }
 
     location /main {
-        content_by_lua '
+        access_by_lua '
             res = ngx.location.capture("/foo?n=1")
             ngx.say("top res.status = " .. res.status)
             ngx.say("top res.body = [" .. res.body .. "]")
         ';
+        content_by_lua return;
     }
 
     location /a {
@@ -180,7 +185,7 @@ top res.body = [1 res1.status = 200
 --- config
     location ~ '^/(foo|bar)$' {
         set $tag $1;
-        content_by_lua '
+        rewrite_by_lua '
             local res1, res2
             if ngx.var.tag == "foo" then
                 res1, res2 = ngx.location.capture_multi{
@@ -201,10 +206,11 @@ top res.body = [1 res1.status = 200
             ngx.say(n .. " res2.status = " .. res2.status)
             ngx.say(n .. " res2.body = " .. res2.body)
         ';
+        content_by_lua return;
     }
 
     location /main {
-        content_by_lua '
+        access_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/foo?n=1" },
                 { "/bar?n=2" },
@@ -215,6 +221,7 @@ top res.body = [1 res1.status = 200
             ngx.say("top res2.status = " .. res2.status)
             ngx.say("top res2.body = [" .. res2.body .. "]")
         ';
+        content_by_lua return;
     }
 
     location ~ '^/([abcd])$' {
@@ -241,7 +248,7 @@ top res2.body = [2 res1.status = 200
 === TEST 6: memc sanity
 --- config
     location /foo {
-        content_by_lua '
+        access_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -251,6 +258,7 @@ top res2.body = [2 res1.status = 200
             ngx.say("res2.status = " .. res2.status)
             ngx.say("res2.body = " .. res2.body)
         ';
+        content_by_lua return;
     }
     location ~ '^/[ab]$' {
         set $memc_key $uri;
@@ -274,7 +282,7 @@ res2.body = STORED\r
 === TEST 7: memc muti + multi
 --- config
     location /main {
-        content_by_lua '
+        access_by_lua '
             local res1, res2 = ngx.location.capture_multi{
                 { "/foo?n=1" },
                 { "/bar?n=2" },
@@ -284,10 +292,11 @@ res2.body = STORED\r
             ngx.say("res2.status = " .. res2.status)
             ngx.say("res2.body = [" .. res2.body .. "]")
         ';
+        content_by_lua return;
     }
     location ~ '^/(foo|bar)$' {
         set $tag $1;
-        content_by_lua '
+        rewrite_by_lua '
             local res1, res2
             if ngx.var.tag == "foo" then
                 res1, res2 = ngx.location.capture_multi{
@@ -307,6 +316,7 @@ res2.body = STORED\r
             ngx.say(n .. " res2.status = " .. res2.status)
             ngx.say(n .. " res2.body = " .. res2.body)
         ';
+        content_by_lua return;
     }
     location ~ '^/[abcd]$' {
         set $memc_key $uri;
@@ -340,7 +350,7 @@ res2.body = [2 res1.status = 201
 === TEST 8: memc 4 concurrent requests
 --- config
     location /foo {
-        content_by_lua '
+        access_by_lua '
             local res1, res2, res3, res4 = ngx.location.capture_multi{
                 { "/a" },
                 { "/b" },
@@ -359,6 +369,7 @@ res2.body = [2 res1.status = 201
             ngx.say("res4.status = " .. res4.status)
             ngx.say("res4.body = " .. res4.body)
         ';
+        content_by_lua return;
     }
     location ~ '^/[a-d]$' {
         set $memc_key $uri;

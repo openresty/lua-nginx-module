@@ -95,6 +95,8 @@ typedef struct {
     int              cc_ref;            /*  reference to anchor coroutine
                                             in lua registry */
 
+    ngx_http_cleanup_pt     *cleanup;
+
     ngx_chain_t     *body;              /*  captured current request body */
 
 #if 0
@@ -148,7 +150,8 @@ typedef struct {
     unsigned         entered_access_phase:1;
     unsigned         entered_content_phase:1;
 
-    ngx_http_cleanup_pt     *cleanup;
+    /* whether it has run post_subrequest */
+    unsigned         run_post_subrequest:1;
 
 } ngx_http_lua_ctx_t;
 
