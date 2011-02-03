@@ -107,11 +107,15 @@ typedef struct {
     ngx_uint_t       nsubreqs;    /* number of subrequests of the
                                      current request */
 
-    ngx_http_headers_out_t  **sr_headers;
 
     unsigned        *waitings;    /* all subrequests waiting flags */
-    ngx_chain_t    **sr_bodies;   /* all captured subrquest bodies */
+
     ngx_int_t       *sr_statuses; /* all capture subrequest statuses */
+
+    ngx_http_headers_out_t  **sr_headers;
+
+    ngx_chain_t    **sr_bodies;   /* all captured subrquest bodies */
+
     ngx_uint_t       index; /* index of the current subrequest in its
                                parent request */
 

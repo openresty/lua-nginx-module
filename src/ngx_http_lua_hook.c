@@ -489,8 +489,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_http_lua_ctx_t              *ctx;
     ngx_str_t                        uri;
     ngx_str_t                        args;
-    ngx_str_t                        extra_args = ngx_null_string;
-    ngx_uint_t                       flags = 0;
+    ngx_str_t                        extra_args;
+    ngx_uint_t                       flags;
     u_char                          *p;
     u_char                          *q;
     size_t                           len;
@@ -498,12 +498,16 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     int                              rc;
     int                              n;
     ngx_uint_t                       method;
-    ngx_http_request_body_t         *body = NULL;
+    ngx_http_request_body_t         *body;
     int                              type;
     ngx_buf_t                       *b;
-    ngx_flag_t                       share_all_vars = 0;
+    ngx_flag_t                       share_all_vars;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
+    size_t                           waitings_len;
+    size_t                           sr_statuses_len;
+    size_t                           sr_headers_len;
+    size_t                           sr_bodies_len;
 
     n = lua_gettop(L);
     if (n != 1) {
@@ -530,27 +534,28 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ctx->waitings = ngx_palloc(r->pool, nsubreqs * sizeof(unsigned));
-    if (ctx->waitings == NULL) {
+    waitings_len    = nsubreqs * sizeof(unsigned);
+    sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
+    sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t*);
+    sr_bodies_len   = nsubreqs * sizeof(ngx_chain_t *);
+
+    p = ngx_palloc(r->pool, waitings_len + sr_statuses_len + sr_headers_len +
+            sr_bodies_len);
+
+    if (p == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    ctx->sr_headers = ngx_palloc(r->pool,
-            nsubreqs * sizeof(ngx_http_headers_out_t*));
+    ctx->waitings = (void *) p;
+    p += waitings_len;
 
-    if (ctx->sr_headers == NULL) {
-        return luaL_error(L, "out of memory");
-    }
+    ctx->sr_statuses = (void *) p;
+    p += sr_statuses_len;
 
-    ctx->sr_bodies = ngx_palloc(r->pool, nsubreqs * sizeof(ngx_chain_t *));
-    if (ctx->sr_bodies == NULL) {
-        return luaL_error(L, "out of memory");
-    }
+    ctx->sr_headers = (void *) p;
+    p += sr_headers_len;
 
-    ctx->sr_statuses = ngx_palloc(r->pool, nsubreqs * sizeof(ngx_int_t *));
-    if (ctx->sr_statuses == NULL) {
-        return luaL_error(L, "out of memory");
-    }
+    ctx->sr_bodies = (void *) p;
 
     ctx->nsubreqs = nsubreqs;
 
@@ -583,6 +588,13 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         lua_rawgeti(L, 2, 1); /* queries query uri */
 
         dd("first arg in first query: %s", lua_typename(L, lua_type(L, -1)));
+
+        body = NULL;
+
+        extra_args.data = NULL;
+        extra_args.len = 0;
+
+        share_all_vars = 0;
 
         if (nargs == 2) {
             /* check out the options table */
@@ -713,6 +725,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         args.data = NULL;
         args.len = 0;
+
+        flags = 0;
 
         rc = ngx_http_parse_unsafe_uri(r, &uri, &args, &flags);
         if (rc != NGX_OK) {
