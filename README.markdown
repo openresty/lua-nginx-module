@@ -179,7 +179,8 @@ This module embeds the Lua interpreter into the nginx core and integrates the po
 by means of nginx subrequests.
 
 Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this module can be 100% non-blocking on network traffic
-as long as you use the `ngx.location.capture` interface
+as long as you use the `ngx.location.capture()` or
+`ngx.location.capture_multi()` interfaces
 to let the nginx core do all your
 requests to mysql, postgresql, memcached,
 upstream http web services, and etc etc etc (see
@@ -793,6 +794,38 @@ in gzip'd responses that your Lua code is not able to handle properly. So always
 `proxy_pass_request_headers off` in your subrequest location to ignore the original request headers.
 See <http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers> for more
 details.
+
+ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })
+---------------------------------------------------------------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Just like `ngx.location.capture`, but supports multiple subrequests running in parallel.
+
+This function issue several parallel subrequests specified by the input table, and returns their results in the same order. For example,
+
+    res1, res2, res3 = ngx.location.capture_multi{
+        { "/foo", { args = "a=3&b=4" } },
+        { "/bar" },
+        { "/baz", { method = ngx.HTTP_POST, body = "hello" } },
+    }
+
+    if res1.status == ngx.HTTP_OK then
+        ...
+    end
+
+    if res2.body == "BLAH" then
+        ...
+    end
+
+This function will not return until all the subrequests terminate. The total latency is the longest latency of the subrequests, instead of their sum.
+
+The `ngx.location.capture` function is just a special form
+of this function. Logically speaking, the `ngx.location.capture` can be implemented like this
+
+    ngx.location.capture =
+        function (uri, args)
+            return ngx.location.capture_multi({ {uri, args} })
+        end
 
 ngx.status
 ----------
