@@ -787,36 +787,39 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_chain_t **chain,
         ll = &cl->next;
     }
 
+    len = 0;
+
+    for (cl = in; cl; cl = cl->next) {
+        if (ngx_buf_in_memory(cl->buf)) {
+            len += cl->buf->last - cl->buf->pos;
+        }
+    }
+
+    if (len == 0) {
+        return NGX_OK;
+    }
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return NGX_ERROR;
+    }
+
+    cl->buf = ngx_create_temp_buf(r->pool, len);
+    if (cl->buf == NULL) {
+        return NGX_ERROR;
+    }
+
     while (in) {
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
-            return NGX_ERROR;
+        if (ngx_buf_in_memory(in->buf)) {
+            cl->buf->last = ngx_copy(cl->buf->last, in->buf->pos,
+                    in->buf->last - in->buf->pos);
         }
 
-        if (ngx_buf_special(in->buf)) {
-            cl->buf = in->buf;
-
-        } else {
-            if (ngx_buf_in_memory(in->buf)) {
-                len = ngx_buf_size(in->buf);
-                cl->buf = ngx_create_temp_buf(r->pool, len);
-                dd("buf sz:%d, data:%.*s, uri:%.*s", (int) len, (int) len,
-                        in->buf->pos, (int) r->uri.len, r->uri.data);
-
-                cl->buf->last = ngx_copy(cl->buf->pos, in->buf->pos, len);
-
-            } else {
-                dd("ERROR: not memory buf!");
-                return NGX_ERROR;
-            }
-        }
-
-        *ll = cl;
-        ll = &cl->next;
         in = in->next;
     }
 
-    *ll = NULL;
+    *ll = cl;
+    cl->next = NULL;
 
     return NGX_OK;
 }
@@ -1223,7 +1226,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             }
 
             for (cl = sr_body; cl; cl = cl->next) {
-                last = ngx_copy(last, cl->buf->pos, ngx_buf_size(cl->buf));
+                last = ngx_copy(last, cl->buf->pos,
+                        cl->buf->last - cl->buf->pos);
+
+                dd("free bod chain link buf ASAP");
+                ngx_pfree(r->pool, cl->buf->start);
             }
         }
 
@@ -1239,6 +1246,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         /*  copy captured body */
         lua_pushlstring(cc, (const char *) pos, len);
         lua_setfield(cc, -2, "body");
+
+        if (pos) {
+            dd("free body buffer ASAP");
+            ngx_pfree(r->pool, pos);
+        }
 
         /* copy captured headers */
 
@@ -1342,6 +1354,16 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         /*  }}} */
     }
+
+    dd("free sr_statues/headers/bodies memory ASAP");
+
+#if 1
+    ngx_pfree(r->pool, ctx->sr_statuses);
+
+    ctx->sr_statuses = NULL;
+    ctx->sr_headers = NULL;
+    ctx->sr_bodies = NULL;
+#endif
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
