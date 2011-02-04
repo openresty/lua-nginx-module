@@ -1145,21 +1145,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (ctx->cleanup == NULL) {
         /* already done */
-        if (r == r->connection->data && r->postponed) {
-            dd("self finalizing request %.*s", (int) r->uri.len,
-                    r->uri.data);
-
-            if (ctx->entered_content_phase) {
-                ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
-            }
-
-            return NGX_DONE;
-        }
-
         dd("cleanup is null: %.*s", (int) r->uri.len, r->uri.data);
 
         if (ctx->entered_content_phase) {
-            ngx_http_finalize_request(r, ngx_http_output_filter(r, NULL));
+            ngx_http_finalize_request(r,
+                    ngx_http_lua_flush_postponed_outputs(r));
         }
 
         return NGX_DONE;
@@ -1442,5 +1432,19 @@ ngx_http_lua_dump_postponed(ngx_http_request_t *r)
                 &r->uri, r->main->count, r == r->connection->data, i,
                 pr->request ? &pr->request->uri : &nil_str, &out);
     }
+}
+
+
+ngx_int_t
+ngx_http_lua_flush_postponed_outputs(ngx_http_request_t *r)
+{
+    if (r == r->connection->data && r->postponed) {
+        /* notify the downstream postpone filter to flush the postponed
+         * outputs of the current request */
+        return ngx_http_lua_next_body_filter(r, NULL);
+    }
+
+    /* do nothing */
+    return NGX_OK;
 }
 
