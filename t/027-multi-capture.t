@@ -534,3 +534,133 @@ res4.body = f
 " x 4
 --- timeout: 2
 
+
+
+=== TEST 11: a mixture of rewrite, access, content phases
+--- config
+    location /main {
+        rewrite_by_lua '
+            local res = ngx.location.capture("/a")
+            ngx.say("rewrite a: " .. res.body)
+
+            res = ngx.location.capture("/b")
+            ngx.say("rewrite b: " .. res.body)
+
+            res = ngx.location.capture("/c")
+            ngx.say("rewrite c: " .. res.body)
+        ';
+
+        access_by_lua '
+            local res = ngx.location.capture("/A")
+            ngx.say("access A: " .. res.body)
+
+            res = ngx.location.capture("/B")
+            ngx.say("access B: " .. res.body)
+        ';
+
+        content_by_lua '
+            local res = ngx.location.capture("/d")
+            ngx.say("content d: " .. res.body)
+
+            res = ngx.location.capture("/e")
+            ngx.say("content e: " .. res.body)
+
+            res = ngx.location.capture("/f")
+            ngx.say("content f: " .. res.body)
+        ';
+    }
+
+    location /memc {
+        set $memc_key $arg_val;
+        set $memc_value $arg_val;
+        set $memc_cmd $arg_cmd;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location ~ '^/([A-F])$' {
+        echo -n $1;
+    }
+
+    location ~ '^/([a-f])$' {
+        set $tag $1;
+        content_by_lua '
+            ngx.location.capture("/memc?cmd=set&val=" .. ngx.var.tag)
+            local res = ngx.location.capture("/memc?cmd=get&val=" .. ngx.var.tag)
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+rewrite a: a
+rewrite b: b
+rewrite c: c
+access A: A
+access B: B
+content d: d
+content e: e
+content f: f
+
+
+
+=== TEST 12: a mixture of rewrite, access, content phases
+--- config
+    location /main {
+        rewrite_by_lua '
+            local a, b, c = ngx.location.capture_multi{
+                {"/a"}, {"/b"}, {"/c"},
+            }
+            ngx.say("rewrite a: " .. a.body)
+            ngx.say("rewrite b: " .. b.body)
+            ngx.say("rewrite c: " .. c.body)
+        ';
+
+        access_by_lua '
+            local A, B = ngx.location.capture_multi{
+                {"/A"}, {"/B"},
+            }
+            ngx.say("access A: " .. A.body)
+            ngx.say("access B: " .. B.body)
+        ';
+
+        content_by_lua '
+            local d, e, f = ngx.location.capture_multi{
+                {"/d"}, {"/e"}, {"/f"},
+            }
+            ngx.say("content d: " .. d.body)
+            ngx.say("content e: " .. e.body)
+            ngx.say("content f: " .. f.body)
+        ';
+    }
+
+    location /memc {
+        set $memc_key $arg_val;
+        set $memc_value $arg_val;
+        set $memc_cmd $arg_cmd;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location ~ '^/([A-F])$' {
+        echo -n $1;
+    }
+
+    location ~ '^/([a-f])$' {
+        set $tag $1;
+        content_by_lua '
+            ngx.location.capture("/memc?cmd=set&val=" .. ngx.var.tag)
+            local res = ngx.location.capture("/memc?cmd=get&val=" .. ngx.var.tag)
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+rewrite a: a
+rewrite b: b
+rewrite c: c
+access A: A
+access B: B
+content d: d
+content e: e
+content f: f
+
