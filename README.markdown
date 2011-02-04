@@ -1270,6 +1270,14 @@ Future Plan
 Known Issues
 ============
 
+* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture
+locations configured by ngx_echo module's `echo_location`,
+`echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This
+won't be fixed in the future due to technical problems :)
+
+* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture
+locations with internal redirections for now. But this may get fixed in the future.
+
 * **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request
 isolation design. Especially watch yourself when using `require()` to import modules, and
 use this form:
