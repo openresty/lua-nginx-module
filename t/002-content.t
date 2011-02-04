@@ -482,7 +482,7 @@ Bar: nil
 
 
 
-=== TEST 27: HTTP 1.0 rsponse
+=== TEST 27: HTTP 1.0 response
 --- config
     location /lua {
         content_by_lua '

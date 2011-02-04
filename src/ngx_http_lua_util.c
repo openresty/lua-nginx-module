@@ -775,11 +775,12 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
 
 ngx_int_t
-ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_chain_t **chain,
-        ngx_chain_t *in)
+ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
+        ngx_chain_t **chain, ngx_chain_t *in)
 {
     ngx_chain_t     *cl, **ll;
     size_t           len;
+    ngx_buf_t       *b;
 
     ll = chain;
 
@@ -799,19 +800,31 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_chain_t **chain,
         return NGX_OK;
     }
 
-    cl = ngx_alloc_chain_link(r->pool);
+    cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
     if (cl == NULL) {
         return NGX_ERROR;
     }
 
-    cl->buf = ngx_create_temp_buf(r->pool, len);
-    if (cl->buf == NULL) {
+    b = cl->buf;
+
+    b->start = ngx_palloc(r->pool, len);
+    if (b->start == NULL) {
         return NGX_ERROR;
     }
 
+    b->end = b->start + len;
+
+    b->pos  = b->start;
+    b->last = b->pos;
+    b->memory = 1;
+
+#if 0
+    b->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+#endif
+
     while (in) {
         if (ngx_buf_in_memory(in->buf)) {
-            cl->buf->last = ngx_copy(cl->buf->last, in->buf->pos,
+            b->last = ngx_copy(b->last, in->buf->pos,
                     in->buf->last - in->buf->pos);
         }
 
@@ -1114,10 +1127,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
     lua_State                   *cc;
-    ngx_chain_t                 *cl;
-    ngx_chain_t                 *sr_body;
-    size_t                       len;
-    u_char                      *pos, *last;
+    ngx_str_t                   *body_str;
     ngx_http_headers_out_t      *sr_headers;
     ngx_list_part_t             *part;
     ngx_table_elt_t             *header;
@@ -1208,32 +1218,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 (int) ctx->waiting,
                 (int) r->uri.len, r->uri.data);
 
-        sr_body = ctx->sr_bodies[index];
-
-        len = 0;
-        for (cl = sr_body; cl; cl = cl->next) {
-            /*  ignore all non-memory buffers */
-            len += cl->buf->last - cl->buf->pos;
-        }
-
-        if (len == 0) {
-            pos = NULL;
-
-        } else {
-            last = pos = ngx_palloc(r->pool, len);
-            if (pos == NULL) {
-                goto error;
-            }
-
-            for (cl = sr_body; cl; cl = cl->next) {
-                last = ngx_copy(last, cl->buf->pos,
-                        cl->buf->last - cl->buf->pos);
-
-                dd("free bod chain link buf ASAP");
-                ngx_pfree(r->pool, cl->buf->start);
-            }
-        }
-
         cc = ctx->cc;
 
         /*  {{{ construct ret value */
@@ -1244,12 +1228,15 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         lua_setfield(cc, -2, "status");
 
         /*  copy captured body */
-        lua_pushlstring(cc, (const char *) pos, len);
+
+        body_str = &ctx->sr_bodies[index];
+
+        lua_pushlstring(cc, (char *) body_str->data, body_str->len);
         lua_setfield(cc, -2, "body");
 
-        if (pos) {
+        if (body_str->data) {
             dd("free body buffer ASAP");
-            ngx_pfree(r->pool, pos);
+            ngx_pfree(r->pool, body_str->data);
         }
 
         /* copy captured headers */

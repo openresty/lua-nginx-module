@@ -535,7 +535,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
     sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
     sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
-    sr_bodies_len   = nsubreqs * sizeof(ngx_chain_t *);
+    sr_bodies_len   = nsubreqs * sizeof(ngx_str_t);
 
     p = ngx_pcalloc(r->pool, sr_statuses_len + sr_headers_len +
             sr_bodies_len);
@@ -763,15 +763,16 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             return luaL_error(L, "out of memory");
         }
 
+        /* set by ngx_pcalloc:
+         *      sr_ctx->run_post_subrequest = 0
+         *      sr_ctx->free = NULL
+         */
+
         sr_ctx->cc_ref = LUA_NOREF;
 
         sr_ctx->capture = 1;
 
         sr_ctx->index = index;
-
-        /* set by ngx_pcalloc:
-         *      sr_ctx->run_post_subrequest = 0
-         */
 
         psr->handler = ngx_http_lua_post_subrequest;
         psr->data = sr_ctx;
@@ -887,6 +888,10 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ngx_http_request_t            *pr;
     ngx_http_lua_ctx_t            *pr_ctx;
     ngx_http_lua_ctx_t            *ctx = data;
+    size_t                         len;
+    ngx_str_t                     *body_str;
+    u_char                        *p;
+    ngx_chain_t                   *cl;
 
     dd("uri %.*s, rc:%d, waiting: %d, done:%d", (int) r->uri.len, r->uri.data,
             (int) rc, (int) ctx->waiting, (int) ctx->done);
@@ -943,7 +948,54 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     dd("pr_ctx status: %d", (int) pr_ctx->sr_statuses[ctx->index]);
 
     /* copy subrequest response headers */
+
     pr_ctx->sr_headers[ctx->index] = &r->headers_out;
+
+    /* copy subrequest response body */
+
+    body_str = &pr_ctx->sr_bodies[ctx->index];
+
+    len = 0;
+    for (cl = ctx->body; cl; cl = cl->next) {
+        /*  ignore all non-memory buffers */
+        len += cl->buf->last - cl->buf->pos;
+    }
+
+    body_str->len = len;
+
+    if (len == 0) {
+        body_str->data = NULL;
+
+    } else {
+        p = ngx_palloc(r->pool, len);
+        if (p == NULL) {
+            return NGX_ERROR;
+        }
+
+        body_str->data = p;
+
+        for (cl = ctx->body; cl; cl = cl->next) {
+            p = ngx_copy(p, cl->buf->pos,
+                    cl->buf->last - cl->buf->pos);
+
+            dd("free bod chain link buf ASAP");
+            ngx_pfree(r->pool, cl->buf->start);
+        }
+
+        /* freeing the ctx->body chain such that it can be reused by
+         * other subrequests */
+
+        if (pr_ctx->free == NULL) {
+            pr_ctx->free = ctx->body;
+
+        } else {
+            for (cl = pr_ctx->free; cl->next; cl = cl->next) { /* void */ }
+
+            cl->next = ctx->body;
+        }
+    }
+
+    /* work-around issues in nginx's event module */
 
     if (r != r->connection->data && r->postponed &&
             (r->main->posted_requests == NULL ||
@@ -951,24 +1003,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     {
         ngx_http_post_request(pr, NULL);
     }
-
-#if 0
-    /* ensure that the parent request is (or will be)
-     *  posted out the head of the r->posted_requests chain */
-
-    dd("posted requests: %p", r->main->posted_requests);
-
-    if (r->main->posted_requests
-            && r->main->posted_requests->request != pr)
-    {
-        dd("posting parent request");
-
-        rc = ngx_http_lua_post_request_at_head(pr, NULL);
-        if (rc != NGX_OK) {
-            return NGX_ERROR;
-        }
-    }
-#endif
 
     return rc;
 }

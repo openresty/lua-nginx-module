@@ -95,7 +95,11 @@ typedef struct {
     int              cc_ref;            /*  reference to anchor coroutine
                                             in lua registry */
 
+    ngx_chain_t             *free; /* free bufs */
+
     ngx_http_cleanup_pt     *cleanup;
+
+    ngx_chain_t             *body; /* buffered response body chains */
 
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */
@@ -104,7 +108,7 @@ typedef struct {
 
     ngx_http_headers_out_t  **sr_headers;
 
-    ngx_chain_t    **sr_bodies;   /* all captured subrquest bodies */
+    ngx_str_t       *sr_bodies;   /* all captured subrequest bodies */
 
     ngx_uint_t       index; /* index of the current subrequest in its
                                parent request */
