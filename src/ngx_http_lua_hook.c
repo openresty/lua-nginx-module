@@ -774,8 +774,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         psr->handler = ngx_http_lua_post_subrequest;
         psr->data = sr_ctx;
 
-        rc = ngx_http_subrequest(r, &uri, &args, &sr, psr,
-                NGX_HTTP_SUBREQUEST_WAITED);
+        rc = ngx_http_subrequest(r, &uri, &args, &sr, psr, 0);
 
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to issue subrequest: %d", (int) rc);
