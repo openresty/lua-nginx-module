@@ -537,7 +537,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
     sr_bodies_len   = nsubreqs * sizeof(ngx_chain_t *);
 
-    p = ngx_palloc(r->pool, sr_statuses_len + sr_headers_len +
+    p = ngx_pcalloc(r->pool, sr_statuses_len + sr_headers_len +
             sr_bodies_len);
 
     if (p == NULL) {
@@ -769,6 +769,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         sr_ctx->index = index;
 
+        /* set by ngx_pcalloc:
+         *      sr_ctx->run_post_subrequest = 0
+         */
+
         psr->handler = ngx_http_lua_post_subrequest;
         psr->data = sr_ctx;
 
@@ -937,13 +941,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     dd("pr_ctx status: %d", (int) pr_ctx->sr_statuses[ctx->index]);
-
-    /*  copy subrequest response body */
-    dd("saving sr body, r:%.*s, body:%p, done:%d, nsubreqs:%d",
-            (int) r->uri.len, r->uri.data, ctx->body, ctx->done,
-            (int) ctx->nsubreqs);
-
-    pr_ctx->sr_bodies[ctx->index] = ctx->body;
 
     /* copy subrequest response headers */
     pr_ctx->sr_headers[ctx->index] = &r->headers_out;

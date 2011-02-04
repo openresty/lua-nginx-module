@@ -97,15 +97,8 @@ typedef struct {
 
     ngx_http_cleanup_pt     *cleanup;
 
-    ngx_chain_t     *body;              /*  captured current request body */
-
-#if 0
-    ngx_chain_t     *sr_body;           /*  all captured subrequest bodies */
-    ngx_int_t        sr_status;         /*  captured subrequest status */
-#endif
-
-    ngx_uint_t       nsubreqs;    /* number of subrequests of the
-                                     current request */
+    unsigned                 nsubreqs;  /* number of subrequests of the
+                                         * current request */
 
     ngx_int_t       *sr_statuses; /* all capture subrequest statuses */
 

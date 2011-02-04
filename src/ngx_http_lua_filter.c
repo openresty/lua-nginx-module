@@ -48,10 +48,16 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
-    int                      rc;
-    ngx_http_lua_ctx_t      *ctx;
+    ngx_http_request_t              *pr;
+    ngx_http_lua_ctx_t              *pr_ctx;
+    int                              rc;
+    ngx_http_lua_ctx_t              *ctx;
 
     dd("in body filter");
+
+    if (in == NULL) {
+        return ngx_http_lua_next_body_filter(r, NULL);
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -61,7 +67,21 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_lua_next_body_filter(r, in);
     }
 
-    rc = ngx_http_lua_add_copy_chain(r, &ctx->body, in);
+    if (ctx->run_post_subrequest) {
+        return NGX_OK;
+    }
+
+    pr = r->parent;
+    if (pr == NULL) {
+        return NGX_ERROR;
+    }
+
+    pr_ctx = ngx_http_get_module_ctx(pr, ngx_http_lua_module);
+    if (pr_ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    rc = ngx_http_lua_add_copy_chain(r, &pr_ctx->sr_bodies[ctx->index], in);
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
