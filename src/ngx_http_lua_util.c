@@ -842,7 +842,6 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->exec_uri.data = NULL;
     ctx->exec_uri.len = 0;
 
-    ctx->waitings = NULL;
     ctx->sr_statuses = NULL;
     ctx->sr_headers = NULL;
     ctx->sr_bodies = NULL;
@@ -945,9 +944,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #if 0
                 ngx_http_lua_dump_postponed(r);
 #endif
-
-                ctx->waiting = 1;
-                ctx->done = 0;
 
                 lua_settop(cc, 0);
                 return NGX_AGAIN;
@@ -1203,8 +1199,10 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     dd("nsubreqs: %d", (int) ctx->nsubreqs);
 
     for (index = 0; index < ctx->nsubreqs; index++) {
-        dd("summary: subquery %d, waiting %d, req %.*s", (int) index,
-                (int) ctx->waitings[index],
+        dd("summary: reqs %d, subquery %d, waiting %d, req %.*s",
+                (int) ctx->nsubreqs,
+                (int) index,
+                (int) ctx->waiting,
                 (int) r->uri.len, r->uri.data);
 
         sr_body = ctx->sr_bodies[index];
@@ -1354,14 +1352,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     dd("already run thread for %.*s...", (int) r->uri.len, r->uri.data);
 
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
-        ctx->waiting = 1;
-        ctx->done = 0;
-
         return NGX_DONE;
     }
-
-    ctx->waiting = 0;
-    ctx->done = 1;
 
     dd("entered content phase: %d", (int) ctx->entered_content_phase);
 

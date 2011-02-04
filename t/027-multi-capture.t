@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(10);
+repeat_each(3);
 #repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;

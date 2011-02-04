@@ -504,7 +504,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_flag_t                       share_all_vars;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
-    size_t                           waitings_len;
     size_t                           sr_statuses_len;
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
@@ -534,20 +533,16 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    waitings_len    = nsubreqs * sizeof(unsigned);
     sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
-    sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t*);
+    sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
     sr_bodies_len   = nsubreqs * sizeof(ngx_chain_t *);
 
-    p = ngx_palloc(r->pool, waitings_len + sr_statuses_len + sr_headers_len +
+    p = ngx_palloc(r->pool, sr_statuses_len + sr_headers_len +
             sr_bodies_len);
 
     if (p == NULL) {
         return luaL_error(L, "out of memory");
     }
-
-    ctx->waitings = (void *) p;
-    p += waitings_len;
 
     ctx->sr_statuses = (void *) p;
     p += sr_statuses_len;
@@ -562,8 +557,11 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     n = lua_gettop(L);
     dd("top before loop: %d", n);
 
+    ctx->done = 0;
+    ctx->waiting = 0;
+
     for (index = 0; index < nsubreqs; index++) {
-        ctx->waitings[index] = 1;
+        ctx->waiting++;
 
         lua_rawgeti(L, 1, index + 1);
         if (lua_isnil(L, -1)) {
@@ -885,7 +883,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ngx_http_request_t            *pr;
     ngx_http_lua_ctx_t            *pr_ctx;
     ngx_http_lua_ctx_t            *ctx = data;
-    ngx_uint_t                     i;
 
     dd("uri %.*s, rc:%d, waiting: %d, done:%d", (int) r->uri.len, r->uri.data,
             (int) rc, (int) ctx->waiting, (int) ctx->done);
@@ -907,18 +904,12 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         return NGX_ERROR;
     }
 
-    pr_ctx->waitings[ctx->index] = 0;
+    pr_ctx->waiting--;
 
-    for (i = 0; i < pr_ctx->nsubreqs; i++) {
-        if (pr_ctx->waitings[i]) {
-            goto done;
-        }
+    if (pr_ctx->waiting == 0) {
+        pr_ctx->done = 1;
     }
 
-    pr_ctx->done = 1;
-    pr_ctx->waiting = 0;
-
-done:
     if (pr_ctx->entered_content_phase) {
         dd("setting wev handler");
         pr->write_event_handler = ngx_http_lua_content_wev_handler;

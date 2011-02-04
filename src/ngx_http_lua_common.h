@@ -107,9 +107,6 @@ typedef struct {
     ngx_uint_t       nsubreqs;    /* number of subrequests of the
                                      current request */
 
-
-    unsigned        *waitings;    /* all subrequests waiting flags */
-
     ngx_int_t       *sr_statuses; /* all capture subrequest statuses */
 
     ngx_http_headers_out_t  **sr_headers;
@@ -131,7 +128,7 @@ typedef struct {
     unsigned       eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
 
-    unsigned       waiting:1;         /*  1: subrequest is still running;
+    unsigned       waiting;         /*  1: subrequest is still running;
                                             0: subrequest is not running */
 
     unsigned       done:1;            /*  1: subrequest is just done;
