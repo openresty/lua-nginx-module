@@ -1165,9 +1165,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ngx_http_lua_dump_postponed(r);
 #endif
 
-        if (r == r->connection->data && r->postponed && r->postponed->request) {
-            r->connection->data = r->postponed->request;
-            ngx_http_post_request(r->postponed->request, NULL);
+        if (r == r->connection->data && r->postponed) {
+            if (r->postponed->request) {
+                r->connection->data = r->postponed->request;
+                ngx_http_post_request(r->postponed->request, NULL);
+            } else {
+                ngx_http_lua_flush_postponed_outputs(r);
+            }
         }
 
 #if 0

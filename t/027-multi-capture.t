@@ -383,3 +383,154 @@ res4.status = 201
 res4.body = STORED\r
 
 "
+
+
+
+=== TEST 9: capture multi in series (more complex)
+--- config
+    location /foo {
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+            res1, res2 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+            local res3, res4 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+            res3, res4 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+
+            ngx.say("res1.status = " .. res1.status)
+            ngx.say("res1.body = " .. res1.body)
+            ngx.say("res2.status = " .. res2.status)
+            ngx.say("res2.body = " .. res2.body)
+            ngx.say("res3.status = " .. res3.status)
+            ngx.say("res3.body = " .. res3.body)
+            ngx.say("res4.status = " .. res4.status)
+            ngx.say("res4.body = " .. res4.body)
+
+        ';
+    }
+    location /a {
+        echo -n a;
+    }
+    location /b {
+        echo -n b;
+    }
+    location /main {
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                { "/foo" },
+                { "/foo" },
+            }
+            local res3, res4 = ngx.location.capture_multi{
+                { "/foo" },
+                { "/foo" },
+            }
+            ngx.print(res1.body)
+            ngx.print(res2.body)
+            ngx.print(res3.body)
+            ngx.print(res4.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body eval
+"res1.status = 200
+res1.body = a
+res2.status = 200
+res2.body = b
+res3.status = 200
+res3.body = a
+res4.status = 200
+res4.body = b
+" x 4
+
+
+
+=== TEST 10: capture multi in series (more complex, using memc)
+--- config
+    location /foo {
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+            res1, res2 = ngx.location.capture_multi{
+                { "/a" },
+                { "/b" },
+            }
+            local res3, res4 = ngx.location.capture_multi{
+                { "/c" },
+                { "/d" },
+            }
+            res3, res4 = ngx.location.capture_multi{
+                { "/e" },
+                { "/f" },
+            }
+
+            ngx.say("res1.status = " .. res1.status)
+            ngx.say("res1.body = " .. res1.body)
+            ngx.say("res2.status = " .. res2.status)
+            ngx.say("res2.body = " .. res2.body)
+            ngx.say("res3.status = " .. res3.status)
+            ngx.say("res3.body = " .. res3.body)
+            ngx.say("res4.status = " .. res4.status)
+            ngx.say("res4.body = " .. res4.body)
+        ';
+    }
+
+    location /memc {
+        set $memc_key $arg_val;
+        set $memc_value $arg_val;
+        set $memc_cmd $arg_cmd;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location ~ '^/([a-f])$' {
+        set $tag $1;
+        content_by_lua '
+            ngx.location.capture("/memc?cmd=set&val=" .. ngx.var.tag)
+            local res = ngx.location.capture("/memc?cmd=get&val=" .. ngx.var.tag)
+            ngx.print(res.body)
+        ';
+    }
+
+    location /main {
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                { "/foo" },
+                { "/foo" },
+            }
+            local res3, res4 = ngx.location.capture_multi{
+                { "/foo" },
+                { "/foo" },
+            }
+            ngx.print(res1.body)
+            ngx.print(res2.body)
+            ngx.print(res3.body)
+            ngx.print(res4.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body2
+--- response_body eval
+"res1.status = 200
+res1.body = a
+res2.status = 200
+res2.body = b
+res3.status = 200
+res3.body = e
+res4.status = 200
+res4.body = f
+" x 4
+--- timeout: 2
+

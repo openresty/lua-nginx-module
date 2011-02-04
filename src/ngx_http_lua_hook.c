@@ -957,9 +957,18 @@ done:
     /* copy subrequest response headers */
     pr_ctx->sr_headers[ctx->index] = &r->headers_out;
 
+    if (r != r->connection->data && r->postponed &&
+            (r->main->posted_requests == NULL ||
+            r->main->posted_requests->request != pr))
+    {
+        ngx_http_post_request(pr, NULL);
+    }
+
 #if 0
     /* ensure that the parent request is (or will be)
      *  posted out the head of the r->posted_requests chain */
+
+    dd("posted requests: %p", r->main->posted_requests);
 
     if (r->main->posted_requests
             && r->main->posted_requests->request != pr)
