@@ -126,4 +126,5 @@ kill body = {"errcode":0}$
 thread id = \d+
 kill status = 200
 kill body = {"errcode":0}$
+--- SKIP
 

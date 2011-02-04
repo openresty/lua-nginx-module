@@ -1001,7 +1001,11 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
             (r->main->posted_requests == NULL ||
             r->main->posted_requests->request != pr))
     {
+#if defined(nginx_version) && nginx_version >= 8012
         ngx_http_post_request(pr, NULL);
+#else
+        ngx_http_post_request(pr);
+#endif
     }
 
     return rc;

@@ -427,8 +427,6 @@ Note that calling `ngx.exit(ngx.OK)` just returning from the current `rewrite_by
 control flow will still continue to the content handler. To terminate the current request from within the current `rewrite_by_lua` handler,
 calling `ngx.exit(ngx.HTTP_OK)` for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
 
-This directive won't work properly with nginx 0.7.x.
-
 access_by_lua
 --------------
 
@@ -529,8 +527,6 @@ rewrite_by_lua_file
 
 Same as `rewrite_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
-
-This directive won't work properly with nginx 0.7.x.
 
 Nginx variables can be used in <path-to-lua-script> string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is

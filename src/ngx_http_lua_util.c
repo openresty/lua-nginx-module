@@ -1177,35 +1177,20 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         if (r == r->connection->data && r->postponed) {
             if (r->postponed->request) {
                 r->connection->data = r->postponed->request;
+
+#if defined(nginx_version) && nginx_version >= 8012
                 ngx_http_post_request(r->postponed->request, NULL);
+#else
+                ngx_http_post_request(r->postponed->request);
+#endif
+
             } else {
                 ngx_http_lua_flush_postponed_outputs(r);
             }
         }
 
-#if 0
-        if (r->main->posted_requests
-                && r->main->posted_requests->request != r)
-        {
-            dd("postpone our wev handler");
-
-#if defined(nginx_version) && nginx_version >= 8012
-            ngx_http_post_request(r, NULL);
-#else
-            ngx_http_post_request(r);
-#endif
-        }
-#endif
-
         return NGX_DONE;
     }
-
-#if 0
-    if (r != r->connection->data) {
-        ngx_http_finalize_request(r, NGX_OK);
-        return NGX_DONE;
-    }
-#endif
 
     ctx->done = 0;
 
@@ -1433,8 +1418,20 @@ ngx_http_lua_dump_postponed(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                "postponed request for %V: c:%d, a:%d, i:%d, r:%V, out:%V",
-                &r->uri, r->main->count, r == r->connection->data, i,
+                "postponed request for %V: "
+
+#if defined(nginx_version) && nginx_version >= 8011
+                "c:%d, "
+#endif
+
+                "a:%d, i:%d, r:%V, out:%V",
+                &r->uri,
+
+#if defined(nginx_version) && nginx_version >= 8011
+                r->main->count,
+#endif
+
+                r == r->connection->data, i,
                 pr->request ? &pr->request->uri : &nil_str, &out);
     }
 }

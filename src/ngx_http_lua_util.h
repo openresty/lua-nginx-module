@@ -6,6 +6,12 @@
 #include "ngx_http_lua_common.h"
 
 
+#ifndef ngx_str_set
+#define ngx_str_set(str, text)                                               \
+    (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+#endif
+
+
 lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
         ngx_http_lua_main_conf_t *lmcf);
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
