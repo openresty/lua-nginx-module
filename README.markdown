@@ -1261,6 +1261,10 @@ Future Plan
 ===========
 
 * Add the `lua_require` directive to load module into main thread's globals.
+* Add the "cosocket" mechamism that will emulate a common set of Lua socket
+API that will give you totally transparently non-blocking capability out of
+the box by means of a completely new upstream layer atop the nginx event model
+and no nginx subrequest overheads.
 * Add Lua code automatic time slicing support by yielding and resuming
 the Lua VM actively via Lua's debug hooks.
 * Make set_by_lua using the same mechanism as content_by_lua.
