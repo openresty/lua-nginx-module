@@ -220,6 +220,10 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     dd("enter");
 
+#if defined(nginx_version) && nginx_version >= 8042 && nginx_version <= 8053
+    return "does not work with " NGINX_VER;
+#endif
+
     /*  must specifiy a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
