@@ -1327,11 +1327,11 @@ Copyright & License
 
     This module is licenced under the BSD license.
 
-    Copyright (C) 2009, 2010, 2011 Taobao Inc., Alibaba Group ( http://www.taobao.com ).
+    Copyright (C) 2009, 2010, 2011, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
 
-    Copyright (C) 2009, 2010, 2011 by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+    Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-    Copyright (C) 2009, 2010, 2011 by Yichun "agentzh" Zhang <agentzh@gmail.com>.
+    Copyright (C) 2009, 2010, 2011, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
 
     All rights reserved.
 
