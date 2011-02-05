@@ -38,7 +38,7 @@ __DATA__
 
     location /lua {
         content_by_lua '
-            local sql = "select sleep(3)"
+            local sql = "select sleep(5)"
             local res = ngx.location.capture("/mysql",
                 { method = ngx.HTTP_POST, body = sql })
 
