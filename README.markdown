@@ -1251,20 +1251,28 @@ filtering chain affects a lot. The correct configure adding order is:
 TODO
 ====
 
+* Add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to
+`ngx.location.capture()` and ngx.location.capture_multi()` methods, to allow
+micro performance tuning on the user side.
 * Add directives to run lua codes when nginx stops/reloads.
 * Deal with TCP 3-second delay problem under great connection harness.
-* Implement an alternative version of pcall()/xpcall() for Lua to support
-  yielding in protected Lua function calls.
 
 Future Plan
 ===========
 
-* Add 'lua_require' directive to load module into main thread's globals
-* Add Lua VM active yield and resume (using debug hook)
-* Make set_by_lua using the same mechanism as content_by_lua
+* Add the `lua_require` directive to load module into main thread's globals.
+* Add Lua code automatic time slicing support by yielding and resuming
+the Lua VM actively via Lua's debug hooks.
+* Make set_by_lua using the same mechanism as content_by_lua.
 
 Known Issues
 ============
+
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the
+`ngx.location.capture()` and `ngx.location.capture_multi()` methods cannot be used within
+the context of a Lua `pcall()` or `xpcall()`. If you're heavy on Lua exception model
+based on Lua's `error()` and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0
+supports fully resumable VM.
 
 * The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture
 locations configured by ngx_echo module's `echo_location`,
