@@ -25,7 +25,7 @@ ngx_http_lua_param_get(lua_State *L)
         lua_pushnil(L);
 
     } else {
-        lua_pushlstring(L, (const char*)(v[idx].data), v[idx].len);
+        lua_pushlstring(L, (const char *) (v[idx].data), v[idx].len);
     }
 
     return 1;
@@ -47,7 +47,7 @@ static void
 ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
         ngx_http_variable_value_t *args)
 {
-    /*  set NginX request pointer to current lua thread's globals table */
+    /*  set nginx request pointer to current lua thread's globals table */
     lua_pushlightuserdata(L, r);
     lua_setglobal(L, GLOBALS_SYMBOL_REQUEST);
 
@@ -177,7 +177,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
     /*  passing directive arguments to the user code */
     for (i = 0; i < nargs; i++) {
-        lua_pushlstring(L, (const char*)args[i].data, args[i].len);
+        lua_pushlstring(L, (const char *) args[i].data, args[i].len);
     }
 
     /*  protected call user code */
@@ -212,7 +212,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
             val->len = 0;
         }
     } NGX_LUA_EXCEPTION_CATCH {
-        dd("NginX execution restored");
+        dd("nginx execution restored");
     }
 
     /*  clear Lua stack */

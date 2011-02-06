@@ -92,7 +92,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    /* Eval NginX variables in code path string first */
+    /* Eval nginx variables in code path string first */
     if (ngx_http_complex_value(r, &llcf->access_src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }

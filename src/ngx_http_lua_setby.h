@@ -1,17 +1,10 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
-#ifndef NGX_HTTP_LUA_SET_BY_H__
-#define NGX_HTTP_LUA_SET_BY_H__
+#ifndef NGX_HTTP_LUA_SET_BY_H
+#define NGX_HTTP_LUA_SET_BY_H
 
 #include "ngx_http_lua_common.h"
 
-extern ngx_int_t ngx_http_lua_set_by_chunk(
-        lua_State *l,
-        ngx_http_request_t *r,
-        ngx_str_t *val,
-        ngx_http_variable_value_t *args,
-        size_t nargs
-        );
+ngx_int_t ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r,
+        ngx_str_t *val, ngx_http_variable_value_t *args, size_t nargs);
 
-#endif
-
-
+#endif /* NGX_HTTP_LUA_SET_BY_H */

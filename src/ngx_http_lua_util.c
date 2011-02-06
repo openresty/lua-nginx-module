@@ -423,7 +423,7 @@ inject_http_consts(lua_State *L)
 void
 ngx_http_lua_inject_log_consts(lua_State *L)
 {
-    /* {{{ NginX log level constants */
+    /* {{{ nginx log level constants */
     lua_pushinteger(L, NGX_LOG_STDERR);
     lua_setfield(L, -2, "STDERR");
 
@@ -664,7 +664,7 @@ ngx_http_lua_var_get(lua_State *L)
         return 1;
     }
 
-    lua_pushlstring(L, (const char*) vv->data, (size_t) vv->len);
+    lua_pushlstring(L, (const char *) vv->data, (size_t) vv->len);
 
     return 1;
 }
@@ -724,7 +724,7 @@ ngx_http_lua_var_set(lua_State *L)
                 "in the config file", lowcase, lowcase);
     }
 
-    p = (u_char*) luaL_checklstring(L, 3, &len);
+    p = (u_char *) luaL_checklstring(L, 3, &len);
 
     val = ngx_palloc(r->pool, len);
     if (val == NULL) {
@@ -1113,7 +1113,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
     } NGX_LUA_EXCEPTION_CATCH {
-        dd("NginX execution restored");
+        dd("nginx execution restored");
     }
 
     return NGX_ERROR;

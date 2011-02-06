@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #ifndef DDEBUG_H
 #define DDEBUG_H
 
@@ -19,7 +20,7 @@
 
 #include <stdarg.h>
 
-static void dd(const char* fmt, ...) {
+static void dd(const char *fmt, ...) {
 }
 
 #    endif
@@ -34,7 +35,7 @@ static void dd(const char* fmt, ...) {
 
 #include <stdarg.h>
 
-static void dd(const char* fmt, ...) {
+static void dd(const char *fmt, ...) {
 }
 
 #   endif

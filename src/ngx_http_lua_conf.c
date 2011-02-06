@@ -11,7 +11,7 @@ static char * ngx_http_lua_init_vm(ngx_conf_t *cf,
 void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
-    ngx_http_lua_main_conf_t *lmcf;
+    ngx_http_lua_main_conf_t    *lmcf;
 
     lmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_main_conf_t));
     if (lmcf == NULL) {
@@ -24,7 +24,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua_cpath = { 0, NULL };
      */
 
-    dd("NginX Lua module main config structure initialized!");
+    dd("nginx Lua module main config structure initialized!");
 
     return lmcf;
 }
@@ -76,7 +76,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 }
 
 
-char*
+char *
 ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_http_lua_loc_conf_t *prev = parent;
@@ -104,17 +104,17 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 static void
 ngx_http_lua_cleanup_vm(void *data)
 {
-    lua_State *lua = data;
+    lua_State *L = data;
 
-    if (lua != NULL) {
-        lua_close(lua);
+    if (L != NULL) {
+        lua_close(L);
 
         dd("Lua VM closed!");
     }
 }
 
 
-static char*
+static char *
 ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     ngx_pool_cleanup_t *cln;

@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #ifndef NGX_HTTP_LUA_DIRECTIVE_H
 #define NGX_HTTP_LUA_DIRECTIVE_H
 
@@ -29,4 +30,3 @@ char * ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 
 #endif /* NGX_HTTP_LUA_DIRECTIVE_H */
-

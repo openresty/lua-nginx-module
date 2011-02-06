@@ -55,12 +55,12 @@ static ndk_set_var_value_pt ngx_http_lookup_ndk_set_var_directive(u_char *name,
 jmp_buf ngx_http_lua_exception;
 
 /**
- * Override default Lua panic handler, output VM crash reason to NginX error
+ * Override default Lua panic handler, output VM crash reason to nginx error
  * log, and restore execution to the nearest jmp-mark.
  * 
  * @param L Lua state pointer
  * @retval Long jump to the nearest jmp-mark, never returns.
- * @note NginX request pointer should be stored in Lua thread's globals table
+ * @note nginx request pointer should be stored in Lua thread's globals table
  * in order to make logging working.
  * */
 int
@@ -142,7 +142,7 @@ done:
 
 
 /**
- * Wrapper of NginX log functionality. Take a log level param and varargs of
+ * Wrapper of nginx log functionality. Take a log level param and varargs of
  * log message params.
  *
  * @param L Lua state pointer
@@ -173,7 +173,7 @@ ngx_http_lua_ngx_log(lua_State *L)
 
 
 /**
- * Override Lua print function, output message to NginX error logs. Equal to
+ * Override Lua print function, output message to nginx error logs. Equal to
  * ngx.log(ngx.ERR, ...).
  *
  * @param L Lua state pointer
@@ -294,7 +294,7 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
 
     for (i = 1; i <= nargs; i++) {
         p = lua_tolstring(L, i, &len);
-        b->last = ngx_copy(b->last, (u_char*)p, len);
+        b->last = ngx_copy(b->last, (u_char *) p, len);
     }
 
     if (newline) {
@@ -1978,7 +1978,7 @@ ngx_http_lua_header_set(lua_State *L)
                 dd("header value table index %d", (int) i);
 
                 lua_rawgeti(L, 3, i);
-                p = (u_char*) luaL_checklstring(L, -1, &len);
+                p = (u_char *) luaL_checklstring(L, -1, &len);
 
                 value.data = ngx_palloc(r->pool, len);
                 if (value.data == NULL) {
@@ -2002,7 +2002,7 @@ ngx_http_lua_header_set(lua_State *L)
         }
 
     } else {
-        p = (u_char*) luaL_checklstring(L, 3, &len);
+        p = (u_char *) luaL_checklstring(L, 3, &len);
         value.data = ngx_palloc(r->pool, len);
         if (value.data == NULL) {
             return luaL_error(L, "out of memory");

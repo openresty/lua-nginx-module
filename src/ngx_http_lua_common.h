@@ -170,9 +170,9 @@ extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 /*  coroutine anchoring table key in Lua vm registry */
 #define NGX_LUA_CORT_REF "ngx_lua_cort_ref"
 
-/*  globals symbol to hold NginX request pointer */
+/*  globals symbol to hold nginx request pointer */
 #define GLOBALS_SYMBOL_REQUEST    "ngx._req"
-/*  globals symbol to hold code chunk handling NginX request */
+/*  globals symbol to hold code chunk handling nginx request */
 #define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
 
 
