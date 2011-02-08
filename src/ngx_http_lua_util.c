@@ -34,6 +34,7 @@ setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path,
     lua_setfield(L, tab_idx, fieldname);
 }
 
+
 lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
@@ -1374,9 +1375,14 @@ error:
 u_char *
 ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
 {
-    u_char digest[MD5_DIGEST_LENGTH];
-    MD5(buf, buf_len, digest);
-    return ngx_hex_dump(dest, digest, sizeof(digest));
+    ngx_md5_t                     md5;
+    u_char                        md5_buf[MD5_DIGEST_LENGTH];
+
+    ngx_md5_init(&md5);
+    ngx_md5_update(&md5, buf, buf_len);
+    ngx_md5_final(md5_buf, &md5);
+
+    return ngx_hex_dump(dest, md5_buf, sizeof(md5_buf));
 }
 
 

@@ -1385,15 +1385,16 @@ int
 ngx_http_lua_ngx_md5(lua_State *L)
 {
     ngx_http_request_t      *r;
-    u_char                  *p = NULL;
     u_char                  *src;
-    size_t                   len, slen;
+    size_t                   slen;
+
+    ngx_md5_t                md5;
+    u_char                   md5_buf[MD5_DIGEST_LENGTH];
+    u_char                   hex_buf[2 * sizeof(md5_buf)];
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
-
-    len = MD5_DIGEST_LENGTH * 2;
 
     if (r == NULL) {
         return luaL_error(L, "no request object found");
@@ -1406,18 +1407,18 @@ ngx_http_lua_ngx_md5(lua_State *L)
     if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
         src     = (u_char *) "";
         slen    = 0;
+
     } else {
         src = (u_char *) luaL_checklstring(L, 1, &slen);
     }
 
-    p = ngx_palloc(r->pool, len);
-    if (p == NULL) {
-        return NGX_ERROR;
-    }
+    ngx_md5_init(&md5);
+    ngx_md5_update(&md5, src, slen);
+    ngx_md5_final(md5_buf, &md5);
 
-    ndk_md5_hash(p, (char *) src, slen);
+    ngx_hex_dump(hex_buf, md5_buf, sizeof(md5_buf));
 
-    lua_pushlstring(L, (char *) p, len);
+    lua_pushlstring(L, (char *) hex_buf, sizeof(hex_buf));
 
     return 1;
 }
@@ -1427,16 +1428,15 @@ int
 ngx_http_lua_ngx_md5_bin(lua_State *L)
 {
     ngx_http_request_t      *r;
-    u_char                  *p = NULL;
     u_char                  *src;
-    size_t                   len, slen;
+    size_t                   slen;
+
     ngx_md5_t                md5;
+    u_char                   md5_buf[MD5_DIGEST_LENGTH];
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
-
-    len = MD5_DIGEST_LENGTH;
 
     if (r == NULL) {
         return luaL_error(L, "no request object found");
@@ -1449,26 +1449,18 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
     if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
         src     = (u_char *) "";
         slen    = 0;
+
     } else {
         src = (u_char *) luaL_checklstring(L, 1, &slen);
     }
 
     dd("slen: %d", (int) slen);
 
-    p = ngx_palloc(r->pool, len);
-    if (p == NULL) {
-        return NGX_ERROR;
-    }
-
     ngx_md5_init(&md5);
-    ngx_md5_update(&md5, (char *) src, slen);
-    ngx_md5_final(p, &md5);
+    ngx_md5_update(&md5, src, slen);
+    ngx_md5_final(md5_buf, &md5);
 
-    dd("len: %d", (int) len);
-
-    lua_pushlstring(L, (char *) p, len);
-
-    ngx_pfree(r->pool, p);
+    lua_pushlstring(L, (char *) md5_buf, sizeof(md5_buf));
 
     return 1;
 }

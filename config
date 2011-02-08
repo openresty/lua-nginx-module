@@ -1,38 +1,3 @@
-ngx_feature="OpenSSL md5 crypto library"
-ngx_feature_libs="-lcrypto"
-ngx_feature_name=
-ngx_feature_run=no
-ngx_feature_incs="#include <openssl/md5.h>"
-ngx_feature_path=
-ngx_feature_test="MD5(NULL, 0, NULL);"
-
-. auto/feature
-
-if [ $ngx_found = no ]; then
-    # Solaris and others
-    ngx_feature="OpenSSL md5 crypto library under /lib"
-    ngx_feature_libs="-L/lib -lcrypto"
-
-    . auto/feature
-
-    if [ $ngx_found = no ]; then
-        cat << END
-        $0: error: the ngx_lua addon requires OpenSSL crypto library but we cannot find it.
-END
-        exit 1
-    fi
-fi
-
-if [ $ngx_found = yes ]; then
-    CORE_INCS="$CORE_INCS $ngx_feature_path"
-    CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
-else
- cat << END
- $0: error: the ngx_lua addon requires the OpenSSL library.
-END
- exit 1
-fi
-
 ngx_feature="lua library"
 ngx_feature_libs="-llua -lm"
 ngx_feature_name=
@@ -160,7 +125,7 @@ ngx_addon_name=ngx_http_lua_module
 HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES ngx_http_lua_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/src/ngx_http_lua_module.c $ngx_addon_dir/src/ngx_http_lua_headers.c $ngx_addon_dir/src/ngx_http_lua_directive.c $ngx_addon_dir/src/ngx_http_lua_hook.c $ngx_addon_dir/src/ngx_http_lua_util.c $ngx_addon_dir/src/ngx_http_lua_cache.c $ngx_addon_dir/src/ngx_http_lua_conf.c $ngx_addon_dir/src/ngx_http_lua_contentby.c $ngx_addon_dir/src/ngx_http_lua_rewriteby.c $ngx_addon_dir/src/ngx_http_lua_accessby.c $ngx_addon_dir/src/ngx_http_lua_setby.c $ngx_addon_dir/src/ngx_http_lua_filter.c $ngx_addon_dir/src/ngx_http_lua_clfactory.c"
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/src/ddebug.h $ngx_addon_dir/src/ngx_http_lua_common.h $ngx_addon_dir/src/ngx_http_lua_directive.h $ngx_addon_dir/src/ngx_http_lua_headers.h $ngx_addon_dir/src/ngx_http_lua_hook.h $ngx_addon_dir/src/ngx_http_lua_util.h $ngx_addon_dir/src/ngx_http_lua_cache.h $ngx_addon_dir/src/ngx_http_lua_conf.h $ngx_addon_dir/src/ngx_http_lua_contentby.h $ngx_addon_dir/src/ngx_http_lua_rewriteby.h $ngx_addon_dir/src/ngx_http_lua_accessby.h $ngx_addon_dir/src/ngx_http_lua_setby.h $ngx_addon_dir/src/ngx_http_lua_filter.h $ngx_addon_dir/src/ngx_http_lua_clfactory.h"
-CFLAGS="$CFLAGS -DNDK_SET_VAR -DNGX_OPENSSL_MD5 -DNGX_HAVE_OPENSSL_MD5_H -DNGX_HAVE_OPENSSL_SHA1_H -DNDK_SET_VAR -DNDK_HASH -DNDK_SHA1 -DNDK_MD5"
+CFLAGS="$CFLAGS -DNDK_SET_VAR"
 
 ngx_feature="export symbols by default"
 ngx_feature_libs="-Wl,-E"
