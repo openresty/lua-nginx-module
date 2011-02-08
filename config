@@ -141,3 +141,5 @@ if [ $ngx_found = yes ]; then
     CORE_LIBS="-Wl,-E $CORE_LIBS"
 fi
 
+USE_MD5=YES
+
