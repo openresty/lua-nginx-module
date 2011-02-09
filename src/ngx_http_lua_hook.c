@@ -955,34 +955,56 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     body_str = &pr_ctx->sr_bodies[ctx->index];
 
-    len = 0;
-    for (cl = ctx->body; cl; cl = cl->next) {
-        /*  ignore all non-memory buffers */
-        len += cl->buf->last - cl->buf->pos;
-    }
+    if (ctx->body && ctx->body->next == NULL) {
+        /* optimize for the single buf body */
 
-    body_str->len = len;
+        cl = ctx->body;
 
-    if (len == 0) {
-        body_str->data = NULL;
+        len = cl->buf->last - cl->buf->pos;
+
+        body_str->len = len;
+
+        if (len == 0) {
+            body_str->data = NULL;
+
+        } else {
+            body_str->data = cl->buf->pos;
+        }
 
     } else {
-        p = ngx_palloc(r->pool, len);
-        if (p == NULL) {
-            return NGX_ERROR;
-        }
-
-        body_str->data = p;
-
+        len = 0;
         for (cl = ctx->body; cl; cl = cl->next) {
-            p = ngx_copy(p, cl->buf->pos,
-                    cl->buf->last - cl->buf->pos);
-
-            dd("free bod chain link buf ASAP");
-            ngx_pfree(r->pool, cl->buf->start);
+            /*  ignore all non-memory buffers */
+            len += cl->buf->last - cl->buf->pos;
         }
 
-        /* freeing the ctx->body chain such that it can be reused by
+        body_str->len = len;
+
+        if (len == 0) {
+            body_str->data = NULL;
+
+        } else {
+            p = ngx_palloc(r->pool, len);
+            if (p == NULL) {
+                return NGX_ERROR;
+            }
+
+            body_str->data = p;
+
+            /* copy from and then free the data buffers */
+
+            for (cl = ctx->body; cl; cl = cl->next) {
+                p = ngx_copy(p, cl->buf->pos,
+                        cl->buf->last - cl->buf->pos);
+
+                dd("free bod chain link buf ASAP");
+                ngx_pfree(r->pool, cl->buf->start);
+            }
+        }
+    }
+
+    if (ctx->body) {
+        /* free the ctx->body chain such that it can be reused by
          * other subrequests */
 
         if (pr_ctx->free == NULL) {
