@@ -179,8 +179,8 @@ This module embeds the Lua interpreter into the nginx core and integrates the po
 by means of nginx subrequests.
 
 Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this module can be 100% non-blocking on network traffic
-as long as you use the `ngx.location.capture()` or
-`ngx.location.capture_multi()` interfaces
+as long as you use the `ngx.location.capture` or
+`ngx.location.capture_multi` interfaces
 to let the nginx core do all your
 requests to mysql, postgresql, memcached,
 upstream http web services, and etc etc etc (see
@@ -813,7 +813,26 @@ This function issue several parallel subrequests specified by the input table, a
         ...
     end
 
-This function will not return until all the subrequests terminate. The total latency is the longest latency of the subrequests, instead of their sum.
+This function will not return until all the subrequests terminate.
+The total latency is the longest latency of the subrequests, instead of their sum.
+
+When you don't know inadvance how many subrequests you want to issue,
+you can use Lua tables for both requests and responses. For instance,
+
+    -- construct the requests table
+    local reqs = {}
+    table.insert(reqs, { "/mysql" })
+    table.insert(reqs, { "/postgres" })
+    table.insert(reqs, { "/redis" })
+    table.insert(reqs, { "/memcached" })
+
+    -- issue all the requests at once and wait when they all return
+    local resps = { ngx.location.capture_multi(reqs) }
+
+    -- loop over the responses table
+    for i, resp in ipairs(resps) do
+    -- process the response table "resp"
+    end
 
 The `ngx.location.capture` function is just a special form
 of this function. Logically speaking, the `ngx.location.capture` can be implemented like this
@@ -1248,7 +1267,7 @@ TODO
 ====
 
 * Add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to
-`ngx.location.capture()` and ngx.location.capture_multi()` methods, to allow
+`ngx.location.capture` and ngx.location.capture_multi` methods, to allow
 micro performance tuning on the user side.
 * Add directives to run lua codes when nginx stops/reloads.
 * Deal with TCP 3-second delay problem under great connection harness.
@@ -1269,7 +1288,7 @@ Known Issues
 ============
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the
-`ngx.location.capture()` and `ngx.location.capture_multi()` methods cannot be used within
+`ngx.location.capture()` and `ngx.location.capture_multi` methods cannot be used within
 the context of a Lua `pcall()` or `xpcall()`. If you're heavy on Lua exception model
 based on Lua's `error()` and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0
 supports fully resumable VM.
