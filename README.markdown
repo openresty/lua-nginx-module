@@ -831,7 +831,7 @@ you can use Lua tables for both requests and responses. For instance,
 
     -- loop over the responses table
     for i, resp in ipairs(resps) do
-    -- process the response table "resp"
+        -- process the response table "resp"
     end
 
 The `ngx.location.capture` function is just a special form
