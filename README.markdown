@@ -826,7 +826,7 @@ you can use Lua tables for both requests and responses. For instance,
     table.insert(reqs, { "/redis" })
     table.insert(reqs, { "/memcached" })
 
-    -- issue all the requests at once and wait when they all return
+    -- issue all the requests at once and wait until they all return
     local resps = { ngx.location.capture_multi(reqs) }
 
     -- loop over the responses table
