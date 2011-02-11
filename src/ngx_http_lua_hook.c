@@ -287,6 +287,11 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
         size += sizeof("\n") - 1;
     }
 
+    if (size == 0) {
+        /* do nothing for empty strings */
+        return 0;
+    }
+
     b = ngx_create_temp_buf(r->pool, size);
     if (b == NULL) {
         return luaL_error(L, "out of memory");
@@ -314,8 +319,6 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send data through the output filters");
     }
-
-    lua_settop(L, 0);
 
     return 0;
 }
