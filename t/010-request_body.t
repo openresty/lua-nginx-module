@@ -141,3 +141,93 @@ world\x03\x04\xff"
 --- response_body_eval
 "nil"
 
+
+
+=== TEST 8: test override server conf
+--- config
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+    }
+    location /hi {
+        echo_request_body;
+    }
+    location /echo_body {
+        lua_need_request_body off;
+        content_by_lua '
+            ngx.say(ngx.var.request_body or "nil")
+            local res = ngx.location.capture(
+                "/proxy",
+                { method = ngx.HTTP_POST,
+                  body = ngx.var.request_body })
+
+            ngx.say(res.status)
+        ';
+    }
+--- request_eval
+"POST /echo_body
+"
+--- response_body
+nil
+200
+
+
+
+=== TEST 9: empty POST body
+--- config
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+    }
+    location /hi {
+        echo_request_body;
+    }
+    location /echo_body {
+        lua_need_request_body on;
+        content_by_lua '
+            ngx.say(ngx.var.request_body or "nil")
+            local res = ngx.location.capture(
+                "/proxy",
+                { method = ngx.HTTP_POST,
+                  body = ngx.var.request_body })
+
+            ngx.say(res.status)
+        ';
+    }
+--- request_eval
+"POST /echo_body
+"
+--- response_body
+nil
+200
+
+
+
+=== TEST 10: on disk request body
+--- config
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+    }
+    location /hi {
+        echo_request_body;
+    }
+    location /echo_body {
+        lua_need_request_body on;
+
+        client_max_body_size 100k;
+        client_body_buffer_size 1;
+        sendfile on;
+
+        rewrite_by_lua '
+            local res = ngx.location.capture(
+                "/proxy",
+                { method = ngx.HTTP_POST,
+                  body = ngx.var.request_body })
+        ';
+
+        echo_request_body;
+    }
+--- request_eval
+"POST /echo_body
+" . ('a' x 1024)
+--- response_body_eval
+'a' x 1024
+

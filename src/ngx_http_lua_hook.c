@@ -675,14 +675,18 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                     return luaL_error(L, "Bad http request body");
                 }
 
-                q = (u_char *) lua_tolstring(L, -1, &len);
-                if (len != 0) {
-                    body = ngx_pcalloc(r->pool,
-                            sizeof(ngx_http_request_body_t));
-                    if (body == NULL) {
-                        return luaL_error(L, "out of memory");
-                    }
+                body = ngx_pcalloc(r->pool,
+                        sizeof(ngx_http_request_body_t));
 
+                if (body == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                q = (u_char *) lua_tolstring(L, -1, &len);
+
+                dd("request body: [%.*s]", (int) len, q);
+
+                if (len) {
                     b = ngx_create_temp_buf(r->pool, len);
                     if (b == NULL) {
                         return luaL_error(L, "out of memory");
@@ -824,7 +828,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->request_body = body;
 
         rc = ngx_http_lua_set_content_length_header(sr,
-                ngx_buf_size(body->buf));
+                body->buf ? ngx_buf_size(body->buf) : 0);
 
         if (rc != NGX_OK) {
             return NGX_ERROR;
