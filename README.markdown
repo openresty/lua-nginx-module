@@ -6,10 +6,10 @@ ngx_lua - Embed the Power of Lua into Nginx
 Status
 ======
 
-This module is still under active development but is already production
-ready :)
+This module is under active development and is already production ready :)
 
-Commit bit can be freely delivered at your request ;)
+We're already using this module very heavily in our production web applications
+here in Taobao.com, Alibaba Group.
 
 Synopsis
 ========
@@ -195,10 +195,6 @@ And Lua modules loaded are persistent on
 the nginx worker process level. So the memory
 footprint is quite small even when your
 nginx worker process is handling 10K requests at the same time.
-
-We're already using this module very heavily
-in our production web applications here in
-Taobao.com, Alibaba Group.
 
 Directives
 ==========
