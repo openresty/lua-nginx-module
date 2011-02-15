@@ -6,9 +6,9 @@ ngx_feature_incs="#include <lauxlib.h>"
 ngx_feature_path=
 ngx_feature_test="(void) luaL_newstate();"
 
-if [ -n "$LUAJIT_INC" -o -n "$LIBJIT_LIB" ]; then
+if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     # explicit set lua lib path
-    ngx_feature="lua library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
+    ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
     ngx_feature_path="$LUAJIT_INC"
     if [ $NGX_RPATH = YES ]; then
         ngx_feature_libs="-R$LUAJIT_LIB -L$LUAJIT_LIB -lluajit-5.1 -lm"
@@ -24,6 +24,23 @@ if [ -n "$LUAJIT_INC" -o -n "$LIBJIT_LIB" ]; then
 END
         exit 1
     fi
+
+	case "$NGX_PLATFORM" in
+		Darwin:*)
+			case "$NGX_MACHINE" in
+				amd64 | x86_64)
+					echo "adding extra linking options needed by LuaJIT"
+					ngx_feature_libs="$ngx_feature_libs -pagezero_size 10000 -image_base 100000000"
+				;;
+
+				*)
+				;;
+			esac
+		;;
+
+		*)
+		;;
+	esac
 else
     if [ -n "$LUA_INC" -o -n "$LUA_LIB" ]; then
         # explicit set lua lib path
