@@ -736,6 +736,7 @@ ngx_http_lua_var_set(lua_State *L)
 
     vv->valid = 1;
     vv->not_found = 0;
+    vv->no_cacheable = 0;
 
     vv->data = val;
     vv->len = len;
