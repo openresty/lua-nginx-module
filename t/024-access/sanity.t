@@ -7,10 +7,9 @@ use Test::Nginx::Socket;
 #log_level('warn');
 #no_nginx_manager();
 
-#repeat_each(1);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 no_long_string();
@@ -639,4 +638,31 @@ Hi
 --- request
 GET /main
 --- response_body
+
+
+
+=== TEST 33: server access_by_lua
+--- config
+    access_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
+--- request
+GET /
+--- response_body chop
+<html><head><title>It works!</title></head><body>It works!</body></html>
+--- response_headers
+X-Foo: bar
+
+
+
+=== TEST 34: server access_by_lua_file
+--- config
+    access_by_lua_file html/foo.lua;
+--- user_files
+>>> foo.lua
+ngx.header["X-Foo"] = "bar" ngx.send_headers()
+--- request
+GET /
+--- response_body chop
+<html><head><title>It works!</title></head><body>It works!</body></html>
+--- response_headers
+X-Foo: bar
 

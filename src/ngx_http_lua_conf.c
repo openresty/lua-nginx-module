@@ -84,14 +84,20 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     if (conf->rewrite_src.value.len == 0) {
         conf->rewrite_src = prev->rewrite_src;
+        conf->rewrite_handler = prev->rewrite_handler;
+        conf->rewrite_src_key = prev->rewrite_src_key;
     }
 
     if (conf->access_src.value.len == 0) {
         conf->access_src = prev->access_src;
+        conf->access_handler = prev->access_handler;
+        conf->access_src_key = prev->access_src_key;
     }
 
     if (conf->content_src.value.len == 0) {
         conf->content_src = prev->content_src;
+        conf->content_handler = prev->content_handler;
+        conf->content_src_key = prev->content_src_key;
     }
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);

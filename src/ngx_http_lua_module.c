@@ -34,7 +34,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     {
         ngx_string("lua_code_cache"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
-        NGX_HTTP_LIF_CONF | NGX_CONF_FLAG,
+            NGX_HTTP_LIF_CONF | NGX_CONF_FLAG,
         ngx_http_lua_code_cache,
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_http_lua_loc_conf_t, enable_code_cache),
@@ -44,7 +44,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     {
         ngx_string("lua_need_request_body"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
-        NGX_HTTP_LIF_CONF | NGX_CONF_FLAG,
+            NGX_HTTP_LIF_CONF | NGX_CONF_FLAG,
         ngx_conf_set_flag_slot,
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_http_lua_loc_conf_t, force_read_body),
@@ -55,7 +55,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     {
         ngx_string("set_by_lua"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_SIF_CONF |
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_2MORE,
+            NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_2MORE,
         ngx_http_lua_set_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
@@ -66,7 +66,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     {
         ngx_string("set_by_lua_file"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_SIF_CONF |
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_2MORE,
+            NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_2MORE,
         ngx_http_lua_set_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
@@ -76,7 +76,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     /* rewrite_by_lua <inline script> */
     {
         ngx_string("rewrite_by_lua"),
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
         ngx_http_lua_rewrite_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
@@ -86,7 +87,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     /* access_by_lua <inline script> */
     {
         ngx_string("access_by_lua"),
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
         ngx_http_lua_access_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
@@ -105,7 +107,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
     {
         ngx_string("rewrite_by_lua_file"),
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
         ngx_http_lua_rewrite_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
@@ -114,7 +117,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
     {
         ngx_string("access_by_lua_file"),
-        NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
         ngx_http_lua_access_by_lua,
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
