@@ -262,7 +262,7 @@ set_by_lua
 ----------
 
 * **Syntax:** `set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]`
-* **Context:** `main | server | location | sif | lif`
+* **Context:** `main`, `server`, `location`, `server if`, `location if`
 
 Execute user code specified by `<lua-script-str>` with input arguments `$arg1
 $arg2 ...`, and set the script's return value to `$res` in string form. In
@@ -295,7 +295,7 @@ set_by_lua_file
 ---------------
 
 * **Syntax:** `set_by_lua_file $res <path-to-lua-script> [$arg1 $arg2 ...]`
-* **Context:** `main | server | location | sif | lif`
+* **Context:** `main`, `server`, `location`, `server if`, `location if`
 
 Basically the same as `set_by_lua`, except the code to be executed is in the
 file specified by `<path-lua-script>`.
@@ -309,7 +309,7 @@ content_by_lua
 --------------
 
 * **Syntax:** `content_by_lua <lua-script-str>`
-* **Context:** `location | lif`
+* **Context:** `location`, `location if`
 * **Phase:** `content`
 
 Act as a content handler and execute user code specified by `<lua-script-str>`
@@ -333,7 +333,7 @@ rewrite_by_lua
 --------------
 
 * **Syntax:** `rewrite_by_lua <lua-script-str>`
-* **Context:** `location | lif`
+* **Context:** `http`, `server`, `location`, `location if`
 * **Phase:** `rewrite tail`
 
 Act as a rewrite phase handler and execute user code specified by `<lua-script-str>`
@@ -427,7 +427,7 @@ access_by_lua
 --------------
 
 * **Syntax:** `access_by_lua <lua-script-str>`
-* **Context:** `location | lif`
+* **Context:** `http`, `server`, `location`, `location if`
 * **Phase:** `access tail`
 
 Act as an access phase handler and execute user code specified by `<lua-script-str>`
@@ -499,7 +499,7 @@ content_by_lua_file
 -------------------
 
 * **Syntax:** `content_by_lua_file <path-to-lua-script>`
-* **Context:** `location | lif`
+* **Context:** `location`, `location if`
 * **Phase:** `content`
 
 Basically the same as `content_by_lua`, except the code to be executed is in
@@ -518,7 +518,7 @@ rewrite_by_lua_file
 -------------------
 
 * **Syntax:** `rewrite_by_lua_file <path-to-lua-script>`
-* **Context:** `location | lif`
+* **Context:** `http`, `server`, `location`, `location if`
 * **Phase:** `rewrite tail`
 
 Same as `rewrite_by_lua`, except the code to be executed is in
@@ -537,7 +537,7 @@ access_by_lua_file
 -------------------
 
 * **Syntax:** `access_by_lua_file <path-to-lua-script>`
-* **Context:** `location | lif`
+* **Context:** `http`, `server`, `location`, `location if`
 * **Phase:** `access tail`
 
 Same as `access_by_lua`, except the code to be executed is in the file
