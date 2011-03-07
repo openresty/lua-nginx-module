@@ -150,7 +150,7 @@ Synopsis
            lua_need_request_body on;
 
            client_max_body_size 100k;
-           client_body_buffer_size 100k;
+           client_body_in_single_buffer on;
 
            access_by_lua '
                -- check the client IP addr is in our black list
@@ -564,10 +564,11 @@ Force reading request body data or not. The client request body won't be read,
 so you have to explicitly force reading the body if you need its content.
 
 If you want to read the request body data from the `$request_body` variable, make sure that
-your `client_max_body_size` setting is equal to
-your `client_body_buffer_size` setting and
-the capacity specified should hold the biggest
-request body that your app allow.
+your set `client_body_in_single_buffer` on. See
+
+<http://wiki.nginx.org/NginxHttpCoreModule#client_body_in_single_buffer>
+
+for more details.
 
 If the current location defines `rewrite_by_lua` or `rewrite_by_lua_file`,
 then the request body will be read just before the `rewrite_by_lua` or `rewrite_by_lua_file` code is run (and also at the
