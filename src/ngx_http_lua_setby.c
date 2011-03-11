@@ -148,6 +148,14 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
     ngx_http_lua_inject_log_consts(L);
 
+    /* ngx. getter and setter */
+    lua_createtable(L, 0, 2); /* metatable for .ngx */
+    lua_pushcfunction(L, ngx_http_lua_ngx_get);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_ngx_set);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 

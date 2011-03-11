@@ -596,3 +596,26 @@ main req
 --- response_body
 sub req
 
+
+
+=== TEST 24: is_subrequest in sub request in set_by_lua
+--- config
+    location /main {
+        echo_location /lua;
+    }
+
+    location /lua {
+        set_by_lua $a '
+            if ngx.is_subrequest then
+                return "sub req"
+            else
+                return "main req"
+            end
+        ';
+        echo $a;
+    }
+--- request
+    GET /main
+--- response_body
+sub req
+

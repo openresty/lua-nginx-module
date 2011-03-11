@@ -841,7 +841,7 @@ of this function. Logically speaking, the `ngx.location.capture` can be implemen
 
 ngx.status
 ----------
-* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Read and write the response status. This should be called
 before sending out the response headers.
@@ -1102,6 +1102,12 @@ Returns a formated string can be used as the cookie expiration time. The paramet
 
     ngx.say(ngx.cookie_time(1290079655))
         -- yields "Thu, 18-Nov-10 11:27:35 GMT"
+
+ngx.is_subrequest
+-----------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Returns true if the current request is an nginx subrequest, or false otherwise.
 
 ndk.set_var.DIRECTIVE
 ---------------------
