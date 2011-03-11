@@ -629,7 +629,8 @@ baz
 bah
 
 
-=== TEST 33: server rewrite_by_lua
+
+=== TEST 32: server rewrite_by_lua
 --- config
     rewrite_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
 --- request
@@ -641,7 +642,7 @@ X-Foo: bar
 
 
 
-=== TEST 34: server rewrite_by_lua_file
+=== TEST 33: server rewrite_by_lua_file
 --- config
     rewrite_by_lua_file html/foo.lua;
 --- user_files
