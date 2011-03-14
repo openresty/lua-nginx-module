@@ -1099,7 +1099,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "content_by_lua aborted: %s: %s",
+                "lua handler aborted: %s: %s",
                 err, msg);
 
         ngx_http_lua_del_thread(r, L, cc_ref, 0);
