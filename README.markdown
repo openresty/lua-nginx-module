@@ -1240,6 +1240,7 @@ To run the test suite, you also need the following dependencies:
 	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module>
 	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module>
 	* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module>
+	* headers-more-nginx-module: <http://github.com/agentzh/headers-more-nginx-module>
 	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module>
 	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module>
 	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/>
@@ -1264,9 +1265,10 @@ filtering chain affects a lot. The correct configure adding order is:
 4. echo-nginx-module
 5. memc-nginx-module
 6. lua-nginx-module (i.e. this module)
-7. srcache-nginx-module
-8. drizzle-nginx-module
-9. rds-json-nginx-module
+7. headers-more-nginx-module
+8. srcache-nginx-module
+9. drizzle-nginx-module
+10. rds-json-nginx-module
 
 TODO
 ====

@@ -802,9 +802,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         lua_pop(L, 2); /* pop the subrequest argument and uri */
     }
 
-    lua_pushinteger(L, location_capture);
-
-    return lua_yield(L, 1);
+    return lua_yield(L, 0);
 }
 
 

@@ -21,7 +21,6 @@ tar -xzvf nginx-$version.tar.gz
 cd nginx-$version/
 if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$root/util/build.sh" -nt Makefile ]]; then
 	./configure --prefix=$root/work \
-            --with-cc-opt="-O0" \
 				--add-module=$root \
 				--add-module=$root/deps/ngx_devel_kit \
 				$opts
