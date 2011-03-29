@@ -4,11 +4,11 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
-#master_process_enabled(1);
+#master_on();
 #log_level('warn');
 
 #repeat_each(120);
-repeat_each(3);
+#repeat_each(3);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -175,4 +175,34 @@ GET /lua
 --- response_body eval
 "
 Hi"
+
+
+
+=== TEST 8:
+XXX TODO!! FIXME!!
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /test {
+        content_by_lua_file 'html/test.lua';
+    }
+
+    location /a {
+        echo "hello";
+    }
+
+    location /b {
+        echo "hello";
+    }
+
+--- user_files
+>>> test.lua
+ngx.location.capture('/a')
+
+ngx.exec('/b')
+--- request
+    GET /test
+--- response_body
+hello
+--- SKIP
 

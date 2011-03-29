@@ -25,22 +25,22 @@ END
         exit 1
     fi
 
-	case "$NGX_PLATFORM" in
-		Darwin:*)
-			case "$NGX_MACHINE" in
-				amd64 | x86_64 | i386)
-					echo "adding extra linking options needed by LuaJIT"
-					ngx_feature_libs="$ngx_feature_libs -pagezero_size 10000 -image_base 100000000"
-				;;
+    case "$NGX_PLATFORM" in
+        Darwin:*)
+            case "$NGX_MACHINE" in
+                amd64 | x86_64 | i386)
+                    echo "adding extra linking options needed by LuaJIT"
+                    ngx_feature_libs="$ngx_feature_libs -pagezero_size 10000 -image_base 100000000"
+                ;;
 
-				*)
-				;;
-			esac
-		;;
+                *)
+                ;;
+            esac
+        ;;
 
-		*)
-		;;
-	esac
+        *)
+        ;;
+    esac
 else
     if [ -n "$LUA_INC" -o -n "$LUA_LIB" ]; then
         # explicit set lua lib path
