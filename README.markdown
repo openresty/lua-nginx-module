@@ -1182,8 +1182,6 @@ lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
 
 1. Download the latest version of the release tarball of this module from
 lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
-(Mac 64-bit users need to edit ngx_lua's config file themselves, see the
-Known Issues section below.)
 
 1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
 the version 0.8.54 (see nginx compatibility), and then build the source with
@@ -1324,14 +1322,6 @@ use this form:
 
         package.loaded.xxx = nil
         require('xxx')
-
-* 64-bit Darwin OS (Mac OS X) needs special linking options to use LuaJIT. Change the line at the bottom of `config` file from
-
-		CORE_LIBS="-Wl,-E $CORE_LIBS"
-
-	to
-
-		CORE_LIBS="-Wl,-E -Wl,-pagezero_size,10000 -Wl,-image_base,100000000 $CORE_LIBS"
 
 See Also
 ========
