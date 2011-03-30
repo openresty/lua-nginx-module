@@ -1323,9 +1323,12 @@ use this form:
         package.loaded.xxx = nil
         require('xxx')
 
+Data Sharing within an Nginx Worker
+===================================
+
 For now, if you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
 
-It's recommended to always put the following piece of code at the end of your Lua modules using `ngx.location.capture()` or `ngx.location.capture_multi()` to prevent casual use of module-level global variables that are shared among *all* requests:
+It's recommended to always put the following piece of code at the end of your Lua modules using `ngx.location.capture()` or `ngx.location.capture_multi()` to prevent casual use of module-level global variables that are shared among *all* requests, which is usually not what you want:
 
     getmetatable(foo.bar).__newindex = function (table, key, val)
         error('Attempt to write to undeclared variable "' .. key .. '": '
