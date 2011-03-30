@@ -1366,7 +1366,7 @@ Your "mydata" module in this example will only be loaded and run on the first re
 
 This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
 
-It's worth noting that this is *per-worker* sharing, not *per-server-instance* caching. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
+It's worth noting that this is *per-worker* sharing, not *per-server* sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
 
 1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or have multiple server machines.
 2. Use some true backend storage like `memcached`, `redis`, or an RDBMS like `mysql`.
