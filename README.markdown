@@ -1323,19 +1323,53 @@ use this form:
         package.loaded.xxx = nil
         require('xxx')
 
-Data Sharing within an Nginx Worker
-===================================
-
-For now, if you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
-
-It's recommended to always put the following piece of code at the end of your Lua modules using `ngx.location.capture()` or `ngx.location.capture_multi()` to prevent casual use of module-level global variables that are shared among *all* requests, which is usually not what you want:
+* It's recommended to always put the following piece of code at the end of your Lua modules using `ngx.location.capture()` or `ngx.location.capture_multi()` to prevent casual use of module-level global variables that are shared among *all* requests, which is usually not what you want:
 
     getmetatable(foo.bar).__newindex = function (table, key, val)
         error('Attempt to write to undeclared variable "' .. key .. '": '
                 .. debug.traceback())
     end
 
-assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen.
+assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the `Data Sharing within an Nginx Worker` for the reasons of this danger.
+
+
+Data Sharing within an Nginx Worker
+===================================
+
+If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
+
+Here's a complete small example:
+
+    -- mydata.lua
+    module("mydata", package.seeall)
+
+    local data = {
+        dog = 3,
+        cat = 4,
+        pig = 5,
+    }
+
+    function get_age(name)
+        return data[name]
+    end
+
+and then accessing it from your nginx.conf:
+
+    location /lua {
+        content_lua_by_lua '
+            local mydata = require("mydata")
+            ngx.say(mydata.get_age("dog"))
+        ';
+    }
+
+Your "mydata" module in this example will only be loaded and run on the first request to the location /lua, and all those subsequent requests to the same nginx worker process will use the reloaded instance of the module as well as the same copy of the data in RAM, until you send a HUP signals to the nginx master process to enforce a reload.
+
+This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
+
+It's worth noting that this is *per-worker* sharing, not *per-server-instance* caching. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
+
+1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or have multiple server machines.
+2. Use some true backend storage like `memcached`, `redis`, or an RDBMS like `mysql`.
 
 See Also
 ========
