@@ -1362,13 +1362,19 @@ and then accessing it from your nginx.conf:
         ';
     }
 
-Your "mydata" module in this example will only be loaded and run on the first request to the location /lua, and all those subsequent requests to the same nginx worker process will use the reloaded instance of the module as well as the same copy of the data in RAM, until you send a `HUP` signal to the nginx master process to enforce a reload.
+Your `mydata` module in this example will only be loaded
+and run on the first request to the location `/lua`,
+and all those subsequent requests to the same nginx
+worker process will use the reloaded instance of the
+module as well as the same copy of the data in it,
+until you send a `HUP` signal to the nginx master
+process to enforce a reload.
 
 This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
 
 It's worth noting that this is *per-worker* sharing, not *per-server* sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
 
-1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or have multiple server machines.
+1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
 2. Use some true backend storage like `memcached`, `redis`, or an RDBMS like `mysql`.
 
 See Also
