@@ -1362,7 +1362,7 @@ and then accessing it from your nginx.conf:
         ';
     }
 
-Your "mydata" module in this example will only be loaded and run on the first request to the location /lua, and all those subsequent requests to the same nginx worker process will use the reloaded instance of the module as well as the same copy of the data in RAM, until you send a HUP signals to the nginx master process to enforce a reload.
+Your "mydata" module in this example will only be loaded and run on the first request to the location /lua, and all those subsequent requests to the same nginx worker process will use the reloaded instance of the module as well as the same copy of the data in RAM, until you send a `HUP` signal to the nginx master process to enforce a reload.
 
 This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
 
