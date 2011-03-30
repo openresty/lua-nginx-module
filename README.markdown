@@ -1332,7 +1332,7 @@ It's recommended to always put the following piece of code at the end of your Lu
                 .. debug.traceback())
     end
 
-Assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen.
+assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen.
 
 See Also
 ========
