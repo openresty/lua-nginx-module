@@ -6,6 +6,8 @@
 #include "ngx_http_lua_hook.h"
 
 
+static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx);
 static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
@@ -252,9 +254,9 @@ ngx_int_t
 ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         ngx_chain_t *in)
 {
-    ngx_int_t        rc;
-    size_t           size;
-    ngx_chain_t     *cl;
+    ngx_int_t            rc;
+    ngx_chain_t         *cl;
+    ngx_chain_t        **ll;
 
 #if 1
     if (ctx->eof) {
@@ -265,42 +267,37 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     rc = ngx_http_lua_send_header_if_needed(r, ctx);
 
-    if (r->header_only || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        ctx->eof = 1;
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
     }
 
-    if (r->http_version < NGX_HTTP_VERSION_11 && !ctx->headers_sent) {
-        ctx->headers_sent = 1;
-
-        size = 0;
-
-        for (cl = in; cl; cl = cl->next) {
-            size += ngx_buf_size(cl->buf);
-            if (cl->next == NULL) {
-                cl->buf->last_buf = 1;
-            }
-        }
-
-        r->headers_out.content_length_n = (off_t) size;
-
-        if (r->headers_out.content_length) {
-            r->headers_out.content_length->hash = 0;
-        }
-
-        r->headers_out.content_length = NULL;
-
-        dd("setting ctx->eof = 1");
+    if (r->header_only) {
         ctx->eof = 1;
 
-        rc = ngx_http_send_header(r);
-
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-            return rc;
+        if (r->http_version < NGX_HTTP_VERSION_11) {
+            return ngx_http_lua_send_http10_headers(r, ctx);
         }
+
+        return rc;
     }
 
     if (in == NULL) {
+        if (r->http_version < NGX_HTTP_VERSION_11) {
+            rc = ngx_http_lua_send_http10_headers(r, ctx);
+            if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                return rc;
+            }
+
+            if (ctx->out) {
+                rc = ngx_http_output_filter(r, ctx->out);
+
+                if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                    return rc;
+                }
+
+                ctx->out = NULL;
+            }
+        }
 
 #if defined(nginx_version) && nginx_version <= 8004
 
@@ -317,14 +314,56 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         dd("send special buf");
 
         rc = ngx_http_send_special(r, NGX_HTTP_LAST);
-        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
 
         return NGX_OK;
     }
 
+    /* in != NULL */
+
+    if (r->http_version < NGX_HTTP_VERSION_11 && !ctx->headers_sent) {
+        /* we buffer all the output bufs for HTTP 1.0 */
+        for (cl = ctx->out, ll = &ctx->out; cl; cl = cl->next) {
+            ll = &cl->next;
+        }
+
+        *ll = in;
+
+        return NGX_OK;
+    }
+
     return ngx_http_output_filter(r, in);
+}
+
+
+static ngx_int_t
+ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx)
+{
+    size_t               size;
+    ngx_chain_t         *cl;
+
+    if (ctx->headers_sent) {
+        return NGX_OK;
+    }
+
+    ctx->headers_sent = 1;
+
+    if (r->headers_out.content_length == NULL) {
+        for (size = 0, cl = ctx->out; cl; cl = cl->next) {
+            size += ngx_buf_size(cl->buf);
+        }
+
+        r->headers_out.content_length_n = (off_t) size;
+
+        if (r->headers_out.content_length) {
+            r->headers_out.content_length->hash = 0;
+        }
+    }
+
+    return ngx_http_send_header(r);
 }
 
 

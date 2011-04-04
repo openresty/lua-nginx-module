@@ -1126,37 +1126,17 @@ For instance,
 HTTP 1.0 support
 ----------------
 
-Sometimes you may want to use nginx's standard `ngx_proxy` module to proxy requests to
-another nginx machine configured by a location with `content_by_lua`. Because
-`proxy_pass` only supports the HTTP 1.0 protocol, we have to know
-the length of your response body and set the `Content-Length` header before emitting
-any data out. `ngx_lua` will automatically recognize HTTP 1.0 requests and try to send out an appropriate `Content-Length` header for you, at the first invocation of `ngx.print()` and `ngx.say`, assuming all the response body data
-is in a single call of `ngx.print()` or `ngx.say`. So if you want to
-support HTTP 1.0 clients like `ngx_proxy`, do not
-call `ngx.print()` or `ngx.say()` multiple times,
-try buffering the output data yourself wherever needed.
+The HTTP 1.0 protocol does not support chunked outputs and always requires an
+explicit `Content-Length` header when the response body is non-empty. So when
+an HTTP 1.0 request is present, This module will automatically buffer all the
+outputs of user calls of `ngx.say()` and `ngx.print()` and
+postpone sending response headers until it sees all the outputs in the response
+body, and at that time ngx_lua can calculate the total length of the body and
+construct a proper `Content-Length` header for the HTTP 1.0 client.
 
-Here is a small example:
-
-On machine A:
-
-    location /internal {
-        rewrite ^/internal/(.*) /lua/$1 break;
-        proxy_pass http://B;
-    }
-
-then on machine B:
-
-    location = /lua/foo {
-        content_by_lua '
-            data = "hello, world"
-            ngx.print(data)
-        ';
-    }
-
-Then accessing machine A's /internal/foo using curl gives the result that we expect.
-
-One caveat apples here: always send out the response body data in a single call of `ngx.print()` or `ngx.say()`, and subsequent calls of `ngx.print()` or `ngx.say()` will take no effect on the client side.
+Note that, common HTTP benchmark tools like `ab` and `http_load` always issue
+HTTP 1.0 requests by default. To force `curl` to send HTTP 1.0 requests, use
+the `-0` option.
 
 Performance
 ===========

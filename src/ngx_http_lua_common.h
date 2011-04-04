@@ -99,6 +99,7 @@ typedef struct {
     int              cc_ref;            /*  reference to anchor coroutine
                                             in lua registry */
 
+    ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free; /* free bufs */
 
     ngx_http_cleanup_pt     *cleanup;
@@ -121,7 +122,7 @@ typedef struct {
     ngx_str_t        exec_args;
 
     ngx_int_t        exit_code;
-    ngx_flag_t       exited:1;
+    unsigned         exited:1;
 
     unsigned       headers_sent:1;    /*  1: response header has been sent;
                                             0: header not sent yet */
