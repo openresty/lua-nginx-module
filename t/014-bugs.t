@@ -176,32 +176,3 @@ GET /lua
 "
 Hi"
 
-
-
-=== TEST 8:
-XXX TODO!! FIXME!!
---- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
---- config
-    location /test {
-        content_by_lua_file 'html/test.lua';
-    }
-
-    location /a {
-        echo "hello";
-    }
-
-    location /b {
-        echo "hello";
-    }
-
---- user_files
->>> test.lua
-ngx.location.capture('/a')
-
-ngx.exec('/b')
---- request
-    GET /test
---- response_body
-hello
-

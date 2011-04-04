@@ -1064,31 +1064,19 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                                     &ctx->exec_args, &ctx->exec_uri);
                         }
 
-#if defined(nginx_version) && nginx_version >= 8011
-                        /* ngx_http_named_location always increments
-                         * r->main->count, which is not we want for
-                         * non-content phases */
+                        r->write_event_handler = ngx_http_request_empty_handler;
 
-                        if (! ctx->entered_content_phase) {
-                            r->main->count--;
+                        rc = ngx_http_named_location(r, &ctx->exec_uri);
+                        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
+                        {
+                            return rc;
                         }
-#endif
 
-                        return ngx_http_named_location(r, &ctx->exec_uri);
+                        return NGX_OK;
                     }
 
                     dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
                             ctx->exec_uri.data);
-
-#if defined(nginx_version) && nginx_version >= 8011
-                    /* ngx_http_internal_redirect always increments
-                     * r->main->count, which is not we want for
-                     * non-content phases */
-
-                    if (! ctx->entered_content_phase) {
-                        r->main->count--;
-                    }
-#endif
 
                     /* resume the write event handler */
                     r->write_event_handler = ngx_http_request_empty_handler;
@@ -1098,6 +1086,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                         return rc;
                     }
+
+                    dd("internal redirect returned %d when in content phase? "
+                            "%d", (int) rc, ctx->entered_content_phase);
 
                     return NGX_OK;
                 }

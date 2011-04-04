@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 #repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
@@ -183,4 +183,57 @@ Hello a=Yichun&b=Zhang
 GET /read
 --- response_body
 Hello 
+
+
+
+=== TEST 10: exec after location capture
+--- config
+    location /test {
+        rewrite_by_lua_file 'html/test.lua';
+        echo world;
+    }
+
+    location /a {
+        echo "hello";
+    }
+
+    location /b {
+        echo "hello";
+    }
+
+--- user_files
+>>> test.lua
+ngx.location.capture('/a')
+
+ngx.exec('/b')
+--- request
+    GET /test
+--- response_body
+hello
+
+
+
+=== TEST 11: exec after (named) location capture
+--- config
+    location /test {
+        content_by_lua_file 'html/test.lua';
+    }
+
+    location /a {
+        echo "hello";
+    }
+
+    location @b {
+        echo "hello";
+    }
+
+--- user_files
+>>> test.lua
+ngx.location.capture('/a')
+
+ngx.exec('@b')
+--- request
+    GET /test
+--- response_body
+hello
 
