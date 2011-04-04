@@ -1067,12 +1067,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         r->write_event_handler = ngx_http_request_empty_handler;
 
                         rc = ngx_http_named_location(r, &ctx->exec_uri);
+#if defined(nginx_version) && nginx_version >= 8011
                         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
                         {
                             return rc;
                         }
 
                         return NGX_OK;
+#else
+                        return rc;
+#endif
                     }
 
                     dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
@@ -1083,15 +1087,20 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     rc = ngx_http_internal_redirect(r, &ctx->exec_uri,
                             &ctx->exec_args);
-                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-                        return rc;
-                    }
 
                     dd("internal redirect returned %d when in content phase? "
                             "%d", (int) rc, ctx->entered_content_phase);
 
+#if defined(nginx_version) && nginx_version >= 8011
+                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                        return rc;
+                    }
+
                     return NGX_OK;
-                }
+#else
+                    return rc;
+#endif
+                    }
             }
 
             msg = "unknown reason";
