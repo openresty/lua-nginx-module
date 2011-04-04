@@ -1090,8 +1090,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     }
 #endif
 
-                    return ngx_http_internal_redirect(r, &ctx->exec_uri,
+                    /* resume the write event handler */
+                    r->write_event_handler = ngx_http_request_empty_handler;
+
+                    rc = ngx_http_internal_redirect(r, &ctx->exec_uri,
                             &ctx->exec_args);
+                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+                        return rc;
+                    }
+
+                    return NGX_OK;
                 }
             }
 

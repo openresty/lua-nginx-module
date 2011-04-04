@@ -204,5 +204,4 @@ ngx.exec('/b')
     GET /test
 --- response_body
 hello
---- SKIP
 
