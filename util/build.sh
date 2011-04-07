@@ -5,12 +5,11 @@
 version=${1:-0.8.54}
 opts=$2
 
-script_dir=$(dirname $0)
-root=$(readlink -f $script_dir/..)
+root=$(cd ${0%/*}/.. && echo $PWD)
 mkdir -p $root/{build,work}
 
 cd $root
-git submodule update
+git submodule update --init
 
 cd $root/build
 if [ ! -s nginx-$version.tar.gz ]; then
