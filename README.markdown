@@ -634,6 +634,11 @@ Core constants
     ngx.AGAIN
     ngx.ERROR
 
+They take the same values of NGX_OK, NGX_AGAIN, NGX_DONE, NGX_ERROR, and etc. But now
+only ngx.exit() only take two of these values, i.e., NGX_OK and NGX_ERROR. I'll add a
+quick note to README. Thanks for reminding us. The return values of the Lua "return"
+statement will be silently ignored.
+
 HTTP method constants
 ---------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
