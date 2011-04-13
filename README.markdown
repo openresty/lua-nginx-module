@@ -1360,6 +1360,8 @@ assuming your current Lua module is named `foo.bar`. This will guarantee that yo
 Data Sharing within an Nginx Worker
 ===================================
 
+**NOTE: This mechanism behaves differently when code cache is turned off, and should be considered as a DIRTY TRICK. Backward compatibility is NOT guaranteed. Use at your own risk! We're going to design a whole new data-sharing mechanism.**
+
 If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
 
 Here's a complete small example:
