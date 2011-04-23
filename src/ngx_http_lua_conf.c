@@ -110,10 +110,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 static void
 ngx_http_lua_cleanup_vm(void *data)
 {
-    lua_State *L = data;
+    ngx_http_lua_main_conf_t *lmcf = data;
 
-    if (L != NULL) {
-        lua_close(L);
+    if (lmcf->lua != NULL) {
+        lua_close(lmcf->lua);
+
+	lmcf->lua = NULL;
 
         dd("Lua VM closed!");
     }
@@ -139,7 +141,7 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
-    cln->data = lmcf->lua;
+    cln->data = lmcf;
 
     return NGX_CONF_OK;
 }

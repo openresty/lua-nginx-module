@@ -18,6 +18,7 @@
 
 #include <nginx.h>
 #include <ndk.h>
+#include <ngx_http.h>
 #include <ngx_md5.h>
 
 
@@ -47,8 +48,12 @@
 
 
 typedef struct {
-    size_t       size;
     u_char      *key;
+
+    ngx_str_t    script;
+
+    size_t                      size;
+    ngx_http_complex_value_t   *value;
 } ngx_http_lua_set_var_data_t;
 
 typedef struct {

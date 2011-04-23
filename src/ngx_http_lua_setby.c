@@ -45,7 +45,7 @@ ngx_http_lua_param_get(lua_State *L)
  * */
 static void
 ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
-        ngx_http_variable_value_t *args)
+        ngx_http_complex_value_t *args)
 {
     /*  set nginx request pointer to current lua thread's globals table */
     lua_pushlightuserdata(L, r);
@@ -172,7 +172,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
 ngx_int_t
 ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
-        ngx_http_variable_value_t *args, size_t nargs)
+        ngx_http_complex_value_t *args, size_t nargs)
 {
     size_t i;
     ngx_int_t rc;
@@ -185,7 +185,10 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
     /*  passing directive arguments to the user code */
     for (i = 0; i < nargs; i++) {
-        lua_pushlstring(L, (const char *) args[i].data, args[i].len);
+	if (ngx_http_complex_value(r, &args[i], val) != NGX_OK) {
+	    return NGX_ERROR;
+	}
+        lua_pushlstring(L, (const char *) val->data, val->len);
     }
 
     /*  protected call user code */
