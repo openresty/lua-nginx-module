@@ -53,8 +53,10 @@ int ngx_http_lua_header_set(lua_State *L);
 
 int ngx_http_lua_ngx_exec(lua_State *L);
 
+#if (NDK)
 int ngx_http_lua_ndk_set_var_get(lua_State *L);
 int ngx_http_lua_ndk_set_var_set(lua_State *L);
+#endif
 
 int ngx_http_lua_run_set_var_directive(lua_State *L);
 

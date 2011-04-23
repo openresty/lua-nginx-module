@@ -17,10 +17,12 @@
 #include <lauxlib.h>
 
 #include <nginx.h>
-#include <ndk.h>
 #include <ngx_http.h>
 #include <ngx_md5.h>
 
+#if (NDK)
+#include <ndk.h>
+#endif
 
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
