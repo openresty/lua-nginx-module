@@ -4,6 +4,7 @@
 
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
+#include "ngx_http_lua_patch.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -986,8 +987,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         cc = ctx->cc;
         cc_ref = ctx->cc_ref;
 
+        // XXX: work-around to nginx regex subsystem
+        ngx_http_lua_pcre_malloc_init(r->pool);
+
         /*  run code */
         rv = lua_resume(cc, nret);
+
+        // XXX: work-around to nginx regex subsystem
+        ngx_http_lua_pcre_malloc_done();
 
         dd("lua resume returns %d", (int) rv);
 
