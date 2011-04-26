@@ -507,6 +507,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_setglobal(L, "print");
     /* }}} */
 
+#if (NDK)
     lua_createtable(L, 0, 1);    /* ndk.* */
 
     lua_newtable(L);    /* .set_var */
@@ -521,6 +522,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_setfield(L, -2, "set_var");
 
     lua_setglobal(L, "ndk");
+#endif
 
     lua_createtable(L, 0, 20);    /* ngx.* */
 

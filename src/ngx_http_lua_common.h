@@ -17,9 +17,12 @@
 #include <lauxlib.h>
 
 #include <nginx.h>
-#include <ndk.h>
+#include <ngx_http.h>
 #include <ngx_md5.h>
 
+#if (NDK)
+#include <ndk.h>
+#endif
 
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
@@ -47,8 +50,12 @@
 
 
 typedef struct {
-    size_t       size;
     u_char      *key;
+
+    ngx_str_t    script;
+
+    size_t                      size;
+    ngx_http_complex_value_t   *value;
 } ngx_http_lua_set_var_data_t;
 
 typedef struct {
