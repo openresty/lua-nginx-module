@@ -9,12 +9,6 @@
 
 #define NGX_UNESCAPE_URI_COMPONENT  0
 
-#ifndef ngx_str_set
-#define ngx_str_set(str, text)                                               \
-    (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
-#endif
-
-
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
 static ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
@@ -85,6 +79,9 @@ ngx_http_lua_atpanic(lua_State *L)
 
     /*  restore nginx execution */
     NGX_LUA_EXCEPTION_THROW(1);
+
+    /* cannot reach here, just to suppress a potential gcc warning */
+    return 0;
 }
 
 

@@ -1,5 +1,12 @@
 {
    <insert_a_suppression_name_here>
+   Memcheck:Param
+   socketcall.setsockopt(optval)
+   fun:setsockopt
+   fun:drizzle_state_connect
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Leak
    fun:malloc
    fun:ngx_alloc
