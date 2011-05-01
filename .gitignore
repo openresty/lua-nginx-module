@@ -103,3 +103,6 @@ go
 all.sh
 src/accessby.[ch]
 src/rewriteby.[ch]
+src/patch.[ch]
+all
+build10
