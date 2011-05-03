@@ -3,8 +3,10 @@
 #define NGX_HTTP_LUA_HEADERS_H
 
 
+#include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+
 
 typedef struct ngx_http_lua_header_val_s ngx_http_lua_header_val_t;
 

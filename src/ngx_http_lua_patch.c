@@ -1,3 +1,4 @@
+#include "nginx.h"
 #include "ngx_http_lua_patch.h"
 
 static ngx_pool_t *ngx_http_lua_pcre_pool;
@@ -5,11 +6,11 @@ static ngx_pool_t *ngx_http_lua_pcre_pool;
 static void* (*old_pcre_malloc)(size_t);
 static void (*old_pcre_free)(void *ptr);
 
-// XXX: work-around to nginx regex subsystem, must init a memory pool
-// to use PCRE functions. As PCRE still has memory-leaking problems,
-// and nginx overwrote pcre_malloc/free hooks with its own static
-// functions, so nobody else can reuse nginx regex subsystem...
-static void*
+/* XXX: work-around to nginx regex subsystem, must init a memory pool
+ * to use PCRE functions. As PCRE still has memory-leaking problems,
+ * and nginx overwrote pcre_malloc/free hooks with its own static
+ * functions, so nobody else can reuse nginx regex subsystem... */
+static void *
 ngx_http_lua_pcre_malloc(size_t size)
 {
 	if(ngx_http_lua_pcre_pool) {

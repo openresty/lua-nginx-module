@@ -1,5 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#include <nginx.h>
 #include "ngx_http_lua_clfactory.h"
 
 

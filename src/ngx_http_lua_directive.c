@@ -2,15 +2,19 @@
 
 #define DDEBUG 0
 
+#include <nginx.h>
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_conf.h"
-#include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_rewriteby.h"
+
+#if defined(NDK) && NDK
+#include "ngx_http_lua_setby.h"
+#endif
 
 
 unsigned  ngx_http_lua_requires_rewrite = 0;
@@ -69,6 +73,7 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+#if defined(NDK) && NDK
 char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -207,6 +212,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 
     return NGX_OK;
 }
+#endif /* defined(NDK) && NDK */
 
 
 char *

@@ -1,4 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
 #define DDEBUG 0
 
 #include "ngx_http_lua_setby.h"
@@ -190,13 +191,13 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         lua_pushlstring(L, (const char *) args[i].data, args[i].len);
     }
 
-    // XXX: work-around to nginx regex subsystem
+    /* XXX: work-around to nginx regex subsystem */
     ngx_http_lua_pcre_malloc_init(r->pool);
 
     /*  protected call user code */
     rc = lua_pcall(L, nargs, 1, 0);
 
-    // XXX: work-around to nginx regex subsystem
+    /* XXX: work-around to nginx regex subsystem */
     ngx_http_lua_pcre_malloc_done();
 
     if (rc) {
