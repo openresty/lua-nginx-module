@@ -5,6 +5,7 @@
 
 #include "ddebug.h"
 
+#include <nginx.h>
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_util.h"
 #include <ctype.h>

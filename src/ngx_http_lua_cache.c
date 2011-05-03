@@ -3,6 +3,7 @@
 #define DDEBUG 0
 #include "ddebug.h"
 
+#include <nginx.h>
 #include <ngx_md5.h>
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_cache.h"

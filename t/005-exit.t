@@ -9,7 +9,7 @@ repeat_each(2);
 #master_on();
 #workers(1);
 #log_level('debug');
-log_level('warn');
+#log_level('warn');
 #worker_connections(1024);
 
 plan tests => blocks() * repeat_each() * 2;
@@ -159,10 +159,10 @@ local yajl = require('yajl');
 local old_uid = ngx.var.uid
 -- print('about to run sr')
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
--- print('just have run sr' .. res.body)
 if (res.status ~= ngx.HTTP_OK) then
     ngx.exit(res.status)
 end
+-- print('just have run sr: ' .. res.body)
 res = yajl.to_value(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then

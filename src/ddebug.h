@@ -3,6 +3,7 @@
 #ifndef DDEBUG_H
 #define DDEBUG_H
 
+#include <nginx.h>
 #include <ngx_core.h>
 
 #if defined(DDEBUG) && (DDEBUG)

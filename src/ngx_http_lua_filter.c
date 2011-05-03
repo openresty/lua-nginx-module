@@ -2,6 +2,7 @@
 
 #define DDEBUG 0
 
+#include <nginx.h>
 #include "ngx_http_lua_filter.h"
 #include "ngx_http_lua_util.h"
 

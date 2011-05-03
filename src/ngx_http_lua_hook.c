@@ -2,6 +2,7 @@
 
 #define DDEBUG 0
 
+#include <nginx.h>
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
@@ -41,8 +42,11 @@ static void log_wrapper(ngx_http_request_t *r, const char *ident, int level,
         lua_State *L);
 static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
+
+#if defined(NDK) && NDK
 static ndk_set_var_value_pt ngx_http_lookup_ndk_set_var_directive(u_char *name,
         size_t name_len);
+#endif
 
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
@@ -2152,6 +2156,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 }
 
 
+#if defined(NDK) && NDK
 int
 ngx_http_lua_ndk_set_var_get(lua_State *L)
 {
@@ -2282,6 +2287,7 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
 
     return 1;
 }
+#endif /* defined(NDK) && NDK */
 
 
 static ngx_int_t

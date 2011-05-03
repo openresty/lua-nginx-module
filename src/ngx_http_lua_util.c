@@ -2,6 +2,7 @@
 
 #define DDEBUG 0
 
+#include "nginx.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_patch.h"
@@ -507,6 +508,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_setglobal(L, "print");
     /* }}} */
 
+#if defined(NDK) && NDK
     lua_createtable(L, 0, 1);    /* ndk.* */
 
     lua_newtable(L);    /* .set_var */
@@ -521,6 +523,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_setfield(L, -2, "set_var");
 
     lua_setglobal(L, "ndk");
+#endif /* defined(NDK) && NDK */
 
     lua_createtable(L, 0, 20);    /* ngx.* */
 
@@ -987,13 +990,13 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         cc = ctx->cc;
         cc_ref = ctx->cc_ref;
 
-        // XXX: work-around to nginx regex subsystem
+        /* XXX: work-around to nginx regex subsystem */
         ngx_http_lua_pcre_malloc_init(r->pool);
 
         /*  run code */
         rv = lua_resume(cc, nret);
 
-        // XXX: work-around to nginx regex subsystem
+        /* XXX: work-around to nginx regex subsystem */
         ngx_http_lua_pcre_malloc_done();
 
         dd("lua resume returns %d", (int) rv);

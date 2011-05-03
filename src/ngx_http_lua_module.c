@@ -1,5 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#include <nginx.h>
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_filter.h"
@@ -51,6 +52,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         NULL
     },
 
+#if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
     {
         ngx_string("set_by_lua"),
@@ -72,6 +74,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         0,
         ngx_http_lua_filter_set_by_lua_file
     },
+#endif
 
     /* rewrite_by_lua <inline script> */
     {

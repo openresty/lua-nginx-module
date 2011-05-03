@@ -2,7 +2,7 @@
 
 #define DDEBUG 0
 
-#include "nginx.h"
+#include <nginx.h>
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
