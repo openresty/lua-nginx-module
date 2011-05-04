@@ -291,6 +291,8 @@ for example,
         echo "sum = $sum, diff = $diff";
     }
 
+This directive requires the ngx_devel_kit module.
+
 set_by_lua_file
 ---------------
 
@@ -304,6 +306,8 @@ When the Lua code cache is on (this is the default), the user code is loaded
 once at the first request and cached. Nginx config must be reloaded if you
 modified the file and expected to see updated behavior. You can disable the
 Lua code cache by setting `lua_code_cache off;` in your nginx.conf.
+
+This directive requires the ngx_devel_kit module.
 
 content_by_lua
 --------------
@@ -1132,6 +1136,8 @@ For instance,
 
     local res = ndk.set_var.set_escape_uri('a/b');
     -- now res == 'a%2fb'
+
+This feature requires the ngx_devel_kit module.
 
 HTTP 1.0 support
 ----------------
