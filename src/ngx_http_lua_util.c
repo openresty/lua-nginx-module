@@ -635,12 +635,14 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_newtable(L);    /* .req */
 
-    lua_createtable(L, 0, 2); /* metatable for .header */
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_clear);
+    lua_setfield(L, -2, "clear_header");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_set);
+    lua_setfield(L, -2, "set_header");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_headers);
+    lua_setfield(L, -2, "get_headers");
 
     lua_setfield(L, -2, "req");
 
@@ -650,9 +652,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_newtable(L);    /* .header */
 
     lua_createtable(L, 0, 2); /* metatable for .header */
-    lua_pushcfunction(L, ngx_http_lua_header_get);
+    lua_pushcfunction(L, ngx_http_lua_ngx_header_get);
     lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_header_set);
+    lua_pushcfunction(L, ngx_http_lua_ngx_header_set);
     lua_setfield(L, -2, "__newindex");
     lua_setmetatable(L, -2);
 

@@ -905,33 +905,67 @@ same does assigning an empty table:
 `ngx.header` is not a normal Lua table so you cannot
 iterate through it.
 
-For reading request headers, see the `ngx.req.header` interface instead.
+For reading request headers, use the `ngx.req.get_headers()` function instead.
 
 Reading values from ngx.header.HEADER is not implemented yet,
 and usually you shouldn't need it.
 
-ngx.req.header
---------------
+ngx.req.get_headers()
+---------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-This read-only Lua table holds all of the request headers. Because it is an ordinary Lua table,
-iterating through it via Lua's `pairs` function is supported, for instance,
+Returns a Lua table holds all of the request headers.
 
-    local h = {}
-    for k, v in pairs(ngx.req.header) do
-        h[k] = v
+Here's an example,
+
+    local h = ngx.req.get_headers()
+    for k, v in pairs(h) do
+        ...
     end
 
-For performance reasons, this table
-is generated on-the-fly at the first time it is accessed.
+To read an individual header:
 
-This Lua table is read-only, setting values to this table will not automatically modify the request headers on the Nginx land.
-(TODO: we'll provide `ngx.req.set_header()` and `ngx.req.clear_header()` for
-request header modification.)
+    ngx.say("Host: ", ngx.req.get_headers()["Host"])
 
 Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
 
     http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
+
+ngx.req.set_header(header_name, header_value)
+---------------------------------------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Set the request header named `header_name` to value `header_value`, overriding any existing ones.
+
+Here's an example of setting the `Content-Length` header:
+
+    ngx.req.set_header("Content-Type", "text/css")
+
+The `header_value` can take an array list of values,
+for example,
+
+    ngx.req.set_header("Foo", {"a", "abc"})
+
+will produce two new request headers:
+
+    Foo: a
+    Foo: abc
+
+and old `Foo` headers will be overridden if there's any.
+
+When the `header_value` argument is `nil`, the request header will be removed. So
+
+    ngx.req.set_header("X-Foo", nil)
+
+is equivalent to
+
+    ngx.req.clear_header("X-Foo")
+
+ngx.req.clear_header(header_name)
+---------------------------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Clear the request header named `header_name`.
 
 ngx.exec(uri, args)
 -------------------

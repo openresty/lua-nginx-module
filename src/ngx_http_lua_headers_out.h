@@ -4,8 +4,7 @@
 
 
 #include <nginx.h>
-#include <ngx_core.h>
-#include <ngx_http.h>
+#include "ngx_http_lua_common.h"
 
 
 ngx_int_t ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
