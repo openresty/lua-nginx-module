@@ -631,6 +631,21 @@ init_ngx_lua_globals(lua_State *L)
 
     lua_setfield(L, -2, "var");
 
+    /* {{{ ngx.req table */
+
+    lua_newtable(L);    /* .req */
+
+    lua_createtable(L, 0, 2); /* metatable for .header */
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_set);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
+    lua_setfield(L, -2, "req");
+
+    /* }}} */
+
 #if 1
     lua_newtable(L);    /* .header */
 

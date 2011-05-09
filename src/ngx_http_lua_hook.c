@@ -42,6 +42,7 @@ static void log_wrapper(ngx_http_request_t *r, const char *ident, int level,
         lua_State *L);
 static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
+static void ngx_http_lua_create_req_header_table(lua_State *L);
 
 #if defined(NDK) && NDK
 static ndk_set_var_value_pt ngx_http_lookup_ndk_set_var_directive(u_char *name,
@@ -1931,6 +1932,88 @@ ngx_http_lua_ngx_set(lua_State *L) {
 
     return luaL_error(L, "Attempt to write to ngx. with the key \"%s\"", p);
 }
+
+
+int
+ngx_http_lua_ngx_req_get(lua_State *L) {
+    u_char                      *p;
+    size_t                       len;
+
+    p = (u_char *) luaL_checklstring(L, -1, &len);
+
+    if (len == sizeof("header") - 1 &&
+            ngx_strncmp(p, "header", sizeof("header") - 1) == 0)
+    {
+        ngx_http_lua_create_req_header_table(L); /* req "header" header */
+        lua_insert(L, 2); /* req header "header" */
+        lua_pushvalue(L, 2); /* req header "header" header */
+        lua_rawset(L, 1); /* req header */
+
+        return 1;
+    }
+
+    dd("key %s not matched", p);
+
+    lua_pushnil(L);
+    return 1;
+}
+
+
+static void
+ngx_http_lua_create_req_header_table(lua_State *L) {
+    ngx_list_part_t              *part;
+    ngx_table_elt_t              *header;
+    ngx_http_request_t           *r;
+    ngx_uint_t                    i;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        luaL_error(L, "no request object found");
+        return;
+    }
+
+    lua_createtable(L, 0, 8); /* Firefox creates 8 headers in its requests */
+
+    part = &r->headers_in.headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
+        lua_pushlstring(L, (char *) header[i].value.data, header[i].value.len);
+        lua_rawset(L, -3);
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http lua req header: \"%V: %V\"",
+                       &header[i].key, &header[i].value);
+    }
+}
+
+
+int
+ngx_http_lua_ngx_req_set(lua_State *L) {
+    u_char                      *p;
+    size_t                       len;
+
+    /* we skip the first argument that is the table */
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+
+    return luaL_error(L, "Attempt to write to ngx.req. with the key \"%s\"", p);
+}
+
 
 
 int

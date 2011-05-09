@@ -49,6 +49,9 @@ int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
 int ngx_http_lua_ngx_get(lua_State *L);
 int ngx_http_lua_ngx_set(lua_State *L);
 
+int ngx_http_lua_ngx_req_get(lua_State *L);
+int ngx_http_lua_ngx_req_set(lua_State *L);
+
 int ngx_http_lua_header_get(lua_State *L);
 int ngx_http_lua_header_set(lua_State *L);
 

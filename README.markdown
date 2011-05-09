@@ -905,12 +905,33 @@ same does assigning an empty table:
 `ngx.header` is not a normal Lua table so you cannot
 iterate through it.
 
-For reading request headers, use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
+For reading request headers, see the `ngx.req.header` interface instead.
+
+Reading values from ngx.header.HEADER is not implemented yet,
+and usually you shouldn't need it.
+
+ngx.req.header
+--------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+This read-only Lua table holds all of the request headers. Because it is an ordinary Lua table,
+iterating through it via Lua's `pairs` function is supported, for instance,
+
+    local h = {}
+    for k, v in pairs(ngx.req.header) do
+        h[k] = v
+    end
+
+For performance reasons, this table
+is generated on-the-fly at the first time it is accessed.
+
+This Lua table is read-only, setting values to this table will not automatically modify the request headers on the Nginx land.
+(TODO: we'll provide `ngx.req.set_header()` and `ngx.req.clear_header()` for
+request header modification.)
+
+Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
 
     http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
-
-Reading values from ngx.header.HEADER is not implemented yet, and usually you
-shouldn't need it.
 
 ngx.exec(uri, args)
 -------------------
