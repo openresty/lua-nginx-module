@@ -6,7 +6,7 @@
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
-#include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_headers_out.h"
 
 #define NGX_UNESCAPE_URI_COMPONENT  0
 
@@ -1952,6 +1952,8 @@ ngx_http_lua_ngx_req_get(lua_State *L) {
         return 1;
     }
 
+    /* TODO: implement ngx.req.args here */
+
     dd("key %s not matched", p);
 
     lua_pushnil(L);
@@ -2105,7 +2107,7 @@ ngx_http_lua_header_set(lua_State *L)
                 ngx_memcpy(value.data, p, len);
                 value.len = len;
 
-                rc = ngx_http_lua_set_header(r, key, value,
+                rc = ngx_http_lua_set_output_header(r, key, value,
                         i == 1 /* override */);
 
                 if (rc != NGX_OK) {
@@ -2132,7 +2134,7 @@ ngx_http_lua_header_set(lua_State *L)
     dd("key: %.*s, value: %.*s",
             (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_header(r, key, value, 1 /* override */);
+    rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
 
     if (rc != NGX_OK) {
         return luaL_error(L, "failed to set header %s (error: %d)",

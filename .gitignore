@@ -97,8 +97,8 @@ src/filter.h
 src/contentby.c
 pack
 b.sh
-src/headers.c
-src/headers.h
+src/in.[ch]
+src/out.[ch]
 go
 all.sh
 src/accessby.[ch]
