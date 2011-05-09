@@ -107,7 +107,7 @@ content cached: hello
             ngx.say(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
@@ -130,7 +130,7 @@ nil
             ngx.say(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
@@ -153,7 +153,7 @@ nil
             ngx.say(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"

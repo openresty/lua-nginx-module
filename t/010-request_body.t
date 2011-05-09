@@ -24,11 +24,11 @@ __DATA__
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -42,11 +42,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -58,11 +58,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -76,11 +76,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -95,11 +95,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -115,11 +115,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -134,11 +134,11 @@ world\x03\x04\xff"
             ngx.print(ngx.var.request_body or "nil")
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -163,7 +163,7 @@ world\x03\x04\xff"
             ngx.say(res.status)
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 "
 --- response_body
@@ -192,7 +192,7 @@ nil
             ngx.say(res.status)
         ';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 "
 --- response_body
@@ -225,9 +225,9 @@ nil
 
         echo_request_body;
     }
---- request_eval
+--- request eval
 "POST /echo_body
 " . ('a' x 1024)
---- response_body_eval
+--- response_body eval
 'a' x 1024
 

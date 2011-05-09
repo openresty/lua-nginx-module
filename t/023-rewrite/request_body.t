@@ -25,11 +25,11 @@ __DATA__
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -44,11 +44,11 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -61,11 +61,11 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -80,11 +80,11 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -100,11 +100,11 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "hello\x00\x01\x02
 world\x03\x04\xff"
 
@@ -121,11 +121,11 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
 
@@ -141,10 +141,10 @@ world\x03\x04\xff"
         ';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
---- request_eval
+--- request eval
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- response_body_eval
+--- response_body eval
 "nil"
 
