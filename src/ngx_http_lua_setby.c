@@ -177,8 +177,11 @@ ngx_int_t
 ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         ngx_http_variable_value_t *args, size_t nargs)
 {
-    size_t i;
-    ngx_int_t rc;
+    size_t           i;
+    ngx_int_t        rc;
+    u_char          *err_msg;
+    size_t           rlen;
+    u_char          *rdata;
 
     /*  set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
@@ -200,21 +203,22 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
     /* XXX: work-around to nginx regex subsystem */
     ngx_http_lua_pcre_malloc_done();
 
-    if (rc) {
+    if (rc != 0) {
         /*  error occured when running loaded code */
-        const char *err_msg = lua_tostring(L, -1);
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-error) %s",
-                err_msg);
+        err_msg = (u_char *) lua_tostring(L, -1);
 
-        lua_settop(L, 0);    /*  clear remaining elems on stack */
-        assert(lua_gettop(L) == 0);
+        if (err_msg != NULL) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-error) %s",
+                    err_msg);
+
+            lua_settop(L, 0);    /*  clear remaining elems on stack */
+        }
 
         return NGX_ERROR;
     }
 
     NGX_LUA_EXCEPTION_TRY {
-        size_t rlen;
-        const char *rdata = lua_tolstring(L, -1, &rlen);
+        rdata = (u_char *) lua_tolstring(L, -1, &rlen);
 
         if (rdata) {
             val->data = ngx_pcalloc(r->pool, rlen);
@@ -229,6 +233,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
             val->data = NULL;
             val->len = 0;
         }
+
     } NGX_LUA_EXCEPTION_CATCH {
         dd("nginx execution restored");
     }

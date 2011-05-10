@@ -1,6 +1,6 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#define DDEBUG 1
+#define DDEBUG 0
 
 #include <nginx.h>
 #include "ngx_http_lua_hook.h"

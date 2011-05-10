@@ -28,7 +28,7 @@ static void ngx_http_lua_clear_package_loaded(lua_State *L);
  *
  * */
 static ngx_int_t
-ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
+ngx_http_lua_cache_load_code(lua_State *L, const char *key)
 {
     /*  get code cache table */
     lua_getfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);    /*  sp++ */
@@ -40,7 +40,7 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
         return NGX_ERROR;
     }
 
-    lua_getfield(L, -1, ck);    /*  sp++ */
+    lua_getfield(L, -1, key);    /*  sp++ */
 
     if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
@@ -79,12 +79,12 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *ck)
  *
  * */
 static ngx_int_t
-ngx_http_lua_cache_store_code(lua_State *L, const char *ck)
+ngx_http_lua_cache_store_code(lua_State *L, const char *key)
 {
     int rc;
 
     /*  get code cache table */
-    lua_getfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);    /*  sp++ */
+    lua_getfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY); /* closure cache */
 
     dd("Code cache table to store: %p", lua_topointer(L, -1));
 
@@ -93,11 +93,11 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *ck)
         return NGX_ERROR;
     }
 
-    lua_pushvalue(L, -2);        /*  sp++ */
-    lua_setfield(L, -2, ck);    /*  sp-- */
+    lua_pushvalue(L, -2); /* closure cache closure */
+    lua_setfield(L, -2, key); /* closure cache */
 
     /*  remove cache table, leave closure factory at top of stack */
-    lua_pop(L, 1);                /*  sp-- */
+    lua_pop(L, 1); /* closure */
 
     /*  call closure factory to generate new closure */
     rc = lua_pcall(L, 0, 1, 0);
