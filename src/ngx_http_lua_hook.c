@@ -1956,7 +1956,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         return luaL_error(L, "no request object found");
     }
 
-    lua_createtable(L, 0, 8); /* Firefox creates 8 headers in its requests */
+    lua_createtable(L, 0, 4);
 
     part = &r->headers_in.headers.part;
     header = part->elts;
@@ -1974,8 +1974,60 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         }
 
         lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
-        lua_pushlstring(L, (char *) header[i].value.data, header[i].value.len);
-        lua_rawset(L, -3);
+            /* stack: table key */
+
+        lua_pushvalue(L, -1); /* stack: table key key */
+
+        /* check if header already exists */
+        lua_rawget(L, -3); /* stack: table key value */
+
+        if (lua_isnil(L, -1)) {
+            dd("req.header key %.*s not exist", (int) header[i].key.len,
+                    header[i].key.data);
+
+            lua_pop(L, 1); /* stack: table key */
+
+            lua_pushlstring(L, (char *) header[i].value.data,
+                    header[i].value.len); /* stack: table key value */
+
+            lua_rawset(L, -3); /* stack: table */
+
+        } else {
+            dd("req.header key %.*s exists", (int) header[i].key.len,
+                    header[i].key.data);
+
+            if (! lua_istable(L, -1)) { /* already inserted one value */
+                dd("req.header key %.*s already has one value",
+                        (int) header[i].key.len, header[i].key.data);
+                lua_createtable(L, 4, 0);
+                    /* stack: table key value table */
+
+                lua_insert(L, -2); /* stack: table key table value */
+                lua_rawseti(L, -2, 1); /* stack: table key table */
+
+                lua_pushlstring(L, (char *) header[i].value.data,
+                        header[i].value.len);
+                    /* stack: table key table value */
+
+                lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
+                    /* stack: table key table */
+
+                lua_rawset(L, -3); /* stack: table */
+
+            } else {
+                dd("req.header key %.*s already has multi values",
+                        (int) header[i].key.len, header[i].key.data);
+
+                lua_pushlstring(L, (char *) header[i].value.data,
+                        header[i].value.len);
+                    /* stack: table key table value */
+
+                lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
+                    /* stack: table key table */
+
+                lua_pop(L, 2); /* stack: table */
+            }
+        }
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http lua req header: \"%V: %V\"",

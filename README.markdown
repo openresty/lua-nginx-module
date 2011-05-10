@@ -927,6 +927,16 @@ To read an individual header:
 
     ngx.say("Host: ", ngx.req.get_headers()["Host"])
 
+For multiple instances of request headers like
+
+    Foo: foo
+    Foo: bar
+    Foo: baz
+
+the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like this:
+
+    {"foo", "bar", "baz"}
+
 Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
 
     http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER

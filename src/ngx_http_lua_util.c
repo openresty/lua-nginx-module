@@ -525,7 +525,7 @@ init_ngx_lua_globals(lua_State *L)
     lua_setglobal(L, "ndk");
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0, 20);    /* ngx.* */
+    lua_createtable(L, 0, 22);    /* ngx.* */
 
     /* {{{ register nginx hook functions */
     lua_pushcfunction(L, ngx_http_lua_ngx_exec);

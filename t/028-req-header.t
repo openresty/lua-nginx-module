@@ -284,7 +284,7 @@ GET /bar
 
 
 
-=== TEST 15: set_header and clear_header should refresh ngx.req.header automatically
+=== TEST 15: set_header and clear_header should refresh ngx.req.get_headers() automatically
 --- config
     location /foo {
         content_by_lua '
@@ -309,4 +309,29 @@ Foo: foo
 Foo 1: 32
 Foo 2: abc
 Foo 3: nil
+
+
+
+=== TEST 16: duplicate req headers
+--- config
+    location /foo {
+        content_by_lua '
+            local vals = ngx.req.get_headers()["Foo"]
+            ngx.say("value is of type ", type(vals), ".")
+            if type(vals) == "table" then
+                ngx.say("Foo takes ", #vals or "nil", " values.")
+                ngx.say("They are ", table.concat(vals, ", "), ".")
+            end
+        ';
+    }
+--- more_headers
+Foo: foo
+Foo: bar
+Foo: baz
+--- request
+    GET /foo
+--- response_body
+value is of type table.
+Foo takes 3 values.
+They are foo, bar, baz.
 
