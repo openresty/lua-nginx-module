@@ -6,7 +6,7 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2);
@@ -469,8 +469,8 @@ fo%3d=%3d%3e
     }
 --- request
 GET /lua
---- response_body
-fo%3d=%3d%3e&%3d=%3a
+--- response_body_like chop
+^(?:fo%3d=%3d%3e\&%3d=%3a|%3d=%3a\&fo%3d=%3d%3e)$
 
 
 
@@ -491,8 +491,8 @@ fo%3d=%3d%3e&%3d=%3a
     }
 --- request
 GET /lua
---- response_body
-bar=hello&foo=3
+--- response_body_like chop
+^(?:bar=hello\&foo=3|foo=3\&bar=hello)$
 
 
 
