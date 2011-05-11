@@ -2200,7 +2200,6 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     ngx_str_t                    value;
     ngx_uint_t                   i;
     size_t                       len;
-    ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
 
@@ -2233,8 +2232,6 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     key.data[len] = '\0';
 
     key.len = len;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (lua_type(L, 2) == LUA_TNIL) {
         value.data = NULL;
