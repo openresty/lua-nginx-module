@@ -1273,7 +1273,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   1.0.x (last tested: 1.0.0)
+*   1.0.x (last tested: 1.0.1)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x (last tested: 0.8.54)
 *   0.7.x >= 0.7.46 (last tested: 0.7.68)
