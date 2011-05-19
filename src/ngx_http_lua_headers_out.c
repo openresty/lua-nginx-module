@@ -145,10 +145,13 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
                 dd("clearing normal header for %.*s", (int) hv->key.len,
                         hv->key.data);
 
+                h[i].value.len = 0;
                 h[i].hash = 0;
-            }
 
-            h[i].value = *value;
+            } else {
+                h[i].value = *value;
+                h[i].hash = 1;
+            }
 
             if (output_header) {
                 *output_header = &h[i];
@@ -168,6 +171,11 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     }
 
 new_header:
+
+    /* XXX we still need to create header slot even if the value
+     * is empty because some builtin headers like Last-Modified
+     * relies on this to get cleared */
+
     h = ngx_list_push(&r->headers_out.headers);
 
     if (h == NULL) {
@@ -176,6 +184,7 @@ new_header:
 
     if (value->len == 0) {
         h->hash = 0;
+
     } else {
         h->hash = hv->hash;
     }

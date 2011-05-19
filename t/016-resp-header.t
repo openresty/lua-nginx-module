@@ -191,3 +191,40 @@ X-Foo: a\r\n.*?X-Foo: abc$
 --- response_body
 Hello
 
+
+
+=== TEST 11: clear first, then add
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Foo"] = {}
+            ngx.header["Foo"] = {"a", "b"}
+            ngx.send_headers()
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_like eval
+".*Foo: a\r
+Foo: b.*"
+--- response_body
+
+
+
+=== TEST 12: first add, then clear, then add again
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Foo"] = {"c", "d"}
+            ngx.header["Foo"] = {}
+            ngx.header["Foo"] = {"a", "b"}
+            ngx.send_headers()
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_like eval
+".*Foo: a\r
+Foo: b.*"
+--- response_body
+

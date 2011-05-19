@@ -106,3 +106,4 @@ src/rewriteby.[ch]
 src/patch.[ch]
 all
 build10
+g

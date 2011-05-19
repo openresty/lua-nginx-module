@@ -10,12 +10,12 @@ use Test::Nginx::Socket;
 #repeat_each(120);
 #repeat_each(3);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
 
-#$ENV{LUA_PATH} = "$html_dir/?.lua";
+$ENV{LUA_CPATH} = "/home/lz/luax/?.so;;";
 
 #no_diff();
 #no_long_string();
@@ -175,4 +175,37 @@ GET /lua
 --- response_body eval
 "
 Hi"
+
+
+
+=== TEST 8: github issue 37: header bug
+https://github.com/chaoslawful/lua-nginx-module/issues/37
+--- config
+    location /sub {
+        content_by_lua '
+            ngx.header["Set-Cookie"] = {"TestCookie1=foo", "TestCookie2=bar"};
+            ngx.say("Hello")
+        ';
+    }
+    location /lua {
+        content_by_lua '
+            -- local yajl = require "yajl"
+            ngx.header["Set-Cookie"] = {}
+            res = ngx.location.capture("/sub")
+
+            for i,j in pairs(res.header) do
+                ngx.header[i] = j
+            end
+
+            -- ngx.say("set-cookie: ", yajl.to_string(res.header["Set-Cookie"]))
+
+            ngx.send_headers()
+            ngx.print("body: ", res.body)
+        ';
+    }
+--- request
+GET /lua
+--- raw_response_headers_like eval
+".*Set-Cookie: TestCookie1=foo\r
+Set-Cookie: TestCookie2=bar.*"
 
