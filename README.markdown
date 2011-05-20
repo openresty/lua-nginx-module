@@ -1260,6 +1260,14 @@ with LuaJIT 2.0.
 Installation
 ============
 
+You're recommended to install this module as well as the Lua interpreter or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty bundle:
+
+    https://github.com/agentzh/ngx_openresty
+
+The installation steps are usually as simple as ./configure && make && make install
+
+Alternatively, you can compile this module with nginx core's source by hand:
+
 1. Install lua into your system. At least Lua 5.1 is required.
 Lua can be obtained freely from its project [homepage](http://www.lua.org/).
 For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
