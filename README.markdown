@@ -648,9 +648,13 @@ HTTP method constants
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     value = ngx.HTTP_GET
+
     value = ngx.HTTP_HEAD
+
     value = ngx.HTTP_PUT
+
     value = ngx.HTTP_POST
+
     value = ngx.HTTP_DELETE
 
 HTTP status constants
@@ -658,16 +662,27 @@ HTTP status constants
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     value = ngx.HTTP_OK
+
     value = ngx.HTTP_CREATED
+
     value = ngx.HTTP_MOVED_PERMANENTLY
+
     value = ngx.HTTP_MOVED_TEMPORARILY
+
     value = ngx.HTTP_NOT_MODIFIED
+
     value = ngx.HTTP_BAD_REQUEST
+
     value = ngx.HTTP_GONE
+
     value = ngx.HTTP_NOT_FOUND
+
     value = ngx.HTTP_NOT_ALLOWED
+
     value = ngx.HTTP_FORBIDDEN
+
     value = ngx.HTTP_INTERNAL_SERVER_ERROR
+
     value = ngx.HTTP_SERVICE_UNAVAILABLE
 
 Nginx log level constants
@@ -675,13 +690,21 @@ Nginx log level constants
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     log_level = ngx.STDERR
+
     log_level = ngx.EMERG
+
     log_level = ngx.ALERT
+
     log_level = ngx.CRIT
+
     log_level = ngx.ERR
+
     log_level = ngx.WARN
+
     log_level = ngx.NOTICE
+
     log_level = ngx.INFO
+
     log_level = ngx.DEBUG
 
 print(a, b, ...)
