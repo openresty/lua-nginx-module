@@ -634,8 +634,11 @@ Core constants
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     ngx.OK
+
     ngx.DONE
+
     ngx.AGAIN
+
     ngx.ERROR
 
 They take the same values of NGX_OK, NGX_AGAIN, NGX_DONE, NGX_ERROR, and etc. But now
