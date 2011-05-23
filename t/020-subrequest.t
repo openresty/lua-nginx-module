@@ -619,3 +619,51 @@ sub req
 --- response_body
 sub req
 
+
+
+=== TEST 25: header inheritance bug (without body) (github issue 38)
+https://github.com/chaoslawful/lua-nginx-module/issues/38
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo -n $http_foo;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_GET });
+            ngx.say("header foo: [", res.body, "]")
+        ';
+    }
+--- request
+GET /lua
+--- more_headers
+Foo: bar
+--- response_body
+header foo: [bar]
+
+
+
+=== TEST 26: header inheritance bug (with body) (github issue 38)
+https://github.com/chaoslawful/lua-nginx-module/issues/38
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo -n $http_foo;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { body = "abc" });
+            ngx.say("header foo: [", res.body, "]")
+        ';
+    }
+--- request
+GET /lua
+--- more_headers
+Foo: bar
+--- response_body
+header foo: [bar]
+

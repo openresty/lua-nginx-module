@@ -644,8 +644,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             lua_getfield(L, 4, "share_all_vars");
 
             type = lua_type(L, -1);
+
             if (type == LUA_TNIL) {
                 /* do nothing */
+
             } else {
                 if (type != LUA_TBOOLEAN) {
                     return luaL_error(L, "Bad share_all_vars option value");
@@ -661,8 +663,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             lua_getfield(L, 4, "method");
 
             type = lua_type(L, -1);
+
             if (type == LUA_TNIL) {
                 method = NGX_HTTP_GET;
+
             } else {
                 if (type != LUA_TNUMBER) {
                     return luaL_error(L, "Bad http request method");
@@ -676,6 +680,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             /* check the body option */
 
             lua_getfield(L, 4, "body");
+
+            type = lua_type(L, -1);
 
             if (type != LUA_TNIL) {
                 if (type != LUA_TSTRING && type != LUA_TNUMBER) {
@@ -2529,23 +2535,13 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
 static ngx_int_t
 ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
 {
-    ngx_table_elt_t            *h;
+    ngx_table_elt_t                 *h, *header;
+    u_char                          *p;
+    ngx_list_part_t                 *part;
+    ngx_http_request_t              *pr;
+    ngx_uint_t                       i;
 
     r->headers_in.content_length_n = len;
-    r->headers_in.content_length = ngx_pcalloc(r->pool,
-            sizeof(ngx_table_elt_t));
-
-    r->headers_in.content_length->value.data =
-        ngx_palloc(r->pool, NGX_OFF_T_LEN);
-
-    if (r->headers_in.content_length->value.data == NULL) {
-        return NGX_ERROR;
-    }
-
-    r->headers_in.content_length->value.len = ngx_sprintf(
-            r->headers_in.content_length->value.data, "%O",
-            r->headers_in.content_length_n) -
-            r->headers_in.content_length->value.data;
 
     if (ngx_list_init(&r->headers_in.headers, r->pool, 20,
                 sizeof(ngx_table_elt_t)) != NGX_OK) {
@@ -2557,11 +2553,7 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
         return NGX_ERROR;
     }
 
-    h->hash = r->header_hash;
-
     h->key = ngx_http_lua_content_length_header_key;
-    h->value = r->headers_in.content_length->value;
-
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
         return NGX_ERROR;
@@ -2569,9 +2561,56 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
 
     ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
 
+    r->headers_in.content_length = h;
+
+    p = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->value.data = p;
+
+    h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
+
+    h->hash = 1;
+
     dd("r content length: %.*s",
             (int)r->headers_in.content_length->value.len,
             r->headers_in.content_length->value.data);
+
+    pr = r->parent;
+
+    if (pr == NULL) {
+        return NGX_OK;
+    }
+
+    /* forward the parent request's all other request headers */
+
+    part = &pr->headers_in.headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = ngx_list_push(&r->headers_in.headers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = header[i];
+    }
+
+    /* XXX maybe we should set those built-in header slot in
+     * ngx_http_headers_in_t too? */
 
     return NGX_OK;
 }

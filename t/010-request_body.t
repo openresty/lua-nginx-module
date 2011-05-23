@@ -216,18 +216,35 @@ nil
         client_body_buffer_size 1;
         sendfile on;
 
-        rewrite_by_lua '
+        content_by_lua '
             local res = ngx.location.capture(
                 "/proxy",
                 { method = ngx.HTTP_POST,
                   body = ngx.var.request_body })
+            ngx.print(res.body)
         ';
-
-        echo_request_body;
     }
 --- request eval
 "POST /echo_body
 " . ('a' x 1024)
---- response_body eval
-'a' x 1024
+--- response_body chomp
+
+
+
+=== TEST 11: no modify main request content-length
+--- config
+    location /foo {
+        content_by_lua '
+            ngx.location.capture("/other", {body = "hello"})
+            ngx.say(ngx.req.get_headers()["Content-Length"] or "nil")
+        ';
+    }
+    location /other {
+        echo hi;
+    }
+--- request
+POST /foo
+hi
+--- response_body
+2
 
