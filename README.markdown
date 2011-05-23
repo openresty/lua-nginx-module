@@ -883,7 +883,7 @@ ngx.status
 ----------
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Read and write the response status. This should be called
+Read and write the current request's response status. This should be called
 before sending out the response headers.
 
     ngx.status = ngx.HTTP_CREATED
@@ -893,7 +893,7 @@ ngx.header.HEADER
 -----------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Set/add/clear response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
+Set/add/clear the current request's response headers. Underscores (_) in the header names will be replaced by dashes (-) and the header names will be matched case-insentively.
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
@@ -940,7 +940,7 @@ ngx.req.get_headers()
 ---------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Returns a Lua table holds all of the request headers.
+Returns a Lua table holds all of the current request's request headers.
 
 Here's an example,
 
@@ -971,7 +971,8 @@ ngx.req.set_header(header_name, header_value)
 ---------------------------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Set the request header named `header_name` to value `header_value`, overriding any existing ones.
+Set the current request's request header named `header_name` to value `header_value`, overriding any existing ones.
+None of the current request's subrequests will be affected.
 
 Here's an example of setting the `Content-Length` header:
 
@@ -1001,7 +1002,7 @@ ngx.req.clear_header(header_name)
 ---------------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Clear the request header named `header_name`.
+Clear the current request's request header named `header_name`. None of the current request's subrequests will be affected.
 
 ngx.exec(uri, args)
 -------------------
