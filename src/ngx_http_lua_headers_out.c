@@ -129,18 +129,9 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
             i = 0;
         }
 
-        if (
-            (h[i].key.len == hv->key.len
-                && ngx_strncasecmp(h[i].key.data,
-                    hv->key.data,
-                                   h[i].key.len) == 0)
-            ||
-            (h[i].key.len >= hv->key.len-1
-                && ngx_strncasecmp(h[i].key.data,
-                    hv->key.data,
-                                   hv->key.len-1) == 0)
-            )
-        {
+        if (h[i].key.len == hv->key.len && ngx_strncasecmp(h[i].key.data,
+                    hv->key.data, h[i].key.len) == 0)
+         {
             if (value->len == 0) {
                 dd("clearing normal header for %.*s", (int) hv->key.len,
                         hv->key.data);

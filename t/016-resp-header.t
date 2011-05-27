@@ -7,8 +7,8 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-repeat_each(2);
-#repeat_each(1);
+#repeat_each(2);
+repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 3;
 
@@ -227,4 +227,38 @@ Foo: b.*"
 ".*Foo: a\r
 Foo: b.*"
 --- response_body
+
+
+
+=== TEST 13: names are the same in the beginning (one value per key)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Foox"] = "barx"
+            ngx.header["Fooy"] = "bary"
+            ngx.send_headers()
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Foox: barx
+Fooy: bary
+
+
+
+=== TEST 14: names are the same in the beginning (multiple values per key)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Foox"] = {"conx1", "conx2" }
+            ngx.header["Fooy"] = {"cony1", "cony2" }
+            ngx.send_headers()
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Foox: conx1, conx2
+Fooy: cony1, cony2
 
