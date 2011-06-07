@@ -209,3 +209,20 @@ GET /lua
 ".*Set-Cookie: TestCookie1=foo\r
 Set-Cookie: TestCookie2=bar.*"
 
+
+
+=== TEST 9: memory leak
+--- config
+    location /foo {
+        content_by_lua_file 'html/foo.lua';
+    }
+--- user_files
+>>> foo.lua
+res = {}
+res = {'good 1', 'good 2', 'good 3'}
+return ngx.redirect("/somedir/" .. ngx.escape_uri(res[math.random(1,#res)]))
+--- request
+    GET /foo
+--- response_body
+--- SKIP
+

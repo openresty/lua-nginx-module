@@ -425,7 +425,7 @@ Just as any other rewrite-phase handlers, `rewrite_by_lua` also runs in subreque
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current `rewrite_by_lua` handler, and the nginx request processing
 control flow will still continue to the content handler. To terminate the current request from within the current `rewrite_by_lua` handler,
-calling `ngx.exit(ngx.HTTP_OK)` for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
+calling `ngx.exit` with status >= 200 (ngx.HTTP_OK) and status < 300 (ngx.HTTP_SPECIAL_RESPONSE) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
 access_by_lua
 --------------
@@ -664,29 +664,35 @@ HTTP status constants
 ---------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-    value = ngx.HTTP_OK
+    value = ngx.HTTP_OK (200)
 
-    value = ngx.HTTP_CREATED
+    value = ngx.HTTP_CREATED (201)
 
-    value = ngx.HTTP_MOVED_PERMANENTLY
+    value = ngx.HTTP_SPECIAL_RESPONSE (300)
 
-    value = ngx.HTTP_MOVED_TEMPORARILY
+    value = ngx.HTTP_MOVED_PERMANENTLY (301)
 
-    value = ngx.HTTP_NOT_MODIFIED
+    value = ngx.HTTP_MOVED_TEMPORARILY (302)
 
-    value = ngx.HTTP_BAD_REQUEST
+    value = ngx.HTTP_SEE_OTHER (303)
 
-    value = ngx.HTTP_GONE
+    value = ngx.HTTP_NOT_MODIFIED (304)
 
-    value = ngx.HTTP_NOT_FOUND
+    value = ngx.HTTP_BAD_REQUEST (400)
 
-    value = ngx.HTTP_NOT_ALLOWED
+    value = ngx.HTTP_UNAUTHORIZED (401)
 
-    value = ngx.HTTP_FORBIDDEN
+    value = ngx.HTTP_FORBIDDEN (403)
 
-    value = ngx.HTTP_INTERNAL_SERVER_ERROR
+    value = ngx.HTTP_NOT_FOUND (404)
 
-    value = ngx.HTTP_SERVICE_UNAVAILABLE
+    value = ngx.HTTP_NOT_ALLOWED (405)
+
+    value = ngx.HTTP_GONE (410)
+
+    value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
+
+    value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
 
 Nginx log level constants
 -------------------------

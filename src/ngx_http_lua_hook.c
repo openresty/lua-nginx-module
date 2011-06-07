@@ -354,7 +354,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
-    if (rc >= 200 && ctx->headers_sent) {
+    if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
         return luaL_error(L, "attempt to call ngx.exit after sending "
                 "out the headers");
     }
