@@ -435,7 +435,7 @@ Hi
 
 
 
-=== TEST 11: throw ngx.OK does not skip other rewrite phase handlers
+=== TEST 11: throw ngx.OK does *not* skip other rewrite phase handlers
 --- config
     location /lua {
         rewrite_by_lua "ngx.exit(ngx.OK)";
