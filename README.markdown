@@ -497,7 +497,7 @@ Just as any other access-phase handlers, `access_by_lua` will NOT run in subrequ
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current `access_by_lua` handler, and the nginx request processing
 control flow will still continue to the content handler. To terminate the current request from within the current `access_by_lua` handler,
-calling `ngx.exit(ngx.HTTP_OK)` for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
+calling `ngx.exit(status)` where status >= 200 (ngx.HTTP_OK) and status < 300 (ngx.HTTP_SPECIAL_RESPONSE) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
 
 content_by_lua_file
 -------------------
@@ -1129,8 +1129,10 @@ ngx.exit(status)
 ----------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Interrupts the execution of the current Lua thread and returns
+When status >= 200 (ngx.HTTP_OK), it will interrupt the execution of the current Lua thread and returns
 status code to nginx.
+
+When status == 0 (ngx.OK), it will quits the current phase handler (or content handler if content_by_lua* directives are used).
 
 The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
 `ngx.HTTP_MOVED_TEMPORARILY`,
