@@ -130,12 +130,12 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
         return rc;
     }
 
-    if (rc == NGX_DONE) {
+    if (rc == NGX_DONE || rc == NGX_AGAIN) {
         return NGX_DONE;
     }
 
-    if (rc == NGX_AGAIN) {
-        return NGX_DONE;
+    if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
+        return rc;
     }
 
     return NGX_DECLINED;
@@ -290,12 +290,12 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
         return rc;
     }
 
-    if (rc == NGX_DONE) {
+    if (rc == NGX_DONE || rc == NGX_AGAIN) {
         return NGX_DONE;
     }
 
-    if (rc == NGX_AGAIN) {
-        return NGX_DONE;
+    if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
+        return rc;
     }
 
     return NGX_DECLINED;

@@ -424,40 +424,50 @@ inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_HEAD);
     lua_setfield(L, -2, "HTTP_HEAD");
 
-    lua_pushinteger(L, 200);
+    lua_pushinteger(L, NGX_HTTP_OK);
     lua_setfield(L, -2, "HTTP_OK");
 
-    lua_pushinteger(L, 201);
+    lua_pushinteger(L, NGX_HTTP_CREATED);
     lua_setfield(L, -2, "HTTP_CREATED");
 
-    lua_pushinteger(L, 301);
+    lua_pushinteger(L, NGX_HTTP_SPECIAL_RESPONSE);
+    lua_setfield(L, -2, "HTTP_SPECIAL_RESPONSE");
+
+    lua_pushinteger(L, NGX_HTTP_MOVED_PERMANENTLY);
     lua_setfield(L, -2, "HTTP_MOVED_PERMANENTLY");
 
-    lua_pushinteger(L, 302);
+    lua_pushinteger(L, NGX_HTTP_MOVED_TEMPORARILY);
     lua_setfield(L, -2, "HTTP_MOVED_TEMPORARILY");
 
-    lua_pushinteger(L, 304);
+    lua_pushinteger(L, NGX_HTTP_SEE_OTHER);
+    lua_setfield(L, -2, "HTTP_SEE_OTHER");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_MODIFIED);
     lua_setfield(L, -2, "HTTP_NOT_MODIFIED");
 
-    lua_pushinteger(L, 400);
+    lua_pushinteger(L, NGX_HTTP_BAD_REQUEST);
     lua_setfield(L, -2, "HTTP_BAD_REQUEST");
+
+    lua_pushinteger(L, NGX_HTTP_UNAUTHORIZED);
+    lua_setfield(L, -2, "HTTP_UNAUTHORIZED");
+
+
+    lua_pushinteger(L, NGX_HTTP_FORBIDDEN);
+    lua_setfield(L, -2, "HTTP_FORBIDDEN");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_FOUND);
+    lua_setfield(L, -2, "HTTP_NOT_FOUND");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_ALLOWED);
+    lua_setfield(L, -2, "HTTP_NOT_ALLOWED");
 
     lua_pushinteger(L, 410);
     lua_setfield(L, -2, "HTTP_GONE");
 
-    lua_pushinteger(L, 404);
-    lua_setfield(L, -2, "HTTP_NOT_FOUND");
-
-    lua_pushinteger(L, 405);
-    lua_setfield(L, -2, "HTTP_NOT_ALLOWED");
-
-    lua_pushinteger(L, 403);
-    lua_setfield(L, -2, "HTTP_FORBIDDEN");
-
-    lua_pushinteger(L, 500);
+    lua_pushinteger(L, NGX_HTTP_INTERNAL_SERVER_ERROR);
     lua_setfield(L, -2, "HTTP_INTERNAL_SERVER_ERROR");
 
-    lua_pushinteger(L, 503);
+    lua_pushinteger(L, NGX_HTTP_SERVICE_UNAVAILABLE);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
     /* }}} */
 }
@@ -1097,16 +1107,18 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         ctx->cleanup = NULL;
                     }
 
-                    if (ctx->exit_code == NGX_OK) {
-                        if (ctx->entered_content_phase) {
-                            rc = ngx_http_lua_send_chain_link(r, ctx,
-                                    NULL /* indicate last_buf */);
+                    if ((ctx->exit_code == NGX_OK &&
+                                ctx->entered_content_phase) ||
+                                (ctx->exit_code >= NGX_HTTP_OK &&
+                                ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
+                    {
+                        rc = ngx_http_lua_send_chain_link(r, ctx,
+                                NULL /* indicate last_buf */);
 
-                            if (rc == NGX_ERROR ||
-                                    rc >= NGX_HTTP_SPECIAL_RESPONSE)
-                            {
-                                return rc;
-                            }
+                        if (rc == NGX_ERROR ||
+                                rc >= NGX_HTTP_SPECIAL_RESPONSE)
+                        {
+                            return rc;
                         }
                     }
 

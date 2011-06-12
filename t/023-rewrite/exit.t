@@ -435,7 +435,7 @@ Hi
 
 
 
-=== TEST 11: throw ngx.OK does not skip other rewrite phase handlers
+=== TEST 11: throw ngx.OK does *not* skip other rewrite phase handlers
 --- config
     location /lua {
         rewrite_by_lua "ngx.exit(ngx.OK)";
@@ -446,4 +446,65 @@ Hi
 GET /lua
 --- response_body
 hello
+
+
+
+=== TEST 12: throw ngx.HTTP_OK *does* skip other rewrite phase handlers (by inlined code)
+--- config
+    location /lua {
+        rewrite_by_lua "ngx.exit(ngx.HTTP_OK)";
+        set $foo hello;
+        echo $foo;
+    }
+--- request
+GET /lua
+--- response_body
+
+
+
+=== TEST 13: throw ngx.HTTP_OK *does* skip other rewrite phase handlers (by inlined code + partial output)
+--- config
+    location /lua {
+        rewrite_by_lua "ngx.say('hiya') ngx.exit(ngx.HTTP_OK)";
+        set $foo hello;
+        echo $foo;
+    }
+--- request
+GET /lua
+--- response_body
+hiya
+
+
+
+=== TEST 14: throw ngx.HTTP_OK *does* skip other rewrite phase handlers (by file)
+--- config
+    location /lua {
+        rewrite_by_lua_file html/foo.lua;
+        set $foo hello;
+        echo $foo;
+    }
+--- user_files
+>>> foo.lua
+ngx.exit(ngx.HTTP_OK)
+--- request
+GET /lua
+--- response_body
+
+
+
+=== TEST 15: throw ngx.HTTP_OK *does* skip other rewrite phase handlers (by file + partial output)
+--- config
+    location /lua {
+        rewrite_by_lua_file html/foo.lua;
+        set $foo hello;
+        echo $foo;
+    }
+--- user_files
+>>> foo.lua
+ngx.say("morning")
+ngx.exit(ngx.HTTP_OK)
+--- request
+GET /lua
+--- response_body
+morning
 
