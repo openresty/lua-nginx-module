@@ -9,6 +9,11 @@
 #include "ngx_http_lua_accessby.h"
 
 
+#if !defined(nginx_version) || nginx_version < 8054
+#error "at least nginx 0.8.54 is required"
+#endif
+
+
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 
 

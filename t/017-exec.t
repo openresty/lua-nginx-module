@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -287,4 +287,92 @@ ngx.exec('@b')
 --- request
     GET /test
 --- response_body: hello hello hello world world world
+
+
+
+=== TEST 14: github issue #40: 2 Subrequest calls when using access_by_lua, ngx.exec and echo_location (content)
+--- config
+    location = /hi {
+        echo hello;
+    }
+    location /sub {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+        #echo hello;
+    }
+    location /p{
+        #content_by_lua '
+            #local res = ngx.location.capture("/sub")
+            #ngx.print(res.body)
+        #';
+        echo_location /sub;
+    }
+    location /lua {
+        content_by_lua '
+            ngx.exec("/p")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+hello
+
+
+
+=== TEST 15: github issue #40: 2 Subrequest calls when using access_by_lua, ngx.exec and echo_location (content + named location)
+--- config
+    location = /hi {
+        echo hello;
+    }
+    location /sub {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+        #echo hello;
+    }
+    location @p {
+        #content_by_lua '
+            #local res = ngx.location.capture("/sub")
+            #ngx.print(res.body)
+        #';
+        echo_location /sub;
+    }
+    location /lua {
+        content_by_lua '
+            ngx.exec("@p")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+hello
+
+
+
+=== TEST 16: github issue #40: 2 Subrequest calls when using access_by_lua, ngx.exec and echo_location (content + post subrequest)
+--- config
+    location = /hi {
+        echo hello;
+    }
+    location /sub {
+        proxy_pass http://127.0.0.1:$server_port/hi;
+        #echo hello;
+    }
+    location /p{
+        #content_by_lua '
+            #local res = ngx.location.capture("/sub")
+            #ngx.print(res.body)
+        #';
+        echo_location /sub;
+    }
+    location blah {
+        echo blah;
+    }
+    location /lua {
+        content_by_lua '
+            ngx.location.capture("/blah")
+            ngx.exec("/p")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+hello
 

@@ -439,8 +439,10 @@ inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_MOVED_TEMPORARILY);
     lua_setfield(L, -2, "HTTP_MOVED_TEMPORARILY");
 
+#if defined(nginx_version) && nginx_version >= 8042
     lua_pushinteger(L, NGX_HTTP_SEE_OTHER);
     lua_setfield(L, -2, "HTTP_SEE_OTHER");
+#endif
 
     lua_pushinteger(L, NGX_HTTP_NOT_MODIFIED);
     lua_setfield(L, -2, "HTTP_NOT_MODIFIED");
@@ -1145,16 +1147,21 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         r->write_event_handler = ngx_http_request_empty_handler;
 
                         rc = ngx_http_named_location(r, &ctx->exec_uri);
-#if defined(nginx_version) && nginx_version >= 8011
                         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
                         {
                             return rc;
                         }
 
-                        return NGX_OK;
-#else
-                        return rc;
-#endif
+                        if (! ctx->entered_content_phase &&
+                                r != r->connection->data)
+                        {
+                            /* XXX ensure the main request ref count
+                             * is decreased because the current
+                             * request will be quit */
+                            r->main->count--;
+                        }
+
+                        return NGX_DONE;
                     }
 
                     dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
@@ -1169,16 +1176,23 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     dd("internal redirect returned %d when in content phase? "
                             "%d", (int) rc, ctx->entered_content_phase);
 
-#if defined(nginx_version) && nginx_version >= 8011
                     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                         return rc;
                     }
 
-                    return NGX_OK;
-#else
-                    return rc;
-#endif
+                    dd("XXYY HERE %d\n", (int) r->main->count);
+
+                    if (! ctx->entered_content_phase &&
+                            r != r->connection->data)
+                    {
+                        /* XXX ensure the main request ref count
+                         * is decreased because the current
+                         * request will be quit */
+                        r->main->count--;
                     }
+
+                    return NGX_DONE;
+                }
             }
 
             msg = "unknown reason";
@@ -1249,7 +1263,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                     ngx_http_lua_flush_postponed_outputs(r));
         }
 
-        return NGX_DONE;
+        return NGX_OK;
     }
 
     dd("waiting: %d, done: %d", (int) ctx->waiting,
@@ -1431,16 +1445,26 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, ctx->nsubreqs);
 
-    dd("already run thread for %.*s...", (int) r->uri.len, r->uri.data);
+    dd("already run thread for %.*s: %d", (int) r->uri.len, r->uri.data,
+            (int) rc);
 
-    if (rc == NGX_AGAIN || rc == NGX_DONE) {
+    if (rc == NGX_AGAIN) {
         return NGX_DONE;
+    }
+
+    if (rc == NGX_DONE) {
+        if (ctx->entered_content_phase) {
+            ngx_http_finalize_request(r, rc);
+        }
+
+        return NGX_OK;
     }
 
     dd("entered content phase: %d", (int) ctx->entered_content_phase);
 
     if (ctx->entered_content_phase) {
         ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
     }
 
     if (rc == NGX_OK) {

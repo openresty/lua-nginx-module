@@ -1318,14 +1318,11 @@ The following versions of Nginx should work with this module:
 
 *   1.0.x (last tested: 1.0.2)
 *   0.9.x (last tested: 0.9.4)
-*   0.8.x (last tested: 0.8.54)
-*   0.7.x >= 0.7.46 (last tested: 0.7.68)
+*   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
 Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 
-Note that `rewrite_by_lua` will NOT work for nginx 0.8.41 ~ 0.8.53.
-
-If you find that any particular version of Nginx above 0.7.44 does not
+If you find that any particular version of Nginx above 0.8.54 does not
 work with this module, please consider reporting a bug.
 
 Test Suite
