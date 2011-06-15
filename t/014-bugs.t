@@ -272,7 +272,8 @@ Bar
 Bar
 
 
-=== TEST 10: capturing locations with internal redirects (simple index)
+
+=== TEST 12: capturing locations with internal redirects (simple index)
 --- config
     location /main {
         content_by_lua '
