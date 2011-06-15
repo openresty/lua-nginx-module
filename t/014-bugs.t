@@ -271,3 +271,17 @@ Bar
 --- response_body
 Bar
 
+
+=== TEST 10: capturing locations with internal redirects (simple index)
+--- config
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body chop
+<html><head><title>It works!</title></head><body>It works!</body></html>
+
