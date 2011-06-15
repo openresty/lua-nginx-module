@@ -5,6 +5,7 @@
 #include <nginx.h>
 #include "ngx_http_lua_filter.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_hook.h"
 
 
 ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
@@ -34,6 +35,20 @@ static ngx_int_t
 ngx_http_lua_header_filter(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    ngx_http_post_subrequest_t      *ps;
+
+    if (ctx == NULL || ! ctx->capture) {
+        ps = r->post_subrequest;
+        if (ps != NULL && ps->handler == ngx_http_lua_post_subrequest &&
+                ps->data != NULL)
+        {
+            /* the lua ctx has been cleared by ngx_http_internal_redirect,
+             * resume it from the post_subrequest data
+             */
+            ctx = ps->data;
+            ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+        }
+    }
 
     if (ctx && ctx->capture) {
         /* force subrequest response body buffer in memory */

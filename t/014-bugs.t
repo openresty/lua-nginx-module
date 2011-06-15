@@ -79,7 +79,6 @@ GET /report/listBidwordPrices4lzExtra.htm?words=123,156,2532
 
 
 === TEST 3: sanity
-I dunno why this test is not passing. TODO'ing...
 --- config
     location = /memc {
         #set $memc_value 'hello';
@@ -111,7 +110,6 @@ I dunno why this test is not passing. TODO'ing...
 --- request
 GET /main
 --- response_body_like: 3: bar$
---- SKIP
 
 
 
@@ -225,4 +223,51 @@ return ngx.redirect("/somedir/" .. ngx.escape_uri(res[math.random(1,#res)]))
     GET /foo
 --- response_body
 --- SKIP
+
+
+
+=== TEST 10: capturing locations with internal redirects (no lua redirect)
+--- config
+    location /bar {
+        echo Bar;
+    }
+    location /foo {
+        #content_by_lua '
+        #ngx.exec("/bar")
+        #';
+        echo_exec /bar;
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/foo")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+Bar
+
+
+
+=== TEST 11: capturing locations with internal redirects (lua redirect)
+--- config
+    location /bar {
+        content_by_lua 'ngx.say("Bar")';
+    }
+    location /foo {
+        content_by_lua '
+            ngx.exec("/bar")
+        ';
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/foo")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+Bar
 

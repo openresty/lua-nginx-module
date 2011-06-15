@@ -32,8 +32,6 @@ static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
         ngx_flag_t share_all_vars);
-static ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r,
-        void *data, ngx_int_t rc);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
 static void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type);
@@ -897,7 +895,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 }
 
 
-static ngx_int_t
+ngx_int_t
 ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
     ngx_http_request_t            *pr;

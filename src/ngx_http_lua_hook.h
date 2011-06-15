@@ -65,6 +65,9 @@ int ngx_http_lua_ndk_set_var_set(lua_State *L);
 int ngx_http_lua_run_set_var_directive(lua_State *L);
 #endif
 
+ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r,
+        void *data, ngx_int_t rc);
+
 
 #endif /* NGX_HTTP_LUA_HOOK_H */
 
