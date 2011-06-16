@@ -1333,24 +1333,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         sr_headers = ctx->sr_headers[index];
 
-        if (sr_headers->content_length == NULL
-            && sr_headers->content_length_n >= 0)
-        {
-            lua_pushliteral(cc, "Content-Length"); /* header key */
-
-            lua_pushnumber(cc, sr_headers->content_length_n);
-                /* head key value */
-
-            lua_rawset(cc, -3); /* head */
-        }
-
-        if (sr_headers->content_type.len) {
-            lua_pushliteral(cc, "Content-Type"); /* header key */
-            lua_pushlstring(cc, (char *) sr_headers->content_type.data,
-                    sr_headers->content_type.len); /* head key value */
-            lua_rawset(cc, -3); /* head */
-        }
-
         dd("saving subrequest response headers");
 
         part = &sr_headers->headers.part;
@@ -1376,6 +1358,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 continue;
             }
 #endif
+
+            header[i].hash = 0;
 
             dd("pushing sr header %.*s", (int) header[i].key.len,
                     header[i].key.data);
@@ -1423,6 +1407,33 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                     lua_pop(cc, 2); /* stack: table */
                 }
             }
+        }
+
+        if (sr_headers->content_type.len) {
+            lua_pushliteral(cc, "Content-Type"); /* header key */
+            lua_pushlstring(cc, (char *) sr_headers->content_type.data,
+                    sr_headers->content_type.len); /* head key value */
+            lua_rawset(cc, -3); /* head */
+        }
+
+        if (sr_headers->content_length == NULL
+            && sr_headers->content_length_n >= 0)
+        {
+            lua_pushliteral(cc, "Content-Length"); /* header key */
+
+            lua_pushnumber(cc, sr_headers->content_length_n);
+                /* head key value */
+
+            lua_rawset(cc, -3); /* head */
+        }
+
+        /* to work-around an issue in ngx_http_static_module
+         * (github issue #41) */
+        if (sr_headers->location && sr_headers->location->value.len) {
+            lua_pushliteral(cc, "Location"); /* header key */
+            lua_pushlstring(cc, (char *) sr_headers->location->value.data,
+                    sr_headers->location->value.len); /* head key value */
+            lua_rawset(cc, -3); /* head */
         }
 
         lua_setfield(cc, -2, "header");

@@ -343,3 +343,43 @@ world
 --- response_body
 hello
 
+
+
+=== TEST 15: nginx rewrite works in subrequests
+--- config
+    rewrite /foo /foo/ permanent;
+    location = /foo/ {
+        echo hello;
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/foo")
+            ngx.say("status = ", res.status)
+            ngx.say("Location: ", res.header["Location"] or "nil")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+status = 301
+Location: /foo/
+
+
+
+=== TEST 16: nginx rewrite works in subrequests
+--- config
+    access_by_lua '
+        local res = ngx.location.capture(ngx.var.uri)
+        ngx.say("status = ", res.status)
+        ngx.say("Location: ", res.header["Location"] or "nil")
+        ngx.exit(200)
+    ';
+--- request
+    GET /foo
+--- user_files
+>>> foo/index.html
+It works!
+--- response_body
+status = 301
+Location: /foo/
+
