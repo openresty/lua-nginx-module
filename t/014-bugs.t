@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 #repeat_each(120);
 #repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -382,4 +382,40 @@ It works!
 --- response_body
 status = 301
 Location: /foo/
+
+
+
+=== TEST 17: set content-type header with charset
+--- config
+    location /lua {
+        charset GBK;
+        content_by_lua '
+            ngx.header.content_type = "text/xml; charset=UTF-8"
+            ngx.say("hi")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+hi
+--- response_headers
+Content-Type: text/xml; charset=UTF-8
+
+
+
+=== TEST 18: set response header content-type with charset
+--- config
+    location /lua {
+        charset GBK;
+        content_by_lua '
+            ngx.header.content_type = "text/xml"
+            ngx.say("hi")
+        ';
+    }
+--- request
+    GET /lua
+--- response_body
+hi
+--- response_headers
+Content-Type: text/xml; charset=GBK
 
