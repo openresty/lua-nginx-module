@@ -244,6 +244,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         if (r->http_version >= NGX_HTTP_VERSION_11) {
             /* Send response headers for HTTP version <= 1.0 elsewhere */
             ctx->headers_sent = 1;
+            dd("sending headers");
             return ngx_http_send_header(r);
         }
     }

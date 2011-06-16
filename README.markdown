@@ -68,10 +68,12 @@ Synopsis
         }
 
         location /request_body {
-                # force reading request body (default off)
-                lua_need_request_body on;
+             # force reading request body (default off)
+             lua_need_request_body on;
+             client_max_body_size 50k;
+             client_body_in_single_buffer on;
 
-                content_by_lua 'ngx.print(ngx.var.request_body)';
+             content_by_lua 'ngx.print(ngx.var.request_body)';
         }
 
         # transparent non-blocking I/O in Lua via subrequests

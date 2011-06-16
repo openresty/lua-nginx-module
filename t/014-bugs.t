@@ -286,3 +286,60 @@ Bar
 --- response_body chop
 <html><head><title>It works!</title></head><body>It works!</body></html>
 
+
+
+=== TEST 13: capturing locations with internal redirects (more lua statements)
+--- config
+    location /bar {
+        content_by_lua '
+            ngx.say("hello")
+            ngx.say("world")
+        ';
+    }
+    location /foo {
+        #content_by_lua '
+        #ngx.exec("/bar")
+        #';
+        echo_exec /bar;
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/foo")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+world
+
+
+
+=== TEST 14: capturing locations with internal redirects (post subrequest with internal redirect)
+--- config
+    location /bar {
+        lua_need_request_body on;
+        client_body_in_single_buffer on;
+
+        content_by_lua '
+            ngx.say(ngx.var.request_body)
+        ';
+    }
+    location /foo {
+        #content_by_lua '
+        #ngx.exec("/bar")
+        #';
+        echo_exec /bar;
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/foo", { method = ngx.HTTP_POST, body = "hello" })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
