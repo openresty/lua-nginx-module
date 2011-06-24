@@ -2568,7 +2568,7 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
 
     h->value.data = p;
 
-    h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
+    h->value.len = ngx_sprintf(h->value.data, "%uz", len) - h->value.data;
 
     h->hash = 1;
 
