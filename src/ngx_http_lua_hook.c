@@ -28,7 +28,7 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 static void ngx_http_lua_process_args_option(ngx_http_request_t *r,
         lua_State *L, int table, ngx_str_t *args);
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
-        size_t len);
+        off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
         ngx_flag_t share_all_vars);
@@ -2531,7 +2531,7 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
 
 
 static ngx_int_t
-ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
+ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 {
     ngx_table_elt_t                 *h, *header;
     u_char                          *p;
@@ -2568,7 +2568,7 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, size_t len)
 
     h->value.data = p;
 
-    h->value.len = ngx_sprintf(h->value.data, "%uz", len) - h->value.data;
+    h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
 
     h->hash = 1;
 
