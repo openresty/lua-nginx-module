@@ -1273,7 +1273,7 @@ Installation
 
 You're recommended to install this module as well as the Lua interpreter or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty bundle:
 
-<https://github.com/agentzh/ngx_openresty>
+<http://openresty.org>
 
 The installation steps are usually as simple as ./configure && make && make install
 
