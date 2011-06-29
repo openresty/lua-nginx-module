@@ -1318,7 +1318,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   1.0.x (last tested: 1.0.2)
+*   1.0.x (last tested: 1.0.4)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
