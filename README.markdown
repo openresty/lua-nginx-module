@@ -1219,6 +1219,15 @@ Returns a formated string can be used as the cookie expiration time. The paramet
     ngx.say(ngx.cookie_time(1290079655))
         -- yields "Thu, 18-Nov-10 11:27:35 GMT"
 
+ngx.http_time(sec)
+--------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Returns a formated string can be used as the http header time (for example, being used in Last-Modified header). The parameter `sec` is the timestamp in seconds (like those returned from `ngx.time`).
+
+    ngx.say(ngx.http_time(1290079655))
+        -- yields "Thu, 18 Nov 10 11:27:35 GMT"
+
 ngx.is_subrequest
 -----------------
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
