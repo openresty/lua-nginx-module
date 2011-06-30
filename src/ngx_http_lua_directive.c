@@ -24,10 +24,23 @@ unsigned  ngx_http_lua_requires_access  = 0;
 char *
 ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
-            "lua_code_cache is off; this will hurt performance");
+    char             *p = conf;
+    ngx_flag_t       *fp;
+    char             *ret;
 
-    return ngx_conf_set_flag_slot(cf, cmd, conf);
+    ret = ngx_conf_set_flag_slot(cf, cmd, conf);
+    if (ret != NGX_CONF_OK) {
+        return ret;
+    }
+
+    fp = (ngx_flag_t *) (p + cmd->offset);
+
+    if (! *fp) {
+        ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
+                "lua_code_cache is off; this will hurt performance");
+    }
+
+    return NGX_CONF_OK;
 }
 
 
