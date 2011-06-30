@@ -17,30 +17,30 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: cookie_time
+=== TEST 1: http_time in content_by_lua
 --- config
     location /lua {
         content_by_lua '
-            ngx.say(ngx.cookie_time(1290079655))
+            ngx.say(ngx.http_time(1290079655))
         ';
     }
 --- request
 GET /lua
 --- response_body
-Thu, 18-Nov-10 11:27:35 GMT
+Thu, 18 Nov 2010 11:27:35 GMT
 
 
 
-=== TEST 2: cookie_time in set_by_lua
+=== TEST 2: http_time in set_by_lua
 --- config
     location /lua {
         set_by_lua $a '
-            return ngx.cookie_time(1290079655)
+            return ngx.http_time(1290079655)
         ';
         echo $a;
     }
 --- request
 GET /lua
 --- response_body
-Thu, 18-Nov-10 11:27:35 GMT
+Thu, 18 Nov 2010 11:27:35 GMT
 
