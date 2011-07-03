@@ -725,13 +725,7 @@ ngx_http_lua_var_get(lua_State *L)
     name.len = len;
     name.data = lowcase;
 
-#if defined(nginx_version) && \
-    (nginx_version >= 8036 || \
-     (nginx_version < 8000 && nginx_version >= 7066))
     vv = ngx_http_get_variable(r, &name, hash);
-#else
-    vv = ngx_http_get_variable(r, &name, hash, 1);
-#endif
 
     if (vv == NULL || vv->not_found) {
         lua_pushnil(L);
@@ -754,7 +748,9 @@ ngx_http_lua_var_get(lua_State *L)
 int
 ngx_http_lua_var_set(lua_State *L)
 {
+    ngx_http_variable_t         *v;
     ngx_http_variable_value_t   *vv;
+    ngx_http_core_main_conf_t   *cmcf;
     u_char                      *p, *lowcase, *val;
     size_t                       len;
     ngx_str_t                    name;
@@ -770,6 +766,9 @@ ngx_http_lua_var_set(lua_State *L)
     }
 
     /* we skip the first argument that is the table */
+
+    /* we read the variable name */
+
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
     lowcase = ngx_palloc(r->pool, len + 1);
@@ -784,19 +783,7 @@ ngx_http_lua_var_set(lua_State *L)
     name.len = len;
     name.data = lowcase;
 
-#if defined(nginx_version) && \
-    (nginx_version >= 8036 || \
-     (nginx_version < 8000 && nginx_version >= 7066))
-    vv = ngx_http_get_variable(r, &name, hash);
-#else
-    vv = ngx_http_get_variable(r, &name, hash, 1);
-#endif
-
-    if (vv == NULL || vv->not_found) {
-        return luaL_error(L, "variable \"%s\" not defined yet; "
-                "you sould have used \"set $%s '';\" earlier "
-                "in the config file", lowcase, lowcase);
-    }
+    /* we read the variable new value */
 
     p = (u_char *) luaL_checklstring(L, 3, &len);
 
@@ -807,14 +794,57 @@ ngx_http_lua_var_set(lua_State *L)
 
     ngx_memcpy(val, p, len);
 
-    vv->valid = 1;
-    vv->not_found = 0;
-    vv->no_cacheable = 0;
+    /* we fetch the variable itself */
 
-    vv->data = val;
-    vv->len = len;
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-    return 0;
+    v = ngx_hash_find(&cmcf->variables_hash, hash, name.data, name.len);
+
+    if (v) {
+        if (! (v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+            return luaL_error(L, "variable \"%s\" not changeable", lowcase);
+        }
+
+        if (v->set_handler) {
+            vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
+            if (vv == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+
+            vv->valid = 1;
+            vv->not_found = 0;
+            vv->no_cacheable = 0;
+
+            vv->data = val;
+            vv->len = len;
+
+            v->set_handler(r, vv, v->data);
+
+            return 0;
+        }
+
+        if (v->flags & NGX_HTTP_VAR_INDEXED) {
+            vv = &r->variables[v->index];
+
+            vv->valid = 1;
+            vv->not_found = 0;
+            vv->no_cacheable = 0;
+
+            vv->data = val;
+            vv->len = len;
+
+            return 0;
+        }
+
+        return luaL_error(L, "variable \"%s\" cannot be assigned a value", lowcase);
+    }
+
+    /* variable not found */
+
+    return luaL_error(L, "varaible \"%s\" not found for writing; "
+                "maybe it is a built-in variable that is not changeable "
+                "or you sould have used \"set $%s '';\" earlier "
+                "in the config file", lowcase, lowcase);
 }
 
 

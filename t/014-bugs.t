@@ -419,3 +419,50 @@ hi
 --- response_headers
 Content-Type: text/xml; charset=GBK
 
+
+
+=== TEST 19: set $limit_rate (variables with set_handler)
+--- config
+    location /lua {
+        set $limit_rate 1000;
+        rewrite_by_lua '
+            ngx.var.limit_rate = 180;
+        ';
+        echo "limit rate = $limit_rate";
+    }
+--- request
+    GET /lua
+--- response_body
+limit rate = 180
+
+
+
+=== TEST 20: set $args and read $query_string
+--- config
+    location /lua {
+        set $args 'hello';
+        rewrite_by_lua '
+            ngx.var.args = "world";
+        ';
+        echo $query_string;
+    }
+--- request
+    GET /lua
+--- response_body
+world
+
+
+
+=== TEST 21: set $arg_xxx
+--- config
+    location /lua {
+        rewrite_by_lua '
+            ngx.var.arg_foo = "world";
+        ';
+        echo $arg_foo;
+    }
+--- request
+    GET /lua?foo=3
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
