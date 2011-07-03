@@ -699,11 +699,14 @@ int
 ngx_http_lua_var_get(lua_State *L)
 {
     ngx_http_request_t          *r;
-    u_char                      *p, *lowcase;
+    u_char                      *p, *lowcase, *val;
     size_t                       len;
     ngx_uint_t                   hash;
     ngx_str_t                    name;
     ngx_http_variable_value_t   *vv;
+    ngx_uint_t                   n;
+    LUA_NUMBER                   index;
+    int                         *cap;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -711,6 +714,40 @@ ngx_http_lua_var_get(lua_State *L)
 
     if (r == NULL) {
         return luaL_error(L, "no request object found");
+    }
+
+    if (lua_type(L, -1) == LUA_TNUMBER) {
+        /* it is a regex capturing variable */
+
+        index = lua_tonumber(L, -1);
+
+        if (index <= 0) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        n = (ngx_uint_t) index * 2;
+
+        dd("n = %d, ncaptures = %d", (int) n, (int) r->ncaptures);
+
+        if (r->captures == NULL || r->captures_data == NULL ||
+                n >= r->ncaptures)
+        {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        /* n >= 0 && n < r->ncaptures */
+
+        cap = r->captures;
+
+        p = r->captures_data;
+
+        val = &p[cap[n]];
+
+        lua_pushlstring(L, (const char *) val, (size_t) (cap[n + 1] - cap[n]));
+
+        return 1;
     }
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
