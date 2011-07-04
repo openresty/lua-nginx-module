@@ -197,14 +197,18 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         lua_pushlstring(L, (const char *) args[i].data, args[i].len);
     }
 
+#if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
     ngx_http_lua_pcre_malloc_init(r->pool);
+#endif
 
     /*  protected call user code */
     rc = lua_pcall(L, nargs, 1, 0);
 
+#if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
     ngx_http_lua_pcre_malloc_done();
+#endif
 
     if (rc != 0) {
         /*  error occured when running loaded code */

@@ -702,14 +702,18 @@ int
 ngx_http_lua_var_get(lua_State *L)
 {
     ngx_http_request_t          *r;
-    u_char                      *p, *lowcase, *val;
+    u_char                      *p, *lowcase;
     size_t                       len;
     ngx_uint_t                   hash;
     ngx_str_t                    name;
     ngx_http_variable_value_t   *vv;
+
+#if (NGX_PCRE)
+    u_char                      *val;
     ngx_uint_t                   n;
     LUA_NUMBER                   index;
     int                         *cap;
+#endif
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -719,6 +723,7 @@ ngx_http_lua_var_get(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+#if (NGX_PCRE)
     if (lua_type(L, -1) == LUA_TNUMBER) {
         /* it is a regex capturing variable */
 
@@ -752,6 +757,7 @@ ngx_http_lua_var_get(lua_State *L)
 
         return 1;
     }
+#endif
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
 
@@ -1090,14 +1096,18 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         cc = ctx->cc;
         cc_ref = ctx->cc_ref;
 
+#if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
         ngx_http_lua_pcre_malloc_init(r->pool);
+#endif
 
         /*  run code */
         rv = lua_resume(cc, nret);
 
+#if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
         ngx_http_lua_pcre_malloc_done();
+#endif
 
         dd("lua resume returns %d", (int) rv);
 

@@ -1,6 +1,7 @@
 #include <nginx.h>
 #include "ngx_http_lua_patch.h"
 
+#if (NGX_PCRE)
 
 static ngx_pool_t *ngx_http_lua_pcre_pool;
 
@@ -53,6 +54,8 @@ ngx_http_lua_pcre_malloc_done()
 	pcre_malloc = old_pcre_malloc;
 	pcre_free = old_pcre_free;
 }
+
+#endif /* NGX_PCRE */
 
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
