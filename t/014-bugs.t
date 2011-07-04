@@ -419,3 +419,69 @@ hi
 --- response_headers
 Content-Type: text/xml; charset=GBK
 
+
+
+=== TEST 19: get by-position capturing variables
+--- config
+    location ~ '^/lua/(.*)' {
+        content_by_lua '
+            ngx.say(ngx.var[1] or "nil")
+        ';
+    }
+--- request
+    GET /lua/hello
+--- response_body
+hello
+
+
+
+=== TEST 20: get by-position capturing variables ($0)
+--- config
+    location ~ '^/lua/(.*)' {
+        content_by_lua '
+            ngx.say(ngx.var[0] or "nil")
+        ';
+    }
+--- request
+    GET /lua/hello
+--- response_body
+nil
+
+
+
+=== TEST 21: get by-position capturing variables (exceeding captures)
+--- config
+    location ~ '^/lua/(.*)' {
+        content_by_lua '
+            ngx.say(ngx.var[2] or "nil")
+        ';
+    }
+--- request
+    GET /lua/hello
+--- response_body
+nil
+
+
+
+=== TEST 22: get by-position capturing variables ($1, $2)
+--- config
+    location ~ '^/lua/(.*)/(.*)' {
+        content_by_lua '
+            ngx.say(ngx.var[-1] or "nil")
+            ngx.say(ngx.var[0] or "nil")
+            ngx.say(ngx.var[1] or "nil")
+            ngx.say(ngx.var[2] or "nil")
+            ngx.say(ngx.var[3] or "nil")
+            ngx.say(ngx.var[4] or "nil")
+        ';
+    }
+--- request
+    GET /lua/hello/world
+--- response_body
+nil
+nil
+hello
+world
+nil
+nil
+
