@@ -1,4 +1,4 @@
-0.2.0 - July 2011
+0.2.0 - 5 July 2011
 * now we support ngx.var[1], ngx.var[2], and etc to refer to the nginx regex capturing variables \$1, \$2, and etc in Lua. this resolved github issue #43. thanks Tobia Conforto for reporting it.
 
 * now we use the same value overriding mechanism as ngx_rewrite's set command for ngx.var.VAR = new_value. Assigning values to special variables like $limit_rate and $args should now work; also writing to built-in variables that are not changeable (like $arg_PARAMETER) will result in a 500 error page, as expected, now. thanks Richard Kearsley for reporting it.
