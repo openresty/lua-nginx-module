@@ -9,7 +9,7 @@
 #define NGX_LUA_EXCEPTION_CATCH else
 #define NGX_LUA_EXCEPTION_THROW(x) longjmp(ngx_http_lua_exception, (x))
 
-jmp_buf ngx_http_lua_exception;
+extern jmp_buf ngx_http_lua_exception;
 
 int ngx_http_lua_atpanic(lua_State *L);
 int ngx_http_lua_print(lua_State *L);

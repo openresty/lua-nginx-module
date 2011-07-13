@@ -13,6 +13,8 @@
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
+jmp_buf ngx_http_lua_exception;
+
 static ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
 static ngx_str_t  ngx_http_lua_put_method = ngx_http_lua_method_name("PUT");
 static ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
