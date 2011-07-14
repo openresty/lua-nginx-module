@@ -882,7 +882,8 @@ ngx_http_lua_var_set(lua_State *L)
             return 0;
         }
 
-        return luaL_error(L, "variable \"%s\" cannot be assigned a value", lowcase);
+        return luaL_error(L, "variable \"%s\" cannot be assigned a value",
+                lowcase);
     }
 
     /* variable not found */

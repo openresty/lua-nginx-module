@@ -631,8 +631,14 @@ For example:
 
 That is, nginx variables cannot be created on-the-fly.
 
+Some special nginx variables like `$args` and `$limit_rate` can be assigned a value,
+some are not, like `$arg_PARAMETER`.
+
+Nginx regex group capturing variables `$1`, `$2`, `$3`, and etc, can be read by this
+interface as well, by writing `ngx.var[1]`, `ngx.var[2]`, `ngx.var[3]`, and etc.
+
 Core constants
----------------------
+--------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     ngx.OK
@@ -830,11 +836,6 @@ in gzip'd responses that your Lua code is not able to handle properly. So always
 `proxy_pass_request_headers off` in your subrequest location to ignore the original request headers.
 See <http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers> for more
 details.
-
-For now, do not use the `error_page` directive or `ngx.exec()` or ngx_echo's `echo_exec`
-directive within locations to be captured by `ngx.location.capture()`
-or `ngx.location.capture_multi()`; ngx_lua cannot capture locations with internal redirections.
-See the `Known Issues` section below for more details and working work-arounds.
 
 ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })
 ---------------------------------------------------------------------
@@ -1404,40 +1405,6 @@ the Lua VM actively via Lua's debug hooks.
 
 Known Issues
 ============
-
-* Do not use the `error_page` directive or `ngx.exec()` or ngx_echo's `echo_exec` directive
-within locations to be captured by `ngx.location.capture()`
-or `ngx.location.capture_multi()`; ngx_lua cannot capture locations with internal redirections.
-Also be careful with server-wide `error_page` settings that are automatically inherited by
-*all* locations by default. If you're using the ngx_openresty bundle (<http://github.com/agentzh/ngx_openresty>),
-you can use the `no_error_pages` directive within locations that are to be captured from within Lua, for example,
-
-    server {
-        # server-wide error page settings
-        error_page 500 503 504 html/50x.html;
-
-        location /memc {
-            # explicitly disable error_page setting inheritance
-            #  within this location:
-            no_error_pages; # this directive is provided by ngx_openresty only
-
-            set $memc_key $query_string;
-            set $memc_cmd get;
-            memc_pass 127.0.0.1:11211;
-        }
-
-        location /api {
-            content_by_lua '
-                local res = ngx.location.capture(
-                    "/memc", { args = 'my_key' }
-                )
-                if res.status ~= ngx.HTTP_OK then
-                    ...
-                end
-                ...
-            ';
-        }
-    }
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the
 `ngx.location.capture()` and `ngx.location.capture_multi` methods cannot be used within
