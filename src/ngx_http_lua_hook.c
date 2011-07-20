@@ -2683,14 +2683,23 @@ ngx_http_lua_ngx_http_time(lua_State *L)
 int
 ngx_http_lua_ngx_parse_http_time(lua_State *L)
 {
-    u_char              				*p;
-    size_t              				len;
+    ngx_http_request_t                  *r;
+    u_char                              *p;
+    size_t                               len;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
     }
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
 
     lua_pushnumber(L, (lua_Number) ngx_http_parse_time(p, len));
 
