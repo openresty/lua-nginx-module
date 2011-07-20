@@ -616,6 +616,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_http_time);
     lua_setfield(L, -2, "http_time");
 
+	lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
+    lua_setfield(L, -2, "parse_http_time");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
     lua_setfield(L, -2, "redirect");
 

@@ -2681,6 +2681,24 @@ ngx_http_lua_ngx_http_time(lua_State *L)
 
 
 int
+ngx_http_lua_ngx_parse_http_time(lua_State *L)
+{
+    u_char              				*p;
+    size_t              				len;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    lua_pushnumber(L, (lua_Number) ngx_http_parse_time(p, len));
+
+    return 1;
+}
+
+
+int
 ngx_http_lua_ngx_redirect(lua_State *L)
 {
     ngx_http_lua_ctx_t          *ctx;
