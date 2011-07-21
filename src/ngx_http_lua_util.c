@@ -53,6 +53,12 @@ lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     lua_State       *L;
+    const char      *old_path;
+    const char      *new_path;
+    size_t           old_path_len;
+    const char      *old_cpath;
+    const char      *new_cpath;
+    size_t           old_cpath_len;
 
     L = luaL_newstate();
     if (L == NULL) {
@@ -69,102 +75,49 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         return NULL;
     }
 
-    if (lmcf->lua_path.len != 0) {
-        const char      *old_path;
-        const char      *new_path;
-        size_t           old_path_len;
-        const char      *default_path;
 #ifdef LUA_DEFAULT_PATH
-        size_t           len;
-        u_char          *p;
+#   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
+    lua_pushliteral(L, LUA_DEFAULT_PATH ";"); /* package default */
+    lua_getfield(L, -2, "path"); /* package default old */
+    old_path = lua_tolstring(L, -1, &old_path_len);
+    lua_concat(L, 2); /* package new */
+    lua_setfield(L, -2, "path"); /* package */
 #endif
 
+#ifdef LUA_DEFAULT_CPATH
+#   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
+    lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
+    lua_getfield(L, -2, "cpath"); /* package default old */
+    old_cpath = lua_tolstring(L, -1, &old_cpath_len);
+    lua_concat(L, 2); /* package new */
+    lua_setfield(L, -2, "cpath"); /* package */
+#endif
+
+    if (lmcf->lua_path.len != 0) {
         lua_getfield(L, -1, "path"); /* get original package.path */
         old_path = lua_tolstring(L, -1, &old_path_len);
 
-#ifdef LUA_DEFAULT_PATH
-#   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
-        len = LUA_DEFAULT_PATH_LEN + sizeof(";") - 1 + old_path_len + 1;
-
-        p = ngx_palloc(cf->pool, len);
-        if (p == NULL) {
-            return NULL;
-        }
-
-        default_path = (char *) p;
-
-        p = ngx_copy(p, LUA_DEFAULT_PATH, LUA_DEFAULT_PATH_LEN);
-        *p++ = ';';
-        p = ngx_copy(p, old_path, old_path_len);
-        *p++ = '\0';
-
-        if ((char *) p - default_path != (ssize_t) len) {
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                    "buffer error while generating lua path: %z != %uz",
-                    (char *) p - default_path, len);
-
-            return NULL;
-        }
-#else
-        default_path = old_path;
-#endif /* LUA_DEFAULT_PATH */
-
-        dd("default path: %s", default_path);
+        dd("old path: %s", old_path);
 
         lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
         new_path = lua_tostring(L, -1);
 
-        dd("new_path path: %s", new_path);
-
-        set_path(L, -3, "path", new_path, default_path);
+        set_path(L, -3, "path", new_path, old_path);
 
         lua_pop(L, 2);
     }
 
     if (lmcf->lua_cpath.len != 0) {
-        const char      *old_cpath;
-        const char      *new_cpath;
-        const char      *default_cpath;
-        size_t           old_cpath_len;
-#ifdef LUA_DEFAULT_CPATH
-        size_t           len;
-        u_char          *p;
-#endif
-
         lua_getfield(L, -1, "cpath"); /* get original package.cpath */
         old_cpath = lua_tolstring(L, -1, &old_cpath_len);
 
-#ifdef LUA_DEFAULT_CPATH
-#   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
-        len = LUA_DEFAULT_CPATH_LEN + sizeof(";") - 1 + old_cpath_len + 1;
-
-        p = ngx_palloc(cf->pool, len);
-        if (p == NULL) {
-            return NULL;
-        }
-
-        default_cpath = (char *) p;
-
-        p = ngx_copy(p, LUA_DEFAULT_CPATH, LUA_DEFAULT_CPATH_LEN);
-        *p++ = ';';
-        p = ngx_copy(p, old_cpath, old_cpath_len);
-        *p++ = '\0';
-
-        if ((char *) p - default_cpath != (ssize_t) len) {
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                    "buffer error while generating lua cpath: %z != %uz",
-                    (char *) p - default_cpath, len);
-
-            return NULL;
-        }
-#else
-        default_cpath = old_cpath;
-#endif /* LUA_DEFAULT_CPATH */
+        dd("old cpath: %s", old_cpath);
 
         lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
         new_cpath = lua_tostring(L, -1);
 
-        set_path(L, -3, "cpath", new_cpath, default_cpath);
+        set_path(L, -3, "cpath", new_cpath, old_cpath);
+
 
         lua_pop(L, 2);
     }
