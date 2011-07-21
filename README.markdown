@@ -1229,6 +1229,17 @@ Returns a formated string can be used as the http header time (for example, bein
     ngx.say(ngx.http_time(1290079655))
         -- yields "Thu, 18 Nov 10 11:27:35 GMT"
 
+ngx.parse_http_time(str)
+------------------------
+* **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Parse the http time string (as returned by ngx.http_time) into seconds. Returns the seconds or `nil` if the input string is in bad forms.
+
+    local time = ngx.parse_http_time("Thu, 18 Nov 10 11:27:35 GMT")
+    if time == nil then
+        ...
+    end
+
 ngx.is_subrequest
 -----------------
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
