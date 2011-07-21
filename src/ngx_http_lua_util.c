@@ -14,23 +14,33 @@ static void init_ngx_lua_registry(lua_State *L);
 static void init_ngx_lua_globals(lua_State *L);
 static void inject_http_consts(lua_State *L);
 static void inject_core_consts(lua_State *L);
-static void setpath(lua_State *L, int tab_idx, const char *fieldname,
-        const char *path, const char *def);
+static void set_path(lua_State *L, int tab_idx, const char *fieldname,
+        const char *path, const char *default_path);
 
 
+#ifndef LUA_PATH_SEP
 #define LUA_PATH_SEP ";"
+#endif
+
 #define AUX_MARK "\1"
 
 
 static void
-setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path,
-        const char *def)
+set_path(lua_State *L, int tab_idx, const char *fieldname, const char *path,
+        const char *default_path)
 {
     const char *tmp_path;
 
+    /* XXX here we use some hack to simplify string manipulation */
     tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
             LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
-    luaL_gsub(L, tmp_path, AUX_MARK, def);
+
+    dd("tmp_path path: %s", tmp_path);
+
+    tmp_path = luaL_gsub(L, tmp_path, AUX_MARK, default_path);
+
+    dd("final form: %s", tmp_path);
+
     lua_remove(L, -2);
 
     /* fix negative index as there's new data on stack */
@@ -42,7 +52,9 @@ setpath(lua_State *L, int tab_idx, const char *fieldname, const char *path,
 lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
-    lua_State *L = luaL_newstate();
+    lua_State       *L;
+
+    L = luaL_newstate();
     if (L == NULL) {
         return NULL;
     }
@@ -58,31 +70,101 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     }
 
     if (lmcf->lua_path.len != 0) {
-        const char *old_path;
-        const char *new_path;
+        const char      *old_path;
+        const char      *new_path;
+        size_t           old_path_len;
+        const char      *default_path;
+#ifdef LUA_DEFAULT_PATH
+        size_t           len;
+        u_char          *p;
+#endif
 
         lua_getfield(L, -1, "path"); /* get original package.path */
-        old_path = lua_tostring(L, -1);
+        old_path = lua_tolstring(L, -1, &old_path_len);
+
+#ifdef LUA_DEFAULT_PATH
+#   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
+        len = LUA_DEFAULT_PATH_LEN + sizeof(";") - 1 + old_path_len + 1;
+
+        p = ngx_palloc(cf->pool, len);
+        if (p == NULL) {
+            return NULL;
+        }
+
+        default_path = (char *) p;
+
+        p = ngx_copy(p, LUA_DEFAULT_PATH, LUA_DEFAULT_PATH_LEN);
+        *p++ = ';';
+        p = ngx_copy(p, old_path, old_path_len);
+        *p++ = '\0';
+
+        if ((char *) p - default_path != (ssize_t) len) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                    "buffer error while generating lua path: %z != %uz",
+                    (char *) p - default_path, len);
+
+            return NULL;
+        }
+#else
+        default_path = old_path;
+#endif /* LUA_DEFAULT_PATH */
+
+        dd("default path: %s", default_path);
 
         lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
         new_path = lua_tostring(L, -1);
 
-        setpath(L, -3, "path", new_path, old_path);
+        dd("new_path path: %s", new_path);
+
+        set_path(L, -3, "path", new_path, default_path);
 
         lua_pop(L, 2);
     }
 
     if (lmcf->lua_cpath.len != 0) {
-        const char *old_cpath;
-        const char *new_cpath;
+        const char      *old_cpath;
+        const char      *new_cpath;
+        const char      *default_cpath;
+        size_t           old_cpath_len;
+#ifdef LUA_DEFAULT_CPATH
+        size_t           len;
+        u_char          *p;
+#endif
 
         lua_getfield(L, -1, "cpath"); /* get original package.cpath */
-        old_cpath = lua_tostring(L, -1);
+        old_cpath = lua_tolstring(L, -1, &old_cpath_len);
+
+#ifdef LUA_DEFAULT_CPATH
+#   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
+        len = LUA_DEFAULT_CPATH_LEN + sizeof(";") - 1 + old_cpath_len + 1;
+
+        p = ngx_palloc(cf->pool, len);
+        if (p == NULL) {
+            return NULL;
+        }
+
+        default_cpath = (char *) p;
+
+        p = ngx_copy(p, LUA_DEFAULT_CPATH, LUA_DEFAULT_CPATH_LEN);
+        *p++ = ';';
+        p = ngx_copy(p, old_cpath, old_cpath_len);
+        *p++ = '\0';
+
+        if ((char *) p - default_cpath != (ssize_t) len) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                    "buffer error while generating lua cpath: %z != %uz",
+                    (char *) p - default_cpath, len);
+
+            return NULL;
+        }
+#else
+        default_cpath = old_cpath;
+#endif /* LUA_DEFAULT_CPATH */
 
         lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
         new_cpath = lua_tostring(L, -1);
 
-        setpath(L, -3, "cpath", new_cpath, old_cpath);
+        set_path(L, -3, "cpath", new_cpath, default_cpath);
 
         lua_pop(L, 2);
     }
