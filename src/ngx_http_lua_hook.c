@@ -2619,7 +2619,6 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 int
 ngx_http_lua_ngx_cookie_time(lua_State *L)
 {
-    ngx_http_request_t                  *r;
     time_t                               t;
     u_char                              *p;
 
@@ -2630,14 +2629,6 @@ ngx_http_lua_ngx_cookie_time(lua_State *L)
     }
 
     t = (time_t) luaL_checknumber(L, 1);
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
 
     p = buf;
     p = ngx_http_cookie_time(p, t);
@@ -2651,7 +2642,6 @@ ngx_http_lua_ngx_cookie_time(lua_State *L)
 int
 ngx_http_lua_ngx_http_time(lua_State *L)
 {
-    ngx_http_request_t                  *r;
     time_t                               t;
     u_char                              *p;
 
@@ -2662,14 +2652,6 @@ ngx_http_lua_ngx_http_time(lua_State *L)
     }
 
     t = (time_t) luaL_checknumber(L, 1);
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
 
     p = buf;
     p = ngx_http_time(p, t);
@@ -2683,9 +2665,9 @@ ngx_http_lua_ngx_http_time(lua_State *L)
 int
 ngx_http_lua_ngx_parse_http_time(lua_State *L)
 {
-    ngx_http_request_t                  *r;
     u_char                              *p;
     size_t                               len;
+    time_t                               time;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -2693,15 +2675,13 @@ ngx_http_lua_ngx_parse_http_time(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
+    time = ngx_http_parse_time(p, len);
+    if (time == NGX_ERROR) {
+        lua_pushnil(L);
+        return 1;
     }
 
-    lua_pushnumber(L, (lua_Number) ngx_http_parse_time(p, len));
+    lua_pushnumber(L, (lua_Number) time);
 
     return 1;
 }
