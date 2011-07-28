@@ -3,6 +3,8 @@
 #define DDEBUG 0
 
 #include "nginx.h"
+#include "ngx_http.h"
+#include "ngx_http_request.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_patch.h"
@@ -424,40 +426,70 @@ inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_HEAD);
     lua_setfield(L, -2, "HTTP_HEAD");
 
-    lua_pushinteger(L, 200);
+    lua_pushinteger(L, NGX_HTTP_OK);//200
     lua_setfield(L, -2, "HTTP_OK");
 
-    lua_pushinteger(L, 201);
+    lua_pushinteger(L, NGX_HTTP_CREATED);//201
     lua_setfield(L, -2, "HTTP_CREATED");
+    
+    lua_pushinteger(L, NGX_HTTP_ACCEPTED);//202
+    lua_setfield(L, -2, "HTTP_ACCEPTED");
+    
+    lua_pushinteger(L, NGX_HTTP_NO_CONTENT);//204
+    lua_setfield(L, -2, "HTTP_NO_CONTENT");
+    
+    lua_pushinteger(L, NGX_HTTP_PARTIAL_CONTENT);
+    lua_setfield(L, -2, "HTTP_PARTIAL_CONTENT");//206
 
-    lua_pushinteger(L, 301);
+    lua_pushinteger(L, NGX_HTTP_SPECIAL_RESPONSE);//300
+    lua_setfield(L, -2, "HTTP_SPECIAL_RESPONSE");
+    
+    lua_pushinteger(L, NGX_HTTP_MOVED_PERMANENTLY);//301
     lua_setfield(L, -2, "HTTP_MOVED_PERMANENTLY");
 
-    lua_pushinteger(L, 302);
+    lua_pushinteger(L, NGX_HTTP_MOVED_TEMPORARILY);//302
     lua_setfield(L, -2, "HTTP_MOVED_TEMPORARILY");
 
-    lua_pushinteger(L, 304);
+    lua_pushinteger(L, NGX_HTTP_SEE_OTHER);//303
+    lua_setfield(L, -2, "HTTP_SEE_OTHER");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_MODIFIED);//304
     lua_setfield(L, -2, "HTTP_NOT_MODIFIED");
 
-    lua_pushinteger(L, 400);
+    lua_pushinteger(L, NGX_HTTP_BAD_REQUEST);//400
     lua_setfield(L, -2, "HTTP_BAD_REQUEST");
+
+    lua_pushinteger(L, NGX_HTTP_BAD_REQUEST);//401
+    lua_setfield(L, -2, "HTTP_BAD_REQUEST");
+
+    lua_pushinteger(L, NGX_HTTP_FORBIDDEN);//403
+    lua_setfield(L, -2, "HTTP_FORBIDDEN");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_FOUND);//404
+    lua_setfield(L, -2, "HTTP_NOT_FOUND");
+
+    lua_pushinteger(L, NGX_HTTP_NOT_ALLOWED);//405
+    lua_setfield(L, -2, "HTTP_NOT_ALLOWED");
+
+    lua_pushinteger(L, NGX_HTTP_REQUEST_TIME_OUT);//408
+    lua_setfield(L, -2, "HTTP_REQUEST_TIME_OUT");
+
+    lua_pushinteger(L, NGX_HTTP_CONFLICT);//409
+    lua_setfield(L, -2, "NGX_HTTP_CONFLICT");
 
     lua_pushinteger(L, 410);
     lua_setfield(L, -2, "HTTP_GONE");
 
-    lua_pushinteger(L, 404);
-    lua_setfield(L, -2, "HTTP_NOT_FOUND");
+    lua_pushinteger(L, NGX_HTTP_PRECONDITION_FAILED);//412
+    lua_setfield(L, -2, "HTTP_PRECONDITION_FAILED");
 
-    lua_pushinteger(L, 405);
-    lua_setfield(L, -2, "HTTP_NOT_ALLOWED");
+    lua_pushinteger(L, NGX_HTTP_RANGE_NOT_SATISFIABLE);//416
+    lua_setfield(L, -2, "HTTP_RANGE_NOT_SATISFIABLE");
 
-    lua_pushinteger(L, 403);
-    lua_setfield(L, -2, "HTTP_FORBIDDEN");
-
-    lua_pushinteger(L, 500);
+    lua_pushinteger(L, NGX_HTTP_INTERNAL_SERVER_ERROR);//500
     lua_setfield(L, -2, "HTTP_INTERNAL_SERVER_ERROR");
 
-    lua_pushinteger(L, 503);
+    lua_pushinteger(L, NGX_HTTP_SERVICE_UNAVAILABLE);//503
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
     /* }}} */
 }
