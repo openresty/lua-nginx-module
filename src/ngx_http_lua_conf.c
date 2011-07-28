@@ -50,7 +50,7 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 }
 
 
-void*
+void *
 ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_loc_conf_t *conf;
