@@ -223,7 +223,8 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
     dd("entered? %d", (int) ctx->entered_access_phase);
 
     if (ctx->waiting_more_body) {
-        return NGX_DECLINED;
+        dd("WAITING MORE BODY");
+        return NGX_DONE;
     }
 
     if (ctx->entered_access_phase) {
@@ -242,7 +243,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
             ! ctx->read_body_done &&
             ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
     {
-        rc = ngx_http_read_client_request_body(r, 
+        rc = ngx_http_read_client_request_body(r,
                 ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {

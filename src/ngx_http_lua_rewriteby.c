@@ -222,7 +222,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     dd("entered? %d", (int) ctx->entered_rewrite_phase);
 
     if (ctx->waiting_more_body) {
-        return NGX_DECLINED;
+        return NGX_DONE;
     }
 
     if (ctx->entered_rewrite_phase) {
