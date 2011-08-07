@@ -14,7 +14,6 @@
 static void ngx_http_lua_clear_package_loaded(lua_State *L);
 
 
-
 /**
  * Find code chunk associated with the given key in code cache,
  * and push it to the top of Lua stack if found.
@@ -267,6 +266,16 @@ ngx_http_lua_clear_package_loaded(lua_State *L)
         lua_pop(L, 1);  /* package loaded key */
 
         p = (u_char *) lua_tolstring(L, -1, &len);
+
+#if 1
+        /* XXX work-around the "stack overflow" issue of LuaRocks
+         * while unloading and reloading Lua modules */
+        if (len >= sizeof("luarocks") - 1 &&
+                ngx_strncmp(p, "luarocks", sizeof("luarocks") - 1) == 0)
+        {
+            goto done;
+        }
+#endif
 
         switch (len) {
         case 2:

@@ -470,3 +470,99 @@ ngx.say("OK")
 OK
 OK
 
+
+
+=== TEST 15: skip luarocks
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+     lua_code_cache off;"
+--- config
+    location /main {
+        echo_location /load;
+        echo_location /check;
+        echo_location /check;
+    }
+
+    location /load {
+        content_by_lua '
+            package.loaded.luarocks = nil;
+            local foo = require "luarocks";
+            foo.hi()
+        ';
+    }
+
+    location /check {
+        content_by_lua '
+            local foo = package.loaded.luarocks
+            if foo then
+                ngx.say("found")
+            else
+                ngx.say("not found")
+            end
+        ';
+    }
+--- request
+GET /main
+--- user_files
+>>> luarocks.lua
+module(..., package.seeall);
+
+ngx.say("loading");
+
+function hi ()
+    ngx.say("hello, foo")
+end;
+--- response_body
+loading
+hello, foo
+found
+found
+
+
+
+=== TEST 16: skip luarocks*
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+     lua_code_cache off;"
+--- config
+    location /main {
+        echo_location /load;
+        echo_location /check;
+        echo_location /check;
+    }
+
+    location /load {
+        content_by_lua '
+            package.loaded.luarocks2 = nil;
+            local foo = require "luarocks2";
+            foo.hi()
+        ';
+    }
+
+    location /check {
+        content_by_lua '
+            local foo = package.loaded.luarocks2
+            if foo then
+                ngx.say("found")
+            else
+                ngx.say("not found")
+            end
+        ';
+    }
+--- request
+GET /main
+--- user_files
+>>> luarocks2.lua
+module(..., package.seeall);
+
+ngx.say("loading");
+
+function hi ()
+    ngx.say("hello, foo")
+end;
+--- response_body
+loading
+hello, foo
+found
+found
+
