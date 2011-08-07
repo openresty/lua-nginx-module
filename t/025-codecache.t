@@ -522,6 +522,7 @@ found
 
 === TEST 16: skip luarocks*
 -trick Crosby-- ONLY
+-trick Crosby-- ONLY
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';
      lua_code_cache off;"
