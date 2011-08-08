@@ -1,6 +1,27 @@
 {
    <insert_a_suppression_name_here>
    Memcheck:Leak
+   fun:malloc
+   fun:ngx_alloc
+   fun:ngx_event_process_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:ngx_conf_flush_files
+   fun:ngx_single_process_cycle
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:memcpy
+   fun:ngx_vslprintf
+   fun:ngx_log_error_core
+   fun:ngx_http_charset_header_filter
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
    fun:memalign
    fun:posix_memalign
    fun:ngx_memalign
