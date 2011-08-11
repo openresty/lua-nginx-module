@@ -43,6 +43,8 @@ u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
         int buf_len);
 void ngx_http_lua_dump_postponed(ngx_http_request_t *r);
 ngx_int_t ngx_http_lua_flush_postponed_outputs(ngx_http_request_t *r);
+void ngx_http_lua_set_multi_value_table(lua_State *L, int index);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
+

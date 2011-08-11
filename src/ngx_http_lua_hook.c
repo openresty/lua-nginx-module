@@ -2975,6 +2975,8 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
             ngx_http_lua_unescape_uri(&dst, &src, p - q,
                     NGX_UNESCAPE_URI_COMPONENT);
 
+            dd("pushing key %.*s", (int) (dst - q), q);
+
             /* push the key */
             lua_pushlstring(L, (char *) q, dst - q);
 
@@ -2991,6 +2993,8 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
             ngx_http_lua_unescape_uri(&dst, &src, p - q,
                     NGX_UNESCAPE_URI_COMPONENT);
 
+            dd("pushing key or value %.*s", (int) (dst - q), q);
+
             /* push the value or key */
             lua_pushlstring(L, (char *) q, dst - q);
 
@@ -3006,6 +3010,8 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
             } else {
                 /* the current parsing pair takes no value,
                  * just push the value "true" */
+                dd("pushing boolean true");
+
                 lua_pushboolean(L, 1);
             }
 
@@ -3013,10 +3019,12 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
 
             if (len == 0) {
                 /* ignore empty string key pairs */
+                dd("popping key and value...");
                 lua_pop(L, 2);
 
             } else {
-                lua_settable(L, 1);
+                dd("setting table...");
+                ngx_http_lua_set_multi_value_table(L, 1);
             }
 
         } else {
@@ -3024,26 +3032,41 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
         }
     }
 
-    if (p != q) {
+    if (p != q || parsing_value) {
         src = q; dst = q;
 
         ngx_http_lua_unescape_uri(&dst, &src, p - q,
                 NGX_UNESCAPE_URI_COMPONENT);
 
-        /* push the value or key */
+        dd("pushing key or value %.*s", (int) (dst - q), q);
+
         lua_pushlstring(L, (char *) q, dst - q);
 
         if (! parsing_value) {
+            dd("pushing boolean true...");
             lua_pushboolean(L, 1);
         }
 
-        lua_settable(L, 1);
+        (void) lua_tolstring(L, -2, &len);
+
+        if (len == 0) {
+            /* ignore empty string key pairs */
+            dd("popping key and value...");
+            lua_pop(L, 2);
+
+        } else {
+            dd("setting table...");
+            ngx_http_lua_set_multi_value_table(L, 1);
+        }
     }
 
     ngx_pfree(r->pool, buf);
 
     dd("gettop: %d", lua_gettop(L));
     dd("type: %s", lua_typename(L, lua_type(L, 1)));
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "internal error: stack in bad state");
+    }
 
     return 1;
 }

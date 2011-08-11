@@ -210,7 +210,20 @@ nil
 
 
 
-=== TEST 12: bad argument type to ngx.location.capture
+=== TEST 12: write boolean
+--- config
+    location /lua {
+        access_by_lua 'ngx.say(true, " ", false)';
+        content_by_lua return;
+    }
+--- request
+GET /lua
+--- response_body
+true false
+
+
+
+=== TEST 13: bad argument type to ngx.location.capture
 --- config
     location /lua {
         access_by_lua 'ngx.location.capture(nil)';
@@ -223,7 +236,7 @@ GET /lua
 
 
 
-=== TEST 13: capture location (default 0);
+=== TEST 14: capture location (default 0);
 --- config
  location /recur {
        access_by_lua '
@@ -249,7 +262,7 @@ end
 
 
 
-=== TEST 14: capture location
+=== TEST 15: capture location
 access phase not running in subrequests
 --- config
  location /recur {
@@ -276,7 +289,7 @@ status=200 body=
 
 
 
-=== TEST 15: setting nginx variables from within Lua
+=== TEST 16: setting nginx variables from within Lua
 --- config
  location /set {
        set $a "";
@@ -293,7 +306,7 @@ Foo: 32
 
 
 
-=== TEST 16: nginx quote sql string 1
+=== TEST 17: nginx quote sql string 1
 --- config
  location /set {
        set $a 'hello\n\r\'"\\'; # this runs after access_by_lua
@@ -307,7 +320,7 @@ GET /set
 
 
 
-=== TEST 17: nginx quote sql string 2
+=== TEST 18: nginx quote sql string 2
 --- config
 location /set {
     #set $a "hello\n\r'\"\\";
@@ -321,7 +334,7 @@ GET /set
 
 
 
-=== TEST 18: use dollar
+=== TEST 19: use dollar
 --- config
 location /set {
     access_by_lua '
@@ -337,7 +350,7 @@ GET /set
 
 
 
-=== TEST 19: subrequests do not share variables of main requests by default
+=== TEST 20: subrequests do not share variables of main requests by default
 --- config
 location /sub {
     echo $a;
@@ -353,7 +366,7 @@ GET /parent
 
 
 
-=== TEST 20: subrequests can share variables of main requests
+=== TEST 21: subrequests can share variables of main requests
 --- config
 location /sub {
     echo $a;
@@ -377,7 +390,7 @@ GET /parent
 
 
 
-=== TEST 21: main requests use subrequests' variables
+=== TEST 22: main requests use subrequests' variables
 --- config
 location /sub {
     set $a 12;
@@ -397,7 +410,7 @@ GET /parent
 
 
 
-=== TEST 22: main requests do NOT use subrequests' variables
+=== TEST 23: main requests do NOT use subrequests' variables
 --- config
 location /sub {
     set $a 12;
@@ -417,7 +430,7 @@ GET /parent
 
 
 
-=== TEST 23: capture location headers
+=== TEST 24: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -439,7 +452,7 @@ type: foo/bar
 
 
 
-=== TEST 24: capture location headers
+=== TEST 25: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -466,7 +479,7 @@ Bar: Bah
 
 
 
-=== TEST 25: capture location headers
+=== TEST 26: capture location headers
 --- config
     location /other {
         default_type 'foo/bar';
@@ -493,7 +506,7 @@ Bar: nil
 
 
 
-=== TEST 26: access_by_lua runs after ngx_access
+=== TEST 27: access_by_lua runs after ngx_access
 --- config
     location /lua {
         deny all;
@@ -511,7 +524,7 @@ GET /lua
 
 
 
-=== TEST 27: auth_request runs before ngx_access
+=== TEST 28: auth_request runs before ngx_access
 --- config
     location /lua {
         deny all;
@@ -528,7 +541,7 @@ GET /lua
 
 
 
-=== TEST 28: access_by_lua shouldn't send headers automatically (on simple return)
+=== TEST 29: access_by_lua shouldn't send headers automatically (on simple return)
 --- config
     location /lua {
         access_by_lua 'return';
@@ -551,7 +564,7 @@ foo
 
 
 
-=== TEST 29: access_by_lua shouldn't send headers automatically (on simple exit)
+=== TEST 30: access_by_lua shouldn't send headers automatically (on simple exit)
 --- config
     location /lua {
         access_by_lua 'ngx.exit(ngx.OK)';
@@ -574,7 +587,7 @@ foo
 
 
 
-=== TEST 30: short circuit
+=== TEST 31: short circuit
 --- config
     location /lua {
         access_by_lua '
@@ -595,7 +608,7 @@ Hi
 
 
 
-=== TEST 31: nginx vars in script path
+=== TEST 32: nginx vars in script path
 --- config
     location ~ ^/lua/(.+)$ {
         access_by_lua_file html/$1.lua;
@@ -617,7 +630,7 @@ Hi
 
 
 
-=== TEST 32: phase postponing works for various locations (access phase not running in subrequest)
+=== TEST 33: phase postponing works for various locations (access phase not running in subrequest)
 --- config
     location ~ '^/lua/(.+)' {
         set $path $1;
@@ -641,7 +654,7 @@ GET /main
 
 
 
-=== TEST 33: server access_by_lua
+=== TEST 34: server access_by_lua
 --- config
     access_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
 --- request
@@ -653,7 +666,7 @@ X-Foo: bar
 
 
 
-=== TEST 34: server access_by_lua_file
+=== TEST 35: server access_by_lua_file
 --- config
     access_by_lua_file html/foo.lua;
 --- user_files

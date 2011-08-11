@@ -171,7 +171,7 @@ GET /lua
 
 
 
-=== TEST 10: invalid capture location (not as expected...)
+=== TEST 9: invalid capture location (not as expected...)
 --- config
     location /lua {
         content_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
@@ -183,7 +183,7 @@ res=404
 
 
 
-=== TEST 11: nil is "nil"
+=== TEST 10: nil is "nil"
 --- config
     location /lua {
         content_by_lua 'ngx.say(nil)';
@@ -192,6 +192,18 @@ res=404
 GET /lua
 --- response_body
 nil
+
+
+
+=== TEST 11: write boolean
+--- config
+    location /lua {
+        content_by_lua 'ngx.say(true, " ", false)';
+    }
+--- request
+GET /lua
+--- response_body
+true false
 
 
 

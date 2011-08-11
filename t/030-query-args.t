@@ -61,9 +61,10 @@ c = true
         ';
     }
 --- request
-GET /lua?foo&bar=42
+GET /lua?foo&baz=&bar=42
 --- response_body
 bar = 42
+baz = 
 foo = true
 
 
@@ -138,5 +139,121 @@ done
 --- request
 GET /lua?=&&
 --- response_body
+done
+
+
+
+=== TEST 6: multi-value keys
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                local val = args[key]
+                if type(val) == "table" then
+                    ngx.say(key, " = [", table.concat(val, ", "), "]")
+                else
+                    ngx.say(key, " = ", val)
+                end
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?foo=32&foo==&foo=baz
+--- response_body
+foo = [32, =, baz]
+done
+
+
+
+=== TEST 7: multi-value keys
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                local val = args[key]
+                if type(val) == "table" then
+                    ngx.say(key, " = [", table.concat(val, ", "), "]")
+                else
+                    ngx.say(key, " = ", val)
+                end
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?foo=32&foo==&bar=baz
+--- response_body
+bar = baz
+foo = [32, =]
+done
+
+
+
+=== TEST 8: empty arg
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            -- ngx.say(args)
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?&=
+--- response_body
+done
+
+
+
+=== TEST 9: = in value
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            -- ngx.say(args)
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?foo===
+--- response_body
+foo = ==
 done
 

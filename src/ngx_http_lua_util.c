@@ -1701,3 +1701,44 @@ ngx_http_lua_flush_postponed_outputs(ngx_http_request_t *r)
     return NGX_OK;
 }
 
+
+void
+ngx_http_lua_set_multi_value_table(lua_State *L, int index)
+{
+    if (index < 0) {
+        index = lua_gettop(L) + index + 1;
+    }
+
+    lua_pushvalue(L, -2); /* stack: table key value key */
+    lua_rawget(L, index);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1); /* stack: table key value */
+        lua_rawset(L, index); /* stack: table */
+
+    } else {
+        if (! lua_istable(L, -1)) {
+            /* just inserted one value */
+            lua_createtable(L, 4, 0);
+                /* stack: table key value value table */
+            lua_insert(L, -2);
+                /* stack: table key value table value */
+            lua_rawseti(L, -2, 1);
+                /* stack: table key value table */
+            lua_insert(L, -2);
+                /* stack: table key table value */
+
+            lua_rawseti(L, -2, 2); /* stack: table key table */
+
+            lua_rawset(L, index); /* stack: table */
+
+        } else {
+            /* stack: table key value table */
+            lua_insert(L, -2); /* stack: table key table value */
+
+            lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
+                /* stack: table key table  */
+            lua_pop(L, 2); /* stack: table */
+        }
+    }
+}
+
