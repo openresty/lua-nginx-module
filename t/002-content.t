@@ -160,7 +160,7 @@ status=200 body=hello, world
 
 
 
-=== TEST 9: capture non-existed location
+ei= TEST 9: capture non-existed location
 --- config
     location /lua {
         content_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
@@ -186,12 +186,12 @@ res=404
 === TEST 11: nil is "nil"
 --- config
     location /lua {
-        content_by_lua 'ngx.print(nil)';
+        content_by_lua 'ngx.say(nil)';
     }
 --- request
 GET /lua
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body
+nil
 
 
 

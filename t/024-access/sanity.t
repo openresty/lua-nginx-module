@@ -200,13 +200,13 @@ res=404
 === TEST 11: nil is "nil"
 --- config
     location /lua {
-        access_by_lua 'ngx.print(nil)';
-        content_by_lua 'ngx.exit(ngx.OK)';
+        access_by_lua 'ngx.say(nil)';
+        content_by_lua return;
     }
 --- request
 GET /lua
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body
+nil
 
 
 

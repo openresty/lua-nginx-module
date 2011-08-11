@@ -259,6 +259,8 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     ngx_int_t                    rc;
     int                          i;
     int                          nargs;
+    int                          type;
+    const char                  *msg;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -282,9 +284,33 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     size = 0;
 
     for (i = 1; i <= nargs; i++) {
-        luaL_checkstring(L, i);
-        lua_tolstring(L, i, &len);
-        size += len;
+        type = lua_type(L, i);
+        switch (type) {
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                lua_tolstring(L, i, &len);
+                size += len;
+                break;
+
+            case LUA_TNIL:
+                size += sizeof("nil") - 1;
+                break;
+
+            case LUA_TBOOLEAN:
+                if (lua_toboolean(L, i)) {
+                    size += sizeof("true") - 1;
+
+                } else {
+                    size += sizeof("false") - 1;
+                }
+
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "string, number, boolean, or nil "
+                         "expected, got %s", lua_typename(L, type));
+                return luaL_argerror(L, i, msg);
+        }
     }
 
     if (newline) {
@@ -302,8 +328,43 @@ ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
     }
 
     for (i = 1; i <= nargs; i++) {
-        p = lua_tolstring(L, i, &len);
-        b->last = ngx_copy(b->last, (u_char *) p, len);
+        type = lua_type(L, i);
+        switch (type) {
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                p = lua_tolstring(L, i, &len);
+                b->last = ngx_copy(b->last, (u_char *) p, len);
+                break;
+
+            case LUA_TNIL:
+                *b->last++ = 'n';
+                *b->last++ = 'i';
+                *b->last++ = 'l';
+                break;
+
+            case LUA_TBOOLEAN:
+                if (lua_toboolean(L, i)) {
+                    *b->last++ = 't';
+                    *b->last++ = 'r';
+                    *b->last++ = 'u';
+                    *b->last++ = 'e';
+
+                } else {
+                    *b->last++ = 'f';
+                    *b->last++ = 'a';
+                    *b->last++ = 'l';
+                    *b->last++ = 's';
+                    *b->last++ = 'e';
+                }
+
+                break;
+
+            default:
+                /* impossible to reach here */
+                msg = lua_pushfstring(L, "string, number, boolean, or nil "
+                         "expected, got %s", lua_typename(L, type));
+                return luaL_argerror(L, i, msg);
+        }
     }
 
     if (newline) {
@@ -2862,5 +2923,128 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 (int) (p - args->data), (int) len);
         return;
     }
+}
+
+
+int
+ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
+    ngx_http_request_t          *r;
+    u_char                      *p, *q, *buf;
+    u_char                      *src, *dst;
+    u_char                      *last;
+    unsigned                     parsing_value;
+    size_t                       len;
+
+    if (lua_gettop(L) != 0) {
+        return luaL_error(L, "expecting 0 arguments but seen %d",
+                lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    lua_createtable(L, 0, 4);
+
+    /* we copy r->args over to buf to simplify
+     * unescaping query arg keys and values */
+
+    buf = ngx_palloc(r->pool, r->args.len);
+    if (buf == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    ngx_memcpy(buf, r->args.data, r->args.len);
+
+    p = r->args.data;
+    last = p + r->args.len;
+
+    parsing_value = 0;
+    q = p;
+
+    while (p != last) {
+        if (*p == '=' && ! parsing_value) {
+            /* key data is between p and q */
+
+            src = q; dst = q;
+
+            ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                    NGX_UNESCAPE_URI_COMPONENT);
+
+            /* push the key */
+            lua_pushlstring(L, (char *) q, dst - q);
+
+            /* skip the current '=' char */
+            p++;
+
+            q = p;
+            parsing_value = 1;
+
+        } else if (*p == '&') {
+            /* reached the end of a key or a value, just save it */
+            src = q; dst = q;
+
+            ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                    NGX_UNESCAPE_URI_COMPONENT);
+
+            /* push the value or key */
+            lua_pushlstring(L, (char *) q, dst - q);
+
+            /* skip the current '&' char */
+            p++;
+
+            q = p;
+
+            if (parsing_value) {
+                /* end of the current pair's value */
+                parsing_value = 0;
+
+            } else {
+                /* the current parsing pair takes no value,
+                 * just push the value "true" */
+                lua_pushboolean(L, 1);
+            }
+
+            (void) lua_tolstring(L, -2, &len);
+
+            if (len == 0) {
+                /* ignore empty string key pairs */
+                lua_pop(L, 2);
+
+            } else {
+                lua_settable(L, 1);
+            }
+
+        } else {
+            p++;
+        }
+    }
+
+    if (p != q) {
+        src = q; dst = q;
+
+        ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                NGX_UNESCAPE_URI_COMPONENT);
+
+        /* push the value or key */
+        lua_pushlstring(L, (char *) q, dst - q);
+
+        if (! parsing_value) {
+            lua_pushboolean(L, 1);
+        }
+
+        lua_settable(L, 1);
+    }
+
+    ngx_pfree(r->pool, buf);
+
+    dd("gettop: %d", lua_gettop(L));
+    dd("type: %s", lua_typename(L, lua_type(L, 1)));
+
+    return 1;
 }
 
