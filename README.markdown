@@ -1004,7 +1004,7 @@ ngx.req.get_post_args()
 ------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Returns a Lua table holds all of the current request's POST query arguments.
+Returns a Lua table holds all of the current request's POST query arguments. It's required to turn on the `lua_need_request_body` directive, or a Lua exception will be thrown.
 
 Here's an example,
 
