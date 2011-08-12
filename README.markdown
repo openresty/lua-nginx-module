@@ -945,6 +945,61 @@ For reading request headers, use the `ngx.req.get_headers()` function instead.
 Reading values from ngx.header.HEADER is not implemented yet,
 and usually you shouldn't need it.
 
+ngx.req.get_query_args()
+------------------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Returns a Lua table holds all of the current request's request URL query arguments.
+
+Here's an example,
+
+    location = /test {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            for key, val in pairs(args) do
+                if type(val) == "table" then
+                    ngx.say(key, ": ", table.concat(val, ", "))
+                else
+                    ngx.say(key, ": ", val)
+                end
+            end
+        ';
+    }
+
+Then `GET /test?foo=bar&bar=baz&bar=blah` will yield the response body
+
+    foo: bar
+    bar: baz, blah
+
+Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
+
+Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings, `GET /test?a%20b=1%61+2` will yield the output
+
+    a b: 1a 2
+
+Arguments without the `=<value>` parts are treated as boolean arguments. For example, `GET /test?foo&bar` will yield the outputs
+
+    foo: true
+    bar: true
+
+That is, they will take Lua boolean values `true`. However, they're different from arguments taking empty string values. For example, `GET /test?foo=&bar=` will give something like
+
+    foo: 
+    bar: 
+
+Empty key arguments are discarded, for instance, `GET /test?=hello&=world will yeild empty outputs.
+
+Updating query arguments via the nginx variable `$args` (or `ngx.var.args` in Lua) at runtime are also supported:
+
+    ngx.var.args = "a=3&b=42"
+    local args = ngx.req.get_query_args()
+
+Here the `args` table will always look like
+
+    {a = 3, b = 42}
+
+regardless of the actual request query string.
+
 ngx.req.get_headers()
 ---------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
@@ -1105,15 +1160,13 @@ ngx.print(a, b, ...)
 
 Emit args concatenated to the HTTP client (as response body).
 
-Nil arguments are not allowed.
+Lua nil value will result in outputing "nil", and Lua boolean values will emit "true" or "false".
 
 ngx.say(a, b, ...)
 ------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Just as `ngx.print` but also emit a trailing newline.
-
-Nil arguments are not allowed.
 
 ngx.log(log_level, ...)
 -----------------------
@@ -1339,7 +1392,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   1.0.x (last tested: 1.0.4)
+*   1.0.x (last tested: 1.0.5)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 

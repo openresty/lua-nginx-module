@@ -257,3 +257,72 @@ GET /lua?foo===
 foo = ==
 done
 
+
+
+=== TEST 10: empty key, but non-emtpy values
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?=hello&=world
+--- response_body
+done
+
+
+
+=== TEST 11: updating args with $args
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("updating args...")
+
+            ngx.var.args = "a=3&b=4"
+
+            local args = ngx.req.get_query_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua?foo=bar
+--- response_body
+foo = bar
+updating args...
+a = 3
+b = 4
+done
+
