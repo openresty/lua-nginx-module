@@ -987,7 +987,7 @@ That is, they will take Lua boolean values `true`. However, they're different fr
     foo: 
     bar: 
 
-Empty key arguments are discarded, for instance, `GET /test?=hello&=world will yeild empty outputs.
+Empty key arguments are discarded, for instance, `GET /test?=hello&=world` will yield empty outputs.
 
 Updating query arguments via the nginx variable `$args` (or `ngx.var.args` in Lua) at runtime are also supported:
 
@@ -999,6 +999,60 @@ Here the `args` table will always look like
     {a = 3, b = 42}
 
 regardless of the actual request query string.
+
+ngx.req.get_post_args()
+------------------------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+Returns a Lua table holds all of the current request's POST query arguments.
+
+Here's an example,
+
+    location = /test {
+        content_by_lua '
+            local args = ngx.req.get_query_args()
+            for key, val in pairs(args) do
+                if type(val) == "table" then
+                    ngx.say(key, ": ", table.concat(val, ", "))
+                else
+                    ngx.say(key, ": ", val)
+                end
+            end
+        ';
+    }
+
+Then
+
+    # Post request with the body 'foo=bar&bar=baz&bar=blah'
+    $ curl --data 'foo=bar&bar=baz&bar=blah' localhost/test
+
+will yield the response body like
+
+    foo: bar
+    bar: baz, blah
+
+Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
+
+Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings,
+
+    # POST request with body 'a%20b=1%61+2'
+    $ curl -d 'a%20b=1%61+2' localhost/test
+
+will yield the output
+
+    a b: 1a 2
+
+Arguments without the `=<value>` parts are treated as boolean arguments. For example, `GET /test?foo&bar` will yield the outputs
+
+    foo: true
+    bar: true
+
+That is, they will take Lua boolean values `true`. However, they're different from arguments taking empty string values. For example, `POST /test` with request body `foo=&bar=` will give something like
+
+    foo: 
+    bar: 
+
+Empty key arguments are discarded, for instance, `POST /test` with body `=hello&=world` will yield empty outputs.
 
 ngx.req.get_headers()
 ---------------------

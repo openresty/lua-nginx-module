@@ -82,7 +82,12 @@ a=3&b=4&c
 
             table.sort(keys)
             for i, key in ipairs(keys) do
-                ngx.say(key, " = ", args[key])
+                local val = args[key]
+                if type(val) == "table" then
+                    ngx.say(key, ": ", table.concat(val, ", "))
+                else
+                    ngx.say(key, ": ", val)
+                end
             end
         ';
     }
