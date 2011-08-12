@@ -54,6 +54,7 @@ int ngx_http_lua_ngx_set(lua_State *L);
 int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 int ngx_http_lua_ngx_req_header_set(lua_State *L);
 int ngx_http_lua_ngx_req_get_query_args(lua_State *L);
+int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 int ngx_http_lua_ngx_header_get(lua_State *L);
 int ngx_http_lua_ngx_header_set(lua_State *L);

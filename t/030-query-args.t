@@ -7,8 +7,8 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-#repeat_each(2);
-repeat_each(1);
+repeat_each(2);
+#repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2);
 
@@ -83,11 +83,27 @@ foo = true
             for i, key in ipairs(keys) do
                 ngx.say(key, " = ", args[key])
             end
+
+            ngx.say("again...")
+
+            args = ngx.req.get_query_args()
+            keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
         ';
     }
 --- request
 GET /lua?%3d&b%20r=4%61+2
 --- response_body
+= = true
+b r = 4a 2
+again...
 = = true
 b r = 4a 2
 

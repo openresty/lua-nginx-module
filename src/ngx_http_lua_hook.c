@@ -3011,7 +3011,7 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
 
     ngx_memcpy(buf, r->args.data, r->args.len);
 
-    p = r->args.data;
+    p = buf;
     last = p + r->args.len;
 
     parsing_value = 0;
