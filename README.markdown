@@ -71,7 +71,7 @@ Synopsis
              # force reading request body (default off)
              lua_need_request_body on;
              client_max_body_size 50k;
-             client_body_in_single_buffer on;
+             client_body_buffer_size 50k;
 
              content_by_lua 'ngx.print(ngx.var.request_body)';
         }
@@ -152,7 +152,7 @@ Synopsis
            lua_need_request_body on;
 
            client_max_body_size 100k;
-           client_body_in_single_buffer on;
+           client_body_buffer_size 100k;
 
            access_by_lua '
                -- check the client IP addr is in our black list
@@ -570,9 +570,9 @@ Force reading request body data or not. The client request body won't be read,
 so you have to explicitly force reading the body if you need its content.
 
 If you want to read the request body data from the `$request_body` variable, make sure that
-your set `client_body_in_single_buffer` on. See
+your have configured `client_body_buffer_size` to have exactly the same value as `client_max_body_size`. See
 
-<http://wiki.nginx.org/NginxHttpCoreModule#client_body_in_single_buffer>
+<http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size>
 
 for more details.
 

@@ -23,7 +23,7 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -48,7 +48,7 @@ c = true
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -73,7 +73,7 @@ foo = true
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -86,7 +86,7 @@ foo = true
 
             ngx.say("again...")
 
-            args = ngx.req.get_query_args()
+            args = ngx.req.get_uri_args()
             keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -113,7 +113,7 @@ b r = 4a 2
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -138,7 +138,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -163,7 +163,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -194,7 +194,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -226,7 +226,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             -- ngx.say(args)
             for key, val in pairs(args) do
@@ -252,7 +252,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             -- ngx.say(args)
             for key, val in pairs(args) do
@@ -279,7 +279,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -304,7 +304,7 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -319,7 +319,7 @@ done
 
             ngx.var.args = "a=3&b=4"
 
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
