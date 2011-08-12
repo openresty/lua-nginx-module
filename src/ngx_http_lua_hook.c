@@ -44,6 +44,8 @@ static int log_wrapper(ngx_http_request_t *r, const char *ident, int level,
 static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
+static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
+        u_char *buf, u_char *last);
 
 
 #if defined(NDK) && NDK
@@ -2980,11 +2982,9 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 int
 ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
     ngx_http_request_t          *r;
-    u_char                      *p, *q, *buf;
-    u_char                      *src, *dst;
+    u_char                      *buf;
     u_char                      *last;
-    unsigned                     parsing_value;
-    size_t                       len;
+    int                          retval;
 
     if (lua_gettop(L) != 0) {
         return luaL_error(L, "expecting 0 arguments but seen %d",
@@ -3011,8 +3011,102 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
 
     ngx_memcpy(buf, r->args.data, r->args.len);
 
+    last = buf + r->args.len;
+
+    retval = ngx_http_lua_parse_args(r, L, buf, last);
+
+    ngx_pfree(r->pool, buf);
+
+    return retval;
+}
+
+
+int
+ngx_http_lua_ngx_req_get_post_args(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    u_char                      *buf;
+    int                          retval;
+    size_t                       len;
+    ngx_chain_t                 *cl;
+    u_char                      *p;
+    u_char                      *last;
+
+    if (lua_gettop(L) != 0) {
+        return luaL_error(L, "expecting 0 arguments but seen %d",
+                lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (r->discard_body) {
+        lua_createtable(L, 0, 4);
+        return 1;
+    }
+
+    if (r->request_body == NULL) {
+        return luaL_error(L, "no request body found; "
+                "maybe you should turn on lua_need_request_body?");
+    }
+
+    if (r->request_body->temp_file) {
+        return luaL_error(L, "requesty body in temp file not supported");
+    }
+
+    lua_createtable(L, 0, 4);
+
+    if (r->request_body->bufs == NULL) {
+        return 1;
+    }
+
+    /* we copy r->request_body->bufs over to buf to simplify
+     * unescaping query arg keys and values */
+
+    len = 0;
+    for (cl = r->request_body->bufs; cl; cl = cl->next) {
+        len += cl->buf->last - cl->buf->pos;
+    }
+
+    dd("post body length: %d", (int) len);
+
+    buf = ngx_palloc(r->pool, len);
+    if (buf == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
     p = buf;
-    last = p + r->args.len;
+    for (cl = r->request_body->bufs; cl; cl = cl->next) {
+        p = ngx_copy(p, cl->buf->pos, cl->buf->last - cl->buf->pos);
+    }
+
+    dd("post body: %.*s", (int) len, buf);
+
+    last = buf + len;
+
+    retval = ngx_http_lua_parse_args(r, L, buf, last);
+
+    ngx_pfree(r->pool, buf);
+
+    return retval;
+}
+
+
+static int
+ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
+        u_char *last)
+{
+    u_char                      *p, *q;
+    u_char                      *src, *dst;
+    unsigned                     parsing_value;
+    size_t                       len;
+
+    p = buf;
 
     parsing_value = 0;
     q = p;
@@ -3110,8 +3204,6 @@ ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
             ngx_http_lua_set_multi_value_table(L, 1);
         }
     }
-
-    ngx_pfree(r->pool, buf);
 
     dd("gettop: %d", lua_gettop(L));
     dd("type: %s", lua_typename(L, lua_type(L, 1)));

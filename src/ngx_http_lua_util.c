@@ -701,6 +701,9 @@ init_ngx_lua_globals(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_query_args);
     lua_setfield(L, -2, "get_query_args");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_post_args);
+    lua_setfield(L, -2, "get_post_args");
+
     lua_setfield(L, -2, "req");
 
     /* }}} */
