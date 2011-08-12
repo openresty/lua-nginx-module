@@ -945,7 +945,7 @@ For reading request headers, use the `ngx.req.get_headers()` function instead.
 Reading values from ngx.header.HEADER is not implemented yet,
 and usually you shouldn't need it.
 
-ngx.req.get_query_args()
+ngx.req.get_uri_args()
 ------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
@@ -955,7 +955,7 @@ Here's an example,
 
     location = /test {
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_uri_args()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -992,7 +992,7 @@ Empty key arguments are discarded, for instance, `GET /test?=hello&=world` will 
 Updating query arguments via the nginx variable `$args` (or `ngx.var.args` in Lua) at runtime are also supported:
 
     ngx.var.args = "a=3&b=42"
-    local args = ngx.req.get_query_args()
+    local args = ngx.req.get_uri_args()
 
 Here the `args` table will always look like
 
@@ -1009,8 +1009,9 @@ Returns a Lua table holds all of the current request's POST query arguments. It'
 Here's an example,
 
     location = /test {
+        lua_need_request_body on;
         content_by_lua '
-            local args = ngx.req.get_query_args()
+            local args = ngx.req.get_post_args()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))

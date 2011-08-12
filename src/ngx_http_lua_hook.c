@@ -2980,7 +2980,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
 
 int
-ngx_http_lua_ngx_req_get_query_args(lua_State *L) {
+ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
     u_char                      *last;
