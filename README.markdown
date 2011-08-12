@@ -734,7 +734,7 @@ It's equivalent to
 
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 
-Nil arguments are accepted and result in literal "nil".
+Lua nil arguments are accepted and result in literal "nil", and Lua booleans result in "true" or "false".
 
 ngx.location.capture(uri, options?)
 -----------------------------------
@@ -1174,7 +1174,7 @@ ngx.log(log_level, ...)
 
 Log args concatenated to error.log with the given logging level.
 
-Nil arguments are accepted and result in literal "nil".
+Lua nil arguments are accepted and result in literal "nil", and Lua booleans result in "true" or "false".
 
 ngx.flush()
 -----------
