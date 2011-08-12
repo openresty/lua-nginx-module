@@ -217,3 +217,19 @@ GET /log
 --- response_body
 32
 
+
+
+=== TEST 13: test booleans and nil
+--- config
+    location /log {
+        set_by_lua $a '
+            ngx.log(ngx.ERR, true, false, nil)
+            return 32;
+        ';
+        echo $a;
+    }
+--- request
+GET /log
+--- response_body
+32
+

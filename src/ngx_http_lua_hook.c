@@ -39,7 +39,7 @@ static void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type);
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
         size_t size);
-static void log_wrapper(ngx_http_request_t *r, const char *ident, int level,
+static int log_wrapper(ngx_http_request_t *r, const char *ident, int level,
         lua_State *L);
 static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
@@ -92,7 +92,7 @@ ngx_http_lua_atpanic(lua_State *L)
 }
 
 
-static void
+static int
 log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 {
     u_char              *buf;
@@ -100,6 +100,8 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
     u_char              *q;
     int                  nargs, i;
     size_t               size, len;
+    int                  type;
+    const char          *msg;
 
     nargs = lua_gettop(L);
     if (nargs == 0) {
@@ -110,30 +112,78 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
     size = 0;
 
     for (i = 1; i <= nargs; i++) {
-        if (lua_type(L, i) == LUA_TNIL) {
-            size += sizeof("nil") - 1;
-        } else {
-            luaL_checkstring(L, i);
-            lua_tolstring(L, i, &len);
-            size += len;
+        type = lua_type(L, i);
+        switch (type) {
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                lua_tolstring(L, i, &len);
+                size += len;
+                break;
+
+            case LUA_TNIL:
+                size += sizeof("nil") - 1;
+                break;
+
+            case LUA_TBOOLEAN:
+                if (lua_toboolean(L, i)) {
+                    size += sizeof("true") - 1;
+
+                } else {
+                    size += sizeof("false") - 1;
+                }
+
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "string, number, boolean, or nil "
+                         "expected, got %s", lua_typename(L, type));
+                return luaL_argerror(L, i, msg);
         }
     }
 
     buf = ngx_palloc(r->pool, size + 1);
     if (buf == NULL) {
-        luaL_error(L, "out of memory");
-        return;
+        return luaL_error(L, "out of memory");
     }
 
     p = buf;
     for (i = 1; i <= nargs; i++) {
-        if (lua_type(L, i) == LUA_TNIL) {
-            *p++ = 'n';
-            *p++ = 'i';
-            *p++ = 'l';
-        } else {
-            q = (u_char *) lua_tolstring(L, i, &len);
-            p = ngx_copy(p, q, len);
+        type = lua_type(L, i);
+        switch (type) {
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                q = (u_char *) lua_tolstring(L, i, &len);
+                p = ngx_copy(p, q, len);
+                break;
+
+            case LUA_TNIL:
+                *p++ = 'n';
+                *p++ = 'i';
+                *p++ = 'l';
+                break;
+
+            case LUA_TBOOLEAN:
+                if (lua_toboolean(L, i)) {
+                    *p++ = 't';
+                    *p++ = 'r';
+                    *p++ = 'u';
+                    *p++ = 'e';
+
+                } else {
+                    *p++ = 'f';
+                    *p++ = 'a';
+                    *p++ = 'l';
+                    *p++ = 's';
+                    *p++ = 'e';
+                }
+
+                break;
+
+            default:
+                /* impossible to reach here */
+                msg = lua_pushfstring(L, "string, number, boolean, or nil "
+                         "expected, got %s", lua_typename(L, type));
+                return luaL_argerror(L, i, msg);
         }
     }
 
@@ -142,6 +192,7 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 done:
     ngx_log_error((ngx_uint_t) level, r->connection->log, 0,
             "%s%s", ident, (buf == NULL) ? (u_char *) "(null)" : buf);
+    return 0;
 }
 
 
@@ -167,7 +218,7 @@ ngx_http_lua_ngx_log(lua_State *L)
         /* remove log-level param from stack */
         lua_remove(L, 1);
 
-        log_wrapper(r, "", level, L);
+        return log_wrapper(r, "", level, L);
     } else {
         dd("(lua-log) can't output log due to invalid logging context!");
     }
@@ -193,7 +244,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if (r && r->connection && r->connection->log) {
-        log_wrapper(r, "lua print: ", NGX_LOG_NOTICE, L);
+        return log_wrapper(r, "lua print: ", NGX_LOG_NOTICE, L);
 
     } else {
         dd("(lua-print) can't output print content to error log due "
