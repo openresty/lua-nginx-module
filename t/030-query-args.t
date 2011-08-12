@@ -19,7 +19,6 @@ run_tests();
 __DATA__
 
 === TEST 1: sanity
-
 --- config
     location /lua {
         content_by_lua '

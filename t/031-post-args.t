@@ -7,8 +7,8 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-#repeat_each(2);
-repeat_each(1);
+repeat_each(2);
+#repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2);
 
@@ -69,7 +69,8 @@ a=3&b=4&c
 --- error_code: 500
 
 
-=== TEST 2: empty request body
+
+=== TEST 3: empty request body
 --- config
     location /lua {
         lua_need_request_body on;

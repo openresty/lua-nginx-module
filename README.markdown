@@ -1217,6 +1217,21 @@ Emit args concatenated to the HTTP client (as response body).
 
 Lua nil value will result in outputing "nil", and Lua boolean values will emit "true" or "false".
 
+Also, nested arrays of strings are also allowed. The elements in the arrays will be sent one by one. For example
+
+    local table = {
+        "hello, ",
+        {"world: ", true, " or ", false,
+            {": ", nil}}
+    }
+    ngx.print(table)
+
+will yield the output
+
+    hello, world: true or false: nil
+
+Non-array table arguments will cause a Lua exception to be thrown.
+
 ngx.say(a, b, ...)
 ------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
