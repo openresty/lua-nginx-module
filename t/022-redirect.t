@@ -16,6 +16,7 @@ plan tests => blocks() * repeat_each() * 3;
 #no_long_string();
 
 $ENV{TEST_NGINX_PORT} ||= 1984;
+$ENV{TEST_NGINX_CLIENT_PORT} ||= 1984;
 
 run_tests();
 
@@ -108,15 +109,22 @@ GET /read
 
 === TEST 6: relative uri
 --- config
+    location /echo {
+        echo hello, world;
+    }
+    location /proxy {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT/echo;
+    }
     location /read {
         content_by_lua '
-            ngx.redirect("/foo")
+            ngx.location.capture("/proxy")
+            ngx.redirect("/echo")
             ngx.say("hi")
         ';
     }
 --- request
 GET /read
---- raw_response_headers_like: Location: http://localhost(?::\d+)?/foo\r\n
+--- raw_response_headers_like: Location: http://localhost(?::\d+)?/echo\r\n
 --- response_body_like: 302 Found
 --- error_code: 302
 
