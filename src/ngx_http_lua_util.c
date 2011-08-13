@@ -1137,10 +1137,6 @@ ngx_http_lua_request_cleanup(void *data)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua request cleanup");
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    L = lmcf->lua;
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     /*  force coroutine handling the request quit */
@@ -1152,6 +1148,10 @@ ngx_http_lua_request_cleanup(void *data)
         *ctx->cleanup = NULL;
         ctx->cleanup = NULL;
     }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    L = lmcf->lua;
 
     if (ctx->ctx_ref != LUA_NOREF) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1296,6 +1296,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);
                     ctx->cc_ref = LUA_NOREF;
+                    ngx_http_lua_request_cleanup(r);
 
                     if ((ctx->exit_code == NGX_OK &&
                                 ctx->entered_content_phase) ||
@@ -1315,6 +1316,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     return ctx->exit_code;
                 }
 
+                /* ctx->exited == 0 */
+
                 if (ctx->exec_uri.len) {
                     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                             "lua thread initiated internal redirect to %V",
@@ -1322,6 +1325,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     ngx_http_lua_del_thread(r, L, cc_ref, 0);
                     ctx->cc_ref = LUA_NOREF;
+                    ngx_http_lua_request_cleanup(r);
 
                     if (ctx->exec_uri.data[0] == '@') {
                         if (ctx->exec_args.len > 0) {
@@ -1391,6 +1395,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         ngx_http_lua_del_thread(r, L, cc_ref, 0);
         ctx->cc_ref = LUA_NOREF;
+        ngx_http_lua_request_cleanup(r);
 
         dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 

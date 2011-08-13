@@ -4,7 +4,7 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-log_level('warn');
+#log_level('warn');
 
 repeat_each(2);
 #repeat_each(1);
@@ -666,4 +666,37 @@ GET /lua
 Foo: bar
 --- response_body
 header foo: [bar]
+
+
+
+=== TEST 27: lua calls lua via subrequests
+--- config
+    location /a {
+        content_by_lua '
+            ngx.say("hello, a");
+        ';
+    }
+    location /b {
+        content_by_lua '
+            ngx.say("hello, b");
+        ';
+    }
+    location /c {
+        content_by_lua '
+            ngx.say("hello, c");
+        ';
+    }
+    location /main {
+        content_by_lua '
+            res1, res2 = ngx.location.capture_multi({{"/a"}, {"/b"}})
+            res3 = ngx.location.capture("/c")
+            ngx.print(res1.body, res2.body, res3.body)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello, a
+hello, b
+hello, c
 

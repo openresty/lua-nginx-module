@@ -1041,7 +1041,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run post subrequest handler: rc:%d, w %d, d %d",
+            "lua run post subrequest handler: rc:%d, waiting:%d, done:%d",
             rc, ctx->waiting, ctx->done);
 
     ctx->run_post_subrequest = 1;
