@@ -736,6 +736,84 @@ It's equivalent to
 
 Lua nil arguments are accepted and result in literal "nil", and Lua booleans result in "true" or "false".
 
+ngx.ctx
+-------
+* **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
+
+This table can be used to store per-request context data for Lua programmers.
+
+This table has a liftime identical to the current request (just like Nginx variables). Consider the following example,
+
+    location /test {
+        rewrite_by_lua '
+            ngx.say("foo = ", ngx.ctx.foo)
+            ngx.ctx.foo = 76
+        ';
+        access_by_lua '
+            ngx.ctx.foo = ngx.ctx.foo + 3
+        ';
+        content_by_lua '
+            ngx.say(ngx.ctx.foo)
+        ';
+    }
+
+Then `GET /test` will yield the output
+
+    foo = nil
+    79
+
+That is, the `ngx.ctx.foo` entry persists across the rewrite, access, and content phases of a request.
+
+Also, every request has its sown copy, include subrequests, for example:
+
+    location /sub {
+        content_by_lua '
+            ngx.say("sub pre: ", ngx.ctx.blah)
+            ngx.ctx.blah = 32
+            ngx.say("sub post: ", ngx.ctx.blah)
+        ';
+    }
+    location /main {
+        content_by_lua '
+            ngx.ctx.blah = 73
+            ngx.say("main pre: ", ngx.ctx.blah)
+            local res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("main post: ", ngx.ctx.blah)
+        ';
+    }
+
+Then `GET /main` will give the output
+
+    main pre: 73
+    sub pre: nil
+    sub post: 32
+    main post: 73
+
+We can see that modification of the `ngx.ctx.blah` entry in the subrequest does not affect the one in its parent request. They do have two separate versions of `ngx.ctx.blah` per se.
+
+Internal redirection will destroy the original request's `ngx.ctx` data (if any) and the new request will have an emptied `ngx.ctx` table. For instance,
+
+    location /new {
+        content_by_lua '
+            ngx.say(ngx.ctx.foo)
+        ';
+    }
+    location /orig {
+        content_by_lua '
+            ngx.ctx.foo = "hello"
+            ngx.exec("/new")
+        ';
+    }
+
+Then `GET /orig` will give you
+
+    nil
+
+rather than the original `"hello"` value.
+
+Arbitrary data values can be inserted into this "matic" table, including Lua closures and nested tables. You can also register your own meta methods with it.
+
 ngx.location.capture(uri, options?)
 -----------------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
