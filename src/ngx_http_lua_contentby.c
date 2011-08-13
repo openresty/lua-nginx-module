@@ -33,6 +33,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         dd("setting new ctx, ctx = %p", ctx);
 
         ctx->cc_ref = LUA_NOREF;
+        ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 
@@ -124,6 +125,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         dd("setting new ctx: ctx = %p", ctx);
 
         ctx->cc_ref = LUA_NOREF;
+        ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }

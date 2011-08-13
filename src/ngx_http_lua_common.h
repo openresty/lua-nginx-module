@@ -102,8 +102,12 @@ typedef struct {
 
 typedef struct {
     lua_State       *cc;                /*  coroutine to handle request */
-    int              cc_ref;            /*  reference to anchor coroutine
-                                            in lua registry */
+
+    int              cc_ref;            /*  reference to anchor coroutine in
+                                            the lua registry */
+
+    int              ctx_ref;           /*  reference to anchor request ctx
+                                            data in lua registry */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free; /* free bufs */
@@ -195,11 +199,16 @@ extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 /*  user code cache table key in Lua vm registry */
 #define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"
+
 /*  coroutine anchoring table key in Lua vm registry */
 #define NGX_LUA_CORT_REF "ngx_lua_cort_ref"
 
+/*  request ctx data anchoring table key in Lua vm registry */
+#define NGX_LUA_REQ_CTX_REF "ngx_lua_req_ctx_ref"
+
 /*  globals symbol to hold nginx request pointer */
 #define GLOBALS_SYMBOL_REQUEST    "ngx._req"
+
 /*  globals symbol to hold code chunk handling nginx request */
 #define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
 

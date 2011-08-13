@@ -56,8 +56,9 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
                 ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 
             } else {
-                dd("restoring ctx...%d %d", (int) old_ctx->capture,
-                        (int) old_ctx->index);
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                        "lua restoring ctx with capture %d, index %d",
+                        old_ctx->capture, old_ctx->index);
 
                 ctx->capture = old_ctx->capture;
                 ctx->index = old_ctx->index;
@@ -67,8 +68,10 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     }
 
     if (ctx && ctx->capture) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua capturing request body");
+
         /* force subrequest response body buffer in memory */
-        dd("ctx and capture!");
         r->filter_need_in_memory = 1;
 
         return NGX_OK;
@@ -85,8 +88,6 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_ctx_t              *pr_ctx;
 
-    dd("in body filter");
-
     if (in == NULL) {
         return ngx_http_lua_next_body_filter(r, NULL);
     }
@@ -99,12 +100,19 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_lua_next_body_filter(r, in);
     }
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua body filter");
+
     if (ctx->run_post_subrequest) {
-        dd("already run post_subrequest");
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua body filter skipped because post subrequest already run");
         return NGX_OK;
     }
 
     if (r->parent == NULL) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua body filter skipped because no parent request found");
+
         return NGX_ERROR;
     }
 
@@ -113,7 +121,9 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-    dd("restoring the body data");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua body filter capturing output");
+
     rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->body, in);
 
     if (rc != NGX_OK) {

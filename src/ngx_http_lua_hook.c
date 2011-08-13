@@ -49,6 +49,7 @@ static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
         u_char *buf, u_char *last);
 static size_t ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i);
 static u_char * ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst);
+static int ngx_http_lua_ngx_ctx(lua_State *L);
 
 
 #if defined(NDK) && NDK
@@ -72,8 +73,8 @@ jmp_buf ngx_http_lua_exception;
 int
 ngx_http_lua_atpanic(lua_State *L)
 {
-    const char *s = luaL_checkstring(L, 1);
-    ngx_http_request_t *r;
+    const char              *s;
+    ngx_http_request_t      *r;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -81,6 +82,7 @@ ngx_http_lua_atpanic(lua_State *L)
 
     /*  log Lua VM crashing reason to error log */
     if (r && r->connection && r->connection->log) {
+        s = luaL_checkstring(L, 1);
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "(lua-atpanic) Lua VM crashed, reason: %s", s);
 
@@ -911,6 +913,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
          */
 
         sr_ctx->cc_ref = LUA_NOREF;
+        sr_ctx->ctx_ref = LUA_NOREF;
 
         sr_ctx->capture = 1;
 
@@ -1033,12 +1036,13 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     u_char                        *p;
     ngx_chain_t                   *cl;
 
-    dd("uri %.*s, rc:%d, waiting: %d, done:%d", (int) r->uri.len, r->uri.data,
-            (int) rc, (int) ctx->waiting, (int) ctx->done);
-
     if (ctx->run_post_subrequest) {
         return rc;
     }
+
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua run post subrequest handler: rc:%d, w %d, d %d",
+            rc, ctx->waiting, ctx->done);
 
     ctx->run_post_subrequest = 1;
 
@@ -1060,7 +1064,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     if (pr_ctx->entered_content_phase) {
-        dd("setting wev handler");
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua restoring write event handler");
+
         pr->write_event_handler = ngx_http_lua_content_wev_handler;
     }
 
@@ -2009,6 +2015,12 @@ ngx_http_lua_ngx_get(lua_State *L) {
         return 1;
     }
 
+    if (len == sizeof("ctx") - 1 &&
+            ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
+    {
+        return ngx_http_lua_ngx_ctx(L);
+    }
+
     if (len == sizeof("is_subrequest") - 1 &&
             ngx_strncmp(p, "is_subrequest", sizeof("is_subrequest") - 1) == 0)
     {
@@ -2161,7 +2173,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         }
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http lua req header: \"%V: %V\"",
+                       "lua request header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
     }
 
@@ -3372,5 +3384,46 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
     }
 
     return dst;
+}
+
+
+static int
+ngx_http_lua_ngx_ctx(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ctx->ctx_ref == LUA_NOREF) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua create ngx.ctx table for the current request");
+
+        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        ctx->ctx_ref = luaL_ref(L, -3);
+        return 1;
+
+    } else {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua fetching existing ngx.ctx table for the current request");
+
+        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        lua_rawgeti(L, -1, ctx->ctx_ref);
+    }
+
+    return 1;
 }
 

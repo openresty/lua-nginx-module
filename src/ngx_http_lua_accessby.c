@@ -216,6 +216,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         dd("setting new ctx: ctx = %p", ctx);
 
         ctx->cc_ref = LUA_NOREF;
+        ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
