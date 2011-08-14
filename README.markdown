@@ -1497,19 +1497,13 @@ The installation steps are usually as simple as ./configure && make && make inst
 
 Alternatively, you can compile this module with nginx core's source by hand:
 
-1. Install lua into your system. At least Lua 5.1 is required.
-Lua can be obtained freely from its project [homepage](http://www.lua.org/).
-For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
+1. Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 
-1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from
-lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
+1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
 
-1. Download the latest version of the release tarball of this module from
-lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
+1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
 
-1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
-the version 0.8.54 (see nginx compatibility), and then build the source with
-this module:
+1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example, the version 0.8.54 (see nginx compatibility), and then build the source with this module:
 
         $ wget 'http://sysoev.ru/nginx/nginx-0.8.54.tar.gz'
         $ tar -xzvf nginx-0.8.54.tar.gz
@@ -1593,9 +1587,7 @@ filtering chain affects a lot. The correct configure adding order is:
 TODO
 ====
 
-* Add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to
-`ngx.location.capture` and ngx.location.capture_multi` methods, to allow
-micro performance tuning on the user side.
+* Add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to `ngx.location.capture` and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
 * Add directives to run lua codes when nginx stops/reloads.
 * Deal with TCP 3-second delay problem under great connection harness.
 
@@ -1603,12 +1595,8 @@ Future Plan
 ===========
 
 * Add the `lua_require` directive to load module into main thread's globals.
-* Add the "cosocket" mechamism that will emulate a common set of Lua socket
-API that will give you totally transparently non-blocking capability out of
-the box by means of a completely new upstream layer atop the nginx event model
-and no nginx subrequest overheads.
-* Add Lua code automatic time slicing support by yielding and resuming
-the Lua VM actively via Lua's debug hooks.
+* Add the "cosocket" mechamism that will emulate a common set of Lua socket API that will give you totally transparently non-blocking capability out of the box by means of a completely new upstream layer atop the nginx event model and no nginx subrequest overheads.
+* Add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * Make set_by_lua using the same mechanism as content_by_lua.
 
 Known Issues
