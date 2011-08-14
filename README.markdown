@@ -792,7 +792,7 @@ Overriding `ngx.ctx` with a new Lua table is also supported, for example,
 
 ngx.location.capture
 --------------------
-* **Syntax:** `ngx.location.capture(uri, options?)`
+* **Syntax:** `res = ngx.location.capture(uri, options?)`
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Issue a synchronous but still non-blocking "nginx subrequest" using `uri`.
@@ -894,7 +894,7 @@ details.
 
 ngx.location.capture_multi
 --------------------------
-* **Syntax:** `ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })`
+* **Syntax:** `res1, res2, ... = ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })`
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Just like `ngx.location.capture`, but supports multiple subrequests running in parallel.
