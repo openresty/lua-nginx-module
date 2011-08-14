@@ -180,9 +180,9 @@ Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this mo
 as long as you use the [[#ngx.location.capture|ngx.location.capture]] or
 [[#ngx.location.capture_multi|ngx.location.capture_multi]] interfaces
 to let the nginx core do all your
-requests to mysql, postgresql, memcached,
+requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-ngx_drizzle, ngx_postgres, ngx_memc, and ngx_proxy modules for details).
+[http://github.com/chaoslawful/drizzle-nginx-module ngx_drizzle], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [http://wiki.nginx.org/NginxHttpMemcModule ngx_memc], [http://github.com/agentzh/redis2-nginx-module ngx_redis2] and ngx_proxy modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -1489,10 +1489,10 @@ The installation steps are usually as simple as <code>./configure && make && mak
 
 Alternatively, you can compile this module with nginx core's source by hand:
 
-# Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
-# Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
-# Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
-# Grab the nginx source code from [nginx.net](http://nginx.net/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+# Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [http://www.lua.org/ homepage].  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
+# Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [http://github.com/simpl/ngx_devel_kit/downloads file list].
+# Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/downloads file list].
+# Grab the nginx source code from [http://nginx.net/ nginx.net], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 <geshi lang="nginx">
         $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
         $ tar -xzvf nginx-1.0.5.tar.gz
@@ -1662,12 +1662,12 @@ It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharin
 
 = See Also =
 
-* "Introduction to ngx_lua" ( https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction )
-* ngx_devel_kit ( http://github.com/simpl/ngx_devel_kit )
-* echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
-* drizzle-nginx-module ( http://github.com/chaoslawful/drizzle-nginx-module )
-* postgres-nginx-module ( http://github.com/FRiCKLE/ngx_postgres )
-* memc-nginx-module ( http://github.com/agentzh/memc-nginx-module )
+* [https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction Introduction to ngx_lua]
+* [http://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+* [http://github.com/agentzh/echo-nginx-module echo-nginx-module]
+* [http://github.com/chaoslawful/drizzle-nginx-module drizzle-nginx-module]
+* [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
+* [http://github.com/agentzh/memc-nginx-module memc-nginx-module]
 
 = Authors =
 

@@ -184,9 +184,9 @@ Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop this mo
 as long as you use the `ngx.location.capture` or
 `ngx.location.capture_multi` interfaces
 to let the nginx core do all your
-requests to mysql, postgresql, memcached,
+requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-ngx_drizzle, ngx_postgres, ngx_memc, and ngx_proxy modules for details).
+[ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [ngx_memc](http://wiki.nginx.org/NginxHttpMemcModule), [ngx_redis2](http://github.com/agentzh/redis2-nginx-module) and ngx_proxy modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -1676,12 +1676,12 @@ It's worth noting that this is *per-worker* sharing, not *per-server* sharing. T
 See Also
 ========
 
-* "Introduction to ngx_lua" ( <https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction> )
+* [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
 * [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
-* drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
-* postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
-* memc-nginx-module ( <http://github.com/agentzh/memc-nginx-module> )
+* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
+* [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
+* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
 
 Authors
 =======
