@@ -1142,9 +1142,9 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like thi
 
     {"foo", "bar", "baz"}
 
-Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard $http_HEADER variables:
+Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard `$http_HEADER` variables:
 
-    http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
+http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
 
 ngx.req.set_header
 ------------------
@@ -1245,7 +1245,7 @@ outputs by either `ngx.print` or `ngx.say`.
 This method never returns.
 
 This method is very much like the `rewrite` directive with the `redirect` modifier in the standard
-`ngx_rewrite` module, for example, this nginx.conf snippet
+`ngx_rewrite` module, for example, this `nginx.conf` snippet
 
     rewrite ^ /foo redirect;  # nginx config
 

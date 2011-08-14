@@ -577,7 +577,7 @@ so you have to explicitly force reading the body if you need its content.
 If you want to read the request body data from the <code>$request_body</code> variable, make sure that
 your have configured <code>client_body_buffer_size</code> to have exactly the same value as <code>client_max_body_size</code>. See
 
-<http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size>
+http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size 
 
 for more details.
 
@@ -888,7 +888,7 @@ subrequest responses. For example, when you're using the standard <code>ngx_prox
 your subrequests, then an "Accept-Encoding: gzip" header in your main request may result
 in gzip'd responses that your Lua code is not able to handle properly. So always set
 <code>proxy_pass_request_headers off</code> in your subrequest location to ignore the original request headers.
-See <http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers> for more
+See http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers for more
 details.
 
 == ngx.location.capture_multi ==
@@ -1140,10 +1140,10 @@ the value of <code>ngx.req.get_headers()["Foo"]</code> will be a Lua (array) tab
 <geshi lang="nginx">
     {"foo", "bar", "baz"}
 </geshi>
-Another way to read individual request headers is to use <code>ngx.var.http_HEADER</code>, that is, nginx's standard $http_HEADER variables:
-<geshi lang="nginx">
-    http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
-</geshi>
+Another way to read individual request headers is to use <code>ngx.var.http_HEADER</code>, that is, nginx's standard <code>$http_HEADER</code> variables:
+
+http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
+
 == ngx.req.set_header ==
 '''syntax:''' ''ngx.req.set_header(header_name, header_value)''
 
@@ -1243,7 +1243,7 @@ outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 This method never returns.
 
 This method is very much like the <code>rewrite</code> directive with the <code>redirect</code> modifier in the standard
-<code>ngx_rewrite</code> module, for example, this nginx.conf snippet
+<code>ngx_rewrite</code> module, for example, this <code>nginx.conf</code> snippet
 <geshi lang="nginx">
     rewrite ^ /foo redirect;  # nginx config
 </geshi>
@@ -1484,7 +1484,7 @@ with LuaJIT 2.0.
 
 You're recommended to install this module as well as the Lua interpreter or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty bundle:
 
-<http://openresty.org>
+http://openresty.org 
 
 The installation steps are usually as simple as ./configure && make && make install
 
@@ -1544,23 +1544,23 @@ To run the test suite, you also need the following dependencies:
 * Nginx version > 0.8.53
 
 * Perl modules:
-** test-nginx: <http://github.com/agentzh/test-nginx>
+** test-nginx: http://github.com/agentzh/test-nginx 
 
 * Nginx modules:
-** echo-nginx-module: <http://github.com/agentzh/echo-nginx-module>
-** drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module>
-** rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module>
-** set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module>
-** headers-more-nginx-module: <http://github.com/agentzh/headers-more-nginx-module>
-** memc-nginx-module: <http://github.com/agentzh/memc-nginx-module>
-** srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module>
-** ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/>
+** echo-nginx-module: http://github.com/agentzh/echo-nginx-module 
+** drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module 
+** rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module 
+** set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module 
+** headers-more-nginx-module: http://github.com/agentzh/headers-more-nginx-module 
+** memc-nginx-module: http://github.com/agentzh/memc-nginx-module 
+** srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module 
+** ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/ 
 
 * C libraries:
-** yajl: <https://github.com/lloyd/yajl>
+** yajl: https://github.com/lloyd/yajl 
 
 * Lua modules:
-** lua-yajl: <https://github.com/brimworks/lua-yajl>
+** lua-yajl: https://github.com/brimworks/lua-yajl 
 *** Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
 
 * Applications:
@@ -1689,12 +1689,12 @@ It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharin
 
 = See Also =
 
-* "Introduction to ngx_lua" ( <https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction> )
-* ngx_devel_kit ( <http://github.com/simpl/ngx_devel_kit> )
-* echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
-* drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
-* postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
-* memc-nginx-module ( <http://github.com/agentzh/memc-nginx-module> )
+* "Introduction to ngx_lua" ( https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction )
+* ngx_devel_kit ( http://github.com/simpl/ngx_devel_kit )
+* echo-nginx-module ( http://github.com/agentzh/echo-nginx-module )
+* drizzle-nginx-module ( http://github.com/chaoslawful/drizzle-nginx-module )
+* postgres-nginx-module ( http://github.com/FRiCKLE/ngx_postgres )
+* memc-nginx-module ( http://github.com/agentzh/memc-nginx-module )
 
 = Authors =
 
