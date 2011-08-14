@@ -510,7 +510,7 @@ content_by_lua_file
 Basically the same as `content_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
 
-Nginx variables can be used in <path-to-lua-script> string, in order to provide
+Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
 
@@ -529,7 +529,7 @@ rewrite_by_lua_file
 Same as `rewrite_by_lua`, except the code to be executed is in
 the file specified by `<path-lua-script>`.
 
-Nginx variables can be used in <path-to-lua-script> string, in order to provide
+Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
 
@@ -548,7 +548,7 @@ access_by_lua_file
 Same as `access_by_lua`, except the code to be executed is in the file
 specified by `<path-lua-script>`.
 
-Nginx variables can be used in <path-to-lua-script> string, in order to provide
+Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
 greater flexibility in practice. But this feature must be used carefully, so is
 not recommend for beginners.
 
@@ -1500,10 +1500,10 @@ Alternatively, you can compile this module with nginx core's source by hand:
 1. Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
 1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
-1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example, the version 0.8.54 (see nginx compatibility), and then build the source with this module:
-        $ wget 'http://sysoev.ru/nginx/nginx-0.8.54.tar.gz'
-        $ tar -xzvf nginx-0.8.54.tar.gz
-        $ cd nginx-0.8.54/
+1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+        $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
+        $ tar -xzvf nginx-1.0.5.tar.gz
+        $ cd nginx-1.0.5/
  
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -1540,7 +1540,7 @@ Test Suite
 
 To run the test suite, you also need the following dependencies:
 
-* Nginx version > 0.8.53
+* Nginx version >= 0.8.54
 
 * Perl modules:
 	* test-nginx: <http://github.com/agentzh/test-nginx>
