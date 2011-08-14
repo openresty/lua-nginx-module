@@ -102,3 +102,26 @@ sub pre: nil
 sub post: 32
 main post: 73
 
+
+
+=== TEST 5: overriding ctx
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.ctx = { foo = 32, bar = 54 };
+            ngx.say(ngx.ctx.foo)
+            ngx.say(ngx.ctx.bar)
+
+            ngx.ctx = { baz = 56  };
+            ngx.say(ngx.ctx.foo)
+            ngx.say(ngx.ctx.baz)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+32
+54
+nil
+56
+
