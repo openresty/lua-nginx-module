@@ -764,7 +764,7 @@ Then `GET /test` will yield the output
 
 That is, the `ngx.ctx.foo` entry persists across the rewrite, access, and content phases of a request.
 
-Also, every request has its sown copy, include subrequests, for example:
+Also, every request has its own copy, include subrequests, for example:
 
     location /sub {
         content_by_lua '
