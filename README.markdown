@@ -814,6 +814,10 @@ rather than the original `"hello"` value.
 
 Arbitrary data values can be inserted into this "matic" table, including Lua closures and nested tables. You can also register your own meta methods with it.
 
+Overriding `ngx.ctx` with a new Lua table is also supported, for example,
+
+    ngx.ctx = { foo = 32, bar = 54 }
+
 ngx.location.capture(uri, options?)
 -----------------------------------
 * **Context:** `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
