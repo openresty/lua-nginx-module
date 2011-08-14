@@ -1677,8 +1677,8 @@ See Also
 ========
 
 * "Introduction to ngx_lua" ( <https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction> )
-* ngx_devel_kit ( <http://github.com/simpl/ngx_devel_kit> )
-* echo-nginx-module ( <http://github.com/agentzh/echo-nginx-module> )
+* [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
+* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
 * drizzle-nginx-module ( <http://github.com/chaoslawful/drizzle-nginx-module> )
 * postgres-nginx-module ( <http://github.com/FRiCKLE/ngx_postgres> )
 * memc-nginx-module ( <http://github.com/agentzh/memc-nginx-module> )
