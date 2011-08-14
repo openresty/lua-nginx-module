@@ -263,7 +263,7 @@ can be used to stand for the original cpath.
 
 '''context:''' ''main, server, location, server if, location if''
 
-Execute user code specified by <code><lua-script-str></code> with input arguments `$arg1 $arg2 ...<code>, and set the script's return value to </code>$res` in string form. In
+Execute user code specified by <code><lua-script-str></code> with input arguments <code>$arg1 $arg2 ...</code>, and set the script's return value to <code>$res</code> in string form. In
 <code><lua-script-str></code> code the input arguments can be retrieved from <code>ngx.arg</code>
 table (index starts from <code>1</code> and increased sequentially).
 
@@ -272,7 +272,7 @@ event loop is blocked during the code execution, so you'd better '''NOT''' call
 anything that may be blocked or time-costy.
 
 Note that [[#set_by_lua|set_by_lua]] can only output a value to a single nginx variable at
-a time. But a work-around is also available by means of the ngx.var.xxx interface,
+a time. But a work-around is also available by means of the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] interface,
 for example,
 <geshi lang="nginx">
     location /foo {
@@ -614,7 +614,9 @@ Here's an example
 </geshi>
 that outputs 88, the sum of 32 and 56.
 
-== Read and write Nginx variables ==
+== ngx.var.VARIABLE ==
+'''syntax:''' ''ngx.var.VAR_NAME''
+
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 <geshi lang="nginx">
     value = ngx.var.some_nginx_variable_name
