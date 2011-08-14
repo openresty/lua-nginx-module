@@ -204,11 +204,11 @@ nginx worker process is handling 10K requests at the same time.
 '''context:''' ''main, server, location, location if''
 
 
-Enable or disable the Lua code cache for <code>set_by_lua_file</code>,
+Enable or disable the Lua code cache for [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#rewrite_by_lua_file|rewrite_by_lua_file]], and
 [[#access_by_lua_file|access_by_lua_file]], and also force Lua module reloading on a per-request basis.
 
-The Lua files referenced in <code>set_by_lua_file</code>,
+The Lua files referenced in [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#access_by_lua_file|access_by_lua_file]],
 and [[#rewrite_by_lua_file|rewrite_by_lua_file]] won't be cached at all,
 and Lua's <code>package.loaded</code> table will be cleared
@@ -217,7 +217,7 @@ won't be cached either). So developers and enjoy
 the PHP-way, i.e., edit-and-refresh.
 
 But please note that Lua code inlined into nginx.conf
-like those specified by <code>set_by_lua</code>, [[#content_by_lua|content_by_lua]],
+like those specified by [[#set_by_lua|set_by_lua]], [[#content_by_lua|content_by_lua]],
 [[#access_by_lua|access_by_lua]], and [[#rewrite_by_lua|rewrite_by_lua]] will ''always'' be
 cached because only nginx knows how to parse <code>nginx.conf</code>
 and the only way to tell it to re-load the config file
@@ -242,7 +242,7 @@ when the code cache is off.
 '''context:''' ''main''
 
 
-Set the Lua module searching path used by scripts specified by <code>set_by_lua*</code>,
+Set the Lua module searching path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The path string is in standard Lua path form, and <code>;;</code>
 can be used to stand for the original path.
 
@@ -256,7 +256,7 @@ defaults.
 '''context:''' ''main''
 
 
-Set the Lua C-module searching path used by scripts specified by <code>set_by_lua*</code>,
+Set the Lua C-module searching path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The cpath string is in standard Lua cpath form, and <code>;;</code>
 can be used to stand for the original cpath.
 
@@ -272,11 +272,11 @@ $arg2 ...<code>, and set the script's return value to </code>$res` in string for
 <code><lua-script-str></code> code the input arguments can be retrieved from <code>ngx.arg</code>
 table (index starts from <code>1</code> and increased sequentially).
 
-<code>set_by_lua*</code> directives are designed to execute small and quick codes. Nginx
+[[#set_by_lua|set_by_lua]] directives are designed to execute small and quick codes. Nginx
 event loop is blocked during the code execution, so you'd better '''NOT''' call
 anything that may be blocked or time-costy.
 
-Note that <code>set_by_lua</code> can only output a value to a single nginx variable at
+Note that [[#set_by_lua|set_by_lua]] can only output a value to a single nginx variable at
 a time. But a work-around is also available by means of the ngx.var.xxx interface,
 for example,
 <geshi lang="nginx">
@@ -303,7 +303,7 @@ This directive requires the ngx_devel_kit module.
 '''context:''' ''main, server, location, server if, location if''
 
 
-Basically the same as <code>set_by_lua</code>, except the code to be executed is in the
+Basically the same as [[#set_by_lua|set_by_lua]], except the code to be executed is in the
 file specified by <code><path-lua-script></code>.
 
 When the Lua code cache is on (this is the default), the user code is loaded
@@ -1517,7 +1517,7 @@ This feature requires the ngx_devel_kit module.
 The HTTP 1.0 protocol does not support chunked outputs and always requires an
 explicit <code>Content-Length</code> header when the response body is non-empty. So when
 an HTTP 1.0 request is present, This module will automatically buffer all the
-outputs of user calls of <code>ngx.say()</code> and <code>ngx.print()</code> and
+outputs of user calls of [[#ngx.say|ngx.say]] and [[#ngx.print|ngx.print]] and
 postpone sending response headers until it sees all the outputs in the response
 body, and at that time ngx_lua can calculate the total length of the body and
 construct a proper <code>Content-Length</code> header for the HTTP 1.0 client.
