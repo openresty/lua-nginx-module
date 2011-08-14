@@ -1490,17 +1490,17 @@ The installation steps are usually as simple as ./configure && make && make inst
 
 Alternatively, you can compile this module with nginx core's source by hand:
 
-1. Install lua into your system. At least Lua 5.1 is required.
+# Install lua into your system. At least Lua 5.1 is required.
 Lua can be obtained freely from its project [homepage](http://www.lua.org/).
 For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 
-1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from
+# Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from
 lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
 
-1. Download the latest version of the release tarball of this module from
+# Download the latest version of the release tarball of this module from
 lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
 
-1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
+# Grab the nginx source code from [nginx.net](http://nginx.net/), for example,
 the version 0.8.54 (see nginx compatibility), and then build the source with
 this module:
 <geshi lang="nginx">
@@ -1570,16 +1570,16 @@ To run the test suite, you also need the following dependencies:
 These module's adding order is IMPORTANT! For filter modules's position in
 filtering chain affects a lot. The correct configure adding order is:
 
-1. ngx_devel_kit
-2. set-misc-nginx-module
-3. ngx_http_auth_request_module
-4. echo-nginx-module
-5. memc-nginx-module
-6. lua-nginx-module (i.e. this module)
-7. headers-more-nginx-module
-8. srcache-nginx-module
-9. drizzle-nginx-module
-10. rds-json-nginx-module
+# ngx_devel_kit
+# set-misc-nginx-module
+# ngx_http_auth_request_module
+# echo-nginx-module
+# memc-nginx-module
+# lua-nginx-module (i.e. this module)
+# headers-more-nginx-module
+# srcache-nginx-module
+# drizzle-nginx-module
+# rds-json-nginx-module
 
 = TODO =
 
@@ -1602,23 +1602,14 @@ the Lua VM actively via Lua's debug hooks.
 
 = Known Issues =
 
-* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the
-[[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods cannot be used within
-the context of a Lua <code>pcall()</code> or <code>xpcall()</code>. If you're heavy on Lua exception model
-based on Lua's <code>error()</code> and <code>pcall()</code>/<code>xpcall()</code>, use LuaJIT 2.0 instead because LuaJIT 2.0
-supports fully resumable VM.
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods cannot be used within the context of a Lua <code>pcall()</code> or <code>xpcall()</code>. If you're heavy on Lua exception model based on Lua's <code>error()</code> and <code>pcall()</code>/<code>xpcall()</code>, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resumable VM.
 
 * The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture
-locations configured by ngx_echo module's <code>echo_location</code>,
-<code>echo_location_async</code>, <code>echo_subrequest</code>, or <code>echo_subrequest_async</code> directives. This
-won't be fixed in the future due to technical problems :)
+locations configured by ngx_echo module's <code>echo_location</code>, <code>echo_location_async</code>, <code>echo_subrequest</code>, or <code>echo_subrequest_async</code> directives. This won't be fixed in the future due to technical problems :)
 
-* The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture
-locations with internal redirections for now. But this may get fixed in the future.
+* The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations with internal redirections for now. But this may get fixed in the future.
 
-* '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request
-isolation design. Especially watch yourself when using <code>require()</code> to import modules, and
-use this form:
+* '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request isolation design. Especially watch yourself when using <code>require()</code> to import modules, and use this form:
 <geshi lang="nginx">
         local xxx = require('xxx')
 </geshi>
@@ -1626,9 +1617,7 @@ use this form:
 <geshi lang="nginx">
         require('xxx')
 </geshi>
-: The old form will cause module unusable in requests for the reason told
-: previously. If you have to stick with the old form, you can always force
-: loading module for every request by clean <code>package.loaded.<module></code>, like this:
+: The old form will cause module unusable in requests for the reason told previously. If you have to stick with the old form, you can always force loading module for every request by clean <code>package.loaded.<module></code>, like this:
 <geshi lang="nginx">
         package.loaded.xxx = nil
         require('xxx')
@@ -1684,8 +1673,8 @@ This data sharing technique is essential for high-performance Lua apps built ato
 
 It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
 
-1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
-2. Use some true backend storage like <code>memcached</code>, <code>redis</code>, or an RDBMS like <code>mysql</code>.
+# Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
+# Use some true backend storage like <code>memcached</code>, <code>redis</code>, or an RDBMS like <code>mysql</code>.
 
 = See Also =
 
@@ -1713,26 +1702,11 @@ Copyright (C) 2009, 2010, 2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@g
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-* Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 

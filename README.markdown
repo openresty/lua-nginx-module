@@ -1614,23 +1614,14 @@ the Lua VM actively via Lua's debug hooks.
 Known Issues
 ============
 
-* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the
-`ngx.location.capture()` and `ngx.location.capture_multi` methods cannot be used within
-the context of a Lua `pcall()` or `xpcall()`. If you're heavy on Lua exception model
-based on Lua's `error()` and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0
-supports fully resumable VM.
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the `ngx.location.capture()` and `ngx.location.capture_multi` methods cannot be used within the context of a Lua `pcall()` or `xpcall()`. If you're heavy on Lua exception model based on Lua's `error()` and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resumable VM.
 
 * The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture
-locations configured by ngx_echo module's `echo_location`,
-`echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This
-won't be fixed in the future due to technical problems :)
+locations configured by ngx_echo module's `echo_location`, `echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This won't be fixed in the future due to technical problems :)
 
-* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture
-locations with internal redirections for now. But this may get fixed in the future.
+* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture locations with internal redirections for now. But this may get fixed in the future.
 
-* **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request
-isolation design. Especially watch yourself when using `require()` to import modules, and
-use this form:
+* **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request isolation design. Especially watch yourself when using `require()` to import modules, and use this form:
 
         local xxx = require('xxx')
 
@@ -1638,9 +1629,7 @@ use this form:
 
         require('xxx')
 
-	The old form will cause module unusable in requests for the reason told
-	previously. If you have to stick with the old form, you can always force
-	loading module for every request by clean `package.loaded.<module>`, like this:
+	The old form will cause module unusable in requests for the reason told previously. If you have to stick with the old form, you can always force loading module for every request by clean `package.loaded.<module>`, like this:
 
         package.loaded.xxx = nil
         require('xxx')
@@ -1730,26 +1719,11 @@ Copyright (C) 2009, 2010, 2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@g
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-* Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
