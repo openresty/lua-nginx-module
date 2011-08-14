@@ -240,7 +240,7 @@ lua_package_path
 ----------------
 
 * **Syntax:** `lua_package_path <lua-style-path-str>`
-* **Default:** The content of LUA_PATH environ variable or Lua's compiled-in defaults.
+* **Default:** `The content of LUA_PATH environ variable or Lua's compiled-in defaults.`
 * **Context:** `main`
 
 Set the Lua module searching path used by scripts specified by `set_by_lua*`,
@@ -251,8 +251,7 @@ lua_package_cpath
 -----------------
 
 * **Syntax:** `lua_package_cpath <lua-style-cpath-str>`
-* **Default:** The content of LUA_CPATH environ variable or Lua's compiled-in
-defaults.
+* **Default:** `The content of LUA_CPATH environ variable or Lua's compiled-in defaults.`
 * **Context:** `main`
 
 Set the Lua C-module searching path used by scripts specified by `set_by_lua*`,

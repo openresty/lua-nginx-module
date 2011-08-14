@@ -248,9 +248,8 @@ can be used to stand for the original path.
 
 '''syntax:''' ''lua_package_cpath <lua-style-cpath-str>''
 
-'''default:''' ''The content of LUA_CPATH environ variable or Lua's compiled-in''
+'''default:''' ''The content of LUA_CPATH environ variable or Lua's compiled-in defaults.''
 
-defaults.
 '''context:''' ''main''
 
 Set the Lua C-module searching path used by scripts specified by [[#set_by_lua|set_by_lua]],
