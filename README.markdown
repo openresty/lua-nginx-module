@@ -16,22 +16,22 @@ Synopsis
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
-
+ 
     # set search paths for Lua external libraries written in C (can also use ';;'):
     lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
-
+ 
     server {
         location /inline_concat {
             # MIME type determined by default_type:
             default_type 'text/plain';
-
+ 
             set $a "hello";
             set $b "world";
             # inline lua script
             set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
             echo $res;
         }
-
+ 
         location /rel_file_concat {
             set $a "foo";
             set $b "bar";
@@ -43,7 +43,7 @@ Synopsis
             set_by_lua_file $res conf/concat.lua $a $b;
             echo $res;
         }
-
+ 
         location /abs_file_concat {
             set $a "fee";
             set $b "baz";
@@ -51,52 +51,52 @@ Synopsis
             set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
             echo $res;
         }
-
+ 
         location /lua_content {
             # MIME type determined by default_type:
             default_type 'text/plain';
-
+ 
             content_by_lua "ngx.say('Hello,world!')"
         }
-
-        location /nginx_var {
+ 
+         location /nginx_var {
             # MIME type determined by default_type:
             default_type 'text/plain';
-
+ 
             # try access /nginx_var?a=hello,world
             content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
         }
-
+ 
         location /request_body {
              # force reading request body (default off)
              lua_need_request_body on;
              client_max_body_size 50k;
              client_body_buffer_size 50k;
-
+ 
              content_by_lua 'ngx.print(ngx.var.request_body)';
         }
-
+ 
         # transparent non-blocking I/O in Lua via subrequests
         location /lua {
             # MIME type determined by default_type:
             default_type 'text/plain';
-
+ 
             content_by_lua '
                 local res = ngx.location.capture("/some_other_location")
                 if res.status == 200 then
                     ngx.print(res.body)
                 end';
         }
-
+ 
         # GET /recur?num=5
         location /recur {
             # MIME type determined by default_type:
             default_type 'text/plain';
-
-           content_by_lua '
+ 
+            content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
                ngx.say("num is: ", num)
-
+ 
                if num > 0 then
                    res = ngx.location.capture("/recur?num=" .. tostring(num - 1))
                    ngx.print("status=", res.status, " ")
@@ -106,70 +106,70 @@ Synopsis
                end
                ';
         }
-
+ 
         location /foo {
             rewrite_by_lua '
                 res = ngx.location.capture("/memc",
                     { args = { cmd = 'incr', key = ngx.var.uri } }
                 )
             ';
-
+ 
             proxy_pass http://blah.blah.com;
         }
-
+ 
         location /blah {
             access_by_lua '
                 local res = ngx.location.capture("/auth")
-
+ 
                 if res.status == ngx.HTTP_OK then
                     return
                 end
-
+ 
                 if res.status == ngx.HTTP_FORBIDDEN then
                     ngx.exit(res.status)
                 end
-
+ 
                 ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
             ';
-
+ 
             # proxy_pass/fastcgi_pass/postgres_pass/...
         }
-
+ 
         location /mixed {
             rewrite_by_lua_file /path/to/rewrite.lua;
             access_by_lua_file /path/to/access.lua;
             content_by_lua_file /path/to/content.lua;
         }
-
+ 
         # use nginx var in code path
         # WARN: contents in nginx var must be carefully filtered,
         # otherwise there'll be great security risk!
         location ~ ^/app/(.+) {
                 content_by_lua_file /path/to/lua/app/root/$1.lua;
         }
-
+ 
         location / {
            lua_need_request_body on;
-
+ 
            client_max_body_size 100k;
            client_body_buffer_size 100k;
-
+ 
            access_by_lua '
                -- check the client IP addr is in our black list
                if ngx.var.remote_addr == "132.5.72.3" then
                    ngx.exit(ngx.HTTP_FORBIDDEN)
                end
-
+ 
                -- check if the request body contains bad words
                if ngx.var.request_body and
                         string.match(ngx.var.request_body, "fsck")
                then
                    return ngx.redirect("/terms_of_use.html")
                end
-
+ 
                -- tests passed
            ';
-
+ 
            # proxy_pass/fastcgi_pass/etc settings
         }
     }
@@ -240,8 +240,7 @@ lua_package_path
 ----------------
 
 * **Syntax:** `lua_package_path <lua-style-path-str>`
-* **Default:** The content of LUA_PATH environ variable or Lua's compiled-in
-defaults.
+* **Default:** The content of LUA_PATH environ variable or Lua's compiled-in defaults.
 * **Context:** `main`
 
 Set the Lua module searching path used by scripts specified by `set_by_lua*`,
@@ -281,15 +280,15 @@ for example,
 
     location /foo {
         set $diff ''; # we have to predefine the $diff variable here
-
+ 
         set_by_lua $sum '
             local a = 32
             local b = 56
-
+ 
             ngx.var.diff = a - b;  -- write to $diff directly
             return a + b;          -- return the $sum value normally
         ';
-
+ 
         echo "sum = $sum, diff = $diff";
     }
 
@@ -387,7 +386,7 @@ The right way of doing this is as follows:
                 return ngx.redirect("/bar");
             end
         ';
-
+ 
         echo "res = $b";
     }
 
@@ -398,10 +397,11 @@ approximately implemented by `rewrite_by_lua`. For example,
         eval $res {
             proxy_pass http://foo.com/check-spam;
         }
+ 
         if ($res = 'spam') {
             rewrite ^ /terms-of-use.html redirect;
         }
-
+ 
         fastcgi_pass ...;
     }
 
@@ -411,7 +411,7 @@ can be implemented in terms of `ngx_lua` like this
         internal;
         proxy_pass http://foo.com/check-spam;
     }
-
+ 
     location / {
         rewrite_by_lua '
             local res = ngx.location.capture("/check-spam")
@@ -419,7 +419,7 @@ can be implemented in terms of `ngx_lua` like this
                 ngx.redirect("/terms-of-use.html")
             end
         ';
-
+ 
         fastcgi_pass ...;
     }
 
@@ -427,7 +427,7 @@ Just as any other rewrite-phase handlers, `rewrite_by_lua` also runs in subreque
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current `rewrite_by_lua` handler, and the nginx request processing
 control flow will still continue to the content handler. To terminate the current request from within the current `rewrite_by_lua` handler,
-calling `ngx.exit` with status >= 200 (ngx.HTTP_OK) and status < 300 (ngx.HTTP_SPECIAL_RESPONSE) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
+calling `ngx.exit` with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
 access_by_lua
 --------------
@@ -453,12 +453,12 @@ So the following will work as expected:
         allow   192.168.1.0/24;
         allow   10.1.1.0/16;
         deny    all;
-
+ 
         access_by_lua '
             local res = ngx.location.capture("/mysql", { ... })
             ...
         ';
-
+ 
         # proxy_pass/fastcgi_pass/...
     }
 
@@ -471,7 +471,7 @@ approximately implemented by `access_by_lua`. For example,
 
     location / {
         auth_request /auth;
-
+ 
         # proxy_pass/fastcgi_pass/postgres_pass/...
     }
 
@@ -480,18 +480,18 @@ can be implemented in terms of `ngx_lua` like this
     location / {
         access_by_lua '
             local res = ngx.location.capture("/auth")
-
+ 
             if res.status == ngx.HTTP_OK then
                 return
             end
-
+ 
             if res.status == ngx.HTTP_FORBIDDEN then
                 ngx.exit(res.status)
             end
-
+ 
             ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         ';
-
+ 
         # proxy_pass/fastcgi_pass/postgres_pass/...
     }
 
@@ -601,11 +601,11 @@ Here's an example
     location /foo {
         set $a 32;
         set $b 56;
-
+ 
         set_by_lua $res
             'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
             $a $b;
-
+ 
         echo $sum;
     }
 
@@ -773,6 +773,7 @@ Also, every request has its own copy, include subrequests, for example:
             ngx.say("sub post: ", ngx.ctx.blah)
         ';
     }
+ 
     location /main {
         content_by_lua '
             ngx.ctx.blah = 73
@@ -799,6 +800,7 @@ Internal redirection will destroy the original request's `ngx.ctx` data (if any)
             ngx.say(ngx.ctx.foo)
         ';
     }
+ 
     location /orig {
         content_by_lua '
             ngx.ctx.foo = "hello"
@@ -932,11 +934,11 @@ This function issue several parallel subrequests specified by the input table, a
         { "/bar" },
         { "/baz", { method = ngx.HTTP_POST, body = "hello" } },
     }
-
+ 
     if res1.status == ngx.HTTP_OK then
         ...
     end
-
+ 
     if res2.body == "BLAH" then
         ...
     end
@@ -953,10 +955,10 @@ you can use Lua tables for both requests and responses. For instance,
     table.insert(reqs, { "/postgres" })
     table.insert(reqs, { "/redis" })
     table.insert(reqs, { "/memcached" })
-
+ 
     -- issue all the requests at once and wait until they all return
     local resps = { ngx.location.capture_multi(reqs) }
-
+ 
     -- loop over the responses table
     for i, resp in ipairs(resps) do
         -- process the response table "resp"
@@ -988,7 +990,7 @@ Set/add/clear the current request's response headers. Underscores (_) in the hea
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
-
+ 
     ngx.header["X-My-Header"] = 'blah blah';
 
 Multi-value headers can be set this way:
@@ -1222,7 +1224,7 @@ Named locations are also supported, but query strings are ignored. For example
             ngx.exec("@bar");
         ';
     }
-
+ 
     location @bar {
         ...
     }
@@ -1361,32 +1363,31 @@ Escape `str` as a URI component.
 
     newstr = ngx.escape_uri(str)
 
-ngx.unescape_uri(str)
----------------------
+ngx.unescape_uri
+----------------
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Unescape `str` as a escaped URI component.
 
     newstr = ngx.unescape_uri(str)
 
-ngx.encode_base64(str)
-----------------------
+ngx.encode_base64
+-----------------
+* **Syntax:** `newstr = ngx.encode_base64(str)`
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Encode `str` to a base64 digest
+Encode `str` to a base64 digest.
 
-    newstr = ngx.encode_base64(str)
-
-ngx.decode_base64(str)
-----------------------
+ngx.decode_base64
+-----------------
+* **Syntax:** `newstr = ngx.decode_base64(str)`
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
-Decode `str` as a base64 digest to the raw form
+Decode `str` as a base64 digest to the raw form.
 
-    newstr = ngx.decode_base64(str)
-
-ngx.today()
----------------
+ngx.today
+---------
+* **Syntax:** `str = ngx.today()`
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
 Returns today's date (in the format `yyyy-mm-dd`) from nginx cached time (no syscall involved unlike Lua's date library).
@@ -1522,20 +1523,20 @@ this module:
         $ wget 'http://sysoev.ru/nginx/nginx-0.8.54.tar.gz'
         $ tar -xzvf nginx-0.8.54.tar.gz
         $ cd nginx-0.8.54/
-
+ 
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
         export LUA_INC=/path/to/lua/include
-
+ 
         # or tell where to find LuaJIT when you want to use JIT instead
         # export LUAJIT_LIB=/path/to/luajit/lib
         # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
-
+ 
         # Here we assume you would install you nginx under /opt/nginx/.
         $ ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
-
+ 
         $ make -j2
         $ make install
 
@@ -1674,13 +1675,13 @@ Here's a complete small example:
 
     -- mydata.lua
     module("mydata", package.seeall)
-
+ 
     local data = {
         dog = 3,
         cat = 4,
         pig = 5,
     }
-
+ 
     function get_age(name)
         return data[name]
     end
@@ -1728,36 +1729,36 @@ Authors
 Copyright & License
 ===================
 
-    This module is licenced under the BSD license.
+This module is licenced under the BSD license.
 
-    Copyright (C) 2009, 2010, 2011, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
+Copyright (C) 2009, 2010, 2011, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
 
-    Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-    Copyright (C) 2009, 2010, 2011, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009, 2010, 2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
 
-    All rights reserved.
+All rights reserved.
 
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions
-    are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
 
-        * Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
 
-        * Redistributions in binary form must reproduce the above copyright
-        notice, this list of conditions and the following disclaimer in the
-        documentation and/or other materials provided with the distribution.
+* Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-    TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
