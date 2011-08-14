@@ -265,8 +265,7 @@ set_by_lua
 * **Syntax:** `set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]`
 * **Context:** `main`, `server`, `location`, `server if`, `location if`
 
-Execute user code specified by `<lua-script-str>` with input arguments `$arg1
-$arg2 ...`, and set the script's return value to `$res` in string form. In
+Execute user code specified by `<lua-script-str>` with input arguments `$arg1 $arg2 ...`, and set the script's return value to `$res` in string form. In
 `<lua-script-str>` code the input arguments can be retrieved from `ngx.arg`
 table (index starts from `1` and increased sequentially).
 
@@ -275,7 +274,7 @@ event loop is blocked during the code execution, so you'd better **NOT** call
 anything that may be blocked or time-costy.
 
 Note that `set_by_lua` can only output a value to a single nginx variable at
-a time. But a work-around is also available by means of the ngx.var.xxx interface,
+a time. But a work-around is also available by means of the `ngx.var.VARIABLE` interface,
 for example,
 
     location /foo {
@@ -611,8 +610,9 @@ Here's an example
 
 that outputs 88, the sum of 32 and 56.
 
-Read and write Nginx variables
-------------------------------
+ngx.var.VARIABLE
+----------------
+* **Syntax:** `ngx.var.VAR_NAME`
 * **Context:** `set_by_lua*`, `rewrite_by_lua*`, `access_by_lua*`, `content_by_lua*`
 
     value = ngx.var.some_nginx_variable_name

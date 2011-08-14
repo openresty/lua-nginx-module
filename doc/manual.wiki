@@ -263,8 +263,7 @@ can be used to stand for the original cpath.
 
 '''context:''' ''main, server, location, server if, location if''
 
-Execute user code specified by <code><lua-script-str></code> with input arguments `$arg1
-$arg2 ...<code>, and set the script's return value to </code>$res` in string form. In
+Execute user code specified by <code><lua-script-str></code> with input arguments `$arg1 $arg2 ...<code>, and set the script's return value to </code>$res` in string form. In
 <code><lua-script-str></code> code the input arguments can be retrieved from <code>ngx.arg</code>
 table (index starts from <code>1</code> and increased sequentially).
 
