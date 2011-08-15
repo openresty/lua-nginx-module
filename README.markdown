@@ -586,7 +586,7 @@ lua_need_request_body
 
 Force reading request body data or not. The client request body won't be read, so you have to explicitly force reading the body if you need its content.
 
-If you want to read the request body data from the [$request_body](http://wiki.nginx.org/NginxHttpCoreModule#$request_body) variable, make sure that
+If you want to read the request body data from the [$request_body](http://wiki.nginx.org/NginxHttpCoreModule#.24request_body) variable, make sure that
 your have configured [client_body_buffer_size](http://wiki.nginx.org/NginxHttpCoreModule#client_body_buffer_size) to have exactly the same value as [client_max_body_size](http://wiki.nginx.org/NginxHttpCoreModule#client_max_body_size).
 
 If the current location defines `rewrite_by_lua` or `rewrite_by_lua_file`,
@@ -1169,7 +1169,7 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like thi
 
     {"foo", "bar", "baz"}
 
-Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard [$http_HEADER](http://wiki.nginx.org/NginxHttpCoreModule#$http_HEADER) variables.
+Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard [$http_HEADER](http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER) variables.
 
 ngx.req.set_header
 ------------------
