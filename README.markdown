@@ -1745,16 +1745,6 @@ locations configured by ngx_echo module's `echo_location`, `echo_location_async`
 
 assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the `Data Sharing within an Nginx Worker` for the reasons of this danger.
 
-See Also
-========
-
-* [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
-* [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
-* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
-* [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
-
 Authors
 =======
 
@@ -1781,4 +1771,16 @@ Redistribution and use in source and binary forms, with or without modification,
 * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+See Also
+========
+
+* [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
+* [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
+* [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
+* [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
+* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
+* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
+* [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
+* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
 
