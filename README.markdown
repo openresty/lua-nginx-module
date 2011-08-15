@@ -191,7 +191,7 @@ as long as you use the `ngx.location.capture` or
 to let the nginx core do all your
 requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-[ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [ngx_memc](http://wiki.nginx.org/NginxHttpMemcModule), [ngx_redis2](http://github.com/agentzh/redis2-nginx-module) and `NginxHttpProxyModule` modules for details).
+[ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [ngx_memc](http://wiki.nginx.org/NginxHttpMemcModule), [ngx_redis2](http://github.com/agentzh/redis2-nginx-module) and [NginxHttpProxyModule](http://wiki.nginx.org/NginxHttpProxyModule) modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -457,7 +457,7 @@ Act as an access phase handler and execute user code specified by `<lua-script-s
 
 This hook uses exactly the same mechanism as `content_by_lua` so all the nginx APIs defined there are also available here.
 
-Note that this handler always runs *after* the standard `NginxHttpAccessModule`. So the following will work as expected:
+Note that this handler always runs *after* the standard [NginxHttpAccessModule](http://wiki.nginx.org/NginxHttpAccessModule). So the following will work as expected:
 
 
     location / {
@@ -1249,7 +1249,7 @@ This method never returns.
 This method *must* be called before `ngx.send_headers` or explicit response body
 outputs by either `ngx.print` or `ngx.say`.
 
-This method is very much like the `echo_exec` directive in `NginxHttpEchoModule`.
+This method is very much like the `echo_exec` directive in [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule).
 
 ngx.redirect
 ------------
@@ -1281,7 +1281,7 @@ This method *must* be called before `ngx.send_headers` or explicit response body
 This method never returns.
 
 This method is very much like the `rewrite` directive with the `redirect` modifier in the standard
-`NginxHttpRewriteModule`, for example, this `nginx.conf` snippet
+[NginxHttpRewriteModule](http://wiki.nginx.org/NginxHttpRewriteModule), for example, this `nginx.conf` snippet
 
 
     rewrite ^ /foo redirect;  # nginx config
@@ -1515,7 +1515,7 @@ ndk.set_var.DIRECTIVE
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
-For example, `NginxHttpSetMiscModule`'s following directives can be invoked this way:
+For example, [NginxHttpSetMiscModule](http://wiki.nginx.org/NginxHttpSetMiscModule)'s following directives can be invoked this way:
 
 * `set_quote_sql_str`
 * `set_quote_pgsql_str`
@@ -1737,7 +1737,7 @@ Known Issues
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the `ngx.location.capture` and `ngx.location.capture_multi` methods cannot be used within the context of a Lua [pcall()](http://www.lua.org/manual/5.1/manual.html#pdf-pcall) or [xpcall()](http://www.lua.org/manual/5.1/manual.html#pdf-xpcall). If you're heavy on Lua exception model based on Lua's [error()](http://www.lua.org/manual/5.1/manual.html#pdf-error) and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resume-able VM.
 
-* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture locations configured by `NginxHttpEchoModule`'s `echo_location`, `echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This won't be fixed in the future due to technical problems.
+* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture locations configured by [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule)'s `echo_location`, `echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This won't be fixed in the future due to technical problems.
 
 * **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request isolation design. Especially watch yourself when using `require()` to import modules, and use this form:
 
