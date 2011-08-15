@@ -179,16 +179,19 @@ Description
     integrates the powerful Lua threads (aka Lua coroutines) into the nginx
     event model by means of nginx subrequests.
 
-    Unlike Apache's mod_lua and Lighttpd's mod_magnet, Lua code written atop
-    this module can be 100% non-blocking on network traffic as long as you
-    use the ngx.location.capture or ngx.location.capture_multi interfaces to
-    let the nginx core do all your requests to mysql, postgresql, memcached,
-    redis, upstream http web services, and etc etc etc (see ngx_drizzle
+    Unlike Apache's mod_lua
+    (<http://httpd.apache.org/docs/2.3/mod/mod_lua.html>) and Lighttpd's
+    mod_magnet (<http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet>), Lua
+    code written atop this module can be *100% non-blocking* on network
+    traffic as long as you use the ngx.location.capture or
+    ngx.location.capture_multi interfaces to let the nginx core do all your
+    requests to mysql, postgresql, memcached, redis, upstream http web
+    services, and etc etc etc (see ngx_drizzle
     (<http://github.com/chaoslawful/drizzle-nginx-module>), ngx_postgres
     (<http://github.com/FRiCKLE/ngx_postgres/>), ngx_memc
     (<http://wiki.nginx.org/NginxHttpMemcModule>), ngx_redis2
-    (<http://github.com/agentzh/redis2-nginx-module>) and ngx_proxy modules
-    for details).
+    (<http://github.com/agentzh/redis2-nginx-module>) and
+    [[NginxHttpProxyModule]] modules for details).
 
     The Lua interpreter instance is shared across all the requests in a
     single nginx worker process.
@@ -285,7 +288,7 @@ Directives
 
             echo "sum = $sum, diff = $diff";
         }
-    This directive requires the ngx_devel_kit module.
+    This directive requires the ngx_devel_kit (L<https://github.com/simpl/ngx_devel_kit>) module.
 
   set_by_lua_file
     syntax: *set_by_lua_file $res <path-to-lua-script> [$arg1 $arg2 ...]*
@@ -301,7 +304,8 @@ Directives
     You can disable the Lua code cache by setting "lua_code_cache off;" in
     your nginx.conf.
 
-    This directive requires the ngx_devel_kit module.
+    This directive requires the ngx_devel_kit
+    (<https://github.com/simpl/ngx_devel_kit>) module.
 
   content_by_lua
     syntax: *content_by_lua <lua-script-str>*
@@ -414,13 +418,17 @@ Directives
     "<lua-script-str>" for every request. The user code may call predefined
     APIs to generate response content.
 
-    This hook uses exactly the same mechamism as content_by_lua so all the
+    This hook uses exactly the same mechanism as content_by_lua so all the
     nginx APIs defined there are also available here.
 
-    Note that this handler always runs *after* the standard nginx access
-    module ( http://wiki.nginx.org/NginxHttpAccessModule ). So the following
-    will work as expected: location / { deny 192.168.1.1; allow
-    192.168.1.0/24; allow 10.1.1.0/16; deny all;
+    Note that this handler always runs *after* the standard
+    [[NginxHttpAccessModule]]. So the following will work as expected:
+
+        location / {
+            deny    192.168.1.1;
+            allow   192.168.1.0/24;
+            allow   10.1.1.0/16;
+            deny    all;
 
             access_by_lua '
                 local res = ngx.location.capture("/mysql", { ... })
@@ -429,17 +437,22 @@ Directives
 
             # proxy_pass/fastcgi_pass/...
         }
-    That is, if a client address appears in the blacklist, then
-    we don't have to bother sending a mysql query to do more
-    advanced authentication in L<access_by_lua|/"access_by_lua">.
+
+    That is, if a client address appears in the blacklist, then we don't
+    have to bother sending a MySQL query to do more advanced authentication
+    in access_by_lua.
 
     It's worth mentioning that, the "ngx_auth_request" module can be
-    approximately implemented by access_by_lua. For example, location / {
-    auth_request /auth;
+    approximately implemented by access_by_lua. For example,
+
+        location / {
+            auth_request /auth;
 
             # proxy_pass/fastcgi_pass/postgres_pass/...
         }
-    can be implemented in terms of C<ngx_lua> like this
+
+    can be implemented in terms of "ngx_lua" like this
+
         location / {
             access_by_lua '
                 local res = ngx.location.capture("/auth")
@@ -457,14 +470,16 @@ Directives
 
             # proxy_pass/fastcgi_pass/postgres_pass/...
         }
-    Just as any other access-phase handlers, L<access_by_lua|/"access_by_lua"> will NOT run in subrequests.
+
+    Just as any other access phase handlers, access_by_lua will *not* run in
+    subrequests.
 
     Note that calling "ngx.exit(ngx.OK)" just returning from the current
     access_by_lua handler, and the nginx request processing control flow
     will still continue to the content handler. To terminate the current
     request from within the current access_by_lua handler, calling
-    "ngx.exit(status)" where status >= 200 (ngx.HTTP_OK) and status < 300
-    (ngx.HTTP_SPECIAL_RESPONSE) for successful quits and
+    "ngx.exit(status)" where status >= 200 ("ngx.HTTP_OK") and status < 300
+    ("ngx.HTTP_SPECIAL_RESPONSE") for successful quits and
     "ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)" or its friends for failures.
 
   content_by_lua_file
@@ -484,8 +499,8 @@ Directives
     When the Lua code cache is on (this is the default), the user code is
     loaded once at the first request and cached. Nginx config must be
     reloaded if you modified the file and expected to see updated behavior.
-    You can disable the Lua code cache by setting "lua_code_cache off;" in
-    your nginx.conf.
+    You can disable the Lua code cache by setting lua_code_cache "off" in
+    your "nginx.conf" file.
 
   rewrite_by_lua_file
     syntax: *rewrite_by_lua_file <path-to-lua-script>*
@@ -504,8 +519,8 @@ Directives
     When the Lua code cache is on (this is the default), the user code is
     loaded once at the first request and cached. Nginx config must be
     reloaded if you modified the file and expected to see updated behavior.
-    You can disable the Lua code cache by setting "lua_code_cache off;" in
-    your nginx.conf.
+    You can disable the Lua code cache by setting lua_code_cache "off" in
+    your "nginx.conf" file.
 
   access_by_lua_file
     syntax: *access_by_lua_file <path-to-lua-script>*
@@ -524,8 +539,8 @@ Directives
     When the Lua code cache is on (this is the default), the user code is
     loaded once at the first request and cached. Nginx config must be
     reloaded if you modified the file and expected to see updated behavior.
-    You can disable the Lua code cache by setting "lua_code_cache off;" in
-    your nginx.conf.
+    You can disable the Lua code cache by setting lua_code_cache "off" in
+    your "nginx.conf" file.
 
   lua_need_request_body
     syntax: *lua_need_request_body <on | off>*
@@ -541,12 +556,8 @@ Directives
     content.
 
     If you want to read the request body data from the $request_body
-    variable, make sure that your have configured "client_body_buffer_size"
-    to have exactly the same value as "client_max_body_size". See
-
-    http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size
-
-    for more details.
+    variable, make sure that your have configured client_body_buffer_size to
+    have exactly the same value as client_max_body_size.
 
     If the current location defines rewrite_by_lua or rewrite_by_lua_file,
     then the request body will be read just before the rewrite_by_lua or
@@ -558,11 +569,19 @@ Directives
     The same applies to access_by_lua and access_by_lua_file.
 
 Nginx API for Lua
-  Input arguments
-    context: *set_by_lua**
+  ngx.arg
+    syntax: *val = ngx.arg[index]* context: *set_by_lua**
 
-    Index the input arguments to the set_by_lua* directives: value =
-    ngx.arg[n] Here's an example location /foo { set $a 32; set $b 56;
+    Index the input arguments to the set_by_lua and set_by_lua_file
+    directives:
+
+        value = ngx.arg[n]
+
+    Here's an example
+
+        location /foo {
+            set $a 32;
+            set $b 56;
 
             set_by_lua $res
                 'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
@@ -570,6 +589,7 @@ Nginx API for Lua
 
             echo $sum;
         }
+
     that outputs 88, the sum of 32 and 56.
 
   ngx.var.VARIABLE
@@ -591,15 +611,22 @@ Nginx API for Lua
     "ngx.var[3]", and etc.
 
   Core constants
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua** ngx.OK
-    ngx.DONE ngx.AGAIN ngx.ERROR They take the same values of "NGX_OK",
-    "NGX_AGAIN", "NGX_DONE", "NGX_ERROR", and etc. But now only ngx.exit
-    only take two of these values, i.e., "NGX_OK" and "NGX_ERROR".
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua** ngx.OK (0)
+    ngx.ERROR (-1) ngx.AGAIN (-2) ngx.DONE (-4) They take the same values of
+    "NGX_OK", "NGX_AGAIN", "NGX_DONE", "NGX_ERROR", and etc. But now only
+    ngx.exit only take two of these values, i.e., "NGX_OK" and "NGX_ERROR".
 
   HTTP method constants
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua** value =
-    ngx.HTTP_GET value = ngx.HTTP_HEAD value = ngx.HTTP_PUT value =
-    ngx.HTTP_POST value = ngx.HTTP_DELETE
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+      ngx.HTTP_GET
+      ngx.HTTP_HEAD
+      ngx.HTTP_PUT
+      ngx.HTTP_POST
+      ngx.HTTP_DELETE
+
+    These constants are usually used in ngx.location.catpure and
+    ngx.location.capture_multi method calls.
 
   HTTP status constants
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua** value =
@@ -614,21 +641,22 @@ Nginx API for Lua
 
   Nginx log level constants
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
-    log_level = ngx.STDERR log_level = ngx.EMERG log_level = ngx.ALERT
-    log_level = ngx.CRIT log_level = ngx.ERR log_level = ngx.WARN log_level
-    = ngx.NOTICE log_level = ngx.INFO log_level = ngx.DEBUG
+    ngx.STDERR ngx.EMERG ngx.ALERT ngx.CRIT ngx.ERR ngx.WARN ngx.NOTICE
+    ngx.INFO ngx.DEBUG
+
+    These constants are usually used by the ngx.log method.
 
   print
     syntax: *print(...)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Emit args concatenated to "error.log", with log level "ngx.NOTICE" and
-    prefix "lua print: ".
+    Emit args concatenated to nginx's "error.log" file, with log level
+    "ngx.NOTICE" and prefix "lua print: ".
 
-    It's equivalent to ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...) Lua nil
-    arguments are accepted and result in literal "nil", and Lua booleans
-    result in "true" or "false".
+    It's equivalent to ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...) Lua
+    "nil" arguments are accepted and result in literal "nil", and Lua
+    booleans result in "true" or "false".
 
   ngx.ctx
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
@@ -690,7 +718,7 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Issue a synchronous but still non-blocking "nginx subrequest" using
+    Issue a synchronous but still non-blocking *Nginx Subrequest* using
     "uri".
 
     Nginx subrequests provide a powerful way to make non-blocking internal
@@ -742,7 +770,7 @@ Nginx API for Lua
     The "args" option can specify extra url arguments, for instance,
     ngx.location.capture('/foo?a=1', { args = { b = 3, c = ':' } } ) is
     equivalent to ngx.location.capture('/foo?a=1&b=3&c=%3a') that is, this
-    method will autmotically escape argument keys and values according to
+    method will automatically escape argument keys and values according to
     URI rules and concatenating them together into a complete query string.
     Because it's all done in hand-written C, it should be faster than your
     own Lua code.
@@ -757,10 +785,8 @@ Nginx API for Lua
     you're using the standard "ngx_proxy" module to serve your subrequests,
     then an "Accept-Encoding: gzip" header in your main request may result
     in gzip'd responses that your Lua code is not able to handle properly.
-    So always set "proxy_pass_request_headers off" in your subrequest
-    location to ignore the original request headers. See
-    http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers
-    for more details.
+    So always set proxy_pass_request_headers "off" in your subrequest
+    location to ignore the original request headers.
 
   ngx.location.capture_multi
     syntax: *res1, res2, ... = ngx.location.capture_multi({ {uri, options?},
@@ -818,9 +844,9 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Set/add/clear the current request's response headers. Underscores (_) in
-    the header names will be replaced by dashes (-) and the header names
-    will be matched case-insentively. -- equivalent to
+    Set/add/clear the current request's response headers. Underscores ("_")
+    in the header names will be replaced by dashes ("-") and the header
+    names will be matched case-insentively. -- equivalent to
     ngx.header["Content-Type"] = 'text/plain' ngx.header.content_type =
     'text/plain';
 
@@ -833,17 +859,17 @@ Nginx API for Lua
     in the response headers. Only array-like tables are accepted.
 
     Note that, for those standard headers that only accepts a single value,
-    like Content-Type, only the last element in the (array) table will take
-    effect. So ngx.header.content_type = {'a', 'b'} is equivalent to
-    ngx.header.content_type = 'b' Setting a slot to nil effectively removes
-    it from the response headers: ngx.header["X-My-Header"] = nil; same does
-    assigning an empty table: ngx.header["X-My-Header"] = {}; "ngx.header"
-    is not a normal Lua table so you cannot iterate through it.
+    like "Content-Type", only the last element in the (array) table will
+    take effect. So ngx.header.content_type = {'a', 'b'} is equivalent to
+    ngx.header.content_type = 'b' Setting a slot to "nil" effectively
+    removes it from the response headers: ngx.header["X-My-Header"] = nil;
+    same does assigning an empty table: ngx.header["X-My-Header"] = {};
+    "ngx.header" is not a normal Lua table so you cannot iterate through it.
 
-    For reading request headers, use the "ngx.req.get_headers()" function
+    For reading request headers, use the ngx.req.get_headers function
     instead.
 
-    Reading values from ngx.header.HEADER is not implemented yet, and
+    Reading values from "ngx.header.HEADER" is not implemented yet, and
     usually you shouldn't need it.
 
   ngx.req.get_uri_args
@@ -922,9 +948,7 @@ Nginx API for Lua
     "ngx.req.get_headers()["Foo"]" will be a Lua (array) table like this:
     {"foo", "bar", "baz"} Another way to read individual request headers is
     to use "ngx.var.http_HEADER", that is, nginx's standard $http_HEADER
-    variables:
-
-    http://wiki.nginx.org/NginxHttpCoreModule#.24http_HEADER
+    variables.
 
   ngx.req.set_header
     syntax: *ngx.req.set_header(header_name, header_value)*
@@ -958,52 +982,79 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Does an internal redirect to uri with args. ngx.exec('/some-location');
-    ngx.exec('/some-location', 'a=3&b=5&c=6');
-    ngx.exec('/some-location?a=3&b=5', 'c=6'); Named locations are also
-    supported, but query strings are ignored. For example location /foo {
-    content_by_lua ' ngx.exec("@bar"); '; }
+    Does an internal redirect to "uri" with "args".
+
+        ngx.exec('/some-location');
+        ngx.exec('/some-location', 'a=3&b=5&c=6');
+        ngx.exec('/some-location?a=3&b=5', 'c=6');
+
+    Named locations are also supported, but query strings are ignored. For
+    example,
+
+        location /foo {
+            content_by_lua '
+                ngx.exec("@bar");
+            ';
+        }
 
         location @bar {
             ...
         }
-    Note that this is very different from L<ngx.redirect|/"ngx.redirect"> in that
-    it's just an internal redirect and no new HTTP traffic is involved.
+
+    Note that this is very different from ngx.redirect in that it's just an
+    internal redirect and no new HTTP traffic is involved.
 
     This method never returns.
 
-    This method MUST be called before "ngx.send_headers()" or explicit
+    This method *must* be called before ngx.send_headers or explicit
     response body outputs by either ngx.print or ngx.say.
 
-    This method is very much like the "echo_exec" directive in the ngx_echo
-    module.
+    This method is very much like the echo_exec directive in
+    [[NginxHttpEchoModule]].
 
   ngx.redirect
     syntax: *ngx.redirect(uri, status?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Issue an HTTP 301 or 302 redirection to "uri".
+    Issue an "HTTP 301<code> or <code>302" redirection to "uri".
 
     The optional "status" parameter specifies whether 301 or 302 to be used.
-    It's 302 (ngx.HTTP_MOVED_TEMPORARILY) by default.
+    It's 302 ("ngx.HTTP_MOVED_TEMPORARILY") by default.
 
-    Here's a small example: return ngx.redirect("/foo") which is equivalent
-    to return ngx.redirect("http://localhost:1984/foo",
-    ngx.HTTP_MOVED_TEMPORARILY) assuming the current server name is
-    "localhost" and it's listening on the 1984 port.
+    Here's a small example:
 
-    This method MUST be called before "ngx.send_headers()" or explicit
+        return ngx.redirect("/foo")
+
+    which is equivalent to
+
+        return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
+
+    assuming the current server name is "localhost" and it's listening on
+    the 1984 port.
+
+    This method *must* be called before ngx.send_headers or explicit
     response body outputs by either ngx.print or ngx.say.
 
     This method never returns.
 
-    This method is very much like the "rewrite" directive with the
-    "redirect" modifier in the standard "ngx_rewrite" module, for example,
-    this "nginx.conf" snippet rewrite ^ /foo redirect; # nginx config is
-    equivalent to the following Lua code return ngx.redirect('/foo'); -- lua
-    code while rewrite ^ /foo permanent; # nginx config is equivalent to
-    return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY) -- Lua code
+    This method is very much like the rewrite directive with the "redirect"
+    modifier in the standard [[NginxHttpRewriteModule]], for example, this
+    "nginx.conf" snippet
+
+        rewrite ^ /foo redirect;  # nginx config
+
+    is equivalent to the following Lua code
+
+        return ngx.redirect('/foo');  -- lua code
+
+    while
+
+        rewrite ^ /foo permanent;  # nginx config
+
+    is equivalent to
+
+        return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
 
   ngx.send_headers
     syntax: *ngx.send_headers()*
@@ -1012,7 +1063,7 @@ Nginx API for Lua
 
     Explicitly send out the response headers.
 
-    Usually you don't have to send headers yourself. ngx_lua will
+    Usually you don't have to send headers yourself. "ngx_lua" will
     automatically send out headers right before you output contents via
     ngx.say or ngx.print.
 
@@ -1024,16 +1075,28 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Emit args concatenated to the HTTP client (as response body).
+    Emit arguments concatenated to the HTTP client (as response body). If
+    response headers have not been sent yet, this function will first send
+    the headers out, and then output the body data.
 
-    Lua nil value will result in outputing "nil", and Lua boolean values
-    will emit "true" or "false".
+    Lua "nil" value will result in outputing "nil", and Lua boolean values
+    will emit literal "true" or "false", accordingly.
 
     Also, nested arrays of strings are also allowed. The elements in the
-    arrays will be sent one by one. For example local table = { "hello, ",
-    {"world: ", true, " or ", false, {": ", nil}} } ngx.print(table) will
-    yield the output hello, world: true or false: nil Non-array table
-    arguments will cause a Lua exception to be thrown.
+    arrays will be sent one by one. For example
+
+        local table = {
+            "hello, ",
+            {"world: ", true, " or ", false,
+                {": ", nil}}
+        }
+        ngx.print(table)
+
+    will yield the output
+
+        hello, world: true or false: nil
+
+    Non-array table arguments will cause a Lua exception to be thrown.
 
   ngx.say
     syntax: *ngx.say(...)*
@@ -1047,32 +1110,36 @@ Nginx API for Lua
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Log args concatenated to error.log with the given logging level.
+    Log arguments concatenated to error.log with the given logging level.
 
-    Lua nil arguments are accepted and result in literal "nil", and Lua
-    booleans result in "true" or "false".
+    Lua "nil" arguments are accepted and result in literal "nil", and Lua
+    booleans result in literal "true" or "false" outputs.
+
+    The "log_level" argument can take constants like "ngx.ERR" and
+    "ngx.WARN". Check out Nginx log level constants for details.
 
   ngx.flush
     syntax: *ngx.flush()*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Force flushing the response outputs.
+    Force flushing the response outputs. This operation has no effect in
+    HTTP 1.0 buffering output mode. See HTTP 1.0 support.
 
   ngx.exit
     syntax: *ngx.exit(status)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    When status >= 200 (ngx.HTTP_OK), it will interrupt the execution of the
-    current Lua thread and returns status code to nginx.
+    When "status >= 200" ("ngx.HTTP_OK"), it will interrupt the execution of
+    the current Lua thread and returns status code to nginx.
 
-    When status == 0 (ngx.OK), it will quits the current phase handler (or
-    content handler if content_by_lua* directives are used).
+    When "status == 0" ("ngx.OK"), it will quits the current phase handler
+    (or content handler if content_by_lua directives are used).
 
     The "status" argument can be "ngx.OK", "ngx.ERROR",
     "ngx.HTTP_NOT_FOUND", "ngx.HTTP_MOVED_TEMPORARILY", or other HTTP status
-    numbers.
+    constants.
 
   ngx.eof
     syntax: *ngx.eof()*
@@ -1093,7 +1160,7 @@ Nginx API for Lua
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Unescape "str" as a escaped URI component.
+    Unescape "str" as an escaped URI component.
 
   ngx.encode_base64
     syntax: *newstr = ngx.encode_base64(str)*
@@ -1115,7 +1182,7 @@ Nginx API for Lua
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Returns today's date (in the format "yyyy-mm-dd") from nginx cached time
-    (no syscall involved unlike Lua's date library). .
+    (no syscall involved unlike Lua's date library).
 
     This is the local time.
 
@@ -1134,7 +1201,8 @@ Nginx API for Lua
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Returns the current timestamp (in the format "yyyy-mm-dd hh:mm:ss") of
-    the nginx cached time (no syscall involved unlike Lua's date library).
+    the nginx cached time (no syscall involved unlike Lua's os.date
+    (<http://www.lua.org/manual/5.1/manual.html#pdf-os.date>) function).
 
     This is the local time.
 
@@ -1144,7 +1212,8 @@ Nginx API for Lua
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Returns the current timestamp (in the format "yyyy-mm-dd hh:mm:ss") of
-    the nginx cached time (no syscall involved unlike Lua's date library).
+    the nginx cached time (no syscall involved unlike Lua's os.date
+    (<http://www.lua.org/manual/5.1/manual.html#pdf-os.date>) function).
 
     This is the UTC time.
 
@@ -1182,21 +1251,36 @@ Nginx API for Lua
   ngx.is_subrequest
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Returns true if the current request is an nginx subrequest, or false
+    Returns "true" if the current request is an nginx subrequest, or "false"
     otherwise.
 
   ndk.set_var.DIRECTIVE
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    syntax: *res = ndk.set_var.DIRECTIVE_NAME* context: *rewrite_by_lua*,
+    access_by_lua*, content_by_lua**
 
     This mechanism allows calling other nginx C modules' directives that are
-    implemented by Nginx Devel Kit (NDK)'s set_var submodule's
-    ndk_set_var_value.
+    implemented by Nginx Devel Kit
+    (<https://github.com/simpl/ngx_devel_kit>) (NDK)'s set_var submodule's
+    "ndk_set_var_value".
 
-    For example, ngx_set_misc module's "set_escape_uri",
-    "set_quote_sql_str", and etc.
+    For example, [[NginxHttpSetMiscModule]]'s following directives can be
+    invoked this way:
 
-    For instance, local res = ndk.set_var.set_escape_uri('a/b'); -- now res
-    == 'a%2fb' This feature requires the ngx_devel_kit module.
+    *   set_quote_sql_str
+
+    *   set_quote_pgsql_str
+
+    *   set_escape_uri
+
+    *   set_unescape_uri
+
+    For instance,
+
+        local res = ndk.set_var.set_escape_uri('a/b');
+        -- now res == 'a%2fb'
+
+    This feature requires the ngx_devel_kit
+    (<https://github.com/simpl/ngx_devel_kit>) module.
 
 HTTP 1.0 support
     The HTTP 1.0 protocol does not support chunked outputs and always
@@ -1224,8 +1308,10 @@ Data Sharing within an Nginx Worker
     shared data through it. It works because required Lua modules are loaded
     only once, and all coroutines will share the same copy of the module.
 
-    Here's a complete small example: -- mydata.lua module("mydata",
-    package.seeall)
+    Here's a complete small example:
+
+        -- mydata.lua
+        module("mydata", package.seeall)
 
         local data = {
             dog = 3,
@@ -1236,31 +1322,32 @@ Data Sharing within an Nginx Worker
         function get_age(name)
             return data[name]
         end
+
     and then accessing it from your nginx.conf:
+
         location /lua {
             content_lua_by_lua '
                 local mydata = require("mydata")
                 ngx.say(mydata.get_age("dog"))
             ';
         }
-    Your C<mydata> module in this example will only be loaded
-    and run on the first request to the location C</lua>,
-    and all those subsequent requests to the same nginx
-    worker process will use the reloaded instance of the
-    module as well as the same copy of the data in it,
-    until you send a C<HUP> signal to the nginx master
-    process to enforce a reload.
+
+    Your "mydata" module in this example will only be loaded and run on the
+    first request to the location "/lua", and all those subsequent requests
+    to the same nginx worker process will use the reloaded instance of the
+    module as well as the same copy of the data in it, until you send a
+    "HUP" signal to the nginx master process to enforce a reload.
 
     This data sharing technique is essential for high-performance Lua apps
     built atop this module. It's common to cache reusable data globally.
 
     It's worth noting that this is *per-worker* sharing, not *per-server*
     sharing. That is, when you have multiple nginx worker processes under an
-    nginx master, this data sharing cannot pass process boundry. If you
+    nginx master, this data sharing cannot pass process boundary. If you
     indeed need server-wide data sharing, you can
 
     1.  Use only a single nginx worker and a single server. This is not
-        recommended when you have a mulit-core CPU or multiple CPUs in a
+        recommended when you have a multi-core CPU or multiple CPUs in a
         single machine.
 
     2.  Use some true backend storage like "memcached", "redis", or an RDBMS
@@ -1460,22 +1547,19 @@ Future Plan
 Known Issues
     *   Because the standard Lua 5.1 interpreter's VM is not fully
         resumable, the ngx.location.capture and ngx.location.capture_multi
-        methods cannot be used within the context of a Lua "pcall()" or
-        "xpcall()". If you're heavy on Lua exception model based on Lua's
-        "error()" and "pcall()"/"xpcall()", use LuaJIT 2.0 instead because
-        LuaJIT 2.0 supports fully resumable VM.
+        methods cannot be used within the context of a Lua pcall()
+        (<http://www.lua.org/manual/5.1/manual.html#pdf-pcall>) or xpcall()
+        (<http://www.lua.org/manual/5.1/manual.html#pdf-xpcall>). If you're
+        heavy on Lua exception model based on Lua's error()
+        (<http://www.lua.org/manual/5.1/manual.html#pdf-error>) and
+        "pcall()"/"xpcall()", use LuaJIT 2.0 instead because LuaJIT 2.0
+        supports fully resume-able VM.
 
     *   The ngx.location.capture and ngx.location.capture_multi Lua methods
-        cannot capture
-
-    locations configured by ngx_echo module's "echo_location",
-    "echo_location_async", "echo_subrequest", or "echo_subrequest_async"
-    directives. This won't be fixed in the future due to technical problems
-    :)
-
-    *   The ngx.location.capture and ngx.location.capture_multi Lua methods
-        cannot capture locations with internal redirections for now. But
-        this may get fixed in the future.
+        cannot capture locations configured by [[NginxHttpEchoModule]]'s
+        echo_location, echo_location_async, echo_subrequest, or
+        echo_subrequest_async directives. This won't be fixed in the future
+        due to technical problems.
 
     *   WATCH OUT: Globals WON'T persist between requests, because of the
         one-coroutine-per-request isolation design. Especially watch
