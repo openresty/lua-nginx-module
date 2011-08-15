@@ -11,6 +11,11 @@ This module is under active development and is already production ready :)
 We're already using this module very heavily in our production web applications
 here in Taobao.com, Alibaba Group.
 
+Version
+=======
+
+This document describes lua-nginx-module [v0.2.1rc10](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 14 August 2011.
+
 Synopsis
 ========
 
@@ -1512,7 +1517,7 @@ For instance,
 This feature requires the ngx_devel_kit module.
 
 HTTP 1.0 support
-----------------
+================
 
 The HTTP 1.0 protocol does not support chunked outputs and always requires an
 explicit `Content-Length` header when the response body is non-empty. So when
@@ -1525,6 +1530,52 @@ construct a proper `Content-Length` header for the HTTP 1.0 client.
 Note that, common HTTP benchmark tools like `ab` and `http_load` always issue
 HTTP 1.0 requests by default. To force `curl` to send HTTP 1.0 requests, use
 the `-0` option.
+
+Data Sharing within an Nginx Worker
+===================================
+
+**NOTE: This mechanism behaves differently when code cache is turned off, and should be considered as a DIRTY TRICK. Backward compatibility is NOT guaranteed. Use at your own risk! We're going to design a whole new data-sharing mechanism.**
+
+If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
+
+Here's a complete small example:
+
+    -- mydata.lua
+    module("mydata", package.seeall)
+ 
+    local data = {
+        dog = 3,
+        cat = 4,
+        pig = 5,
+    }
+ 
+    function get_age(name)
+        return data[name]
+    end
+
+and then accessing it from your nginx.conf:
+
+    location /lua {
+        content_lua_by_lua '
+            local mydata = require("mydata")
+            ngx.say(mydata.get_age("dog"))
+        ';
+    }
+
+Your `mydata` module in this example will only be loaded
+and run on the first request to the location `/lua`,
+and all those subsequent requests to the same nginx
+worker process will use the reloaded instance of the
+module as well as the same copy of the data in it,
+until you send a `HUP` signal to the nginx master
+process to enforce a reload.
+
+This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
+
+It's worth noting that this is *per-worker* sharing, not *per-server* sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
+
+1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
+1. Use some true backend storage like `memcached`, `redis`, or an RDBMS like `mysql`.
 
 Performance
 ===========
@@ -1552,7 +1603,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
 1. Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
 1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
-1. Grab the nginx source code from [nginx.net](http://nginx.net/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 
         $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
         $ tar -xzvf nginx-1.0.5.tar.gz
@@ -1574,6 +1625,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
         $ make -j2
         $ make install
 
+
 Compatibility
 =============
 
@@ -1587,6 +1639,19 @@ Earlier versions of Nginx like 0.6.x and 0.5.x will **not** work.
 
 If you find that any particular version of Nginx above 0.8.54 does not
 work with this module, please consider reporting a bug.
+
+Report Bugs
+===========
+
+Although a lot of effort has been put into testing and code tuning, there must be some serious bugs lurking somewhere in this module. So whenever you are bitten by any quirks, please don't hesitate to
+
+1. create a ticket on the [issue tracking interface](http://github.com/chaoslawful/lua-nginx-module/issues) provided by GitHub,
+1. or send a bug report or even patches to the [nginx mailing list](http://mailman.nginx.org/mailman/listinfo/nginx).
+
+Source Repository
+=================
+
+Available on github at [chaoslawful/lua-nginx-module](http://github.com/chaoslawful/lua-nginx-module).
 
 Test Suite
 ==========
@@ -1679,52 +1744,6 @@ locations configured by ngx_echo module's `echo_location`, `echo_location_async`
     end
 
 assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the `Data Sharing within an Nginx Worker` for the reasons of this danger.
-
-Data Sharing within an Nginx Worker
-===================================
-
-**NOTE: This mechanism behaves differently when code cache is turned off, and should be considered as a DIRTY TRICK. Backward compatibility is NOT guaranteed. Use at your own risk! We're going to design a whole new data-sharing mechanism.**
-
-If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
-
-Here's a complete small example:
-
-    -- mydata.lua
-    module("mydata", package.seeall)
- 
-    local data = {
-        dog = 3,
-        cat = 4,
-        pig = 5,
-    }
- 
-    function get_age(name)
-        return data[name]
-    end
-
-and then accessing it from your nginx.conf:
-
-    location /lua {
-        content_lua_by_lua '
-            local mydata = require("mydata")
-            ngx.say(mydata.get_age("dog"))
-        ';
-    }
-
-Your `mydata` module in this example will only be loaded
-and run on the first request to the location `/lua`,
-and all those subsequent requests to the same nginx
-worker process will use the reloaded instance of the
-module as well as the same copy of the data in it,
-until you send a `HUP` signal to the nginx master
-process to enforce a reload.
-
-This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
-
-It's worth noting that this is *per-worker* sharing, not *per-server* sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
-
-1. Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
-1. Use some true backend storage like `memcached`, `redis`, or an RDBMS like `mysql`.
 
 See Also
 ========

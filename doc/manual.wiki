@@ -1,4 +1,4 @@
-= Name =
+﻿= Name =
 
 ngx_lua - Embed the Power of Lua into Nginx
 
@@ -8,6 +8,10 @@ This module is under active development and is already production ready :)
 
 We're already using this module very heavily in our production web applications
 here in Taobao.com, Alibaba Group.
+
+= Version =
+
+This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc10] released on 14 August 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1454,7 +1458,7 @@ For instance,
 </geshi>
 This feature requires the ngx_devel_kit module.
 
-== HTTP 1.0 support ==
+= HTTP 1.0 support =
 
 The HTTP 1.0 protocol does not support chunked outputs and always requires an
 explicit <code>Content-Length</code> header when the response body is non-empty. So when
@@ -1467,6 +1471,51 @@ construct a proper <code>Content-Length</code> header for the HTTP 1.0 client.
 Note that, common HTTP benchmark tools like <code>ab</code> and <code>http_load</code> always issue
 HTTP 1.0 requests by default. To force <code>curl</code> to send HTTP 1.0 requests, use
 the <code>-0</code> option.
+
+= Data Sharing within an Nginx Worker =
+
+'''NOTE: This mechanism behaves differently when code cache is turned off, and should be considered as a DIRTY TRICK. Backward compatibility is NOT guaranteed. Use at your own risk! We're going to design a whole new data-sharing mechanism.'''
+
+If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
+
+Here's a complete small example:
+<geshi lang="nginx">
+    -- mydata.lua
+    module("mydata", package.seeall)
+ 
+    local data = {
+        dog = 3,
+        cat = 4,
+        pig = 5,
+    }
+ 
+    function get_age(name)
+        return data[name]
+    end
+</geshi>
+and then accessing it from your nginx.conf:
+<geshi lang="nginx">
+    location /lua {
+        content_lua_by_lua '
+            local mydata = require("mydata")
+            ngx.say(mydata.get_age("dog"))
+        ';
+    }
+</geshi>
+Your <code>mydata</code> module in this example will only be loaded
+and run on the first request to the location <code>/lua</code>,
+and all those subsequent requests to the same nginx
+worker process will use the reloaded instance of the
+module as well as the same copy of the data in it,
+until you send a <code>HUP</code> signal to the nginx master
+process to enforce a reload.
+
+This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
+
+It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
+
+# Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
+# Use some true backend storage like <code>memcached</code>, <code>redis</code>, or an RDBMS like <code>mysql</code>.
 
 = Performance =
 
@@ -1492,7 +1541,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
 # Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [http://www.lua.org/ homepage].  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 # Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [http://github.com/simpl/ngx_devel_kit/downloads file list].
 # Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/downloads file list].
-# Grab the nginx source code from [http://nginx.net/ nginx.net], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+# Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 <geshi lang="nginx">
         $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
         $ tar -xzvf nginx-1.0.5.tar.gz
@@ -1514,6 +1563,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
         $ make -j2
         $ make install
 </geshi>
+
 = Compatibility =
 
 The following versions of Nginx should work with this module:
@@ -1526,6 +1576,17 @@ Earlier versions of Nginx like 0.6.x and 0.5.x will '''not''' work.
 
 If you find that any particular version of Nginx above 0.8.54 does not
 work with this module, please consider reporting a bug.
+
+= Report Bugs =
+
+Although a lot of effort has been put into testing and code tuning, there must be some serious bugs lurking somewhere in this module. So whenever you are bitten by any quirks, please don't hesitate to
+
+# create a ticket on the [http://github.com/chaoslawful/lua-nginx-module/issues issue tracking interface] provided by GitHub,
+# or send a bug report or even patches to the [http://mailman.nginx.org/mailman/listinfo/nginx nginx mailing list].
+
+= Source Repository =
+
+Available on github at [http://github.com/chaoslawful/lua-nginx-module chaoslawful/lua-nginx-module].
 
 = Test Suite =
 
@@ -1614,51 +1675,6 @@ locations configured by ngx_echo module's <code>echo_location</code>, <code>echo
     end
 </geshi>
 assuming your current Lua module is named <code>foo.bar</code>. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the <code>Data Sharing within an Nginx Worker</code> for the reasons of this danger.
-
-= Data Sharing within an Nginx Worker =
-
-'''NOTE: This mechanism behaves differently when code cache is turned off, and should be considered as a DIRTY TRICK. Backward compatibility is NOT guaranteed. Use at your own risk! We're going to design a whole new data-sharing mechanism.'''
-
-If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
-
-Here's a complete small example:
-<geshi lang="nginx">
-    -- mydata.lua
-    module("mydata", package.seeall)
- 
-    local data = {
-        dog = 3,
-        cat = 4,
-        pig = 5,
-    }
- 
-    function get_age(name)
-        return data[name]
-    end
-</geshi>
-and then accessing it from your nginx.conf:
-<geshi lang="nginx">
-    location /lua {
-        content_lua_by_lua '
-            local mydata = require("mydata")
-            ngx.say(mydata.get_age("dog"))
-        ';
-    }
-</geshi>
-Your <code>mydata</code> module in this example will only be loaded
-and run on the first request to the location <code>/lua</code>,
-and all those subsequent requests to the same nginx
-worker process will use the reloaded instance of the
-module as well as the same copy of the data in it,
-until you send a <code>HUP</code> signal to the nginx master
-process to enforce a reload.
-
-This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
-
-It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundry. If you indeed need server-wide data sharing, you can
-
-# Use only a single nginx worker and a single server. This is not recommended when you have a mulit-core CPU or multiple CPUs in a single machine.
-# Use some true backend storage like <code>memcached</code>, <code>redis</code>, or an RDBMS like <code>mysql</code>.
 
 = See Also =
 
