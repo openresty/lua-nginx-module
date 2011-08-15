@@ -586,8 +586,8 @@ lua_need_request_body
 
 Force reading request body data or not. The client request body won't be read, so you have to explicitly force reading the body if you need its content.
 
-If you want to read the request body data from the `$request_body` variable, make sure that
-your have configured `client_body_buffer_size` to have exactly the same value as `client_max_body_size`.
+If you want to read the request body data from the [$request_body](http://wiki.nginx.org/NginxHttpCoreModule#$request_body) variable, make sure that
+your have configured [client_body_buffer_size](http://wiki.nginx.org/NginxHttpCoreModule#client_body_buffer_size) to have exactly the same value as [client_max_body_size](http://wiki.nginx.org/NginxHttpCoreModule#client_max_body_size).
 
 If the current location defines `rewrite_by_lua` or `rewrite_by_lua_file`,
 then the request body will be read just before the `rewrite_by_lua` or `rewrite_by_lua_file` code is run (and also at the
@@ -910,7 +910,7 @@ request headers of the current request. This may have unexpected side-effects on
 subrequest responses. For example, when you're using the standard `ngx_proxy` module to serve
 your subrequests, then an "Accept-Encoding: gzip" header in your main request may result
 in gzip'd responses that your Lua code is not able to handle properly. So always set
-`proxy_pass_request_headers` `off` in your subrequest location to ignore the original request headers.
+[proxy_pass_request_headers](http://wiki.nginx.org/NginxHttpProxyModule#proxy_pass_request_headers) `off` in your subrequest location to ignore the original request headers.
 
 ngx.location.capture_multi
 --------------------------
@@ -1169,7 +1169,7 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like thi
 
     {"foo", "bar", "baz"}
 
-Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard `$http_HEADER` variables.
+Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard [$http_HEADER](http://wiki.nginx.org/NginxHttpCoreModule#$http_HEADER) variables.
 
 ngx.req.set_header
 ------------------
@@ -1249,7 +1249,7 @@ This method never returns.
 This method *must* be called before `ngx.send_headers` or explicit response body
 outputs by either `ngx.print` or `ngx.say`.
 
-This method is very much like the `echo_exec` directive in [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule).
+This method is very much like the [echo_exec](http://wiki.nginx.org/NginxHttpEchoModule#echo_exec) directive in [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule).
 
 ngx.redirect
 ------------
@@ -1280,7 +1280,7 @@ This method *must* be called before `ngx.send_headers` or explicit response body
 
 This method never returns.
 
-This method is very much like the `rewrite` directive with the `redirect` modifier in the standard
+This method is very much like the [rewrite](http://wiki.nginx.org/NginxHttpRewriteModule#rewrite) directive with the `redirect` modifier in the standard
 [NginxHttpRewriteModule](http://wiki.nginx.org/NginxHttpRewriteModule), for example, this `nginx.conf` snippet
 
 
@@ -1517,10 +1517,10 @@ This mechanism allows calling other nginx C modules' directives that are impleme
 
 For example, [NginxHttpSetMiscModule](http://wiki.nginx.org/NginxHttpSetMiscModule)'s following directives can be invoked this way:
 
-* `set_quote_sql_str`
-* `set_quote_pgsql_str`
-* `set_escape_uri`
-* `set_unescape_uri`
+* [set_quote_sql_str](http://wiki.nginx.org/NginxHttpSetMiscModule#set_quote_sql_str)
+* [set_quote_pgsql_str](http://wiki.nginx.org/NginxHttpSetMiscModule#set_quote_pgsql_str)
+* [set_escape_uri](http://wiki.nginx.org/NginxHttpSetMiscModule#set_escape_uri)
+* [set_unescape_uri](http://wiki.nginx.org/NginxHttpSetMiscModule#set_unescape_uri)
 
 For instance,
 
@@ -1737,7 +1737,7 @@ Known Issues
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the `ngx.location.capture` and `ngx.location.capture_multi` methods cannot be used within the context of a Lua [pcall()](http://www.lua.org/manual/5.1/manual.html#pdf-pcall) or [xpcall()](http://www.lua.org/manual/5.1/manual.html#pdf-xpcall). If you're heavy on Lua exception model based on Lua's [error()](http://www.lua.org/manual/5.1/manual.html#pdf-error) and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resume-able VM.
 
-* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture locations configured by [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule)'s `echo_location`, `echo_location_async`, `echo_subrequest`, or `echo_subrequest_async` directives. This won't be fixed in the future due to technical problems.
+* The `ngx.location.capture` and `ngx.location.capture_multi` Lua methods cannot capture locations configured by [NginxHttpEchoModule](http://wiki.nginx.org/NginxHttpEchoModule)'s [echo_location](http://wiki.nginx.org/NginxHttpEchoModule#echo_location), [echo_location_async](http://wiki.nginx.org/NginxHttpEchoModule#echo_location_async), [echo_subrequest](http://wiki.nginx.org/NginxHttpEchoModule#echo_subrequest), or [echo_subrequest_async](http://wiki.nginx.org/NginxHttpEchoModule#echo_subrequest_async) directives. This won't be fixed in the future due to technical problems.
 
 * **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request isolation design. Especially watch yourself when using `require()` to import modules, and use this form:
 
