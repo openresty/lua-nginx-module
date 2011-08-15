@@ -363,18 +363,21 @@ content.
 This hook uses exactly the same mechamism as [content_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#content_by_lua) so all the nginx APIs defined there
 are also available here.
 
-Note that this handler always runs *after* the standard nginx rewrite module ( <http://wiki.nginx.org/NginxHttpRewriteModule> ). So the following will work as expected:
+Note that this handler always runs *after* the standard [NginxHttpRewriteModule](http://wiki.nginx.org/NginxHttpRewriteModule). So the following will work as expected:
+
 
        location /foo {
            set $a 12; # create and initialize $a
-           set $b ''; # create and initialize $b
+           set $b ""; # create and initialize $b
            rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
            echo "res = $b";
        }
 
-because `set $a 12` and `set $b ''` run before [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua).
+
+because `set $a 12` and `set $b ""` run *before* [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua).
 
 On the other hand, the following will not work as expected:
+
 
     ?  location /foo {
     ?      set $a 12; # create and initialize $a
@@ -388,9 +391,11 @@ On the other hand, the following will not work as expected:
     ?      echo "res = $b";
     ?  }
 
+
 because `if` runs *before* [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) even if it's put after [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) in the config.
 
 The right way of doing this is as follows:
+
 
     location /foo {
         set $a 12; # create and initialize $a
@@ -405,8 +410,9 @@ The right way of doing this is as follows:
         echo "res = $b";
     }
 
-It's worth mentioning that, the `ngx_eval` module can be
-approximately implemented by [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua). For example,
+
+It's worth mentioning that, the `ngx_eval` module can be approximately implemented by [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua). For example,
+
 
     location / {
         eval $res {
@@ -420,7 +426,9 @@ approximately implemented by [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLua
         fastcgi_pass ...;
     }
 
+
 can be implemented in terms of `ngx_lua` like this
+
 
     location = /check-spam {
         internal;
@@ -438,11 +446,10 @@ can be implemented in terms of `ngx_lua` like this
         fastcgi_pass ...;
     }
 
-Just as any other rewrite-phase handlers, [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) also runs in subrequests.
 
-Note that calling `ngx.exit(ngx.OK)` just returning from the current [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) handler, and the nginx request processing
-control flow will still continue to the content handler. To terminate the current request from within the current [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) handler,
-calling [ngx.exit](http://wiki.nginx.org/NginxHttpLuaModule#ngx.exit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
+Just as any other rewrite phase handlers, [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) also runs in subrequests.
+
+Note that calling `ngx.exit(ngx.OK)` just returning from the current [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [rewrite_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#rewrite_by_lua) handler, calling [ngx.exit](http://wiki.nginx.org/NginxHttpLuaModule#ngx.exit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
 access_by_lua
 -------------
@@ -702,6 +709,7 @@ HTTP status constants
       value = ngx.HTTP_GONE (410)
       value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
       value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
+
 
 Nginx log level constants
 -------------------------

@@ -350,18 +350,21 @@ content.
 This hook uses exactly the same mechamism as [[#content_by_lua|content_by_lua]] so all the nginx APIs defined there
 are also available here.
 
-Note that this handler always runs ''after'' the standard nginx rewrite module ( http://wiki.nginx.org/NginxHttpRewriteModule ). So the following will work as expected:
+Note that this handler always runs ''after'' the standard [[NginxHttpRewriteModule]]. So the following will work as expected:
+
 <geshi lang="nginx">
    location /foo {
        set $a 12; # create and initialize $a
-       set $b ''; # create and initialize $b
+       set $b ""; # create and initialize $b
        rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
        echo "res = $b";
    }
 </geshi>
-because <code>set $a 12</code> and <code>set $b ''</code> run before [[#rewrite_by_lua|rewrite_by_lua]].
+
+because <code>set $a 12</code> and <code>set $b ""</code> run ''before'' [[#rewrite_by_lua|rewrite_by_lua]].
 
 On the other hand, the following will not work as expected:
+
 <geshi lang="nginx">
     ?  location /foo {
     ?      set $a 12; # create and initialize $a
@@ -375,9 +378,11 @@ On the other hand, the following will not work as expected:
     ?      echo "res = $b";
     ?  }
 </geshi>
+
 because <code>if</code> runs ''before'' [[#rewrite_by_lua|rewrite_by_lua]] even if it's put after [[#rewrite_by_lua|rewrite_by_lua]] in the config.
 
 The right way of doing this is as follows:
+
 <geshi lang="nginx">
     location /foo {
         set $a 12; # create and initialize $a
@@ -392,8 +397,9 @@ The right way of doing this is as follows:
         echo "res = $b";
     }
 </geshi>
-It's worth mentioning that, the <code>ngx_eval</code> module can be
-approximately implemented by [[#rewrite_by_lua|rewrite_by_lua]]. For example,
+
+It's worth mentioning that, the <code>ngx_eval</code> module can be approximately implemented by [[#rewrite_by_lua|rewrite_by_lua]]. For example,
+
 <geshi lang="nginx">
     location / {
         eval $res {
@@ -407,7 +413,9 @@ approximately implemented by [[#rewrite_by_lua|rewrite_by_lua]]. For example,
         fastcgi_pass ...;
     }
 </geshi>
+
 can be implemented in terms of <code>ngx_lua</code> like this
+
 <geshi lang="nginx">
     location = /check-spam {
         internal;
@@ -425,11 +433,10 @@ can be implemented in terms of <code>ngx_lua</code> like this
         fastcgi_pass ...;
     }
 </geshi>
-Just as any other rewrite-phase handlers, [[#rewrite_by_lua|rewrite_by_lua]] also runs in subrequests.
 
-Note that calling <code>ngx.exit(ngx.OK)</code> just returning from the current [[#rewrite_by_lua|rewrite_by_lua]] handler, and the nginx request processing
-control flow will still continue to the content handler. To terminate the current request from within the current [[#rewrite_by_lua|rewrite_by_lua]] handler,
-calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
+Just as any other rewrite phase handlers, [[#rewrite_by_lua|rewrite_by_lua]] also runs in subrequests.
+
+Note that calling <code>ngx.exit(ngx.OK)</code> just returning from the current [[#rewrite_by_lua|rewrite_by_lua]] handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [[#rewrite_by_lua|rewrite_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
 
 == access_by_lua ==
 
@@ -679,6 +686,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.catpure
   value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
   value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
 </geshi>
+
 == Nginx log level constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 <geshi lang="lua">
