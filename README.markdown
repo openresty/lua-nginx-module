@@ -1365,7 +1365,7 @@ Log arguments concatenated to error.log with the given logging level.
 
 Lua `nil` arguments are accepted and result in literal `"nil"`, and Lua booleans result in literal `"true"` or `"false"` outputs.
 
-The `log_level` argument can take constants like `ngx.ERR` and `ngx.WARN`. Check out [Nginx log level constants](http://wiki.nginx.org/NginxHttpLuaModule#Nginx.20log.20level.20constants) for details.
+The `log_level` argument can take constants like `ngx.ERR` and `ngx.WARN`. Check out [Nginx log level constants](http://wiki.nginx.org/NginxHttpLuaModule#Nginx_log_level_constants) for details.
 
 ngx.flush
 ---------
@@ -1373,7 +1373,7 @@ ngx.flush
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Force flushing the response outputs. This operation has no effect in HTTP 1.0 buffering output mode. See [HTTP 1.0 support](http://wiki.nginx.org/NginxHttpLuaModule#HTTP.201.0.20support).
+Force flushing the response outputs. This operation has no effect in HTTP 1.0 buffering output mode. See [HTTP 1.0 support](http://wiki.nginx.org/NginxHttpLuaModule#HTTP_1.0_support).
 
 ngx.exit
 --------
@@ -1387,7 +1387,7 @@ status code to nginx.
 When `status == 0` (`ngx.OK`), it will quits the current phase handler (or content handler if [content_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#content_by_lua) directives are used).
 
 The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
-`ngx.HTTP_MOVED_TEMPORARILY`, or other [HTTP status constants](http://wiki.nginx.org/NginxHttpLuaModule#HTTP.20status.20constants).
+`ngx.HTTP_MOVED_TEMPORARILY`, or other [HTTP status constants](http://wiki.nginx.org/NginxHttpLuaModule#HTTP_status_constants).
 
 ngx.eof
 -------
