@@ -1,13 +1,12 @@
 ﻿= Name =
 
-ngx_lua - Embed the Power of Lua into Nginx
+ngx_lua - Embed the power of Lua into Nginx
+
+''This module is not distributed with the Nginx source.'' See [[#Installation|the installation instructions]].
 
 = Status =
 
-This module is under active development and is already production ready :)
-
-We're already using this module very heavily in our production web applications
-here in Taobao.com, Alibaba Group.
+This module is under active development and is already production ready.
 
 = Version =
 
@@ -1003,6 +1002,8 @@ For reading request headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]
 Reading values from <code>ngx.header.HEADER</code> is not implemented yet,
 and usually you shouldn't need it.
 
+Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and its friends) will throw out a Lua exception.
+
 == ngx.req.get_uri_args ==
 '''syntax:''' ''args = ngx.req.get_uri_args()''
 
@@ -1469,8 +1470,17 @@ For example, [[NginxHttpSetMiscModule]]'s following directives can be invoked th
 
 * [[NginxHttpSetMiscModule#set_quote_sql_str|set_quote_sql_str]]
 * [[NginxHttpSetMiscModule#set_quote_pgsql_str|set_quote_pgsql_str]]
-* [[NginxHttpSetMiscModule#set_escape_uri|set_escape_uri]]
+* [[NginxHttpSetMiscModule#set_quote_json_str|set_quote_json_str]]
 * [[NginxHttpSetMiscModule#set_unescape_uri|set_unescape_uri]]
+* [[NginxHttpSetMiscModule#set_escape_uri|set_escape_uri]]
+* [[NginxHttpSetMiscModule#set_encode_base32|set_encode_base32]]
+* [[NginxHttpSetMiscModule#set_decode_base32|set_decode_base32]]
+* [[NginxHttpSetMiscModule#set_encode_base64|set_encode_base64]]
+* [[NginxHttpSetMiscModule#set_decode_base64|set_decode_base64]]
+* [[NginxHttpSetMiscModule#set_encode_base64|set_encode_hex]]
+* [[NginxHttpSetMiscModule#set_decode_base64|set_decode_hex]]
+* [[NginxHttpSetMiscModule#set_encode_base64|set_sha1]]
+* [[NginxHttpSetMiscModule#set_decode_base64|set_md5]]
 
 For instance,
 
@@ -1478,6 +1488,11 @@ For instance,
     local res = ndk.set_var.set_escape_uri('a/b');
     -- now res == 'a%2fb'
 </geshi>
+
+Similarly, the following directives provided by [[NginxHttpEncryptedSessionModule]] can be invoked from within Lua too:
+
+* [[NginxHttpEncryptedSessionModule#set_encrypt_session|set_encrypt_session]]
+* [[NginxHttpEncryptedSessionModule#set_decrypt_session|set_decrypt_session]]
 
 This feature requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
 
@@ -1735,4 +1750,5 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/chaoslawful/drizzle-nginx-module drizzle-nginx-module]
 * [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
 * [http://github.com/agentzh/memc-nginx-module memc-nginx-module]
+* [http://openresty.org The ngx_openresty bundle]
 
