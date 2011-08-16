@@ -8,6 +8,7 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_headers_out.h"
 #include "ngx_http_lua_headers_in.h"
+#include <pcre.h>
 #include <math.h>
 
 #define NGX_UNESCAPE_URI_COMPONENT  0
@@ -89,7 +90,7 @@ ngx_http_lua_atpanic(lua_State *L)
 
     } else {
         dd("(lua-atpanic) can't output Lua VM crashing reason to error log"
-                " due to invalid logging context: %s", s);
+                " due to invalid logging context");
     }
 
     /*  restore nginx execution */
@@ -3478,5 +3479,146 @@ ngx_http_lua_ngx_set_ctx(lua_State *L)
     ctx->ctx_ref = luaL_ref(L, -2);
 
     return 0;
+}
+
+
+int
+ngx_http_lua_ngx_re_match(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_str_t                    subj;
+    ngx_str_t                    pat;
+    ngx_str_t                    opts;
+    ngx_regex_compile_t          re;
+    u_char                      *p;
+    const char                  *msg;
+    ngx_int_t                    rc;
+    ngx_uint_t                   n;
+    int                          i;
+    int                          nargs;
+    int                         *cap;
+    int                          ovecsize;
+    u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
+
+    nargs = lua_gettop(L);
+
+    if (nargs != 2 && nargs != 3) {
+        return luaL_error(L, "expecting two or three arguments, but got %d",
+                nargs);
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    subj.data = (u_char *) luaL_checklstring(L, 1, &subj.len);
+    pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
+
+    ngx_memzero(&re, sizeof(ngx_regex_compile_t));
+
+    if (nargs >= 3) {
+        opts.data = (u_char *) luaL_checklstring(L, 3, &opts.len);
+
+    } else {
+        opts.data = (u_char *) "";
+        opts.len = 0;
+    }
+
+    re.pattern = pat;
+    re.options = 0;
+    re.err.len = NGX_MAX_CONF_ERRSTR;
+    re.err.data = errstr;
+    re.pool = r->pool;
+
+    p = opts.data;
+
+    while (*p != '\0') {
+        switch (*p) {
+            case 'i':
+                re.options |= NGX_REGEX_CASELESS;
+                break;
+
+            case 's':
+                re.options |= PCRE_DOTALL;
+                break;
+
+            case 'm':
+                re.options |= PCRE_MULTILINE;
+                break;
+
+            case 'u':
+                re.options |= PCRE_UTF8;
+                break;
+
+            case 'x':
+                re.options |= PCRE_EXTENDED;
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
+                return luaL_argerror(L, 3, msg);
+        }
+
+        p++;
+    }
+
+    dd("compiling regex");
+
+    if (ngx_regex_compile(&re) != NGX_OK) {
+        dd("compile failed");
+
+        re.err.data[re.err.len] = '\0';
+        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
+                pat.data, re.err.data);
+
+        return luaL_argerror(L, 2, msg);
+    }
+
+    dd("compile done, captures %d", re.captures);
+
+    ovecsize = (re.captures + 1) * 3;
+
+    cap = ngx_palloc(r->pool, ovecsize * sizeof(int));
+    if (cap == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
+    if (rc == NGX_REGEX_NO_MATCHED) {
+        ngx_pfree(r->pool, cap);
+        lua_pushnil(L);
+        return 1;
+    }
+
+    if (rc < 0) {
+        ngx_pfree(r->pool, cap);
+        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" using \"%s\"",
+                      (int) rc, subj.data, pat.data);
+    }
+
+    lua_createtable(L, re.captures + 1 /* narr */, 1 /* nrec */);
+
+    if (rc == 0) {
+        return luaL_error(L, "capture size too small");
+    }
+
+    dd("rc = %d", (int) rc);
+
+    for (i = 0, n = 0; i <= re.captures; i++, n += 2) {
+        lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                cap[n + 1] - cap[n]);
+
+        dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+
+        lua_rawseti(L, -2, (int) i);
+    }
+
+    ngx_pfree(r->pool, cap);
+
+    return 1;
 }
 

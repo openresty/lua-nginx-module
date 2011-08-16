@@ -61,6 +61,8 @@ int ngx_http_lua_ngx_header_set(lua_State *L);
 
 int ngx_http_lua_ngx_req_get_headers(lua_State *L);
 
+int ngx_http_lua_ngx_re_match(lua_State *L);
+
 int ngx_http_lua_ngx_exec(lua_State *L);
 
 #if defined(NDK) && NDK

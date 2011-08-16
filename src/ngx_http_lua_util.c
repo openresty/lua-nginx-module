@@ -719,6 +719,17 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
 
     lua_setfield(L, -2, "var");
 
+    /* {{{ ngx.re table */
+
+    lua_newtable(L);    /* .re */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
+    lua_setfield(L, -2, "match");
+
+    lua_setfield(L, -2, "re");
+
+    /* }}} */
+
     /* {{{ ngx.req table */
 
     lua_newtable(L);    /* .req */
