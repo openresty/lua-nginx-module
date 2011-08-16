@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes lua-nginx-module [v0.2.1rc10](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 14 August 2011.
+This document describes lua-nginx-module [v0.2.1rc11](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 16 August 2011.
 
 Synopsis
 ========
@@ -1513,9 +1513,68 @@ Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org
 
 ngx.is_subrequest
 -----------------
+**syntax:** *value = ngx.is_subrequest*
+
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns `true` if the current request is an nginx subrequest, or `false` otherwise.
+
+ngx.re.match
+------------
+**syntax:** ''captures = ngx.re.match(subject, regex, options?)
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Matches the `subject` string using the Perl-compatible regular expression `regex` with the optional `options`.
+
+Only the first occurrence of the match is returned, or `nil` if no match is found.
+
+When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized subpattern's capturing, `captures[2]` the second, and so on. Here's some examples:
+
+
+    local m = ngx.re.match("hello, 1234", "[0-9]+")
+    -- m[0] == "1234"
+
+
+
+    local m = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
+    -- m[0] == "1234"
+    -- m[1] == "1"
+
+
+Unmatched subpatterns will take `nil` values in their `captures` table fields. For instance,
+
+
+    local m = ngx.re.match("hello, world", "(world)|(hello)")
+    -- m[0] == "hello"
+    -- m[1] == nil
+    -- m[2] == "hello"
+
+
+You can also specify `options` to control how the match will be performed. The following option characters are supported:
+
+
+    m             multi-line mode (just like Perl 5's //m)
+    s             single-line mode (just like Perl 5's //s)
+    i             caseless mode (just like Perl 5's //i)
+    u             UTF-8 mode
+    x             extended mode (just like Perl 5's //x)
+
+
+These characters can be combined together, for example,
+
+
+    local m = ngx.re.match("hello, world", "HEL LO", "ix")
+    -- m[0] == "hello"
+
+
+
+    local m = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
+    -- m[0] == "hello, 美好"
+    -- m[1] == "美好"
+
+
+This method requires the PCRE library enabled in your Nginx build.
 
 ndk.set_var.DIRECTIVE
 ---------------------

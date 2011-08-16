@@ -3482,6 +3482,7 @@ ngx_http_lua_ngx_set_ctx(lua_State *L)
 }
 
 
+#if (NGX_PCRE)
 int
 ngx_http_lua_ngx_re_match(lua_State *L)
 {
@@ -3596,8 +3597,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     if (rc < 0) {
         ngx_pfree(r->pool, cap);
-        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" using \"%s\"",
-                      (int) rc, subj.data, pat.data);
+        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" "
+                "using \"%s\"", (int) rc, subj.data, pat.data);
     }
 
     lua_createtable(L, re.captures + 1 /* narr */, 1 /* nrec */);
@@ -3609,10 +3610,16 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     dd("rc = %d", (int) rc);
 
     for (i = 0, n = 0; i <= re.captures; i++, n += 2) {
-        lua_pushlstring(L, (char *) &subj.data[cap[n]],
-                cap[n + 1] - cap[n]);
+        dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
+        if (cap[n] < 0) {
+            lua_pushnil(L);
 
-        dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+        } else {
+            lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                    cap[n + 1] - cap[n]);
+
+            dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+        }
 
         lua_rawseti(L, -2, (int) i);
     }
@@ -3621,4 +3628,5 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     return 1;
 }
+#endif /* NGX_PCRE */
 

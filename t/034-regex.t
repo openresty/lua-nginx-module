@@ -296,3 +296,26 @@ error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() fa
 --- response_body
 error: bad argument #3 to '?' (unknown flag "H")
 
+
+
+=== TEST 15: extended mode (ignore whitespaces)
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, world", "(world)|(hello)", "x")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched: ", m)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+nil
+hello
+

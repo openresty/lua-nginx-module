@@ -719,6 +719,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
 
     lua_setfield(L, -2, "var");
 
+#if (NGX_PCRE)
     /* {{{ ngx.re table */
 
     lua_newtable(L);    /* .re */
@@ -729,6 +730,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     lua_setfield(L, -2, "re");
 
     /* }}} */
+#endif /* NGX_PCRE */
 
     /* {{{ ngx.req table */
 
