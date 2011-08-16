@@ -262,3 +262,21 @@ Fooy: bary
 Foox: conx1, conx2
 Fooy: cony1, cony2
 
+
+
+=== TEST 15: set header after ngx.print
+--- config
+    location /lua {
+        default_type "text/plain";
+        content_by_lua '
+            ngx.print("hello")
+            ngx.header.content_type = "text/foo"
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Content-Type:
+--- error_code:
+--- response_body:
+

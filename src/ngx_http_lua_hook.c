@@ -2216,6 +2216,13 @@ ngx_http_lua_ngx_header_set(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    if (ctx->headers_sent) {
+        return luaL_error(L, "attempt to set ngx.header.HEADER after "
+                "sending out response headers");
+    }
+
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
@@ -2238,8 +2245,6 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     key.data[len] = '\0';
 
     key.len = len;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (! ctx->headers_set) {
         rc = ngx_http_set_content_type(r);
