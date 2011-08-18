@@ -7,7 +7,7 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 
@@ -36,7 +36,64 @@ __DATA__
 
 
 
-=== TEST 2: single capture
+=== TEST 2: escaping sequences
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", "(\\\\d+)")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+
+
+
+=== TEST 3: escaping sequences (bad)
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", "(\\d+)")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+
+
+
+=== TEST 4: escaping sequences in [[ ... ]]
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", "[[\\d+]]")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+
+
+
+=== TEST 5: single capture
 --- config
     location /re {
         content_by_lua '
@@ -57,7 +114,7 @@ __DATA__
 
 
 
-=== TEST 3: multiple captures
+=== TEST 6: multiple captures
 --- config
     location /re {
         content_by_lua '
@@ -80,7 +137,7 @@ hello
 
 
 
-=== TEST 4: not matched
+=== TEST 7: not matched
 --- config
     location /re {
         content_by_lua '
@@ -99,7 +156,7 @@ not matched: nil
 
 
 
-=== TEST 5: case sensitive by default
+=== TEST 8: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -118,7 +175,7 @@ not matched: nil
 
 
 
-=== TEST 6: case sensitive by default
+=== TEST 9: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -137,7 +194,7 @@ hello
 
 
 
-=== TEST 7: UTF-8 mode
+=== TEST 10: UTF-8 mode
 --- config
     location /re {
         content_by_lua '
@@ -156,7 +213,7 @@ hello章亦
 
 
 
-=== TEST 8: multi-line mode (^ at line head)
+=== TEST 11: multi-line mode (^ at line head)
 --- config
     location /re {
         content_by_lua '
@@ -175,7 +232,7 @@ world
 
 
 
-=== TEST 9: multi-line mode (. does not match \n)
+=== TEST 12: multi-line mode (. does not match \n)
 --- config
     location /re {
         content_by_lua '
@@ -194,7 +251,7 @@ hello
 
 
 
-=== TEST 10: single-line mode (^ as normal)
+=== TEST 13: single-line mode (^ as normal)
 --- config
     location /re {
         content_by_lua '
@@ -213,7 +270,7 @@ not matched: nil
 
 
 
-=== TEST 11: single-line mode (dot all)
+=== TEST 14: single-line mode (dot all)
 --- config
     location /re {
         content_by_lua '
@@ -233,7 +290,7 @@ world
 
 
 
-=== TEST 12: extended mode (ignore whitespaces)
+=== TEST 15: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -252,7 +309,7 @@ he
 
 
 
-=== TEST 13: bad pattern
+=== TEST 16: bad pattern
 --- config
     location /re {
         content_by_lua '
@@ -275,7 +332,7 @@ error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() fa
 
 
 
-=== TEST 14: bad option
+=== TEST 17: bad option
 --- config
     location /re {
         content_by_lua '
@@ -298,7 +355,7 @@ error: bad argument #3 to '?' (unknown flag "H")
 
 
 
-=== TEST 15: extended mode (ignore whitespaces)
+=== TEST 18: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -318,4 +375,25 @@ error: bad argument #3 to '?' (unknown flag "H")
 hello
 nil
 hello
+
+
+
+=== TEST 19: gmatch
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("hello, world", "[a-z]+") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+world
 
