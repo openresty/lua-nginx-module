@@ -7,7 +7,7 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 
@@ -378,22 +378,25 @@ hello
 
 
 
-=== TEST 19: gmatch
+=== TEST 19: optional trailing captures
 --- config
     location /re {
         content_by_lua '
-            for m in ngx.re.gmatch("hello, world", "[a-z]+") do
-                if m then
-                    ngx.say(m[0])
-                else
-                    ngx.say("not matched: ", m)
-                end
+            m = ngx.re.match("hello, 1234", "([0-9]+)(h?)")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
             end
         ';
     }
 --- request
     GET /re
---- response_body
-hello
-world
+--- response_body eval
+"1234
+1234
+
+"
 

@@ -3613,7 +3613,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     dd("rc = %d", (int) rc);
 
-    for (i = 0, n = 0; i <= re.captures; i++, n += 2) {
+    for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
         if (cap[n] < 0) {
             lua_pushnil(L);
@@ -3795,6 +3795,9 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     subj.data += offset;
+    subj.len -= offset;
+
+    dd("regex exec...");
 
     rc = ngx_regex_exec(re->regex, &subj, cap, ovecsize);
     if (rc == NGX_REGEX_NO_MATCHED) {
