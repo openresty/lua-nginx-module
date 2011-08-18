@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes lua-nginx-module [v0.2.1rc11](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 16 August 2011.
+This document describes lua-nginx-module [v0.2.1rc12](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 18 August 2011.
 
 Synopsis
 ========
@@ -337,14 +337,6 @@ The use code is executed in a new spawned coroutine with independent globals
 environment (i.e. a sandbox). I/O operations in user code should only be done
 through predefined Nginx APIs, otherwise Nginx event loop may be blocked and
 performance may drop off dramatically.
-
-As predefined Nginx I/O APIs used coroutine yielding/resuming mechanism, the
-user code should not call any modules that used coroutine API to prevent
-obfuscating the predefined Nginx APIs (actually coroutine module is masked off
-in [content_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#content_by_lua) directives). This limitation is a little crucial, but
-don't worry! We're working on a alternative coroutine implementation that can
-be fit in the Nginx event framework. When it is done, the user code will be
-able to use coroutine mechanism freely as in standard Lua again!
 
 rewrite_by_lua
 --------------
@@ -1527,7 +1519,7 @@ ngx.re.match
 
 Matches the `subject` string using the Perl-compatible regular expression `regex` with the optional `options`.
 
-Only the first occurrence of the match is returned, or `nil` if no match is found.
+Only the first occurrence of the match is returned, or `nil` if no match is found. In case of fatal errors, like seeing bad `UTF-8` sequences in `UTF-8` mode, a Lua exception will be raised.
 
 When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized subpattern's capturing, `captures[2]` the second, and so on. Here's some examples:
 
@@ -1549,6 +1541,29 @@ Unmatched subpatterns will take `nil` values in their `captures` table fields. F
     -- m[0] == "hello"
     -- m[1] == nil
     -- m[2] == "hello"
+
+
+Escaping sequences in Perl-compatible regular expressions like `\d`, `\s`, and `\w`, require special care when specifying them in Lua string literals, because the backslash character, `\`, needs to be escaped in Lua string literals too, for example,
+
+
+    ? m = ngx.re.match("hello, 1234", "\d+")
+
+
+won't work as expected and won't match at all. Intead, you should escape the backslash itself and write
+
+
+    m = ngx.re.match("hello, 1234", "\\d+")
+
+
+When you put the Lua code snippet in your `nginx.conf` file, you have to escape the backslash one more time, because your Lua code is now in an nginx string literal, and backslashes in nginx string literals require escaping as well. For instance,
+
+
+    location /test {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "\\\\d+")
+            if m then ngx.say(m[0]) else ngx.say("not matched!") end
+        ';
+    }
 
 
 You can also specify `options` to control how the match will be performed. The following option characters are supported:
@@ -1576,9 +1591,47 @@ These characters can be combined together, for example,
 
 This method requires the PCRE library enabled in your Nginx build.
 
+This feature is introduced in the `v0.2.1rc11` release.
+
+ngx.re.gmatch
+-------------
+**syntax:** ''iterator = ngx.re.gmatch(subject, regex, options?)
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Similar to [ngx.re.match](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.match), but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the `<subject>` string argument with the Perl-compatible regular expression `regex`.
+
+Here's a small exmple to demonstrate its basic usage:
+
+
+    local iterator = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+    local m
+    m = iterator()    -- m[0] == m[1] == "hello"
+    m = iterator()    -- m[0] == m[1] == "world"
+    m = iterator()    -- m == nil
+
+
+More often we just put it into a Lua `for` loop:
+
+
+    for m in ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+        ngx.say(m[0])
+        ngx.say(m[1])
+    end
+
+
+The optional `options` argument takes exactly the same semantics as the [ngx.re.match](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.match) method.
+
+The current implementation requires that the iterator returned should only be used in a single request. That is, one should *not* assign it to a variable belonging to persistent namespace like a Lua package.
+
+This method requires the PCRE library enabled in your Nginx build.
+
+This feature was first introduced in the `v0.2.1rc12` release.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
+
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
@@ -1816,6 +1869,8 @@ Future Plan
 
 Known Issues
 ============
+
+* As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [ngx.location.capture](http://wiki.nginx.org/NginxHttpLuaModule#ngx.location.capture) (actually coroutine modules have been masked off in [content_by_lua](http://wiki.nginx.org/NginxHttpLuaModule#content_by_lua) directives and others). This limitation is a little crucial, but don't worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the [ngx.location.capture](http://wiki.nginx.org/NginxHttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/NginxHttpLuaModule#ngx.location.capture_multi) methods cannot be used within the context of a Lua [pcall()](http://www.lua.org/manual/5.1/manual.html#pdf-pcall) or [xpcall()](http://www.lua.org/manual/5.1/manual.html#pdf-xpcall). If you're heavy on Lua exception model based on Lua's [error()](http://www.lua.org/manual/5.1/manual.html#pdf-error) and `pcall()`/`xpcall()`, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resume-able VM.
 
