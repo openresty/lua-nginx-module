@@ -29,10 +29,6 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
-#ifndef NGX_UNESCAPE_URI_COMPONENT
-#define NGX_UNESCAPE_URI_COMPONENT  0
-#endif
-
 /* Nginx HTTP Lua Inline tag prefix */
 
 #define NGX_HTTP_LUA_INLINE_TAG "nhli_"

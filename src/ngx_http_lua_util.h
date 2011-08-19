@@ -6,6 +6,11 @@
 #include "ngx_http_lua_common.h"
 
 
+#ifndef NGX_UNESCAPE_URI_COMPONENT
+#define NGX_UNESCAPE_URI_COMPONENT  0
+#endif
+
+
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
     (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
