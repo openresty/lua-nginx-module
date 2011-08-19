@@ -11,6 +11,7 @@
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_echo.h"
 #include "ngx_http_lua_time.h"
+#include "ngx_http_lua_redirect.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
