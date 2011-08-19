@@ -6,6 +6,7 @@
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_patch.h"
+#include "ngx_http_lua_time.h"
 
 
 static int
