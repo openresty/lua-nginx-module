@@ -18,9 +18,6 @@ int ngx_http_lua_ngx_log(lua_State *L);
 
 int ngx_http_lua_ngx_exit(lua_State *L);
 
-int ngx_http_lua_ngx_flush(lua_State *L);
-int ngx_http_lua_ngx_eof(lua_State *L);
-
 int ngx_http_lua_ngx_escape_uri(lua_State *L);
 int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 
@@ -32,17 +29,8 @@ int ngx_http_lua_ngx_md5_bin(lua_State *L);
 int ngx_http_lua_ngx_decode_base64(lua_State *L);
 int ngx_http_lua_ngx_encode_base64(lua_State *L);
 
-int ngx_http_lua_ngx_location_capture(lua_State *L);
-int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
-
 int ngx_http_lua_ngx_get(lua_State *L);
 int ngx_http_lua_ngx_set(lua_State *L);
-
-ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r,
-        void *data, ngx_int_t rc);
-
-void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
-        ngx_uint_t type);
 
 
 #endif /* NGX_HTTP_LUA_HOOK_H */

@@ -104,6 +104,16 @@ all.sh
 src/accessby.[ch]
 src/rewriteby.[ch]
 src/patch.[ch]
+src/ndk.[ch]
+src/redirect.[ch]
+src/echo.[ch]
+src/log.[ch]
+src/subrequest.[ch]
+src/time.[ch]
+src/regex.[ch]
+src/ctx.[ch]
+src/args.[ch]
+src/headers.[ch]
 all
 build10
 g

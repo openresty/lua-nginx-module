@@ -331,3 +331,91 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
     return dst;
 }
 
+
+/**
+ * Force flush out response content
+ * */
+int
+ngx_http_lua_ngx_flush(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_buf_t                   *buf;
+    ngx_chain_t                 *cl;
+    ngx_int_t                    rc;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ctx->eof) {
+        return luaL_error(L, "already seen eof");
+    }
+
+    buf = ngx_calloc_buf(r->pool);
+    if (buf == NULL) {
+        return luaL_error(L, "memory allocation error");
+    }
+
+    buf->flush = 1;
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    cl->next = NULL;
+    cl->buf = buf;
+
+    rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return luaL_error(L, "failed to send chain link: %d", (int) rc);
+    }
+
+    return 0;
+}
+
+
+/**
+ * Send last_buf, terminate output stream
+ * */
+int
+ngx_http_lua_ngx_eof(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_int_t                rc;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) != 0) {
+        return luaL_error(L, "no argument is expected");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return luaL_error(L, "failed to send eof buf");
+    }
+
+    return 0;
+}
+

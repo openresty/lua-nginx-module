@@ -6,6 +6,7 @@
 #include "ngx_http_lua_filter.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
+#include "ngx_http_lua_subrequest.h"
 
 
 ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
