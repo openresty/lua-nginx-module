@@ -1,6 +1,10 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
+#include "ddebug.h"
+
 
 #include "nginx.h"
 #include "ngx_http_lua_util.h"
@@ -14,6 +18,7 @@
 #include "ngx_http_lua_redirect.h"
 #include "ngx_http_lua_ndk.h"
 #include "ngx_http_lua_subrequest.h"
+#include "ngx_http_lua_log.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,

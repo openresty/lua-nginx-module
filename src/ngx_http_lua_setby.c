@@ -1,12 +1,16 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
+#include "ddebug.h"
 
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_patch.h"
 #include "ngx_http_lua_time.h"
+#include "ngx_http_lua_log.h"
 
 
 static int
