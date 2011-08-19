@@ -38,12 +38,6 @@ int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
 int ngx_http_lua_ngx_get(lua_State *L);
 int ngx_http_lua_ngx_set(lua_State *L);
 
-#if defined(NDK) && NDK
-int ngx_http_lua_ndk_set_var_get(lua_State *L);
-int ngx_http_lua_ndk_set_var_set(lua_State *L);
-int ngx_http_lua_run_set_var_directive(lua_State *L);
-#endif
-
 ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r,
         void *data, ngx_int_t rc);
 
