@@ -12,8 +12,6 @@
 #include <pcre.h>
 #include <math.h>
 
-#define NGX_UNESCAPE_URI_COMPONENT  0
-
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
 jmp_buf ngx_http_lua_exception;
@@ -38,8 +36,7 @@ static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
         ngx_flag_t share_all_vars);
 static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
-static void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
-        ngx_uint_t type);
+
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
         size_t size);
 static int log_wrapper(ngx_http_request_t *r, const char *ident, int level,
@@ -47,8 +44,6 @@ static int log_wrapper(ngx_http_request_t *r, const char *ident, int level,
 static uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
-static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
-        u_char *buf, u_char *last);
 static size_t ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i);
 static u_char * ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst);
 
@@ -1270,7 +1265,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
 
 /* XXX we also decode '+' to ' ' */
-static void
+void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type)
 {
@@ -3010,242 +3005,6 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 (int) (p - args->data), (int) len);
         return;
     }
-}
-
-
-int
-ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
-    ngx_http_request_t          *r;
-    u_char                      *buf;
-    u_char                      *last;
-    int                          retval;
-
-    if (lua_gettop(L) != 0) {
-        return luaL_error(L, "expecting 0 arguments but seen %d",
-                lua_gettop(L));
-    }
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    lua_createtable(L, 0, 4);
-
-    /* we copy r->args over to buf to simplify
-     * unescaping query arg keys and values */
-
-    buf = ngx_palloc(r->pool, r->args.len);
-    if (buf == NULL) {
-        return luaL_error(L, "out of memory");
-    }
-
-    ngx_memcpy(buf, r->args.data, r->args.len);
-
-    last = buf + r->args.len;
-
-    retval = ngx_http_lua_parse_args(r, L, buf, last);
-
-    ngx_pfree(r->pool, buf);
-
-    return retval;
-}
-
-
-int
-ngx_http_lua_ngx_req_get_post_args(lua_State *L)
-{
-    ngx_http_request_t          *r;
-    u_char                      *buf;
-    int                          retval;
-    size_t                       len;
-    ngx_chain_t                 *cl;
-    u_char                      *p;
-    u_char                      *last;
-
-    if (lua_gettop(L) != 0) {
-        return luaL_error(L, "expecting 0 arguments but seen %d",
-                lua_gettop(L));
-    }
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (r->discard_body) {
-        lua_createtable(L, 0, 4);
-        return 1;
-    }
-
-    if (r->request_body == NULL) {
-        return luaL_error(L, "no request body found; "
-                "maybe you should turn on lua_need_request_body?");
-    }
-
-    if (r->request_body->temp_file) {
-        return luaL_error(L, "requesty body in temp file not supported");
-    }
-
-    lua_createtable(L, 0, 4);
-
-    if (r->request_body->bufs == NULL) {
-        return 1;
-    }
-
-    /* we copy r->request_body->bufs over to buf to simplify
-     * unescaping query arg keys and values */
-
-    len = 0;
-    for (cl = r->request_body->bufs; cl; cl = cl->next) {
-        len += cl->buf->last - cl->buf->pos;
-    }
-
-    dd("post body length: %d", (int) len);
-
-    buf = ngx_palloc(r->pool, len);
-    if (buf == NULL) {
-        return luaL_error(L, "out of memory");
-    }
-
-    p = buf;
-    for (cl = r->request_body->bufs; cl; cl = cl->next) {
-        p = ngx_copy(p, cl->buf->pos, cl->buf->last - cl->buf->pos);
-    }
-
-    dd("post body: %.*s", (int) len, buf);
-
-    last = buf + len;
-
-    retval = ngx_http_lua_parse_args(r, L, buf, last);
-
-    ngx_pfree(r->pool, buf);
-
-    return retval;
-}
-
-
-static int
-ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
-        u_char *last)
-{
-    u_char                      *p, *q;
-    u_char                      *src, *dst;
-    unsigned                     parsing_value;
-    size_t                       len;
-
-    p = buf;
-
-    parsing_value = 0;
-    q = p;
-
-    while (p != last) {
-        if (*p == '=' && ! parsing_value) {
-            /* key data is between p and q */
-
-            src = q; dst = q;
-
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                    NGX_UNESCAPE_URI_COMPONENT);
-
-            dd("pushing key %.*s", (int) (dst - q), q);
-
-            /* push the key */
-            lua_pushlstring(L, (char *) q, dst - q);
-
-            /* skip the current '=' char */
-            p++;
-
-            q = p;
-            parsing_value = 1;
-
-        } else if (*p == '&') {
-            /* reached the end of a key or a value, just save it */
-            src = q; dst = q;
-
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                    NGX_UNESCAPE_URI_COMPONENT);
-
-            dd("pushing key or value %.*s", (int) (dst - q), q);
-
-            /* push the value or key */
-            lua_pushlstring(L, (char *) q, dst - q);
-
-            /* skip the current '&' char */
-            p++;
-
-            q = p;
-
-            if (parsing_value) {
-                /* end of the current pair's value */
-                parsing_value = 0;
-
-            } else {
-                /* the current parsing pair takes no value,
-                 * just push the value "true" */
-                dd("pushing boolean true");
-
-                lua_pushboolean(L, 1);
-            }
-
-            (void) lua_tolstring(L, -2, &len);
-
-            if (len == 0) {
-                /* ignore empty string key pairs */
-                dd("popping key and value...");
-                lua_pop(L, 2);
-
-            } else {
-                dd("setting table...");
-                ngx_http_lua_set_multi_value_table(L, 1);
-            }
-
-        } else {
-            p++;
-        }
-    }
-
-    if (p != q || parsing_value) {
-        src = q; dst = q;
-
-        ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                NGX_UNESCAPE_URI_COMPONENT);
-
-        dd("pushing key or value %.*s", (int) (dst - q), q);
-
-        lua_pushlstring(L, (char *) q, dst - q);
-
-        if (! parsing_value) {
-            dd("pushing boolean true...");
-            lua_pushboolean(L, 1);
-        }
-
-        (void) lua_tolstring(L, -2, &len);
-
-        if (len == 0) {
-            /* ignore empty string key pairs */
-            dd("popping key and value...");
-            lua_pop(L, 2);
-
-        } else {
-            dd("setting table...");
-            ngx_http_lua_set_multi_value_table(L, 1);
-        }
-    }
-
-    dd("gettop: %d", lua_gettop(L));
-    dd("type: %s", lua_typename(L, lua_type(L, 1)));
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "internal error: stack in bad state");
-    }
-
-    return 1;
 }
 
 

@@ -53,8 +53,6 @@ int ngx_http_lua_ngx_set(lua_State *L);
 
 int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 int ngx_http_lua_ngx_req_header_set(lua_State *L);
-int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
-int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 int ngx_http_lua_ngx_header_get(lua_State *L);
 int ngx_http_lua_ngx_header_set(lua_State *L);
@@ -71,6 +69,9 @@ int ngx_http_lua_run_set_var_directive(lua_State *L);
 
 ngx_int_t ngx_http_lua_post_subrequest(ngx_http_request_t *r,
         void *data, ngx_int_t rc);
+
+void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
+        ngx_uint_t type);
 
 
 #endif /* NGX_HTTP_LUA_HOOK_H */

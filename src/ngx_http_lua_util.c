@@ -7,6 +7,7 @@
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_patch.h"
 #include "ngx_http_lua_regex.h"
+#include "ngx_http_lua_args.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
