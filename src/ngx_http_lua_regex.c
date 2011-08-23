@@ -3,16 +3,16 @@
 #endif
 #include "ddebug.h"
 
+#if (NGX_PCRE)
+
 #include "ngx_http_lua_regex.h"
+#include "ngx_http_lua_script.h"
 #include <pcre.h>
 
 
-#if (NGX_PCRE)
 static int ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L);
-#endif
 
 
-#if (NGX_PCRE)
 int
 ngx_http_lua_ngx_re_match(lua_State *L)
 {
@@ -131,14 +131,14 @@ ngx_http_lua_ngx_re_match(lua_State *L)
                 "using \"%s\"", (int) rc, subj.data, pat.data);
     }
 
-    lua_createtable(L, re.captures + 1 /* narr */, 1 /* nrec */);
-
     if (rc == 0) {
         ngx_pfree(r->pool, cap);
         return luaL_error(L, "capture size too small");
     }
 
     dd("rc = %d", (int) rc);
+
+    lua_createtable(L, re.captures + 1 /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -349,8 +349,6 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
                 (int) rc, subj.data);
     }
 
-    lua_createtable(L, re->captures + 1 /* narr */, 1 /* nrec */);
-
     if (rc == 0) {
         lua_pushinteger(L, -1);
         lua_replace(L, lua_upvalueindex(4));
@@ -360,6 +358,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     dd("rc = %d", (int) rc);
+
+    lua_createtable(L, re->captures + 1 /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -390,5 +390,165 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     return 1;
 
 }
+
+
+int
+ngx_http_lua_ngx_re_sub(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_str_t                    subj;
+    ngx_str_t                    pat;
+    ngx_str_t                    opts;
+    ngx_str_t                    tpl;
+    ngx_str_t                    repl;
+    ngx_regex_compile_t          re;
+    u_char                      *p;
+    const char                  *msg;
+    ngx_int_t                    rc;
+    int                          nargs;
+    int                         *cap;
+    int                          ovecsize;
+    u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
+
+    ngx_http_lua_complex_value_t              ctpl;
+    ngx_http_lua_compile_complex_value_t       ccv;
+
+    nargs = lua_gettop(L);
+
+    if (nargs != 3 && nargs != 4) {
+        return luaL_error(L, "expecting three or four arguments, but got %d",
+                nargs);
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    subj.data = (u_char *) luaL_checklstring(L, 1, &subj.len);
+    pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
+    tpl.data = (u_char *) luaL_checklstring(L, 3, &tpl.len);
+
+    ngx_memzero(&re, sizeof(ngx_regex_compile_t));
+
+    if (nargs >= 4) {
+        opts.data = (u_char *) luaL_checklstring(L, 4, &opts.len);
+
+    } else { /* nargs == 3 */
+        opts.data = (u_char *) "";
+        opts.len = 0;
+    }
+
+    re.pattern = pat;
+    re.options = 0;
+    re.err.len = NGX_MAX_CONF_ERRSTR;
+    re.err.data = errstr;
+    re.pool = r->pool;
+
+    p = opts.data;
+
+    while (*p != '\0') {
+        switch (*p) {
+            case 'i':
+                re.options |= NGX_REGEX_CASELESS;
+                break;
+
+            case 's':
+                re.options |= PCRE_DOTALL;
+                break;
+
+            case 'm':
+                re.options |= PCRE_MULTILINE;
+                break;
+
+            case 'u':
+                re.options |= PCRE_UTF8;
+                break;
+
+            case 'x':
+                re.options |= PCRE_EXTENDED;
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
+                return luaL_argerror(L, 3, msg);
+        }
+
+        p++;
+    }
+
+    dd("compiling regex");
+
+    if (ngx_regex_compile(&re) != NGX_OK) {
+        dd("compile failed");
+
+        re.err.data[re.err.len] = '\0';
+        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
+                pat.data, re.err.data);
+
+        return luaL_argerror(L, 2, msg);
+    }
+
+    dd("compile done, captures %d", re.captures);
+
+    ovecsize = (re.captures + 1) * 3;
+
+    cap = ngx_palloc(r->pool, ovecsize * sizeof(int));
+    if (cap == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
+    if (rc == NGX_REGEX_NO_MATCHED) {
+        ngx_pfree(r->pool, cap);
+
+        lua_settop(L, 1);
+        lua_pushinteger(L, 0);
+        return 2;
+    }
+
+    if (rc < 0) {
+        ngx_pfree(r->pool, cap);
+        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" "
+                "using \"%s\"", (int) rc, subj.data, pat.data);
+    }
+
+    if (rc == 0) {
+        ngx_pfree(r->pool, cap);
+        return luaL_error(L, "capture size too small");
+    }
+
+    dd("rc = %d", (int) rc);
+
+    ngx_memzero(&ccv, sizeof(ngx_http_lua_compile_complex_value_t));
+    ccv.request = r;
+    ccv.value = &tpl;
+    ccv.complex_value = &ctpl;
+
+    if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
+        ngx_pfree(r->pool, cap);
+        return luaL_error(L, "bad template for substitution: \"%s\"", tpl.data);
+    }
+
+    rc = ngx_http_lua_complex_value(r, &subj, rc, cap, &ctpl, &repl);
+
+    ngx_pfree(r->pool, cap);
+
+    if (rc != NGX_OK) {
+        return luaL_error(L, "failed to eval the template for replacement: "
+                "\"%s\"", tpl.data);
+    }
+
+    lua_pushlstring(L, (char *) repl.data, repl.len);
+    ngx_pfree(r->pool, repl.data);
+
+    lua_pushinteger(L, 1);
+
+    return 2;
+}
+
 #endif /* NGX_PCRE */
 

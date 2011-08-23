@@ -743,6 +743,9 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
     lua_setfield(L, -2, "gmatch");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
+    lua_setfield(L, -2, "sub");
+
     lua_setfield(L, -2, "re");
 
     /* }}} */

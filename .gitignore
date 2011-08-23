@@ -114,6 +114,7 @@ src/regex.[ch]
 src/ctx.[ch]
 src/args.[ch]
 src/headers.[ch]
+src/script.[ch]
 all
 build10
 g
