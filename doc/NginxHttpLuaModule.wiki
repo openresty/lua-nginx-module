@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc12] released on 18 August 2011.
+This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc13] released on 24 August 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1457,7 +1457,7 @@ Returns <code>true</code> if the current request is an nginx subrequest, or <cod
 == ngx.re.match ==
 '''syntax:''' ''captures = ngx.re.match(subject, regex, options?)
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Matches the <code>subject</code> string using the Perl-compatible regular expression <code>regex</code> with the optional <code>options</code>.
 
@@ -1511,11 +1511,12 @@ When you put the Lua code snippet in your <code>nginx.conf</code> file, you have
 You can also specify <code>options</code> to control how the match will be performed. The following option characters are supported:
 
 <geshi lang="text">
-    m             multi-line mode (just like Perl 5's //m)
-    s             single-line mode (just like Perl 5's //s)
-    i             caseless mode (just like Perl 5's //i)
+    a             anchored mode (only match from the beginning)
+    i             caseless mode (just like Perl's /i modifier)
+    m             multi-line mode (just like Perl's /m modifier)
+    s             single-line mode (just like Perl's /s modifier)
     u             UTF-8 mode
-    x             extended mode (just like Perl 5's //x)
+    x             extended mode (just like Perl's /x modifier)
 </geshi>
 
 These characters can be combined together, for example,
@@ -1538,7 +1539,7 @@ This feature is introduced in the <code>v0.2.1rc11</code> release.
 == ngx.re.gmatch ==
 '''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the Perl-compatible regular expression <code>regex</code>.
 
@@ -1568,6 +1569,60 @@ The current implementation requires that the iterator returned should only be us
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the <code>v0.2.1rc12</code> release.
+
+== ngx.re.sub ==
+'''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)
+
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+
+Substitutes the first match of the Perl-compatible regular expression <code>regex</code> on the <code>subject</code> argument string with the string or function argument <code>replace</code>. The optional <code>options</code> argument has exactly the same meaning as in [[#ngx.re.match|ngx.re.match]].
+
+This method returns the resulting new string as well as the number of successful substitutions, or throw out a Lua exception when an error occurred (syntax errors in the <code><replace></code> string argument, for example).
+
+When the <code>replace</code> is a string, then it is treated as a special template for string replacement. For example,
+
+<geshi lang="lua">
+    local newstr, n = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+        -- newstr == "hello, [12][1]34"
+        -- n == 1
+</geshi>
+
+where <code>$0</code> referring to the whole substring matched by the pattern and <code>$1</code> referring to the first parenthesized capturing substring.
+
+You can also use curly braces to disambiguate variable names from the background string literals: 
+
+<geshi lang="lua">
+    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
+        -- newstr == "hello, 10034"
+        -- n == 1
+</geshi>
+
+Literal dollar sign characters (<code>$</code>) in the <code>replace</code> string argument can be escaped by another dollar sign, for instance,
+
+<geshi lang="lua">
+    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "$$")
+        -- newstr == "hello, $234"
+        -- n == 1
+</geshi>
+
+Do not use backlashes to escape dollar signs; it won't work as expected.
+
+When the <code>replace</code> argument is of type "function", then it will be invoked with the "match table" as the argument to generate the replace string literal for substitution. The "match table" fed into the <code>replace</code> function is exactly the same as the return value of [[#ngx.re.match|ngx.re.match]]. Here is an example:
+
+<geshi lang="lua">
+    local func = function (m)
+        return "[" .. m[0] .. "][" .. m[1] .. "]"
+    end
+    local newstr, n = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
+        -- newstr == "hello, [12][1]34"
+        -- n == 1
+</geshi>
+
+The dollar sign characters in the return value of the <code>replace</code> function argument are not special at all.
+
+This method requires the PCRE library enabled in your Nginx build.
+
+This feature was first introduced in the <code>v0.2.1rc13</code> release.
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''

@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes lua-nginx-module [v0.2.1rc12](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 18 August 2011.
+This document describes lua-nginx-module [v0.2.1rc13](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 24 August 2011.
 
 Synopsis
 ========
@@ -1515,7 +1515,7 @@ ngx.re.match
 ------------
 **syntax:** ''captures = ngx.re.match(subject, regex, options?)
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Matches the `subject` string using the Perl-compatible regular expression `regex` with the optional `options`.
 
@@ -1569,11 +1569,12 @@ When you put the Lua code snippet in your `nginx.conf` file, you have to escape 
 You can also specify `options` to control how the match will be performed. The following option characters are supported:
 
 
-    m             multi-line mode (just like Perl 5's //m)
-    s             single-line mode (just like Perl 5's //s)
-    i             caseless mode (just like Perl 5's //i)
+    a             anchored mode (only match from the beginning)
+    i             caseless mode (just like Perl's /i modifier)
+    m             multi-line mode (just like Perl's /m modifier)
+    s             single-line mode (just like Perl's /s modifier)
     u             UTF-8 mode
-    x             extended mode (just like Perl 5's //x)
+    x             extended mode (just like Perl's /x modifier)
 
 
 These characters can be combined together, for example,
@@ -1597,7 +1598,7 @@ ngx.re.gmatch
 -------------
 **syntax:** ''iterator = ngx.re.gmatch(subject, regex, options?)
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Similar to [ngx.re.match](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.match), but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the `<subject>` string argument with the Perl-compatible regular expression `regex`.
 
@@ -1627,6 +1628,61 @@ The current implementation requires that the iterator returned should only be us
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the `v0.2.1rc12` release.
+
+ngx.re.sub
+----------
+**syntax:** ''newstr, n = ngx.re.sub(subject, regex, replace, options?)
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Substitutes the first match of the Perl-compatible regular expression `regex` on the `subject` argument string with the string or function argument `replace`. The optional `options` argument has exactly the same meaning as in [ngx.re.match](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.match).
+
+This method returns the resulting new string as well as the number of successful substitutions, or throw out a Lua exception when an error occurred (syntax errors in the `<replace>` string argument, for example).
+
+When the `replace` is a string, then it is treated as a special template for string replacement. For example,
+
+
+    local newstr, n = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+        -- newstr == "hello, [12][1]34"
+        -- n == 1
+
+
+where `$0` referring to the whole substring matched by the pattern and `$1` referring to the first parenthesized capturing substring.
+
+You can also use curly braces to disambiguate variable names from the background string literals: 
+
+
+    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
+        -- newstr == "hello, 10034"
+        -- n == 1
+
+
+Literal dollar sign characters (`$`) in the `replace` string argument can be escaped by another dollar sign, for instance,
+
+
+    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "$$")
+        -- newstr == "hello, $234"
+        -- n == 1
+
+
+Do not use backlashes to escape dollar signs; it won't work as expected.
+
+When the `replace` argument is of type "function", then it will be invoked with the "match table" as the argument to generate the replace string literal for substitution. The "match table" fed into the `replace` function is exactly the same as the return value of [ngx.re.match](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.match). Here is an example:
+
+
+    local func = function (m)
+        return "[" .. m[0] .. "][" .. m[1] .. "]"
+    end
+    local newstr, n = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
+        -- newstr == "hello, [12][1]34"
+        -- n == 1
+
+
+The dollar sign characters in the return value of the `replace` function argument are not special at all.
+
+This method requires the PCRE library enabled in your Nginx build.
+
+This feature was first introduced in the `v0.2.1rc13` release.
 
 ndk.set_var.DIRECTIVE
 ---------------------
