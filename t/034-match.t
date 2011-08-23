@@ -400,3 +400,41 @@ hello
 
 "
 
+
+
+=== TEST 20: anchored match (failed)
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", "([0-9]+)", "a")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+
+
+
+=== TEST 21: anchored match (succeeded)
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("1234, hello", "([0-9]+)", "a")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+

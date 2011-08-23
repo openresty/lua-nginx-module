@@ -216,3 +216,37 @@ nil
 ho$wdy, world
 1
 
+
+
+=== TEST 12: non-anchored match
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "[0-9]", "x")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, x234
+1
+
+
+
+=== TEST 13: anchored match
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "[0-9]", "x", "a")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+0
+

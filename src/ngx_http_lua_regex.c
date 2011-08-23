@@ -89,6 +89,10 @@ ngx_http_lua_ngx_re_match(lua_State *L)
                 re.options |= PCRE_EXTENDED;
                 break;
 
+            case 'a':
+                re.options |= PCRE_ANCHORED;
+                break;
+
             default:
                 msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
                 return luaL_argerror(L, 3, msg);
@@ -235,6 +239,10 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
             case 'x':
                 re->options |= PCRE_EXTENDED;
+                break;
+
+            case 'a':
+                re->options |= PCRE_ANCHORED;
                 break;
 
             default:
@@ -470,6 +478,10 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
 
             case 'x':
                 re.options |= PCRE_EXTENDED;
+                break;
+
+            case 'a':
+                re.options |= PCRE_ANCHORED;
                 break;
 
             default:

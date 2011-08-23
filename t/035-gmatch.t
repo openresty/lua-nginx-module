@@ -116,3 +116,88 @@ world
 nil
 nil
 
+
+
+=== TEST 5: anchored match (failed)
+--- config
+    location /re {
+        content_by_lua '
+            it = ngx.re.gmatch("hello, 1234", "([0-9]+)", "a")
+            ngx.say(it())
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+nil
+
+
+
+=== TEST 6: anchored match (succeeded)
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("12 hello 34", "[0-9]", "a")
+            local m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m[0])
+            ngx.say(it())
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1
+2
+nil
+
+
+
+=== TEST 7: non-anchored gmatch
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("12 hello 34", "[0-9]")
+            local m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1
+2
+3
+4
+nil
+
+
+
+=== TEST 8: anchored match (succeeded)
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("12 hello 34", "[0-9]", "a")
+            local m = it()
+            ngx.say(m[0])
+            m = it()
+            ngx.say(m[0])
+            ngx.say(it())
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1
+2
+nil
+
