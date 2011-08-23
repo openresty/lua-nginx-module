@@ -12,7 +12,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 2);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -249,4 +249,104 @@ hello, x234
 --- response_body
 hello, 1234
 0
+
+
+
+=== TEST 14: function replace
+--- config
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                return "[" .. m[0] .. "] [" .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.sub("hello, 34", "([0-9])", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, [3] [3]4
+1
+
+
+
+=== TEST 15: function replace (failed)
+--- config
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                return "[" .. m[0] .. "] [" .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.sub("hello, 34", "([A-Z])", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 34
+0
+
+
+
+=== TEST 16: bad repl arg type
+--- config
+    location /re {
+        content_by_lua '
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([A-Z])", true)
+            ngx.say(rc)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+false
+bad argument #3 to '?' (string, number, or function expected, got boolean)
+nil
+
+
+
+=== TEST 17: use number to replace
+--- config
+    location /re {
+        content_by_lua '
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", 72)
+            ngx.say(rc)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+true
+hello, 724
+1
+
+
+
+=== TEST 18: bad function return value type
+--- config
+    location /re {
+        content_by_lua '
+            local f = function (m) end
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", f)
+            ngx.say(rc)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+false
+bad argument #3 to '?' (string or number expected to be returned by the replace function, got nil)
+nil
 

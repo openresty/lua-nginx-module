@@ -142,7 +142,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, re.captures + 1 /* narr */, 1 /* nrec */);
+    lua_createtable(L, re.captures /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -367,7 +367,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, re->captures + 1 /* narr */, 1 /* nrec */);
+    lua_createtable(L, re->captures /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -413,9 +413,14 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
     u_char                      *p;
     const char                  *msg;
     ngx_int_t                    rc;
+    ngx_uint_t                   n;
+    ngx_int_t                    i;
     int                          nargs;
     int                         *cap;
     int                          ovecsize;
+    int                          type;
+    unsigned                     func;
+    size_t                       len;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
 
     ngx_http_lua_complex_value_t              ctpl;
@@ -438,12 +443,31 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
 
     subj.data = (u_char *) luaL_checklstring(L, 1, &subj.len);
     pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
-    tpl.data = (u_char *) luaL_checklstring(L, 3, &tpl.len);
+
+    func = 0;
+
+    type = lua_type(L, 3);
+    switch (type) {
+        case LUA_TFUNCTION:
+            func = 1;
+            break;
+
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            tpl.data = (u_char *) lua_tolstring(L, 3, &tpl.len);
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "string, number, or function expected, "
+                    "got %s", lua_typename(L, type));
+            return luaL_argerror(L, 3, msg);
+    }
 
     ngx_memzero(&re, sizeof(ngx_regex_compile_t));
 
-    if (nargs >= 4) {
+    if (nargs == 4) {
         opts.data = (u_char *) luaL_checklstring(L, 4, &opts.len);
+        lua_pop(L, 1);
 
     } else { /* nargs == 3 */
         opts.data = (u_char *) "";
@@ -486,7 +510,7 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
 
             default:
                 msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
-                return luaL_argerror(L, 3, msg);
+                return luaL_argerror(L, 4, msg);
         }
 
         p++;
@@ -534,6 +558,63 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
     }
 
     dd("rc = %d", (int) rc);
+
+    if (func) {
+        lua_createtable(L, re.captures /* narr */, 1 /* nrec */);
+
+        for (i = 0, n = 0; i < rc; i++, n += 2) {
+            dd("capture %d: %d %d", (int) i, cap[n], cap[n + 1]);
+            if (cap[n] < 0) {
+                lua_pushnil(L);
+
+            } else {
+                lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                        cap[n + 1] - cap[n]);
+
+                dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+            }
+
+            lua_rawseti(L, -2, (int) i);
+        }
+
+        lua_call(L, 1 /* nargs */, 1 /* nresults */);
+        type = lua_type(L, -1);
+        switch (type) {
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                tpl.data = (u_char *) lua_tolstring(L, -1, &tpl.len);
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "string or number expected to be "
+                        "returned by the replace function, got %s",
+                        lua_typename(L, type));
+                return luaL_argerror(L, 3, msg);
+        }
+
+        len = cap[0] + tpl.len + subj.len - cap[1];
+        repl.len = len;
+        repl.data = ngx_palloc(r->pool, len);
+        if (repl.data == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        dd("len = %d", (int) len);
+        dd("tpl = %s", tpl.data);
+
+        p = ngx_copy(repl.data, subj.data, cap[0]);
+        p = ngx_copy(p, tpl.data, tpl.len);
+        p = ngx_copy(p, &subj.data[cap[1]], subj.len - cap[1]);
+
+        lua_pushlstring(L, (char *) repl.data, repl.len);
+
+        ngx_pfree(r->pool, repl.data);
+        ngx_pfree(r->pool, cap);
+
+        lua_pushinteger(L, 1);
+
+        return 2;
+    }
 
     ngx_memzero(&ccv, sizeof(ngx_http_lua_compile_complex_value_t));
     ccv.request = r;
