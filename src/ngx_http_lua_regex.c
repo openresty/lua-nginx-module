@@ -27,6 +27,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     ngx_int_t                    rc;
     ngx_uint_t                   n;
     int                          i;
+    ngx_int_t                    pos = 0;
     int                          nargs;
     int                         *cap;
     int                          ovecsize;
@@ -34,9 +35,9 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     nargs = lua_gettop(L);
 
-    if (nargs != 2 && nargs != 3) {
-        return luaL_error(L, "expecting two or three arguments, but got %d",
-                nargs);
+    if (nargs != 2 && nargs != 3 && nargs != 4) {
+        return luaL_error(L, "expecting two or three or four arguments, "
+                "but got %d", nargs);
     }
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -54,6 +55,29 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     if (nargs >= 3) {
         opts.data = (u_char *) luaL_checklstring(L, 3, &opts.len);
+
+        if (nargs == 4) {
+            luaL_checktype(L, 4, LUA_TTABLE);
+            lua_getfield(L, 4, "pos");
+            if (lua_isnumber(L, -1)) {
+                pos = (ngx_int_t) lua_tointeger(L, -1);
+                if (pos < 0) {
+                    pos = 0;
+                }
+
+            } else if (lua_isnil(L, -1)) {
+                pos = 0;
+
+            } else {
+                msg = lua_pushfstring(L, "bad pos field type in the ctx table "
+                        "argument: %s",
+                        luaL_typename(L, -1));
+
+                return luaL_argerror(L, 4, msg);
+            }
+
+            lua_pop(L, 1);
+        }
 
     } else {
         opts.data = (u_char *) "";
@@ -87,6 +111,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     cap = ngx_palloc(r->pool, ovecsize * sizeof(int));
     if (cap == NULL) {
         return luaL_error(L, "out of memory");
+    }
+
+    if (nargs == 4) { /* has ctx table */
+        subj.data += pos;
+        subj.len  -= pos;
     }
 
     rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
@@ -124,6 +153,12 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         }
 
         lua_rawseti(L, -2, (int) i);
+    }
+
+    if (nargs == 4) { /* having ctx table */
+        pos += cap[1];
+        lua_pushinteger(L, (lua_Integer) pos);
+        lua_setfield(L, 4, "pos");
     }
 
     ngx_pfree(r->pool, cap);
@@ -224,14 +259,14 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     ngx_uint_t                   n;
     int                          i;
     ngx_str_t                    subj;
-    int                          offset;
+    ngx_int_t                    offset;
 
     /* upvalues in order: subj r re offset */
 
     subj.data = (u_char *) lua_tolstring(L, lua_upvalueindex(1), &subj.len);
     orig_r = (ngx_http_request_t *) lua_touserdata(L, lua_upvalueindex(2));
     re = (ngx_regex_compile_t *) lua_touserdata(L, lua_upvalueindex(3));
-    offset = lua_tointeger(L, lua_upvalueindex(4));
+    offset = (ngx_int_t) lua_tointeger(L, lua_upvalueindex(4));
 
     dd("offset %d, re %p, r %p, subj %s", offset, re, orig_r, subj.data);
 
@@ -322,13 +357,12 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         ngx_pfree(r->pool, re);
     }
 
-    lua_pushinteger(L, offset);
+    lua_pushinteger(L, (lua_Integer) offset);
     lua_replace(L, lua_upvalueindex(4));
 
     ngx_pfree(r->pool, cap);
 
     return 1;
-
 }
 
 
@@ -573,6 +607,10 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
                 re->options |= PCRE_EXTENDED;
                 break;
 
+            case 'o':
+                /* TODO: just like Perl's /o, the compile-once flag */
+                break;
+
             case 'a':
                 re->options |= PCRE_ANCHORED;
                 break;
@@ -585,7 +623,6 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
         p++;
     }
 }
-
 
 #endif /* NGX_PCRE */
 

@@ -438,3 +438,49 @@ not matched!
 --- response_body
 1234
 
+
+
+=== TEST 22: match with ctx but no pos
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = {}
+            m = ngx.re.match("1234, hello", "([0-9]+)", "", ctx)
+            if m then
+                ngx.say(m[0])
+                ngx.say(ctx.pos)
+            else
+                ngx.say("not matched!")
+                ngx.say(ctx.pos)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+4
+
+
+
+=== TEST 23: match with ctx and a pos
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = { pos = 2 }
+            m = ngx.re.match("1234, hello", "([0-9]+)", "", ctx)
+            if m then
+                ngx.say(m[0])
+                ngx.say(ctx.pos)
+            else
+                ngx.say("not matched!")
+                ngx.say(ctx.pos)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+34
+4
+
