@@ -13,6 +13,7 @@
 static int ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L);
 static void ngx_http_lua_ngx_re_parse_opts(lua_State *L,
         ngx_regex_compile_t *re, ngx_str_t *opts, int narg);
+static int ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global);
 
 
 int
@@ -104,7 +105,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         return luaL_argerror(L, 2, msg);
     }
 
-    dd("compile done, captures %d", re.captures);
+    dd("compile done, captures %d", (int) re.captures);
 
     ovecsize = (re.captures + 1) * 3;
 
@@ -268,7 +269,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     re = (ngx_regex_compile_t *) lua_touserdata(L, lua_upvalueindex(3));
     offset = (ngx_int_t) lua_tointeger(L, lua_upvalueindex(4));
 
-    dd("offset %d, re %p, r %p, subj %s", offset, re, orig_r, subj.data);
+    dd("offset %d, re %p, r %p, subj %s", (int) offset, re, orig_r, subj.data);
 
     if (offset < 0) {
         lua_pushnil(L);
@@ -366,17 +367,78 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 }
 
 
+static void
+ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
+        ngx_str_t *opts, int narg)
+{
+    u_char          *p;
+    const char      *msg;
+
+    p = opts->data;
+
+    while (*p != '\0') {
+        switch (*p) {
+            case 'i':
+                re->options |= NGX_REGEX_CASELESS;
+                break;
+
+            case 's':
+                re->options |= PCRE_DOTALL;
+                break;
+
+            case 'm':
+                re->options |= PCRE_MULTILINE;
+                break;
+
+            case 'u':
+                re->options |= PCRE_UTF8;
+                break;
+
+            case 'x':
+                re->options |= PCRE_EXTENDED;
+                break;
+
+            case 'o':
+                /* TODO: just like Perl's /o, the compile-once flag */
+                break;
+
+            case 'a':
+                re->options |= PCRE_ANCHORED;
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
+                luaL_argerror(L, narg, msg);
+        }
+
+        p++;
+    }
+}
+
+
 int
 ngx_http_lua_ngx_re_sub(lua_State *L)
+{
+    return ngx_http_lua_ngx_re_sub_helper(L, 0 /* global */);
+}
+
+
+int
+ngx_http_lua_ngx_re_gsub(lua_State *L)
+{
+    return ngx_http_lua_ngx_re_sub_helper(L, 1 /* global */);
+}
+
+
+static int
+ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 {
     ngx_http_request_t          *r;
     ngx_str_t                    subj;
     ngx_str_t                    pat;
     ngx_str_t                    opts;
     ngx_str_t                    tpl;
-    ngx_str_t                    repl;
     ngx_regex_compile_t          re;
-    u_char                      *p;
     const char                  *msg;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
@@ -386,7 +448,9 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
     int                          ovecsize;
     int                          type;
     unsigned                     func;
-    size_t                       len;
+    size_t                       offset;
+    size_t                       count;
+    luaL_Buffer                  luabuf;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
 
     ngx_http_lua_complex_value_t              ctpl;
@@ -469,159 +533,140 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
-    if (rc == NGX_REGEX_NO_MATCHED) {
-        ngx_pfree(r->pool, cap);
+    count = 0;
+    offset = 0;
 
-        lua_settop(L, 1);
-        lua_pushinteger(L, 0);
-        return 2;
-    }
+    for (;;) {
+        subj.data += offset;
+        subj.len  -= offset;
 
-    if (rc < 0) {
-        ngx_pfree(r->pool, cap);
-        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" "
-                "using \"%s\"", (int) rc, subj.data, pat.data);
-    }
+        if (subj.len == 0) {
+            break;
+        }
 
-    if (rc == 0) {
-        ngx_pfree(r->pool, cap);
-        return luaL_error(L, "capture size too small");
-    }
+        rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
+        if (rc == NGX_REGEX_NO_MATCHED) {
+            break;
+        }
 
-    dd("rc = %d", (int) rc);
+        if (rc < 0) {
+            ngx_pfree(r->pool, cap);
+            return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\" "
+                    "using \"%s\"", (int) rc, subj.data, pat.data);
+        }
 
-    if (func) {
-        lua_createtable(L, re.captures /* narr */, 1 /* nrec */);
+        if (rc == 0) {
+            ngx_pfree(r->pool, cap);
+            return luaL_error(L, "capture size too small");
+        }
 
-        for (i = 0, n = 0; i < rc; i++, n += 2) {
-            dd("capture %d: %d %d", (int) i, cap[n], cap[n + 1]);
-            if (cap[n] < 0) {
-                lua_pushnil(L);
+        dd("rc = %d", (int) rc);
 
-            } else {
-                lua_pushlstring(L, (char *) &subj.data[cap[n]],
-                        cap[n + 1] - cap[n]);
+        offset = cap[1];
+        count++;
 
-                dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+        if (count == 1) {
+            luaL_buffinit(L, &luabuf);
+        }
+
+        if (func) {
+            lua_pushvalue(L, -1);
+
+            lua_createtable(L, re.captures /* narr */, 1 /* nrec */);
+
+            for (i = 0, n = 0; i < rc; i++, n += 2) {
+                dd("capture %d: %d %d", (int) i, cap[n], cap[n + 1]);
+                if (cap[n] < 0) {
+                    lua_pushnil(L);
+
+                } else {
+                    lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                            cap[n + 1] - cap[n]);
+
+                    dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+                }
+
+                lua_rawseti(L, -2, (int) i);
             }
 
-            lua_rawseti(L, -2, (int) i);
+            dd("stack size at call: %d", lua_gettop(L));
+
+            lua_call(L, 1 /* nargs */, 1 /* nresults */);
+            type = lua_type(L, -1);
+            switch (type) {
+                case LUA_TNUMBER:
+                case LUA_TSTRING:
+                    tpl.data = (u_char *) lua_tolstring(L, -1, &tpl.len);
+                    break;
+
+                default:
+                    msg = lua_pushfstring(L, "string or number expected to be "
+                            "returned by the replace function, got %s",
+                            lua_typename(L, type));
+                    return luaL_argerror(L, 3, msg);
+            }
+
+            luaL_addlstring(&luabuf, (char *) subj.data, cap[0]);
+            luaL_addlstring(&luabuf, (char *) tpl.data, tpl.len);
+
+            lua_pop(L, 1);
+
+            if (global) {
+                continue;
+            }
+
+            subj.data += offset;
+            subj.len -= offset;
+
+            break;
         }
 
-        lua_call(L, 1 /* nargs */, 1 /* nresults */);
-        type = lua_type(L, -1);
-        switch (type) {
-            case LUA_TNUMBER:
-            case LUA_TSTRING:
-                tpl.data = (u_char *) lua_tolstring(L, -1, &tpl.len);
-                break;
+        if (count == 1) {
+            ngx_memzero(&ccv, sizeof(ngx_http_lua_compile_complex_value_t));
+            ccv.request = r;
+            ccv.value = &tpl;
+            ccv.complex_value = &ctpl;
 
-            default:
-                msg = lua_pushfstring(L, "string or number expected to be "
-                        "returned by the replace function, got %s",
-                        lua_typename(L, type));
-                return luaL_argerror(L, 3, msg);
+            if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
+                ngx_pfree(r->pool, cap);
+                return luaL_error(L, "bad template for substitution: \"%s\"", tpl.data);
+            }
         }
 
-        len = cap[0] + tpl.len + subj.len - cap[1];
-        repl.len = len;
-        repl.data = ngx_palloc(r->pool, len);
-        if (repl.data == NULL) {
-            return luaL_error(L, "out of memory");
+        rc = ngx_http_lua_complex_value(r, &subj, rc, cap, &ctpl, &luabuf);
+
+        if (rc != NGX_OK) {
+            ngx_pfree(r->pool, cap);
+            return luaL_error(L, "failed to eval the template for replacement: "
+                    "\"%s\"", tpl.data);
         }
 
-        dd("len = %d", (int) len);
-        dd("tpl = %s", tpl.data);
-
-        p = ngx_copy(repl.data, subj.data, cap[0]);
-        p = ngx_copy(p, tpl.data, tpl.len);
-        p = ngx_copy(p, &subj.data[cap[1]], subj.len - cap[1]);
-
-        lua_pushlstring(L, (char *) repl.data, repl.len);
-
-        ngx_pfree(r->pool, repl.data);
-        ngx_pfree(r->pool, cap);
-
-        lua_pushinteger(L, 1);
-
-        return 2;
+        if (! global) {
+            subj.data += offset;
+            subj.len -= offset;
+            break;
+        }
     }
 
-    ngx_memzero(&ccv, sizeof(ngx_http_lua_compile_complex_value_t));
-    ccv.request = r;
-    ccv.value = &tpl;
-    ccv.complex_value = &ctpl;
+    if (count == 0) {
+        dd("no match, just the original subject");
+        lua_settop(L, 1);
 
-    if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
-        ngx_pfree(r->pool, cap);
-        return luaL_error(L, "bad template for substitution: \"%s\"", tpl.data);
+    } else {
+        dd("adding trailer: %s (len %d)", subj.data, (int) subj.len);
+
+        if (subj.len != 0) {
+            luaL_addlstring(&luabuf, (char *) subj.data, subj.len);
+        }
+
+        luaL_pushresult(&luabuf);
+        dd("the dst string: %s", lua_tostring(L, -1));
     }
-
-    rc = ngx_http_lua_complex_value(r, &subj, rc, cap, &ctpl, &repl);
 
     ngx_pfree(r->pool, cap);
 
-    if (rc != NGX_OK) {
-        return luaL_error(L, "failed to eval the template for replacement: "
-                "\"%s\"", tpl.data);
-    }
-
-    lua_pushlstring(L, (char *) repl.data, repl.len);
-    ngx_pfree(r->pool, repl.data);
-
-    lua_pushinteger(L, 1);
-
+    lua_pushinteger(L, count);
     return 2;
-}
-
-
-static void
-ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
-        ngx_str_t *opts, int narg)
-{
-    u_char          *p;
-    const char      *msg;
-
-    p = opts->data;
-
-    while (*p != '\0') {
-        switch (*p) {
-            case 'i':
-                re->options |= NGX_REGEX_CASELESS;
-                break;
-
-            case 's':
-                re->options |= PCRE_DOTALL;
-                break;
-
-            case 'm':
-                re->options |= PCRE_MULTILINE;
-                break;
-
-            case 'u':
-                re->options |= PCRE_UTF8;
-                break;
-
-            case 'x':
-                re->options |= PCRE_EXTENDED;
-                break;
-
-            case 'o':
-                /* TODO: just like Perl's /o, the compile-once flag */
-                break;
-
-            case 'a':
-                re->options |= PCRE_ANCHORED;
-                break;
-
-            default:
-                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
-                luaL_argerror(L, narg, msg);
-        }
-
-        p++;
-    }
 }
 
 #endif /* NGX_PCRE */

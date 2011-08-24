@@ -8,6 +8,7 @@
 int ngx_http_lua_ngx_re_match(lua_State *L);
 int ngx_http_lua_ngx_re_gmatch(lua_State *L);
 int ngx_http_lua_ngx_re_sub(lua_State *L);
+int ngx_http_lua_ngx_re_gsub(lua_State *L);
 
 #endif /* NGX_PCRE */
 

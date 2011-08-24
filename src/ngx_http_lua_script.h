@@ -71,7 +71,7 @@ ngx_int_t ngx_http_lua_compile_complex_value(
         ngx_http_lua_compile_complex_value_t *ccv);
 ngx_int_t ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
         ngx_int_t count, int *cap, ngx_http_lua_complex_value_t *val,
-        ngx_str_t *value);
+        luaL_Buffer *luabuf);
 
 
 #endif /* NGX_HTTP_LUA_SCRIPT_H */

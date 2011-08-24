@@ -96,9 +96,8 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
 ngx_int_t
 ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
         ngx_int_t count, int *cap, ngx_http_lua_complex_value_t *val,
-        ngx_str_t *value)
+        luaL_Buffer *luabuf)
 {
-    size_t                            total;
     size_t                            len;
     u_char                           *p;
     ngx_http_lua_script_code_pt       code;
@@ -106,16 +105,8 @@ ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
     ngx_http_lua_script_engine_t      e;
 
     if (val->lengths == NULL) {
-        total = cap[0] + val->value.len + subj->len - cap[1];
-        value->len = total;
-        value->data = ngx_palloc(r->pool, total);
-        if (value->data == NULL) {
-            return NGX_ERROR;
-        }
-
-        p = ngx_copy(value->data, subj->data, cap[0]);
-        p = ngx_copy(p, val->value.data, val->value.len);
-        p = ngx_copy(p, &subj->data[cap[1]], subj->len - cap[1]);
+        luaL_addlstring(luabuf, (char *) subj->data, cap[0]);
+        luaL_addlstring(luabuf, (char *) val->value.data, val->value.len);
 
         return NGX_OK;
     }
@@ -136,15 +127,10 @@ ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
         len += lcode(&e);
     }
 
-    total = cap[0] + len + subj->len - cap[1];
-
-    value->len = total;
-    value->data = ngx_pnalloc(r->pool, total);
-    if (value->data == NULL) {
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
         return NGX_ERROR;
     }
-
-    p = ngx_copy(value->data, subj->data, cap[0]);
 
     e.ip = val->values;
     e.pos = p;
@@ -154,9 +140,10 @@ ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
         code((ngx_http_lua_script_engine_t *) &e);
     }
 
-    p += len;
+    luaL_addlstring(luabuf, (char *) subj->data, cap[0]);
+    luaL_addlstring(luabuf, (char *) p, len);
 
-    ngx_memcpy(p, &subj->data[cap[1]], subj->len - cap[1]);
+    ngx_pfree(r->pool, p);
 
     return NGX_OK;
 }
