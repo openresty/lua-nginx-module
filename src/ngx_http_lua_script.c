@@ -156,7 +156,7 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
     ngx_str_t    name;
     ngx_uint_t   i, bracket;
     unsigned     num_var;
-    ngx_uint_t   n;
+    ngx_uint_t   n = 0;
 
     if (ngx_http_lua_script_init_arrays(sc) != NGX_OK) {
         return NGX_ERROR;
