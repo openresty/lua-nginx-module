@@ -309,7 +309,6 @@ static ngx_int_t
 ngx_http_lua_script_add_copy_code(ngx_http_lua_script_compile_t *sc,
         ngx_str_t *value, ngx_uint_t last)
 {
-    u_char                           *p;
     size_t                            size, len;
     ngx_http_lua_script_copy_code_t  *code;
 
@@ -336,7 +335,7 @@ ngx_http_lua_script_add_copy_code(ngx_http_lua_script_compile_t *sc,
     code->code = ngx_http_lua_script_copy_code;
     code->len = len;
 
-    p = ngx_cpymem((u_char *) code + sizeof(ngx_http_lua_script_copy_code_t),
+    ngx_memcpy((u_char *) code + sizeof(ngx_http_lua_script_copy_code_t),
                    value->data, value->len);
 
     return NGX_OK;
@@ -395,7 +394,6 @@ ngx_http_lua_script_add_capture_code(ngx_http_lua_script_compile_t *sc,
                       ngx_http_lua_script_copy_capture_len_code;
     code->n = 2 * n;
 
-
     code = ngx_http_lua_script_add_code(*sc->values,
                         sizeof(ngx_http_lua_script_copy_capture_code_t));
     if (code == NULL) {
@@ -414,11 +412,8 @@ ngx_http_lua_script_copy_capture_len_code(ngx_http_lua_script_engine_t *e)
 {
     int                                  *cap;
     ngx_uint_t                            n;
-    ngx_http_request_t                   *r;
 
     ngx_http_lua_script_copy_capture_code_t  *code;
-
-    r = e->request;
 
     code = (ngx_http_lua_script_copy_capture_code_t *) e->ip;
 
@@ -441,10 +436,7 @@ ngx_http_lua_script_copy_capture_code(ngx_http_lua_script_engine_t *e)
     int                                  *cap;
     u_char                               *p, *pos;
     ngx_uint_t                            n;
-    ngx_http_request_t                   *r;
     ngx_http_lua_script_copy_capture_code_t  *code;
-
-    r = e->request;
 
     code = (ngx_http_lua_script_copy_capture_code_t *) e->ip;
 
