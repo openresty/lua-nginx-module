@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes lua-nginx-module [v0.2.1rc14](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 24 August 2011.
+This document describes lua-nginx-module [v0.2.1rc15](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 24 August 2011.
 
 Synopsis
 ========
@@ -1703,6 +1703,35 @@ The dollar sign characters in the return value of the `replace` function argumen
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the `v0.2.1rc13` release.
+
+ngx.re.gsub
+-----------
+**syntax:** *newstr, n = ngx.re.gsub(subject, regex, replace, options?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Just like [ngx.re.sub](http://wiki.nginx.org/NginxHttpLuaModule#ngx.re.sub), but does global substitution.
+
+Here is some examples:
+
+
+    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+        -- newstr == "[hello,h], [world,w]"
+        -- n == 2
+
+
+
+    local func = function (m)
+        return "[" .. m[0] .. "," .. m[1] .. "]"
+    end
+    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
+        -- newstr == "[hello,h], [world,w]"
+        -- n == 2
+
+
+This method requires the PCRE library enabled in your Nginx build.
+
+This feature was first introduced in the `v0.2.1rc15` release.
 
 ndk.set_var.DIRECTIVE
 ---------------------

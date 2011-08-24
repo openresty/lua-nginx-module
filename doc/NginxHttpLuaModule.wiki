@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc14] released on 24 August 2011.
+This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc15] released on 24 August 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1643,6 +1643,34 @@ The dollar sign characters in the return value of the <code>replace</code> funct
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the <code>v0.2.1rc13</code> release.
+
+== ngx.re.gsub ==
+'''syntax:''' ''newstr, n = ngx.re.gsub(subject, regex, replace, options?)''
+
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+
+Just like [[#ngx.re.sub|ngx.re.sub]], but does global substitution.
+
+Here is some examples:
+
+<geshi lang="lua">
+    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+        -- newstr == "[hello,h], [world,w]"
+        -- n == 2
+</geshi>
+
+<geshi lang="lua">
+    local func = function (m)
+        return "[" .. m[0] .. "," .. m[1] .. "]"
+    end
+    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
+        -- newstr == "[hello,h], [world,w]"
+        -- n == 2
+</geshi>
+
+This method requires the PCRE library enabled in your Nginx build.
+
+This feature was first introduced in the <code>v0.2.1rc15</code> release.
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
