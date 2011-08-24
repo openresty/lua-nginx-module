@@ -583,7 +583,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
                     lua_pushlstring(L, (char *) &subj.data[cap[n]],
                             cap[n + 1] - cap[n]);
 
-                    dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
+                    dd("pushing capture %s at %d", lua_tostring(L, -1),
+                            (int) i);
                 }
 
                 lua_rawseti(L, -2, (int) i);
@@ -629,7 +630,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
             if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
                 ngx_pfree(r->pool, cap);
-                return luaL_error(L, "bad template for substitution: \"%s\"", tpl.data);
+                return luaL_error(L, "bad template for substitution: \"%s\"",
+                        tpl.data);
             }
         }
 
