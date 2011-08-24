@@ -11,6 +11,8 @@
 
 
 static int ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L);
+static void ngx_http_lua_ngx_re_parse_opts(lua_State *L,
+        ngx_regex_compile_t *re, ngx_str_t *opts, int narg);
 
 
 int
@@ -21,7 +23,6 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     ngx_str_t                    pat;
     ngx_str_t                    opts;
     ngx_regex_compile_t          re;
-    u_char                      *p;
     const char                  *msg;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
@@ -65,41 +66,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     re.err.data = errstr;
     re.pool = r->pool;
 
-    p = opts.data;
-
-    while (*p != '\0') {
-        switch (*p) {
-            case 'i':
-                re.options |= NGX_REGEX_CASELESS;
-                break;
-
-            case 's':
-                re.options |= PCRE_DOTALL;
-                break;
-
-            case 'm':
-                re.options |= PCRE_MULTILINE;
-                break;
-
-            case 'u':
-                re.options |= PCRE_UTF8;
-                break;
-
-            case 'x':
-                re.options |= PCRE_EXTENDED;
-                break;
-
-            case 'a':
-                re.options |= PCRE_ANCHORED;
-                break;
-
-            default:
-                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
-                return luaL_argerror(L, 3, msg);
-        }
-
-        p++;
-    }
+    ngx_http_lua_ngx_re_parse_opts(L, &re, &opts, 3);
 
     dd("compiling regex");
 
@@ -172,7 +139,6 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     ngx_str_t                    pat;
     ngx_str_t                    opts;
     ngx_regex_compile_t         *re;
-    u_char                      *p;
     const char                  *msg;
     int                          nargs;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
@@ -217,41 +183,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     re->err.data = errstr;
     re->pool = r->pool;
 
-    p = opts.data;
-
-    while (*p != '\0') {
-        switch (*p) {
-            case 'i':
-                re->options |= NGX_REGEX_CASELESS;
-                break;
-
-            case 's':
-                re->options |= PCRE_DOTALL;
-                break;
-
-            case 'm':
-                re->options |= PCRE_MULTILINE;
-                break;
-
-            case 'u':
-                re->options |= PCRE_UTF8;
-                break;
-
-            case 'x':
-                re->options |= PCRE_EXTENDED;
-                break;
-
-            case 'a':
-                re->options |= PCRE_ANCHORED;
-                break;
-
-            default:
-                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
-                return luaL_argerror(L, 3, msg);
-        }
-
-        p++;
-    }
+    ngx_http_lua_ngx_re_parse_opts(L, re, &opts, 3);
 
     dd("compiling regex");
 
@@ -480,41 +412,7 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
     re.err.data = errstr;
     re.pool = r->pool;
 
-    p = opts.data;
-
-    while (*p != '\0') {
-        switch (*p) {
-            case 'i':
-                re.options |= NGX_REGEX_CASELESS;
-                break;
-
-            case 's':
-                re.options |= PCRE_DOTALL;
-                break;
-
-            case 'm':
-                re.options |= PCRE_MULTILINE;
-                break;
-
-            case 'u':
-                re.options |= PCRE_UTF8;
-                break;
-
-            case 'x':
-                re.options |= PCRE_EXTENDED;
-                break;
-
-            case 'a':
-                re.options |= PCRE_ANCHORED;
-                break;
-
-            default:
-                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
-                return luaL_argerror(L, 4, msg);
-        }
-
-        p++;
-    }
+    ngx_http_lua_ngx_re_parse_opts(L, &re, &opts, 4);
 
     dd("compiling regex");
 
@@ -642,6 +540,52 @@ ngx_http_lua_ngx_re_sub(lua_State *L)
 
     return 2;
 }
+
+
+static void
+ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
+        ngx_str_t *opts, int narg)
+{
+    u_char          *p;
+    const char      *msg;
+
+    p = opts->data;
+
+    while (*p != '\0') {
+        switch (*p) {
+            case 'i':
+                re->options |= NGX_REGEX_CASELESS;
+                break;
+
+            case 's':
+                re->options |= PCRE_DOTALL;
+                break;
+
+            case 'm':
+                re->options |= PCRE_MULTILINE;
+                break;
+
+            case 'u':
+                re->options |= PCRE_UTF8;
+                break;
+
+            case 'x':
+                re->options |= PCRE_EXTENDED;
+                break;
+
+            case 'a':
+                re->options |= PCRE_ANCHORED;
+                break;
+
+            default:
+                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
+                luaL_argerror(L, narg, msg);
+        }
+
+        p++;
+    }
+}
+
 
 #endif /* NGX_PCRE */
 
