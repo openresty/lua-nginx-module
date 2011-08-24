@@ -8,7 +8,7 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes lua-nginx-module v0.2.1rc13
+    This document describes lua-nginx-module v0.2.1rc14
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
     on 24 August 2011.
 
@@ -1279,7 +1279,7 @@ Nginx API for Lua
     otherwise.
 
   ngx.re.match
-    syntax: ''captures = ngx.re.match(subject, regex, options?)
+    syntax: *captures = ngx.re.match(subject, regex, options?, ctx?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -1353,12 +1353,38 @@ Nginx API for Lua
         -- m[0] == "hello, 美好"
         -- m[1] == "美好"
 
+    The optional fourth argument, "ctx", can be a Lua table holding an
+    optional "pos" field. When the "pos" field in the "ctx" table argument
+    is specified, "ngx.re.match" will start matching from that offset.
+    Regardless of the presence of the "pos" field in the "ctx" table,
+    "ngx.re.match" will always set this "pos" field to the position *after*
+    the substring matched by the whole pattern in case of a successful
+    match. When match fails, the "ctx" table will leave intact. Here is some
+    examples,
+
+        local ctx = {}
+        local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+             -- m[0] = "1234"
+             -- ctx.pos == 4
+
+        local ctx = { pos = 2 }
+        local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+             -- m[0] = "34"
+             -- ctx.pos == 4
+
+    The "ctx" table argument combined with the "a" regex modifier can be
+    used to construct a lexer atop "ngx.re.match".
+
+    Note that, the "options" argument is not optional when the "ctx"
+    argument is specified; use the empty Lua string ("") as the placeholder
+    for "options" if you do not want to specify any regex options.
+
     This method requires the PCRE library enabled in your Nginx build.
 
     This feature is introduced in the "v0.2.1rc11" release.
 
   ngx.re.gmatch
-    syntax: ''iterator = ngx.re.gmatch(subject, regex, options?)
+    syntax: *iterator = ngx.re.gmatch(subject, regex, options?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -1393,7 +1419,7 @@ Nginx API for Lua
     This feature was first introduced in the "v0.2.1rc12" release.
 
   ngx.re.sub
-    syntax: ''newstr, n = ngx.re.sub(subject, regex, replace, options?)
+    syntax: *newstr, n = ngx.re.sub(subject, regex, replace, options?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 

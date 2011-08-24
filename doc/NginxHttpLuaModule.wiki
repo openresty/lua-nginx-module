@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc13] released on 24 August 2011.
+This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc14] released on 24 August 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1455,7 +1455,7 @@ Parse the http time string (as returned by [[#ngx.http_time|ngx.http_time]]) int
 Returns <code>true</code> if the current request is an nginx subrequest, or <code>false</code> otherwise.
 
 == ngx.re.match ==
-'''syntax:''' ''captures = ngx.re.match(subject, regex, options?)
+'''syntax:''' ''captures = ngx.re.match(subject, regex, options?, ctx?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -1532,12 +1532,32 @@ These characters can be combined together, for example,
     -- m[1] == "美好"
 </geshi>
 
+The optional fourth argument, <code>ctx</code>, can be a Lua table holding an optional <code>pos</code> field. When the <code>pos</code> field in the <code>ctx</code> table argument is specified, <code>ngx.re.match</code> will start matching from that offset. Regardless of the presence of the <code>pos</code> field in the <code>ctx</code> table, <code>ngx.re.match</code> will always set this <code>pos</code> field to the position ''after'' the substring matched by the whole pattern in case of a successful match. When match fails, the <code>ctx</code> table will leave intact. Here is some examples,
+
+<geshi lang="lua">
+    local ctx = {}
+    local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+         -- m[0] = "1234"
+         -- ctx.pos == 4
+</geshi>
+
+<geshi lang="lua">
+    local ctx = { pos = 2 }
+    local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+         -- m[0] = "34"
+         -- ctx.pos == 4
+</geshi>
+
+The <code>ctx</code> table argument combined with the <code>a</code> regex modifier can be used to construct a lexer atop <code>ngx.re.match</code>.
+
+Note that, the <code>options</code> argument is not optional when the <code>ctx</code> argument is specified; use the empty Lua string (<code>""</code>) as the placeholder for <code>options</code> if you do not want to specify any regex options.
+
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature is introduced in the <code>v0.2.1rc11</code> release.
 
 == ngx.re.gmatch ==
-'''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)
+'''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -1571,7 +1591,7 @@ This method requires the PCRE library enabled in your Nginx build.
 This feature was first introduced in the <code>v0.2.1rc12</code> release.
 
 == ngx.re.sub ==
-'''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)
+'''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
