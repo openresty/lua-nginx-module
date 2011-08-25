@@ -188,9 +188,9 @@ Description
     services, and etc etc etc (see ngx_drizzle
     (<http://github.com/chaoslawful/drizzle-nginx-module>), ngx_postgres
     (<http://github.com/FRiCKLE/ngx_postgres/>), ngx_memc
-    (<http://wiki.nginx.org/NginxHttpMemcModule>), ngx_redis2
+    (<http://wiki.nginx.org/HttpMemcModule>), ngx_redis2
     (<http://github.com/agentzh/redis2-nginx-module>) and
-    [[NginxHttpProxyModule]] modules for details).
+    [[HttpProxyModule]] modules for details).
 
     The Lua interpreter instance is shared across all the requests in a
     single nginx worker process.
@@ -263,6 +263,8 @@ Directives
 
     context: *main, server, location, server if, location if*
 
+    phase: *rewrite*
+
     Execute user code specified by "<lua-script-str>" with input arguments
     "$arg1 $arg2 ...", and set the script's return value to $res in string
     form. In "<lua-script-str>" code the input arguments can be retrieved
@@ -270,9 +272,9 @@ Directives
 
     set_by_lua directives are designed to execute small and quick codes.
     Nginx event loop is blocked during the code execution, so you'd better
-    NOT call anything that may be blocked or time-costy.
+    not call anything that may be blocked or time-consuming.
 
-    Note that set_by_lua can only output a value to a single nginx variable
+    Note that set_by_lua can only output a value to a single Nginx variable
     at a time. But a work-around is also available by means of the
     ngx.var.VARIABLE interface, for example, location /foo { set $diff ''; #
     we have to predefine the $diff variable here
@@ -287,7 +289,16 @@ Directives
 
             echo "sum = $sum, diff = $diff";
         }
-    This directive requires the ngx_devel_kit (L<https://github.com/simpl/ngx_devel_kit>) module.
+
+    This directive can be freely mixed with all the directives of
+    [[HttpRewriteModule]], [[HttpSetMiscModule]], and
+    [[HttpArrayVarModule]]. All of these directives will run in exactly the
+    same order that they are written in the config file. For example, set
+    $foo 32; set_by_lua $bar 'tonumber(ngx.var.foo) + 1'; set $baz "bar:
+    $bar"; # $baz == "bar: 33"
+
+    This directive requires the ngx_devel_kit
+    (<https://github.com/simpl/ngx_devel_kit>) module.
 
   set_by_lua_file
     syntax: *set_by_lua_file $res <path-to-lua-script> [$arg1 $arg2 ...]*
@@ -337,7 +348,7 @@ Directives
     nginx APIs defined there are also available here.
 
     Note that this handler always runs *after* the standard
-    [[NginxHttpRewriteModule]]. So the following will work as expected:
+    [[HttpRewriteModule]]. So the following will work as expected:
 
        location /foo {
            set $a 12; # create and initialize $a
@@ -440,7 +451,7 @@ Directives
     nginx APIs defined there are also available here.
 
     Note that this handler always runs *after* the standard
-    [[NginxHttpAccessModule]]. So the following will work as expected:
+    [[HttpAccessModule]]. So the following will work as expected:
 
         location / {
             deny    192.168.1.1;
@@ -1032,7 +1043,7 @@ Nginx API for Lua
     response body outputs by either ngx.print or ngx.say.
 
     This method is very much like the echo_exec directive in
-    [[NginxHttpEchoModule]].
+    [[HttpEchoModule]].
 
   ngx.redirect
     syntax: *ngx.redirect(uri, status?)*
@@ -1061,7 +1072,7 @@ Nginx API for Lua
     This method never returns.
 
     This method is very much like the rewrite directive with the "redirect"
-    modifier in the standard [[NginxHttpRewriteModule]], for example, this
+    modifier in the standard [[HttpRewriteModule]], for example, this
     "nginx.conf" snippet
 
         rewrite ^ /foo redirect;  # nginx config
@@ -1513,8 +1524,8 @@ Nginx API for Lua
     (<https://github.com/simpl/ngx_devel_kit>) (NDK)'s set_var submodule's
     "ndk_set_var_value".
 
-    For example, [[NginxHttpSetMiscModule]]'s following directives can be
-    invoked this way:
+    For example, [[HttpSetMiscModule]]'s following directives can be invoked
+    this way:
 
     *   set_quote_sql_str
 
@@ -1548,7 +1559,7 @@ Nginx API for Lua
         -- now res == 'a%2fb'
 
     Similarly, the following directives provided by
-    [[NginxHttpEncryptedSessionModule]] can be invoked from within Lua too:
+    [[HttpEncryptedSessionModule]] can be invoked from within Lua too:
 
     *   set_encrypt_session
 
@@ -1841,7 +1852,7 @@ Known Issues
         supports fully resume-able VM.
 
     *   The ngx.location.capture and ngx.location.capture_multi Lua methods
-        cannot capture locations configured by [[NginxHttpEchoModule]]'s
+        cannot capture locations configured by [[HttpEchoModule]]'s
         echo_location, echo_location_async, echo_subrequest, or
         echo_subrequest_async directives. This won't be fixed in the future
         due to technical problems.
