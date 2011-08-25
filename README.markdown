@@ -245,7 +245,7 @@ when the code cache is off.
 lua_package_path
 ----------------
 
-**syntax:** *lua_package_path <lua-style-path-str>*
+**syntax:** *lua_package_path &lt;lua-style-path-str&gt;*
 
 **default:** *The content of LUA_PATH environ variable or Lua's compiled-in defaults.*
 
@@ -258,7 +258,7 @@ can be used to stand for the original path.
 lua_package_cpath
 -----------------
 
-**syntax:** *lua_package_cpath <lua-style-cpath-str>*
+**syntax:** *lua_package_cpath &lt;lua-style-cpath-str&gt;*
 
 **default:** *The content of LUA_CPATH environ variable or Lua's compiled-in defaults.*
 
@@ -271,7 +271,7 @@ can be used to stand for the original cpath.
 set_by_lua
 ----------
 
-**syntax:** *set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]*
+**syntax:** *set_by_lua $res &lt;lua-script-str&gt; [$arg1 $arg2 ...]*
 
 **context:** *main, server, location, server if, location if*
 
@@ -316,7 +316,7 @@ This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_k
 set_by_lua_file
 ---------------
 
-**syntax:** *set_by_lua_file $res <path-to-lua-script> [$arg1 $arg2 ...]*
+**syntax:** *set_by_lua_file $res &lt;path-to-lua-script&gt; [$arg1 $arg2 ...]*
 
 **context:** *main, server, location, server if, location if*
 
@@ -333,7 +333,7 @@ This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_k
 content_by_lua
 --------------
 
-**syntax:** *content_by_lua <lua-script-str>*
+**syntax:** *content_by_lua &lt;lua-script-str&gt;*
 
 **context:** *location, location if*
 
@@ -351,7 +351,7 @@ performance may drop off dramatically.
 rewrite_by_lua
 --------------
 
-**syntax:** *rewrite_by_lua <lua-script-str>*
+**syntax:** *rewrite_by_lua &lt;lua-script-str&gt;*
 
 **context:** *http, server, location, location if*
 
@@ -455,7 +455,7 @@ Note that calling `ngx.exit(ngx.OK)` just returning from the current [rewrite_by
 access_by_lua
 -------------
 
-**syntax:** *access_by_lua <lua-script-str>*
+**syntax:** *access_by_lua &lt;lua-script-str&gt;*
 
 **context:** *http, server, location, location if*
 
@@ -524,7 +524,7 @@ Note that calling `ngx.exit(ngx.OK)` just returning from the current [access_by_
 content_by_lua_file
 -------------------
 
-**syntax:** *content_by_lua_file <path-to-lua-script>*
+**syntax:** *content_by_lua_file &lt;path-to-lua-script&gt;*
 
 **context:** *location, location if*
 
@@ -542,7 +542,7 @@ When the Lua code cache is on (this is the default), the user code is loaded onc
 rewrite_by_lua_file
 -------------------
 
-**syntax:** *rewrite_by_lua_file <path-to-lua-script>*
+**syntax:** *rewrite_by_lua_file &lt;path-to-lua-script&gt;*
 
 **context:** *http, server, location, location if*
 
@@ -563,7 +563,7 @@ Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#l
 access_by_lua_file
 ------------------
 
-**syntax:** *access_by_lua_file <path-to-lua-script>*
+**syntax:** *access_by_lua_file &lt;path-to-lua-script&gt;*
 
 **context:** *http, server, location, location if*
 
@@ -584,7 +584,7 @@ Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#l
 lua_need_request_body
 ---------------------
 
-**syntax:** *lua_need_request_body <on | off>*
+**syntax:** *lua_need_request_body &lt;on | off&gt;*
 
 **default:** *off*
 
