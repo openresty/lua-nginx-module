@@ -185,7 +185,7 @@ as long as you use the [[#ngx.location.capture|ngx.location.capture]] or
 to let the nginx core do all your
 requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-[http://github.com/chaoslawful/drizzle-nginx-module ngx_drizzle], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [http://wiki.nginx.org/NginxHttpMemcModule ngx_memc], [http://github.com/agentzh/redis2-nginx-module ngx_redis2] and [[NginxHttpProxyModule]] modules for details).
+[http://github.com/chaoslawful/drizzle-nginx-module ngx_drizzle], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [http://wiki.nginx.org/HttpMemcModule ngx_memc], [http://github.com/agentzh/redis2-nginx-module ngx_redis2] and [[HttpProxyModule]] modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -265,15 +265,17 @@ can be used to stand for the original cpath.
 
 '''context:''' ''main, server, location, server if, location if''
 
+'''phase:''' ''rewrite''
+
 Execute user code specified by <code><lua-script-str></code> with input arguments <code>$arg1 $arg2 ...</code>, and set the script's return value to <code>$res</code> in string form. In
 <code><lua-script-str></code> code the input arguments can be retrieved from <code>ngx.arg</code>
 table (index starts from <code>1</code> and increased sequentially).
 
 [[#set_by_lua|set_by_lua]] directives are designed to execute small and quick codes. Nginx
-event loop is blocked during the code execution, so you'd better '''NOT''' call
-anything that may be blocked or time-costy.
+event loop is blocked during the code execution, so you'd better '''not''' call
+anything that may be blocked or time-consuming.
 
-Note that [[#set_by_lua|set_by_lua]] can only output a value to a single nginx variable at
+Note that [[#set_by_lua|set_by_lua]] can only output a value to a single Nginx variable at
 a time. But a work-around is also available by means of the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] interface,
 for example,
 <geshi lang="nginx">
@@ -291,6 +293,14 @@ for example,
         echo "sum = $sum, diff = $diff";
     }
 </geshi>
+
+This directive can be freely mixed with all the directives of [[HttpRewriteModule]], [[HttpSetMiscModule]], and [[HttpArrayVarModule]]. All of these directives will run in exactly the same order that they are written in the config file. For example,
+<geshi lang="nginx">
+    set $foo 32;
+    set_by_lua $bar 'tonumber(ngx.var.foo) + 1';
+    set $baz "bar: $bar";  # $baz == "bar: 33"
+</geshi>
+
 This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
 
 == set_by_lua_file ==
@@ -341,7 +351,7 @@ content.
 This hook uses exactly the same mechamism as [[#content_by_lua|content_by_lua]] so all the nginx APIs defined there
 are also available here.
 
-Note that this handler always runs ''after'' the standard [[NginxHttpRewriteModule]]. So the following will work as expected:
+Note that this handler always runs ''after'' the standard [[HttpRewriteModule]]. So the following will work as expected:
 
 <geshi lang="nginx">
    location /foo {
@@ -441,7 +451,7 @@ Act as an access phase handler and execute user code specified by <code><lua-scr
 
 This hook uses exactly the same mechanism as [[#content_by_lua|content_by_lua]] so all the nginx APIs defined there are also available here.
 
-Note that this handler always runs ''after'' the standard [[NginxHttpAccessModule]]. So the following will work as expected:
+Note that this handler always runs ''after'' the standard [[HttpAccessModule]]. So the following will work as expected:
 
 <geshi lang="nginx">
     location / {
@@ -566,8 +576,8 @@ Lua code cache by setting [[#lua_code_cache|lua_code_cache]] <code>off</code> in
 
 Force reading request body data or not. The client request body won't be read, so you have to explicitly force reading the body if you need its content.
 
-If you want to read the request body data from the [[NginxHttpCoreModule#$request_body|$request_body]] variable, make sure that
-your have configured [[NginxHttpCoreModule#client_body_buffer_size|client_body_buffer_size]] to have exactly the same value as [[NginxHttpCoreModule#client_max_body_size|client_max_body_size]].
+If you want to read the request body data from the [[HttpCoreModule#$request_body|$request_body]] variable, make sure that
+your have configured [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] to have exactly the same value as [[HttpCoreModule#client_max_body_size|client_max_body_size]].
 
 If the current location defines [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]],
 then the request body will be read just before the [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]] code is run (and also at the
@@ -881,7 +891,7 @@ request headers of the current request. This may have unexpected side-effects on
 subrequest responses. For example, when you're using the standard <code>ngx_proxy</code> module to serve
 your subrequests, then an "Accept-Encoding: gzip" header in your main request may result
 in gzip'd responses that your Lua code is not able to handle properly. So always set
-[[NginxHttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] <code>off</code> in your subrequest location to ignore the original request headers.
+[[HttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] <code>off</code> in your subrequest location to ignore the original request headers.
 
 == ngx.location.capture_multi ==
 '''syntax:''' ''res1, res2, ... = ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })''
@@ -1136,7 +1146,7 @@ the value of <code>ngx.req.get_headers()["Foo"]</code> will be a Lua (array) tab
 <geshi lang="lua">
     {"foo", "bar", "baz"}
 </geshi>
-Another way to read individual request headers is to use <code>ngx.var.http_HEADER</code>, that is, nginx's standard [[NginxHttpCoreModule#$http_HEADER|$http_HEADER]] variables.
+Another way to read individual request headers is to use <code>ngx.var.http_HEADER</code>, that is, nginx's standard [[HttpCoreModule#$http_HEADER|$http_HEADER]] variables.
 
 == ngx.req.set_header ==
 '''syntax:''' ''ngx.req.set_header(header_name, header_value)''
@@ -1213,7 +1223,7 @@ This method never returns.
 This method ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body
 outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
-This method is very much like the [[NginxHttpEchoModule#echo_exec|echo_exec]] directive in [[NginxHttpEchoModule]].
+This method is very much like the [[HttpEchoModule#echo_exec|echo_exec]] directive in [[HttpEchoModule]].
 
 == ngx.redirect ==
 '''syntax:''' ''ngx.redirect(uri, status?)''
@@ -1243,8 +1253,8 @@ This method ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or 
 
 This method never returns.
 
-This method is very much like the [[NginxHttpRewriteModule#rewrite|rewrite]] directive with the <code>redirect</code> modifier in the standard
-[[NginxHttpRewriteModule]], for example, this <code>nginx.conf</code> snippet
+This method is very much like the [[HttpRewriteModule#rewrite|rewrite]] directive with the <code>redirect</code> modifier in the standard
+[[HttpRewriteModule]], for example, this <code>nginx.conf</code> snippet
 
 <geshi lang="nginx">
     rewrite ^ /foo redirect;  # nginx config
@@ -1679,21 +1689,21 @@ This feature was first introduced in the <code>v0.2.1rc15</code> release.
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simpl/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
 
-For example, [[NginxHttpSetMiscModule]]'s following directives can be invoked this way:
+For example, [[HttpSetMiscModule]]'s following directives can be invoked this way:
 
-* [[NginxHttpSetMiscModule#set_quote_sql_str|set_quote_sql_str]]
-* [[NginxHttpSetMiscModule#set_quote_pgsql_str|set_quote_pgsql_str]]
-* [[NginxHttpSetMiscModule#set_quote_json_str|set_quote_json_str]]
-* [[NginxHttpSetMiscModule#set_unescape_uri|set_unescape_uri]]
-* [[NginxHttpSetMiscModule#set_escape_uri|set_escape_uri]]
-* [[NginxHttpSetMiscModule#set_encode_base32|set_encode_base32]]
-* [[NginxHttpSetMiscModule#set_decode_base32|set_decode_base32]]
-* [[NginxHttpSetMiscModule#set_encode_base64|set_encode_base64]]
-* [[NginxHttpSetMiscModule#set_decode_base64|set_decode_base64]]
-* [[NginxHttpSetMiscModule#set_encode_base64|set_encode_hex]]
-* [[NginxHttpSetMiscModule#set_decode_base64|set_decode_hex]]
-* [[NginxHttpSetMiscModule#set_encode_base64|set_sha1]]
-* [[NginxHttpSetMiscModule#set_decode_base64|set_md5]]
+* [[HttpSetMiscModule#set_quote_sql_str|set_quote_sql_str]]
+* [[HttpSetMiscModule#set_quote_pgsql_str|set_quote_pgsql_str]]
+* [[HttpSetMiscModule#set_quote_json_str|set_quote_json_str]]
+* [[HttpSetMiscModule#set_unescape_uri|set_unescape_uri]]
+* [[HttpSetMiscModule#set_escape_uri|set_escape_uri]]
+* [[HttpSetMiscModule#set_encode_base32|set_encode_base32]]
+* [[HttpSetMiscModule#set_decode_base32|set_decode_base32]]
+* [[HttpSetMiscModule#set_encode_base64|set_encode_base64]]
+* [[HttpSetMiscModule#set_decode_base64|set_decode_base64]]
+* [[HttpSetMiscModule#set_encode_base64|set_encode_hex]]
+* [[HttpSetMiscModule#set_decode_base64|set_decode_hex]]
+* [[HttpSetMiscModule#set_encode_base64|set_sha1]]
+* [[HttpSetMiscModule#set_decode_base64|set_md5]]
 
 For instance,
 
@@ -1702,10 +1712,10 @@ For instance,
     -- now res == 'a%2fb'
 </geshi>
 
-Similarly, the following directives provided by [[NginxHttpEncryptedSessionModule]] can be invoked from within Lua too:
+Similarly, the following directives provided by [[HttpEncryptedSessionModule]] can be invoked from within Lua too:
 
-* [[NginxHttpEncryptedSessionModule#set_encrypt_session|set_encrypt_session]]
-* [[NginxHttpEncryptedSessionModule#set_decrypt_session|set_decrypt_session]]
+* [[HttpEncryptedSessionModule#set_encrypt_session|set_encrypt_session]]
+* [[HttpEncryptedSessionModule#set_decrypt_session|set_decrypt_session]]
 
 This feature requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
 
@@ -1906,7 +1916,7 @@ filtering chain affects a lot. The correct configure adding order is:
 
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()]. If you're heavy on Lua exception model based on Lua's [http://www.lua.org/manual/5.1/manual.html#pdf-error error()] and <code>pcall()</code>/<code>xpcall()</code>, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resume-able VM.
 
-* The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations configured by [[NginxHttpEchoModule]]'s [[NginxHttpEchoModule#echo_location|echo_location]], [[NginxHttpEchoModule#echo_location_async|echo_location_async]], [[NginxHttpEchoModule#echo_subrequest|echo_subrequest]], or [[NginxHttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives. This won't be fixed in the future due to technical problems.
+* The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations configured by [[HttpEchoModule]]'s [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives. This won't be fixed in the future due to technical problems.
 
 * '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request isolation design. Especially watch yourself when using <code>require()</code> to import modules, and use this form:
 <geshi lang="nginx">
