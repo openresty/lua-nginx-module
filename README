@@ -8,9 +8,9 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes lua-nginx-module v0.2.1rc15
+    This document describes lua-nginx-module v0.2.1rc17
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
-    on 24 August 2011.
+    on 26 August 2011.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -1292,7 +1292,7 @@ Nginx API for Lua
   ngx.re.match
     syntax: *captures = ngx.re.match(subject, regex, options?, ctx?)*
 
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Matches the "subject" string using the Perl-compatible regular
     expression "regex" with the optional "options".
@@ -1397,7 +1397,7 @@ Nginx API for Lua
   ngx.re.gmatch
     syntax: *iterator = ngx.re.gmatch(subject, regex, options?)*
 
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Similar to ngx.re.match, but returns a Lua iterator instead, so as to
     let the user programmer iterate all the matches over the "<subject>"
@@ -1432,7 +1432,7 @@ Nginx API for Lua
   ngx.re.sub
     syntax: *newstr, n = ngx.re.sub(subject, regex, replace, options?)*
 
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Substitutes the first match of the Perl-compatible regular expression
     "regex" on the "subject" argument string with the string or function
@@ -1493,7 +1493,7 @@ Nginx API for Lua
   ngx.re.gsub
     syntax: *newstr, n = ngx.re.gsub(subject, regex, replace, options?)*
 
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Just like ngx.re.sub, but does global substitution.
 
@@ -1680,7 +1680,7 @@ Installation
         example, the version 1.0.5 (see nginx compatibility), and then build
         the source with this module:
 
-            $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
+            $ wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
             $ tar -xzvf nginx-1.0.5.tar.gz
             $ cd nginx-1.0.5/
 

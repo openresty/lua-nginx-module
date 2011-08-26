@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc15] released on 24 August 2011.
+This document describes lua-nginx-module [https://github.com/chaoslawful/lua-nginx-module/downloads v0.2.1rc17] released on 26 August 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1467,7 +1467,7 @@ Returns <code>true</code> if the current request is an nginx subrequest, or <cod
 == ngx.re.match ==
 '''syntax:''' ''captures = ngx.re.match(subject, regex, options?, ctx?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Matches the <code>subject</code> string using the Perl-compatible regular expression <code>regex</code> with the optional <code>options</code>.
 
@@ -1569,7 +1569,7 @@ This feature is introduced in the <code>v0.2.1rc11</code> release.
 == ngx.re.gmatch ==
 '''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the Perl-compatible regular expression <code>regex</code>.
 
@@ -1603,7 +1603,7 @@ This feature was first introduced in the <code>v0.2.1rc12</code> release.
 == ngx.re.sub ==
 '''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Substitutes the first match of the Perl-compatible regular expression <code>regex</code> on the <code>subject</code> argument string with the string or function argument <code>replace</code>. The optional <code>options</code> argument has exactly the same meaning as in [[#ngx.re.match|ngx.re.match]].
 
@@ -1657,7 +1657,7 @@ This feature was first introduced in the <code>v0.2.1rc13</code> release.
 == ngx.re.gsub ==
 '''syntax:''' ''newstr, n = ngx.re.gsub(subject, regex, replace, options?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Just like [[#ngx.re.sub|ngx.re.sub]], but does global substitution.
 
@@ -1808,7 +1808,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
 # Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/downloads file list].
 # Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 <geshi lang="bash">
-        $ wget 'http://sysoev.ru/nginx/nginx-1.0.5.tar.gz'
+        $ wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
         $ tar -xzvf nginx-1.0.5.tar.gz
         $ cd nginx-1.0.5/
  
