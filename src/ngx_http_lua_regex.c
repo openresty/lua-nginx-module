@@ -16,6 +16,11 @@ static void ngx_http_lua_ngx_re_parse_opts(lua_State *L,
 static int ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global);
 
 
+#define ngx_http_lua_regex_exec(re, s, start, captures, size) \
+    pcre_exec(re, NULL, (const char *) (s)->data, (s)->len, start, 0, \
+              captures, size)
+
+
 int
 ngx_http_lua_ngx_re_match(lua_State *L)
 {
@@ -114,12 +119,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    if (nargs == 4) { /* has ctx table */
-        subj.data += pos;
-        subj.len  -= pos;
-    }
-
-    rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
+    rc = ngx_http_lua_regex_exec(re.regex, &subj, pos, cap, ovecsize);
     if (rc == NGX_REGEX_NO_MATCHED) {
         ngx_pfree(r->pool, cap);
         lua_pushnil(L);
@@ -157,7 +157,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     }
 
     if (nargs == 4) { /* having ctx table */
-        pos += cap[1];
+        pos = cap[1];
         lua_pushinteger(L, (lua_Integer) pos);
         lua_setfield(L, 4, "pos");
     }
@@ -297,12 +297,9 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    subj.data += offset;
-    subj.len -= offset;
-
     dd("regex exec...");
 
-    rc = ngx_regex_exec(re->regex, &subj, cap, ovecsize);
+    rc = ngx_http_lua_regex_exec(re->regex, &subj, offset, cap, ovecsize);
     if (rc == NGX_REGEX_NO_MATCHED) {
         /* set upvalue "offset" to -1 */
         lua_pushinteger(L, -1);
@@ -352,7 +349,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         lua_rawseti(L, -2, (int) i);
     }
 
-    offset += cap[1];
+    offset = cap[1];
     if (offset == (ssize_t) subj.len) {
         offset = -1;
         ngx_pfree(r->pool, re);
@@ -537,14 +534,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     offset = 0;
 
     for (;;) {
-        subj.data += offset;
-        subj.len  -= offset;
-
         if (subj.len == 0) {
             break;
         }
 
-        rc = ngx_regex_exec(re.regex, &subj, cap, ovecsize);
+        rc = ngx_http_lua_regex_exec(re.regex, &subj, offset, cap, ovecsize);
         if (rc == NGX_REGEX_NO_MATCHED) {
             break;
         }
@@ -562,7 +556,6 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         dd("rc = %d", (int) rc);
 
-        offset = cap[1];
         count++;
 
         if (count == 1) {
@@ -607,17 +600,16 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
                     return luaL_argerror(L, 3, msg);
             }
 
-            luaL_addlstring(&luabuf, (char *) subj.data, cap[0]);
+            luaL_addlstring(&luabuf, (char *) &subj.data[offset], cap[0] - offset);
             luaL_addlstring(&luabuf, (char *) tpl.data, tpl.len);
 
             lua_pop(L, 1);
 
+            offset = cap[1];
+
             if (global) {
                 continue;
             }
-
-            subj.data += offset;
-            subj.len -= offset;
 
             break;
         }
@@ -635,7 +627,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
             }
         }
 
-        rc = ngx_http_lua_complex_value(r, &subj, rc, cap, &ctpl, &luabuf);
+        rc = ngx_http_lua_complex_value(r, &subj, offset, rc, cap, &ctpl, &luabuf);
 
         if (rc != NGX_OK) {
             ngx_pfree(r->pool, cap);
@@ -643,11 +635,13 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
                     "\"%s\"", tpl.data);
         }
 
-        if (! global) {
-            subj.data += offset;
-            subj.len -= offset;
-            break;
+        offset = cap[1];
+
+        if (global) {
+            continue;
         }
+
+        break;
     }
 
     if (count == 0) {
@@ -655,13 +649,14 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
         lua_settop(L, 1);
 
     } else {
-        dd("adding trailer: %s (len %d)", subj.data, (int) subj.len);
+        if (offset != subj.len) {
+            dd("adding trailer: %s (len %d)", subj.data[offset], (int) (subj.len - offset));
 
-        if (subj.len != 0) {
-            luaL_addlstring(&luabuf, (char *) subj.data, subj.len);
+            luaL_addlstring(&luabuf, (char *) &subj.data[offset], subj.len - offset);
         }
 
         luaL_pushresult(&luabuf);
+
         dd("the dst string: %s", lua_tostring(L, -1));
     }
 

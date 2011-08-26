@@ -162,3 +162,20 @@ hello, world
 --- response_body
 {[hello,h], [world,w]}
 
+
+
+=== TEST 9: look-behind assertion
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "h$0")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+{foohbarhbaz}
+2
+

@@ -95,8 +95,8 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
 
 ngx_int_t
 ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
-        ngx_int_t count, int *cap, ngx_http_lua_complex_value_t *val,
-        luaL_Buffer *luabuf)
+        size_t offset, ngx_int_t count, int *cap,
+        ngx_http_lua_complex_value_t *val, luaL_Buffer *luabuf)
 {
     size_t                            len;
     u_char                           *p;
@@ -105,7 +105,7 @@ ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
     ngx_http_lua_script_engine_t      e;
 
     if (val->lengths == NULL) {
-        luaL_addlstring(luabuf, (char *) subj->data, cap[0]);
+        luaL_addlstring(luabuf, (char *) &subj->data[offset], cap[0] - offset);
         luaL_addlstring(luabuf, (char *) val->value.data, val->value.len);
 
         return NGX_OK;
@@ -140,7 +140,7 @@ ngx_http_lua_complex_value(ngx_http_request_t *r, ngx_str_t *subj,
         code((ngx_http_lua_script_engine_t *) &e);
     }
 
-    luaL_addlstring(luabuf, (char *) subj->data, cap[0]);
+    luaL_addlstring(luabuf, (char *) &subj->data[offset], cap[0] - offset);
     luaL_addlstring(luabuf, (char *) p, len);
 
     ngx_pfree(r->pool, p);
