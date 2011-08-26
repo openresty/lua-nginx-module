@@ -600,7 +600,9 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
                     return luaL_argerror(L, 3, msg);
             }
 
-            luaL_addlstring(&luabuf, (char *) &subj.data[offset], cap[0] - offset);
+            luaL_addlstring(&luabuf, (char *) &subj.data[offset],
+                    cap[0] - offset);
+
             luaL_addlstring(&luabuf, (char *) tpl.data, tpl.len);
 
             lua_pop(L, 1);
@@ -627,7 +629,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
             }
         }
 
-        rc = ngx_http_lua_complex_value(r, &subj, offset, rc, cap, &ctpl, &luabuf);
+        rc = ngx_http_lua_complex_value(r, &subj, offset, rc, cap, &ctpl,
+                &luabuf);
 
         if (rc != NGX_OK) {
             ngx_pfree(r->pool, cap);
@@ -650,9 +653,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
     } else {
         if (offset != subj.len) {
-            dd("adding trailer: %s (len %d)", subj.data[offset], (int) (subj.len - offset));
+            dd("adding trailer: %s (len %d)", subj.data[offset],
+                    (int) (subj.len - offset));
 
-            luaL_addlstring(&luabuf, (char *) &subj.data[offset], subj.len - offset);
+            luaL_addlstring(&luabuf, (char *) &subj.data[offset],
+                    subj.len - offset);
         }
 
         luaL_pushresult(&luabuf);
