@@ -116,5 +116,5 @@ src/args.[ch]
 src/headers.[ch]
 src/script.[ch]
 all
-build10
+build1[01]
 g
