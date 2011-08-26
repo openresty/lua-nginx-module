@@ -160,15 +160,15 @@ nil
         content_by_lua '
             local it = ngx.re.gmatch("12 hello 34", "[0-9]")
             local m = it()
-            ngx.say(m[0])
+            ngx.say(m and m[0])
             m = it()
-            ngx.say(m[0])
+            ngx.say(m and m[0])
             m = it()
-            ngx.say(m[0])
+            ngx.say(m and m[0])
             m = it()
-            ngx.say(m[0])
+            ngx.say(m and m[0])
             m = it()
-            ngx.say(m)
+            ngx.say(m and m[0])
         ';
     }
 --- request
@@ -217,4 +217,46 @@ nil
     GET /re
 --- response_body
 1
+
+
+
+=== TEST 10: gmatch (look-behind assertion)
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("{foobar}, {foobaz}", "(?<=foo)ba[rz]") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+bar
+baz
+
+
+
+=== TEST 11: gmatch (look-behind assertion 2)
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+bar
+baz
 

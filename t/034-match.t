@@ -504,3 +504,23 @@ not matched!
 --- response_body
 1234
 
+
+
+=== TEST 25: match (look-behind assertion)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = {}
+            local m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "", ctx)
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "", ctx)
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+bar
+baz
+
