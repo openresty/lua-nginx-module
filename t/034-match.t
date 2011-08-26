@@ -484,3 +484,23 @@ not matched!
 34
 4
 
+
+
+=== TEST 24: sanity (set_by_lua)
+--- config
+    location /re {
+        set_by_lua $res '
+            m = ngx.re.match("hello, 1234", "([0-9]+)")
+            if m then
+                return m[0]
+            else
+                return "not matched!"
+            end
+        ';
+        echo $res;
+    }
+--- request
+    GET /re
+--- response_body
+1234
+

@@ -350,3 +350,19 @@ false
 bad argument #3 to '?' (string or number expected to be returned by the replace function, got nil)
 nil
 
+
+
+=== TEST 19: matched but w/o variables (set_by_lua)
+--- config
+    location /re {
+        set_by_lua $res '
+            local s, n = ngx.re.sub("hello, world", "[a-z]+", "howdy")
+            return s
+        ';
+        echo $res;
+    }
+--- request
+    GET /re
+--- response_body
+howdy, world
+

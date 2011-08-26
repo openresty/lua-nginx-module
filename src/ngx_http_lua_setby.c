@@ -11,6 +11,7 @@
 #include "ngx_http_lua_patch.h"
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
+#include "ngx_http_lua_regex.h"
 
 
 static int
@@ -105,6 +106,28 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
     lua_setfield(L, -2, "var");
     /*  }}} */
+
+#if (NGX_PCRE)
+    /* {{{ ngx.re table */
+
+    lua_newtable(L);    /* .re */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
+    lua_setfield(L, -2, "match");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
+    lua_setfield(L, -2, "gmatch");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
+    lua_setfield(L, -2, "sub");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
+    lua_setfield(L, -2, "gsub");
+
+    lua_setfield(L, -2, "re");
+
+    /* }}} */
+#endif /* NGX_PCRE */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
     lua_setfield(L, -2, "escape_uri");

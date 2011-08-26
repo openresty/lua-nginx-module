@@ -142,3 +142,23 @@ hello, world
 {[hello,h], [world,w]}
 2
 
+
+
+=== TEST 8: set_by_lua
+--- config
+    location /re {
+        set_by_lua $res '
+            local f = function (m)
+                return "[" .. m[0] .. "," .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.gsub("{hello, world}", "([a-z])[a-z]+", f)
+            return s
+        ';
+        echo $res;
+    }
+--- request
+    GET /re
+--- response_body
+{[hello,h], [world,w]}
+

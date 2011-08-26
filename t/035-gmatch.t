@@ -201,3 +201,20 @@ nil
 2
 nil
 
+
+
+=== TEST 9: anchored match (succeeded, set_by_lua)
+--- config
+    location /re {
+        set_by_lua $res '
+            local it = ngx.re.gmatch("12 hello 34", "[0-9]", "a")
+            local m = it()
+            return m[0]
+        ';
+        echo $res;
+    }
+--- request
+    GET /re
+--- response_body
+1
+
