@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.2.1rc19](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 26 August 2011.
+This document describes ngx_lua [v0.2.1rc18](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 26 August 2011.
 
 Synopsis
 ========
