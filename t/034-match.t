@@ -524,3 +524,56 @@ not matched!
 bar
 baz
 
+
+
+=== TEST 26: match (with regex cache)
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([A-Z]+)", "io")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("1234, okay", "([A-Z]+)", "io")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hello, 1234", "([A-Z]+)", "o")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+okay
+nil
+
+
+=== TEST 26: match (with regex cache and ctx)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = {}
+            local m = ngx.re.match("hello, 1234", "([A-Z]+)", "io", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+
+            m = ngx.re.match("1234, okay", "([A-Z]+)", "io", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+
+            ctx.pos = 0
+            m = ngx.re.match("hi, 1234", "([A-Z]+)", "o", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+5
+okay
+10
+nil
+0
+

@@ -139,6 +139,8 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         return NGX_CONF_ERROR;
     }
 
+    lmcf->pool = cf->pool;
+
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
     cln->data = lmcf->lua;
