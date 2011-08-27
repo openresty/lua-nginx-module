@@ -24,7 +24,11 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua = NULL;
      *      lmcf->lua_path = { 0, NULL };
      *      lmcf->lua_cpath = { 0, NULL };
+     *      lmcf->regex_cache_entries = 0;
      */
+
+    lmcf->pool = cf->pool;
+    lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
 
     dd("nginx Lua module main config structure initialized!");
 
@@ -36,6 +40,10 @@ char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
     ngx_http_lua_main_conf_t *lmcf = conf;
+
+    if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
+        lmcf->regex_cache_max_entries = 1024;
+    }
 
     if (lmcf->lua == NULL) {
         if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
@@ -138,8 +146,6 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     if (lmcf->lua == NULL) {
         return NGX_CONF_ERROR;
     }
-
-    lmcf->pool = cf->pool;
 
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;

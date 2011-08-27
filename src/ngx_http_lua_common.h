@@ -57,11 +57,14 @@ typedef struct {
 } ngx_http_lua_set_var_data_t;
 #endif
 
+
 typedef struct {
-    ngx_pool_t      *pool;
     lua_State       *lua;
     ngx_str_t        lua_path;
     ngx_str_t        lua_cpath;
+    ngx_pool_t      *pool;
+    ngx_int_t        regex_cache_entries;
+    ngx_int_t        regex_cache_max_entries;
 
     unsigned    postponed_to_rewrite_phase_end:1;
     unsigned    postponed_to_access_phase_end:1;

@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('warn');
+log_level('debug');
 
 repeat_each(2);
 
@@ -600,4 +600,54 @@ okay
 10
 nil
 0
+
+
+
+=== TEST 29: exceeding regex cache max entries
+--- http_config
+    lua_regex_cache_max_entries 2;
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("howdy, 567", "([0-9]+)", "oi")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hiya, 98", "([0-9]+)", "ox")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
+
+
+
+=== TEST 30: disable regex cache completely
+--- http_config
+    lua_regex_cache_max_entries 0;
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("howdy, 567", "([0-9]+)", "oi")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hiya, 98", "([0-9]+)", "ox")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
 

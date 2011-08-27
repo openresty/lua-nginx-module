@@ -149,6 +149,20 @@ ngx_http_lua_ngx_re_match(lua_State *L)
                 "lua regex cache miss for regex \"%s\" with options \"%s\"",
                 pat.data, opts.data);
 
+        if (lmcf->regex_cache_entries >= lmcf->regex_cache_max_entries) {
+
+            if (lmcf->regex_cache_entries == lmcf->regex_cache_max_entries) {
+                ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                        "lua exceeding regex cache max entries (%i)",
+                        lmcf->regex_cache_max_entries);
+
+                lmcf->regex_cache_entries++;
+            }
+
+            pool = r->pool;
+            comp_once = 0;
+        }
+
     } else {
         pool = r->pool;
     }
@@ -160,9 +174,9 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     re_comp.err.len = NGX_MAX_CONF_ERRSTR;
     re_comp.err.data = errstr;
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua compiling pcre regex \"%s\" with options \"%s\"",
-            subj.data, opts.data);
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua compiling pcre regex \"%s\" with options \"%s\" "
+            "(compile once: %d)", subj.data, opts.data, comp_once);
 
     ngx_http_lua_pcre_malloc_done();
 
@@ -193,8 +207,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     if (comp_once) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua saving compiled regex (%d captures) into the cache",
-                re_comp.captures);
+                "lua saving compiled regex (%d captures) into the cache "
+                "(entries %i)", re_comp.captures, lmcf->regex_cache_entries);
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
@@ -210,6 +224,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         lua_pushlightuserdata(L, re); /* table key value */
         lua_rawset(L, -3); /* table */
         lua_pop(L, 1);
+
+        lmcf->regex_cache_entries++;
     }
 
 exec:
