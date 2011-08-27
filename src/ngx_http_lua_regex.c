@@ -127,7 +127,10 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         lua_pop(L, 1); /* table key */
 
         if (re) {
-            dd("regex cache hit!");
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                    "lua regex cache hit for regex \"%s\" with options \"%s\"",
+                    pat.data, opts.data);
+
             lua_pop(L, 2);
 
             dd("restoring regex %p, ncaptures %d,  captures %p", re->regex,
@@ -142,7 +145,9 @@ ngx_http_lua_ngx_re_match(lua_State *L)
             goto exec;
         }
 
-        dd("regex cache miss!");
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua regex cache miss for regex \"%s\" with options \"%s\"",
+                pat.data, opts.data);
 
     } else {
         pool = r->pool;
@@ -150,18 +155,14 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     dd("pool %p, r pool %p", pool, r->pool);
 
-    /*
-    p = ngx_palloc(pool, pat.len + 1);
-    ngx_memcpy(p, pat.data, pat.len + 1);
-    pat.data = p;
-    */
-
     re_comp.pool = pool;
     re_comp.pattern = pat;
     re_comp.err.len = NGX_MAX_CONF_ERRSTR;
     re_comp.err.data = errstr;
 
-    dd("compiling regex");
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua compiling pcre regex \"%s\" with options \"%s\"",
+            subj.data, opts.data);
 
     ngx_http_lua_pcre_malloc_done();
 
@@ -190,6 +191,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     }
 
     if (comp_once) {
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua saving compiled regex (%d captures) into the cache",
+                re_comp.captures);
+
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
             return luaL_error(L, "out of memory");
@@ -207,11 +213,18 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     }
 
 exec:
-    rc = ngx_http_lua_regex_exec(re_comp.regex, &subj, pos, cap, ovecsize);
+    rc = ngx_http_lua_regex_exec(re_comp.regex, &subj, (int) pos, cap,
+            ovecsize);
+
     if (rc == NGX_REGEX_NO_MATCHED) {
+        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "regex \"%s\" not matched on string \"%s\" starting from %z",
+                pat.data, subj.data, pos);
+
         if (!comp_once) {
             ngx_pfree(pool, cap);
         }
+
         lua_pushnil(L);
         return 1;
     }

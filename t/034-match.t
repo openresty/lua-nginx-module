@@ -118,7 +118,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([a-z]+).*?([0-9]{2})[0-9]+")
+            m = ngx.re.match("hello, 1234", "([a-z]+).*?([0-9]{2})[0-9]+", "")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -137,7 +137,30 @@ hello
 
 
 
-=== TEST 7: not matched
+=== TEST 7: multiple captures (with o)
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", "([a-z]+).*?([0-9]{2})[0-9]+", "o")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+hello
+12
+
+
+
+=== TEST 8: not matched
 --- config
     location /re {
         content_by_lua '
@@ -156,7 +179,7 @@ not matched: nil
 
 
 
-=== TEST 8: case sensitive by default
+=== TEST 9: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -175,7 +198,7 @@ not matched: nil
 
 
 
-=== TEST 9: case sensitive by default
+=== TEST 10: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -194,7 +217,7 @@ hello
 
 
 
-=== TEST 10: UTF-8 mode
+=== TEST 11: UTF-8 mode
 --- config
     location /re {
         content_by_lua '
@@ -213,7 +236,7 @@ hello章亦
 
 
 
-=== TEST 11: multi-line mode (^ at line head)
+=== TEST 12: multi-line mode (^ at line head)
 --- config
     location /re {
         content_by_lua '
@@ -232,7 +255,7 @@ world
 
 
 
-=== TEST 12: multi-line mode (. does not match \n)
+=== TEST 13: multi-line mode (. does not match \n)
 --- config
     location /re {
         content_by_lua '
@@ -251,7 +274,7 @@ hello
 
 
 
-=== TEST 13: single-line mode (^ as normal)
+=== TEST 14: single-line mode (^ as normal)
 --- config
     location /re {
         content_by_lua '
@@ -270,7 +293,7 @@ not matched: nil
 
 
 
-=== TEST 14: single-line mode (dot all)
+=== TEST 15: single-line mode (dot all)
 --- config
     location /re {
         content_by_lua '
@@ -290,7 +313,7 @@ world
 
 
 
-=== TEST 15: extended mode (ignore whitespaces)
+=== TEST 16: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -309,7 +332,7 @@ he
 
 
 
-=== TEST 16: bad pattern
+=== TEST 17: bad pattern
 --- config
     location /re {
         content_by_lua '
@@ -332,7 +355,7 @@ error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() fa
 
 
 
-=== TEST 17: bad option
+=== TEST 18: bad option
 --- config
     location /re {
         content_by_lua '
@@ -355,7 +378,7 @@ error: bad argument #3 to '?' (unknown flag "H")
 
 
 
-=== TEST 18: extended mode (ignore whitespaces)
+=== TEST 19: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -378,7 +401,7 @@ hello
 
 
 
-=== TEST 19: optional trailing captures
+=== TEST 20: optional trailing captures
 --- config
     location /re {
         content_by_lua '
@@ -402,7 +425,7 @@ hello
 
 
 
-=== TEST 20: anchored match (failed)
+=== TEST 21: anchored match (failed)
 --- config
     location /re {
         content_by_lua '
@@ -421,7 +444,7 @@ not matched!
 
 
 
-=== TEST 21: anchored match (succeeded)
+=== TEST 22: anchored match (succeeded)
 --- config
     location /re {
         content_by_lua '
@@ -440,7 +463,7 @@ not matched!
 
 
 
-=== TEST 22: match with ctx but no pos
+=== TEST 23: match with ctx but no pos
 --- config
     location /re {
         content_by_lua '
@@ -463,7 +486,7 @@ not matched!
 
 
 
-=== TEST 23: match with ctx and a pos
+=== TEST 24: match with ctx and a pos
 --- config
     location /re {
         content_by_lua '
@@ -486,7 +509,7 @@ not matched!
 
 
 
-=== TEST 24: sanity (set_by_lua)
+=== TEST 25: sanity (set_by_lua)
 --- config
     location /re {
         set_by_lua $res '
@@ -506,7 +529,7 @@ not matched!
 
 
 
-=== TEST 25: match (look-behind assertion)
+=== TEST 26: match (look-behind assertion)
 --- config
     location /re {
         content_by_lua '
@@ -526,7 +549,7 @@ baz
 
 
 
-=== TEST 26: match (with regex cache)
+=== TEST 27: match (with regex cache)
 --- config
     location /re {
         content_by_lua '
@@ -548,7 +571,8 @@ okay
 nil
 
 
-=== TEST 26: match (with regex cache and ctx)
+
+=== TEST 28: match (with regex cache and ctx)
 --- config
     location /re {
         content_by_lua '
