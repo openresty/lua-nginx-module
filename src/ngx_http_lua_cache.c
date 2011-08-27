@@ -302,6 +302,14 @@ ngx_http_lua_clear_package_loaded(lua_State *L)
                 goto done;
             }
 
+            if (ngx_strncmp(p, "ngx", sizeof("ngx") - 1) == 0) {
+                goto done;
+            }
+
+            if (ngx_strncmp(p, "ndk", sizeof("ndk") - 1) == 0) {
+                goto done;
+            }
+
             break;
 
         case 4:

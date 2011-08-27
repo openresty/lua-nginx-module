@@ -500,7 +500,8 @@ hiya, hello
 1
 
 
-=== TEST 23: empty replace
+
+=== TEST 24: empty replace
 --- config
     location /re {
         content_by_lua '

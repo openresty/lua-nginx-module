@@ -621,6 +621,12 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
 
     lua_setfield(L, -2, "set_var");
 
+    lua_getglobal(L, "package"); /* ndk package */
+    lua_getfield(L, -1, "loaded"); /* ndk package loaded */
+    lua_pushvalue(L, -3); /* ndk package loaded ndk */
+    lua_setfield(L, -2, "ndk"); /* ndk package loaded */
+    lua_pop(L, 2);
+
     lua_setglobal(L, "ndk");
 #endif /* defined(NDK) && NDK */
 
@@ -806,6 +812,12 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     lua_setmetatable(L, -2);
 
     /*  }}} */
+
+    lua_getglobal(L, "package"); /* ngx package */
+    lua_getfield(L, -1, "loaded"); /* ngx package loaded */
+    lua_pushvalue(L, -3); /* ngx package loaded ngx */
+    lua_setfield(L, -2, "ngx"); /* ngx package loaded */
+    lua_pop(L, 2);
 
     lua_setglobal(L, "ngx");
 }

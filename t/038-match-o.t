@@ -137,7 +137,7 @@ hello
 
 
 
-=== TEST 8: not matched
+=== TEST 7: not matched
 --- config
     location /re {
         content_by_lua '
@@ -156,7 +156,7 @@ not matched: nil
 
 
 
-=== TEST 9: case sensitive by default
+=== TEST 8: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -175,7 +175,7 @@ not matched: nil
 
 
 
-=== TEST 10: case sensitive by default
+=== TEST 9: case sensitive by default
 --- config
     location /re {
         content_by_lua '
@@ -194,7 +194,7 @@ hello
 
 
 
-=== TEST 11: UTF-8 mode
+=== TEST 10: UTF-8 mode
 --- config
     location /re {
         content_by_lua '
@@ -213,7 +213,7 @@ hello章亦
 
 
 
-=== TEST 12: multi-line mode (^ at line head)
+=== TEST 11: multi-line mode (^ at line head)
 --- config
     location /re {
         content_by_lua '
@@ -232,7 +232,7 @@ world
 
 
 
-=== TEST 13: multi-line mode (. does not match \n)
+=== TEST 12: multi-line mode (. does not match \n)
 --- config
     location /re {
         content_by_lua '
@@ -251,7 +251,7 @@ hello
 
 
 
-=== TEST 14: single-line mode (^ as normal)
+=== TEST 13: single-line mode (^ as normal)
 --- config
     location /re {
         content_by_lua '
@@ -270,7 +270,7 @@ not matched: nil
 
 
 
-=== TEST 15: single-line mode (dot all)
+=== TEST 14: single-line mode (dot all)
 --- config
     location /re {
         content_by_lua '
@@ -290,7 +290,7 @@ world
 
 
 
-=== TEST 16: extended mode (ignore whitespaces)
+=== TEST 15: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -309,7 +309,7 @@ he
 
 
 
-=== TEST 17: bad pattern
+=== TEST 16: bad pattern
 --- config
     location /re {
         content_by_lua '
@@ -332,7 +332,7 @@ error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() fa
 
 
 
-=== TEST 18: bad option
+=== TEST 17: bad option
 --- config
     location /re {
         content_by_lua '
@@ -355,7 +355,7 @@ error: bad argument #3 to '?' (unknown flag "H")
 
 
 
-=== TEST 19: extended mode (ignore whitespaces)
+=== TEST 18: extended mode (ignore whitespaces)
 --- config
     location /re {
         content_by_lua '
@@ -378,7 +378,7 @@ hello
 
 
 
-=== TEST 20: optional trailing captures
+=== TEST 19: optional trailing captures
 --- config
     location /re {
         content_by_lua '
@@ -402,7 +402,7 @@ hello
 
 
 
-=== TEST 21: anchored match (failed)
+=== TEST 20: anchored match (failed)
 --- config
     location /re {
         content_by_lua '
@@ -421,7 +421,7 @@ not matched!
 
 
 
-=== TEST 22: anchored match (succeeded)
+=== TEST 21: anchored match (succeeded)
 --- config
     location /re {
         content_by_lua '
@@ -440,7 +440,7 @@ not matched!
 
 
 
-=== TEST 23: match with ctx but no pos
+=== TEST 22: match with ctx but no pos
 --- config
     location /re {
         content_by_lua '
@@ -463,7 +463,7 @@ not matched!
 
 
 
-=== TEST 24: match with ctx and a pos
+=== TEST 23: match with ctx and a pos
 --- config
     location /re {
         content_by_lua '
@@ -486,7 +486,7 @@ not matched!
 
 
 
-=== TEST 25: sanity (set_by_lua)
+=== TEST 24: sanity (set_by_lua)
 --- config
     location /re {
         set_by_lua $res '
@@ -506,7 +506,7 @@ not matched!
 
 
 
-=== TEST 26: match (look-behind assertion)
+=== TEST 25: match (look-behind assertion)
 --- config
     location /re {
         content_by_lua '
@@ -526,7 +526,7 @@ baz
 
 
 
-=== TEST 27: match (with regex cache)
+=== TEST 26: match (with regex cache)
 --- config
     location /re {
         content_by_lua '
@@ -549,7 +549,7 @@ nil
 
 
 
-=== TEST 28: match (with regex cache and ctx)
+=== TEST 27: match (with regex cache and ctx)
 --- config
     location /re {
         content_by_lua '
@@ -580,7 +580,7 @@ nil
 
 
 
-=== TEST 29: exceeding regex cache max entries
+=== TEST 28: exceeding regex cache max entries
 --- http_config
     lua_regex_cache_max_entries 2;
 --- config
@@ -605,7 +605,7 @@ nil
 
 
 
-=== TEST 30: disable regex cache completely
+=== TEST 29: disable regex cache completely
 --- http_config
     lua_regex_cache_max_entries 0;
 --- config

@@ -146,3 +146,66 @@ GET /main
 GET /main
 --- response_body_like: ^.+\.so;[^;]+/servroot/html/\?.so$
 
+
+
+=== TEST 7: require "ngx" (content_by_lua)
+--- config
+    location /ngx {
+        content_by_lua '
+            local ngx = require "ngx"
+            ngx.say("hello, world")
+        ';
+    }
+--- request
+GET /ngx
+--- response_body
+hello, world
+
+
+
+=== TEST 8: require "ngx" (set_by_lua)
+--- config
+    location /ngx {
+        set_by_lua $res '
+            local ngx = require "ngx"
+            return ngx.escape_uri(" ")
+        ';
+        echo $res;
+    }
+--- request
+GET /ngx
+--- response_body
+%20
+
+
+
+=== TEST 9: require "ndk" (content_by_lua)
+--- config
+    location /ndk {
+        content_by_lua '
+            local ndk = require "ndk"
+            local res = ndk.set_var.set_escape_uri(" ")
+            ngx.say(res)
+        ';
+    }
+--- request
+GET /ndk
+--- response_body
+%20
+
+
+
+=== TEST 10: require "ndk" (set_by_lua)
+--- config
+    location /ndk {
+        set_by_lua $res '
+            local ndk = require "ndk"
+            return ndk.set_var.set_escape_uri(" ")
+        ';
+        echo $res;
+    }
+--- request
+GET /ndk
+--- response_body
+%20
+
