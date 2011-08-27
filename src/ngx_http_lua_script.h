@@ -6,7 +6,8 @@
 
 
 typedef struct {
-    ngx_http_request_t         *request;
+    ngx_log_t                  *log;
+    ngx_pool_t                 *pool;
     ngx_str_t                  *source;
 
     ngx_array_t               **lengths;
@@ -28,7 +29,8 @@ typedef struct {
 
 
 typedef struct {
-    ngx_http_request_t              *request;
+    ngx_log_t                       *log;
+    ngx_pool_t                      *pool;
     ngx_str_t                       *value;
     ngx_http_lua_complex_value_t    *complex_value;
 } ngx_http_lua_compile_complex_value_t;

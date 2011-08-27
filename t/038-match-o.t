@@ -21,7 +21,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]+)")
+            m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -40,7 +40,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "(\\\\d+)")
+            m = ngx.re.match("hello, 1234", "(\\\\d+)", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -59,7 +59,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "(\\d+)")
+            m = ngx.re.match("hello, 1234", "(\\d+)", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -78,7 +78,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "[[\\d+]]")
+            m = ngx.re.match("hello, 1234", "[[\\d+]]", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -97,7 +97,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]{2})[0-9]+")
+            m = ngx.re.match("hello, 1234", "([0-9]{2})[0-9]+", "o")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -115,29 +115,6 @@ not matched!
 
 
 === TEST 6: multiple captures
---- config
-    location /re {
-        content_by_lua '
-            m = ngx.re.match("hello, 1234", "([a-z]+).*?([0-9]{2})[0-9]+", "")
-            if m then
-                ngx.say(m[0])
-                ngx.say(m[1])
-                ngx.say(m[2])
-            else
-                ngx.say("not matched!")
-            end
-        ';
-    }
---- request
-    GET /re
---- response_body
-hello, 1234
-hello
-12
-
-
-
-=== TEST 7: multiple captures (with o)
 --- config
     location /re {
         content_by_lua '
@@ -164,7 +141,7 @@ hello
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "foo")
+            m = ngx.re.match("hello, 1234", "foo", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -183,7 +160,7 @@ not matched: nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "HELLO")
+            m = ngx.re.match("hello, 1234", "HELLO", "o")
             if m then
                 ngx.say(m[0])
             else
@@ -202,7 +179,7 @@ not matched: nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "HELLO", "i")
+            m = ngx.re.match("hello, 1234", "HELLO", "oi")
             if m then
                 ngx.say(m[0])
             else
@@ -221,7 +198,7 @@ hello
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello章亦春", "HELLO.{2}", "iu")
+            m = ngx.re.match("hello章亦春", "HELLO.{2}", "iou")
             if m then
                 ngx.say(m[0])
             else
@@ -240,7 +217,7 @@ hello章亦
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello\\nworld", "^world", "m")
+            m = ngx.re.match("hello\\nworld", "^world", "mo")
             if m then
                 ngx.say(m[0])
             else
@@ -259,7 +236,7 @@ world
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello\\nworld", ".*", "m")
+            m = ngx.re.match("hello\\nworld", ".*", "om")
             if m then
                 ngx.say(m[0])
             else
@@ -278,7 +255,7 @@ hello
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello\\nworld", "^world", "s")
+            m = ngx.re.match("hello\\nworld", "^world", "so")
             if m then
                 ngx.say(m[0])
             else
@@ -297,7 +274,7 @@ not matched: nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello\\nworld", ".*", "s")
+            m = ngx.re.match("hello\\nworld", ".*", "os")
             if m then
                 ngx.say(m[0])
             else
@@ -317,7 +294,7 @@ world
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello\\nworld", "\\\\w     \\\\w", "x")
+            m = ngx.re.match("hello\\nworld", "\\\\w     \\\\w", "xo")
             if m then
                 ngx.say(m[0])
             else
@@ -336,7 +313,7 @@ he
 --- config
     location /re {
         content_by_lua '
-            rc, m = pcall(ngx.re.match, "hello\\nworld", "(abc")
+            rc, m = pcall(ngx.re.match, "hello\\nworld", "(abc", "o")
             if rc then
                 if m then
                     ngx.say(m[0])
@@ -359,7 +336,7 @@ error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() fa
 --- config
     location /re {
         content_by_lua '
-            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "H")
+            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "Ho")
             if rc then
                 if m then
                     ngx.say(m[0])
@@ -382,7 +359,7 @@ error: bad argument #3 to '?' (unknown flag "H")
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, world", "(world)|(hello)", "x")
+            m = ngx.re.match("hello, world", "(world)|(hello)", "xo")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -405,7 +382,7 @@ hello
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]+)(h?)")
+            m = ngx.re.match("hello, 1234", "([0-9]+)(h?)", "o")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -429,7 +406,7 @@ hello
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]+)", "a")
+            m = ngx.re.match("hello, 1234", "([0-9]+)", "oa")
             if m then
                 ngx.say(m[0])
             else
@@ -448,7 +425,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("1234, hello", "([0-9]+)", "a")
+            m = ngx.re.match("1234, hello", "([0-9]+)", "ao")
             if m then
                 ngx.say(m[0])
             else
@@ -468,7 +445,7 @@ not matched!
     location /re {
         content_by_lua '
             local ctx = {}
-            m = ngx.re.match("1234, hello", "([0-9]+)", "", ctx)
+            m = ngx.re.match("1234, hello", "([0-9]+)", "o", ctx)
             if m then
                 ngx.say(m[0])
                 ngx.say(ctx.pos)
@@ -491,7 +468,7 @@ not matched!
     location /re {
         content_by_lua '
             local ctx = { pos = 2 }
-            m = ngx.re.match("1234, hello", "([0-9]+)", "", ctx)
+            m = ngx.re.match("1234, hello", "([0-9]+)", "o", ctx)
             if m then
                 ngx.say(m[0])
                 ngx.say(ctx.pos)
@@ -513,7 +490,7 @@ not matched!
 --- config
     location /re {
         set_by_lua $res '
-            m = ngx.re.match("hello, 1234", "([0-9]+)")
+            m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
             if m then
                 return m[0]
             else
@@ -534,10 +511,10 @@ not matched!
     location /re {
         content_by_lua '
             local ctx = {}
-            local m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "", ctx)
+            local m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "o", ctx)
             ngx.say(m and m[0])
 
-            m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "", ctx)
+            m = ngx.re.match("{foobarbaz}", "(?<=foo)bar|(?<=bar)baz", "o", ctx)
             ngx.say(m and m[0])
         ';
     }
@@ -546,4 +523,108 @@ not matched!
 --- response_body
 bar
 baz
+
+
+
+=== TEST 27: match (with regex cache)
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([A-Z]+)", "io")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("1234, okay", "([A-Z]+)", "io")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hello, 1234", "([A-Z]+)", "o")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+okay
+nil
+
+
+
+=== TEST 28: match (with regex cache and ctx)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = {}
+            local m = ngx.re.match("hello, 1234", "([A-Z]+)", "io", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+
+            m = ngx.re.match("1234, okay", "([A-Z]+)", "io", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+
+            ctx.pos = 0
+            m = ngx.re.match("hi, 1234", "([A-Z]+)", "o", ctx)
+            ngx.say(m and m[0])
+            ngx.say(ctx.pos)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+5
+okay
+10
+nil
+0
+
+
+
+=== TEST 29: exceeding regex cache max entries
+--- http_config
+    lua_regex_cache_max_entries 2;
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("howdy, 567", "([0-9]+)", "oi")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hiya, 98", "([0-9]+)", "ox")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
+
+
+
+=== TEST 30: disable regex cache completely
+--- http_config
+    lua_regex_cache_max_entries 0;
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "o")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("howdy, 567", "([0-9]+)", "oi")
+            ngx.say(m and m[0])
+
+            m = ngx.re.match("hiya, 98", "([0-9]+)", "ox")
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
 

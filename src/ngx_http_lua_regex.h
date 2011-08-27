@@ -2,6 +2,7 @@
 #define NGX_HTTP_LUA_REGEX_H
 
 #include "ngx_http_lua_common.h"
+#include "ngx_http_lua_script.h"
 
 #if (NGX_PCRE)
 
@@ -10,6 +11,8 @@ typedef struct {
     ngx_regex_t                  *regex;
     int                           ncaptures;
     int                          *captures;
+
+    ngx_http_lua_complex_value_t    *replace;
 } ngx_http_lua_regex_t;
 
 

@@ -345,7 +345,6 @@ nil
 
 
 === TEST 15: disable regex cache completely
---- ONLY
 --- http_config
     lua_regex_cache_max_entries 0;
 --- config

@@ -21,7 +21,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("hello, world", "[a-z]+", "howdy")
+            local s, n = ngx.re.sub("hello, world", "[a-z]+", "howdy", "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -38,7 +38,7 @@ howdy, world
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("hello, world", "[A-Z]+", "howdy")
+            local s, n = ngx.re.sub("hello, world", "[A-Z]+", "howdy", "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -55,7 +55,7 @@ hello, world
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("a b c d", "(b) (c)", "[$0] [$1] [$2] [$3] [$134]")
+            local s, n = ngx.re.sub("a b c d", "(b) (c)", "[$0] [$1] [$2] [$3] [$134]", "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -73,7 +73,7 @@ a [b c] [b] [c] [] [] d
     location /re {
         content_by_lua '
             local rc, s, n = pcall(ngx.re.sub, "a b c d",
-                "(b) (c)", "[$0] [$1] [$2] [$3] [$hello]")
+                "(b) (c)", "[$0] [$1] [$2] [$3] [$hello]", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -93,7 +93,7 @@ nil
     location /re {
         content_by_lua '
             local rc, s, n = pcall(ngx.re.sub, "a b c d",
-                "(b) (c)", "[$0] [$1] [$2] [$3] [${hello}]")
+                "(b) (c)", "[$0] [$1] [$2] [$3] [${hello}]", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -112,7 +112,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134}]")
+            local s, n = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134}]", "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -129,7 +129,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134]")
+            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134]", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -148,7 +148,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134")
+            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -167,7 +167,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${")
+            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -186,7 +186,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [$")
+            local rc, s, n = pcall(ngx.re.sub, "b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [$", "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -205,7 +205,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("hello, world", "[a-z]+", "ho$$wdy")
+            local s, n = ngx.re.sub("hello, world", "[a-z]+", "ho$$wdy", "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -222,7 +222,7 @@ ho$wdy, world
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("hello, 1234", "[0-9]", "x")
+            local s, n = ngx.re.sub("hello, 1234", " [0-9] ", "x", "xo")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -239,7 +239,7 @@ hello, x234
 --- config
     location /re {
         content_by_lua '
-            local s, n = ngx.re.sub("hello, 1234", "[0-9]", "x", "a")
+            local s, n = ngx.re.sub("hello, 1234", "[0-9]", "x", "ao")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -260,7 +260,7 @@ hello, 1234
                 return "[" .. m[0] .. "] [" .. m[1] .. "]"
             end
 
-            local s, n = ngx.re.sub("hello, 34", "([0-9])", repl)
+            local s, n = ngx.re.sub("hello, 34", "([0-9])", repl, "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -281,7 +281,7 @@ hello, [3] [3]4
                 return "[" .. m[0] .. "] [" .. m[1] .. "]"
             end
 
-            local s, n = ngx.re.sub("hello, 34", "([A-Z])", repl)
+            local s, n = ngx.re.sub("hello, 34", "([A-Z])", repl, "o")
             ngx.say(s)
             ngx.say(n)
         ';
@@ -298,7 +298,7 @@ hello, 34
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([A-Z])", true)
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([A-Z])", true, "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -317,7 +317,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", 72)
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", 72, "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -337,7 +337,7 @@ hello, 724
     location /re {
         content_by_lua '
             local f = function (m) end
-            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", f)
+            local rc, s, n = pcall(ngx.re.sub, "hello, 34", "([0-9])", f, "o")
             ngx.say(rc)
             ngx.say(s)
             ngx.say(n)
@@ -356,7 +356,7 @@ nil
 --- config
     location /re {
         set_by_lua $res '
-            local s, n = ngx.re.sub("hello, world", "[a-z]+", "howdy")
+            local s, n = ngx.re.sub("hello, world", "[a-z]+", "howdy", "o")
             return s
         ';
         echo $res;
@@ -365,4 +365,159 @@ nil
     GET /re
 --- response_body
 howdy, world
+
+
+
+=== TEST 20: with regex cache (with text replace)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "([A-Z]+)", "baz", "io")
+            ngx.say(s)
+            ngx.say(n)
+
+            local s, n = ngx.re.sub("howdy, 1234", "([A-Z]+)", "baz", "io")
+            ngx.say(s)
+            ngx.say(n)
+
+
+            s, n = ngx.re.sub("1234, okay", "([A-Z]+)", "blah", "io")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("hi, 1234", "([A-Z]+)", "hello", "o")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+baz, 1234
+1
+baz, 1234
+1
+1234, blah
+1
+hi, 1234
+0
+
+
+
+=== TEST 21: with regex cache (with func replace)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "([A-Z]+)", "baz", "io")
+            ngx.say(s)
+            ngx.say(n)
+
+            local s, n = ngx.re.sub("howdy, 1234", "([A-Z]+)", function () return "bah" end, "io")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("1234, okay", "([A-Z]+)", function () return "blah" end, "io")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("hi, 1234", "([A-Z]+)", "hello", "o")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+baz, 1234
+1
+bah, 1234
+1
+1234, blah
+1
+hi, 1234
+0
+
+
+
+=== TEST 22: exceeding regex cache max entries
+--- http_config
+    lua_regex_cache_max_entries 2;
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "([0-9]+)", "hello", "o")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("howdy, 567", "([0-9]+)", "hello", "oi")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("hiya, 98", "([0-9]+)", "hello", "ox")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, hello
+1
+howdy, hello
+1
+hiya, hello
+1
+
+
+
+=== TEST 23: disable regex cache completely
+--- http_config
+    lua_regex_cache_max_entries 0;
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "([0-9]+)", "hello", "o")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("howdy, 567", "([0-9]+)", "hello", "oi")
+            ngx.say(s)
+            ngx.say(n)
+
+            s, n = ngx.re.sub("hiya, 98", "([0-9]+)", "hello", "ox")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, hello
+1
+howdy, hello
+1
+hiya, hello
+1
+
+
+=== TEST 23: empty replace
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("hello, 1234", "([0-9]+)", "", "o")
+            ngx.say(s)
+            ngx.say(n)
+
+            local s, n = ngx.re.sub("hi, 5432", "([0-9]+)", "", "o")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 
+1
+hi, 
+1
 

@@ -55,7 +55,7 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
                   + sizeof(ngx_http_lua_script_copy_capture_code_t))
         + sizeof(uintptr_t);
 
-    if (ngx_array_init(&lengths, ccv->request->pool, n, 1) != NGX_OK) {
+    if (ngx_array_init(&lengths, ccv->pool, n, 1) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -66,7 +66,7 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
                 + sizeof(uintptr_t) - 1)
             & ~(sizeof(uintptr_t) - 1);
 
-    if (ngx_array_init(&values, ccv->request->pool, n, 1) != NGX_OK) {
+    if (ngx_array_init(&values, ccv->pool, n, 1) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -75,7 +75,8 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
 
     ngx_memzero(&sc, sizeof(ngx_http_lua_script_compile_t));
 
-    sc.request = ccv->request;
+    sc.pool = ccv->pool;
+    sc.log = ccv->log;
     sc.source = v;
     sc.lengths = &pl;
     sc.values = &pv;
@@ -246,7 +247,7 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
             }
 
             if (bracket) {
-                ngx_log_error(NGX_LOG_ERR, sc->request->connection->log, 0,
+                ngx_log_error(NGX_LOG_ERR, sc->log, 0,
                                    "the closing bracket in \"%V\" "
                                    "variable is missing", &name);
                 return NGX_ERROR;
@@ -257,7 +258,7 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
             }
 
             if (! num_var) {
-                ngx_log_error(NGX_LOG_ERR, sc->request->connection->log, 0,
+                ngx_log_error(NGX_LOG_ERR, sc->log, 0,
                        "attempt to use named capturing variable "
                        "\"%V\" (named captures not supported yet)", &name);
                 return NGX_ERROR;
@@ -297,7 +298,7 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
 
 invalid_variable:
 
-    ngx_log_error(NGX_LOG_ERR, sc->request->connection->log, 0,
+    ngx_log_error(NGX_LOG_ERR, sc->log, 0,
             "lua script: invalid capturing variable name found in \"%V\"",
             sc->source);
 
@@ -469,7 +470,7 @@ ngx_http_lua_script_init_arrays(ngx_http_lua_script_compile_t *sc)
                              + sizeof(ngx_http_lua_script_copy_capture_code_t))
             + sizeof(uintptr_t);
 
-        *sc->lengths = ngx_array_create(sc->request->pool, n, 1);
+        *sc->lengths = ngx_array_create(sc->pool, n, 1);
         if (*sc->lengths == NULL) {
             return NGX_ERROR;
         }
@@ -483,7 +484,7 @@ ngx_http_lua_script_init_arrays(ngx_http_lua_script_compile_t *sc)
                 + sizeof(uintptr_t) - 1)
             & ~(sizeof(uintptr_t) - 1);
 
-        *sc->values = ngx_array_create(sc->request->pool, n, 1);
+        *sc->values = ngx_array_create(sc->pool, n, 1);
         if (*sc->values == NULL) {
             return NGX_ERROR;
         }
