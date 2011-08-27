@@ -261,7 +261,7 @@ When the user Lua programs are exceeding this limit, those new regexes will not 
     2011/08/27 23:18:26 [warn] 31997#0: *1 lua exceeding regex cache max entries (1024), ...
 
 
-You shouldn't specify the `o` regex option for regexes (and/or </code>replace</code> string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations, or you'll quickly reach the limit specified here.
+You shouldn't specify the `o` regex option for regexes (and/or `replace` string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations, or you'll quickly reach the limit specified here.
 
 lua_package_path
 ----------------
