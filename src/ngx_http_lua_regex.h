@@ -13,6 +13,16 @@ typedef struct {
 } ngx_http_lua_regex_t;
 
 
+typedef struct {
+    ngx_http_request_t      *request;
+    ngx_regex_t             *regex;
+    int                      ncaptures;
+    int                     *captures;
+    int                      captures_len;
+    unsigned                 compile_once;
+} ngx_http_lua_regex_ctx_t;
+
+
 int ngx_http_lua_ngx_re_match(lua_State *L);
 int ngx_http_lua_ngx_re_gmatch(lua_State *L);
 int ngx_http_lua_ngx_re_sub(lua_State *L);

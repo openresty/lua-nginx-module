@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('warn');
+#log_level('warn');
 
 repeat_each(2);
 
@@ -154,7 +154,7 @@ nil
 
 
 
-=== TEST 7: non-anchored gmatch
+=== TEST 7: non-anchored gmatch (without regex cache)
 --- config
     location /re {
         content_by_lua '
@@ -182,7 +182,35 @@ nil
 
 
 
-=== TEST 8: anchored match (succeeded)
+=== TEST 8: non-anchored gmatch (with regex cache)
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("12 hello 34", "[0-9]", "o")
+            local m = it()
+            ngx.say(m and m[0])
+            m = it()
+            ngx.say(m and m[0])
+            m = it()
+            ngx.say(m and m[0])
+            m = it()
+            ngx.say(m and m[0])
+            m = it()
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1
+2
+3
+4
+nil
+
+
+
+=== TEST 9: anchored match (succeeded)
 --- config
     location /re {
         content_by_lua '
@@ -203,7 +231,7 @@ nil
 
 
 
-=== TEST 9: anchored match (succeeded, set_by_lua)
+=== TEST 10: anchored match (succeeded, set_by_lua)
 --- config
     location /re {
         set_by_lua $res '
@@ -220,7 +248,7 @@ nil
 
 
 
-=== TEST 10: gmatch (look-behind assertion)
+=== TEST 11: gmatch (look-behind assertion)
 --- config
     location /re {
         content_by_lua '
@@ -241,7 +269,7 @@ baz
 
 
 
-=== TEST 11: gmatch (look-behind assertion 2)
+=== TEST 12: gmatch (look-behind assertion 2)
 --- config
     location /re {
         content_by_lua '
@@ -259,4 +287,87 @@ baz
 --- response_body
 bar
 baz
+
+
+
+=== TEST 13: with regex cache
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, 1234", "([A-Z]+)", "io")
+            local m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("1234, okay", "([A-Z]+)", "io")
+            m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("hi, 1234", "([A-Z]+)", "o")
+            m = it()
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+okay
+nil
+
+
+
+=== TEST 14: exceeding regex cache max entries
+--- http_config
+    lua_regex_cache_max_entries 2;
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, 1234", "([0-9]+)", "o")
+            local m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("howdy, 567", "([0-9]+)", "oi")
+            m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("hiya, 98", "([0-9]+)", "ox")
+            m = it()
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
+
+
+
+=== TEST 15: disable regex cache completely
+--- ONLY
+--- http_config
+    lua_regex_cache_max_entries 0;
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, 1234", "([0-9]+)", "o")
+            local m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("howdy, 567", "([0-9]+)", "oi")
+            local m = it()
+            ngx.say(m and m[0])
+
+            it = ngx.re.gmatch("hiya, 98", "([0-9]+)", "ox")
+            local m = it()
+            ngx.say(m and m[0])
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+567
+98
 
