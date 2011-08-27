@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.2.1rc18](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 26 August 2011.
+This document describes ngx_lua [v0.2.1rc19](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 27 August 2011.
 
 Synopsis
 ========
@@ -241,6 +241,27 @@ impact on the over-all performance and is strongly
 discouraged for production uses. Also, race conditions
 when reloading Lua modules are common for concurrent requests
 when the code cache is off.
+
+lua_regex_cache_max_entries
+---------------------------
+**syntax:** *lua_regex_cache_max_entries &lt;num&gt;*
+
+**default:** *lua_regex_cache_max_entries 1024*
+
+**context:** *http*
+
+Specifies the maximal entries allowed in the worker-process-level compiled-regex cache.
+
+The regular expressions used in [ngx.re.match](http://wiki.nginx.org/HttpLuaModule#ngx.re.match), [ngx.re.gmatch](http://wiki.nginx.org/HttpLuaModule#ngx.re.gmatch), [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub), and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub) will be cached in this cache if the regex option `o` (i.e., compile-once flag) is specified.
+
+The default entries allowed is 1024.
+
+When the user Lua programs are exceeding this limit, those new regexes will not be cached at all (as if no `o` option is ever specified), and there will be one (and only one) warning in nginx's `error.log` file, like this
+
+    2011/08/27 23:18:26 [warn] 31997#0: *1 lua exceeding regex cache max entries (1024), ...
+
+
+You shouldn't specify the `o` regex option for regexes (and/or </code>replace</code> string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations, or you'll quickly reach the limit specified here.
 
 lua_package_path
 ----------------
@@ -1582,6 +1603,8 @@ You can also specify `options` to control how the match will be performed. The f
     a             anchored mode (only match from the beginning)
     i             caseless mode (just like Perl's /i modifier)
     m             multi-line mode (just like Perl's /m modifier)
+    o             compile-once mode (similar to Perl's /o modifer),
+                  to enable the worker-process-level compiled-regex cache
     s             single-line mode (just like Perl's /s modifier)
     u             UTF-8 mode
     x             extended mode (just like Perl's /x modifier)
@@ -1599,6 +1622,8 @@ These characters can be combined together, for example,
     -- m[0] == "hello, 美好"
     -- m[1] == "美好"
 
+
+The `o` regex option is good for performance tuning, because the regex in question will only be compiled once, cached in the worker-process level, and shared among all the requests in the current Nginx worker process. You can tune the upper limit of the regex cache via the [lua_regex_cache_max_entries](http://wiki.nginx.org/HttpLuaModule#lua_regex_cache_max_entries) directive.
 
 The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos` field. When the `pos` field in the `ctx` table argument is specified, `ngx.re.match` will start matching from that offset. Regardless of the presence of the `pos` field in the `ctx` table, `ngx.re.match` will always set this `pos` field to the position *after* the substring matched by the whole pattern in case of a successful match. When match fails, the `ctx` table will leave intact. Here is some examples,
 
