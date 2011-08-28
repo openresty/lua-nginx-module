@@ -610,6 +610,34 @@ The same applies to [[#access_by_lua|access_by_lua]] and [[#access_by_lua_file|a
 
 = Nginx API for Lua =
 
+The Nginx API exposed to the Lua land is provided in the form of two standard packages <code>ngx</code> and <code>ndk</code>. These packages are in the default global scope.
+
+When you're writing your own external Lua modules, however, you can introduce these packages by using the [http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall package.seeall] option:
+
+<geshi lang="lua">
+    module("my_module", package.seeall)
+
+    function say(a) ngx.say(a) end
+</geshi>
+
+Alternatively, import them to your Lua modules by using file-scoped local Lua variables, like this:
+
+<geshi lang="lua">
+    local ngx = ngx
+    module("my_module")
+
+    function say(a) ngx.say(a) end
+</geshi>
+
+You can directly require the standard packages <code>ngx</code> and <code>ndk</code> introduced by this Nginx module, like this:
+
+<geshi lang="lua">
+    local ngx = require "ngx"
+    local ndk = require "ndk"
+</geshi>
+
+The ability to require these packages was introduced in the <code>v0.2.1rc19</code> release.
+
 == ngx.arg ==
 '''syntax:''' ''val = ngx.arg[index]''
 '''context:''' ''set_by_lua*''
