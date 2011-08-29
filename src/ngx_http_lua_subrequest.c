@@ -576,7 +576,7 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
     
     var = extra_vars->elts;
             
-    for (i=0; i<extra_vars->nelts; i++) {
+    for (i=0; i<extra_vars->nelts; i++, var++) {
         
         len = var->key.len;
         
@@ -628,6 +628,9 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
 
                 v->set_handler(sr, vv, v->data);
 
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, sr->connection->log, 0, 
+                      "variable \"%V\" set to value \"%v\"", &name, vv);
+                
                 continue;
             }
             
@@ -641,6 +644,9 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
                 vv->data = val;
                 vv->len = len;
 
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, sr->connection->log, 0, 
+                      "variable \"%V\" set to value \"%v\"", &name, vv);
+                
                 continue;
             }
         }
