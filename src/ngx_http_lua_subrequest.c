@@ -7,6 +7,9 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
 
+#define NGX_HTTP_LUA_SHARE_ALL_VARS     0x01
+#define NGX_HTTP_LUA_COPY_ALL_VARS      0x02
+
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
@@ -24,12 +27,15 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 
 static void ngx_http_lua_process_args_option(ngx_http_request_t *r,
         lua_State *L, int table, ngx_str_t *args);
+static void ngx_http_lua_process_vars_option(ngx_http_request_t *r, 
+        lua_State *L, int table, ngx_array_t **varsp);
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
         off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
-        ngx_flag_t share_all_vars);
-
+        ngx_flag_t vars_action, ngx_array_t *extra_vars);
+static ngx_int_t ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *r, 
+        ngx_array_t *extra_vars);
 
 /* ngx.location.capture is just a thin wrapper around
  * ngx.location.capture_multi */
@@ -70,6 +76,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_http_post_subrequest_t      *psr;
     ngx_http_lua_ctx_t              *sr_ctx;
     ngx_http_lua_ctx_t              *ctx;
+    ngx_array_t                     *extra_vars;
     ngx_str_t                        uri;
     ngx_str_t                        args;
     ngx_str_t                        extra_args;
@@ -84,7 +91,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_http_request_body_t         *body;
     int                              type;
     ngx_buf_t                       *b;
-    ngx_flag_t                       share_all_vars;
+    ngx_flag_t                       vars_action;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
     size_t                           sr_statuses_len;
@@ -143,6 +150,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ctx->done = 0;
     ctx->waiting = 0;
 
+    extra_vars = NULL;
+    
     for (index = 0; index < nsubreqs; index++) {
         ctx->waiting++;
 
@@ -175,8 +184,11 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         extra_args.data = NULL;
         extra_args.len = 0;
 
-        share_all_vars = 0;
-
+        if (extra_vars != NULL)
+            extra_vars->nelts = 0;
+        
+        vars_action = 0;
+        
         if (nargs == 2) {
             /* check out the options table */
 
@@ -215,6 +227,27 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             lua_pop(L, 1);
 
+            /* check the vars option */
+
+            lua_getfield(L, 4, "vars");
+
+            type = lua_type(L, -1);
+
+            switch (type) {
+            case LUA_TTABLE:
+                ngx_http_lua_process_vars_option(r, L, -1, &extra_vars);
+                break;
+
+            case LUA_TNIL:
+                /* do nothing */
+                break;
+
+            default:
+                return luaL_error(L, "Bad vars option value");
+            }
+
+            lua_pop(L, 1);
+            
             /* check the share_all_vars option */
 
             lua_getfield(L, 4, "share_all_vars");
@@ -229,11 +262,37 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                     return luaL_error(L, "Bad share_all_vars option value");
                 }
 
-                share_all_vars = lua_toboolean(L, -1);
-            }
+                if (lua_toboolean(L, -1)) {
+                    vars_action = NGX_HTTP_LUA_SHARE_ALL_VARS;
+                }
+            }           
 
             lua_pop(L, 1);
 
+            /* check the copy_all_vars option */
+            
+            if (vars_action == 0) {
+            
+                lua_getfield(L, 4, "copy_all_vars");
+
+                type = lua_type(L, -1);
+                
+                if (type == LUA_TNIL) {
+                    /* do nothing */
+
+                } else {
+                    if (type != LUA_TBOOLEAN) {
+                        return luaL_error(L, "Bad copy_all_vars option value");
+                    }
+
+                    if (lua_toboolean(L, -1)) {
+                        vars_action = NGX_HTTP_LUA_COPY_ALL_VARS;
+                    }
+                }
+                
+                lua_pop(L, 1);
+            }
+            
             /* check the method option */
 
             lua_getfield(L, 4, "method");
@@ -379,12 +438,14 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-        rc = ngx_http_lua_adjust_subrequest(sr, method, body, share_all_vars);
+        rc = ngx_http_lua_adjust_subrequest(sr, method, body, vars_action, extra_vars);
 
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to adjust the subrequest: %d",
                     (int) rc);
         }
+
+
 
         lua_pop(L, 2); /* pop the subrequest argument and uri */
     }
@@ -395,12 +456,13 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-        ngx_http_request_body_t *body, ngx_flag_t share_all_vars)
+        ngx_http_request_body_t *body, ngx_flag_t vars_action, ngx_array_t *extra_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
     ngx_http_core_main_conf_t   *cmcf;
-
+    size_t                       size;
+    
     r = sr->parent;
 
     sr->header_in = r->header_in;
@@ -458,21 +520,139 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->headers_in.headers.last = &sr->headers_in.headers.part;
     }
 
-    if (! share_all_vars) {
-        /* we do not inherit the parent request's variables */
+    if (vars_action != NGX_HTTP_LUA_SHARE_ALL_VARS) {
+
         cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
 
-        sr->variables = ngx_pcalloc(sr->pool, cmcf->variables.nelts
-                                * sizeof(ngx_http_variable_value_t));
+        size = cmcf->variables.nelts * sizeof(ngx_http_variable_value_t);
+        
+        if (vars_action == NGX_HTTP_LUA_COPY_ALL_VARS) {
+            
+            sr->variables = ngx_palloc(sr->pool, size);
 
-        if (sr->variables == NULL) {
+            if (sr->variables == NULL) {
+                return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            }
+            
+            ngx_memcpy (sr->variables, r->variables, size);
+            
+        } else {
+        
+            /* we do not inherit the parent request's variables */
+            
+            sr->variables = ngx_pcalloc(sr->pool, size);
+
+            if (sr->variables == NULL) {
+                return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            }
+        }
+    }
+
+    return ngx_http_lua_subrequest_add_extra_vars(sr, extra_vars);
+}
+
+static ngx_int_t
+ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr, 
+                                       ngx_array_t *extra_vars)
+{
+    ngx_http_core_main_conf_t   *cmcf;
+    ngx_http_variable_t         *v;
+    ngx_http_variable_value_t   *vv;
+    u_char                      *p, *val;
+    ngx_uint_t                   i, hash;
+    ngx_str_t                    name;
+    size_t                       len;
+    ngx_hash_t                  *variables_hash;
+    ngx_keyval_t                *var;
+
+    /* set any extra variables that were passed to the subrequest */
+
+    if (extra_vars == NULL || extra_vars->nelts == 0)
+        return NGX_OK;
+     
+    
+    cmcf = ngx_http_get_module_main_conf(sr, ngx_http_core_module);
+    variables_hash = &cmcf->variables_hash;
+    
+    var = extra_vars->elts;
+            
+    for (i=0; i<extra_vars->nelts; i++) {
+        
+        len = var->key.len;
+        
+        p = ngx_palloc(sr->pool, len + 1);
+        if (p == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
+
+        p[len] = '\0';
+        
+        hash = ngx_hash_strlow(p, var->key.data, len);
+
+        name.data = p;
+        name.len = len;
+
+        /* copy the variable's current value because it is allocated in lua */
+
+        len = var->value.len;
+        
+        val = ngx_palloc(sr->pool, len);
+        if (val == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        ngx_memcpy(val, var->value.data, len);
+
+
+        v = ngx_hash_find(variables_hash, hash, name.data, name.len);
+
+        if (v) {
+            if (! (v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+                ngx_log_error(NGX_LOG_ERR, sr->connection->log, 0, 
+                              "variable \"%V\" not changeable", &name);
+                return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            if (v->set_handler) {
+                vv = ngx_palloc(sr->pool, sizeof(ngx_http_variable_value_t));
+                if (vv == NULL) {
+                    return NGX_HTTP_INTERNAL_SERVER_ERROR;
+                }
+
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+
+                v->set_handler(sr, vv, v->data);
+
+                continue;
+            }
+            
+            if (v->flags & NGX_HTTP_VAR_INDEXED) {
+                vv = &sr->variables[v->index];
+
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+
+                continue;
+            }
+        }
+        
+        ngx_log_error(NGX_LOG_ERR, sr->connection->log, 0, 
+                      "variable \"%V\" cannot be assigned a value", &name);
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     return NGX_OK;
 }
-
 
 ngx_int_t
 ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
@@ -728,6 +908,50 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
         return;
     }
 }
+
+
+static void
+ngx_http_lua_process_vars_option(ngx_http_request_t *r, lua_State *L,
+        int table, ngx_array_t **varsp)
+{
+    ngx_array_t         *vars;
+    ngx_keyval_t        *var;
+
+    vars = *varsp;
+    
+    if (vars == NULL) {
+        
+        vars = ngx_array_create (r->pool, 10, sizeof(ngx_keyval_t));
+        if (vars == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+        
+        *varsp = vars;
+    }
+        
+    lua_pushnil(L);
+    while (lua_next(L, table - 1) != 0) {
+        
+        if (lua_type(L, -2) != LUA_TSTRING) {
+            luaL_error(L, "attempt to use a non-string key in the "
+                    "\"vars\" option table");
+            return;
+        }
+
+        var = ngx_array_push (vars);
+        if (var == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+
+        var->key.data = (u_char *) lua_tolstring(L, -2, &var->key.len);
+        var->value.data = (u_char *) lua_tolstring(L, -1, &var->value.len);
+
+        lua_pop(L, 1);
+    }
+}
+
 
 
 static ngx_int_t
