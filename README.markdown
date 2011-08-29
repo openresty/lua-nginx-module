@@ -921,7 +921,7 @@ prepare internal-only locations.
 
 An optional option table can be fed as the second
 argument, which support various options like
-`method`, `body`, `args`, and `share_all_vars`.
+`method`, `body`, `args`, `vars`, `share_all_vars` and `copy_all_vars`.
 Issuing a POST subrequest, for example,
 can be done as follows
 
@@ -954,6 +954,37 @@ is equivalent to
 that is, this method will automatically escape argument keys and values according to URI rules and
 concatenating them together into a complete query string. Because it's all done in hand-written C,
 it should be faster than your own Lua code.
+
+The `copy_all_vars` option is like the `share_all_vars` option, but instead of sharing
+variables between the parent and subrequest, the variables are copied, and changes made in the
+subrequest do not affect the parent request in any way.
+
+In addition to these, the `vars` option can be used to set specific values for variables:
+
+    ngx.location.capture('/foo',
+        { vars = { myvar = 'myval' }, share_all_vars = true }
+    )
+
+This simple example is functionally identical to:
+
+    ngx.var.myvar = 'myval'
+
+    ngx.location.capture('/foo', 
+        { share_all_vars = true }
+    )
+
+The advantage of setting the variables explicitly though comes when issuing multiple subrequests
+at the same time using ngx.location.capture_multi, because different variables can be set for 
+different subrequests, which cannot be done otherwise without using arguments (which are usually less
+efficient than setting the variables directly).
+
+    local reqs = {
+        { '/foo1', { vars = { bar1 = bar1val } } },
+        { '/foo2', { vars = { bar2 = bar2val }, copy_all_vars = true } },
+    }
+
+    ngx.location.capture_multi(reqs)
+
 
 The `args` option can also take plain query string:
 

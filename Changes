@@ -47,5 +47,4 @@
 
 * fixed the zero size alert caused by ngx.print("") in Lua.
 
-* now we always allocate r->request_body for subrequests when the method option is specified for ngx.location.capture*. this prevents accidental inheritance of parent request's request body when client_body_buffer_size < client_max_body_size.
-
+* now we always allocate r->request_body for subrequests when the method option is specified for ngx.location.capture*. this prevents accidental inheritance of parent reques

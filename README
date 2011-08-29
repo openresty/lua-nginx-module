@@ -836,10 +836,10 @@ Nginx API for Lua
     combined with the "internal" directive to prepare internal-only
     locations.
 
-    An optional option table can be fed as the second argument, which
-    support various options like "method", "body", "args", and
-    "share_all_vars". Issuing a POST subrequest, for example, can be done as
-    follows res = ngx.location.capture( '/foo/bar', { method =
+    An optional option table can be fed as the second argument, which support
+    various options like "method", "body", "args", "vars", "copy_all_vars"
+    and "share_all_vars". Issuing a POST subrequest, for example, can be done
+    as follows res = ngx.location.capture( '/foo/bar', { method =
     ngx.HTTP_POST, body = 'hello, world' } ) See HTTP method constants
     methods other than POST. The "method" option is "ngx.HTTP_GET" by
     default.
@@ -851,6 +851,21 @@ Nginx API for Lua
     value changes made by the subrequest. Note that variable sharing can
     have unexpected side-effects and lead to confusing issues, use it with
     special care. So, by default, the option is set to "false".
+
+    The "copy_all_vars" options instead gives the subrequest a copy of the
+    parent's variables at the time of issuing the subrequest, but changes
+    made to the child after this point will not affect the variables of the
+    parent's request or any other subrequests sharing the parent's variables.
+
+    Note that if both "share_all_vars" and "copy_all_vars" are set to true,
+    then the variables will be shared.
+
+    In addition to the above two settings, it is possible to specify
+    values for variables in the subrequest using the "vars" option. These
+    variables are set after the sharing/copying of variables has been
+    evaluated, and provides a more efficient method of passing specific
+    values to a subrequest than encoding them as URL arguments and 
+    unescaping them in the Nginx conf file.
 
     The "args" option can specify extra url arguments, for instance,
     ngx.location.capture('/foo?a=1', { args = { b = 3, c = ':' } } ) is
