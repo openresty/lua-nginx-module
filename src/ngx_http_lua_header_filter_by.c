@@ -339,7 +339,7 @@ ngx_http_lua_filter_header_filter(ngx_http_request_t *r)
 
     if (llcf->header_filter_handler == NULL) {
         dd("no header filter handler found");
-        return NGX_DECLINED;
+        return ngx_http_lua_next_filter_header_filter(r);
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
