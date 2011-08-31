@@ -7,6 +7,7 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_header_filter_by.h"
 
 
 #if !defined(nginx_version) || nginx_version < 8054
@@ -122,6 +123,17 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         ngx_http_lua_content_handler_inline
     },
 
+    /* header_filter_by_lua <inline script> */
+    {
+        ngx_string("header_filter_by_lua"),
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_header_filter_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_header_filter_inline
+    },
+
     {
         ngx_string("rewrite_by_lua_file"),
         NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
@@ -150,6 +162,16 @@ static ngx_command_t ngx_http_lua_cmds[] = {
         NGX_HTTP_LOC_CONF_OFFSET,
         0,
         ngx_http_lua_content_handler_file
+    },
+
+    {
+        ngx_string("header_filter_by_lua_file"),
+        NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+            NGX_HTTP_LIF_CONF | NGX_CONF_TAKE1,
+        ngx_http_lua_header_filter_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        ngx_http_lua_header_filter_file
     },
 
     ngx_null_command
@@ -216,6 +238,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         *h = ngx_http_lua_access_handler;
+    }
+
+    if (ngx_http_lua_requires_header_filter) {
+        rc = ngx_http_lua_header_filter_init(cf);
+        if (rc != NGX_OK) {
+            return rc;
+        }
     }
 
     return NGX_OK;

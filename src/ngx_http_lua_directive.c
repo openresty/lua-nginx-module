@@ -11,6 +11,7 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_rewriteby.h"
+#include "ngx_http_lua_header_filter_by.h"
 
 #if defined(NDK) && NDK
 #include "ngx_http_lua_setby.h"
@@ -19,6 +20,7 @@
 
 unsigned  ngx_http_lua_requires_rewrite = 0;
 unsigned  ngx_http_lua_requires_access  = 0;
+unsigned  ngx_http_lua_requires_header_filter  = 0;
 
 
 char *
@@ -471,6 +473,84 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     clcf->handler = ngx_http_lua_content_handler;
+
+    return NGX_CONF_OK;
+}
+
+char *
+ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                   *value;
+    ngx_http_lua_loc_conf_t     *llcf = conf;
+    u_char                      *p;
+
+    ngx_http_compile_complex_value_t         ccv;
+
+    dd("enter");
+
+    /*  must specifiy a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (llcf->header_filter_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    if (value[1].len == 0) {
+        /*  Oops...Invalid location conf */
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                "Invalid location config: no runnable Lua code");
+        return NGX_CONF_ERROR;
+    }
+
+    if (cmd->post == ngx_http_lua_header_filter_inline) {
+        /* Don't eval nginx variables for inline lua code */
+        llcf->header_filter_src.value = value[1];
+
+        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
+        if (p == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        llcf->header_filter_src_key = p;
+
+        p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
+        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
+        *p = '\0';
+
+    } else {
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &llcf->header_filter_src;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (llcf->header_filter_src.lengths == NULL) {
+            /* no variable found */
+            p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
+            if (p == NULL) {
+                return NGX_CONF_ERROR;
+            }
+
+            llcf->header_filter_src_key = p;
+
+            p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
+            p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
+            *p = '\0';
+        }
+    }
+
+    llcf->header_filter_handler = cmd->post;
+
+    if (!ngx_http_lua_requires_header_filter) {
+        ngx_http_lua_requires_header_filter = 1;
+    }
 
     return NGX_CONF_OK;
 }
