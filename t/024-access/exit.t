@@ -17,7 +17,7 @@ plan tests => blocks() * repeat_each() * 2;
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
-#$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
+$ENV{LUA_CPATH} ||= '/usr/local/openresty/lualib/?.so;;';
 
 no_long_string();
 
@@ -152,7 +152,7 @@ GET /api?user=agentz
     }
 --- user_files
 >>> foo.lua
-local yajl = require('yajl');
+local cjson = require('cjson');
 local old_uid = ngx.var.uid
 print('about to run sr')
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
@@ -160,7 +160,7 @@ print('just have run sr' .. res.body)
 if (res.status ~= ngx.HTTP_OK) then
     -- ngx.exit(res.status)
 end
-res = yajl.to_value(res.body)
+res = cjson.decode(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -218,7 +218,7 @@ Logged in 56
     }
 --- user_files
 >>> foo.lua
-local yajl = require('yajl');
+local cjson = require('cjson');
 local old_uid = ngx.var.uid
 -- print('about to run sr')
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
@@ -226,7 +226,7 @@ local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
 if (res.status ~= ngx.HTTP_OK) then
     ngx.exit(res.status)
 end
-res = yajl.to_value(res.body)
+res = cjson.decode(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -294,7 +294,7 @@ Logged in 56
     }
 --- user_files
 >>> foo.lua
-local yajl = require('yajl');
+local cjson = require('cjson');
 local old_uid = ngx.var.uid
 -- print('about to run sr')
 local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
@@ -302,7 +302,7 @@ local res = ngx.location.capture('/conv-uid-mysql?uid=' .. old_uid)
 if (res.status ~= ngx.HTTP_OK) then
     ngx.exit(res.status)
 end
-res = yajl.to_value(res.body)
+res = cjson.decode(res.body)
 if (not res or not res[1] or not res[1].uid or
         not string.match(res[1].uid, '^%d+$')) then
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -379,14 +379,14 @@ Logged in 56
     }
 --- user_files
 >>> foo.lua
-local yajl = require('yajl');
+local cjson = require('cjson');
 local seo_uri = ngx.var.my_uri
 -- print('about to run sr')
 local res = ngx.location.capture('/conv-mysql?' .. seo_uri)
 if (res.status ~= ngx.HTTP_OK) then
     ngx.exit(res.status)
 end
-res = yajl.to_value(res.body)
+res = cjson.decode(res.body)
 if (not res or not res[1] or not res[1].url) then
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 end
