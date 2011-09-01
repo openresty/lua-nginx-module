@@ -44,7 +44,6 @@ Hi
         header_filter_by_lua '
             ngx.header.content_length = "text/my-plain";
         ';
-
     }
 --- request
 GET /read
@@ -64,7 +63,6 @@ GET /read
         header_filter_by_lua '
             ngx.header.uid = ngx.var.strvar;
         ';
-
     }
 --- request
 GET /read
@@ -86,7 +84,6 @@ Hi
         header_filter_by_lua '
             ngx.header.uid = ngx.var.strvar;
         ';
-
     }
 --- request
 HEAD /read
@@ -116,4 +113,37 @@ uid: 127.0.0.1:8080
 --- response_body
 Hi
 
+
+
+=== TEST 6: use capture and header_filter_by
+--- config
+   location /sub {
+        content_by_lua '
+            ngx.say("Hi");
+        ';
+        header_filter_by_lua '
+            ngx.header.uid = "sub";
+        ';
+    }
+
+    location /parent {
+        content_by_lua '
+            local res = ngx.location.capture("/sub")
+            if res.status == 200 then
+                ngx.say(res.header.uid)
+            else
+                ngx.say("parent")
+            end
+        ';
+        header_filter_by_lua '
+            ngx.header.uid = "parent";
+        ';
+    }
+
+--- request
+GET /parent
+--- response_headers
+uid: parent
+--- response_body
+sub
 
