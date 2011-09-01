@@ -106,7 +106,8 @@ typedef struct {
                                                 inline script/script
                                                 file path */
 
-    u_char                 *header_filter_src_key; /* cached key for header_filter_src */
+    u_char                 *header_filter_src_key;
+                                    /* cached key for header_filter_src */
 
 
 

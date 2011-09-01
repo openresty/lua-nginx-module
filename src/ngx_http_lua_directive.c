@@ -477,8 +477,10 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
+
 char *
-ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+        void *conf)
 {
     ngx_str_t                   *value;
     ngx_http_lua_loc_conf_t     *llcf = conf;
