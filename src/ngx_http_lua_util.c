@@ -334,9 +334,13 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 #endif
 
+    if (!r->header_only && (r->method & NGX_HTTP_HEAD)) {
+        r->header_only = 1;
+    }
+
     rc = ngx_http_lua_send_header_if_needed(r, ctx);
 
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
@@ -425,6 +429,10 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
             "lua sending HTTP 1.0 response headers");
 
     ctx->headers_sent = 1;
+
+    if (r->header_only) {
+        return ngx_http_send_header(r);
+    }
 
     if (r->headers_out.content_length == NULL) {
         for (size = 0, cl = ctx->out; cl; cl = cl->next) {

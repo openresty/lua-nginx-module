@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
 #no_diff();
 #no_long_string();
@@ -569,4 +569,32 @@ GET /main
 --- response_body
 5
 1
+
+
+
+=== TEST 31: basic print (HEAD + HTTP 1.1)
+--- config
+    location /lua {
+        # NOTE: the newline escape sequence must be double-escaped, as nginx config
+        # parser will unescape first!
+        content_by_lua 'ngx.print("Hello, Lua!\\n")';
+    }
+--- request
+HEAD /lua
+--- response_body
+
+
+
+=== TEST 32: basic print (HEAD + HTTP 1.0)
+--- config
+    location /lua {
+        # NOTE: the newline escape sequence must be double-escaped, as nginx config
+        # parser will unescape first!
+        content_by_lua 'ngx.print("Hello, Lua!\\n")';
+    }
+--- request
+HEAD /lua HTTP/1.0
+--- response_headers
+!Content-Length
+--- response_body
 
