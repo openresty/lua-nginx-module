@@ -627,8 +627,8 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_log_api(L);
     ngx_http_lua_inject_output_api(L);
     ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_control_api(L);
     ngx_http_lua_inject_string_api(L);
+    ngx_http_lua_inject_control_api(L);
     ngx_http_lua_inject_subrequest_api(L);
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);

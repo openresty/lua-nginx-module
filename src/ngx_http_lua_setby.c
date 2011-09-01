@@ -193,11 +193,9 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_req_api(L);
     ngx_http_lua_inject_arg_api(L, nargs, args);
-
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
-#endif /* NGX_PCRE */
-
+#endif
     ngx_http_lua_inject_misc_api(L);
 
     lua_setfield(L, -2, "ngx");

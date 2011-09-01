@@ -49,122 +49,22 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * */
     lua_newtable(L);    /*  new empty environment aka {} */
 
-    /*  override 'print' function */
-    lua_pushcfunction(L, ngx_http_lua_print);
-    lua_setfield(L, -2, "print");
-
     /*  {{{ initialize ngx.* namespace */
     lua_newtable(L);    /*  ngx.* */
 
-    /* {{{ register reference maps */
-    lua_newtable(L);    /* ngx.var */
-
-    lua_newtable(L); /* metatable for ngx.var */
-    lua_pushcfunction(L, ngx_http_lua_var_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_var_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "var");
-    /*  }}} */
-
-#if (NGX_PCRE)
-    /* {{{ ngx.re table */
-
-    lua_newtable(L);    /* .re */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
-    lua_setfield(L, -2, "match");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
-    lua_setfield(L, -2, "gmatch");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
-    lua_setfield(L, -2, "sub");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
-    lua_setfield(L, -2, "gsub");
-
-    lua_setfield(L, -2, "re");
-
-    /* }}} */
-#endif /* NGX_PCRE */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
-    lua_setfield(L, -2, "escape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
-    lua_setfield(L, -2, "unescape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
-    lua_setfield(L, -2, "quote_sql_str");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_decode_base64);
-    lua_setfield(L, -2, "decode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64);
-    lua_setfield(L, -2, "encode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5_bin);
-    lua_setfield(L, -2, "md5_bin");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
-    lua_setfield(L, -2, "md5");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "get_now_ts"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_utctime);
-    lua_setfield(L, -2, "utctime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "get_now"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "localtime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "get_today"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "today");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_http_time);
-    lua_setfield(L, -2, "http_time");
-
-	lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
-    lua_setfield(L, -2, "parse_http_time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);
-    lua_setfield(L, -2, "cookie_time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_log);
-    lua_setfield(L, -2, "log");
+    ngx_http_lua_inject_http_consts(L);
+    ngx_http_lua_inject_core_consts(L);
 
     ngx_http_lua_inject_log_api(L);
-
-    lua_newtable(L);    /* .header */
-
-    lua_createtable(L, 0, 2); /* metatable for .header */
-    lua_pushcfunction(L, ngx_http_lua_ngx_header_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_header_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "header");
-
-    /* ngx. getter and setter */
-    lua_createtable(L, 0, 2); /* metatable for .ngx */
-    lua_pushcfunction(L, ngx_http_lua_ngx_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
+    ngx_http_lua_inject_time_api(L);
+    ngx_http_lua_inject_string_api(L);
+#if (NGX_PCRE)
+    ngx_http_lua_inject_regex_api(L);
+#endif
+    ngx_http_lua_inject_req_api(L);
+    ngx_http_lua_inject_resp_header_api(L);
+    ngx_http_lua_inject_variable_api(L);
+    ngx_http_lua_inject_misc_api(L);
 
     lua_setfield(L, -2, "ngx");
     /*  }}} */
