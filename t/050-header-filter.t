@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(10000);
 
-plan tests => blocks() * repeat_each() * 3 - repeat_each();
+plan tests => blocks() * repeat_each() * 3 - repeat_each() * 1;
 
 #no_diff();
 #no_long_string();
@@ -146,4 +146,74 @@ GET /parent
 uid: parent
 --- response_body
 sub
+
+
+
+=== TEST 7: overriding ctx
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.ctx.foo = 32;
+            ngx.say(ngx.ctx.foo)
+        ';
+        header_filter_by_lua '
+            ngx.ctx.foo = ngx.ctx.foo + 1;
+            ngx.header.uid = ngx.ctx.foo;
+        ';
+    }
+--- request
+GET /lua
+--- response_headers
+uid: 33
+--- response_body
+32
+
+
+
+=== TEST 8: use req
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("Hi");
+        ';
+
+        header_filter_by_lua '
+            local str = "";
+            local args = ngx.req.get_uri_args()
+            for key, val in pairs(args) do
+                if type(val) == "table" then
+                    str = str .. table.concat(val, ", ")
+                else
+                    str = str .. ":" .. val
+                end
+            end
+
+            ngx.header.uid = str;
+        ';
+    }
+--- request
+GET /lua?a=1&b=2
+--- response_headers
+uid: :1:2
+--- response_body
+Hi
+
+
+
+=== TEST 9: use ngx md5 function
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("Hi");
+        ';
+        header_filter_by_lua '
+            ngx.header.uid = ngx.md5("Hi");
+        ';
+    }
+--- request
+GET /lua
+--- response_headers
+uid: c1a5298f939e87e8f962a5edfc206918
+--- response_body
+Hi
 
