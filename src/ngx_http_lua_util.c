@@ -293,6 +293,8 @@ ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx)
 {
+    ngx_int_t            rc;
+
     if ( ! ctx->headers_sent ) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
@@ -309,9 +311,10 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 
         if (r->http_version >= NGX_HTTP_VERSION_11) {
             /* Send response headers for HTTP version <= 1.0 elsewhere */
-            ctx->headers_sent = 1;
             dd("sending headers");
-            return ngx_http_send_header(r);
+            rc = ngx_http_send_header(r);
+            ctx->headers_sent = 1;
+            return rc;
         }
     }
 
@@ -420,6 +423,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
 {
     size_t               size;
     ngx_chain_t         *cl;
+    ngx_int_t            rc;
 
     if (ctx->headers_sent) {
         return NGX_OK;
@@ -428,10 +432,8 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua sending HTTP 1.0 response headers");
 
-    ctx->headers_sent = 1;
-
     if (r->header_only) {
-        return ngx_http_send_header(r);
+        goto send;
     }
 
     if (r->headers_out.content_length == NULL) {
@@ -446,7 +448,10 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         }
     }
 
-    return ngx_http_send_header(r);
+send:
+    rc = ngx_http_send_header(r);
+    ctx->headers_sent = 1;
+    return rc;
 }
 
 
