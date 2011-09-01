@@ -3,9 +3,9 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
-#master_process_enabled(1);
-#log_level('warn');
 #no_nginx_manager();
+#log_level('warn');
+#master_on();
 
 repeat_each(2);
 
@@ -24,6 +24,7 @@ __DATA__
         # parser will unescape first!
         rewrite_by_lua 'ngx.print("Hello, Lua!\\n")';
         content_by_lua return;
+        #content_by_lua 'ngx.say("Hi")';
     }
 --- request
 GET /lua
