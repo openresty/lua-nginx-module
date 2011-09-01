@@ -7,10 +7,10 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-#repeat_each(2);
-repeat_each(1);
+repeat_each(2);
+#repeat_each(10000);
 
-plan tests => blocks() * repeat_each() * 3 - 1;
+plan tests => blocks() * repeat_each() * 3 - repeat_each();
 
 #no_diff();
 #no_long_string();
@@ -115,6 +115,5 @@ GET /read HTTP/1.0
 uid: 127.0.0.1:8080
 --- response_body
 Hi
---- SKIP
 
 
