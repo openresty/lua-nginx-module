@@ -731,8 +731,8 @@ Nginx API for Lua
   ngx.var.VARIABLE
     syntax: *ngx.var.VAR_NAME*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
-    value = ngx.var.some_nginx_variable_name
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua** value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value Note that you can only write to
     nginx variables that are already defined. For example: location /foo {
     set $my_var ''; # this line is required to create $my_var at config time
@@ -747,7 +747,8 @@ Nginx API for Lua
     "ngx.var[3]", and etc.
 
   Core constants
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
       ngx.OK (0)
       ngx.ERROR (-1)
@@ -757,7 +758,8 @@ Nginx API for Lua
     only L<ngx.exit|/"ngx.exit"> only take two of these values, i.e., C<NGX_OK> and C<NGX_ERROR>.
 
   HTTP method constants
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
       ngx.HTTP_GET
       ngx.HTTP_HEAD
@@ -769,27 +771,29 @@ Nginx API for Lua
     ngx.location.capture_multi method calls.
 
   HTTP status constants
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
-    value = ngx.HTTP_OK (200) value = ngx.HTTP_CREATED (201) value =
-    ngx.HTTP_SPECIAL_RESPONSE (300) value = ngx.HTTP_MOVED_PERMANENTLY (301)
-    value = ngx.HTTP_MOVED_TEMPORARILY (302) value = ngx.HTTP_SEE_OTHER
-    (303) value = ngx.HTTP_NOT_MODIFIED (304) value = ngx.HTTP_BAD_REQUEST
-    (400) value = ngx.HTTP_UNAUTHORIZED (401) value = ngx.HTTP_FORBIDDEN
-    (403) value = ngx.HTTP_NOT_FOUND (404) value = ngx.HTTP_NOT_ALLOWED
-    (405) value = ngx.HTTP_GONE (410) value = ngx.HTTP_INTERNAL_SERVER_ERROR
-    (500) value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua** value = ngx.HTTP_OK (200) value =
+    ngx.HTTP_CREATED (201) value = ngx.HTTP_SPECIAL_RESPONSE (300) value =
+    ngx.HTTP_MOVED_PERMANENTLY (301) value = ngx.HTTP_MOVED_TEMPORARILY
+    (302) value = ngx.HTTP_SEE_OTHER (303) value = ngx.HTTP_NOT_MODIFIED
+    (304) value = ngx.HTTP_BAD_REQUEST (400) value = ngx.HTTP_UNAUTHORIZED
+    (401) value = ngx.HTTP_FORBIDDEN (403) value = ngx.HTTP_NOT_FOUND (404)
+    value = ngx.HTTP_NOT_ALLOWED (405) value = ngx.HTTP_GONE (410) value =
+    ngx.HTTP_INTERNAL_SERVER_ERROR (500) value =
+    ngx.HTTP_SERVICE_UNAVAILABLE (503)
 
   Nginx log level constants
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
-    ngx.STDERR ngx.EMERG ngx.ALERT ngx.CRIT ngx.ERR ngx.WARN ngx.NOTICE
-    ngx.INFO ngx.DEBUG
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua** ngx.STDERR ngx.EMERG ngx.ALERT ngx.CRIT ngx.ERR
+    ngx.WARN ngx.NOTICE ngx.INFO ngx.DEBUG
 
     These constants are usually used by the ngx.log method.
 
   print
     syntax: *print(...)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Emit args concatenated to nginx's "error.log" file, with log level
     "ngx.NOTICE" and prefix "lua print: ".
@@ -799,7 +803,8 @@ Nginx API for Lua
     booleans result in "true" or "false".
 
   ngx.ctx
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     This table can be used to store per-request context data for Lua
     programmers.
@@ -973,7 +978,8 @@ Nginx API for Lua
             end
 
   ngx.status
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Read and write the current request's response status. This should be
     called before sending out the response headers. ngx.status =
@@ -982,7 +988,8 @@ Nginx API for Lua
   ngx.header.HEADER
     syntax: *ngx.header.HEADER = VALUE*
 
-    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Set/add/clear the current request's response headers. Underscores ("_")
     in the header names will be replaced by dashes ("-") and the header
@@ -1019,7 +1026,8 @@ Nginx API for Lua
   ngx.req.get_uri_args
     syntax: *args = ngx.req.get_uri_args()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns a Lua table holds all of the current request's request URL query
     arguments.
@@ -1050,7 +1058,8 @@ Nginx API for Lua
   ngx.req.get_post_args
     syntax: *ngx.req.get_post_args()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns a Lua table holds all of the current request's POST query
     arguments. It's required to turn on the lua_need_request_body directive,
@@ -1081,7 +1090,8 @@ Nginx API for Lua
   ngx.req.get_headers
     syntax: *headers = ngx.req.get_headers()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns a Lua table holds all of the current request's request headers.
 
@@ -1097,7 +1107,8 @@ Nginx API for Lua
   ngx.req.set_header
     syntax: *ngx.req.set_header(header_name, header_value)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Set the current request's request header named "header_name" to value
     "header_value", overriding any existing ones. None of the current
@@ -1116,7 +1127,8 @@ Nginx API for Lua
   ngx.req.clear_header
     syntax: *ngx.req.clear_header(header_name)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Clear the current request's request header named "header_name". None of
     the current request's subrequests will be affected.
@@ -1252,7 +1264,8 @@ Nginx API for Lua
   ngx.log
     syntax: *ngx.log(log_level, ...)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Log arguments concatenated to error.log with the given logging level.
 
@@ -1295,35 +1308,40 @@ Nginx API for Lua
   ngx.escape_uri
     syntax: *newstr = ngx.escape_uri(str)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Escape "str" as a URI component.
 
   ngx.unescape_uri
     syntax: *newstr = ngx.unescape_uri(str)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Unescape "str" as an escaped URI component.
 
   ngx.encode_base64
     syntax: *newstr = ngx.encode_base64(str)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Encode "str" to a base64 digest.
 
   ngx.decode_base64
     syntax: *newstr = ngx.decode_base64(str)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Decode "str" as a base64 digest to the raw form.
 
   ngx.today
     syntax: *str = ngx.today()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns today's date (in the format "yyyy-mm-dd") from nginx cached time
     (no syscall involved unlike Lua's date library).
@@ -1333,7 +1351,8 @@ Nginx API for Lua
   ngx.time
     syntax: *secs = ngx.time()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns the elapsed seconds from the epoch for the current timestamp
     from the nginx cached time (no syscall involved unlike Lua's date
@@ -1342,7 +1361,8 @@ Nginx API for Lua
   ngx.localtime
     syntax: *str = ngx.localtime()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns the current timestamp (in the format "yyyy-mm-dd hh:mm:ss") of
     the nginx cached time (no syscall involved unlike Lua's os.date
@@ -1353,7 +1373,8 @@ Nginx API for Lua
   ngx.utctime
     syntax: *str = ngx.utctime()*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns the current timestamp (in the format "yyyy-mm-dd hh:mm:ss") of
     the nginx cached time (no syscall involved unlike Lua's os.date
@@ -1364,7 +1385,8 @@ Nginx API for Lua
   ngx.cookie_time
     syntax: *str = ngx.cookie_time(sec)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns a formated string can be used as the cookie expiration time. The
     parameter "sec" is the timestamp in seconds (like those returned from
@@ -1374,7 +1396,8 @@ Nginx API for Lua
   ngx.http_time
     syntax: *str = ngx.http_time(sec)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns a formated string can be used as the http header time (for
     example, being used in "Last-Modified" header). The parameter "sec" is
@@ -1385,7 +1408,8 @@ Nginx API for Lua
   ngx.parse_http_time
     syntax: *sec = ngx.parse_http_time(str)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Parse the http time string (as returned by ngx.http_time) into seconds.
     Returns the seconds or "nil" if the input string is in bad forms. local
@@ -1395,7 +1419,8 @@ Nginx API for Lua
   ngx.is_subrequest
     syntax: *value = ngx.is_subrequest*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Returns "true" if the current request is an nginx subrequest, or "false"
     otherwise.
@@ -1403,7 +1428,8 @@ Nginx API for Lua
   ngx.re.match
     syntax: *captures = ngx.re.match(subject, regex, options?, ctx?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Matches the "subject" string using the Perl-compatible regular
     expression "regex" with the optional "options".
@@ -1516,7 +1542,8 @@ Nginx API for Lua
   ngx.re.gmatch
     syntax: *iterator = ngx.re.gmatch(subject, regex, options?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Similar to ngx.re.match, but returns a Lua iterator instead, so as to
     let the user programmer iterate all the matches over the "<subject>"
@@ -1551,7 +1578,8 @@ Nginx API for Lua
   ngx.re.sub
     syntax: *newstr, n = ngx.re.sub(subject, regex, replace, options?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Substitutes the first match of the Perl-compatible regular expression
     "regex" on the "subject" argument string with the string or function
@@ -1612,7 +1640,8 @@ Nginx API for Lua
   ngx.re.gsub
     syntax: *newstr, n = ngx.re.gsub(subject, regex, replace, options?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     Just like ngx.re.sub, but does global substitution.
 
@@ -1636,7 +1665,8 @@ Nginx API for Lua
   ndk.set_var.DIRECTIVE
     syntax: *res = ndk.set_var.DIRECTIVE_NAME*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
 
     This mechanism allows calling other nginx C modules' directives that are
     implemented by Nginx Devel Kit
