@@ -92,8 +92,7 @@ src/setby.c
 src/cache.c
 src/module.c
 src/clfactory.h
-src/filter.c
-src/filter.h
+src/capturefilter.[ch]
 src/contentby.c
 pack
 b.sh

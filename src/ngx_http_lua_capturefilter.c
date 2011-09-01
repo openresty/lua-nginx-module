@@ -3,7 +3,7 @@
 #define DDEBUG 0
 
 #include <nginx.h>
-#include "ngx_http_lua_filter.h"
+#include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_subrequest.h"

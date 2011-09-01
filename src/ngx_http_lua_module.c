@@ -3,7 +3,7 @@
 #include <nginx.h>
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
-#include "ngx_http_lua_filter.h"
+#include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
