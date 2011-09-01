@@ -2,42 +2,12 @@
 
 # this file is mostly meant to be used by the author himself.
 
-version=${1:-0.8.41}
-opts=$2
-
+root=`pwd`
+version=${1:-1.0.5}
 home=~
-script_dir=$(dirname $0)
-root=$(readlink -f $script_dir)
-mkdir -p $root/{build,work}
+force=$2
 
-cd $root/build
-
-if [ ! -s "nginx-$version.tar.gz" ]; then
-    if [ -f ~/work/nginx-$version.tar.gz ]; then
-        cp ~/work/nginx-$version.tar.gz ./ || exit 1
-    else
-        wget "http://nginx.org/download/nginx-$version.tar.gz" -O nginx-$version.tar.gz || exit 1
-        cp nginx-$version.tar.gz ~/work/
-    fi
-
-    tar -xzvf nginx-$version.tar.gz || exit 1
-    cp $root/../no-pool-nginx/nginx-$version-no_pool.patch ./ || exit 1
-    patch -p0 < nginx-$version-no_pool.patch || exit 1
-    patch -p0 < $root/../ngx_openresty/patches/nginx-$version-request_body_preread_fix.patch || exit 1
-    cd nginx-$version/
-    patch -p1 -l < $root/../ngx_openresty/patches/nginx-$version-request_body_in_single_buf.patch || exit 1
-    cd ..
-    patch -p0 < $root/../ngx_openresty/patches/nginx-$version-no_error_pages.patch || exit 1
-fi
-
-                #--add-module=$root/../srcache-nginx-module \
-
-cd nginx-$version/ || exit 1
-
-if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$root/b.sh" -nt Makefile ]]; then
-            #--without-pcre \
-            #--without-http_rewrite_module \
-    ./configure --prefix=$root/work \
+ngx-build $force $version \
             --with-cc-opt=$'-O0' \
             --with-ld-opt="-Wl,-rpath=/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/opt/luajit/lib" \
             --without-mail_pop3_module \
@@ -62,16 +32,4 @@ if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$
                 --add-module=$root/../rds-json-nginx-module \
                 $opts \
                 --with-debug \
-            || exit 1
-fi
-
-#if [ -f $root/work/sbin/nginx ]; then
-    #rm -f $root/work/sbin/nginx
-#fi
-
-if [ -f $root/work/logs/nginx.pid ]; then
-    kill `cat $root/work/logs/nginx.pid`
-fi
-
-make -j2 && make install
 
