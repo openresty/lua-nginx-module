@@ -14,197 +14,11 @@
 #include "ngx_http_lua_regex.h"
 
 
-static int
-ngx_http_lua_param_get(lua_State *L)
-{
-    int         idx;
-    int         n;
-
-    ngx_http_variable_value_t       *v;
-
-    idx = luaL_checkint(L, 2);
-
-    /*  get number of args from closure */
-    n = luaL_checkint(L, lua_upvalueindex(1));
-
-    /*  get args from closure */
-    v = lua_touserdata(L, lua_upvalueindex(2));
-
-    if (idx < 0 || idx > n-1) {
-        lua_pushnil(L);
-
-    } else {
-        lua_pushlstring(L, (const char *) (v[idx].data), v[idx].len);
-    }
-
-    return 1;
-}
-
-
-/**
- * Set environment table for the given code closure.
- *
- * Before:
- *         | code closure | <- top
- *         |      ...     |
- *
- * After:
- *         | code closure | <- top
- *         |      ...     |
- * */
-static void
-ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
-        ngx_http_variable_value_t *args)
-{
-    /*  set nginx request pointer to current lua thread's globals table */
-    lua_pushlightuserdata(L, r);
-    lua_setglobal(L, GLOBALS_SYMBOL_REQUEST);
-
-    /**
-     * we want to create empty environment for current script
-     *
-     * setmetatable({}, {__index = _G})
-     *
-     * if a function or symbol is not defined in our env, __index will lookup
-     * in the global env.
-     *
-     * all variables created in the script-env will be thrown away at the end
-     * of the script run.
-     * */
-    lua_newtable(L);    /*  new empty environment aka {} */
-
-    /*  override 'print' function */
-    lua_pushcfunction(L, ngx_http_lua_print);
-    lua_setfield(L, -2, "print");
-
-    /*  {{{ initialize ngx.* namespace */
-    lua_newtable(L);    /*  ngx.* */
-
-    lua_newtable(L);    /*  .arg table aka {} */
-
-    lua_newtable(L);    /*  the metatable for new param table */
-    lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
-    lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
-
-    lua_pushcclosure(L, ngx_http_lua_param_get, 2);
-        /*  binding upvalues to __index meta-method closure */
-
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
-
-    lua_setfield(L, -2, "arg");    /*  set ngx.arg table */
-
-    /* {{{ register reference maps */
-    lua_newtable(L);    /* ngx.var */
-
-    lua_newtable(L); /* metatable for ngx.var */
-    lua_pushcfunction(L, ngx_http_lua_var_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_var_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "var");
-    /*  }}} */
-
-#if (NGX_PCRE)
-    /* {{{ ngx.re table */
-
-    lua_newtable(L);    /* .re */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
-    lua_setfield(L, -2, "match");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
-    lua_setfield(L, -2, "gmatch");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
-    lua_setfield(L, -2, "sub");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
-    lua_setfield(L, -2, "gsub");
-
-    lua_setfield(L, -2, "re");
-
-    /* }}} */
-#endif /* NGX_PCRE */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
-    lua_setfield(L, -2, "escape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
-    lua_setfield(L, -2, "unescape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
-    lua_setfield(L, -2, "quote_sql_str");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_decode_base64);
-    lua_setfield(L, -2, "decode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64);
-    lua_setfield(L, -2, "encode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5_bin);
-    lua_setfield(L, -2, "md5_bin");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
-    lua_setfield(L, -2, "md5");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "get_now_ts"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_utctime);
-    lua_setfield(L, -2, "utctime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "get_now"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "localtime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "get_today"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "today");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_http_time);
-    lua_setfield(L, -2, "http_time");
-
-	lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
-    lua_setfield(L, -2, "parse_http_time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);
-    lua_setfield(L, -2, "cookie_time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_log);
-    lua_setfield(L, -2, "log");
-
-    ngx_http_lua_inject_log_consts(L);
-
-    /* ngx. getter and setter */
-    lua_createtable(L, 0, 2); /* metatable for .ngx */
-    lua_pushcfunction(L, ngx_http_lua_ngx_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "ngx");
-    /*  }}} */
-
-    /*  {{{ make new env inheriting main thread's globals table */
-    lua_newtable(L);    /*  the metatable for the new env */
-    lua_pushvalue(L, LUA_GLOBALSINDEX);
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
-    /*  }}} */
-
-    lua_setfenv(L, -2);    /*  set new running env for the code closure */
-}
+static void ngx_http_lua_inject_arg_api(lua_State *L,
+       size_t nargs,  ngx_http_variable_value_t *args);
+static int ngx_http_lua_param_get(lua_State *L);
+static void ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r,
+        size_t nargs, ngx_http_variable_value_t *args);
 
 
 ngx_int_t
@@ -280,5 +94,122 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
     lua_settop(L, 0);
 
     return NGX_OK;
+}
+
+
+static void
+ngx_http_lua_inject_arg_api(lua_State *L, size_t nargs,
+        ngx_http_variable_value_t *args)
+{
+    lua_newtable(L);    /*  .arg table aka {} */
+
+    lua_newtable(L);    /*  the metatable for new param table */
+    lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
+    lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
+
+    lua_pushcclosure(L, ngx_http_lua_param_get, 2);
+        /*  binding upvalues to __index meta-method closure */
+
+    lua_setfield(L, -2, "__index");
+    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
+
+    lua_setfield(L, -2, "arg");    /*  set ngx.arg table */
+}
+
+
+static int
+ngx_http_lua_param_get(lua_State *L)
+{
+    int         idx;
+    int         n;
+
+    ngx_http_variable_value_t       *v;
+
+    idx = luaL_checkint(L, 2);
+
+    /*  get number of args from closure */
+    n = luaL_checkint(L, lua_upvalueindex(1));
+
+    /*  get args from closure */
+    v = lua_touserdata(L, lua_upvalueindex(2));
+
+    if (idx < 0 || idx > n-1) {
+        lua_pushnil(L);
+
+    } else {
+        lua_pushlstring(L, (const char *) (v[idx].data), v[idx].len);
+    }
+
+    return 1;
+}
+
+
+/**
+ * Set environment table for the given code closure.
+ *
+ * Before:
+ *         | code closure | <- top
+ *         |      ...     |
+ *
+ * After:
+ *         | code closure | <- top
+ *         |      ...     |
+ * */
+static void
+ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
+        ngx_http_variable_value_t *args)
+{
+    /*  set nginx request pointer to current lua thread's globals table */
+    lua_pushlightuserdata(L, r);
+    lua_setglobal(L, GLOBALS_SYMBOL_REQUEST);
+
+    /**
+     * we want to create empty environment for current script
+     *
+     * setmetatable({}, {__index = _G})
+     *
+     * if a function or symbol is not defined in our env, __index will lookup
+     * in the global env.
+     *
+     * all variables created in the script-env will be thrown away at the end
+     * of the script run.
+     * */
+    lua_newtable(L);    /*  new empty environment aka {} */
+
+#if defined(NDK) && NDK
+    ngx_http_lua_inject_ndk_api(L);
+#endif /* defined(NDK) && NDK */
+
+    /*  {{{ initialize ngx.* namespace */
+    lua_newtable(L);    /*  ngx.* */
+
+    ngx_http_lua_inject_core_consts(L);
+    ngx_http_lua_inject_http_consts(L);
+    ngx_http_lua_inject_log_api(L);
+    ngx_http_lua_inject_http_consts(L);
+    ngx_http_lua_inject_core_consts(L);
+    ngx_http_lua_inject_time_api(L);
+    ngx_http_lua_inject_string_api(L);
+    ngx_http_lua_inject_variable_api(L);
+    ngx_http_lua_inject_req_api(L);
+    ngx_http_lua_inject_arg_api(L, nargs, args);
+
+#if (NGX_PCRE)
+    ngx_http_lua_inject_regex_api(L);
+#endif /* NGX_PCRE */
+
+    ngx_http_lua_inject_misc_api(L);
+
+    lua_setfield(L, -2, "ngx");
+    /*  }}} */
+
+    /*  {{{ make new env inheriting main thread's globals table */
+    lua_newtable(L);    /*  the metatable for the new env */
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    lua_setfield(L, -2, "__index");
+    lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
+    /*  }}} */
+
+    lua_setfenv(L, -2);    /*  set new running env for the code closure */
 }
 
