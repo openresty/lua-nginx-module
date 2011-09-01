@@ -256,6 +256,7 @@ static ngx_int_t
 ngx_http_lua_pre_config(ngx_conf_t *cf)
 {
     ngx_http_lua_requires_rewrite = 0;
+    ngx_http_lua_requires_access = 0;
 
     return NGX_OK;
 }

@@ -3,10 +3,9 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #worker_connections(1014);
-#master_process_enabled(1);
-#log_level('warn');
 #no_nginx_manager();
-master_on();
+#log_level('warn');
+#master_on();
 
 repeat_each(2);
 
@@ -24,14 +23,13 @@ __DATA__
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
         rewrite_by_lua 'ngx.print("Hello, Lua!\\n")';
-        #content_by_lua return;
-        content_by_lua 'ngx.say("Hi")';
+        content_by_lua return;
+        #content_by_lua 'ngx.say("Hi")';
     }
 --- request
 GET /lua
 --- response_body
 Hello, Lua!
---- ONLY
 
 
 
