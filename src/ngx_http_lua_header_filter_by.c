@@ -363,9 +363,8 @@ ngx_http_lua_filter_header_filter(ngx_http_request_t *r)
     dd("calling header filter handler");
     rc = llcf->header_filter_handler(r);
     if (rc != NGX_OK) {
-        /* return NGX_ERROR; */
-        /* return NGX_HTTP_INTERNAL_SERVER_ERROR; */
-        return ngx_http_lua_next_filter_header_filter(r);
+        dd("calling header filter handler rc %d", (int)rc);
+        return NGX_ERROR;
     }
 
     return ngx_http_lua_next_filter_header_filter(r);
