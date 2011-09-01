@@ -216,7 +216,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
 
-    rc = ngx_http_lua_filter_init(cf);
+    rc = ngx_http_lua_capture_filter_init(cf);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -257,6 +257,7 @@ ngx_http_lua_pre_config(ngx_conf_t *cf)
 {
     ngx_http_lua_requires_rewrite = 0;
     ngx_http_lua_requires_access = 0;
+    ngx_http_lua_requires_header_filter = 0;
 
     return NGX_OK;
 }

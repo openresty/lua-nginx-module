@@ -20,7 +20,7 @@
 
 unsigned  ngx_http_lua_requires_rewrite = 0;
 unsigned  ngx_http_lua_requires_access  = 0;
-unsigned  ngx_http_lua_requires_header_filter  = 0;
+unsigned  ngx_http_lua_requires_header_filter = 0;
 
 
 char *

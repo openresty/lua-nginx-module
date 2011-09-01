@@ -235,7 +235,8 @@ ngx_http_lua_filter_header_filter(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    dd("in lua filter header filter: %.*s", (int) r->uri.len, r->uri.data);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua header filter, uri \"%V\"", &r->uri);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);

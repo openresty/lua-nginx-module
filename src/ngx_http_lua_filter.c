@@ -19,7 +19,7 @@ static ngx_int_t ngx_http_lua_body_filter(ngx_http_request_t *r,
 
 
 ngx_int_t
-ngx_http_lua_filter_init(ngx_conf_t *cf)
+ngx_http_lua_capture_filter_init(ngx_conf_t *cf)
 {
     /* setting up output filters to intercept subrequest responses */
     ngx_http_lua_next_header_filter = ngx_http_top_header_filter;
