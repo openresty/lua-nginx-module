@@ -7,7 +7,7 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
-#include "ngx_http_lua_header_filter_by.h"
+#include "ngx_http_lua_headerfilterby.h"
 
 
 #if !defined(nginx_version) || nginx_version < 8054

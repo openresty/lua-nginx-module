@@ -1,11 +1,11 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
 #ifndef DDEBUG
-#define DDEBUG 1
+#define DDEBUG 0
 #endif
 #include "ddebug.h"
 
-#include "ngx_http_lua_header_filter_by.h"
+#include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_patch.h"
@@ -225,6 +225,7 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     return NGX_OK;
 }
 
+
 ngx_int_t
 ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
 {
@@ -267,6 +268,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
 
     return NGX_OK;
 }
+
 
 ngx_int_t
 ngx_http_lua_header_filter_file(ngx_http_request_t *r)
@@ -324,6 +326,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
     return NGX_OK;
 }
 
+
 static ngx_int_t
 ngx_http_lua_filter_header_filter(ngx_http_request_t *r)
 {
@@ -370,6 +373,7 @@ ngx_http_lua_filter_header_filter(ngx_http_request_t *r)
     return ngx_http_lua_next_filter_header_filter(r);
 }
 
+
 ngx_int_t
 ngx_http_lua_header_filter_init()
 {
@@ -379,5 +383,4 @@ ngx_http_lua_header_filter_init()
 
     return NGX_OK;
 }
-
 
