@@ -21,6 +21,7 @@
 unsigned  ngx_http_lua_requires_rewrite = 0;
 unsigned  ngx_http_lua_requires_access  = 0;
 unsigned  ngx_http_lua_requires_header_filter = 0;
+unsigned  ngx_http_lua_requires_capture_filter = 0;
 
 
 char *
@@ -308,6 +309,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (! ngx_http_lua_requires_rewrite) {
         ngx_http_lua_requires_rewrite = 1;
+        ngx_http_lua_requires_capture_filter = 1;
     }
 
     return NGX_CONF_OK;
@@ -388,6 +390,7 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (! ngx_http_lua_requires_access) {
         ngx_http_lua_requires_access = 1;
+        ngx_http_lua_requires_capture_filter = 1;
     }
 
     return NGX_CONF_OK;
@@ -465,6 +468,8 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     llcf->content_handler = cmd->post;
+
+    ngx_http_lua_requires_capture_filter = 1;
 
     /*  register location content handler */
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);

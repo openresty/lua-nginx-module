@@ -9,6 +9,7 @@
 extern unsigned  ngx_http_lua_requires_rewrite;
 extern unsigned  ngx_http_lua_requires_access;
 extern unsigned  ngx_http_lua_requires_header_filter;
+extern unsigned  ngx_http_lua_requires_capture_filter;
 
 
 char * ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd,
