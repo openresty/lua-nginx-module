@@ -43,7 +43,6 @@ void ngx_http_lua_request_cleanup(void *data);
 ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret);
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
-void ngx_http_lua_inject_log_consts(lua_State *L);
 u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
         int buf_len);
 void ngx_http_lua_dump_postponed(ngx_http_request_t *r);
@@ -53,6 +52,24 @@ void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type);
 uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
+#if defined(NDK) && NDK
+void ngx_http_lua_inject_ndk_api(lua_State *L);
+#endif
+void ngx_http_lua_inject_time_api(lua_State *L);
+void ngx_http_lua_inject_output_api(lua_State *L);
+void ngx_http_lua_inject_log_api(lua_State *L);
+void ngx_http_lua_inject_http_consts(lua_State *L);
+void ngx_http_lua_inject_core_consts(lua_State *L);
+void ngx_http_lua_inject_control_api(lua_State *L);
+void ngx_http_lua_inject_string_api(lua_State *L);
+void ngx_http_lua_inject_subrequest_api(lua_State *L);
+void ngx_http_lua_inject_variable_api(lua_State *L);
+#if (NGX_PCRE)
+void ngx_http_lua_inject_regex_api(lua_State *L);
+#endif
+void ngx_http_lua_inject_req_api(lua_State *L);
+void ngx_http_lua_inject_resp_header_api(lua_State *L);
+void ngx_http_lua_inject_misc_api(lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
