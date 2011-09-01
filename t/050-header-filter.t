@@ -217,3 +217,22 @@ uid: c1a5298f939e87e8f962a5edfc206918
 --- response_body
 Hi
 
+
+
+=== TEST 10: set response content-type header (by file)
+--- config
+    location /read {
+        echo "Hi";
+        header_filter_by_lua_file 'html/foo.lua';
+
+    }
+--- request
+GET /read
+--- user_files
+>>> foo.lua
+ngx.header.content_type = "text/my-plain";
+--- response_headers
+Content-Type: text/my-plain
+--- response_body
+Hi
+
