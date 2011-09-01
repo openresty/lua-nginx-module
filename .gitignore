@@ -118,3 +118,4 @@ src/script.[ch]
 all
 build1[01]
 g
+buildroot/
