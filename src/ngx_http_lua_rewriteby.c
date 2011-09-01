@@ -22,8 +22,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (cc == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "(lua-content-by-chunk) failed to create new coroutine "
-                "to handle request");
+                "lua: failed to create new coroutine to handle request");
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -154,7 +153,8 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    dd("in rewrite handler: %.*s", (int) r->uri.len, r->uri.data);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua rewrite handler, uri \"%V\"", &r->uri);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 

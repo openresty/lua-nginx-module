@@ -16,6 +16,7 @@
 
 
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
+static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
 
 
 static ngx_command_t ngx_http_lua_cmds[] = {
@@ -178,7 +179,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 };
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-    NULL,                             /*  preconfiguration */
+    ngx_http_lua_pre_config,          /*  preconfiguration */
     ngx_http_lua_init,                /*  postconfiguration */
 
     ngx_http_lua_create_main_conf,    /*  create main configuration */
@@ -246,6 +247,15 @@ ngx_http_lua_init(ngx_conf_t *cf)
             return rc;
         }
     }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_pre_config(ngx_conf_t *cf)
+{
+    ngx_http_lua_requires_rewrite = 0;
 
     return NGX_OK;
 }
