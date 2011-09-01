@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
 use Test::Nginx::Socket;
@@ -6,7 +6,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 no_long_string();
 
@@ -87,4 +87,21 @@ a%2bb
 GET /escape
 --- response_body
 %22a%2fb%3d%7b%7d%3a%3c%3e%3b%26%5b%5d%5c%5e
+
+
+
+=== TEST 7: escape uri in set_by_lua
+--- config
+    location /escape {
+        echo hello;
+        header_filter_by_lua '
+            ngx.header.baz = ngx.escape_uri(" ")
+        ';
+    }
+--- request
+GET /escape
+--- response_headers
+baz: %20
+--- response_body
+hello
 

@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.2.1rc19](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 27 August 2011.
+This document describes ngx_lua [v0.2.1rc20](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 1 September 2011.
 
 Synopsis
 ========
@@ -364,10 +364,27 @@ Act as a content handler and execute user code specified by `<lua-script-str>`
 for every request. The user code may call predefined APIs to generate response
 content.
 
-The use code is executed in a new spawned coroutine with independent globals
-environment (i.e. a sandbox). I/O operations in user code should only be done
-through predefined Nginx APIs, otherwise Nginx event loop may be blocked and
-performance may drop off dramatically.
+The use code is executed in a new spawned coroutine with independent global environment (i.e. a sandbox).
+
+Do not use this directive and other content handler directives in a same location. For example, it's bad to use this directive with a [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass) directive in the same location.
+
+content_by_lua_file
+-------------------
+
+**syntax:** *content_by_lua_file &lt;path-to-lua-script&gt;*
+
+**context:** *location, location if*
+
+**phase:** *content*
+
+Basically the same as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except the code to be executed is in
+the file specified by `<path-lua-script>`.
+
+Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
+greater flexibility in practice. But this feature must be used carefully, so is
+not recommend for beginners.
+
+When the Lua code cache is on (this is the default), the user code is loaded once at the first request and cached. Nginx config must be reloaded if you modified the file and expected to see updated behavior. You can disable the Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` file.
 
 rewrite_by_lua
 --------------
@@ -473,6 +490,27 @@ Just as any other rewrite phase handlers, [rewrite_by_lua](http://wiki.nginx.org
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) handler, calling [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
+rewrite_by_lua_file
+-------------------
+
+**syntax:** *rewrite_by_lua_file &lt;path-to-lua-script&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *rewrite tail*
+
+Same as [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except the code to be executed is in
+the file specified by `<path-lua-script>`.
+
+Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
+greater flexibility in practice. But this feature must be used carefully, so is
+not recommend for beginners.
+
+When the Lua code cache is on (this is the default), the user code is loaded
+once at the first request and cached. Nginx config must be reloaded if you
+modified the file and expected to see updated behavior. You can disable the
+Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` file.
+
 access_by_lua
 -------------
 
@@ -542,45 +580,6 @@ Just as any other access phase handlers, [access_by_lua](http://wiki.nginx.org/H
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) handler, calling `ngx.exit(status)` where status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` or its friends for failures.
 
-content_by_lua_file
--------------------
-
-**syntax:** *content_by_lua_file &lt;path-to-lua-script&gt;*
-
-**context:** *location, location if*
-
-**phase:** *content*
-
-Basically the same as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except the code to be executed is in
-the file specified by `<path-lua-script>`.
-
-Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
-greater flexibility in practice. But this feature must be used carefully, so is
-not recommend for beginners.
-
-When the Lua code cache is on (this is the default), the user code is loaded once at the first request and cached. Nginx config must be reloaded if you modified the file and expected to see updated behavior. You can disable the Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` file.
-
-rewrite_by_lua_file
--------------------
-
-**syntax:** *rewrite_by_lua_file &lt;path-to-lua-script&gt;*
-
-**context:** *http, server, location, location if*
-
-**phase:** *rewrite tail*
-
-Same as [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except the code to be executed is in
-the file specified by `<path-lua-script>`.
-
-Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
-greater flexibility in practice. But this feature must be used carefully, so is
-not recommend for beginners.
-
-When the Lua code cache is on (this is the default), the user code is loaded
-once at the first request and cached. Nginx config must be reloaded if you
-modified the file and expected to see updated behavior. You can disable the
-Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` file.
-
 access_by_lua_file
 ------------------
 
@@ -601,6 +600,46 @@ When the Lua code cache is on (this is the default), the user code is loaded
 once at the first request and cached. Nginx config must be reloaded if you
 modified the file and expected to see updated behavior. You can disable the
 Lua code cache by setting [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` file.
+
+header_filter_by_lua
+--------------------
+
+**syntax:** *header_filter_by_lua &lt;lua-script-str&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *output header filter*
+
+Use Lua defined in `<lua-script-str>` to define an output header filter. For now, the following Nginx Lua APIs are disabled in this context:
+
+* Output API (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
+* Control APIs (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
+* Subrequest APIs (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
+
+Here's a small example of overriding a response header (or adding if it does not exist) in our Lua header filter:
+
+    location / {
+        proxy_pass http://mybackend;
+        header_filter_by_lua 'ngx.header.Foo = "blah"';
+    }
+
+
+This directive was first introduced in the `v0.2.1rc20` release.
+
+header_filter_by_lua_file
+-------------------------
+
+**syntax:** *header_filter_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *output header filter*
+
+Use Lua code defined in a separate file specified by `<path-to-lua-script-file>` to define an output header filter.
+
+This is very much like [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua) except that it loads Lua code from an external Lua source file.
+
+This directive was first introduced in the `v0.2.1rc20` release.
 
 lua_need_request_body
 ---------------------
@@ -658,9 +697,12 @@ You can directly require the standard packages `ngx` and `ndk` introduced by thi
 
 The ability to require these packages was introduced in the `v0.2.1rc19` release.
 
+Network I/O operations in user code should only be done through our Nginx APIs defined below, otherwise Nginx event loop may be blocked and performance may drop off dramatically. Small disk file operations can be done via Lua's standard `io` and `file` libraries but should be eliminated wherever possible because these also block the Nginx process. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and its friends) are strongly recommended.
+
 ngx.arg
 -------
 **syntax:** *val = ngx.arg[index]*
+
 **context:** *set_by_lua**
 
 Index the input arguments to the [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) and [set_by_lua_file](http://wiki.nginx.org/HttpLuaModule#set_by_lua_file) directives:
@@ -716,7 +758,8 @@ interface as well, by writing `ngx.var[1]`, `ngx.var[2]`, `ngx.var[3]`, and etc.
 
 Core constants
 --------------
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
+
 
       ngx.OK (0)
       ngx.ERROR (-1)
@@ -728,7 +771,7 @@ only [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) only take two of t
 
 HTTP method constants
 ---------------------
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 
       ngx.HTTP_GET
@@ -742,7 +785,7 @@ These constants are usually used in [ngx.location.catpure](http://wiki.nginx.org
 
 HTTP status constants
 ---------------------
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
       value = ngx.HTTP_OK (200)
       value = ngx.HTTP_CREATED (201)
@@ -794,7 +837,7 @@ Lua `nil` arguments are accepted and result in literal `"nil"`, and Lua booleans
 
 ngx.ctx
 -------
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 This table can be used to store per-request context data for Lua programmers.
 
@@ -1090,7 +1133,7 @@ ngx.req.get_uri_args
 --------------------
 **syntax:** *args = ngx.req.get_uri_args()*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns a Lua table holds all of the current request's request URL query arguments.
 
@@ -1147,7 +1190,7 @@ ngx.req.get_post_args
 ---------------------
 **syntax:** *ngx.req.get_post_args()*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns a Lua table holds all of the current request's POST query arguments. It's required to turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, or a Lua exception will be thrown.
 
@@ -1204,7 +1247,7 @@ ngx.req.get_headers
 -------------------
 **syntax:** *headers = ngx.req.get_headers()*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns a Lua table holds all of the current request's request headers.
 
@@ -1235,7 +1278,7 @@ ngx.req.set_header
 ------------------
 **syntax:** *ngx.req.set_header(header_name, header_value)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Set the current request's request header named `header_name` to value `header_value`, overriding any existing ones.
 None of the current request's subrequests will be affected.
@@ -1269,7 +1312,7 @@ ngx.req.clear_header
 --------------------
 **syntax:** *ngx.req.clear_header(header_name)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Clear the current request's request header named `header_name`. None of the current request's subrequests will be affected.
 
@@ -1800,7 +1843,7 @@ ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 

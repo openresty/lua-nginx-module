@@ -8,7 +8,7 @@ log_level('debug'); # to ensure any log-level can be outputed
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
 #no_long_string();
@@ -232,4 +232,40 @@ GET /log
 GET /log
 --- response_body
 32
+
+
+
+=== TEST 14: print() in header filter
+--- config
+    location /log {
+        header_filter_by_lua '
+            print("hi")
+            ngx.header.foo = 32
+        ';
+        echo hi;
+    }
+--- request
+GET /log
+--- response_headers
+foo: 32
+--- response_body
+hi
+
+
+
+=== TEST 15: ngx.log() in header filter
+--- config
+    location /log {
+        header_filter_by_lua '
+            ngx.log(ngx.ERR, "hi")
+            ngx.header.foo = 32
+        ';
+        echo hi;
+    }
+--- request
+GET /log
+--- response_headers
+foo: 32
+--- response_body
+hi
 

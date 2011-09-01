@@ -49,6 +49,10 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * */
     lua_newtable(L);    /*  new empty environment aka {} */
 
+#if defined(NDK) && NDK
+    ngx_http_lua_inject_ndk_api(L);
+#endif /* defined(NDK) && NDK */
+
     /*  {{{ initialize ngx.* namespace */
     lua_newtable(L);    /*  ngx.* */
 

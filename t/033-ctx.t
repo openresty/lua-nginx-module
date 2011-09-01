@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 #no_long_string();
@@ -124,4 +124,24 @@ GET /lua
 54
 nil
 56
+
+
+
+=== TEST 6: header filter
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.ctx.foo = 32;
+            ngx.say(ngx.ctx.foo)
+        ';
+        header_filter_by_lua '
+            ngx.header.blah = ngx.ctx.foo + 1
+        ';
+    }
+--- request
+GET /lua
+--- response_headers
+blah: 33
+--- response_body
+32
 
