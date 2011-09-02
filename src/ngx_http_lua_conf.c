@@ -110,6 +110,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->content_src_key = prev->content_src_key;
     }
 
+    if (conf->header_filter_src.value.len == 0) {
+        conf->header_filter_src = prev->header_filter_src;
+        conf->header_filter_handler = prev->header_filter_handler;
+        conf->header_filter_src_key = prev->header_filter_src_key;
+    }
+
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
 
