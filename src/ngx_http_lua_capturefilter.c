@@ -37,8 +37,12 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 {
     ngx_http_post_subrequest_t      *ps;
     ngx_http_lua_ctx_t              *old_ctx;
+    ngx_http_lua_ctx_t              *ctx;
 
-    ngx_http_lua_ctx_t *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua capture header filter, uri \"%V\"", &r->uri);
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     dd("old ctx: %p", ctx);
 
@@ -88,6 +92,9 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     int                              rc;
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_ctx_t              *pr_ctx;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua capture body filter, uri \"%V\"", &r->uri);
 
     if (in == NULL) {
         return ngx_http_lua_next_body_filter(r, NULL);

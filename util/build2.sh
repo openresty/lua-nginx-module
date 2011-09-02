@@ -7,7 +7,14 @@ version=${1:-1.0.5}
 home=~
 force=$2
 
+# the ngx-build script is from https://github.com/agentzh/nginx-devel-utils
+
+            #--without-pcre \
+            #--without-http_rewrite_module \
+
 ngx-build $force $version \
+            --add-module=$root/../ndk-nginx-module \
+            --add-module=$root/../set-misc-nginx-module \
             --with-cc-opt=$'-O0' \
             --with-ld-opt="-Wl,-rpath=/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/opt/luajit/lib" \
             --without-mail_pop3_module \
@@ -20,8 +27,6 @@ ngx-build $force $version \
             --without-http_autoindex_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
-            --add-module=$root/../ndk-nginx-module \
-            --add-module=$root/../set-misc-nginx-module \
                 --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
                 --add-module=$root/../echo-nginx-module \
                 --add-module=$root/../memc-nginx-module \
@@ -31,5 +36,5 @@ ngx-build $force $version \
                 --add-module=$home/work/nginx/ngx_http_upstream_keepalive-2ce9d8a1ca93 \
                 --add-module=$root/../rds-json-nginx-module \
                 $opts \
-                --with-debug \
+                --with-debug
 
