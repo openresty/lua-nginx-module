@@ -299,7 +299,6 @@ Hi
     location /read {
         echo "Hi";
         header_filter_by_lua_file 'html/foo.lua';
-
     }
 --- request
 GET /read
@@ -310,4 +309,64 @@ ngx.header.content_type = "text/my-plain";
 Content-Type: text/my-plain
 --- response_body
 Hi
+
+
+
+=== TEST 15: by_lua_file server config
+--- config
+    header_filter_by_lua_file 'html/foo.lua';
+
+    location /read {
+        echo "Hi";
+    }
+--- request
+GET /read
+--- user_files
+>>> foo.lua
+ngx.header.content_type = "text/my-plain";
+--- response_headers
+Content-Type: text/my-plain
+--- response_body
+Hi
+
+
+
+=== TEST 16: by_lua_file set in http
+--- http_config
+    header_filter_by_lua_file 'html/foo.lua';
+--- config
+    location /read {
+        echo "Hi";
+    }
+--- request
+GET /read
+--- user_files
+>>> foo.lua
+ngx.header.content_type = "text/my-plain";
+--- response_headers
+Content-Type: text/my-plain
+--- response_body
+Hi
+
+
+
+=== TEST 17: by_lua_file overriding config
+--- config
+    header_filter_by_lua 'html/foo.lua';
+    location /read {
+        echo "Hi";
+        header_filter_by_lua_file 'html/bar.lua';
+    }
+--- request
+GET /read
+--- user_files
+>>> foo.lua
+ngx.header.content_type = "text/my-plain";
+>>> bar.lua
+ngx.header.content_type = "text/read-plain";
+--- response_headers
+Content-Type: text/read-plain
+--- response_body
+Hi
+
 
