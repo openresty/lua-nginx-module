@@ -73,10 +73,15 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->access_src_key = NULL
      *      conf->rewrite_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->rewrite_src_key = NULL
+     *      conf->rewrite_handler = NULL;
+     *
      *      conf->content_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->content_src_key = NULL
-     *      conf->rewrite_handler = NULL;
      *      conf->content_handler = NULL;
+     *
+     *      conf->header_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->header_filter_src_key = NULL
+     *      conf->header_filter_handler = NULL;
      */
 
     conf->force_read_body   = NGX_CONF_UNSET;
