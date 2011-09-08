@@ -700,3 +700,34 @@ hello, a
 hello, b
 hello, c
 
+
+
+=== TEST 28: POST (with body, proxy method, main request is a POST too)
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo_read_request_body;
+
+        echo $echo_request_method;
+        echo_request_body;
+    }
+
+    location /foo {
+        proxy_pass http://127.0.0.1:$server_port/other;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo",
+                { method = ngx.HTTP_POST, body = "hello" });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+POST /lua
+hi
+--- response_body chomp
+POST
+hello
+

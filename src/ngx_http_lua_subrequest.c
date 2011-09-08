@@ -799,6 +799,13 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
             i = 0;
         }
 
+        if (header[i].key.len == sizeof("Content-Length") - 1 &&
+                ngx_strncasecmp(header[i].key.data, (u_char *) "Content-Length",
+                sizeof("Content-Length") - 1) == 0)
+        {
+            continue;
+        }
+
         h = ngx_list_push(&r->headers_in.headers);
         if (h == NULL) {
             return NGX_ERROR;
