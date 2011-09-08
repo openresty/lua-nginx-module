@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.0](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 2 September 2011.
+This document describes ngx_lua [v0.3.1rc1](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 8 September 2011.
 
 Synopsis
 ========
@@ -190,7 +190,7 @@ as long as you use the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModul
 to let the nginx core do all your
 requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-[ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [ngx_memc](http://wiki.nginx.org/HttpMemcModule), [ngx_redis2](http://github.com/agentzh/redis2-nginx-module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+[HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -1996,7 +1996,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   1.0.x (last tested: 1.0.5)
+*   1.0.x (last tested: 1.0.6)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
@@ -2140,7 +2140,7 @@ Authors
 =======
 
 * chaoslawful (王晓哲) <chaoslawful at gmail dot com>
-* Yichun "agentzh" Zhang (章亦春) <agentzh at gmail dot com>
+* Zhang "agentzh" Yichun (章亦春) <agentzh at gmail dot com>
 
 Copyright & License
 ===================
@@ -2170,9 +2170,9 @@ See Also
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
-* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
+* [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule)
+* [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
+* [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
 
