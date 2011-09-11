@@ -81,7 +81,7 @@ static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
                  ngx_http_set_content_length_header },
 
     { ngx_string("Content-Type"),
-                 0,
+                 offsetof(ngx_http_headers_out_t, content_type),
                  ngx_http_set_content_type_header },
 
     { ngx_null_string, 0, ngx_http_set_header }
@@ -105,8 +105,8 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
-    ngx_uint_t                  i;
-    unsigned                    matched = 0;
+    ngx_uint_t                   i;
+    unsigned                     matched = 0;
 
     if (hv->no_override) {
         goto new_header;
@@ -328,5 +328,82 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
     }
 
     return hv.handler(r, &hv, &value);
+}
+
+
+int
+ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
+        ngx_str_t *key)
+{
+    ngx_http_header_out_t      *ho = ngx_http_headers_out;
+    ngx_table_elt_t           **ph;
+    ngx_table_elt_t            *h;
+    ngx_list_part_t            *part;
+    ngx_uint_t                  i;
+
+    dd("looking for response header \"%.*s\"", (int) key->len, key->data);
+
+    for (i = 0; ho[i].name.len; i++) {
+        if (key->len != ho[i].name.len
+                || ngx_strncasecmp(key->data, ho[i].name.data,
+                    ho[i].name.len) != 0)
+        {
+            continue;
+        }
+
+        ph = (ngx_table_elt_t **) ((char *) &r->headers_out + ho[i].offset);
+        if (*ph) {
+            lua_pushlstring(L, (char *) (*ph)->value.data, (*ph)->value.len);
+            return 1;
+        }
+
+        break;
+    }
+
+    if (r->headers_out.content_length_n >= 0 &&
+            key->len == sizeof("Content-Length") - 1 &&
+            ngx_strncasecmp(key->data, (u_char *) "Content-Length",
+            sizeof("Content-Length") - 1) == 0)
+    {
+        lua_pushinteger(L, (lua_Integer) r->headers_out.content_length_n);
+        return 1;
+    }
+
+    if (r->headers_out.content_type.len &&
+            key->len == sizeof("Content-Type") - 1 &&
+            ngx_strncasecmp(key->data, (u_char *) "Content-Type",
+            sizeof("Content-Type") - 1) == 0)
+    {
+        lua_pushlstring(L, (char *) r->headers_out.content_type.data,
+                r->headers_out.content_type.len);
+        return 1;
+    }
+
+    dd("not a built-in output header");
+
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].key.len == key->len && ngx_strncasecmp(key->data,
+                    h[i].key.data, h[i].key.len) == 0)
+         {
+             lua_pushlstring(L, (char *) h[i].value.data, h[i].value.len);
+             return 1;
+         }
+    }
+
+    lua_pushnil(L);
+    return 1;
 }
 

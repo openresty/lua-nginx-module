@@ -280,3 +280,55 @@ Content-Type:
 --- error_code:
 --- response_body:
 
+
+
+=== TEST 16: get content-type header after ngx.print
+--- config
+    location /lua {
+        default_type "text/my-plain";
+        content_by_lua '
+            ngx.print("hello, ")
+            ngx.say(ngx.header.content_type)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Content-Type: text/my-plain
+--- response_body
+hello, text/my-plain
+
+
+
+=== TEST 17: get content-length header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.content_length = 2;
+            ngx.say(ngx.header.content_length);
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Content-Length: 2
+--- response_body
+2
+
+
+
+=== TEST 18: get content-length header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.foo = "bar";
+            ngx.say(ngx.header.foo);
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+foo: bar
+--- response_body
+bar
+

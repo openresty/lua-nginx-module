@@ -143,7 +143,44 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 int
 ngx_http_lua_ngx_header_get(lua_State *L)
 {
-    return luaL_error(L, "header get not implemented yet");
+    ngx_http_request_t          *r;
+    u_char                      *p;
+    ngx_str_t                    key;
+    ngx_uint_t                   i;
+    size_t                       len;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    /* we skip the first argument that is the table */
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+
+    dd("key: %.*s, len %d", (int) len, p, (int) len);
+
+    /* replace "_" with "-" */
+    for (i = 0; i < len; i++) {
+        if (p[i] == '_') {
+            p[i] = '-';
+        }
+    }
+
+    key.data = ngx_palloc(r->pool, len + 1);
+    if (key.data == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    ngx_memcpy(key.data, p, len);
+
+    key.data[len] = '\0';
+
+    key.len = len;
+
+    return ngx_http_lua_get_output_header(L, r, &key);
 }
 
 
