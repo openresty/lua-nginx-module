@@ -9,7 +9,7 @@
 
 
 ngx_int_t ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
-        ngx_str_t value, ngx_flag_t override);
+        ngx_str_t value, unsigned override);
 
 
 #endif /* NGX_HTTP_LUA_HEADERS_IN_H */

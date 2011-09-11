@@ -28,7 +28,7 @@ static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
         off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
-        ngx_flag_t share_all_vars);
+        unsigned share_all_vars);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -84,7 +84,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_http_request_body_t         *body;
     int                              type;
     ngx_buf_t                       *b;
-    ngx_flag_t                       share_all_vars;
+    unsigned                         share_all_vars;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
     size_t                           sr_statuses_len;
@@ -395,7 +395,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-        ngx_http_request_body_t *body, ngx_flag_t share_all_vars)
+        ngx_http_request_body_t *body, unsigned share_all_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;

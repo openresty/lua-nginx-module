@@ -1,7 +1,9 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 /* Copyright (C) agentzh */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
 
 #include "ddebug.h"
 
@@ -13,23 +15,17 @@
 
 static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value,
-    ngx_table_elt_t **output_header, ngx_flag_t no_create);
-
+    ngx_table_elt_t **output_header, unsigned no_create);
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_content_type_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_clear_content_length_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 
@@ -105,12 +101,12 @@ ngx_http_set_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
 static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         ngx_str_t *value, ngx_table_elt_t **output_header,
-        ngx_flag_t no_create)
+        unsigned no_create)
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
     ngx_uint_t                  i;
-    ngx_flag_t                  matched = 0;
+    unsigned                    matched = 0;
 
     if (hv->no_override) {
         goto new_header;
@@ -292,7 +288,7 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
-        ngx_str_t value, ngx_flag_t override)
+        ngx_str_t value, unsigned override)
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;

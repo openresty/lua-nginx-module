@@ -195,7 +195,7 @@ struct ngx_http_lua_header_val_s {
     ngx_str_t                               key;
     ngx_http_lua_set_header_pt              handler;
     ngx_uint_t                              offset;
-    ngx_flag_t                              no_override;
+    unsigned                                no_override;
 };
 
 typedef struct {
