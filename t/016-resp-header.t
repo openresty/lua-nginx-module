@@ -8,7 +8,6 @@ use Test::Nginx::Socket;
 #log_level('warn');
 
 repeat_each(2);
-#repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 3;
 
@@ -474,4 +473,91 @@ Hellobah
 baz: foo
 --- response_body
 Hellofoo
+
+
+
+=== TEST 25: get multiple user header (proxy)
+--- config
+    location /main {
+        set $footer '';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+        header_filter_by_lua '
+            ngx.var.footer = table.concat(ngx.header.baz, ", ")
+        ';
+        echo_after_body $footer;
+    }
+    location /echo {
+        content_by_lua '
+            ngx.header.baz = {"bah", "blah"}
+            ngx.print("Hello")
+        ';
+    }
+--- request
+    GET /main
+--- raw_response_headers_like eval
+"baz: bah\r
+.*?baz: blah"
+--- response_body
+Hellobah, blah
+
+
+
+=== TEST 26: set and get multiple user header (proxy)
+--- config
+    location /main {
+        set $footer '';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+        header_filter_by_lua '
+            ngx.header.baz = {"foo", "baz"}
+            ngx.var.footer = table.concat(ngx.header.baz, ", ")
+        ';
+        echo_after_body $footer;
+    }
+    location /echo {
+        content_by_lua '
+            ngx.header.baz = {"bah", "hah"}
+            ngx.print("Hello")
+        ';
+    }
+--- request
+    GET /main
+--- raw_response_headers_like eval
+"baz: foo\r
+.*?baz: baz"
+--- response_body
+Hellofoo, baz
+
+
+
+=== TEST 27: get non-existant header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say(ngx.header.foo);
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+!foo
+--- response_body
+nil
+
+
+
+=== TEST 28: get non-existant header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.foo = {"bah", "baz", "blah"}
+            ngx.header.foo = nil
+            ngx.say(ngx.header.foo);
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+!foo
+--- response_body
+nil
 
