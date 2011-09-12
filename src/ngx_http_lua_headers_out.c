@@ -335,48 +335,37 @@ int
 ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
         ngx_str_t *key)
 {
-    ngx_http_header_out_t      *ho = ngx_http_headers_out;
-    ngx_table_elt_t           **ph;
     ngx_table_elt_t            *h;
     ngx_list_part_t            *part;
     ngx_uint_t                  i;
 
     dd("looking for response header \"%.*s\"", (int) key->len, key->data);
 
-    for (i = 0; ho[i].name.len; i++) {
-        if (key->len != ho[i].name.len
-                || ngx_strncasecmp(key->data, ho[i].name.data,
-                    ho[i].name.len) != 0)
+    switch (key->len) {
+    case 14:
+        if (r->headers_out.content_length == NULL
+            && r->headers_out.content_length_n >= 0
+            && ngx_strncasecmp(key->data, (u_char *) "Content-Length", 14) == 0)
         {
-            continue;
-        }
-
-        ph = (ngx_table_elt_t **) ((char *) &r->headers_out + ho[i].offset);
-        if (*ph) {
-            lua_pushlstring(L, (char *) (*ph)->value.data, (*ph)->value.len);
+            lua_pushinteger(L, (lua_Integer) r->headers_out.content_length_n);
             return 1;
         }
 
         break;
-    }
 
-    if (r->headers_out.content_length_n >= 0 &&
-            key->len == sizeof("Content-Length") - 1 &&
-            ngx_strncasecmp(key->data, (u_char *) "Content-Length",
-            sizeof("Content-Length") - 1) == 0)
-    {
-        lua_pushinteger(L, (lua_Integer) r->headers_out.content_length_n);
-        return 1;
-    }
+    case 12:
+        if (r->headers_out.content_type.len
+            && ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0)
+        {
+            lua_pushlstring(L, (char *) r->headers_out.content_type.data,
+                    r->headers_out.content_type.len);
+            return 1;
+        }
 
-    if (r->headers_out.content_type.len &&
-            key->len == sizeof("Content-Type") - 1 &&
-            ngx_strncasecmp(key->data, (u_char *) "Content-Type",
-            sizeof("Content-Type") - 1) == 0)
-    {
-        lua_pushlstring(L, (char *) r->headers_out.content_type.data,
-                r->headers_out.content_type.len);
-        return 1;
+        break;
+
+    default:
+        break;
     }
 
     dd("not a built-in output header");
