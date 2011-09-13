@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc1](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 8 September 2011.
+This document describes ngx_lua [v0.3.1rc2](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 12 September 2011.
 
 Synopsis
 ========
@@ -1082,52 +1082,99 @@ ngx.header.HEADER
 -----------------
 **syntax:** *ngx.header.HEADER = VALUE*
 
+**syntax:** *value = ngx.header.HEADER*
+
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Set/add/clear the current request's response headers. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insentively.
+When assigning to `ngx.header.HEADER` will set, add, or clear the current request's response header named `HEADER`. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insensitively.
+
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
  
     ngx.header["X-My-Header"] = 'blah blah';
 
+
 Multi-value headers can be set this way:
+
 
     ngx.header['Set-Cookie'] = {'a=32; path=/', 'b=4; path=/'}
 
+
 will yield
+
 
     Set-Cookie: a=32; path=/
     Set-Cookie: b=4; path=/
+
 
 in the response headers. Only array-like tables are accepted.
 
 Note that, for those standard headers that only accepts a single value, like `Content-Type`, only the last element
 in the (array) table will take effect. So
 
+
     ngx.header.content_type = {'a', 'b'}
+
 
 is equivalent to
 
+
     ngx.header.content_type = 'b'
+
 
 Setting a slot to `nil` effectively removes it from the response headers:
 
+
     ngx.header["X-My-Header"] = nil;
+
 
 same does assigning an empty table:
 
+
     ngx.header["X-My-Header"] = {};
 
-`ngx.header` is not a normal Lua table so you cannot
-iterate through it.
-
-For reading request headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
-
-Reading values from `ngx.header.HEADER` is not implemented yet,
-and usually you shouldn't need it.
 
 Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly with [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) and its friends) will throw out a Lua exception.
+
+Reading `ngx.header.HEADER` will return the value of the response header named `HEADER`. Underscores (`_`) in the header names will also be replaced by dashes (`-`) and the header names will be matched case-insensitively. If the response header is not present at all, `nil` will be returned.
+
+This is particularly useful in the context of [filter_header_by_lua](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua) and [filter_header_by_lua_file](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua_file), for example,
+
+
+    location /test {
+        set $footer '';
+
+        proxy_pass http://some-backend;
+
+        header_filter_by_lua '
+            if ngx.header["X-My-Header"] == "blah" then
+                ngx.var.footer = "some value"
+            end
+        ';
+
+        echo_after_body $footer;
+    }
+
+
+For multi-value headers, all of the values of header will be collected in order and returned as a Lua table. For example, response headers
+
+
+    Foo: bar
+    Foo: baz
+
+
+will result in
+
+
+    {"bar", "baz"}
+
+
+to be returned when reading `ngx.header.Foo`.
+
+Note that `ngx.header` is not a normal Lua table so you cannot iterate through it using Lua's `ipairs` function.
+
+For reading *request* headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
 
 ngx.req.get_uri_args
 --------------------

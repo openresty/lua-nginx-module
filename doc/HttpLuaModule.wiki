@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc1] released on 8 September 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc2] released on 12 September 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1048,52 +1048,99 @@ before sending out the response headers.
 == ngx.header.HEADER ==
 '''syntax:''' ''ngx.header.HEADER = VALUE''
 
+'''syntax:''' ''value = ngx.header.HEADER''
+
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Set/add/clear the current request's response headers. Underscores (<code>_</code>) in the header names will be replaced by dashes (<code>-</code>) and the header names will be matched case-insentively.
+When assigning to <code>ngx.header.HEADER</code> will set, add, or clear the current request's response header named <code>HEADER</code>. Underscores (<code>_</code>) in the header names will be replaced by dashes (<code>-</code>) and the header names will be matched case-insensitively.
+
 <geshi lang="lua">
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
  
     ngx.header["X-My-Header"] = 'blah blah';
 </geshi>
+
 Multi-value headers can be set this way:
+
 <geshi lang="lua">
     ngx.header['Set-Cookie'] = {'a=32; path=/', 'b=4; path=/'}
 </geshi>
+
 will yield
+
 <geshi lang="bash">
     Set-Cookie: a=32; path=/
     Set-Cookie: b=4; path=/
 </geshi>
+
 in the response headers. Only array-like tables are accepted.
 
 Note that, for those standard headers that only accepts a single value, like <code>Content-Type</code>, only the last element
 in the (array) table will take effect. So
+
 <geshi lang="lua">
     ngx.header.content_type = {'a', 'b'}
 </geshi>
+
 is equivalent to
+
 <geshi lang="lua">
     ngx.header.content_type = 'b'
 </geshi>
+
 Setting a slot to <code>nil</code> effectively removes it from the response headers:
+
 <geshi lang="lua">
     ngx.header["X-My-Header"] = nil;
 </geshi>
+
 same does assigning an empty table:
+
 <geshi lang="lua">
     ngx.header["X-My-Header"] = {};
 </geshi>
-<code>ngx.header</code> is not a normal Lua table so you cannot
-iterate through it.
-
-For reading request headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
-
-Reading values from <code>ngx.header.HEADER</code> is not implemented yet,
-and usually you shouldn't need it.
 
 Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and its friends) will throw out a Lua exception.
+
+Reading <code>ngx.header.HEADER</code> will return the value of the response header named <code>HEADER</code>. Underscores (<code>_</code>) in the header names will also be replaced by dashes (<code>-</code>) and the header names will be matched case-insensitively. If the response header is not present at all, <code>nil</code> will be returned.
+
+This is particularly useful in the context of [[#filter_header_by_lua|filter_header_by_lua]] and [[#filter_header_by_lua_file|filter_header_by_lua_file]], for example,
+
+<geshi lang="nginx">
+    location /test {
+        set $footer '';
+
+        proxy_pass http://some-backend;
+
+        header_filter_by_lua '
+            if ngx.header["X-My-Header"] == "blah" then
+                ngx.var.footer = "some value"
+            end
+        ';
+
+        echo_after_body $footer;
+    }
+</geshi>
+
+For multi-value headers, all of the values of header will be collected in order and returned as a Lua table. For example, response headers
+
+<geshi lang="text">
+    Foo: bar
+    Foo: baz
+</geshi>
+
+will result in
+
+<geshi lang="lua">
+    {"bar", "baz"}
+</geshi>
+
+to be returned when reading <code>ngx.header.Foo</code>.
+
+Note that <code>ngx.header</code> is not a normal Lua table so you cannot iterate through it using Lua's <code>ipairs</code> function.
+
+For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
 == ngx.req.get_uri_args ==
 '''syntax:''' ''args = ngx.req.get_uri_args()''
