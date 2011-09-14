@@ -532,7 +532,7 @@ res3.body = e
 res4.status = 200
 res4.body = f
 " x 4
---- timeout: 2
+--- timeout: 4
 
 
 
