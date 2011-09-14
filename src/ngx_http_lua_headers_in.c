@@ -17,7 +17,7 @@ static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
 static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value,
     ngx_table_elt_t **output_header,
-    ngx_flag_t no_create);
+    unsigned no_create);
 
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
@@ -111,7 +111,7 @@ ngx_http_set_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
 static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         ngx_str_t *value, ngx_table_elt_t **output_header,
-        ngx_flag_t no_create)
+        unsigned no_create)
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
@@ -312,7 +312,7 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
-        ngx_str_t value, ngx_flag_t override)
+        ngx_str_t value, unsigned override)
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;

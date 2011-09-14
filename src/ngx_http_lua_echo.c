@@ -8,7 +8,7 @@
 #include <math.h>
 
 
-static int ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline);
+static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
 static size_t ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i);
 static u_char * ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst);
 
@@ -30,7 +30,7 @@ ngx_http_lua_ngx_say(lua_State *L)
 
 
 static int
-ngx_http_lua_ngx_echo(lua_State *L, ngx_flag_t newline)
+ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;

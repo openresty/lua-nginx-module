@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.2.1rc20](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 1 September 2011.
+This document describes ngx_lua [v0.3.1rc2](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 12 September 2011.
 
 Synopsis
 ========
@@ -190,7 +190,7 @@ as long as you use the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModul
 to let the nginx core do all your
 requests to mysql, postgresql, memcached, redis,
 upstream http web services, and etc etc etc (see
-[ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [ngx_memc](http://wiki.nginx.org/HttpMemcModule), [ngx_redis2](http://github.com/agentzh/redis2-nginx-module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+[HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
 The Lua interpreter instance is shared across all
 the requests in a single nginx worker process.
@@ -1082,52 +1082,99 @@ ngx.header.HEADER
 -----------------
 **syntax:** *ngx.header.HEADER = VALUE*
 
+**syntax:** *value = ngx.header.HEADER*
+
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Set/add/clear the current request's response headers. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insentively.
+When assigning to `ngx.header.HEADER` will set, add, or clear the current request's response header named `HEADER`. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insensitively.
+
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
     ngx.header.content_type = 'text/plain';
  
     ngx.header["X-My-Header"] = 'blah blah';
 
+
 Multi-value headers can be set this way:
+
 
     ngx.header['Set-Cookie'] = {'a=32; path=/', 'b=4; path=/'}
 
+
 will yield
+
 
     Set-Cookie: a=32; path=/
     Set-Cookie: b=4; path=/
+
 
 in the response headers. Only array-like tables are accepted.
 
 Note that, for those standard headers that only accepts a single value, like `Content-Type`, only the last element
 in the (array) table will take effect. So
 
+
     ngx.header.content_type = {'a', 'b'}
+
 
 is equivalent to
 
+
     ngx.header.content_type = 'b'
+
 
 Setting a slot to `nil` effectively removes it from the response headers:
 
+
     ngx.header["X-My-Header"] = nil;
+
 
 same does assigning an empty table:
 
+
     ngx.header["X-My-Header"] = {};
 
-`ngx.header` is not a normal Lua table so you cannot
-iterate through it.
-
-For reading request headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
-
-Reading values from `ngx.header.HEADER` is not implemented yet,
-and usually you shouldn't need it.
 
 Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly with [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) and its friends) will throw out a Lua exception.
+
+Reading `ngx.header.HEADER` will return the value of the response header named `HEADER`. Underscores (`_`) in the header names will also be replaced by dashes (`-`) and the header names will be matched case-insensitively. If the response header is not present at all, `nil` will be returned.
+
+This is particularly useful in the context of [filter_header_by_lua](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua) and [filter_header_by_lua_file](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua_file), for example,
+
+
+    location /test {
+        set $footer '';
+
+        proxy_pass http://some-backend;
+
+        header_filter_by_lua '
+            if ngx.header["X-My-Header"] == "blah" then
+                ngx.var.footer = "some value"
+            end
+        ';
+
+        echo_after_body $footer;
+    }
+
+
+For multi-value headers, all of the values of header will be collected in order and returned as a Lua table. For example, response headers
+
+
+    Foo: bar
+    Foo: baz
+
+
+will result in
+
+
+    {"bar", "baz"}
+
+
+to be returned when reading `ngx.header.Foo`.
+
+Note that `ngx.header` is not a normal Lua table so you cannot iterate through it using Lua's `ipairs` function.
+
+For reading *request* headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
 
 ngx.req.get_uri_args
 --------------------
@@ -1996,7 +2043,7 @@ Compatibility
 
 The following versions of Nginx should work with this module:
 
-*   1.0.x (last tested: 1.0.5)
+*   1.0.x (last tested: 1.0.6)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
@@ -2109,11 +2156,38 @@ Known Issues
 
 assuming your current Lua module is named `foo.bar`. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the `Data Sharing within an Nginx Worker` for the reasons of this danger.
 
+Changes
+=======
+
+v0.3.0
+------
+**New features**
+
+* added the [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua) and [header_filter_by_lua_file](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua_file) directives. thanks Liseen Wan (万珣新).
+* implemented the PCRE regex API for Lua: [ngx.re.match](http://wiki.nginx.org/HttpLuaModule#ngx.re.match), [ngx.re.gmatch](http://wiki.nginx.org/HttpLuaModule#ngx.re.gmatch), [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub), and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub).
+* now we add the `ngx` and `ndk` table into `package.loaded` such that the user can write `local ngx = require 'ngx'` and `local ndk = require 'ndk'`. thanks @Lance.
+* added new directive [lua_regex_cache_max_entries](http://wiki.nginx.org/HttpLuaModule#lua_regex_cache_max_entries) to control the upper limit of the worker-process-level compiled-regex cache enabled by the `o` regex option.
+* implemented the special [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) Lua table for user programmers to store per-request Lua context data for their applications. thanks 欧远宁 for suggesting this feature.
+* now [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) and [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) allow (nested) array-like table arguments. the array elements in them will be sent piece by piece. this will avoid string concatenation for templating engines like [ltp](http://www.savarese.com/software/ltp/).
+* implemented the [ngx.req.get_post_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_post_args) method for fetching url-encoded POST query arguments from within Lua.
+* implemented the [ngx.req.get_uri_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_uri_args) method to fetch parsed URL query arguments from within Lua. thanks Bertrand Mansion (golgote).
+* added new function [ngx.parse_http_time](http://wiki.nginx.org/HttpLuaModule#ngx.parse_http_time), thanks James Hurst.
+* now we allow Lua boolean and `nil` values in arguments to [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print), [ngx.log](http://wiki.nginx.org/HttpLuaModule#ngx.log) and [print](http://wiki.nginx.org/HttpLuaModule#print).
+* added support for user C macros `LUA_DEFAULT_PATH` and `LUA_DEFAULT_CPATH`. for now we can only define them in `ngx_lua`'s `config` file because nginx `configure`'s `--with-cc-opt` option hates values with double-quotes in them. sigh. [ngx_openresty](http://openresty.org/) is already using this feature to bundle 3rd-party Lua libraries.
+
+**Bug fixes**
+
+* worked-around the "stack overflow" issue while using `luarocks.loader` and disabling [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache), as described as github issue #27. thanks Patrick Crosby.
+* fixed the `zero size buf in output` alert while combining [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) on + [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)/[rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) + [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass)/[fastcgi_pass](http://wiki.nginx.org/HttpFcgiModule#fastcgi_pass). thanks Liseen Wan (万珣新).
+* fixed issues with HTTP 1.0 HEAD requests.
+* made setting `ngx.header.HEADER` after sending out response headers throw out a Lua exception to help debugging issues like github issue #49. thanks Bill Donahue (ikhoyo).
+* fixed an issue regarding defining global variables in C header files: we should have defined the global `ngx_http_lua_exception` in a single compilation unit. thanks @姜大炮.
+
 Authors
 =======
 
 * chaoslawful (王晓哲) <chaoslawful at gmail dot com>
-* Yichun "agentzh" Zhang (章亦春) <agentzh at gmail dot com>
+* Zhang "agentzh" Yichun (章亦春) <agentzh at gmail dot com>
 
 Copyright & License
 ===================
@@ -2143,9 +2217,9 @@ See Also
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
-* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
+* [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule)
+* [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
+* [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
 

@@ -1,8 +1,9 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 /* Copyright (C) agentzh */
 
+#ifndef DDEBUG
 #define DDEBUG 0
-
+#endif
 #include "ddebug.h"
 
 #include <nginx.h>
@@ -13,23 +14,17 @@
 
 static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value,
-    ngx_table_elt_t **output_header, ngx_flag_t no_create);
-
+    ngx_table_elt_t **output_header, unsigned no_create);
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_set_content_type_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-
 static ngx_int_t ngx_http_clear_content_length_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 
@@ -85,7 +80,7 @@ static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
                  ngx_http_set_content_length_header },
 
     { ngx_string("Content-Type"),
-                 0,
+                 offsetof(ngx_http_headers_out_t, content_type),
                  ngx_http_set_content_type_header },
 
     { ngx_null_string, 0, ngx_http_set_header }
@@ -105,12 +100,12 @@ ngx_http_set_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
 static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         ngx_str_t *value, ngx_table_elt_t **output_header,
-        ngx_flag_t no_create)
+        unsigned no_create)
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
-    ngx_uint_t                  i;
-    ngx_flag_t                  matched = 0;
+    ngx_uint_t                   i;
+    unsigned                     matched = 0;
 
     if (hv->no_override) {
         goto new_header;
@@ -129,10 +124,12 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
             i = 0;
         }
 
-        if (h[i].key.len == hv->key.len && ngx_strncasecmp(h[i].key.data,
-                    hv->key.data, h[i].key.len) == 0)
-         {
-            if (value->len == 0) {
+        if (h[i].key.len == hv->key.len
+            && ngx_strncasecmp(hv->key.data, h[i].key.data, h[i].key.len) == 0)
+        {
+            dd("found out header %.*s", (int) h[i].key.len, h[i].key.data);
+
+            if (value->len == 0 || matched) {
                 dd("clearing normal header for %.*s", (int) hv->key.len,
                         hv->key.data);
 
@@ -140,6 +137,9 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
                 h[i].hash = 0;
 
             } else {
+                dd("setting header to value %.*s", (int) value->len,
+                        value->data);
+
                 h[i].value = *value;
                 h[i].hash = 1;
             }
@@ -154,7 +154,7 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     }
 
     if (matched){
-      return NGX_OK;
+        return NGX_OK;
     }
 
     if (no_create && value->len == 0) {
@@ -292,7 +292,7 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
-        ngx_str_t value, ngx_flag_t override)
+        ngx_str_t value, unsigned override)
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
@@ -332,5 +332,97 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
     }
 
     return hv.handler(r, &hv, &value);
+}
+
+
+int
+ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
+        ngx_str_t *key)
+{
+    ngx_table_elt_t            *h;
+    ngx_list_part_t            *part;
+    ngx_uint_t                  i;
+    unsigned                    found;
+
+    dd("looking for response header \"%.*s\"", (int) key->len, key->data);
+
+    switch (key->len) {
+    case 14:
+        if (r->headers_out.content_length == NULL
+            && r->headers_out.content_length_n >= 0
+            && ngx_strncasecmp(key->data, (u_char *) "Content-Length", 14) == 0)
+        {
+            lua_pushinteger(L, (lua_Integer) r->headers_out.content_length_n);
+            return 1;
+        }
+
+        break;
+
+    case 12:
+        if (r->headers_out.content_type.len
+            && ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0)
+        {
+            lua_pushlstring(L, (char *) r->headers_out.content_type.data,
+                    r->headers_out.content_type.len);
+            return 1;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    dd("not a built-in output header");
+
+    found = 0;
+
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0) {
+            continue;
+        }
+
+        if (h[i].key.len == key->len && ngx_strncasecmp(key->data,
+                    h[i].key.data, h[i].key.len) == 0)
+         {
+             if (!found) {
+                 found = 1;
+
+                 lua_pushlstring(L, (char *) h[i].value.data, h[i].value.len);
+                 continue;
+             }
+
+             if (found == 1) {
+                 lua_createtable(L, 4 /* narr */, 0);
+                 lua_insert(L, -2);
+                 lua_rawseti(L, -2, found);
+             }
+
+             found++;
+
+             lua_pushlstring(L, (char *) h[i].value.data, h[i].value.len);
+             lua_rawseti(L, -2, found);
+         }
+    }
+
+    if (found) {
+        return 1;
+    }
+
+    lua_pushnil(L);
+    return 1;
 }
 

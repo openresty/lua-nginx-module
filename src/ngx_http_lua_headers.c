@@ -78,58 +78,10 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
             /* stack: table key */
 
-        lua_pushvalue(L, -1); /* stack: table key key */
+        lua_pushlstring(L, (char *) header[i].value.data,
+                header[i].value.len); /* stack: table key value */
 
-        /* check if header already exists */
-        lua_rawget(L, -3); /* stack: table key value */
-
-        if (lua_isnil(L, -1)) {
-            dd("req.header key %.*s not exist", (int) header[i].key.len,
-                    header[i].key.data);
-
-            lua_pop(L, 1); /* stack: table key */
-
-            lua_pushlstring(L, (char *) header[i].value.data,
-                    header[i].value.len); /* stack: table key value */
-
-            lua_rawset(L, -3); /* stack: table */
-
-        } else {
-            dd("req.header key %.*s exists", (int) header[i].key.len,
-                    header[i].key.data);
-
-            if (! lua_istable(L, -1)) { /* already inserted one value */
-                dd("req.header key %.*s already has one value",
-                        (int) header[i].key.len, header[i].key.data);
-                lua_createtable(L, 4, 0);
-                    /* stack: table key value table */
-
-                lua_insert(L, -2); /* stack: table key table value */
-                lua_rawseti(L, -2, 1); /* stack: table key table */
-
-                lua_pushlstring(L, (char *) header[i].value.data,
-                        header[i].value.len);
-                    /* stack: table key table value */
-
-                lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
-                    /* stack: table key table */
-
-                lua_rawset(L, -3); /* stack: table */
-
-            } else {
-                dd("req.header key %.*s already has multi values",
-                        (int) header[i].key.len, header[i].key.data);
-
-                lua_pushlstring(L, (char *) header[i].value.data,
-                        header[i].value.len);
-                    /* stack: table key table value */
-
-                lua_rawseti(L, -2, lua_objlen(L, -2) + 1);
-                    /* stack: table key table */
-
-                lua_pop(L, 2); /* stack: table */
-            }
-        }
+        ngx_http_lua_set_multi_value_table(L, -3);
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua request header: \"%V: %V\"",
@@ -143,7 +95,44 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 int
 ngx_http_lua_ngx_header_get(lua_State *L)
 {
-    return luaL_error(L, "header get not implemented yet");
+    ngx_http_request_t          *r;
+    u_char                      *p;
+    ngx_str_t                    key;
+    ngx_uint_t                   i;
+    size_t                       len;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    /* we skip the first argument that is the table */
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+
+    dd("key: %.*s, len %d", (int) len, p, (int) len);
+
+    /* replace "_" with "-" */
+    for (i = 0; i < len; i++) {
+        if (p[i] == '_') {
+            p[i] = '-';
+        }
+    }
+
+    key.data = ngx_palloc(r->pool, len + 1);
+    if (key.data == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    ngx_memcpy(key.data, p, len);
+
+    key.data[len] = '\0';
+
+    key.len = len;
+
+    return ngx_http_lua_get_output_header(L, r, &key);
 }
 
 

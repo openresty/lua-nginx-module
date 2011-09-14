@@ -223,7 +223,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->content_src_key,
-            &err, llcf->enable_code_cache);
+            &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -277,7 +277,7 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->content_src.value.data,
             llcf->content_src.value.len, llcf->content_src_key,
-            "content_by_lua", &err, llcf->enable_code_cache);
+            "content_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
