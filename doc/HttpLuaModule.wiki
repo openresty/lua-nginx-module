@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc2] released on 12 September 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc3] released on 13 September 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1484,13 +1484,35 @@ Force flushing the response outputs. This operation has no effect in HTTP 1.0 bu
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-When <code>status >= 200</code> (<code>ngx.HTTP_OK</code>), it will interrupt the execution of the current Lua thread and returns
-status code to nginx.
+When <code>status >= 200</code> (<code>ngx.HTTP_OK</code>), it will interrupt the execution of the current request and return status code to nginx.
 
-When <code>status == 0</code> (<code>ngx.OK</code>), it will quits the current phase handler (or content handler if [[#content_by_lua|content_by_lua]] directives are used).
+When <code>status == 0</code> (<code>ngx.OK</code>), it will quits the current phase handler (or content handler if the [[#content_by_lua|content_by_lua]] directive are used).
 
 The <code>status</code> argument can be <code>ngx.OK</code>, <code>ngx.ERROR</code>, <code>ngx.HTTP_NOT_FOUND</code>,
 <code>ngx.HTTP_MOVED_TEMPORARILY</code>, or other [[#HTTP status constants|HTTP status constants]].
+
+To return an error page with custom contents, use code snippets like this:
+
+<geshi lang="lua">
+    ngx.status = ngx.HTTP_GONE
+    ngx.say("This is our own content")
+    -- to cause quit the whole request rather than the current phase handler
+    ngx.exit(ngx.HTTP_OK)
+</geshi>
+
+The effect in action:
+
+<geshi lang="bash">
+    $ curl -i http://localhost/test
+    HTTP/1.1 410 Gone
+    Server: nginx/1.0.6
+    Date: Thu, 15 Sep 2011 00:51:48 GMT
+    Content-Type: text/plain
+    Transfer-Encoding: chunked
+    Connection: keep-alive
+
+    This is our own content
+</geshi>
 
 == ngx.eof ==
 '''syntax:''' ''ngx.eof()''

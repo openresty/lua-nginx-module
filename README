@@ -8,9 +8,9 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc2
+    This document describes ngx_lua v0.3.1rc3
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
-    on 12 September 2011.
+    on 13 September 2011.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -1341,14 +1341,34 @@ Nginx API for Lua
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     When "status >= 200" ("ngx.HTTP_OK"), it will interrupt the execution of
-    the current Lua thread and returns status code to nginx.
+    the current request and return status code to nginx.
 
     When "status == 0" ("ngx.OK"), it will quits the current phase handler
-    (or content handler if content_by_lua directives are used).
+    (or content handler if the content_by_lua directive are used).
 
     The "status" argument can be "ngx.OK", "ngx.ERROR",
     "ngx.HTTP_NOT_FOUND", "ngx.HTTP_MOVED_TEMPORARILY", or other HTTP status
     constants.
+
+    To return an error page with custom contents, use code snippets like
+    this:
+
+        ngx.status = ngx.HTTP_GONE
+        ngx.say("This is our own content")
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
+
+    The effect in action:
+
+        $ curl -i http://localhost/test
+        HTTP/1.1 410 Gone
+        Server: nginx/1.0.6
+        Date: Thu, 15 Sep 2011 00:51:48 GMT
+        Content-Type: text/plain
+        Transfer-Encoding: chunked
+        Connection: keep-alive
+
+        This is our own content
 
   ngx.eof
     syntax: *ngx.eof()*

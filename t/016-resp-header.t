@@ -561,3 +561,35 @@ nil
 --- response_body
 nil
 
+
+
+=== TEST 29: override domains in the cookie
+--- config
+    location /foo {
+        echo hello;
+        add_header Set-Cookie 'foo=bar; Domain=backend.int';
+        add_header Set-Cookie 'baz=bah; Domain=backend.int';
+    }
+
+    location /main {
+        proxy_pass http://127.0.0.1:$server_port/foo;
+        header_filter_by_lua '
+            local cookies = ngx.header.set_cookie
+            if not cookies then return end
+            if type(cookies) ~= "table" then cookies = {cookies} end
+            local newcookies = {}
+            for i, val in ipairs(cookies) do
+                local newval = string.gsub(val, "([dD]omain)=[%w_-\\\\.]+",
+                          "%1=external.domain.com")
+                table.insert(newcookies, newval)
+            end
+            ngx.header.set_cookie = newcookies
+        ';
+    }
+--- request
+    GET /main
+--- response_headers
+Set-Cookie: foo=bar; Domain=external.domain.com, baz=bah; Domain=external.domain.com
+--- response_body
+hello
+

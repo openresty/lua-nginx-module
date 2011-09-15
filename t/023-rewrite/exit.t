@@ -505,3 +505,26 @@ GET /lua
 --- response_body
 morning
 
+
+
+=== TEST 16: error page with custom body
+--- config
+    error_page 410 @err;
+    location @err {
+        echo blah blah;
+    }
+    location /foo {
+        rewrite_by_lua '
+            ngx.status = ngx.HTTP_GONE
+            ngx.say("This is our own content")
+            -- to cause quit the whole request rather than the current phase handler
+            ngx.exit(ngx.HTTP_OK)
+        ';
+        echo Hello;
+    }
+--- request
+    GET /foo
+--- response_body
+This is our own content
+--- error_code: 410
+
