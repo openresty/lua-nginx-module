@@ -1484,9 +1484,9 @@ Force flushing the response outputs. This operation has no effect in HTTP 1.0 bu
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-When <code>status >= 200</code> (<code>ngx.HTTP_OK</code>), it will interrupt the execution of the current request and return status code to nginx.
+When <code>status >= 200</code> (i.e., <code>ngx.HTTP_OK</code> and above), it will interrupt the execution of the current request and return status code to nginx.
 
-When <code>status == 0</code> (<code>ngx.OK</code>), it will quits the current phase handler (or content handler if the [[#content_by_lua|content_by_lua]] directive are used).
+When <code>status == 0</code> (i.e., <code>ngx.OK</code>), it will only quit the current phase handler (or the content handler if the [[#content_by_lua|content_by_lua]] directive is used) and continue to run laster phases (if any) for the current request.
 
 The <code>status</code> argument can be <code>ngx.OK</code>, <code>ngx.ERROR</code>, <code>ngx.HTTP_NOT_FOUND</code>,
 <code>ngx.HTTP_MOVED_TEMPORARILY</code>, or other [[#HTTP status constants|HTTP status constants]].

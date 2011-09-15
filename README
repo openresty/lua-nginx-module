@@ -1340,11 +1340,12 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    When "status >= 200" ("ngx.HTTP_OK"), it will interrupt the execution of
-    the current request and return status code to nginx.
+    When "status >= 200" (i.e., "ngx.HTTP_OK" and above), it will interrupt
+    the execution of the current request and return status code to nginx.
 
-    When "status == 0" ("ngx.OK"), it will quits the current phase handler
-    (or content handler if the content_by_lua directive are used).
+    When "status == 0" (i.e., "ngx.OK"), it will only quit the current phase
+    handler (or the content handler if the content_by_lua directive is used)
+    and continue to run laster phases (if any) for the current request.
 
     The "status" argument can be "ngx.OK", "ngx.ERROR",
     "ngx.HTTP_NOT_FOUND", "ngx.HTTP_MOVED_TEMPORARILY", or other HTTP status
