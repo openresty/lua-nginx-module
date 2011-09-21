@@ -4,7 +4,6 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #repeat_each(20000);
-#repeat_each(2);
 repeat_each(2);
 #master_on();
 #workers(1);
@@ -418,4 +417,25 @@ GET /lua
 --- error_code: 200
 --- response_body
 Hi
+
+
+
+=== TEST 11: pcall safe
+--- config
+    location /lua {
+        content_by_lua '
+            function f ()
+                ngx.say("hello")
+                ngx.exit(200)
+            end
+
+            pcall(f)
+            ngx.say("world")
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 200
+--- response_body
+hello
 

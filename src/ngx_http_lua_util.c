@@ -28,6 +28,10 @@ static void init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path);
 static void ngx_http_lua_inject_log_consts(lua_State *L);
+static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref);
+static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref);
 
 
 #ifndef LUA_PATH_SEP
@@ -1109,6 +1113,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                         "lua thread yielded");
 
+                if (ctx->exited) {
+                    return ngx_http_lua_handle_exit(L, r, ctx, cc_ref);
+                }
+
+                if (ctx->exec_uri.len) {
+                    return ngx_http_lua_handle_exec(L, r, ctx, cc_ref);
+                }
+
 #if 0
                 ngx_http_lua_dump_postponed(r);
 #endif
@@ -1164,110 +1176,11 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             msg = lua_tostring(cc, -1);
 
         } else {
-            if (lua_isnil(cc, -1)) {
-                if (ctx->exited) {
-                    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                            "lua thread aborting request with status %d",
-                            ctx->exit_code);
-
-                    ngx_http_lua_del_thread(r, L, cc_ref, 0);
-                    ctx->cc_ref = LUA_NOREF;
-                    ngx_http_lua_request_cleanup(r);
-
-                    if ((ctx->exit_code == NGX_OK &&
-                                ctx->entered_content_phase) ||
-                                (ctx->exit_code >= NGX_HTTP_OK &&
-                                ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
-                    {
-                        rc = ngx_http_lua_send_chain_link(r, ctx,
-                                NULL /* indicate last_buf */);
-
-                        if (rc == NGX_ERROR ||
-                                rc >= NGX_HTTP_SPECIAL_RESPONSE)
-                        {
-                            return rc;
-                        }
-                    }
-
-                    return ctx->exit_code;
-                }
-
-                /* ctx->exited == 0 */
-
-                if (ctx->exec_uri.len) {
-                    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                            "lua thread initiated internal redirect to %V",
-                            &ctx->exec_uri);
-
-                    ngx_http_lua_del_thread(r, L, cc_ref, 0);
-                    ctx->cc_ref = LUA_NOREF;
-                    ngx_http_lua_request_cleanup(r);
-
-                    if (ctx->exec_uri.data[0] == '@') {
-                        if (ctx->exec_args.len > 0) {
-                            ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                                    "query strings %V ignored when exec'ing "
-                                    "named location %V",
-                                    &ctx->exec_args, &ctx->exec_uri);
-                        }
-
-                        r->write_event_handler = ngx_http_request_empty_handler;
-
-                        rc = ngx_http_named_location(r, &ctx->exec_uri);
-                        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
-                        {
-                            return rc;
-                        }
-
-                        if (! ctx->entered_content_phase &&
-                                r != r->connection->data)
-                        {
-                            /* XXX ensure the main request ref count
-                             * is decreased because the current
-                             * request will be quit */
-                            r->main->count--;
-                        }
-
-                        return NGX_DONE;
-                    }
-
-                    dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
-                            ctx->exec_uri.data);
-
-                    /* resume the write event handler */
-                    r->write_event_handler = ngx_http_request_empty_handler;
-
-                    rc = ngx_http_internal_redirect(r, &ctx->exec_uri,
-                            &ctx->exec_args);
-
-                    dd("internal redirect returned %d when in content phase? "
-                            "%d", (int) rc, ctx->entered_content_phase);
-
-                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-                        return rc;
-                    }
-
-                    dd("XXYY HERE %d\n", (int) r->main->count);
-
-                    if (! ctx->entered_content_phase &&
-                            r != r->connection->data)
-                    {
-                        /* XXX ensure the main request ref count
-                         * is decreased because the current
-                         * request will be quit */
-                        r->main->count--;
-                    }
-
-                    return NGX_DONE;
-                }
-            }
-
             msg = "unknown reason";
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "lua handler aborted: %s: %s",
-                err, msg);
+                "lua handler aborted: %s: %s", err, msg);
 
         ngx_http_lua_del_thread(r, L, cc_ref, 0);
         ctx->cc_ref = LUA_NOREF;
@@ -2232,5 +2145,111 @@ ngx_http_lua_inject_misc_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_set);
     lua_setfield(L, -2, "__newindex");
     lua_setmetatable(L, -2);
+}
+
+
+static ngx_int_t
+ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref)
+{
+    ngx_int_t               rc;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua thread initiated internal redirect to %V",
+            &ctx->exec_uri);
+
+    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ctx->cc_ref = LUA_NOREF;
+    ngx_http_lua_request_cleanup(r);
+
+    if (ctx->exec_uri.data[0] == '@') {
+        if (ctx->exec_args.len > 0) {
+            ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                    "query strings %V ignored when exec'ing "
+                    "named location %V",
+                    &ctx->exec_args, &ctx->exec_uri);
+        }
+
+        r->write_event_handler = ngx_http_request_empty_handler;
+
+        rc = ngx_http_named_location(r, &ctx->exec_uri);
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
+        {
+            return rc;
+        }
+
+        if (! ctx->entered_content_phase &&
+                r != r->connection->data)
+        {
+            /* XXX ensure the main request ref count
+             * is decreased because the current
+             * request will be quit */
+            r->main->count--;
+        }
+
+        return NGX_DONE;
+    }
+
+    dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
+            ctx->exec_uri.data);
+
+    /* resume the write event handler */
+    r->write_event_handler = ngx_http_request_empty_handler;
+
+    rc = ngx_http_internal_redirect(r, &ctx->exec_uri,
+            &ctx->exec_args);
+
+    dd("internal redirect returned %d when in content phase? "
+            "%d", (int) rc, ctx->entered_content_phase);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return rc;
+    }
+
+    dd("XXYY HERE %d\n", (int) r->main->count);
+
+    if (! ctx->entered_content_phase &&
+            r != r->connection->data)
+    {
+        /* XXX ensure the main request ref count
+         * is decreased because the current
+         * request will be quit */
+        r->main->count--;
+    }
+
+    return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref)
+{
+    ngx_int_t           rc;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua thread aborting request with status %d",
+            ctx->exit_code);
+
+    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ctx->cc_ref = LUA_NOREF;
+    ngx_http_lua_request_cleanup(r);
+
+    if ((ctx->exit_code == NGX_OK &&
+                ctx->entered_content_phase) ||
+                (ctx->exit_code >= NGX_HTTP_OK &&
+                ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
+    {
+        rc = ngx_http_lua_send_chain_link(r, ctx,
+                NULL /* indicate last_buf */);
+
+        if (rc == NGX_ERROR ||
+                rc >= NGX_HTTP_SPECIAL_RESPONSE)
+        {
+            return rc;
+        }
+    }
+
+    return ctx->exit_code;
 }
 

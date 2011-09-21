@@ -97,8 +97,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     ctx->exec_uri = uri;
     ctx->exec_args = args;
 
-    lua_pushnil(L);
-    return lua_error(L);
+    return lua_yield(L, 0);
 }
 
 
@@ -174,7 +173,6 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     ctx->exit_code = rc;
     ctx->exited = 1;
 
-    lua_pushnil(L);
-    return lua_error(L);
+    return lua_yield(L, 0);
 }
 

@@ -255,7 +255,13 @@ uid: 33
         header_filter_by_lua '
             local str = "";
             local args = ngx.req.get_uri_args()
+            local keys = {}
             for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                local val = args[key]
                 if type(val) == "table" then
                     str = str .. table.concat(val, ", ")
                 else

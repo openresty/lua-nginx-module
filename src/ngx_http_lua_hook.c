@@ -1,6 +1,8 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
 
 #include <nginx.h>
 #include "ngx_http_lua_hook.h"
@@ -88,8 +90,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
     ctx->exit_code = rc;
     ctx->exited = 1;
 
-    lua_pushnil(L);
-    return lua_error(L);
+    dd("calling yield");
+    return lua_yield(L, 0);
 }
 
 

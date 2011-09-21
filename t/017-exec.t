@@ -376,3 +376,26 @@ hello
 --- response_body
 hello
 
+
+
+=== TEST 17: pcall safe
+--- config
+    location /lua {
+        content_by_lua '
+            function f ()
+                ngx.exec("/hi")
+            end
+
+            pcall(f)
+            ngx.say("hello")
+        ';
+    }
+    location /hi {
+        echo hi;
+    }
+--- request
+GET /lua
+--- error_code: 200
+--- response_body
+hi
+
