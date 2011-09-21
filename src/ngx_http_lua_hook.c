@@ -57,45 +57,6 @@ ngx_http_lua_atpanic(lua_State *L)
 
 
 int
-ngx_http_lua_ngx_exit(lua_State *L)
-{
-    ngx_http_request_t          *r;
-    ngx_http_lua_ctx_t          *ctx;
-    ngx_int_t                    rc;
-
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one argument");
-    }
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        return luaL_error(L, "no request ctx found");
-    }
-
-    rc = (ngx_int_t) luaL_checkinteger(L, 1);
-
-    if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
-        return luaL_error(L, "attempt to call ngx.exit after sending "
-                "out the headers");
-    }
-
-    ctx->exit_code = rc;
-    ctx->exited = 1;
-
-    dd("calling yield");
-    return lua_yield(L, 0);
-}
-
-
-int
 ngx_http_lua_ngx_escape_uri(lua_State *L)
 {
     ngx_http_request_t      *r;

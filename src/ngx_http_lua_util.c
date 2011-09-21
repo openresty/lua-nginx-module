@@ -15,7 +15,7 @@
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_echo.h"
 #include "ngx_http_lua_time.h"
-#include "ngx_http_lua_redirect.h"
+#include "ngx_http_lua_control.h"
 #include "ngx_http_lua_ndk.h"
 #include "ngx_http_lua_subrequest.h"
 #include "ngx_http_lua_log.h"

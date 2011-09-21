@@ -13,8 +13,6 @@ extern jmp_buf ngx_http_lua_exception;
 
 int ngx_http_lua_atpanic(lua_State *L);
 
-int ngx_http_lua_ngx_exit(lua_State *L);
-
 int ngx_http_lua_ngx_escape_uri(lua_State *L);
 int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 
