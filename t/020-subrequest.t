@@ -731,3 +731,27 @@ hi
 POST
 hello
 
+
+
+=== TEST 29: Last-Modified response header for static file subrequest
+--- config
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/foo.html")
+
+            ngx.say(res.status)
+            ngx.say(res.header["Last-Modified"])
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- user_files
+>>> foo.html
+hello, static file
+--- response_body_like chomp
+^200
+
+hello, static file$
+--- SKIP
+
