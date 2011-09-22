@@ -4,7 +4,7 @@
 
 #include "ddebug.h"
 
-#include "ngx_http_lua_common.h"
+#include "ngx_http_lua_args.h"
 #include "ngx_http_lua_util.h"
 
 

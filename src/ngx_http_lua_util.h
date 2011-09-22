@@ -48,8 +48,6 @@ void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         ngx_uint_t type);
 uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
-void ngx_http_lua_inject_http_consts(lua_State *L);
-void ngx_http_lua_inject_core_consts(lua_State *L);
 void ngx_http_lua_inject_req_api(lua_State *L);
 
 

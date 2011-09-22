@@ -16,6 +16,7 @@
 #include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
+#include "ngx_http_lua_consts.h"
 
 
 static void ngx_http_lua_inject_arg_api(lua_State *L,

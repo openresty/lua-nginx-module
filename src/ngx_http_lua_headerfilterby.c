@@ -18,6 +18,7 @@
 #include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
+#include "ngx_http_lua_consts.h"
 
 
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
