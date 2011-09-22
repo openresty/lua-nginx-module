@@ -1,9 +1,10 @@
 #ifndef DDEBUG
-#define DDEBUG 0
+#define DDEBUG 1
 #endif
 #include "ddebug.h"
 
 #include "ngx_http_lua_control.h"
+#include "ngx_http_lua_util.h"
 
 
 static int ngx_http_lua_ngx_exec(lua_State *L);
@@ -40,6 +41,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     u_char                      *p;
     u_char                      *q;
     size_t                       len;
+    const char                  *msg;
 
     n = lua_gettop(L);
     if (n != 1 && n != 2) {
@@ -81,12 +83,31 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     if (n == 2) {
         /* read the 2nd argument (args) */
-        p = (u_char *) luaL_checklstring(L, 2, &len);
+        dd("args type: %s", luaL_typename(L, 2));
 
-        user_args.data = ngx_palloc(r->pool, len);
-        ngx_memcpy(user_args.data, p, len);
+        switch (lua_type(L, 2)) {
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            p = (u_char *) lua_tolstring(L, 2, &len);
 
-        user_args.len = len;
+            user_args.data = ngx_palloc(r->pool, len);
+            ngx_memcpy(user_args.data, p, len);
+
+            user_args.len = len;
+            break;
+
+        case LUA_TTABLE:
+            ngx_http_lua_process_args_option(r, L, 2, &user_args);
+
+            dd("user_args: %.*s", (int) user_args.len, user_args.data);
+
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "string, number, or table expected, "
+                    "but got %s", luaL_typename(L, 2));
+            return luaL_argerror(L, 2, msg);
+        }
 
     } else {
         user_args.data = NULL;

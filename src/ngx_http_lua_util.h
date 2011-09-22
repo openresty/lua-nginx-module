@@ -49,6 +49,8 @@ void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
 void ngx_http_lua_inject_req_api(lua_State *L);
+void ngx_http_lua_process_args_option(ngx_http_request_t *r,
+        lua_State *L, int table, ngx_str_t *args);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */

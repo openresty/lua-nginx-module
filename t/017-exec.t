@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -398,4 +398,25 @@ GET /lua
 --- error_code: 200
 --- response_body
 hi
+
+
+
+=== TEST 18: lua table as "args" parameter
+--- config
+    location /lua {
+        content_by_lua '
+            local args = { foo = 3, bar = 4 }
+            ngx.exec("/hi", args)
+        ';
+    }
+    location /hi {
+        echo "foo = $arg_foo";
+        echo "bar = $arg_bar";
+    }
+--- request
+GET /lua
+--- error_code: 200
+--- response_body
+foo = 3
+bar = 4
 

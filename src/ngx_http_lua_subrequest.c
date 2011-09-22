@@ -22,8 +22,6 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
         ngx_string("Content-Length");
 
 
-static void ngx_http_lua_process_args_option(ngx_http_request_t *r,
-        lua_State *L, int table, ngx_str_t *args);
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
         off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
@@ -628,107 +626,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     return rc;
-}
-
-
-static void
-ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
-        int table, ngx_str_t *args)
-{
-    u_char              *key;
-    size_t               key_len;
-    u_char              *value;
-    size_t               value_len;
-    size_t               len = 0;
-    uintptr_t            total_escape = 0;
-    int                  n;
-    int                  i;
-    u_char              *p;
-
-    n = 0;
-    lua_pushnil(L);
-    while (lua_next(L, table - 1) != 0) {
-        if (lua_type(L, -2) != LUA_TSTRING) {
-            luaL_error(L, "attemp to use a non-string key in the "
-                    "\"args\" option table");
-            return;
-        }
-
-        key = (u_char *) lua_tolstring(L, -2, &key_len);
-
-        total_escape += 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
-                NGX_ESCAPE_URI);
-
-        value = (u_char *) lua_tolstring(L, -1, &value_len);
-
-        total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
-                NGX_ESCAPE_URI);
-
-        len += key_len + value_len + (sizeof("=") - 1);
-
-        n++;
-
-        lua_pop(L, 1);
-    }
-
-    len += (size_t) total_escape;
-
-    if (n > 1) {
-        len += (n - 1) * (sizeof("&") - 1);
-    }
-
-    dd("len 1: %d", (int) len);
-
-    p = ngx_palloc(r->pool, len);
-    if (p == 0) {
-        luaL_error(L, "out of memory");
-        return;
-    }
-
-    args->data = p;
-    args->len = len;
-
-    i = 0;
-    lua_pushnil(L);
-    while (lua_next(L, table - 1) != 0) {
-        key = (u_char *) lua_tolstring(L, -2, &key_len);
-
-        if (total_escape) {
-            p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                    NGX_ESCAPE_URI);
-
-        } else {
-            dd("shortcut: no escape required");
-
-            p = ngx_copy(p, key, key_len);
-        }
-
-        *p++ = '=';
-
-        value = (u_char *) lua_tolstring(L, -1, &value_len);
-
-        if (total_escape) {
-            p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                    NGX_ESCAPE_URI);
-
-        } else {
-            p = ngx_copy(p, value, value_len);
-        }
-
-        if (i != n - 1) {
-            /* not the last pair */
-            *p++ = '&';
-        }
-
-        i++;
-        lua_pop(L, 1);
-    }
-
-    if (p - args->data != (ssize_t) len) {
-        luaL_error(L, "buffer error: %d != %d",
-                (int) (p - args->data), (int) len);
-        return;
-    }
 }
 
 
