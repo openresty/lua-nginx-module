@@ -1,5 +1,9 @@
-#include <nginx.h>
-#include "ngx_http_lua_patch.h"
+#ifndef DDEBUG
+#define DDEBUG 0
+#endif
+#include "ddebug.h"
+
+#include "ngx_http_lua_pcrefix.h"
 
 #if (NGX_PCRE)
 

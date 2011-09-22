@@ -73,9 +73,9 @@ src/cache.h
 src/common.h
 src/directive.c
 src/directive.h
-src/hook.c
-src/hook.h
-src/contentby.h
+src/consts.[ch]
+src/contentby.[ch]
+src/pcrefix.[ch]
 src/util.c
 src/clfactory.c
 src/directive.c

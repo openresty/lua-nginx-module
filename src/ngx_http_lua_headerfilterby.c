@@ -8,7 +8,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_patch.h"
+#include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_regex.h"

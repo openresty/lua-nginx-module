@@ -9,7 +9,7 @@
 #include "nginx.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
-#include "ngx_http_lua_patch.h"
+#include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
 #include "ngx_http_lua_headers.h"
