@@ -8,9 +8,9 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc3
+    This document describes ngx_lua v0.3.1rc4
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
-    on 13 September 2011.
+    on 21 September 2011.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -2064,14 +2064,17 @@ Known Issues
         Lua coroutine mechanism freely as in standard Lua again!
 
     *   Because the standard Lua 5.1 interpreter's VM is not fully
-        resumable, the ngx.location.capture and ngx.location.capture_multi
-        methods cannot be used within the context of a Lua pcall()
+        resumable, the methods ngx.location.capture,
+        [[#ngx.location.capture_multi|ngx.location.capture_multi],
+        ngx.redirect, ngx.exec, and ngx.exit cannot be used within the
+        context of a Lua pcall()
         (<http://www.lua.org/manual/5.1/manual.html#pdf-pcall>) or xpcall()
-        (<http://www.lua.org/manual/5.1/manual.html#pdf-xpcall>). If you're
-        heavy on Lua exception model based on Lua's error()
-        (<http://www.lua.org/manual/5.1/manual.html#pdf-error>) and
-        "pcall()"/"xpcall()", use LuaJIT 2.0 instead because LuaJIT 2.0
-        supports fully resume-able VM.
+        (<http://www.lua.org/manual/5.1/manual.html#pdf-xpcall>) when the
+        standard Lua 5.1 interpreter is used; you'll get the following
+        error:
+
+        attempt to yield across metamethod/C-call boundary
+    :To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
 
     *   The ngx.location.capture and ngx.location.capture_multi Lua methods
         cannot capture locations configured by [[HttpEchoModule]]'s

@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc3] released on 13 September 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc4] released on 21 September 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2075,11 +2075,12 @@ filtering chain affects a lot. The correct configure adding order is:
 = Known Issues =
 
 * As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [[#ngx.location.capture|ngx.location.capture]] (actually coroutine modules have been masked off in [[#content_by_lua|content_by_lua]] directives and others). This limitation is a little crucial, but don't worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
-
-* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()]. If you're heavy on Lua exception model based on Lua's [http://www.lua.org/manual/5.1/manual.html#pdf-error error()] and <code>pcall()</code>/<code>xpcall()</code>, use LuaJIT 2.0 instead because LuaJIT 2.0 supports fully resume-able VM.
-
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] when the standard Lua 5.1 interpreter is used; you'll get the following error:
+<geshi lang="text">
+    attempt to yield across metamethod/C-call boundary
+</geshi>
+:To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
 * The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations configured by [[HttpEchoModule]]'s [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives. This won't be fixed in the future due to technical problems.
-
 * '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request isolation design. Especially watch yourself when using <code>require()</code> to import modules, and use this form:
 <geshi lang="nginx">
         local xxx = require('xxx')
