@@ -2070,11 +2070,10 @@ Known Issues
         context of a Lua pcall()
         (<http://www.lua.org/manual/5.1/manual.html#pdf-pcall>) or xpcall()
         (<http://www.lua.org/manual/5.1/manual.html#pdf-xpcall>) when the
-        standard Lua 5.1 interpreter is used; you'll get the following
-        error:
-
-        attempt to yield across metamethod/C-call boundary
-    :To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
+        standard Lua 5.1 interpreter is used; you'll get the error "attempt
+        to yield across metamethod/C-call boundary". To fix this, please use
+        LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able
+        VM.
 
     *   The ngx.location.capture and ngx.location.capture_multi Lua methods
         cannot capture locations configured by [[HttpEchoModule]]'s
