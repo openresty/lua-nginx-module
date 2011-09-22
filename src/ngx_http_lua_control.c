@@ -6,7 +6,29 @@
 #include "ngx_http_lua_control.h"
 
 
-int
+static int ngx_http_lua_ngx_exec(lua_State *L);
+static int ngx_http_lua_ngx_redirect(lua_State *L);
+static int ngx_http_lua_ngx_exit(lua_State *L);
+
+
+void
+ngx_http_lua_inject_control_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
+    lua_setfield(L, -2, "redirect");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_exec);
+    lua_setfield(L, -2, "exec");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
+    lua_setfield(L, -2, "throw_error"); /* deprecated */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
+    lua_setfield(L, -2, "exit");
+}
+
+
+static int
 ngx_http_lua_ngx_exec(lua_State *L)
 {
     int                          n;
@@ -101,7 +123,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_redirect(lua_State *L)
 {
     ngx_http_lua_ctx_t          *ctx;
@@ -177,7 +199,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_exit(lua_State *L)
 {
     ngx_http_request_t          *r;

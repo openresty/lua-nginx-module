@@ -15,6 +15,29 @@ static int ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L);
 static unsigned ngx_http_lua_ngx_re_parse_opts(lua_State *L,
         ngx_regex_compile_t *re, ngx_str_t *opts, int narg);
 static int ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global);
+static int ngx_http_lua_ngx_re_match(lua_State *L);
+static int ngx_http_lua_ngx_re_gmatch(lua_State *L);
+static int ngx_http_lua_ngx_re_sub(lua_State *L);
+static int ngx_http_lua_ngx_re_gsub(lua_State *L);
+
+
+typedef struct {
+    ngx_regex_t                  *regex;
+    int                           ncaptures;
+    int                          *captures;
+
+    ngx_http_lua_complex_value_t    *replace;
+} ngx_http_lua_regex_t;
+
+
+typedef struct {
+    ngx_http_request_t      *request;
+    ngx_regex_t             *regex;
+    int                      ncaptures;
+    int                     *captures;
+    int                      captures_len;
+    unsigned                 compile_once;
+} ngx_http_lua_regex_ctx_t;
 
 
 #define ngx_http_lua_regex_exec(re, s, start, captures, size) \
@@ -22,7 +45,7 @@ static int ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global);
               captures, size)
 
 
-int
+static int
 ngx_http_lua_ngx_re_match(lua_State *L)
 {
     /* u_char                      *p; */
@@ -296,7 +319,7 @@ exec:
 }
 
 
-int
+static int
 ngx_http_lua_ngx_re_gmatch(lua_State *L)
 {
     ngx_http_lua_main_conf_t    *lmcf = NULL;
@@ -673,14 +696,14 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
 }
 
 
-int
+static int
 ngx_http_lua_ngx_re_sub(lua_State *L)
 {
     return ngx_http_lua_ngx_re_sub_helper(L, 0 /* global */);
 }
 
 
-int
+static int
 ngx_http_lua_ngx_re_gsub(lua_State *L)
 {
     return ngx_http_lua_ngx_re_sub_helper(L, 1 /* global */);
@@ -1105,6 +1128,30 @@ exec:
     lua_pushinteger(L, count);
     return 2;
 }
+
+
+void
+ngx_http_lua_inject_regex_api(lua_State *L)
+{
+    /* ngx.re */
+
+    lua_newtable(L);    /* .re */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
+    lua_setfield(L, -2, "match");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
+    lua_setfield(L, -2, "gmatch");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
+    lua_setfield(L, -2, "sub");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
+    lua_setfield(L, -2, "gsub");
+
+    lua_setfield(L, -2, "re");
+}
+
 
 #endif /* NGX_PCRE */
 

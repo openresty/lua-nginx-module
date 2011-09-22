@@ -12,6 +12,7 @@
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_regex.h"
+#include "ngx_http_lua_ndk.h"
 
 
 static void ngx_http_lua_inject_arg_api(lua_State *L,

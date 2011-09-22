@@ -13,7 +13,7 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
 #include "ngx_http_lua_headers.h"
-#include "ngx_http_lua_echo.h"
+#include "ngx_http_lua_output.h"
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_control.h"
 #include "ngx_http_lua_ndk.h"
@@ -27,7 +27,6 @@ static void init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L);
 static void init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path);
-static void ngx_http_lua_inject_log_consts(lua_State *L);
 static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
 static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
@@ -576,39 +575,6 @@ ngx_http_lua_inject_http_consts(lua_State *L)
 
 
 static void
-ngx_http_lua_inject_log_consts(lua_State *L)
-{
-    /* {{{ nginx log level constants */
-    lua_pushinteger(L, NGX_LOG_STDERR);
-    lua_setfield(L, -2, "STDERR");
-
-    lua_pushinteger(L, NGX_LOG_EMERG);
-    lua_setfield(L, -2, "EMERG");
-
-    lua_pushinteger(L, NGX_LOG_ALERT);
-    lua_setfield(L, -2, "ALERT");
-
-    lua_pushinteger(L, NGX_LOG_CRIT);
-    lua_setfield(L, -2, "CRIT");
-
-    lua_pushinteger(L, NGX_LOG_ERR);
-    lua_setfield(L, -2, "ERR");
-
-    lua_pushinteger(L, NGX_LOG_WARN);
-    lua_setfield(L, -2, "WARN");
-
-    lua_pushinteger(L, NGX_LOG_NOTICE);
-    lua_setfield(L, -2, "NOTICE");
-
-    lua_pushinteger(L, NGX_LOG_INFO);
-    lua_setfield(L, -2, "INFO");
-
-    lua_pushinteger(L, NGX_LOG_DEBUG);
-    lua_setfield(L, -2, "DEBUG");
-    /* }}} */
-}
-
-static void
 init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
@@ -649,229 +615,6 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     lua_pop(L, 2);
 
     lua_setglobal(L, "ngx");
-}
-
-
-/**
- * Get nginx internal variables content
- *
- * @retval Always return a string or nil on Lua stack. Return nil when failed
- * to get content, and actual content string when found the specified variable.
- * @seealso ngx_http_lua_var_set
- * */
-int
-ngx_http_lua_var_get(lua_State *L)
-{
-    ngx_http_request_t          *r;
-    u_char                      *p, *lowcase;
-    size_t                       len;
-    ngx_uint_t                   hash;
-    ngx_str_t                    name;
-    ngx_http_variable_value_t   *vv;
-
-#if (NGX_PCRE)
-    u_char                      *val;
-    ngx_uint_t                   n;
-    LUA_NUMBER                   index;
-    int                         *cap;
-#endif
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-#if (NGX_PCRE)
-    if (lua_type(L, -1) == LUA_TNUMBER) {
-        /* it is a regex capturing variable */
-
-        index = lua_tonumber(L, -1);
-
-        if (index <= 0) {
-            lua_pushnil(L);
-            return 1;
-        }
-
-        n = (ngx_uint_t) index * 2;
-
-        dd("n = %d, ncaptures = %d", (int) n, (int) r->ncaptures);
-
-        if (r->captures == NULL || r->captures_data == NULL ||
-                n >= r->ncaptures)
-        {
-            lua_pushnil(L);
-            return 1;
-        }
-
-        /* n >= 0 && n < r->ncaptures */
-
-        cap = r->captures;
-
-        p = r->captures_data;
-
-        val = &p[cap[n]];
-
-        lua_pushlstring(L, (const char *) val, (size_t) (cap[n + 1] - cap[n]));
-
-        return 1;
-    }
-#endif
-
-    p = (u_char *) luaL_checklstring(L, -1, &len);
-
-    lowcase = ngx_palloc(r->pool, len);
-    if (lowcase == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
-
-    hash = ngx_hash_strlow(lowcase, p, len);
-
-    name.len = len;
-    name.data = lowcase;
-
-    vv = ngx_http_get_variable(r, &name, hash);
-
-    if (vv == NULL || vv->not_found) {
-        lua_pushnil(L);
-        return 1;
-    }
-
-    lua_pushlstring(L, (const char *) vv->data, (size_t) vv->len);
-
-    return 1;
-}
-
-
-/**
- * Set nginx internal variable content
- *
- * @retval Always return a boolean on Lua stack. Return true when variable
- * content was modified successfully, false otherwise.
- * @seealso ngx_http_lua_var_get
- * */
-int
-ngx_http_lua_var_set(lua_State *L)
-{
-    ngx_http_variable_t         *v;
-    ngx_http_variable_value_t   *vv;
-    ngx_http_core_main_conf_t   *cmcf;
-    u_char                      *p, *lowcase, *val;
-    size_t                       len;
-    ngx_str_t                    name;
-    ngx_uint_t                   hash;
-    ngx_http_request_t          *r;
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    /* we skip the first argument that is the table */
-
-    /* we read the variable name */
-
-    p = (u_char *) luaL_checklstring(L, 2, &len);
-
-    lowcase = ngx_palloc(r->pool, len + 1);
-    if (lowcase == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
-
-    lowcase[len] = '\0';
-
-    hash = ngx_hash_strlow(lowcase, p, len);
-
-    name.len = len;
-    name.data = lowcase;
-
-    /* we read the variable new value */
-
-    p = (u_char *) luaL_checklstring(L, 3, &len);
-
-    val = ngx_palloc(r->pool, len);
-    if (val == NULL) {
-        return luaL_error(L, "memory allocation erorr");
-    }
-
-    ngx_memcpy(val, p, len);
-
-    /* we fetch the variable itself */
-
-    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
-
-    v = ngx_hash_find(&cmcf->variables_hash, hash, name.data, name.len);
-
-    if (v) {
-        if (! (v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
-            return luaL_error(L, "variable \"%s\" not changeable", lowcase);
-        }
-
-        if (v->set_handler) {
-            vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
-            if (vv == NULL) {
-                return luaL_error(L, "out of memory");
-            }
-
-            vv->valid = 1;
-            vv->not_found = 0;
-            vv->no_cacheable = 0;
-
-            vv->data = val;
-            vv->len = len;
-
-            v->set_handler(r, vv, v->data);
-
-            return 0;
-        }
-
-        if (v->flags & NGX_HTTP_VAR_INDEXED) {
-            vv = &r->variables[v->index];
-
-            vv->valid = 1;
-            vv->not_found = 0;
-            vv->no_cacheable = 0;
-
-            vv->data = val;
-            vv->len = len;
-
-            return 0;
-        }
-
-        return luaL_error(L, "variable \"%s\" cannot be assigned a value",
-                lowcase);
-    }
-
-    /* variable not found */
-
-    return luaL_error(L, "varaible \"%s\" not found for writing; "
-                "maybe it is a built-in variable that is not changeable "
-                "or you sould have used \"set $%s '';\" earlier "
-                "in the config file", lowcase, lowcase);
-}
-
-
-ngx_int_t
-ngx_http_lua_post_request_at_head(ngx_http_request_t *r,
-        ngx_http_posted_request_t *pr)
-{
-    if (pr == NULL) {
-        pr = ngx_palloc(r->pool, sizeof(ngx_http_posted_request_t));
-        if (pr == NULL) {
-            return NGX_ERROR;
-        }
-    }
-
-    pr->request = r;
-    pr->next = r->main->posted_requests;
-    r->main->posted_requests = pr;
-
-    return NGX_OK;
 }
 
 
@@ -1748,119 +1491,6 @@ done:
 }
 
 
-#if defined(NDK) && NDK
-void
-ngx_http_lua_inject_ndk_api(lua_State *L)
-{
-    lua_createtable(L, 0, 1);    /* ndk.* */
-
-    lua_newtable(L);    /* .set_var */
-
-    lua_createtable(L, 0, 2); /* metatable for .set_var */
-    lua_pushcfunction(L, ngx_http_lua_ndk_set_var_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ndk_set_var_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "set_var");
-
-    lua_getglobal(L, "package"); /* ndk package */
-    lua_getfield(L, -1, "loaded"); /* ndk package loaded */
-    lua_pushvalue(L, -3); /* ndk package loaded ndk */
-    lua_setfield(L, -2, "ndk"); /* ndk package loaded */
-    lua_pop(L, 2);
-
-    lua_setglobal(L, "ndk");
-}
-#endif /* defined(NDK) && NDK */
-
-
-void
-ngx_http_lua_inject_time_api(lua_State *L)
-{
-    lua_pushcfunction(L, ngx_http_lua_ngx_utctime);
-    lua_setfield(L, -2, "utctime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "get_now_ts"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "get_now"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_localtime);
-    lua_setfield(L, -2, "localtime");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_time);
-    lua_setfield(L, -2, "time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "get_today"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_today);
-    lua_setfield(L, -2, "today");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_cookie_time);
-    lua_setfield(L, -2, "cookie_time");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_http_time);
-    lua_setfield(L, -2, "http_time");
-
-	lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
-    lua_setfield(L, -2, "parse_http_time");
-}
-
-
-void
-ngx_http_lua_inject_output_api(lua_State *L)
-{
-    lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
-    lua_setfield(L, -2, "send_headers");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_print);
-    lua_setfield(L, -2, "print");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_say);
-    lua_setfield(L, -2, "say");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_flush);
-    lua_setfield(L, -2, "flush");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_eof);
-    lua_setfield(L, -2, "eof");
-}
-
-
-void
-ngx_http_lua_inject_log_api(lua_State *L)
-{
-    ngx_http_lua_inject_log_consts(L);
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_log);
-    lua_setfield(L, -2, "log");
-
-    lua_pushcfunction(L, ngx_http_lua_print);
-    lua_setglobal(L, "print");
-}
-
-
-void
-ngx_http_lua_inject_control_api(lua_State *L)
-{
-    lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
-    lua_setfield(L, -2, "redirect");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_exec);
-    lua_setfield(L, -2, "exec");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
-    lua_setfield(L, -2, "throw_error"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_exit);
-    lua_setfield(L, -2, "exit");
-}
-
-
 void
 ngx_http_lua_inject_string_api(lua_State *L)
 {
@@ -1885,63 +1515,6 @@ ngx_http_lua_inject_string_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
 }
-
-
-void
-ngx_http_lua_inject_subrequest_api(lua_State *L)
-{
-    lua_createtable(L, 0, 2 /* nrec */); /* .location */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
-    lua_setfield(L, -2, "capture");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture_multi);
-    lua_setfield(L, -2, "capture_multi");
-
-    lua_setfield(L, -2, "location");
-}
-
-
-void
-ngx_http_lua_inject_variable_api(lua_State *L)
-{
-    /* {{{ register reference maps */
-    lua_newtable(L);    /* .var */
-
-    lua_createtable(L, 0, 2 /* nrec */); /* metatable for .var */
-    lua_pushcfunction(L, ngx_http_lua_var_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_var_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "var");
-}
-
-
-#if (NGX_PCRE)
-void
-ngx_http_lua_inject_regex_api(lua_State *L)
-{
-    /* ngx.re */
-
-    lua_newtable(L);    /* .re */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
-    lua_setfield(L, -2, "match");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch);
-    lua_setfield(L, -2, "gmatch");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_sub);
-    lua_setfield(L, -2, "sub");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
-    lua_setfield(L, -2, "gsub");
-
-    lua_setfield(L, -2, "re");
-}
-#endif /* NGX_PCRE */
 
 
 void
@@ -1970,22 +1543,6 @@ ngx_http_lua_inject_req_api(lua_State *L)
     lua_setfield(L, -2, "get_post_args");
 
     lua_setfield(L, -2, "req");
-}
-
-
-void
-ngx_http_lua_inject_resp_header_api(lua_State *L)
-{
-    lua_newtable(L);    /* .header */
-
-    lua_createtable(L, 0, 2); /* metatable for .header */
-    lua_pushcfunction(L, ngx_http_lua_ngx_header_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_header_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
-
-    lua_setfield(L, -2, "header");
 }
 
 

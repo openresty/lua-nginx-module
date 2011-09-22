@@ -3,17 +3,22 @@
 #endif
 #include "ddebug.h"
 
-#include "ngx_http_lua_echo.h"
+#include "ngx_http_lua_output.h"
 #include "ngx_http_lua_util.h"
 #include <math.h>
 
 
+static int ngx_http_lua_ngx_say(lua_State *L);
+static int ngx_http_lua_ngx_print(lua_State *L);
+static int ngx_http_lua_ngx_flush(lua_State *L);
+static int ngx_http_lua_ngx_eof(lua_State *L);
+static int ngx_http_lua_ngx_send_headers(lua_State *L);
 static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
 static size_t ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i);
 static u_char * ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst);
 
 
-int
+static int
 ngx_http_lua_ngx_print(lua_State *L)
 {
     dd("calling lua print");
@@ -21,7 +26,7 @@ ngx_http_lua_ngx_print(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_say(lua_State *L)
 {
     dd("calling");
@@ -335,7 +340,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
 /**
  * Force flush out response content
  * */
-int
+static int
 ngx_http_lua_ngx_flush(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -389,7 +394,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
 /**
  * Send last_buf, terminate output stream
  * */
-int
+static int
 ngx_http_lua_ngx_eof(lua_State *L)
 {
     ngx_http_request_t      *r;
@@ -414,6 +419,52 @@ ngx_http_lua_ngx_eof(lua_State *L)
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send eof buf");
+    }
+
+    return 0;
+}
+
+
+void
+ngx_http_lua_inject_output_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
+    lua_setfield(L, -2, "send_headers");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_print);
+    lua_setfield(L, -2, "print");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_say);
+    lua_setfield(L, -2, "say");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_flush);
+    lua_setfield(L, -2, "flush");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_eof);
+    lua_setfield(L, -2, "eof");
+}
+
+
+/**
+ * Send out headers
+ * */
+static int
+ngx_http_lua_ngx_send_headers(lua_State *L)
+{
+    ngx_http_request_t *r;
+    ngx_http_lua_ctx_t *ctx;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+        if (ctx != NULL && ctx->headers_sent == 0) {
+            ngx_http_lua_send_header_if_needed(r, ctx);
+        }
+    } else {
+        dd("(lua-ngx-send-headers) can't find nginx request object!");
     }
 
     return 0;

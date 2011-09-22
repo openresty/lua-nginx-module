@@ -14,6 +14,7 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_ndk.h"
 
 
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;

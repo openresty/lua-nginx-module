@@ -6,8 +6,13 @@
 #include "ngx_http_lua_log.h"
 
 
+static int ngx_http_lua_print(lua_State *L);
+static int ngx_http_lua_ngx_log(lua_State *L);
+
+
 static int log_wrapper(ngx_http_request_t *r, const char *ident, int level,
         lua_State *L);
+static void ngx_http_lua_inject_log_consts(lua_State *L);
 
 
 /**
@@ -167,5 +172,52 @@ done:
     ngx_log_error((ngx_uint_t) level, r->connection->log, 0,
             "%s%s", ident, (buf == NULL) ? (u_char *) "(null)" : buf);
     return 0;
+}
+
+
+void
+ngx_http_lua_inject_log_api(lua_State *L)
+{
+    ngx_http_lua_inject_log_consts(L);
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_log);
+    lua_setfield(L, -2, "log");
+
+    lua_pushcfunction(L, ngx_http_lua_print);
+    lua_setglobal(L, "print");
+}
+
+
+static void
+ngx_http_lua_inject_log_consts(lua_State *L)
+{
+    /* {{{ nginx log level constants */
+    lua_pushinteger(L, NGX_LOG_STDERR);
+    lua_setfield(L, -2, "STDERR");
+
+    lua_pushinteger(L, NGX_LOG_EMERG);
+    lua_setfield(L, -2, "EMERG");
+
+    lua_pushinteger(L, NGX_LOG_ALERT);
+    lua_setfield(L, -2, "ALERT");
+
+    lua_pushinteger(L, NGX_LOG_CRIT);
+    lua_setfield(L, -2, "CRIT");
+
+    lua_pushinteger(L, NGX_LOG_ERR);
+    lua_setfield(L, -2, "ERR");
+
+    lua_pushinteger(L, NGX_LOG_WARN);
+    lua_setfield(L, -2, "WARN");
+
+    lua_pushinteger(L, NGX_LOG_NOTICE);
+    lua_setfield(L, -2, "NOTICE");
+
+    lua_pushinteger(L, NGX_LOG_INFO);
+    lua_setfield(L, -2, "INFO");
+
+    lua_pushinteger(L, NGX_LOG_DEBUG);
+    lua_setfield(L, -2, "DEBUG");
+    /* }}} */
 }
 

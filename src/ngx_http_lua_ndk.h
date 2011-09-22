@@ -6,9 +6,7 @@
 
 
 #if defined(NDK) && NDK
-int ngx_http_lua_ndk_set_var_get(lua_State *L);
-int ngx_http_lua_ndk_set_var_set(lua_State *L);
-int ngx_http_lua_run_set_var_directive(lua_State *L);
+void ngx_http_lua_inject_ndk_api(lua_State *L);
 #endif
 
 

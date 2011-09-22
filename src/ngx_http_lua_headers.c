@@ -10,32 +10,10 @@
 
 
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
+static int ngx_http_lua_ngx_header_get(lua_State *L);
+static int ngx_http_lua_ngx_header_set(lua_State *L);
 
 
-/**
- * Send out headers
- * */
-int
-ngx_http_lua_ngx_send_headers(lua_State *L)
-{
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r) {
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if (ctx != NULL && ctx->headers_sent == 0) {
-            ngx_http_lua_send_header_if_needed(r, ctx);
-        }
-    } else {
-        dd("(lua-ngx-send-headers) can't find nginx request object!");
-    }
-
-    return 0;
-}
 
 
 int
@@ -92,7 +70,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 }
 
 
-int
+static int
 ngx_http_lua_ngx_header_get(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -136,7 +114,7 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_header_set(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -389,5 +367,21 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 
     return 0;
+}
+
+
+void
+ngx_http_lua_inject_resp_header_api(lua_State *L)
+{
+    lua_newtable(L);    /* .header */
+
+    lua_createtable(L, 0, 2); /* metatable for .header */
+    lua_pushcfunction(L, ngx_http_lua_ngx_header_get);
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, ngx_http_lua_ngx_header_set);
+    lua_setfield(L, -2, "__newindex");
+    lua_setmetatable(L, -2);
+
+    lua_setfield(L, -2, "header");
 }
 

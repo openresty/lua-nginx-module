@@ -29,11 +29,13 @@ static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
         ngx_uint_t method, ngx_http_request_body_t *body,
         unsigned share_all_vars);
+static int ngx_http_lua_ngx_location_capture(lua_State *L);
+static int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
 
 
 /* ngx.location.capture is just a thin wrapper around
  * ngx.location.capture_multi */
-int
+static int
 ngx_http_lua_ngx_location_capture(lua_State *L)
 {
     int                 n;
@@ -62,7 +64,7 @@ ngx_http_lua_ngx_location_capture(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 {
     ngx_http_request_t              *r;
@@ -997,5 +999,20 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
         /*  }}} */
     }
+}
+
+
+void
+ngx_http_lua_inject_subrequest_api(lua_State *L)
+{
+    lua_createtable(L, 0, 2 /* nrec */); /* .location */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
+    lua_setfield(L, -2, "capture");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_location_capture_multi);
+    lua_setfield(L, -2, "capture_multi");
+
+    lua_setfield(L, -2, "location");
 }
 
