@@ -64,6 +64,10 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         return luaL_error(L, "no request ctx found");
     }
 
+    if ((r->method & NGX_HTTP_HEAD) || r->header_only) {
+        return 0;
+    }
+
     if (ctx->eof) {
         return luaL_error(L, "seen eof already");
     }
@@ -360,6 +364,10 @@ ngx_http_lua_ngx_flush(lua_State *L)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
+    }
+
+    if ((r->method & NGX_HTTP_HEAD) || r->header_only) {
+        return 0;
     }
 
     if (ctx->eof) {

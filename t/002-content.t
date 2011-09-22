@@ -598,3 +598,38 @@ HEAD /lua HTTP/1.0
 !Content-Length
 --- response_body
 
+
+
+=== TEST 33: headers_sent & HEAD
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say(ngx.headers_sent)
+            ngx.flush()
+            ngx.say(ngx.headers_sent)
+        ';
+    }
+--- request
+HEAD /lua
+--- response_body
+
+
+
+=== TEST 34: headers_sent + GET
+--- config
+    location /lua {
+        content_by_lua '
+            -- print("headers sent: ", ngx.headers_sent)
+            ngx.say(ngx.headers_sent)
+            ngx.say(ngx.headers_sent)
+            -- ngx.flush()
+            ngx.say(ngx.headers_sent)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+false
+true
+true
+
