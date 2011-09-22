@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc6] released on 22 September 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc7] released on 23 September 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1350,6 +1350,20 @@ Named locations are also supported, but query strings are ignored. For example,
         ...
     }
 </geshi>
+
+The optional second <code>args</code> can be used to specify extra URI query arguments, for example:
+
+<geshi lang="lua">
+    ngx.exec("/foo", "a=3&b=hello%20world")
+</geshi>
+
+Alternatively, you can pass a Lua table for the <code>args</code> argument and let ngx_lua do URI escaping and string concatenation automatically for you, for instance,
+
+<geshi lang="lua">
+    ngx.exec("/foo", { a = 3, b = "hello world" })
+</geshi>
+
+The result is exactly the same as the previous example.
 
 Note that this is very different from [[#ngx.redirect|ngx.redirect]] in that
 it's just an internal redirect and no new HTTP traffic is involved.

@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc6](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 22 September 2011.
+This document describes ngx_lua [v0.3.1rc7](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 23 September 2011.
 
 Synopsis
 ========
@@ -1390,6 +1390,20 @@ Named locations are also supported, but query strings are ignored. For example,
         ...
     }
 
+
+The optional second `args` can be used to specify extra URI query arguments, for example:
+
+
+    ngx.exec("/foo", "a=3&b=hello%20world")
+
+
+Alternatively, you can pass a Lua table for the `args` argument and let ngx_lua do URI escaping and string concatenation automatically for you, for instance,
+
+
+    ngx.exec("/foo", { a = 3, b = "hello world" })
+
+
+The result is exactly the same as the previous example.
 
 Note that this is very different from [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect) in that
 it's just an internal redirect and no new HTTP traffic is involved.
