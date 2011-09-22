@@ -751,7 +751,6 @@ GET /lua
 hello, static file
 --- response_body_like chomp
 ^200
-
+[A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4} \d{2}:\d{2}:\d{2} GMT
 hello, static file$
---- SKIP
 

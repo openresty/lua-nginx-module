@@ -833,6 +833,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     ngx_http_headers_out_t      *sr_headers;
     ngx_uint_t                   i;
 
+    u_char                  buf[sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1];
+
     for (index = 0; index < ctx->nsubreqs; index++) {
         dd("summary: reqs %d, subquery %d, waiting %d, req %.*s",
                 (int) ctx->nsubreqs,
@@ -967,6 +969,27 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             lua_pushliteral(cc, "Location"); /* header key */
             lua_pushlstring(cc, (char *) sr_headers->location->value.data,
                     sr_headers->location->value.len); /* head key value */
+            lua_rawset(cc, -3); /* head */
+        }
+
+        if (sr_headers->last_modified_time != -1) {
+            if (sr_headers->status != NGX_HTTP_OK
+                && sr_headers->status != NGX_HTTP_PARTIAL_CONTENT
+                && sr_headers->status != NGX_HTTP_NOT_MODIFIED
+                && sr_headers->status != NGX_HTTP_NO_CONTENT)
+            {
+                sr_headers->last_modified_time = -1;
+                sr_headers->last_modified = NULL;
+            }
+        }
+
+        if (sr_headers->last_modified == NULL
+            && sr_headers->last_modified_time != -1)
+        {
+            (void) ngx_http_time(buf, sr_headers->last_modified_time);
+
+            lua_pushliteral(cc, "Last-Modified"); /* header key */
+            lua_pushlstring(cc, (char *) buf, sizeof(buf)); /* head key value */
             lua_rawset(cc, -3); /* head */
         }
 
