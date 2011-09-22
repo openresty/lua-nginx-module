@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc4](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 21 September 2011.
+This document describes ngx_lua [v0.3.1rc6](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 22 September 2011.
 
 Synopsis
 ========
@@ -1467,6 +1467,16 @@ Usually you don't have to send headers yourself. `ngx_lua` will automatically se
 output contents via [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) or [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print).
 
 Headers will also be sent automatically when [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) exits normally.
+
+ngx.headers_sent
+----------------
+**syntax:** *value = ngx.headers_sent*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Returns `true` if the response headers have been sent (by ngx_lua), and `false` otherwise.
+
+This API was first introduced in ngx_lua v0.3.1rc6.
 
 ngx.print
 ---------

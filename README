@@ -8,9 +8,9 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc4
+    This document describes ngx_lua v0.3.1rc6
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
-    on 21 September 2011.
+    on 22 September 2011.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -1277,6 +1277,17 @@ Nginx API for Lua
 
     Headers will also be sent automatically when content_by_lua exits
     normally.
+
+  ngx.headers_sent
+    syntax: *value = ngx.headers_sent*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Returns "true" if the response headers have been sent (by ngx_lua), and
+    "false" otherwise.
+
+    This API was first introduced in ngx_lua v0.3.1rc6.
 
   ngx.print
     syntax: *ngx.print(...)*
