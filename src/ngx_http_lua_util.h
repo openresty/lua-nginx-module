@@ -50,10 +50,7 @@ uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
         size_t size, ngx_uint_t type);
 void ngx_http_lua_inject_http_consts(lua_State *L);
 void ngx_http_lua_inject_core_consts(lua_State *L);
-void ngx_http_lua_inject_string_api(lua_State *L);
-void ngx_http_lua_inject_variable_api(lua_State *L);
 void ngx_http_lua_inject_req_api(lua_State *L);
-void ngx_http_lua_inject_misc_api(lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */

@@ -5,12 +5,13 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_common.h"
-#include "ngx_http_lua_hook.h"
 #include "ngx_http_lua_util.h"
 
 
 static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
         u_char *buf, u_char *last);
+static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
+static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
 int
@@ -246,5 +247,19 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
     }
 
     return 1;
+}
+
+
+void
+ngx_http_lua_inject_req_args_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
+    lua_setfield(L, -2, "get_uri_args");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
+    lua_setfield(L, -2, "get_query_args"); /* deprecated */
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_post_args);
+    lua_setfield(L, -2, "get_post_args");
 }
 

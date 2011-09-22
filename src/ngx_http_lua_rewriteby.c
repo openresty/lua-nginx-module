@@ -5,7 +5,7 @@
 #include <nginx.h>
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_hook.h"
+#include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_cache.h"
 
 

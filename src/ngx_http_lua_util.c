@@ -8,7 +8,7 @@
 
 #include "nginx.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_hook.h"
+#include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_patch.h"
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
@@ -19,6 +19,9 @@
 #include "ngx_http_lua_ndk.h"
 #include "ngx_http_lua_subrequest.h"
 #include "ngx_http_lua_log.h"
+#include "ngx_http_lua_variable.h"
+#include "ngx_http_lua_string.h"
+#include "ngx_http_lua_misc.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -1492,70 +1495,17 @@ done:
 
 
 void
-ngx_http_lua_inject_string_api(lua_State *L)
-{
-    lua_pushcfunction(L, ngx_http_lua_ngx_escape_uri);
-    lua_setfield(L, -2, "escape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
-    lua_setfield(L, -2, "unescape_uri");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
-    lua_setfield(L, -2, "quote_sql_str");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_decode_base64);
-    lua_setfield(L, -2, "decode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64);
-    lua_setfield(L, -2, "encode_base64");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5_bin);
-    lua_setfield(L, -2, "md5_bin");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_md5);
-    lua_setfield(L, -2, "md5");
-}
-
-
-void
 ngx_http_lua_inject_req_api(lua_State *L)
 {
     /* ngx.req table */
 
     lua_newtable(L);    /* .req */
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_clear);
-    lua_setfield(L, -2, "clear_header");
+    ngx_http_lua_inject_req_header_api(L);
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_set);
-    lua_setfield(L, -2, "set_header");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_headers);
-    lua_setfield(L, -2, "get_headers");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
-    lua_setfield(L, -2, "get_uri_args");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
-    lua_setfield(L, -2, "get_query_args"); /* deprecated */
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_post_args);
-    lua_setfield(L, -2, "get_post_args");
+    ngx_http_lua_inject_req_args_api(L);
 
     lua_setfield(L, -2, "req");
-}
-
-
-void
-ngx_http_lua_inject_misc_api(lua_State *L)
-{
-    /* ngx. getter and setter */
-    lua_createtable(L, 0, 2); /* metatable for .ngx */
-    lua_pushcfunction(L, ngx_http_lua_ngx_get);
-    lua_setfield(L, -2, "__index");
-    lua_pushcfunction(L, ngx_http_lua_ngx_set);
-    lua_setfield(L, -2, "__newindex");
-    lua_setmetatable(L, -2);
 }
 
 

@@ -12,11 +12,12 @@
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
 static int ngx_http_lua_ngx_header_get(lua_State *L);
 static int ngx_http_lua_ngx_header_set(lua_State *L);
+static int ngx_http_lua_ngx_req_get_headers(lua_State *L);
+static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
+static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 
 
-
-
-int
+static int
 ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     ngx_list_part_t              *part;
     ngx_table_elt_t              *header;
@@ -239,7 +240,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_req_header_clear(lua_State *L)
 {
     if (lua_gettop(L) != 1) {
@@ -253,7 +254,7 @@ ngx_http_lua_ngx_req_header_clear(lua_State *L)
 }
 
 
-int
+static int
 ngx_http_lua_ngx_req_header_set(lua_State *L)
 {
     if (lua_gettop(L) != 2) {
@@ -383,5 +384,19 @@ ngx_http_lua_inject_resp_header_api(lua_State *L)
     lua_setmetatable(L, -2);
 
     lua_setfield(L, -2, "header");
+}
+
+
+void
+ngx_http_lua_inject_req_header_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_clear);
+    lua_setfield(L, -2, "clear_header");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_header_set);
+    lua_setfield(L, -2, "set_header");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_headers);
+    lua_setfield(L, -2, "get_headers");
 }
 

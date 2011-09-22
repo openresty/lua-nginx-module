@@ -6,13 +6,16 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_setby.h"
-#include "ngx_http_lua_hook.h"
+#include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_patch.h"
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_ndk.h"
+#include "ngx_http_lua_variable.h"
+#include "ngx_http_lua_string.h"
+#include "ngx_http_lua_misc.h"
 
 
 static void ngx_http_lua_inject_arg_api(lua_State *L,
