@@ -6,6 +6,7 @@
 
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_crc32.h"
 
 
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
@@ -17,6 +18,8 @@ static int ngx_http_lua_ngx_md5(lua_State *L);
 static int ngx_http_lua_ngx_md5_bin(lua_State *L);
 static int ngx_http_lua_ngx_decode_base64(lua_State *L);
 static int ngx_http_lua_ngx_encode_base64(lua_State *L);
+static int ngx_http_lua_ngx_crc32_short(lua_State *L);
+static int ngx_http_lua_ngx_crc32_long(lua_State *L);
 
 
 void
@@ -42,6 +45,12 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_crc32_short);
+    lua_setfield(L, -2, "crc32_short");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_crc32_long);
+    lua_setfield(L, -2, "crc32_long");
 }
 
 
@@ -169,7 +178,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     p = ngx_palloc(r->pool, dlen);
     if (p == NULL) {
-        return luaL_error(L, "memory allocation error");
+        return luaL_error(L, "out of memory");
     }
 
     dst = p;
@@ -178,6 +187,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     if (escape == 0) {
         p = ngx_copy(p, src, len);
+
     } else {
         p = (u_char *) ngx_http_lua_ngx_escape_sql_str(p, src, len);
     }
@@ -280,21 +290,12 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
 static int
 ngx_http_lua_ngx_md5(lua_State *L)
 {
-    ngx_http_request_t      *r;
     u_char                  *src;
     size_t                   slen;
 
     ngx_md5_t                md5;
     u_char                   md5_buf[MD5_DIGEST_LENGTH];
     u_char                   hex_buf[2 * sizeof(md5_buf)];
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -323,20 +324,11 @@ ngx_http_lua_ngx_md5(lua_State *L)
 static int
 ngx_http_lua_ngx_md5_bin(lua_State *L)
 {
-    ngx_http_request_t      *r;
     u_char                  *src;
     size_t                   slen;
 
     ngx_md5_t                md5;
     u_char                   md5_buf[MD5_DIGEST_LENGTH];
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -383,6 +375,7 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
     if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
         src.data     = (u_char *) "";
         src.len      = 0;
+
     } else {
         src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
     }
@@ -396,11 +389,8 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
 
     if (ngx_decode_base64(&p, &src) == NGX_OK) {
         lua_pushlstring(L, (char *) p.data, p.len);
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "lua decode ok");
+
     } else {
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "lua sent invalid base64 encoding");
         lua_pushnil(L);
     }
 
@@ -431,6 +421,7 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
     if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
         src.data     = (u_char *) "";
         src.len      = 0;
+
     } else {
         src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
     }
@@ -448,6 +439,42 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
 
     ngx_pfree(r->pool, p.data);
 
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_crc32_short(lua_State *L)
+{
+    u_char                  *p;
+    size_t                   len;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument, but got %d",
+                lua_gettop(L));
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    lua_pushinteger(L, (lua_Integer) ngx_crc32_short(p, len));
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_crc32_long(lua_State *L)
+{
+    u_char                  *p;
+    size_t                   len;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument, but got %d",
+                lua_gettop(L));
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    lua_pushinteger(L, (lua_Integer) ngx_crc32_long(p, len));
     return 1;
 }
 
