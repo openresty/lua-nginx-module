@@ -456,7 +456,7 @@ ngx_http_lua_ngx_crc32_short(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
-    lua_pushinteger(L, (lua_Integer) ngx_crc32_short(p, len));
+    lua_pushnumber(L, (lua_Number) ngx_crc32_short(p, len));
     return 1;
 }
 
@@ -474,7 +474,7 @@ ngx_http_lua_ngx_crc32_long(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
-    lua_pushinteger(L, (lua_Integer) ngx_crc32_long(p, len));
+    lua_pushnumber(L, (lua_Number) ngx_crc32_long(p, len));
     return 1;
 }
 
