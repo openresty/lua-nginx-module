@@ -8,7 +8,7 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc7
+    This document describes ngx_lua v0.3.1rc8
     (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
     on 23 September 2011.
 
@@ -1432,7 +1432,44 @@ Nginx API for Lua
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
 
-    Decode "str" as a base64 digest to the raw form.
+    Decodes the "str" argument as a base64 digest to the raw form. Returns
+    "nil" if "str" is not well formed.
+
+  ngx.crc32_short
+    syntax: *intval = ngx.crc32_short(str)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Calculates the CRC-32 (Cyclic Redundancy Code) digest for the "str"
+    argument.
+
+    This method performs better on relatively short "str" inputs (i.e., less
+    than 30 ~ 60 bytes), as compared to ngx.crc32_long. The result is
+    exactly the same as ngx.crc32_long.
+
+    Behind the scene, it is just a thin wrapper around the "ngx_crc32_short"
+    function defined in the Nginx core.
+
+    This API was first introduced in the "v0.3.1rc8" release.
+
+  ngx.crc32_long
+    syntax: *intval = ngx.crc32_long(str)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Calculates the CRC-32 (Cyclic Redundancy Code) digest for the "str"
+    argument.
+
+    This method performs better on relatively long "str" inputs (i.e.,
+    longer than 30 ~ 60 bytes), as compared to ngx.crc32_short. The result
+    is exactly the same as ngx.crc32_short.
+
+    Behind the scene, it is just a thin wrapper around the "ngx_crc32_long"
+    function defined in the Nginx core.
+
+    This API was first introduced in the "v0.3.1rc8" release.
 
   ngx.today
     syntax: *str = ngx.today()*

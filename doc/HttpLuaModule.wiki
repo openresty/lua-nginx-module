@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc7] released on 23 September 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/downloads v0.3.1rc8] released on 23 September 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1570,7 +1570,33 @@ Encode <code>str</code> to a base64 digest.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Decode <code>str</code> as a base64 digest to the raw form.
+Decodes the <code>str</code> argument as a base64 digest to the raw form. Returns <code>nil</code> if <code>str</code> is not well formed.
+
+== ngx.crc32_short ==
+'''syntax:''' ''intval = ngx.crc32_short(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Calculates the CRC-32 (Cyclic Redundancy Code) digest for the <code>str</code> argument.
+
+This method performs better on relatively short <code>str</code> inputs (i.e., less than 30 ~ 60 bytes), as compared to [[#ngx.crc32_long|ngx.crc32_long]]. The result is exactly the same as [[#ngx.crc32_long|ngx.crc32_long]].
+
+Behind the scene, it is just a thin wrapper around the <code>ngx_crc32_short</code> function defined in the Nginx core.
+
+This API was first introduced in the <code>v0.3.1rc8</code> release.
+
+== ngx.crc32_long ==
+'''syntax:''' ''intval = ngx.crc32_long(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Calculates the CRC-32 (Cyclic Redundancy Code) digest for the <code>str</code> argument.
+
+This method performs better on relatively long <code>str</code> inputs (i.e., longer than 30 ~ 60 bytes), as compared to [[#ngx.crc32_short|ngx.crc32_short]].  The result is exactly the same as [[#ngx.crc32_short|ngx.crc32_short]].
+
+Behind the scene, it is just a thin wrapper around the <code>ngx_crc32_long</code> function defined in the Nginx core.
+
+This API was first introduced in the <code>v0.3.1rc8</code> release.
 
 == ngx.today ==
 '''syntax:''' ''str = ngx.today()''
