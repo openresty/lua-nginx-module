@@ -640,7 +640,7 @@ true
     location /lua {
         content_by_lua '
             data = "hello,\\nworld\\n"
-            -- ngx.header["Content-Length"] = #data
+            ngx.header["Content-Length"] = #data
             ngx.say("hello,")
             ngx.flush()
             -- ngx.location.capture("/sleep")
