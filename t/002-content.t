@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -632,4 +632,33 @@ GET /lua
 false
 true
 true
+
+
+
+=== TEST 35: HTTP 1.0 response with Content-Length
+--- config
+    location /lua {
+        content_by_lua '
+            data = "hello,\\nworld\\n"
+            -- ngx.header["Content-Length"] = #data
+            ngx.say("hello,")
+            ngx.flush()
+            -- ngx.location.capture("/sleep")
+            ngx.say("world")
+        ';
+    }
+    location /sleep {
+        echo_sleep 2;
+    }
+    location /main {
+        proxy_pass http://127.0.0.1:$server_port/lua;
+    }
+--- request
+GET /main
+--- response_headers
+Content-Length: 13
+--- response_body
+hello,
+world
+--- timeout: 5
 

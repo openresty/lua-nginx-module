@@ -44,7 +44,7 @@ GET /test
 
 
 
-=== TEST 2: long sanity (empty)
+=== TEST 3: long sanity (empty)
 --- config
     location = /test {
         content_by_lua '
