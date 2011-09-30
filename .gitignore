@@ -118,6 +118,8 @@ src/ctx.[ch]
 src/args.[ch]
 src/headers.[ch]
 src/script.[ch]
+src/filter.[ch]
+a.patch
 all
 build1[01]
 g
