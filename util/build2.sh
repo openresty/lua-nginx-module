@@ -15,8 +15,8 @@ force=$2
 ngx-build $force $version \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-cc-opt=$'-O3' \
-            --with-ld-opt="-Wl,-rpath=/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
+            --with-cc-opt=$'-O0' \
+            --with-ld-opt="-Wl,-rpath,/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --without-mail_smtp_module \
@@ -35,6 +35,6 @@ ngx-build $force $version \
                 --add-module=$root/../drizzle-nginx-module \
                 --add-module=$home/work/nginx/ngx_http_upstream_keepalive-2ce9d8a1ca93 \
                 --add-module=$root/../rds-json-nginx-module \
-                $opts #\
-                #--with-debug
+                $opts \
+                --with-debug
 

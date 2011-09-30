@@ -19,6 +19,8 @@ static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_table_elt_t **output_header, unsigned no_create);
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
+        ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_type_header(ngx_http_request_t *r,
@@ -82,6 +84,10 @@ static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
     { ngx_string("Content-Type"),
                  offsetof(ngx_http_headers_out_t, content_type),
                  ngx_http_set_content_type_header },
+
+    { ngx_string("Cache-Control"),
+                 offsetof(ngx_http_headers_out_t, cache_control),
+                 ngx_http_set_builtin_multi_header },
 
     { ngx_null_string, 0, ngx_http_set_header }
 };
@@ -229,6 +235,71 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
     h->hash = hv->hash;
     h->key = hv->key;
     h->value = *value;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
+        ngx_http_lua_header_val_t *hv, ngx_str_t *value)
+{
+    ngx_array_t      *pa;
+    ngx_table_elt_t  *ho, **ph;
+    ngx_uint_t        i;
+
+    pa = (ngx_array_t *) ((char *) &r->headers_out + hv->offset);
+
+    if (pa->elts == NULL) {
+        if (ngx_array_init(pa, r->pool, 2, sizeof(ngx_table_elt_t *)) != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+    }
+
+    if (hv->no_override) {
+        ph = pa->elts;
+        for (i = 0; i < pa->nelts; i++) {
+            if (!ph[i]->hash) {
+                ph[i]->value = *value;
+                ph[i]->hash = 1;
+                return NGX_OK;
+            }
+        }
+
+        goto create;
+    }
+
+    /* override old values (if any) */
+
+    if (pa->nelts > 0) {
+        ph = pa->elts;
+        for (i = 1; i < pa->nelts; i++) {
+            ph[i]->hash = 0;
+            ph[i]->value.len = 0;
+        }
+
+        ph[0]->value = *value;
+        ph[0]->hash = 1;
+
+        return NGX_OK;
+    }
+
+create:
+    ph = ngx_array_push(pa);
+    if (ph == NULL) {
+        return NGX_ERROR;
+    }
+
+    ho = ngx_list_push(&r->headers_out.headers);
+    if (ho == NULL) {
+        return NGX_ERROR;
+    }
+
+    ho->value = *value;
+    ho->hash = 1;
+    ngx_str_set(&ho->key, "Cache-Control");
+    *ph = ho;
 
     return NGX_OK;
 }

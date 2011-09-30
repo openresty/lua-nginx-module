@@ -12,7 +12,7 @@ repeat_each(2);
 plan tests => blocks() * repeat_each() * 3;
 
 #no_diff();
-#no_long_string();
+no_long_string();
 
 run_tests();
 
@@ -592,4 +592,113 @@ nil
 Set-Cookie: foo=bar; Domain=external.domain.com, baz=bah; Domain=external.domain.com
 --- response_body
 hello
+
+
+
+=== TEST 30: set single value to cache-control
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.cache_control = "private"
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Cache-Control: private
+--- response_body
+Cache-Control: private
+
+
+
+=== TEST 31: set multi values to cache-control
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.cache_control = { "private", "no-store" }
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Cache-Control: private, no-store
+--- response_body
+Cache-Control: private; no-store
+
+
+
+=== TEST 32: set multi values to cache-control and override it with a single value
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.cache_control = { "private", "no-store" }
+            ngx.header.cache_control = { "no-cache" }
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+            ngx.say("Cache-Control: ", ngx.header.cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Cache-Control: no-cache
+--- response_body
+Cache-Control: no-cache
+Cache-Control: no-cache
+
+
+
+=== TEST 33: set multi values to cache-control and override it with multiple values
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.cache_control = { "private", "no-store" }
+            ngx.header.cache_control = { "no-cache", "blah", "foo" }
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, "; "))
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Cache-Control: no-cache, blah, foo
+--- response_body
+Cache-Control: no-cache; blah; foo
+Cache-Control: no-cache; blah; foo
+
+
+
+=== TEST 34: set the www-authenticate response header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.www_authenticate = "blah"
+            ngx.say("WWW-Authenticate: ", ngx.var.sent_http_www_authenticate)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+WWW-Authenticate: blah
+--- response_body
+WWW-Authenticate: blah
+
+
+
+=== TEST 34: set and clear the www-authenticate response header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.foo = "blah"
+            ngx.header.foo = nil
+            ngx.say("Foo: ", ngx.var.sent_http_foo)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+!Foo
+--- response_body
+Foo: nil
 
