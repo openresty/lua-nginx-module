@@ -367,7 +367,6 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
-
     ngx_uint_t                        i;
 
     dd("set header value: %.*s", (int) value.len, value.data);
