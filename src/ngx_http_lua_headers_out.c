@@ -147,7 +147,7 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
                         value->data);
 
                 h[i].value = *value;
-                h[i].hash = 1;
+                h[i].hash = hv->hash;
             }
 
             if (output_header) {
@@ -262,7 +262,7 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
         for (i = 0; i < pa->nelts; i++) {
             if (!ph[i]->hash) {
                 ph[i]->value = *value;
-                ph[i]->hash = 1;
+                ph[i]->hash = hv->hash;
                 return NGX_OK;
             }
         }
@@ -280,7 +280,7 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
         }
 
         ph[0]->value = *value;
-        ph[0]->hash = 1;
+        ph[0]->hash = hv->hash;
 
         return NGX_OK;
     }
@@ -297,7 +297,7 @@ create:
     }
 
     ho->value = *value;
-    ho->hash = 1;
+    ho->hash = hv->hash;
     ngx_str_set(&ho->key, "Cache-Control");
     *ph = ho;
 
@@ -372,7 +372,7 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    hv.hash = 1;
+    hv.hash = ngx_hash_key_lc(value.data, value.len);
     hv.key = key;
 
     hv.offset = 0;
