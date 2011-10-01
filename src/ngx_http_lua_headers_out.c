@@ -372,7 +372,7 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    hv.hash = ngx_hash_key_lc(value.data, value.len);
+    hv.hash = ngx_hash_key_lc(key.data, key.len);
     hv.key = key;
 
     hv.offset = 0;
