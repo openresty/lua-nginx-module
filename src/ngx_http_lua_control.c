@@ -206,7 +206,17 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    r->headers_out.location->hash = 1;
+    r->headers_out.location->hash =
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+                    ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+
+#if 0
+    dd("location hash: %lu == %lu",
+            (unsigned long) r->headers_out.location->hash,
+            (unsigned long) ngx_hash_key_lc((u_char *) "Location",
+            sizeof("Location") - 1));
+#endif
+
     r->headers_out.location->value.len = len;
     r->headers_out.location->value.data = uri;
     ngx_str_set(&r->headers_out.location->key, "Location");

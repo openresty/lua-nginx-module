@@ -315,7 +315,9 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             ngx_http_clear_accept_ranges(r);
         }
 
-        if (r->http_version >= NGX_HTTP_VERSION_11 || r->headers_out.content_length) {
+        if (r->http_version >= NGX_HTTP_VERSION_11
+            || r->headers_out.content_length)
+        {
             /* Send response headers for HTTP version <= 1.0 elsewhere */
             dd("sending headers");
             rc = ngx_http_send_header(r);
