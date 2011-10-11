@@ -1,8 +1,11 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
+#include "ddebug.h"
 
-#include <nginx.h>
+
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
@@ -12,6 +15,7 @@
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_headerfilterby.h"
+#include "ngx_http_lua_shdict.h"
 
 #if defined(NDK) && NDK
 #include "ngx_http_lua_setby.h"
@@ -22,6 +26,71 @@ unsigned  ngx_http_lua_requires_rewrite = 0;
 unsigned  ngx_http_lua_requires_access  = 0;
 unsigned  ngx_http_lua_requires_header_filter = 0;
 unsigned  ngx_http_lua_requires_capture_filter = 0;
+
+
+char *
+ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t *lmcf = conf;
+
+    ngx_str_t                  *value, name;
+    ngx_shm_zone_t             *shm_zone;
+    ngx_http_lua_shdict_ctx_t  *ctx;
+    ssize_t                     size;
+
+    if (lmcf->shm_zone != NULL) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    ctx = NULL;
+
+    if (value[1].len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua shared dict name \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    name = value[1];
+
+    size = ngx_parse_size(&value[2]);
+
+    if (size <= 8191) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua shared dict size \"%V\"", &value[2]);
+        return NGX_CONF_ERROR;
+    }
+
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_shdict_ctx_t));
+    if (ctx == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    ctx->name = name;
+
+    shm_zone = ngx_shared_memory_add(cf, &name, (size_t) size,
+                                     &ngx_http_lua_module);
+    if (shm_zone == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (shm_zone->data) {
+        ctx = shm_zone->data;
+
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                   "lua_shared_dict \"%V\" is already defined as \"%V\"",
+                   &name, &ctx->name);
+        return NGX_CONF_ERROR;
+    }
+
+    shm_zone->init = ngx_http_lua_shdict_init_zone;
+    shm_zone->data = ctx;
+
+    lmcf->shm_zone = shm_zone;
+
+    return NGX_CONF_OK;
+}
 
 
 char *

@@ -1,6 +1,5 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#include <nginx.h>
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_capturefilter.h"
@@ -20,6 +19,13 @@ static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
 
 
 static ngx_command_t ngx_http_lua_cmds[] = {
+
+    { ngx_string("lua_shared_dict"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
+      ngx_http_lua_shared_dict,
+      0,
+      0,
+      NULL },
 
     {
         ngx_string("lua_regex_cache_max_entries"),
