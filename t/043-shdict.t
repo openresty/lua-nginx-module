@@ -12,7 +12,8 @@ plan tests => repeat_each() * (blocks() * 2);
 
 #no_diff();
 #no_long_string();
-master_on();
+#master_on();
+#workers(2);
 run_tests();
 
 __DATA__
