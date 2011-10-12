@@ -36,11 +36,7 @@ ngx_int_t ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 void ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
 
-ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
-    u_char *kdata, size_t klen, ngx_uint_t *ep, int *vtype, u_char **vdata,
-    size_t *vlen);
-
-void ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n);
+void ngx_http_lua_inject_shdict_api(ngx_conf_t *cf, lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_SHDICT_H */
