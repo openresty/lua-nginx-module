@@ -9,8 +9,8 @@ Status
 
 Version
     This document describes ngx_lua v0.3.1rc10
-    (<https://github.com/chaoslawful/lua-nginx-module/downloads>) released
-    on 13 October 2011.
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 13
+    October 2011.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -1953,11 +1953,11 @@ Installation
 
     2.  Download the latest version of the release tarball of the
         ngx_devel_kit (NDK) module from lua-nginx-module file list
-        (<http://github.com/simpl/ngx_devel_kit/downloads>).
+        (<http://github.com/simpl/ngx_devel_kit/tags>).
 
     3.  Download the latest version of the release tarball of this module
         from lua-nginx-module file list
-        (<http://github.com/chaoslawful/lua-nginx-module/downloads>).
+        (<http://github.com/chaoslawful/lua-nginx-module/tags>).
 
     4.  Grab the nginx source code from nginx.org (<http://nginx.org/>), for
         example, the version 1.0.5 (see nginx compatibility), and then build

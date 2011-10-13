@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc10](https://github.com/chaoslawful/lua-nginx-module/downloads) released on 13 October 2011.
+This document describes ngx_lua [v0.3.1rc10](https://github.com/chaoslawful/lua-nginx-module/tags) released on 13 October 2011.
 
 Synopsis
 ========
@@ -2087,8 +2087,8 @@ The installation steps are usually as simple as `./configure && make && make ins
 Alternatively, you can compile this module with nginx core's source by hand:
 
 1. Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
-1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/downloads).
-1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/downloads).
+1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/tags).
+1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/tags).
 1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 
         $ wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
