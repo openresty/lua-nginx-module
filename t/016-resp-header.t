@@ -686,7 +686,7 @@ WWW-Authenticate: blah
 
 
 
-=== TEST 34: set and clear the www-authenticate response header
+=== TEST 35: set and clear the www-authenticate response header
 --- config
     location /lua {
         content_by_lua '

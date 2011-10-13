@@ -485,3 +485,21 @@ world
 nil
 nil
 
+
+
+=== TEST 23: jump to internal locations requires ctx cleared
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        content_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+

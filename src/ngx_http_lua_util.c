@@ -1448,6 +1448,10 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
         r->write_event_handler = ngx_http_request_empty_handler;
 
+        /* clear our ctx because ngx_http_named_location
+         * won't do that for us */
+        ngx_http_set_ctx(r, NULL, ngx_http_lua_module);
+
         rc = ngx_http_named_location(r, &ctx->exec_uri);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
         {
