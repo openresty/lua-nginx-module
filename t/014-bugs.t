@@ -487,42 +487,7 @@ nil
 
 
 
-=== TEST 23: jump to internal locations requires ctx cleared
---- config
-    location @proxy {
-        rewrite_by_lua return;
-        echo hello;
-    }
-    location /main {
-        content_by_lua '
-            ngx.exec("@proxy")
-        ';
-    }
---- request
-    GET /main
---- response_body
-hello
-
-
-=== TEST 23: reset ctx
---- config
-    location @proxy {
-        rewrite_by_lua return;
-        echo hello;
-    }
-    location /main {
-        rewrite_by_lua '
-            ngx.exec("@proxy")
-        ';
-    }
---- request
-    GET /main
---- response_body
-hello
-
-
-
-=== TEST 24: set special variables
+=== TEST 23: set special variables
 --- config
     location /main {
         #set_unescape_uri $cookie_a "hello";

@@ -420,3 +420,101 @@ GET /lua
 foo = 3
 bar = 4
 
+
+
+=== TEST 19: jump to internal locations requires ctx cleared
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        content_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
+
+
+=== TEST 20: reset ctx
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        rewrite_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
+
+
+=== TEST 21: exec(named location) in subrequests
+--- config
+    location /entry {
+        echo_location /foo;
+        echo_location /foo2;
+    }
+  location /foo {
+      content_by_lua '
+          ngx.exec("@bar")
+      ';
+  }
+  location /foo2 {
+      content_by_lua '
+          ngx.exec("@bar")
+      ';
+  }
+
+  location @bar {
+      proxy_pass http://127.0.0.1:$server_port/bar;
+  }
+  location /bar {
+      echo hello;
+  }
+--- request
+    GET /entry
+--- response_body
+hello
+hello
+
+
+
+=== TEST 22: exec(normal location) in subrequests
+--- config
+    location /entry {
+        echo_location /foo;
+        echo_location /foo2;
+    }
+  location /foo {
+      content_by_lua '
+          ngx.exec("/baz")
+      ';
+  }
+  location /foo2 {
+      content_by_lua '
+          ngx.exec("/baz")
+      ';
+  }
+
+  location /baz {
+      proxy_pass http://127.0.0.1:$server_port/bar;
+  }
+  location /bar {
+      echo hello;
+  }
+--- request
+    GET /entry
+--- response_body
+hello
+hello
+
