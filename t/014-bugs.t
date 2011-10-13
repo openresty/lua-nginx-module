@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_on();
-#log_level('warn');
+log_level('debug');
 
 #repeat_each(120);
 #repeat_each(3);
@@ -502,4 +502,38 @@ nil
     GET /main
 --- response_body
 hello
+
+
+=== TEST 23: reset ctx
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        rewrite_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
+
+
+=== TEST 24: set special variables
+--- config
+    location /main {
+        #set_unescape_uri $cookie_a "hello";
+        set $http_a "hello";
+        content_by_lua '
+            ngx.say(ngx.var.http_a)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+--- SKIP
 

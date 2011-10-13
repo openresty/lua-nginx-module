@@ -629,6 +629,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ctx->entered_rewrite_phase = 0;
     ctx->entered_access_phase = 0;
+    ctx->entered_content_phase = 0;
 
     ctx->exit_code = 0;
     ctx->exited = 0;
@@ -1448,9 +1449,11 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
         r->write_event_handler = ngx_http_request_empty_handler;
 
+#if 1
         /* clear our ctx because ngx_http_named_location
          * won't do that for us */
         ngx_http_set_ctx(r, NULL, ngx_http_lua_module);
+#endif
 
         rc = ngx_http_named_location(r, &ctx->exec_uri);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)

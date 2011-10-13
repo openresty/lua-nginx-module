@@ -22,7 +22,8 @@ if [[ "$BUILD_CLEAN" -eq 1 || ! -f Makefile || "$root/config" -nt Makefile || "$
 	./configure --prefix=$root/work \
 				--add-module=$root \
 				--add-module=$root/deps/ngx_devel_kit \
-				$opts
+				$opts \
+                                --with-debug
 fi
 
 if [ -f $root/work/sbin/nginx ]; then
