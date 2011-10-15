@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc10](https://github.com/chaoslawful/lua-nginx-module/tags) released on 13 October 2011.
+This document describes ngx_lua [v0.3.1rc12](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
 
 Synopsis
 ========
@@ -801,6 +801,7 @@ HTTP status constants
       value = ngx.HTTP_NOT_ALLOWED (405)
       value = ngx.HTTP_GONE (410)
       value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
+      value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
       value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
 
 
@@ -1585,6 +1586,12 @@ The effect in action:
     This is our own content
 
 
+Number literals can be used directly as the argument, for instance,
+
+
+    ngx.exit(501)
+
+
 ngx.eof
 -------
 **syntax:** *ngx.eof()*
@@ -2187,10 +2194,12 @@ filtering chain affects a lot. The correct configure adding order is:
 
 TODO
 ====
-
-* Add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
-* Add directives to run lua codes when nginx stops/reloads.
-* Deal with TCP 3-second delay problem under great connection harness.
+* add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
+* add directives to run lua codes when nginx stops/reloads.
+* deal with TCP 3-second delay problem under great connection harness.
+* add options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) in order to share and copy a particular set of nginx variables with subrequests, specified by the user.
+* add an option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) so as to specify the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for subrequests.
+* expose nginx's shared memory facility to the Lua land.
 
 Future Plan
 ===========

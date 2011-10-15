@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc10] released on 13 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc12] released on 16 October 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -774,6 +774,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.catpure
   value = ngx.HTTP_NOT_ALLOWED (405)
   value = ngx.HTTP_GONE (410)
   value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
+  value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
   value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
 </geshi>
 
@@ -1537,6 +1538,12 @@ The effect in action:
     This is our own content
 </geshi>
 
+Number literals can be used directly as the argument, for instance,
+
+<geshi lang="lua">
+    ngx.exit(501)
+</geshi>
+
 == ngx.eof ==
 '''syntax:''' ''ngx.eof()''
 
@@ -2110,10 +2117,12 @@ filtering chain affects a lot. The correct configure adding order is:
 # rds-json-nginx-module
 
 = TODO =
-
-* Add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
-* Add directives to run lua codes when nginx stops/reloads.
-* Deal with TCP 3-second delay problem under great connection harness.
+* add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
+* add directives to run lua codes when nginx stops/reloads.
+* deal with TCP 3-second delay problem under great connection harness.
+* add options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] in order to share and copy a particular set of nginx variables with subrequests, specified by the user.
+* add an option to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] so as to specify the [[#ngx.ctx|ngx.ctx]] table for subrequests.
+* expose nginx's shared memory facility to the Lua land.
 
 = Future Plan =
 
