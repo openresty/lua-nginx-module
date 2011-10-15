@@ -502,3 +502,25 @@ nil
 hello
 --- SKIP
 
+
+
+=== TEST 24: rewrite last before rewrite_by_lua
+--- config
+    location @pretty {
+        rewrite ^/main/xyz\.html$ /abc.html last;
+        rewrite_by_lua 'ngx.exec("@proxy")';
+    }
+    location @proxy {
+        echo hello;
+    }
+    location /abc.html {
+        echo abc;
+    }
+    location /main {
+        try_files $uri $uri/ @pretty;
+    }
+--- request
+    GET /main/xyz.html
+--- response_body
+abc
+
