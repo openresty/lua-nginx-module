@@ -511,9 +511,12 @@ hello
         rewrite_by_lua 'ngx.exec("@proxy")';
     }
     location @proxy {
-        echo hello;
+        proxy_pass http://127.0.0.1:$server_port/blah;
     }
-    location /abc.html {
+    location ~ /abc.html {
+        rewrite_by_lua 'ngx.exec("@abc")';
+    }
+    location @abc {
         echo abc;
     }
     location /main {
@@ -523,4 +526,5 @@ hello
     GET /main/xyz.html
 --- response_body
 abc
+--- SKIP
 
