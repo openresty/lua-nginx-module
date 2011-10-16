@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc12] released on 16 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc13] released on 16 October 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -474,6 +474,20 @@ can be implemented in terms of <code>ngx_lua</code> like this
 Just as any other rewrite phase handlers, [[#rewrite_by_lua|rewrite_by_lua]] also runs in subrequests.
 
 Note that calling <code>ngx.exit(ngx.OK)</code> just returning from the current [[#rewrite_by_lua|rewrite_by_lua]] handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [[#rewrite_by_lua|rewrite_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
+
+If one uses [[HttpRewriteModule]]'s [[HttpRewriteModule#rewrite|rewrite]] directive to change the URI and initiate location re-lookups (kinda like internal redirections), then [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] will be skipped altogether in the current location. For example,
+
+<geshi lang="nginx">
+    location /foo {
+        rewrite ^ /bar;
+        rewrite_by_lua 'ngx.exit(503)';
+    }
+    location /bar {
+        ...
+    }
+</geshi>
+
+Here the Lua code <code>ngx.exit(503)</code> will never run while all the Lua code (except access phase handlers) in the <code>/bar</code> location will not be affected anyway. Similarly, <code>rewrite ^ /bar last</code> will also initiate a location re-lookup. If you use the <code>break</code> modifier for the [[HttpRewriteModule#rewrite|rewrite]] directive, however, no location re-lookup will be triggered, and therefore, the rewrite-phase Lua code will still be run as normal.
 
 == rewrite_by_lua_file ==
 
@@ -1408,7 +1422,7 @@ This method is very much like the [[HttpRewriteModule#rewrite|rewrite]] directiv
 [[HttpRewriteModule]], for example, this <code>nginx.conf</code> snippet
 
 <geshi lang="nginx">
-    rewrite ^ /foo redirect;  # nginx config
+    rewrite ^ /foo? redirect;  # nginx config
 </geshi>
 
 is equivalent to the following Lua code
@@ -1420,13 +1434,19 @@ is equivalent to the following Lua code
 while
 
 <geshi lang="nginx">
-    rewrite ^ /foo permanent;  # nginx config
+    rewrite ^ /foo? permanent;  # nginx config
 </geshi>
 
 is equivalent to
 
 <geshi lang="lua">
     return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
+</geshi>
+
+URI arguments can be specified as well, for example:
+
+<geshi lang="lua">
+    return ngx.redirect('/foo?a=3&b=4')
 </geshi>
 
 == ngx.send_headers ==

@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc12](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
+This document describes ngx_lua [v0.3.1rc13](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
 
 Synopsis
 ========
@@ -489,6 +489,20 @@ can be implemented in terms of `ngx_lua` like this
 Just as any other rewrite phase handlers, [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) also runs in subrequests.
 
 Note that calling `ngx.exit(ngx.OK)` just returning from the current [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) handler, and the nginx request processing control flow will still continue to the content handler. To terminate the current request from within the current [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) handler, calling [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
+
+If one uses [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive to change the URI and initiate location re-lookups (kinda like internal redirections), then [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) and [rewrite_by_lua_file](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_file) will be skipped altogether in the current location. For example,
+
+
+    location /foo {
+        rewrite ^ /bar;
+        rewrite_by_lua 'ngx.exit(503)';
+    }
+    location /bar {
+        ...
+    }
+
+
+Here the Lua code `ngx.exit(503)` will never run while all the Lua code (except access phase handlers) in the `/bar` location will not be affected anyway. Similarly, `rewrite ^ /bar last` will also initiate a location re-lookup. If you use the `break` modifier for the [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, however, no location re-lookup will be triggered, and therefore, the rewrite-phase Lua code will still be run as normal.
 
 rewrite_by_lua_file
 -------------------
@@ -1449,7 +1463,7 @@ This method is very much like the [rewrite](http://wiki.nginx.org/HttpRewriteMod
 [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule), for example, this `nginx.conf` snippet
 
 
-    rewrite ^ /foo redirect;  # nginx config
+    rewrite ^ /foo? redirect;  # nginx config
 
 
 is equivalent to the following Lua code
@@ -1461,13 +1475,19 @@ is equivalent to the following Lua code
 while
 
 
-    rewrite ^ /foo permanent;  # nginx config
+    rewrite ^ /foo? permanent;  # nginx config
 
 
 is equivalent to
 
 
     return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
+
+
+URI arguments can be specified as well, for example:
+
+
+    return ngx.redirect('/foo?a=3&b=4')
 
 
 ngx.send_headers
