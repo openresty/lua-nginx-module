@@ -463,3 +463,22 @@ foo: /foo?world
 --- response_body
 HTTP/1.0 hello
 
+
+=== TEST 17: rewrite uri and args (table args)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        #rewrite ^ /bar?hello? break;
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar", true)
+            ngx.req.set_uri_args({["ca t"] = "%"})
+        ';
+        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+    }
+--- request
+    GET /foo?world
+--- response_body
+HTTP/1.0 ca%20t=%25
+

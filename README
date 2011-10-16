@@ -1096,6 +1096,80 @@ Nginx API for Lua
     For reading *request* headers, use the ngx.req.get_headers function
     instead.
 
+  ngx.req.set_uri
+    syntax: *ngx.req.set_uri(uri)*
+
+    syntax: *ngx.req.set_uri(uri, break_cycle)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Rewrite the current request's (parsed) URI by the "uri" argument. The
+    "uri" argument must be a Lua string and cannot be of zero length, or a
+    Lua exception will be thrown.
+
+    The optional boolean "break_cycle" argument plays a similar role as
+    [[HttpRewriteModule]]'s rewrite directive, that is, when "break_cycle"
+    is false (the default), then Nginx will try researching locations with
+    the new URI value at the later "post rewrite" phase, and otherwise
+    location re-lookup will be disabled.
+
+    For example, the following nginx config snippet
+
+        rewrite ^ /foo;
+
+    can be coded in Lua like this:
+
+        ngx.req.set_uri("/foo")
+
+    Similarly, Nginx config
+
+        rewrite ^ /foo break;
+
+    can be coded in Lua as
+
+        ngx.req.set_uri("/foo", true)
+
+    Note that you cannot use this interface to rewrite URI arguments, and
+    you need to use ngx.req.set_uri_args for that. For instance, Nginx
+    config
+
+        rewrite ^ /foo?a=3?;
+
+    can be coded as
+
+        ngx.req.set_uri("/foo")
+        ngx.req.set_uri_args("a=3")
+
+    or
+
+        ngx.req.set_uri("/foo")
+        ngx.req.set_uri_args({a = 3})
+
+    This interface was first introduced in the "v0.3.1rc13" release.
+
+  ngx.req.set_uri_args
+    syntax: *ngx.req.set_uri_args(args)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Rewrite the current request's URI query arguments by the "args"
+    argument. The "args" argument can be either a Lua string, as in
+
+        ngx.req.set_uri_args("a=3&b=hello%20world")
+
+    or a Lua table holding the query arguments' key-value pairs, as in
+
+        ngx.req.set_uri_args({ a = 3, b = "hello world" })
+
+    where in the latter case, this method will automatically escape argument
+    keys and values according to the URI escaping rule.
+
+    This interface was first introduced in the "v0.3.1rc13" release.
+
+    See also ngx.req.set_uri.
+
   ngx.req.get_uri_args
     syntax: *args = ngx.req.get_uri_args()*
 

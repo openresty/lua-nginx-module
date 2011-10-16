@@ -1157,6 +1157,86 @@ Note that <code>ngx.header</code> is not a normal Lua table so you cannot iterat
 
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
+== ngx.req.set_uri ==
+'''syntax:''' ''ngx.req.set_uri(uri)''
+
+'''syntax:''' ''ngx.req.set_uri(uri, break_cycle)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Rewrite the current request's (parsed) URI by the <code>uri</code> argument. The <code>uri</code> argument must be a Lua string and cannot be of zero length, or a Lua exception will be thrown.
+
+The optional boolean <code>break_cycle</code> argument plays a similar role as [[HttpRewriteModule]]'s [[HttpRewriteModule#rewrite|rewrite]] directive, that is, when <code>break_cycle</code> is false (the default), then Nginx will try researching locations with the new URI value at the later <code>post rewrite</code> phase, and otherwise location re-lookup will be disabled.
+
+For example, the following nginx config snippet
+
+<geshi lang="nginx">
+    rewrite ^ /foo;
+</geshi>
+
+can be coded in Lua like this:
+
+<geshi lang="lua">
+    ngx.req.set_uri("/foo")
+</geshi>
+
+Similarly, Nginx config
+
+<geshi lang="nginx">
+    rewrite ^ /foo break;
+</geshi>
+
+can be coded in Lua as
+
+<geshi lang="lua">
+    ngx.req.set_uri("/foo", true)
+</geshi>
+
+Note that you cannot use this interface to rewrite URI arguments, and you need to use [[#ngx.req.set_uri_args|ngx.req.set_uri_args]] for that. For instance, Nginx config
+
+<geshi lang="nginx">
+    rewrite ^ /foo?a=3?;
+</geshi>
+
+can be coded as
+
+<geshi lang="nginx">
+    ngx.req.set_uri("/foo")
+    ngx.req.set_uri_args("a=3")
+</geshi>
+
+or
+
+<geshi lang="nginx">
+    ngx.req.set_uri("/foo")
+    ngx.req.set_uri_args({a = 3})
+</geshi>
+
+This interface was first introduced in the <code>v0.3.1rc13</code> release.
+
+== ngx.req.set_uri_args ==
+'''syntax:''' ''ngx.req.set_uri_args(args)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Rewrite the current request's URI query arguments by the <code>args</code> argument. The <code>args</code> argument can be either a Lua string, as in
+
+<geshi lang="lua">
+    ngx.req.set_uri_args("a=3&b=hello%20world")
+</geshi>
+
+or a Lua table holding the query arguments' key-value pairs, as in
+
+<geshi lang="lua">
+    ngx.req.set_uri_args({ a = 3, b = "hello world" })
+</geshi>
+
+where in the latter case, this method will automatically escape argument keys and values according to the URI escaping rule.
+
+This interface was first introduced in the <code>v0.3.1rc13</code> release.
+
+See also [[#ngx.req.set_uri|ngx.req.set_uri]].
+
 == ngx.req.get_uri_args ==
 '''syntax:''' ''args = ngx.req.get_uri_args()''
 
