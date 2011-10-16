@@ -1651,7 +1651,7 @@ static ngx_int_t
 ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref)
 {
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua thread aborting request with URI rewrite jump: \"%V?%V\"",
             &r->uri, &r->args);
 
