@@ -14,6 +14,8 @@ plan tests => repeat_each() * (blocks() * 2);
 
 no_root_location();
 
+$ENV{TEST_NGINX_CLIENT_PORT} ||= $ENV{TEST_NGINX} ||= server_port();
+
 #no_diff();
 #no_long_string();
 run_tests();
@@ -345,7 +347,7 @@ done
 
 
 
-=== TEST 12: rewrite args
+=== TEST 12: rewrite uri and args
 --- config
     location /bar {
         echo $query_string;
@@ -356,7 +358,7 @@ done
             ngx.req.set_uri("/bar");
             ngx.req.set_uri_args("hello")
         ';
-        proxy_pass http://127.0.0.1:$server_port;
+        proxy_pass http://www.taobao.com:5678;
     }
 --- request
     GET /foo?world
@@ -440,4 +442,24 @@ foo: /bar?hello
 --- response_body
 err: attempt to use zero-length uri
 foo: /foo?world
+
+
+
+=== TEST 17: rewrite uri and args
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        #rewrite ^ /bar?hello? break;
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar", true)
+            ngx.req.set_uri_args("hello")
+        ';
+        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+    }
+--- request
+    GET /foo?world
+--- response_body
+HTTP/1.0 hello
 
