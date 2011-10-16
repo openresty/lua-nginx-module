@@ -17,7 +17,7 @@ no_root_location();
 $ENV{TEST_NGINX_CLIENT_PORT} ||= $ENV{TEST_NGINX} ||= server_port();
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -503,4 +503,123 @@ HTTP/1.0 ca%20t=%25
     GET /foo?world
 --- response_body
 hello
+
+
+
+=== TEST 20: ngx.req.set_uri with jump not allowed in access phase
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        set $err '';
+        access_by_lua '
+            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            ngx.var.err = err
+        ';
+        echo "err: $err";
+    }
+--- request
+    GET /foo?world
+--- response_body
+err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+
+
+
+=== TEST 21: ngx.req.set_uri without jump allowed in access phase
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        set $err '';
+        access_by_lua '
+            ngx.req.set_uri("/bar")
+        ';
+        echo "uri: $uri";
+    }
+--- request
+    GET /foo?world
+--- response_body
+uri: /bar
+
+
+
+=== TEST 22: ngx.req.set_uri with jump not allowed in content phase
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        content_by_lua '
+            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            ngx.say("err: ", err)
+        ';
+    }
+--- request
+    GET /foo?world
+--- response_body
+err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+
+
+
+=== TEST 23: ngx.req.set_uri without jump allowed in content phase
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        set $err '';
+        content_by_lua '
+            ngx.req.set_uri("/bar")
+            ngx.say("uri: ", ngx.var.uri)
+        ';
+    }
+--- request
+    GET /foo?world
+--- response_body
+uri: /bar
+
+
+
+=== TEST 24: ngx.req.set_uri with jump not allowed in set_by_lua
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        set_by_lua $err '
+            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            return err
+        ';
+        echo "err: $err";
+    }
+--- request
+    GET /foo?world
+--- response_body
+err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+
+
+
+=== TEST 25: ngx.req.set_uri without jump is allowed in set_by_lua
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        set_by_lua $dummy '
+            ngx.req.set_uri("/bar")
+            return ""
+        ';
+        echo "uri: $uri";
+    }
+--- request
+    GET /foo?world
+--- response_body
+uri: /bar
 
