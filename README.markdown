@@ -1227,6 +1227,27 @@ can be coded in Lua as
     ngx.req.set_uri("/foo", true)
 
 
+A more sophisticated example involving regex substitutions is as follows
+
+
+    location /test {
+        rewrite_by_lua '
+            local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "$1", "o")
+            ngx.req.set_uri(uri, true)
+        ';
+        proxy_pass http://my_backend;
+    }
+
+
+which is functionally equivalent to
+
+
+    location /test {
+        rewrite ^/test/(.*) /$1 break;
+        proxy_pass http://my_backend;
+    }
+
+
 Note that you cannot use this interface to rewrite URI arguments, and you need to use [ngx.req.set_uri_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri_args) for that. For instance, Nginx config
 
 
