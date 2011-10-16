@@ -128,3 +128,20 @@ GET /read
 --- response_body_like: 302 Found
 --- error_code: 302
 
+
+
+=== TEST 7: default 302 (with uri args)
+--- config
+    location /read {
+        content_by_lua '
+            ngx.redirect("http://www.taobao.com/foo?bar=3");
+            ngx.say("hi")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://www.taobao.com/foo?bar=3
+--- response_body_like: 302 Found
+--- error_code: 302
+

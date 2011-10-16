@@ -153,6 +153,10 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
 
+    if (r->uri_changed) {
+        return NGX_DECLINED;
+    }
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua rewrite handler, uri \"%V\"", &r->uri);
 
