@@ -22,7 +22,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L) {
     size_t                       len;
     u_char                      *p;
     int                          n;
-    int                          break_cycle = 0;
+    int                          jump = 0;
 
     n = lua_gettop(L);
 
@@ -40,7 +40,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L) {
 
     if (n == 2) {
         luaL_checktype(L, 2, LUA_TBOOLEAN);
-        break_cycle = lua_toboolean(L, 2);
+        jump = lua_toboolean(L, 2);
     }
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
@@ -57,15 +57,16 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L) {
     r->internal = 1;
     r->valid_unparsed_uri = 0;
 
-    if (break_cycle) {
-        r->valid_location = 0;
-        r->uri_changed = 0;
+    ngx_http_set_exten(r);
 
-    } else {
+    if (jump) {
         r->uri_changed = 1;
+
+        return lua_yield(L, 0);
     }
 
-    ngx_http_set_exten(r);
+    r->valid_location = 0;
+    r->uri_changed = 0;
 
     return 0;
 }

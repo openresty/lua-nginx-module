@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc13](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
+This document describes ngx_lua [v0.3.1rc14](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
 
 Synopsis
 ========
@@ -336,10 +336,11 @@ This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_k
 
 set_by_lua_file
 ---------------
-
 **syntax:** *set_by_lua_file $res &lt;path-to-lua-script&gt; [$arg1 $arg2 ...]*
 
 **context:** *main, server, location, server if, location if*
+
+**phase:** *rewrite*
 
 Basically the same as [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except the code to be executed is in the
 file specified by `<path-lua-script>`.
@@ -393,7 +394,7 @@ rewrite_by_lua
 
 **context:** *http, server, location, location if*
 
-**phase:** *rewrite tail*
+**phase:** *post-rewrite*
 
 Act as a rewrite phase handler and execute user code specified by `<lua-script-str>`
 for every request. The user code may call predefined APIs to generate response
@@ -511,7 +512,7 @@ rewrite_by_lua_file
 
 **context:** *http, server, location, location if*
 
-**phase:** *rewrite tail*
+**phase:** *post-rewrite*
 
 Same as [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except the code to be executed is in
 the file specified by `<path-lua-script>`.
@@ -532,7 +533,7 @@ access_by_lua
 
 **context:** *http, server, location, location if*
 
-**phase:** *access tail*
+**phase:** *post-access*
 
 Act as an access phase handler and execute user code specified by `<lua-script-str>` for every request. The user code may call predefined APIs to generate response content.
 
@@ -601,7 +602,7 @@ access_by_lua_file
 
 **context:** *http, server, location, location if*
 
-**phase:** *access tail*
+**phase:** *post-access*
 
 Same as [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), except the code to be executed is in the file
 specified by `<path-lua-script>`.
@@ -622,7 +623,7 @@ header_filter_by_lua
 
 **context:** *http, server, location, location if*
 
-**phase:** *output header filter*
+**phase:** *output-header-filter*
 
 Use Lua defined in `<lua-script-str>` to define an output header filter. For now, the following Nginx Lua APIs are disabled in this context:
 
@@ -647,7 +648,7 @@ header_filter_by_lua_file
 
 **context:** *http, server, location, location if*
 
-**phase:** *output header filter*
+**phase:** *output-header-filter*
 
 Use Lua code defined in a separate file specified by `<path-to-lua-script-file>` to define an output header filter.
 
@@ -1193,26 +1194,24 @@ For reading *request* headers, use the [ngx.req.get_headers](http://wiki.nginx.o
 
 ngx.req.set_uri
 ---------------
-**syntax:** *ngx.req.set_uri(uri)*
-
-**syntax:** *ngx.req.set_uri(uri, break_cycle)*
+**syntax:** *ngx.req.set_uri(uri, jump?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
 Rewrite the current request's (parsed) URI by the `uri` argument. The `uri` argument must be a Lua string and cannot be of zero length, or a Lua exception will be thrown.
 
-The optional boolean `break_cycle` argument plays a similar role as [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, that is, when `break_cycle` is false (the default), then Nginx will try researching locations with the new URI value at the later `post rewrite` phase, and otherwise location re-lookup will be disabled.
+The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location. Location jump will not be triggered otherwise, and only the current request's URI will be modified, which is also the default behavior. This function will return but with no returned values when the `jump` argument is `false` or absent altogether.
 
 For example, the following nginx config snippet
 
 
-    rewrite ^ /foo;
+    rewrite ^ /foo last;
 
 
 can be coded in Lua like this:
 
 
-    ngx.req.set_uri("/foo")
+    ngx.req.set_uri("/foo", true)
 
 
 Similarly, Nginx config
@@ -1224,7 +1223,13 @@ Similarly, Nginx config
 can be coded in Lua as
 
 
-    ngx.req.set_uri("/foo", true)
+    ngx.req.set_uri("/foo", false)
+
+
+or equivalently,
+
+
+    ngx.req.set_uri("/foo")
 
 
 A more sophisticated example involving regex substitutions is as follows
@@ -1233,7 +1238,7 @@ A more sophisticated example involving regex substitutions is as follows
     location /test {
         rewrite_by_lua '
             local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "$1", "o")
-            ngx.req.set_uri(uri, true)
+            ngx.req.set_uri(uri)
         ';
         proxy_pass http://my_backend;
     }
@@ -1251,24 +1256,24 @@ which is functionally equivalent to
 Note that you cannot use this interface to rewrite URI arguments, and you need to use [ngx.req.set_uri_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri_args) for that. For instance, Nginx config
 
 
-    rewrite ^ /foo?a=3?;
+    rewrite ^ /foo?a=3? last;
 
 
 can be coded as
 
 
-    ngx.req.set_uri("/foo")
     ngx.req.set_uri_args("a=3")
+    ngx.req.set_uri("/foo", true)
 
 
 or
 
 
-    ngx.req.set_uri("/foo")
     ngx.req.set_uri_args({a = 3})
+    ngx.req.set_uri("/foo", true)
 
 
-This interface was first introduced in the `v0.3.1rc13` release.
+This interface was first introduced in the `v0.3.1rc14` release.
 
 ngx.req.set_uri_args
 --------------------

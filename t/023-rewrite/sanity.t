@@ -721,7 +721,8 @@ abc
 abc
 
 
-=== TEST 37: rewrite break before rewrite_by_lua
+
+=== TEST 38: rewrite break before rewrite_by_lua
 --- config
     location /main {
         rewrite ^/main/xyz\.html$ /abc.html break;

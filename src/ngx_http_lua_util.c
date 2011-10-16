@@ -35,6 +35,8 @@ static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
 static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
+static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
 
 
 #ifndef LUA_PATH_SEP
@@ -774,6 +776,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                         "lua thread yielded");
+
+                if (r->uri_changed) {
+                    return ngx_http_lua_handle_rewrite_jump(L, r, ctx, cc_ref);
+                }
 
                 if (ctx->exited) {
                     return ngx_http_lua_handle_exit(L, r, ctx, cc_ref);
@@ -1641,4 +1647,18 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 }
 
 
+static ngx_int_t
+ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua thread aborting request with URI rewrite jump: \"%V?%V\"",
+            &r->uri, &r->args);
+
+    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ctx->cc_ref = LUA_NOREF;
+    ngx_http_lua_request_cleanup(r);
+
+    return NGX_OK;
+}
 

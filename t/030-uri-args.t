@@ -355,8 +355,8 @@ done
     location /foo {
         #set $args 'hello';
         rewrite_by_lua '
-            ngx.req.set_uri("/bar");
             ngx.req.set_uri_args("hello")
+            ngx.req.set_uri("/bar", true);
         ';
         proxy_pass http://www.taobao.com:5678;
     }
@@ -375,8 +375,8 @@ hello
     location /foo {
         #set $args 'hello';
         rewrite_by_lua '
-            ngx.req.set_uri("/bar")
             ngx.req.set_uri_args("hello")
+            ngx.req.set_uri("/bar", true)
         ';
         echo "foo: $uri?$args";
     }
@@ -395,8 +395,8 @@ bar: /bar?hello
     location /foo {
         #set $args 'hello';
         rewrite_by_lua '
-            ngx.req.set_uri("/bar", false)
             ngx.req.set_uri_args("hello")
+            ngx.req.set_uri("/bar", true)
         ';
         echo "foo: $uri?$args";
     }
@@ -415,7 +415,7 @@ bar: /bar?hello
     location /foo {
         #set $args 'hello';
         rewrite_by_lua '
-            ngx.req.set_uri("/bar", true)
+            ngx.req.set_uri("/bar")
             ngx.req.set_uri_args("hello")
         ';
         echo "foo: $uri?$args";
@@ -453,8 +453,8 @@ foo: /foo?world
     location /foo {
         #rewrite ^ /bar?hello? break;
         rewrite_by_lua '
-            ngx.req.set_uri("/bar", true)
             ngx.req.set_uri_args("hello")
+            ngx.req.set_uri("/bar")
         ';
         proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
     }
@@ -464,7 +464,8 @@ foo: /foo?world
 HTTP/1.0 hello
 
 
-=== TEST 17: rewrite uri and args (table args)
+
+=== TEST 18: rewrite uri and args (table args)
 --- config
     location /bar {
         echo $server_protocol $query_string;
@@ -472,7 +473,7 @@ HTTP/1.0 hello
     location /foo {
         #rewrite ^ /bar?hello? break;
         rewrite_by_lua '
-            ngx.req.set_uri("/bar", true)
+            ngx.req.set_uri("/bar")
             ngx.req.set_uri_args({["ca t"] = "%"})
         ';
         proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
@@ -481,4 +482,25 @@ HTTP/1.0 hello
     GET /foo?world
 --- response_body
 HTTP/1.0 ca%20t=%25
+
+
+
+=== TEST 19: rewrite uri and args (never returns)
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            ngx.req.set_uri_args("hello")
+            ngx.req.set_uri("/bar", true);
+            ngx.exit(503)
+        ';
+        proxy_pass http://www.taobao.com:5678;
+    }
+--- request
+    GET /foo?world
+--- response_body
+hello
 
