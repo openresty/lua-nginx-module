@@ -10,11 +10,124 @@
 
 static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
         u_char *buf, u_char *last);
+static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
+static int ngx_http_lua_ngx_req_set_uri(lua_State *L);
 
 
-int
+static int
+ngx_http_lua_ngx_req_set_uri(lua_State *L) {
+    ngx_http_request_t          *r;
+    size_t                       len;
+    u_char                      *p;
+    int                          n;
+    int                          break_cycle = 0;
+
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting 1 argument but seen %d", n);
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (n == 2) {
+        luaL_checktype(L, 2, LUA_TBOOLEAN);
+        break_cycle = lua_toboolean(L, 2);
+    }
+
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (len == 0) {
+        return luaL_error(L, "attempt to use zero-length uri");
+    }
+
+    r->uri.data = ngx_palloc(r->pool, len);
+    ngx_memcpy(r->uri.data, p, len);
+
+    r->uri.len = len;
+
+    r->internal = 1;
+    r->valid_unparsed_uri = 0;
+
+    if (break_cycle) {
+        r->valid_location = 0;
+        r->uri_changed = 0;
+
+    } else {
+        r->uri_changed = 1;
+    }
+
+    ngx_http_set_exten(r);
+
+    return 0;
+}
+
+
+static int
+ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
+    ngx_http_request_t          *r;
+    ngx_str_t                    args;
+    const char                  *msg;
+    size_t                       len;
+    u_char                      *p;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument but seen %d",
+                lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    switch (lua_type(L, 1)) {
+    case LUA_TNUMBER:
+    case LUA_TSTRING:
+        p = (u_char *) lua_tolstring(L, 1, &len);
+
+        args.data = ngx_palloc(r->pool, len);
+        ngx_memcpy(args.data, p, len);
+
+        args.len = len;
+        break;
+
+    case LUA_TTABLE:
+        ngx_http_lua_process_args_option(r, L, 1, &args);
+
+        dd("args: %.*s", (int) args.len, args.data);
+
+        break;
+
+    default:
+        msg = lua_pushfstring(L, "string, number, or table expected, "
+                "but got %s", luaL_typename(L, 2));
+        return luaL_argerror(L, 1, msg);
+    }
+
+    dd("args: %.*s", (int) args.len, args.data);
+
+    r->args.data = args.data;
+    r->args.len = args.len;
+
+    r->valid_unparsed_uri = 0;
+
+    return 0;
+}
+
+
+static int
 ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
@@ -56,7 +169,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
 }
 
 
-int
+static int
 ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -253,6 +366,12 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 void
 ngx_http_lua_inject_req_args_api(lua_State *L)
 {
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_set_uri);
+    lua_setfield(L, -2, "set_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_set_uri_args);
+    lua_setfield(L, -2, "set_uri_args");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
     lua_setfield(L, -2, "get_uri_args");
 

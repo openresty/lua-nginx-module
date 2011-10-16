@@ -2,7 +2,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#worker_connections(1014);
+worker_connections(1014);
 #master_on();
 #workers(2);
 #log_level('warn');
@@ -11,6 +11,8 @@ repeat_each(2);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2);
+
+no_root_location();
 
 #no_diff();
 #no_long_string();
@@ -340,4 +342,102 @@ updating args...
 a = 3
 b = 4
 done
+
+
+
+=== TEST 12: rewrite args
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar");
+            ngx.req.set_uri_args("hello")
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+    GET /foo?world
+--- response_body
+hello
+
+
+
+=== TEST 13: rewrite args (not break cycle by default)
+--- config
+    location /bar {
+        echo "bar: $uri?$args";
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar")
+            ngx.req.set_uri_args("hello")
+        ';
+        echo "foo: $uri?$args";
+    }
+--- request
+    GET /foo?world
+--- response_body
+bar: /bar?hello
+
+
+
+=== TEST 14: rewrite (not break cycle explicitly)
+--- config
+    location /bar {
+        echo "bar: $uri?$args";
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar", false)
+            ngx.req.set_uri_args("hello")
+        ';
+        echo "foo: $uri?$args";
+    }
+--- request
+    GET /foo?world
+--- response_body
+bar: /bar?hello
+
+
+
+=== TEST 15: rewrite (break cycle explicitly)
+--- config
+    location /bar {
+        echo "bar: $uri?$args";
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            ngx.req.set_uri("/bar", true)
+            ngx.req.set_uri_args("hello")
+        ';
+        echo "foo: $uri?$args";
+    }
+--- request
+    GET /foo?world
+--- response_body
+foo: /bar?hello
+
+
+
+=== TEST 16: rewrite uri (zero-length)
+--- config
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua '
+            local res, err = pcall(ngx.req.set_uri, "")
+            ngx.say("err: ", err)
+        ';
+        echo "foo: $uri?$args";
+    }
+--- request
+    GET /foo?world
+--- response_body
+err: attempt to use zero-length uri
+foo: /foo?world
 
