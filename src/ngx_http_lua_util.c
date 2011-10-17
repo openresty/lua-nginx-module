@@ -13,6 +13,7 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
 #include "ngx_http_lua_uri.h"
+#include "ngx_http_lua_req_body.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_time.h"
@@ -759,6 +760,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+        dd("calling lua_resume: vm %p, nret %d", cc, (int) nret);
+
         /*  run code */
         rv = lua_resume(cc, nret);
 
@@ -873,6 +876,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
+    int                          nret = 0;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua run write event handler");
@@ -906,6 +910,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
 
         return NGX_OK;
+    }
+
+    if (ctx->waiting_more_body && !ctx->req_read_body_done) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua write event handler waiting for more request body data");
+
+        return NGX_DONE;
     }
 
     dd("waiting: %d, done: %d", (int) ctx->waiting,
@@ -945,27 +956,60 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    ctx->done = 0;
+    dd("req read body done: %d", (int) ctx->req_read_body_done);
 
-    dd("nsubreqs: %d", (int) ctx->nsubreqs);
+    if (ctx->req_read_body_done) {
+        dd("turned off req read body done");
 
-    ngx_http_lua_handle_subreq_responses(r, ctx);
+        ctx->req_read_body_done = 0;
 
-    dd("free sr_statues/headers/bodies memory ASAP");
+        nret = 0;
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua read req body done, resuming lua thread");
+
+        goto run;
+
+    } else if (ctx->done) {
+        ctx->done = 0;
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua run subrequests done, resuming lua thread");
+
+        dd("nsubreqs: %d", (int) ctx->nsubreqs);
+
+        ngx_http_lua_handle_subreq_responses(r, ctx);
+
+        dd("free sr_statues/headers/bodies memory ASAP");
 
 #if 1
-    ngx_pfree(r->pool, ctx->sr_statuses);
+        ngx_pfree(r->pool, ctx->sr_statuses);
 
-    ctx->sr_statuses = NULL;
-    ctx->sr_headers = NULL;
-    ctx->sr_bodies = NULL;
+        ctx->sr_statuses = NULL;
+        ctx->sr_headers = NULL;
+        ctx->sr_bodies = NULL;
 #endif
 
+        nret = ctx->nsubreqs;
+
+        goto run;
+    }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "useless lua write event handler");
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, NGX_DONE);
+    }
+
+    return NGX_OK;
+
+run:
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     dd("about to run thread for %.*s...", (int) r->uri.len, r->uri.data);
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, ctx->nsubreqs);
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua run thread returned %d", rc);
@@ -1418,6 +1462,23 @@ done:
 
 
 void
+ngx_http_lua_inject_req_api_no_io(lua_State *L)
+{
+    /* ngx.req table */
+
+    lua_newtable(L);    /* .req */
+
+    ngx_http_lua_inject_req_header_api(L);
+
+    ngx_http_lua_inject_req_uri_api(L);
+
+    ngx_http_lua_inject_req_args_api(L);
+
+    lua_setfield(L, -2, "req");
+}
+
+
+void
 ngx_http_lua_inject_req_api(lua_State *L)
 {
     /* ngx.req table */
@@ -1429,6 +1490,8 @@ ngx_http_lua_inject_req_api(lua_State *L)
     ngx_http_lua_inject_req_uri_api(L);
 
     ngx_http_lua_inject_req_args_api(L);
+
+    ngx_http_lua_inject_req_body_api(L);
 
     lua_setfield(L, -2, "req");
 }

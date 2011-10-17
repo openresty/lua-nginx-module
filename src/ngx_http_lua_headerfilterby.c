@@ -71,7 +71,7 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
-    ngx_http_lua_inject_req_api(L);
+    ngx_http_lua_inject_req_api_no_io(L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_misc_api(L);

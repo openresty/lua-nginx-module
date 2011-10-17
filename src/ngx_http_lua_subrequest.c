@@ -743,6 +743,9 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
     u_char                  buf[sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1];
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua handle subrequest responses");
+
     for (index = 0; index < ctx->nsubreqs; index++) {
         dd("summary: reqs %d, subquery %d, waiting %d, req %.*s",
                 (int) ctx->nsubreqs,

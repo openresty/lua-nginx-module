@@ -171,6 +171,7 @@ typedef struct {
 
     unsigned         waiting_more_body:1;   /* 1: waiting for more data;
                                                0: no need to wait */
+    unsigned         req_read_body_done:1;  /* used by ngx.req.read_body */
 
     unsigned         headers_set:1;
     unsigned         entered_rewrite_phase:1;

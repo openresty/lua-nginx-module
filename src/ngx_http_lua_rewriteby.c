@@ -241,6 +241,10 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
             ! ctx->read_body_done &&
             ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
     {
+        r->request_body_in_single_buf = 1;
+        r->request_body_in_persistent_file = 1;
+        r->request_body_in_clean_file = 1;
+
         rc = ngx_http_read_client_request_body(r, 
                 ngx_http_lua_generic_phase_post_read);
 

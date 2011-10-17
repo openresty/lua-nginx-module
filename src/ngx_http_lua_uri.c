@@ -3,7 +3,7 @@
 #endif
 #include "ddebug.h"
 
-#include "ngx_http_lua_args.h"
+#include "ngx_http_lua_uri.h"
 #include "ngx_http_lua_util.h"
 
 
@@ -19,7 +19,8 @@ ngx_http_lua_inject_req_uri_api(lua_State *L)
 
 
 static int
-ngx_http_lua_ngx_req_set_uri(lua_State *L) {
+ngx_http_lua_ngx_req_set_uri(lua_State *L)
+{
     ngx_http_request_t          *r;
     size_t                       len;
     u_char                      *p;
@@ -36,10 +37,6 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L) {
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
 
     if (n == 2) {
         luaL_checktype(L, 2, LUA_TBOOLEAN);
