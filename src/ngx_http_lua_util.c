@@ -12,6 +12,7 @@
 #include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
+#include "ngx_http_lua_uri.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_time.h"
@@ -1424,6 +1425,8 @@ ngx_http_lua_inject_req_api(lua_State *L)
     lua_newtable(L);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
+
+    ngx_http_lua_inject_req_uri_api(L);
 
     ngx_http_lua_inject_req_args_api(L);
 
