@@ -191,3 +191,36 @@ qr/400 Bad Request/]
 --- error_code eval
 [200, '']
 
+
+
+=== TEST 9: read buffered body and retrieve the data
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+hello, world
+
+
+
+=== TEST 10: read buffered body to file and call get_body_data
+--- config
+    client_body_in_file_only on;
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+nil
+
