@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -136,4 +136,58 @@ ngx.req.read_body: undef
 GET /test
 --- response_body
 ngx.req.read_body: undef
+
+
+
+=== TEST 7: discard body
+--- config
+    location = /foo {
+        content_by_lua '
+            ngx.req.discard_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+    }
+    location = /bar {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /bar
+hiya, world"]
+--- response_body eval
+["body: nil\n",
+"body: hiya, world\n"]
+
+
+
+=== TEST 8: not discard body
+--- config
+    location = /foo {
+        content_by_lua '
+            -- ngx.req.discard_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+    }
+    location = /bar {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /bar
+hiya, world"]
+--- response_body eval
+["body: nil\n",
+qr/400 Bad Request/]
+--- error_code eval
+[200, '']
 
