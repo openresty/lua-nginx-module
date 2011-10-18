@@ -11,7 +11,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 #master_on();
 #workers(2);
 run_tests();
@@ -216,6 +216,38 @@ hello, world
         content_by_lua '
             ngx.req.read_body()
             ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+nil
+
+
+
+=== TEST 11: read buffered body to file and call get_body_file
+--- config
+    client_body_in_file_only on;
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_file())
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body_like: client_body_temp/
+
+
+
+=== TEST 12: read buffered body to memory and retrieve the file
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_file())
         ';
     }
 --- request

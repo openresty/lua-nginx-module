@@ -11,6 +11,7 @@ static int ngx_http_lua_ngx_req_read_body(lua_State *L);
 static void ngx_http_lua_req_body_post_read(ngx_http_request_t *r);
 static int ngx_http_lua_ngx_req_discard_body(lua_State *L);
 static int ngx_http_lua_ngx_req_get_body_data(lua_State *L);
+static int ngx_http_lua_ngx_req_get_body_file(lua_State *L);
 
 
 void
@@ -24,6 +25,9 @@ ngx_http_lua_inject_req_body_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_body_data);
     lua_setfield(L, -2, "get_body_data");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_body_file);
+    lua_setfield(L, -2, "get_body_file");
 }
 
 
@@ -121,6 +125,33 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
 
 static int
+ngx_http_lua_ngx_req_discard_body(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_int_t                    rc;
+    int                          n;
+
+    n = lua_gettop(L);
+
+    if (n != 0) {
+        return luaL_error(L, "expecting 0 arguments but seen %d", n);
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    rc = ngx_http_discard_request_body(r);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return luaL_error(L, "failed to discard request body");
+    }
+
+    return 0;
+}
+
+
+static int
 ngx_http_lua_ngx_req_get_body_data(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -158,10 +189,9 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
 
 
 static int
-ngx_http_lua_ngx_req_discard_body(lua_State *L)
+ngx_http_lua_ngx_req_get_body_file(lua_State *L)
 {
     ngx_http_request_t          *r;
-    ngx_int_t                    rc;
     int                          n;
 
     n = lua_gettop(L);
@@ -174,12 +204,13 @@ ngx_http_lua_ngx_req_discard_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    rc = ngx_http_discard_request_body(r);
-
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return luaL_error(L, "failed to discard request body");
+    if (r->request_body == NULL || r->request_body->temp_file == NULL) {
+        lua_pushnil(L);
+        return 1;
     }
 
-    return 0;
+    lua_pushlstring(L, (char *) r->request_body->temp_file->file.name.data,
+                       r->request_body->temp_file->file.name.len);
+    return 1;
 }
 
