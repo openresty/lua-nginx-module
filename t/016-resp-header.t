@@ -64,8 +64,8 @@ Content-Type: text/html
 GET /read
 --- response_headers
 Content-Length: 3
---- response_body
-Hello
+--- response_body chop
+Hel
 
 
 
