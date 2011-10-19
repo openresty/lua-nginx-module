@@ -7,10 +7,10 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-repeat_each(2);
+#repeat_each(2);
 #repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 3;
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 #no_diff();
 #no_long_string();
@@ -144,4 +144,28 @@ GET /read
 Location: http://www.taobao.com/foo?bar=3
 --- response_body_like: 302 Found
 --- error_code: 302
+
+
+=== TEST 6: location.capture + ngx.redirect
+--- config
+    location /echo {
+        echo hello, world;
+    }
+    location /proxy {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT/echo;
+    }
+    location /read {
+        content_by_lua '
+            ngx.location.capture("/proxy")
+            ngx.location.capture("/proxy")
+            ngx.redirect("/echo")
+            ngx.exit(403)
+        ';
+    }
+--- pipelined_requests eval
+["GET /read/1", "GET /read/2"]
+--- error_code eval
+[302, 302]
+--- response_body eval
+[qr/302 Found/, qr/302 Found/]
 
