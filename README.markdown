@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc14](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 October 2011.
+This document describes ngx_lua [v0.3.1rc17](https://github.com/chaoslawful/lua-nginx-module/tags) released on 19 October 2011.
 
 Synopsis
 ========
@@ -678,6 +678,8 @@ then the request body will be read just before the [rewrite_by_lua](http://wiki.
 the request body won't be read until the content handler's Lua code is
 about to run (i.e., the request body will be read at the
 content phase).
+
+You're recommended to use the [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) function and [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) for finer control over the request body reading process though.
 
 The same applies to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) and [access_by_lua_file](http://wiki.nginx.org/HttpLuaModule#access_by_lua_file).
 
@@ -1479,6 +1481,84 @@ is equivalent to
 
     ngx.req.clear_header("X-Foo")
 
+
+ngx.req.read_body
+-----------------
+**syntax:** *ngx.req.read_body()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Read the client request body synchronously but still non-blocking.
+
+If the request body is already read previously by turning on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) or by using other modules, then this function is a no-op and returns immediately.
+
+In case of errors, like connection errors while reading the data, this method will throw out a Lua exception *or* terminate the current request with the 500 status code immediately.
+
+You can later either retrieve the request body data via [ngx.req.get_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_data) or retrieve the temporary file name for the body data cached to disk via [ngx.req.get_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_file), depending on
+
+1. whether the current request body has already exceeding your [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size),
+1. and whether you have turned on [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only).
+
+In case that you do not want to read the request body and the current request may have a request body, then it's crucial to use the [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
+
+This function was first introduced in the `v0.3.1rc17` release.
+
+ngx.req.discard_body
+--------------------
+**syntax:** *ngx.req.discard_body()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately. Please note that, simply ignoring request body is not the right way to discard it, you need to call this function, or you'll break things under HTTP 1.1 keepalive or HTTP 1.1 pipelining.
+
+If the request body has already been read, this function does nothing and returns immediately.
+
+This function was first introduced in the `v0.3.1rc17` release.
+
+See also [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body).
+
+ngx.req.get_body_data
+---------------------
+**syntax:** *ngx.req.get_body_data()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Retrieves the in-memory request body data.
+
+Returns `nil` if
+1. the request body has not been read,
+1. the request body has been read into disk temporary files,
+1. or the request body has zero size.
+
+If the request body has not been read yet, call [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) first (or turned on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) to force this module to read the request body automatically, but this is not recommended).
+
+If the request body has been read into disk files, try calling the [ngx.req.get_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_file) function instead.
+
+In case that you want to enforce in-memory request bodies, try setting [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) to the same size value in [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size).
+
+Note that calling this function instead of using `ngx.var.request_body` or `ngx.var.echo_request-body` is more efficient because it can save one dynamic memory allocation and one data copy.
+
+This function was first introduced in the `v0.3.1rc17` release.
+
+See also [ngx.req.get_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_file).
+
+ngx.req.get_body_file
+---------------------
+**syntax:** *ngx.req.get_body_file()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Retrieves the file name for the in-file request body data. Returns `nil` if the request body has not been read or has been read into memory.
+
+If the request body has not been read yet, call [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) first (or turned on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) to force this module to read the request body automatically, but this is not recommended).
+
+If the request body has been read into memory, try calling the [ngx.req.get_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_data) function instead.
+
+In case that you want to enforce in-file request bodies, try turning on [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only).
+
+This function was first introduced in the `v0.3.1rc17` release.
+
+See also [ngx.req.get_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_data).
 
 ngx.req.clear_header
 --------------------
@@ -2330,20 +2410,22 @@ TODO
 * add options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) in order to share and copy a particular set of nginx variables with subrequests, specified by the user.
 * add an option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) so as to specify the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for subrequests.
 * expose nginx's shared memory facility to the Lua land.
+* add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its `args` argument is a Lua table.
 
 Future Plan
 ===========
 
-* Add the `lua_require` directive to load module into main thread's globals.
-* Add the "cosocket" mechamism that will emulate a common set of Lua socket API that will give you totally transparently non-blocking capability out of the box by means of a completely new upstream layer atop the nginx event model and no nginx subrequest overheads.
-* Add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* Make set_by_lua using the same mechanism as content_by_lua.
+* add the `lua_require` directive to load module into main thread's globals.
+* add the "cosocket" mechamism that will emulate a common set of Lua socket API that will give you totally transparently non-blocking capability out of the box by means of a completely new upstream layer atop the nginx event model and no nginx subrequest overheads.
+* add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
+* make set_by_lua using the same mechanism as content_by_lua.
+* add coroutine API back to the Lua land.
 
 Known Issues
 ============
 
 * As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) (actually coroutine modules have been masked off in [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) directives and others). This limitation is a little crucial, but don't worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
-* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [[#ngx.location.capture_multi|ngx.location.capture_multi], [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec), and [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) cannot be used within the context of a Lua [pcall()](http://www.lua.org/manual/5.1/manual.html#pdf-pcall) or [xpcall()](http://www.lua.org/manual/5.1/manual.html#pdf-xpcall) when the standard Lua 5.1 interpreter is used; you'll get the error `attempt to yield across metamethod/C-call boundary`. To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi), [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec), and [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) cannot be used within the context of a Lua [pcall()](http://www.lua.org/manual/5.1/manual.html#pdf-pcall) or [xpcall()](http://www.lua.org/manual/5.1/manual.html#pdf-xpcall) when the standard Lua 5.1 interpreter is used; you'll get the error `attempt to yield across metamethod/C-call boundary`. To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
 * The [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) Lua methods cannot capture locations configured by [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule)'s [echo_location](http://wiki.nginx.org/HttpEchoModule#echo_location), [echo_location_async](http://wiki.nginx.org/HttpEchoModule#echo_location_async), [echo_subrequest](http://wiki.nginx.org/HttpEchoModule#echo_subrequest), or [echo_subrequest_async](http://wiki.nginx.org/HttpEchoModule#echo_subrequest_async) directives. This won't be fixed in the future due to technical problems.
 * **WATCH OUT: Globals WON'T persist between requests**, because of the one-coroutine-per-request isolation design. Especially watch yourself when using `require()` to import modules, and use this form:
 

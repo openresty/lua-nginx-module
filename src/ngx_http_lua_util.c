@@ -1561,7 +1561,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     dd("XXYY HERE %d\n", (int) r->main->count);
 
 #if 0
-    if (!ctx->entered_content_phase && r != r->connection->data && r->postponed) {
+    if (!ctx->entered_content_phase) {
         /* XXX ensure the main request ref count
          * is decreased because the current
          * request will be quit */

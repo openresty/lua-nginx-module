@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 log_level('debug');
 
 #repeat_each(120);
-#repeat_each(3);
+repeat_each(3);
 
 plan tests => repeat_each() * (blocks() * 2 + 2);
 

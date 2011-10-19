@@ -9,7 +9,8 @@
 #include "ngx_http_lua_cache.h"
 
 
-static ngx_int_t ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_access_by_chunk(lua_State *L,
+    ngx_http_request_t *r);
 
 
 ngx_int_t
