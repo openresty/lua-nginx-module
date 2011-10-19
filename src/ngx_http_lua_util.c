@@ -1019,11 +1019,8 @@ run:
     }
 
     if (rc == NGX_DONE) {
-        if (ctx->entered_content_phase) {
-            ngx_http_finalize_request(r, rc);
-        }
-
-        return NGX_OK;
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
     }
 
     dd("entered content phase: %d", (int) ctx->entered_content_phase);
@@ -1532,14 +1529,15 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
             return rc;
         }
 
-        if (! ctx->entered_content_phase &&
-                r != r->connection->data)
-        {
+#if 0
+        if (!ctx->entered_content_phase) {
             /* XXX ensure the main request ref count
              * is decreased because the current
              * request will be quit */
             r->main->count--;
+            dd("XXX decrement main count: c:%d", (int) r->main->count);
         }
+#endif
 
         return NGX_DONE;
     }
@@ -1562,14 +1560,15 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
     dd("XXYY HERE %d\n", (int) r->main->count);
 
-    if (! ctx->entered_content_phase &&
-            r != r->connection->data)
-    {
+#if 0
+    if (!ctx->entered_content_phase && r != r->connection->data && r->postponed) {
         /* XXX ensure the main request ref count
          * is decreased because the current
          * request will be quit */
+        dd("XXX decrement main count");
         r->main->count--;
     }
+#endif
 
     return NGX_DONE;
 }

@@ -323,3 +323,31 @@ hello
 --- response_body
 hello
 
+
+
+=== TEST 15: access_by_lua + ngx.exec + subrequest capture
+--- config
+    location /main {
+        access_by_lua '
+            res = ngx.location.capture("/test_loc");
+            ngx.print("hello, ", res.body)
+        ';
+        content_by_lua return;
+    }
+    location /test_loc {
+        rewrite_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+    location @proxy {
+        #echo proxy;
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+    location /foo {
+        echo bah;
+    }
+--- request
+    GET /main
+--- response_body
+hello, bah
+

@@ -1,6 +1,9 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
+#include "ddebug.h"
 
 #include <nginx.h>
 #include "ngx_http_lua_rewriteby.h"
@@ -134,7 +137,8 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        return NGX_OK;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
     }
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
@@ -272,7 +276,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
     char                        *err;
 
-    dd("HERE");
+    dd("rewrite by lua inline");
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -308,7 +312,9 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        return NGX_OK;
+        dd("XXX NGX_DONE returned");
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
     }
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {

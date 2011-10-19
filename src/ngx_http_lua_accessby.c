@@ -136,7 +136,8 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        return NGX_HTTP_OK;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
     }
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
@@ -312,7 +313,8 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        return NGX_HTTP_OK;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
     }
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
