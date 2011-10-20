@@ -1727,3 +1727,111 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
     return NGX_OK;
 }
 
+
+ngx_int_t
+ngx_http_lua_open_and_stat_file(u_char *name, ngx_open_file_info_t *of,
+        ngx_log_t *log)
+{
+    ngx_fd_t         fd;
+    ngx_file_info_t  fi;
+
+    if (of->fd != NGX_INVALID_FILE) {
+
+        if (ngx_file_info(name, &fi) == NGX_FILE_ERROR) {
+            of->failed = ngx_file_info_n;
+            goto failed;
+        }
+
+        if (of->uniq == ngx_file_uniq(&fi)) {
+            goto done;
+        }
+
+    } else if (of->test_dir) {
+
+        if (ngx_file_info(name, &fi) == NGX_FILE_ERROR) {
+            of->failed = ngx_file_info_n;
+            goto failed;
+        }
+
+        if (ngx_is_dir(&fi)) {
+            goto done;
+        }
+    }
+
+    if (!of->log) {
+
+        /*
+         * Use non-blocking open() not to hang on FIFO files, etc.
+         * This flag has no effect on a regular files.
+         */
+
+        fd = ngx_open_file(name, NGX_FILE_RDONLY|NGX_FILE_NONBLOCK,
+                           NGX_FILE_OPEN, 0);
+
+    } else {
+        fd = ngx_open_file(name, NGX_FILE_APPEND, NGX_FILE_CREATE_OR_OPEN,
+                           NGX_FILE_DEFAULT_ACCESS);
+    }
+
+    if (fd == NGX_INVALID_FILE) {
+        of->failed = ngx_open_file_n;
+        goto failed;
+    }
+
+    if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
+        ngx_log_error(NGX_LOG_CRIT, log, ngx_errno,
+                      ngx_fd_info_n " \"%s\" failed", name);
+
+        if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+            ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                          ngx_close_file_n " \"%s\" failed", name);
+        }
+
+        of->fd = NGX_INVALID_FILE;
+
+        return NGX_ERROR;
+    }
+
+    if (ngx_is_dir(&fi)) {
+        if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+            ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                          ngx_close_file_n " \"%s\" failed", name);
+        }
+
+        of->fd = NGX_INVALID_FILE;
+
+    } else {
+        of->fd = fd;
+
+        if (of->directio <= ngx_file_size(&fi)) {
+            if (ngx_directio_on(fd) == NGX_FILE_ERROR) {
+                ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                              ngx_directio_on_n " \"%s\" failed", name);
+
+            } else {
+                of->is_directio = 1;
+            }
+        }
+    }
+
+done:
+
+    of->uniq = ngx_file_uniq(&fi);
+    of->mtime = ngx_file_mtime(&fi);
+    of->size = ngx_file_size(&fi);
+    of->fs_size = ngx_file_fs_size(&fi);
+    of->is_dir = ngx_is_dir(&fi);
+    of->is_file = ngx_is_file(&fi);
+    of->is_link = ngx_is_link(&fi);
+    of->is_exec = ngx_is_exec(&fi);
+
+    return NGX_OK;
+
+failed:
+
+    of->fd = NGX_INVALID_FILE;
+    of->err = ngx_errno;
+
+    return NGX_ERROR;
+}
+

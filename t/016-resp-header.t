@@ -115,7 +115,7 @@ Hello
 --- request
 GET /read
 --- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: bc$
+X-Foo: a\r\n.*?X-Foo: bc\r\n
 --- response_body
 Hello
 
@@ -186,7 +186,7 @@ Hello
 --- request
 GET /read
 --- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: abc$
+X-Foo: a\r\n.*?X-Foo: abc\r\n
 --- response_body
 Hello
 

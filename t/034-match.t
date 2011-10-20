@@ -547,3 +547,23 @@ not matched!
 bar
 baz
 
+
+
+=== TEST 27: escaping sequences
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+--- user_files
+>>> a.lua
+m = ngx.re.match("hello, 1234", "(\\\s+)")
+if m then
+    ngx.say("[", m[0], "]")
+else
+    ngx.say("not matched!")
+end
+--- request
+    GET /re
+--- response_body
+[ ]
+

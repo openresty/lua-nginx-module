@@ -6,9 +6,9 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-repeat_each(2);
+#repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 16);
 
 #no_diff();
 no_long_string();
@@ -257,7 +257,7 @@ nil
 
 
 
-=== TEST 13: read buffered body to memory and reset it
+=== TEST 13: read buffered body to memory and reset it with data in memory
 --- config
     location = /test {
         content_by_lua '
@@ -299,7 +299,7 @@ hello, baby
 
 
 
-=== TEST 15: do not read the current request body but replace it with our own
+=== TEST 15: do not read the current request body but replace it with our own in memory
 --- config
     client_body_in_file_only on;
 
@@ -319,4 +319,248 @@ hello, baby
 "hello, baby
 hello, baby
 "]
+
+
+
+=== TEST 16: read buffered body to file and reset it to a new file
+--- config
+    client_body_in_file_only on;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.var.old = ngx.req.get_body_file()
+            ngx.req.set_body_file(ngx.var.realpath_root .. "/a.txt")
+            ngx.var.new = ngx.req.get_body_file()
+        ';
+        #echo_request_body;
+        proxy_pass http://127.0.0.1:$server_port/echo;
+        #proxy_pass http://127.0.0.1:7890/echo;
+        add_header X-Old $old;
+        add_header X-New $new;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world
+--- user_files
+>>> a.txt
+Will you change this world?
+--- raw_response_headers_like
+X-Old: \S+/client_body_temp/\d+\r
+.*?X-New: \S+/html/a\.txt\r
+--- response_body
+Will you change this world?
+
+
+
+=== TEST 17: read buffered body to file and reset it to a new file
+--- config
+    client_body_in_file_only on;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.var.old = ngx.req.get_body_file() or ""
+            ngx.req.set_body_file(ngx.var.realpath_root .. "/a.txt")
+            ngx.var.new = ngx.req.get_body_file()
+        ';
+        #echo_request_body;
+        proxy_pass http://127.0.0.1:$server_port/echo;
+        #proxy_pass http://127.0.0.1:7890/echo;
+        add_header X-Old $old;
+        add_header X-New $new;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world!
+--- user_files
+>>> a.txt
+Will you change this world?
+--- raw_response_headers_like
+X-Old: \S+/client_body_temp/\d+\r
+.*?X-New: \S+/html/a\.txt\r
+--- response_body
+Will you change this world?
+
+
+
+=== TEST 18: read buffered body to file and reset it to a new file (auto-clean)
+--- config
+    client_body_in_file_only on;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.var.old = ngx.req.get_body_file()
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, true)
+            local b_file = ngx.var.realpath_root .. "/b.txt"
+            ngx.req.set_body_file(b_file, true)
+            ngx.say("a.txt exists: ", io.open(a_file) and "yes" or "no")
+            ngx.say("b.txt exists: ", io.open(b_file) and "yes" or "no")
+        ';
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world
+--- user_files
+>>> a.txt
+Will you change this world?
+>>> b.txt
+Sure I will!
+--- response_body
+a.txt exists: no
+b.txt exists: yes
+
+
+
+=== TEST 19: read buffered body to memoary and reset it to a new file (auto-clean)
+--- config
+    client_body_in_file_only off;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.read_body()
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, true)
+        ';
+        echo_request_body;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hey, you"]
+--- user_files
+>>> a.txt
+Will you change this world?
+--- response_body eval
+["Will you change this world?\n",
+qr/500 Internal Server Error/]
+--- error_code eval
+[200, 500]
+
+
+
+=== TEST 20: read buffered body to memoary and reset it to a new file (no auto-clean)
+--- config
+    client_body_in_file_only off;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.read_body()
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, false)
+        ';
+        echo_request_body;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hey, you"]
+--- user_files
+>>> a.txt
+Will you change this world?
+--- response_body eval
+["Will you change this world?\n",
+"Will you change this world?\n"]
+--- error_code eval
+[200, 200]
+
+
+
+=== TEST 21: no request body and reset it to a new file (auto-clean)
+--- config
+    client_body_in_file_only off;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, false)
+        ';
+        echo_request_body;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hey, you"]
+--- user_files
+>>> a.txt
+Will you change this world?
+--- response_body eval
+["Will you change this world?\n",
+"Will you change this world?\n"]
+--- error_code eval
+[200, 200]
+--- ONLY
+
+
+=== TEST 22: no request body and reset it to a new file (no auto-clean)
+--- config
+    client_body_in_file_only off;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, true)
+        ';
+        echo_request_body;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hey, you"]
+--- user_files
+>>> a.txt
+Will you change this world?
+--- response_body eval
+["Will you change this world?\n",
+qr/500 Internal Server Error/]
+--- error_code eval
+[200, 500]
 
