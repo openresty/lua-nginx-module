@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 #no_diff();
 no_long_string();
@@ -178,7 +178,6 @@ hiya, world"]
             ngx.req.read_body()
             ngx.say("body: ", ngx.var.request_body)
         ';
-
     }
 --- pipelined_requests eval
 ["POST /foo
@@ -255,4 +254,69 @@ POST /test
 hello, world
 --- response_body
 nil
+
+
+
+=== TEST 13: read buffered body to memory and reset it
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hiya, dear")
+            ngx.say(ngx.req.get_body_data())
+            ngx.say(ngx.var.request_body)
+            ngx.say(ngx.var.echo_request_body)
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+hiya, dear
+hiya, dear
+hiya, dear
+
+
+
+=== TEST 14: read body to file and then override it with data in memory
+--- config
+    client_body_in_file_only on;
+
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hello, baby")
+            ngx.say(ngx.req.get_body_data())
+            ngx.say(ngx.var.request_body)
+        ';
+    }
+--- request
+POST /test
+yeah
+--- response_body
+hello, baby
+hello, baby
+
+
+
+=== TEST 15: do not read the current request body but replace it with our own
+--- config
+    client_body_in_file_only on;
+
+    location = /test {
+        content_by_lua '
+            ngx.req.set_body_data("hello, baby")
+            ngx.say(ngx.req.get_body_data())
+            ngx.say(ngx.var.request_body)
+        ';
+    }
+--- pipelined_requests eval
+["POST /test\nyeah", "POST /test\nblah"]
+--- response_body eval
+["hello, baby
+hello, baby
+",
+"hello, baby
+hello, baby
+"]
 

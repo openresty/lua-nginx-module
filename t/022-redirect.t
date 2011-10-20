@@ -146,7 +146,8 @@ Location: http://www.taobao.com/foo?bar=3
 --- error_code: 302
 
 
-=== TEST 6: location.capture + ngx.redirect
+
+=== TEST 8: location.capture + ngx.redirect
 --- config
     location /echo {
         echo hello, world;

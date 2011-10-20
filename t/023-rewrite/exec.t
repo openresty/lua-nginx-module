@@ -351,7 +351,8 @@ hello
 hello, bah
 
 
-=== TEST 15: rewrite_by_lua_file + ngx.exec + subrequest capture
+
+=== TEST 16: rewrite_by_lua_file + ngx.exec + subrequest capture
 --- config
     location /main {
         rewrite_by_lua '

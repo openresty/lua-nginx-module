@@ -12,6 +12,8 @@ static void ngx_http_lua_req_body_post_read(ngx_http_request_t *r);
 static int ngx_http_lua_ngx_req_discard_body(lua_State *L);
 static int ngx_http_lua_ngx_req_get_body_data(lua_State *L);
 static int ngx_http_lua_ngx_req_get_body_file(lua_State *L);
+static int ngx_http_lua_ngx_req_set_body_data(lua_State *L);
+static void ngx_http_lua_pool_cleanup_file(ngx_pool_t *p, ngx_fd_t fd);
 
 
 void
@@ -28,6 +30,9 @@ ngx_http_lua_inject_req_body_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_body_file);
     lua_setfield(L, -2, "get_body_file");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_set_body_data);
+    lua_setfield(L, -2, "set_body_data");
 }
 
 
@@ -212,5 +217,132 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
     lua_pushlstring(L, (char *) r->request_body->temp_file->file.name.data,
                        r->request_body->temp_file->file.name.len);
     return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_req_set_body_data(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    int                          n;
+    ngx_http_request_body_t     *rb;
+    ngx_chain_t                 *cl;
+    ngx_temp_file_t             *tf;
+    ngx_buf_t                   *b;
+    ngx_str_t                    body;
+#if 1
+    ngx_int_t                    rc;
+#endif
+
+    n = lua_gettop(L);
+
+    if (n != 1) {
+        return luaL_error(L, "expecting 1 arguments but seen %d", n);
+    }
+
+    body.data = (u_char *) luaL_checklstring(L, 1, &body.len);
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r->request_body == NULL) {
+
+#if 1
+        rc = ngx_http_discard_request_body(r);
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return luaL_error(L, "failed to discard request body");
+        }
+#endif
+
+        rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+        if (rb == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        r->request_body = rb;
+
+    } else {
+        rb = r->request_body;
+    }
+
+    tf = rb->temp_file;
+
+    if (tf) {
+        if (tf->file.fd != NGX_INVALID_FILE) {
+
+            dd("cleaning temp file %.*s", (int) tf->file.name.len,
+                    tf->file.name.data);
+
+            ngx_http_lua_pool_cleanup_file(r->pool, tf->file.fd);
+            tf->file.fd = NGX_INVALID_FILE;
+
+            dd("temp file cleaned: %.*s", (int) tf->file.name.len,
+                    tf->file.name.data);
+        }
+
+        rb->temp_file = NULL;
+    }
+
+    if (rb->bufs) {
+        for (cl = rb->bufs; cl; cl = cl->next) {
+            if (cl->buf->temporary) {
+                ngx_pfree(r->pool, cl->buf->start);
+            }
+        }
+
+        rb->bufs->next = NULL;
+
+        b = rb->bufs->buf;
+
+        ngx_memzero(b, sizeof(ngx_buf_t));
+        b->temporary = 1;
+        b->start = ngx_palloc(r->pool, body.len);
+        if (b->start == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+        b->end = b->start + body.len;
+
+        b->pos = b->start;
+        b->last = ngx_copy(b->pos, body.data, body.len);
+
+    } else {
+
+        rb->bufs = ngx_alloc_chain_link(r->pool);
+        if (rb->bufs == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        b = ngx_create_temp_buf(r->pool, body.len);
+        b->last = ngx_copy(b->pos, body.data, body.len);
+
+        rb->bufs->buf = b;
+        rb->bufs->next = NULL;
+    }
+
+    return 0;
+}
+
+
+static void
+ngx_http_lua_pool_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
+{
+    ngx_pool_cleanup_t       *c;
+    ngx_pool_cleanup_file_t  *cf;
+
+    for (c = p->cleanup; c; c = c->next) {
+        if (c->handler == ngx_pool_cleanup_file
+            || c->handler == ngx_pool_delete_file)
+        {
+
+            cf = c->data;
+
+            if (cf->fd == fd) {
+                c->handler(cf);
+                c->handler = NULL;
+                return;
+            }
+        }
+    }
 }
 
