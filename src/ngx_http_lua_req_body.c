@@ -74,6 +74,10 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "request context is null");
     }
 
+    if (r->discard_body || r->content_length_n == 0) {
+        return luaL_error(L, "body already discarded");
+    }
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua start to read buffered request body");
 
@@ -111,8 +115,6 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua req body post read");
-
-    r->read_event_handler = ngx_http_block_reading;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     ctx->req_read_body_done = 1;
@@ -299,6 +301,23 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         rb->temp_file = NULL;
     }
 
+    if (body.len == 0) {
+        if (rb->bufs) {
+            for (cl = rb->bufs; cl; cl = cl->next) {
+                if (cl->buf->temporary) {
+                    ngx_pfree(r->pool, cl->buf->start);
+                    cl->buf->temporary = 0;
+                }
+            }
+        }
+
+        rb->bufs = NULL;
+        rb->buf = NULL;
+
+        dd("request body is set to empty string");
+        goto set_header;
+    }
+
     if (rb->bufs) {
         for (cl = rb->bufs; cl; cl = cl->next) {
             if (cl->buf->temporary) {
@@ -337,6 +356,8 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         rb->buf = b;
     }
 
+set_header:
+
     /* override input header Content-Length */
 
     value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN);
@@ -346,8 +367,12 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
     value.len = ngx_sprintf(value.data, "%O", body.len) - value.data;
 
+    dd("setting request Content-Length to %.*s (%d)",
+            (int) value.len, value.data, (int) body.len);
+
+    r->headers_in.content_length_n = body.len;
+
     if (r->headers_in.content_length) {
-        r->headers_in.content_length_n = body.len;
         r->headers_in.content_length->value.data = value.data;
         r->headers_in.content_length->value.len = value.len;
 
@@ -604,8 +629,9 @@ set_header:
 
     value.len = ngx_sprintf(value.data, "%O", of.size) - value.data;
 
+    r->headers_in.content_length_n = of.size;
+
     if (r->headers_in.content_length) {
-        r->headers_in.content_length_n = of.size;
         r->headers_in.content_length->value.data = value.data;
         r->headers_in.content_length->value.len = value.len;
 

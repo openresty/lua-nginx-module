@@ -655,8 +655,6 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua post read for rewrite/access phases");
 
-    r->read_event_handler = ngx_http_block_reading;
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     ctx->read_body_done = 1;

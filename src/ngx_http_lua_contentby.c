@@ -180,8 +180,6 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t  *ctx;
 
-    r->read_event_handler = ngx_http_request_empty_handler;
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     ctx->read_body_done = 1;

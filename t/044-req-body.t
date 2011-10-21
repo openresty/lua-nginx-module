@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 16);
+plan tests => repeat_each() * (blocks() * 2 + 24);
 
 #no_diff();
 no_long_string();
@@ -308,7 +308,11 @@ hello, baby
             ngx.req.set_body_data("hello, baby")
             ngx.say(ngx.req.get_body_data())
             ngx.say(ngx.var.request_body)
+            -- ngx.location.capture("/sleep")
         ';
+    }
+    location = /sleep {
+        echo_sleep 0.5;
     }
 --- pipelined_requests eval
 ["POST /test\nyeah", "POST /test\nblah"]
@@ -584,4 +588,113 @@ POST /test
 hello, world
 --- response_body chomp
 hiya, dear dear friend!
+
+
+
+=== TEST 24: discard request body and reset it to a new file (no auto-clean)
+--- config
+    client_body_in_file_only off;
+
+    location = /test {
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.discard_body()
+            local a_file = ngx.var.realpath_root .. "/a.txt"
+            ngx.req.set_body_file(a_file, true)
+        ';
+        echo_request_body;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hey, you"]
+--- user_files
+>>> a.txt
+Will you change this world?
+--- response_body eval
+["Will you change this world?\n",
+qr/500 Internal Server Error/]
+--- error_code eval
+[200, 500]
+
+
+
+=== TEST 25: discard body and then read
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.req.discard_body()
+            local rc, err = pcall(ngx.req.read_body)
+            ngx.say(err)
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hello, world"]
+--- response_body eval
+["body already discarded
+nil
+",
+"body already discarded
+nil
+"]
+
+
+
+=== TEST 26: set empty request body in memory
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.set_body_data("")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: [", ngx.req.get_body_data(), "]")
+        ';
+    }
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hello, world"]
+--- response_body eval
+["body: [nil]\n","body: [nil]\n"]
+
+
+
+=== TEST 27: set empty request body in file
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.set_body_file(ngx.var.realpath_root .. "/a.txt")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: [", ngx.req.get_body_data(), "]")
+        ';
+    }
+--- user_files
+>>> a.txt
+--- pipelined_requests eval
+["POST /test
+hello, world",
+"POST /test
+hello, world"]
+--- response_body eval
+["body: [nil]\n","body: [nil]\n"]
 

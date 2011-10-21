@@ -589,6 +589,6 @@ end
 --- request
     GET /re
 --- response_body
-[ ]
---- ONLY
+regex: (?:>[\w\s]*</?\w{2,}>)
+[>2</impact>]
 
