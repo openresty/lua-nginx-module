@@ -108,10 +108,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    if (llcf->force_read_body &&
-            ! ctx->read_body_done &&
-            ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
-    {
+    if (llcf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;
         r->request_body_in_clean_file = 1;
