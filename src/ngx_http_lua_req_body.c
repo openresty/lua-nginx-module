@@ -244,7 +244,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
     ngx_chain_t                 *cl;
     ngx_temp_file_t             *tf;
     ngx_buf_t                   *b;
-    ngx_str_t                    body;
+    ngx_str_t                    body, key, value;
 #if 1
     ngx_int_t                    rc;
 #endif
@@ -335,6 +335,31 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
         rb->bufs->buf = b;
         rb->buf = b;
+    }
+
+    /* override input header Content-Length */
+
+    value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+    if (value.data == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    value.len = ngx_sprintf(value.data, "%O", body.len) - value.data;
+
+    if (r->headers_in.content_length) {
+        r->headers_in.content_length_n = body.len;
+        r->headers_in.content_length->value.data = value.data;
+        r->headers_in.content_length->value.len = value.len;
+
+    } else {
+
+        ngx_str_set(&key, "Content-Length");
+
+        rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
+        if (rc != NGX_OK) {
+            return luaL_error(L, "failed to reset the Content-Length "
+                    "input header");
+        }
     }
 
     return 0;

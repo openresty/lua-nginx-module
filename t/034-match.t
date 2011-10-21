@@ -12,7 +12,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 2);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -566,4 +566,29 @@ end
     GET /re
 --- response_body
 [ ]
+
+
+
+=== TEST 28: escaping sequences
+--- config
+    location /re {
+        access_by_lua_file html/a.lua;
+        content_by_lua return;
+    }
+--- user_files
+>>> a.lua
+local uri = "<impact>2</impact>"
+local regex = '(?:>[\\w\\s]*</?\\w{2,}>)';
+ngx.say("regex: ", regex)
+m = ngx.re.match(uri, regex, "oi")
+if m then
+    ngx.say("[", m[0], "]")
+else
+    ngx.say("not matched!")
+end
+--- request
+    GET /re
+--- response_body
+[ ]
+--- ONLY
 

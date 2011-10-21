@@ -530,7 +530,7 @@ Will you change this world?
 "Will you change this world?\n"]
 --- error_code eval
 [200, 200]
---- ONLY
+
 
 
 === TEST 22: no request body and reset it to a new file (no auto-clean)
@@ -563,4 +563,25 @@ Will you change this world?
 qr/500 Internal Server Error/]
 --- error_code eval
 [200, 500]
+
+
+
+=== TEST 23: read buffered body to memory and reset it with data in memory + proxy
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hiya, dear dear friend!")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world
+--- response_body chomp
+hiya, dear dear friend!
 
