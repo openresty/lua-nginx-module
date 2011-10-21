@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc17](https://github.com/chaoslawful/lua-nginx-module/tags) released on 19 October 2011.
+This document describes ngx_lua [v0.3.1rc18](https://github.com/chaoslawful/lua-nginx-module/tags) released on 21 October 2011.
 
 Synopsis
 ========
@@ -1488,15 +1488,17 @@ ngx.req.read_body
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Read the client request body synchronously but still non-blocking.
+Read the client request body synchronously but still non-blockingly.
 
 If the request body is already read previously by turning on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) or by using other modules, then this function is a no-op and returns immediately.
+
+If the request body has already been explicitly discarded, either by this module's [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) or other modules, this function is a no-op and returns immediately.
 
 In case of errors, like connection errors while reading the data, this method will throw out a Lua exception *or* terminate the current request with the 500 status code immediately.
 
 You can later either retrieve the request body data via [ngx.req.get_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_data) or retrieve the temporary file name for the body data cached to disk via [ngx.req.get_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_file), depending on
 
-1. whether the current request body has already exceeding your [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size),
+1. whether the current request body is already exceeding your [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size),
 1. and whether you have turned on [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only).
 
 In case that you do not want to read the request body and the current request may have a request body, then it's crucial to use the [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
@@ -1511,6 +1513,8 @@ ngx.req.discard_body
 
 Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately. Please note that, simply ignoring request body is not the right way to discard it, you need to call this function, or you'll break things under HTTP 1.1 keepalive or HTTP 1.1 pipelining.
 
+This function is an asynchronous call and returns immediately.
+
 If the request body has already been read, this function does nothing and returns immediately.
 
 This function was first introduced in the `v0.3.1rc17` release.
@@ -1519,7 +1523,7 @@ See also [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_bo
 
 ngx.req.get_body_data
 ---------------------
-**syntax:** *ngx.req.get_body_data()*
+**syntax:** *data = ngx.req.get_body_data()*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -1544,11 +1548,13 @@ See also [ngx.req.get_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.get
 
 ngx.req.get_body_file
 ---------------------
-**syntax:** *ngx.req.get_body_file()*
+**syntax:** *file_name = ngx.req.get_body_file()*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Retrieves the file name for the in-file request body data. Returns `nil` if the request body has not been read or has been read into memory.
+
+The returned file is read only and is usually cleaned up automatically by Nginx's memory pool. It should not be modified, renamed, or removed by your own Lua code.
 
 If the request body has not been read yet, call [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) first (or turned on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) to force this module to read the request body automatically, but this is not recommended).
 
@@ -1559,6 +1565,46 @@ In case that you want to enforce in-file request bodies, try turning on [client_
 This function was first introduced in the `v0.3.1rc17` release.
 
 See also [ngx.req.get_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_body_data).
+
+ngx.req.set_body_data
+---------------------
+**syntax:** *ngx.req.set_body_data(data)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Set the current request's request body using the in-memory data specified by the `data` argument.
+
+If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
+
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [nginx-1.0.8-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
+
+If you're using [ngx_openresty](http://openresty.org/) 1.0.8.17+, then you've already had this patch applied.
+
+This function was first introduced in the `v0.3.1rc18` release.
+
+See also [ngx.req.set_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_body_file).
+
+ngx.req.set_body_file
+---------------------
+**syntax:** *ngx.req.set_body_file(file_name, auto_clean?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Set the current request's request body using the in-file data specified by the `file_name` argument.
+
+If the optional `auto_clean` argument is given a `true` value, then this file will be automatically removed at request completion or the next time this function or [ngx.req.set_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_body_data) are called in the same request. The `auto_clean` is default to `false`.
+
+You must ensure that the file specified by the `file_name` argument exists and is readable by an Nginx worker process by setting its permission properly. Otherwise a Lua exception will be thrown.
+
+If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
+
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [nginx-1.0.8-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
+
+If you're using [ngx_openresty](http://openresty.org/) 1.0.8.17+, then you've already had this patch applied.
+
+This function was first introduced in the `v0.3.1rc18` release.
+
+See also [ngx.req.set_body_data](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_body_data).
 
 ngx.req.clear_header
 --------------------
