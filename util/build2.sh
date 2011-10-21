@@ -15,7 +15,7 @@ force=$2
 ngx-build $force $version \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-cc-opt=$'-O3' \
+            --with-cc-opt=$'-O3 -DNGINX_ALLOW_REQUEST_BODY_UPDATING' \
             --with-ld-opt="-Wl,-rpath,/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
             --without-mail_pop3_module \
             --without-mail_imap_module \

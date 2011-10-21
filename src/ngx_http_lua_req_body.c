@@ -74,7 +74,11 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "request context is null");
     }
 
+#ifdef NGINX_ALLOW_REQUEST_BODY_UPDATING
     if (r->discard_body || r->content_length_n == 0) {
+#else
+    if (r->discard_body) {
+#endif
         return luaL_error(L, "body already discarded");
     }
 
