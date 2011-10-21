@@ -630,9 +630,8 @@ qr/500 Internal Server Error/]
     location = /test {
         content_by_lua '
             ngx.req.discard_body()
-            local rc, err = pcall(ngx.req.read_body)
-            ngx.say(err)
-            ngx.say(ngx.req.get_body_data())
+            ngx.req.read_body()
+            ngx.print(ngx.req.get_body_data())
         ';
     }
 --- pipelined_requests eval
@@ -641,12 +640,7 @@ hello, world",
 "POST /test
 hello, world"]
 --- response_body eval
-["body already discarded
-nil
-",
-"body already discarded
-nil
-"]
+["nil","nil"]
 
 
 
