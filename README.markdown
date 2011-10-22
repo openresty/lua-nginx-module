@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc18](https://github.com/chaoslawful/lua-nginx-module/tags) released on 21 October 2011.
+This document describes ngx_lua [v0.3.1rc19](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 October 2011.
 
 Synopsis
 ========
@@ -310,6 +310,7 @@ Note that [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) can only 
 a time. But a work-around is also available by means of the [ngx.var.VARIABLE](http://wiki.nginx.org/HttpLuaModule#ngx.var.VARIABLE) interface,
 for example,
 
+
     location /foo {
         set $diff ''; # we have to predefine the $diff variable here
  
@@ -326,6 +327,7 @@ for example,
 
 
 This directive can be freely mixed with all the directives of [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule), [HttpSetMiscModule](http://wiki.nginx.org/HttpSetMiscModule), and [HttpArrayVarModule](http://wiki.nginx.org/HttpArrayVarModule). All of these directives will run in exactly the same order that they are written in the config file. For example,
+
 
     set $foo 32;
     set_by_lua $bar 'tonumber(ngx.var.foo) + 1';
@@ -633,6 +635,7 @@ Use Lua defined in `<lua-script-str>` to define an output header filter. For now
 
 Here's a small example of overriding a response header (or adding if it does not exist) in our Lua header filter:
 
+
     location / {
         proxy_pass http://mybackend;
         header_filter_by_lua 'ngx.header.Foo = "blah"';
@@ -757,6 +760,7 @@ ngx.var.VARIABLE
 Note that you can only write to nginx variables that are already defined.
 For example:
 
+
     location /foo {
         set $my_var ''; # this line is required to create $my_var at config time
         content_by_lua '
@@ -764,6 +768,7 @@ For example:
             ...
         ';
     }
+
 
 That is, nginx variables cannot be created on-the-fly.
 
@@ -782,6 +787,7 @@ Core constants
       ngx.ERROR (-1)
       ngx.AGAIN (-2)
       ngx.DONE (-4)
+
 
 They take the same values of `NGX_OK`, `NGX_AGAIN`, `NGX_DONE`, `NGX_ERROR`, and etc. But now
 only [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) only take two of these values, i.e., `NGX_OK` and `NGX_ERROR`.
@@ -804,6 +810,7 @@ HTTP status constants
 ---------------------
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
+
       value = ngx.HTTP_OK (200)
       value = ngx.HTTP_CREATED (201)
       value = ngx.HTTP_SPECIAL_RESPONSE (300)
@@ -825,6 +832,7 @@ HTTP status constants
 Nginx log level constants
 -------------------------
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
 
       ngx.STDERR
       ngx.EMERG
@@ -849,7 +857,9 @@ Emit args concatenated to nginx's `error.log` file, with log level `ngx.NOTICE` 
 
 It's equivalent to
 
+
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
+
 
 Lua `nil` arguments are accepted and result in literal `"nil"`, and Lua booleans result in `"true"` or `"false"`.
 
@@ -860,6 +870,7 @@ ngx.ctx
 This table can be used to store per-request context data for Lua programmers.
 
 This table has a liftime identical to the current request (just like Nginx variables). Consider the following example,
+
 
     location /test {
         rewrite_by_lua '
@@ -874,14 +885,18 @@ This table has a liftime identical to the current request (just like Nginx varia
         ';
     }
 
+
 Then `GET /test` will yield the output
+
 
     foo = nil
     79
 
+
 That is, the `ngx.ctx.foo` entry persists across the rewrite, access, and content phases of a request.
 
 Also, every request has its own copy, include subrequests, for example:
+
 
     location /sub {
         content_by_lua '
@@ -901,16 +916,20 @@ Also, every request has its own copy, include subrequests, for example:
         ';
     }
 
+
 Then `GET /main` will give the output
+
 
     main pre: 73
     sub pre: nil
     sub post: 32
     main post: 73
 
+
 We can see that modification of the `ngx.ctx.blah` entry in the subrequest does not affect the one in its parent request. They do have two separate versions of `ngx.ctx.blah` per se.
 
 Internal redirection will destroy the original request's `ngx.ctx` data (if any) and the new request will have an emptied `ngx.ctx` table. For instance,
+
 
     location /new {
         content_by_lua '
@@ -925,15 +944,19 @@ Internal redirection will destroy the original request's `ngx.ctx` data (if any)
         ';
     }
 
+
 Then `GET /orig` will give you
 
+
     nil
+
 
 rather than the original `"hello"` value.
 
 Arbitrary data values can be inserted into this "matic" table, including Lua closures and nested tables. You can also register your own meta methods with it.
 
 Overriding `ngx.ctx` with a new Lua table is also supported, for example,
+
 
     ngx.ctx = { foo = 32, bar = 54 }
 
@@ -955,7 +978,9 @@ Subrequests are completely different from HTTP 301/302 redirection (via [ngx.red
 
 Here's a basic example:
 
+
     res = ngx.location.capture(uri)
+
 
 Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
 
@@ -965,16 +990,20 @@ the value is a Lua (array) table that holds all the values in the order that
 they appear. For instance, if the subrequest response headers contains the following
 lines:
 
+
     Set-Cookie: a=3
     Set-Cookie: foo=bar
     Set-Cookie: baz=blah
+
 
 Then `res.header["Set-Cookie"]` will be evaluted to the table value
 `{"a=3", "foo=bar", "baz=blah"}`.
 
 URI query strings can be concatenated to URI itself, for instance,
 
+
     res = ngx.location.capture('/foo/bar?a=3&b=4')
+
 
 Named locations like `@foo` are not allowed due to a limitation in
 the nginx core. Use normal locations combined with the `internal` directive to
@@ -986,10 +1015,12 @@ argument, which support various options like
 Issuing a POST subrequest, for example,
 can be done as follows
 
+
     res = ngx.location.capture(
         '/foo/bar',
         { method = ngx.HTTP_POST, body = 'hello, world' }
     )
+
 
 See HTTP method constants methods other than POST.
 The `method` option is `ngx.HTTP_GET` by default.
@@ -1004,13 +1035,17 @@ care. So, by default, the option is set to `false`.
 
 The `args` option can specify extra url arguments, for instance,
 
+
     ngx.location.capture('/foo?a=1',
         { args = { b = 3, c = ':' } }
     )
 
+
 is equivalent to
 
+
     ngx.location.capture('/foo?a=1&b=3&c=%3a')
+
 
 that is, this method will automatically escape argument keys and values according to URI rules and
 concatenating them together into a complete query string. Because it's all done in hand-written C,
@@ -1018,9 +1053,11 @@ it should be faster than your own Lua code.
 
 The `args` option can also take plain query string:
 
+
     ngx.location.capture('/foo?a=1',
         { args = 'b=3&c=%3a' } }
     )
+
 
 This is functionally identical to the previous examples.
 
@@ -1041,6 +1078,7 @@ Just like [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.locatio
 
 This function issue several parallel subrequests specified by the input table, and returns their results in the same order. For example,
 
+
     res1, res2, res3 = ngx.location.capture_multi{
         { "/foo", { args = "a=3&b=4" } },
         { "/bar" },
@@ -1055,11 +1093,13 @@ This function issue several parallel subrequests specified by the input table, a
         ...
     end
 
+
 This function will not return until all the subrequests terminate.
 The total latency is the longest latency of the subrequests, instead of their sum.
 
 When you don't know inadvance how many subrequests you want to issue,
 you can use Lua tables for both requests and responses. For instance,
+
 
     -- construct the requests table
     local reqs = {}
@@ -1076,8 +1116,10 @@ you can use Lua tables for both requests and responses. For instance,
         -- process the response table "resp"
     end
 
+
 The [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) function is just a special form
 of this function. Logically speaking, the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) can be implemented like this
+
 
     ngx.location.capture =
         function (uri, args)
@@ -1091,6 +1133,7 @@ ngx.status
 
 Read and write the current request's response status. This should be called
 before sending out the response headers.
+
 
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
@@ -1313,6 +1356,7 @@ Returns a Lua table holds all of the current request's request URL query argumen
 
 Here's an example,
 
+
     location = /test {
         content_by_lua '
             local args = ngx.req.get_uri_args()
@@ -1326,37 +1370,50 @@ Here's an example,
         ';
     }
 
+
 Then `GET /test?foo=bar&bar=baz&bar=blah` will yield the response body
+
 
     foo: bar
     bar: baz, blah
+
 
 Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
 
 Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings, `GET /test?a%20b=1%61+2` will yield the output
 
+
     a b: 1a 2
 
+
 Arguments without the `=<value>` parts are treated as boolean arguments. For example, `GET /test?foo&bar` will yield the outputs
+
 
     foo: true
     bar: true
 
+
 That is, they will take Lua boolean values `true`. However, they're different from arguments taking empty string values. For example, `GET /test?foo=&bar=` will give something like
+
 
     foo: 
     bar: 
+
 
 Empty key arguments are discarded, for instance, `GET /test?=hello&=world` will yield empty outputs.
 
 Updating query arguments via the nginx variable `$args` (or `ngx.var.args` in Lua) at runtime are also supported:
 
+
     ngx.var.args = "a=3&b=42"
     local args = ngx.req.get_uri_args()
 
+
 Here the `args` table will always look like
 
+
     {a = 3, b = 42}
+
 
 regardless of the actual request query string.
 
@@ -1366,14 +1423,14 @@ ngx.req.get_post_args
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns a Lua table holds all of the current request's POST query arguments. It's required to turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, or a Lua exception will be thrown.
+Returns a Lua table holds all of the current request's POST query arguments. It's required to read the request body first by calling [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or to turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, or a Lua exception will be thrown.
 
 Here's an example,
 
+
     location = /test {
-        lua_need_request_body on;
         content_by_lua '
-            local args = ngx.req.get_post_args()
+            ngx.req.read_body()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -1384,36 +1441,49 @@ Here's an example,
         ';
     }
 
+
 Then
+
 
     # Post request with the body 'foo=bar&bar=baz&bar=blah'
     $ curl --data 'foo=bar&bar=baz&bar=blah' localhost/test
 
+
 will yield the response body like
+
 
     foo: bar
     bar: baz, blah
+
 
 Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
 
 Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings,
 
+
     # POST request with body 'a%20b=1%61+2'
     $ curl -d 'a%20b=1%61+2' localhost/test
 
+
 will yield the output
+
 
     a b: 1a 2
 
+
 Arguments without the `=<value>` parts are treated as boolean arguments. For example, `GET /test?foo&bar` will yield the outputs
+
 
     foo: true
     bar: true
 
+
 That is, they will take Lua boolean values `true`. However, they're different from arguments taking empty string values. For example, `POST /test` with request body `foo=&bar=` will give something like
+
 
     foo: 
     bar: 
+
 
 Empty key arguments are discarded, for instance, `POST /test` with body `=hello&=world` will yield empty outputs.
 
@@ -1427,24 +1497,32 @@ Returns a Lua table holds all of the current request's request headers.
 
 Here's an example,
 
+
     local h = ngx.req.get_headers()
     for k, v in pairs(h) do
         ...
     end
 
+
 To read an individual header:
+
 
     ngx.say("Host: ", ngx.req.get_headers()["Host"])
 
+
 For multiple instances of request headers like
+
 
     Foo: foo
     Foo: bar
     Foo: baz
 
+
 the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like this:
 
+
     {"foo", "bar", "baz"}
+
 
 Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard [$http_HEADER](http://wiki.nginx.org/HttpCoreModule#.24http_HEADER) variables.
 
@@ -1459,25 +1537,34 @@ None of the current request's subrequests will be affected.
 
 Here's an example of setting the `Content-Length` header:
 
+
     ngx.req.set_header("Content-Type", "text/css")
+
 
 The `header_value` can take an array list of values,
 for example,
 
+
     ngx.req.set_header("Foo", {"a", "abc"})
+
 
 will produce two new request headers:
 
+
     Foo: a
     Foo: abc
+
 
 and old `Foo` headers will be overridden if there's any.
 
 When the `header_value` argument is `nil`, the request header will be removed. So
 
+
     ngx.req.set_header("X-Foo", nil)
 
+
 is equivalent to
+
 
     ngx.req.clear_header("X-Foo")
 
@@ -1502,6 +1589,13 @@ You can later either retrieve the request body data via [ngx.req.get_body_data](
 1. and whether you have turned on [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only).
 
 In case that you do not want to read the request body and the current request may have a request body, then it's crucial to use the [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
+
+Here's a small example:
+
+
+    ngx.req.read_body()
+    local args = ngx.req.get_post_args()
+
 
 This function was first introduced in the `v0.3.1rc17` release.
 
@@ -1962,8 +2056,10 @@ ngx.cookie_time
 
 Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
 
+
     ngx.say(ngx.cookie_time(1290079655))
         -- yields "Thu, 18-Nov-10 11:27:35 GMT"
+
 
 ngx.http_time
 -------------
@@ -1973,8 +2069,10 @@ ngx.http_time
 
 Returns a formated string can be used as the http header time (for example, being used in `Last-Modified` header). The parameter `sec` is the timestamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
 
+
     ngx.say(ngx.http_time(1290079655))
         -- yields "Thu, 18 Nov 10 11:27:35 GMT"
+
 
 ngx.parse_http_time
 -------------------
@@ -1984,10 +2082,12 @@ ngx.parse_http_time
 
 Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org/HttpLuaModule#ngx.http_time)) into seconds. Returns the seconds or `nil` if the input string is in bad forms.
 
+
     local time = ngx.parse_http_time("Thu, 18 Nov 10 11:27:35 GMT")
     if time == nil then
         ...
     end
+
 
 ngx.is_subrequest
 -----------------
@@ -2354,9 +2454,10 @@ Alternatively, you can compile this module with nginx core's source by hand:
 1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/tags).
 1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
 
-        $ wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
-        $ tar -xzvf nginx-1.0.5.tar.gz
-        $ cd nginx-1.0.5/
+
+        wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
+        tar -xzvf nginx-1.0.5.tar.gz
+        cd nginx-1.0.5/
  
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -2367,12 +2468,12 @@ Alternatively, you can compile this module with nginx core's source by hand:
         # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
  
         # Here we assume you would install you nginx under /opt/nginx/.
-        $ ./configure --prefix=/opt/nginx \
+        ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
  
-        $ make -j2
-        $ make install
+        make -j2
+        make install
 
 
 Compatibility

@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc18] released on 21 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc19] released on 22 October 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -298,6 +298,7 @@ anything that may be blocked or time-consuming.
 Note that [[#set_by_lua|set_by_lua]] can only output a value to a single Nginx variable at
 a time. But a work-around is also available by means of the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] interface,
 for example,
+
 <geshi lang="nginx">
     location /foo {
         set $diff ''; # we have to predefine the $diff variable here
@@ -315,6 +316,7 @@ for example,
 </geshi>
 
 This directive can be freely mixed with all the directives of [[HttpRewriteModule]], [[HttpSetMiscModule]], and [[HttpArrayVarModule]]. All of these directives will run in exactly the same order that they are written in the config file. For example,
+
 <geshi lang="nginx">
     set $foo 32;
     set_by_lua $bar 'tonumber(ngx.var.foo) + 1';
@@ -613,6 +615,7 @@ Use Lua defined in <code><lua-script-str></code> to define an output header filt
 * Subrequest APIs (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 
 Here's a small example of overriding a response header (or adding if it does not exist) in our Lua header filter:
+
 <geshi lang="nginx">
     location / {
         proxy_pass http://mybackend;
@@ -732,6 +735,7 @@ that outputs <code>88</code>, the sum of <code>32</code> and <code>56</code>.
 </geshi>
 Note that you can only write to nginx variables that are already defined.
 For example:
+
 <geshi lang="nginx">
     location /foo {
         set $my_var ''; # this line is required to create $my_var at config time
@@ -741,6 +745,7 @@ For example:
         ';
     }
 </geshi>
+
 That is, nginx variables cannot be created on-the-fly.
 
 Some special nginx variables like <code>$args</code> and <code>$limit_rate</code> can be assigned a value,
@@ -758,6 +763,7 @@ interface as well, by writing <code>ngx.var[1]</code>, <code>ngx.var[2]</code>, 
   ngx.AGAIN (-2)
   ngx.DONE (-4)
 </geshi>
+
 They take the same values of <code>NGX_OK</code>, <code>NGX_AGAIN</code>, <code>NGX_DONE</code>, <code>NGX_ERROR</code>, and etc. But now
 only [[#ngx.exit|ngx.exit]] only take two of these values, i.e., <code>NGX_OK</code> and <code>NGX_ERROR</code>.
 
@@ -776,6 +782,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.catpure
 
 == HTTP status constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
 <geshi lang="nginx">
   value = ngx.HTTP_OK (200)
   value = ngx.HTTP_CREATED (201)
@@ -797,6 +804,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.catpure
 
 == Nginx log level constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
 <geshi lang="lua">
   ngx.STDERR
   ngx.EMERG
@@ -819,9 +827,11 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 Emit args concatenated to nginx's <code>error.log</code> file, with log level <code>ngx.NOTICE</code> and prefix <code>lua print: </code>.
 
 It's equivalent to
+
 <geshi lang="lua">
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 </geshi>
+
 Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code>, and Lua booleans result in <code>"true"</code> or <code>"false"</code>.
 
 == ngx.ctx ==
@@ -830,6 +840,7 @@ Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</c
 This table can be used to store per-request context data for Lua programmers.
 
 This table has a liftime identical to the current request (just like Nginx variables). Consider the following example,
+
 <geshi lang="nginx">
     location /test {
         rewrite_by_lua '
@@ -844,14 +855,18 @@ This table has a liftime identical to the current request (just like Nginx varia
         ';
     }
 </geshi>
+
 Then <code>GET /test</code> will yield the output
+
 <geshi lang="bash">
     foo = nil
     79
 </geshi>
+
 That is, the <code>ngx.ctx.foo</code> entry persists across the rewrite, access, and content phases of a request.
 
 Also, every request has its own copy, include subrequests, for example:
+
 <geshi lang="nginx">
     location /sub {
         content_by_lua '
@@ -871,16 +886,20 @@ Also, every request has its own copy, include subrequests, for example:
         ';
     }
 </geshi>
+
 Then <code>GET /main</code> will give the output
+
 <geshi lang="bash">
     main pre: 73
     sub pre: nil
     sub post: 32
     main post: 73
 </geshi>
+
 We can see that modification of the <code>ngx.ctx.blah</code> entry in the subrequest does not affect the one in its parent request. They do have two separate versions of <code>ngx.ctx.blah</code> per se.
 
 Internal redirection will destroy the original request's <code>ngx.ctx</code> data (if any) and the new request will have an emptied <code>ngx.ctx</code> table. For instance,
+
 <geshi lang="nginx">
     location /new {
         content_by_lua '
@@ -895,15 +914,19 @@ Internal redirection will destroy the original request's <code>ngx.ctx</code> da
         ';
     }
 </geshi>
+
 Then <code>GET /orig</code> will give you
+
 <geshi lang="bash">
     nil
 </geshi>
+
 rather than the original <code>"hello"</code> value.
 
 Arbitrary data values can be inserted into this "matic" table, including Lua closures and nested tables. You can also register your own meta methods with it.
 
 Overriding <code>ngx.ctx</code> with a new Lua table is also supported, for example,
+
 <geshi lang="lua">
     ngx.ctx = { foo = 32, bar = 54 }
 </geshi>
@@ -923,9 +946,11 @@ Also note that subrequests just mimic the HTTP interface but there's ''no'' extr
 Subrequests are completely different from HTTP 301/302 redirection (via [[#ngx.redirect|ngx.redirect]]) and internal redirection (via [[#ngx.exec|ngx.exec]]).
 
 Here's a basic example:
+
 <geshi lang="lua">
     res = ngx.location.capture(uri)
 </geshi>
+
 Returns a Lua table with three slots (<code>res.status</code>, <code>res.header</code>, and <code>res.body</code>).
 
 <code>res.header</code> holds all the response headers of the
@@ -933,18 +958,22 @@ subrequest and it is a normal Lua table. For multi-value response headers,
 the value is a Lua (array) table that holds all the values in the order that
 they appear. For instance, if the subrequest response headers contains the following
 lines:
+
 <geshi lang="bash">
     Set-Cookie: a=3
     Set-Cookie: foo=bar
     Set-Cookie: baz=blah
 </geshi>
+
 Then <code>res.header["Set-Cookie"]</code> will be evaluted to the table value
 <code>{"a=3", "foo=bar", "baz=blah"}</code>.
 
 URI query strings can be concatenated to URI itself, for instance,
+
 <geshi lang="lua">
     res = ngx.location.capture('/foo/bar?a=3&b=4')
 </geshi>
+
 Named locations like <code>@foo</code> are not allowed due to a limitation in
 the nginx core. Use normal locations combined with the <code>internal</code> directive to
 prepare internal-only locations.
@@ -954,12 +983,14 @@ argument, which support various options like
 <code>method</code>, <code>body</code>, <code>args</code>, and <code>share_all_vars</code>.
 Issuing a POST subrequest, for example,
 can be done as follows
+
 <geshi lang="lua">
     res = ngx.location.capture(
         '/foo/bar',
         { method = ngx.HTTP_POST, body = 'hello, world' }
     )
 </geshi>
+
 See HTTP method constants methods other than POST.
 The <code>method</code> option is <code>ngx.HTTP_GET</code> by default.
 
@@ -972,25 +1003,31 @@ and lead to confusing issues, use it with special
 care. So, by default, the option is set to <code>false</code>.
 
 The <code>args</code> option can specify extra url arguments, for instance,
+
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1',
         { args = { b = 3, c = ':' } }
     )
 </geshi>
+
 is equivalent to
+
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1&b=3&c=%3a')
 </geshi>
+
 that is, this method will automatically escape argument keys and values according to URI rules and
 concatenating them together into a complete query string. Because it's all done in hand-written C,
 it should be faster than your own Lua code.
 
 The <code>args</code> option can also take plain query string:
+
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1',
         { args = 'b=3&c=%3a' } }
     )
 </geshi>
+
 This is functionally identical to the previous examples.
 
 Note that, by default, subrequests issued by [[#ngx.location.capture|ngx.location.capture]] inherit all the
@@ -1008,6 +1045,7 @@ in gzip'd responses that your Lua code is not able to handle properly. So always
 Just like [[#ngx.location.capture|ngx.location.capture]], but supports multiple subrequests running in parallel.
 
 This function issue several parallel subrequests specified by the input table, and returns their results in the same order. For example,
+
 <geshi lang="lua">
     res1, res2, res3 = ngx.location.capture_multi{
         { "/foo", { args = "a=3&b=4" } },
@@ -1023,11 +1061,13 @@ This function issue several parallel subrequests specified by the input table, a
         ...
     end
 </geshi>
+
 This function will not return until all the subrequests terminate.
 The total latency is the longest latency of the subrequests, instead of their sum.
 
 When you don't know inadvance how many subrequests you want to issue,
 you can use Lua tables for both requests and responses. For instance,
+
 <geshi lang="lua">
     -- construct the requests table
     local reqs = {}
@@ -1044,8 +1084,10 @@ you can use Lua tables for both requests and responses. For instance,
         -- process the response table "resp"
     end
 </geshi>
+
 The [[#ngx.location.capture|ngx.location.capture]] function is just a special form
 of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.capture]] can be implemented like this
+
 <geshi lang="lua">
     ngx.location.capture =
         function (uri, args)
@@ -1058,6 +1100,7 @@ of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.c
 
 Read and write the current request's response status. This should be called
 before sending out the response headers.
+
 <geshi lang="lua">
     ngx.status = ngx.HTTP_CREATED
     status = ngx.status
@@ -1275,6 +1318,7 @@ See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 Returns a Lua table holds all of the current request's request URL query arguments.
 
 Here's an example,
+
 <geshi lang="nginx">
     location = /test {
         content_by_lua '
@@ -1289,38 +1333,51 @@ Here's an example,
         ';
     }
 </geshi>
+
 Then <code>GET /test?foo=bar&bar=baz&bar=blah</code> will yield the response body
+
 <geshi lang="bash">
     foo: bar
     bar: baz, blah
 </geshi>
+
 Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
 
 Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings, <code>GET /test?a%20b=1%61+2</code> will yield the output
+
 <geshi lang="bash">
     a b: 1a 2
 </geshi>
+
 Arguments without the <code>=<value></code> parts are treated as boolean arguments. For example, <code>GET /test?foo&bar</code> will yield the outputs
+
 <geshi lang="bash">
     foo: true
     bar: true
 </geshi>
+
 That is, they will take Lua boolean values <code>true</code>. However, they're different from arguments taking empty string values. For example, <code>GET /test?foo=&bar=</code> will give something like
+
 <geshi lang="bash">
     foo: 
     bar: 
 </geshi>
+
 Empty key arguments are discarded, for instance, <code>GET /test?=hello&=world</code> will yield empty outputs.
 
 Updating query arguments via the nginx variable <code>$args</code> (or <code>ngx.var.args</code> in Lua) at runtime are also supported:
+
 <geshi lang="lua">
     ngx.var.args = "a=3&b=42"
     local args = ngx.req.get_uri_args()
 </geshi>
+
 Here the <code>args</code> table will always look like
+
 <geshi lang="lua">
     {a = 3, b = 42}
 </geshi>
+
 regardless of the actual request query string.
 
 == ngx.req.get_post_args ==
@@ -1328,14 +1385,14 @@ regardless of the actual request query string.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Returns a Lua table holds all of the current request's POST query arguments. It's required to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
+Returns a Lua table holds all of the current request's POST query arguments. It's required to read the request body first by calling [[#ngx.req.read_body|ngx.req.read_body]] or to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
 
 Here's an example,
+
 <geshi lang="nginx">
     location = /test {
-        lua_need_request_body on;
         content_by_lua '
-            local args = ngx.req.get_post_args()
+            ngx.req.read_body()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -1346,37 +1403,50 @@ Here's an example,
         ';
     }
 </geshi>
+
 Then
+
 <geshi lang="bash">
     # Post request with the body 'foo=bar&bar=baz&bar=blah'
     $ curl --data 'foo=bar&bar=baz&bar=blah' localhost/test
 </geshi>
+
 will yield the response body like
+
 <geshi lang="bash">
     foo: bar
     bar: baz, blah
 </geshi>
+
 Multiple occurrences of an argument key will result in a table value holding all of the values for that key in order.
 
 Keys and values will be automatically unescaped according to URI escaping rules. For example, in the above settings,
+
 <geshi lang="bash">
     # POST request with body 'a%20b=1%61+2'
     $ curl -d 'a%20b=1%61+2' localhost/test
 </geshi>
+
 will yield the output
+
 <geshi lang="bash">
     a b: 1a 2
 </geshi>
+
 Arguments without the <code>=<value></code> parts are treated as boolean arguments. For example, <code>GET /test?foo&bar</code> will yield the outputs
+
 <geshi lang="bash">
     foo: true
     bar: true
 </geshi>
+
 That is, they will take Lua boolean values <code>true</code>. However, they're different from arguments taking empty string values. For example, <code>POST /test</code> with request body <code>foo=&bar=</code> will give something like
+
 <geshi lang="bash">
     foo: 
     bar: 
 </geshi>
+
 Empty key arguments are discarded, for instance, <code>POST /test</code> with body <code>=hello&=world</code> will yield empty outputs.
 
 == ngx.req.get_headers ==
@@ -1387,26 +1457,34 @@ Empty key arguments are discarded, for instance, <code>POST /test</code> with bo
 Returns a Lua table holds all of the current request's request headers.
 
 Here's an example,
+
 <geshi lang="lua">
     local h = ngx.req.get_headers()
     for k, v in pairs(h) do
         ...
     end
 </geshi>
+
 To read an individual header:
+
 <geshi lang="lua">
     ngx.say("Host: ", ngx.req.get_headers()["Host"])
 </geshi>
+
 For multiple instances of request headers like
+
 <geshi lang="bash">
     Foo: foo
     Foo: bar
     Foo: baz
 </geshi>
+
 the value of <code>ngx.req.get_headers()["Foo"]</code> will be a Lua (array) table like this:
+
 <geshi lang="lua">
     {"foo", "bar", "baz"}
 </geshi>
+
 Another way to read individual request headers is to use <code>ngx.var.http_HEADER</code>, that is, nginx's standard [[HttpCoreModule#$http_HEADER|$http_HEADER]] variables.
 
 == ngx.req.set_header ==
@@ -1418,26 +1496,35 @@ Set the current request's request header named <code>header_name</code> to value
 None of the current request's subrequests will be affected.
 
 Here's an example of setting the <code>Content-Length</code> header:
+
 <geshi lang="lua">
     ngx.req.set_header("Content-Type", "text/css")
 </geshi>
+
 The <code>header_value</code> can take an array list of values,
 for example,
+
 <geshi lang="lua">
     ngx.req.set_header("Foo", {"a", "abc"})
 </geshi>
+
 will produce two new request headers:
+
 <geshi lang="bash">
     Foo: a
     Foo: abc
 </geshi>
+
 and old <code>Foo</code> headers will be overridden if there's any.
 
 When the <code>header_value</code> argument is <code>nil</code>, the request header will be removed. So
+
 <geshi lang="lua">
     ngx.req.set_header("X-Foo", nil)
 </geshi>
+
 is equivalent to
+
 <geshi lang="lua">
     ngx.req.clear_header("X-Foo")
 </geshi>
@@ -1461,6 +1548,13 @@ You can later either retrieve the request body data via [[#ngx.req.get_body_data
 # and whether you have turned on [[HttpCoreModule#client_body_in_file_only|client_body_in_file_only]].
 
 In case that you do not want to read the request body and the current request may have a request body, then it's crucial to use the [[#ngx.req.discard_body|ngx.req.discard_body]] function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
+
+Here's a small example:
+
+<geshi lang="lua">
+    ngx.req.read_body()
+    local args = ngx.req.get_post_args()
+</geshi>
 
 This function was first introduced in the <code>v0.3.1rc17</code> release.
 
@@ -1893,32 +1987,38 @@ This is the UTC time.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns a formated string can be used as the cookie expiration time. The parameter <code>sec</code> is the timestamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
+
 <geshi lang="nginx">
     ngx.say(ngx.cookie_time(1290079655))
         -- yields "Thu, 18-Nov-10 11:27:35 GMT"
 </geshi>
+
 == ngx.http_time ==
 '''syntax:''' ''str = ngx.http_time(sec)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns a formated string can be used as the http header time (for example, being used in <code>Last-Modified</code> header). The parameter <code>sec</code> is the timestamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
+
 <geshi lang="nginx">
     ngx.say(ngx.http_time(1290079655))
         -- yields "Thu, 18 Nov 10 11:27:35 GMT"
 </geshi>
+
 == ngx.parse_http_time ==
 '''syntax:''' ''sec = ngx.parse_http_time(str)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Parse the http time string (as returned by [[#ngx.http_time|ngx.http_time]]) into seconds. Returns the seconds or <code>nil</code> if the input string is in bad forms.
+
 <geshi lang="nginx">
     local time = ngx.parse_http_time("Thu, 18 Nov 10 11:27:35 GMT")
     if time == nil then
         ...
     end
 </geshi>
+
 == ngx.is_subrequest ==
 '''syntax:''' ''value = ngx.is_subrequest''
 
@@ -2273,10 +2373,11 @@ Alternatively, you can compile this module with nginx core's source by hand:
 # Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [http://github.com/simpl/ngx_devel_kit/tags file list].
 # Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/tags file list].
 # Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+
 <geshi lang="bash">
-        $ wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
-        $ tar -xzvf nginx-1.0.5.tar.gz
-        $ cd nginx-1.0.5/
+        wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
+        tar -xzvf nginx-1.0.5.tar.gz
+        cd nginx-1.0.5/
  
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -2287,12 +2388,12 @@ Alternatively, you can compile this module with nginx core's source by hand:
         # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
  
         # Here we assume you would install you nginx under /opt/nginx/.
-        $ ./configure --prefix=/opt/nginx \
+        ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
  
-        $ make -j2
-        $ make install
+        make -j2
+        make install
 </geshi>
 
 = Compatibility =

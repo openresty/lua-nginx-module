@@ -121,7 +121,8 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua capture body filter capturing response body, uri \"%V\"", &r->uri);
+            "lua capture body filter capturing response body, uri \"%V\"",
+            &r->uri);
 
     rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->body, in);
 
