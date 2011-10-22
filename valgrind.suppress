@@ -1,5 +1,24 @@
 {
    <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:lj_str_new
+   fun:lua_setfield
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:lj_str_new
+   fun:lua_getfield
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:ngx_alloc
+   fun:(below main)
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Param
    epoll_ctl(event)
    fun:epoll_ctl

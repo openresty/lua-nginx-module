@@ -356,12 +356,12 @@ set_header:
 
     /* override input header Content-Length */
 
-    value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+    value.data = ngx_palloc(r->pool, NGX_SIZE_T_LEN);
     if (value.data == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    value.len = ngx_sprintf(value.data, "%O", body.len) - value.data;
+    value.len = ngx_sprintf(value.data, "%uz", body.len) - value.data;
 
     dd("setting request Content-Length to %.*s (%d)",
             (int) value.len, value.data, (int) body.len);
