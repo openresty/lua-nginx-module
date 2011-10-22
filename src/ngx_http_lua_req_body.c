@@ -420,7 +420,6 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     ngx_temp_file_t             *tf;
     ngx_buf_t                   *b;
     ngx_str_t                    name;
-    ngx_http_core_loc_conf_t    *clcf;
     ngx_int_t                    rc;
     int                          clean;
     ngx_open_file_info_t         of;
@@ -508,8 +507,6 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     }
 
     b->last_in_chain = 1;
-
-    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
     /* just make r->request_body->temp_file a bare stub */
 

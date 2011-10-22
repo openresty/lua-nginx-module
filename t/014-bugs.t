@@ -502,3 +502,23 @@ nil
 hello
 --- SKIP
 
+
+
+=== TEST 24: set special variables
+--- config
+    location /main {
+        content_by_lua '
+            dofile(ngx.var.realpath_root .. "/a.lua")
+        ';
+    }
+    location /echo {
+        echo hi;
+    }
+--- request
+    GET /main
+--- user_files
+>>> a.lua
+ngx.location.capture("/echo")
+--- response_body
+--- SKIP
+
