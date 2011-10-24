@@ -39,9 +39,6 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
     ngx_http_lua_ctx_t              *old_ctx;
     ngx_http_lua_ctx_t              *ctx;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua capture header filter, uri \"%V\"", &r->uri);
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     dd("old ctx: %p", ctx);
@@ -74,7 +71,7 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 
     if (ctx && ctx->capture) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua capturing request body");
+                "lua capturing response body");
 
         /* force subrequest response body buffer in memory */
         r->filter_need_in_memory = 1;
@@ -93,9 +90,6 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_ctx_t              *pr_ctx;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua capture body filter, uri \"%V\"", &r->uri);
-
     if (in == NULL) {
         return ngx_http_lua_next_body_filter(r, NULL);
     }
@@ -107,9 +101,6 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         return ngx_http_lua_next_body_filter(r, in);
     }
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua body filter");
 
     if (ctx->run_post_subrequest) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -129,8 +120,9 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua body filter capturing output");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua capture body filter capturing response body, uri \"%V\"",
+            &r->uri);
 
     rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->body, in);
 

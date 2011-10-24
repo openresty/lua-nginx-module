@@ -5,10 +5,10 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_on();
-#log_level('warn');
+log_level('debug');
 
 #repeat_each(120);
-#repeat_each(3);
+repeat_each(3);
 
 plan tests => repeat_each() * (blocks() * 2 + 2);
 
@@ -484,4 +484,41 @@ hello
 world
 nil
 nil
+
+
+
+=== TEST 23: set special variables
+--- config
+    location /main {
+        #set_unescape_uri $cookie_a "hello";
+        set $http_a "hello";
+        content_by_lua '
+            ngx.say(ngx.var.http_a)
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+--- SKIP
+
+
+
+=== TEST 24: set special variables
+--- config
+    location /main {
+        content_by_lua '
+            dofile(ngx.var.realpath_root .. "/a.lua")
+        ';
+    }
+    location /echo {
+        echo hi;
+    }
+--- request
+    GET /main
+--- user_files
+>>> a.lua
+ngx.location.capture("/echo")
+--- response_body
+--- SKIP
 

@@ -669,3 +669,70 @@ GET /
 --- response_headers
 X-Foo: bar
 
+
+
+=== TEST 35: rewrite last before rewrite_by_lua
+--- config
+    location /main {
+        rewrite ^/main/xyz\.html$ /abc.html last;
+        rewrite_by_lua 'ngx.exit(503)';
+    }
+    location ~ /abc.html {
+        echo abc;
+    }
+--- request
+    GET /main/xyz.html
+--- response_body
+abc
+
+
+
+=== TEST 36: rewrite last before rewrite_by_lua_file
+--- config
+    location /main {
+        rewrite ^/main/xyz\.html$ /abc.html last;
+        rewrite_by_lua_file html/exit.lua;
+    }
+    location ~ /abc.html {
+        echo abc;
+    }
+--- user_files
+>>> exit.lua
+ngx.exit(503)
+--- request
+    GET /main/xyz.html
+--- response_body
+abc
+
+
+
+=== TEST 37: rewrite before rewrite_by_lua
+--- config
+    location /main {
+        rewrite ^/main/xyz\.html$ /abc.html;
+        rewrite_by_lua 'ngx.exit(503)';
+    }
+    location ~ /abc.html {
+        echo abc;
+    }
+--- request
+    GET /main/xyz.html
+--- response_body
+abc
+
+
+
+=== TEST 38: rewrite break before rewrite_by_lua
+--- config
+    location /main {
+        rewrite ^/main/xyz\.html$ /abc.html break;
+        rewrite_by_lua 'ngx.exit(503)';
+    }
+    location ~ /abc.html {
+        echo abc;
+    }
+--- request
+    GET /main/xyz.html
+--- response_body_like: 503 Service Temporarily Unavailable
+--- error_code: 503
+

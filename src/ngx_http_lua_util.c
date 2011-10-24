@@ -12,6 +12,8 @@
 #include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
+#include "ngx_http_lua_uri.h"
+#include "ngx_http_lua_req_body.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_time.h"
@@ -36,6 +38,8 @@ static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
 static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
+static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
 
 
 #ifndef LUA_PATH_SEP
@@ -631,6 +635,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ctx->entered_rewrite_phase = 0;
     ctx->entered_access_phase = 0;
+    ctx->entered_content_phase = 0;
 
     ctx->exit_code = 0;
     ctx->exited = 0;
@@ -651,8 +656,6 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua post read for rewrite/access phases");
-
-    r->read_event_handler = ngx_http_request_empty_handler;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -757,6 +760,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+        dd("calling lua_resume: vm %p, nret %d", cc, (int) nret);
+
         /*  run code */
         rv = lua_resume(cc, nret);
 
@@ -775,6 +780,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                         "lua thread yielded");
+
+                if (r->uri_changed) {
+                    return ngx_http_lua_handle_rewrite_jump(L, r, ctx, cc_ref);
+                }
 
                 if (ctx->exited) {
                     return ngx_http_lua_handle_exit(L, r, ctx, cc_ref);
@@ -867,6 +876,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
+    int                          nret = 0;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua run write event handler");
@@ -900,6 +910,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
 
         return NGX_OK;
+    }
+
+    if (ctx->waiting_more_body && !ctx->req_read_body_done) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua write event handler waiting for more request body data");
+
+        return NGX_DONE;
     }
 
     dd("waiting: %d, done: %d", (int) ctx->waiting,
@@ -939,27 +956,60 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    ctx->done = 0;
+    dd("req read body done: %d", (int) ctx->req_read_body_done);
 
-    dd("nsubreqs: %d", (int) ctx->nsubreqs);
+    if (ctx->req_read_body_done) {
+        dd("turned off req read body done");
 
-    ngx_http_lua_handle_subreq_responses(r, ctx);
+        ctx->req_read_body_done = 0;
 
-    dd("free sr_statues/headers/bodies memory ASAP");
+        nret = 0;
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua read req body done, resuming lua thread");
+
+        goto run;
+
+    } else if (ctx->done) {
+        ctx->done = 0;
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua run subrequests done, resuming lua thread");
+
+        dd("nsubreqs: %d", (int) ctx->nsubreqs);
+
+        ngx_http_lua_handle_subreq_responses(r, ctx);
+
+        dd("free sr_statues/headers/bodies memory ASAP");
 
 #if 1
-    ngx_pfree(r->pool, ctx->sr_statuses);
+        ngx_pfree(r->pool, ctx->sr_statuses);
 
-    ctx->sr_statuses = NULL;
-    ctx->sr_headers = NULL;
-    ctx->sr_bodies = NULL;
+        ctx->sr_statuses = NULL;
+        ctx->sr_headers = NULL;
+        ctx->sr_bodies = NULL;
 #endif
 
+        nret = ctx->nsubreqs;
+
+        goto run;
+    }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "useless lua write event handler");
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, NGX_DONE);
+    }
+
+    return NGX_OK;
+
+run:
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     dd("about to run thread for %.*s...", (int) r->uri.len, r->uri.data);
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, ctx->nsubreqs);
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua run thread returned %d", rc);
@@ -969,11 +1019,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        if (ctx->entered_content_phase) {
-            ngx_http_finalize_request(r, rc);
-        }
-
-        return NGX_OK;
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
     }
 
     dd("entered content phase: %d", (int) ctx->entered_content_phase);
@@ -1412,6 +1459,23 @@ done:
 
 
 void
+ngx_http_lua_inject_req_api_no_io(lua_State *L)
+{
+    /* ngx.req table */
+
+    lua_newtable(L);    /* .req */
+
+    ngx_http_lua_inject_req_header_api(L);
+
+    ngx_http_lua_inject_req_uri_api(L);
+
+    ngx_http_lua_inject_req_args_api(L);
+
+    lua_setfield(L, -2, "req");
+}
+
+
+void
 ngx_http_lua_inject_req_api(lua_State *L)
 {
     /* ngx.req table */
@@ -1420,7 +1484,11 @@ ngx_http_lua_inject_req_api(lua_State *L)
 
     ngx_http_lua_inject_req_header_api(L);
 
+    ngx_http_lua_inject_req_uri_api(L);
+
     ngx_http_lua_inject_req_args_api(L);
+
+    ngx_http_lua_inject_req_body_api(L);
 
     lua_setfield(L, -2, "req");
 }
@@ -1450,20 +1518,26 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
         r->write_event_handler = ngx_http_request_empty_handler;
 
+#if 1
+        /* clear the modules contexts */
+        ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);
+#endif
+
         rc = ngx_http_named_location(r, &ctx->exec_uri);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
         {
             return rc;
         }
 
-        if (! ctx->entered_content_phase &&
-                r != r->connection->data)
-        {
+#if 0
+        if (!ctx->entered_content_phase) {
             /* XXX ensure the main request ref count
              * is decreased because the current
              * request will be quit */
             r->main->count--;
+            dd("XXX decrement main count: c:%d", (int) r->main->count);
         }
+#endif
 
         return NGX_DONE;
     }
@@ -1486,14 +1560,15 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
     dd("XXYY HERE %d\n", (int) r->main->count);
 
-    if (! ctx->entered_content_phase &&
-            r != r->connection->data)
-    {
+#if 0
+    if (!ctx->entered_content_phase) {
         /* XXX ensure the main request ref count
          * is decreased because the current
          * request will be quit */
+        dd("XXX decrement main count");
         r->main->count--;
     }
+#endif
 
     return NGX_DONE;
 }
@@ -1637,4 +1712,126 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 }
 
 
+static ngx_int_t
+ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx, int cc_ref)
+{
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua thread aborting request with URI rewrite jump: \"%V?%V\"",
+            &r->uri, &r->args);
+
+    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ctx->cc_ref = LUA_NOREF;
+    ngx_http_lua_request_cleanup(r);
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_open_and_stat_file(u_char *name, ngx_open_file_info_t *of,
+        ngx_log_t *log)
+{
+    ngx_fd_t         fd;
+    ngx_file_info_t  fi;
+
+    if (of->fd != NGX_INVALID_FILE) {
+
+        if (ngx_file_info(name, &fi) == NGX_FILE_ERROR) {
+            of->failed = ngx_file_info_n;
+            goto failed;
+        }
+
+        if (of->uniq == ngx_file_uniq(&fi)) {
+            goto done;
+        }
+
+    } else if (of->test_dir) {
+
+        if (ngx_file_info(name, &fi) == NGX_FILE_ERROR) {
+            of->failed = ngx_file_info_n;
+            goto failed;
+        }
+
+        if (ngx_is_dir(&fi)) {
+            goto done;
+        }
+    }
+
+    if (!of->log) {
+
+        /*
+         * Use non-blocking open() not to hang on FIFO files, etc.
+         * This flag has no effect on a regular files.
+         */
+
+        fd = ngx_open_file(name, NGX_FILE_RDONLY|NGX_FILE_NONBLOCK,
+                           NGX_FILE_OPEN, 0);
+
+    } else {
+        fd = ngx_open_file(name, NGX_FILE_APPEND, NGX_FILE_CREATE_OR_OPEN,
+                           NGX_FILE_DEFAULT_ACCESS);
+    }
+
+    if (fd == NGX_INVALID_FILE) {
+        of->failed = ngx_open_file_n;
+        goto failed;
+    }
+
+    if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
+        ngx_log_error(NGX_LOG_CRIT, log, ngx_errno,
+                      ngx_fd_info_n " \"%s\" failed", name);
+
+        if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+            ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                          ngx_close_file_n " \"%s\" failed", name);
+        }
+
+        of->fd = NGX_INVALID_FILE;
+
+        return NGX_ERROR;
+    }
+
+    if (ngx_is_dir(&fi)) {
+        if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+            ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                          ngx_close_file_n " \"%s\" failed", name);
+        }
+
+        of->fd = NGX_INVALID_FILE;
+
+    } else {
+        of->fd = fd;
+
+        if (of->directio <= ngx_file_size(&fi)) {
+            if (ngx_directio_on(fd) == NGX_FILE_ERROR) {
+                ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
+                              ngx_directio_on_n " \"%s\" failed", name);
+
+            } else {
+                of->is_directio = 1;
+            }
+        }
+    }
+
+done:
+
+    of->uniq = ngx_file_uniq(&fi);
+    of->mtime = ngx_file_mtime(&fi);
+    of->size = ngx_file_size(&fi);
+    of->fs_size = ngx_file_fs_size(&fi);
+    of->is_dir = ngx_is_dir(&fi);
+    of->is_file = ngx_is_file(&fi);
+    of->is_link = ngx_is_link(&fi);
+    of->is_exec = ngx_is_exec(&fi);
+
+    return NGX_OK;
+
+failed:
+
+    of->fd = NGX_INVALID_FILE;
+    of->err = ngx_errno;
+
+    return NGX_ERROR;
+}
 

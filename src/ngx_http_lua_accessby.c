@@ -9,142 +9,8 @@
 #include "ngx_http_lua_cache.h"
 
 
-ngx_int_t
-ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
-{
-    int                      cc_ref;
-    lua_State               *cc;
-    ngx_http_lua_ctx_t      *ctx;
-    ngx_http_cleanup_t      *cln;
-
-    /*  {{{ new coroutine to handle request */
-    cc = ngx_http_lua_new_thread(r, L, &cc_ref);
-
-    if (cc == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "lua: failed to create new coroutine "
-                "to handle request");
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    /*  move code closure to new coroutine */
-    lua_xmove(L, cc, 1);
-
-    /*  set closure's env table to new coroutine's globals table */
-    lua_pushvalue(cc, LUA_GLOBALSINDEX);
-    lua_setfenv(cc, -2);
-
-    /*  save reference of code to ease forcing stopping */
-    lua_pushvalue(cc, -1);
-    lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
-
-    /*  save nginx request in coroutine globals table */
-    lua_pushlightuserdata(cc, r);
-    lua_setglobal(cc, GLOBALS_SYMBOL_REQUEST);
-    /*  }}} */
-
-    /*  {{{ initialize request context */
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    dd("ctx = %p", ctx);
-
-    if (ctx == NULL) {
-        return NGX_ERROR;
-    }
-
-    ngx_http_lua_reset_ctx(r, L, ctx);
-
-    ctx->entered_access_phase = 1;
-
-    ctx->cc = cc;
-    ctx->cc_ref = cc_ref;
-
-    /*  }}} */
-
-    /*  {{{ register request cleanup hooks */
-    if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
-        if (cln == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-        cln->handler = ngx_http_lua_request_cleanup;
-        cln->data = r;
-        ctx->cleanup = &cln->handler;
-    }
-    /*  }}} */
-
-    return ngx_http_lua_run_thread(L, r, ctx, 0);
-}
-
-
-ngx_int_t
-ngx_http_lua_access_handler_file(ngx_http_request_t *r)
-{
-    lua_State                       *L;
-    ngx_int_t                        rc;
-    u_char                          *script_path;
-    ngx_http_lua_main_conf_t        *lmcf;
-    ngx_http_lua_loc_conf_t         *llcf;
-    char                            *err;
-    ngx_str_t                        eval_src;
-
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
-    /* Eval nginx variables in code path string first */
-    if (ngx_http_complex_value(r, &llcf->access_src, &eval_src) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
-            eval_src.len);
-
-    if (script_path == NULL) {
-        return NGX_ERROR;
-    }
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    L = lmcf->lua;
-
-    /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-            &err, llcf->enable_code_cache ? 1 : 0);
-
-    if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
-
-    rc = ngx_http_lua_access_by_chunk(L, r);
-
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
-    }
-
-    if (rc == NGX_AGAIN) {
-        return NGX_DONE;
-    }
-
-    if (rc == NGX_DONE) {
-        return NGX_HTTP_OK;
-    }
-
-    if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
-    }
-
-    return NGX_DECLINED;
-}
+static ngx_int_t ngx_http_lua_access_by_chunk(lua_State *L,
+    ngx_http_request_t *r);
 
 
 ngx_int_t
@@ -241,10 +107,11 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    if (llcf->force_read_body &&
-            ! ctx->read_body_done &&
-            ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
-    {
+    if (llcf->force_read_body && !ctx->read_body_done) {
+        r->request_body_in_single_buf = 1;
+        r->request_body_in_persistent_file = 1;
+        r->request_body_in_clean_file = 1;
+
         rc = ngx_http_read_client_request_body(r,
                 ngx_http_lua_generic_phase_post_read);
 
@@ -295,9 +162,128 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_lua_access_by_chunk(L, r);
+    return ngx_http_lua_access_by_chunk(L, r);
+}
 
-    dd("access by chunk returns %d", (int) rc);
+
+ngx_int_t
+ngx_http_lua_access_handler_file(ngx_http_request_t *r)
+{
+    lua_State                       *L;
+    ngx_int_t                        rc;
+    u_char                          *script_path;
+    ngx_http_lua_main_conf_t        *lmcf;
+    ngx_http_lua_loc_conf_t         *llcf;
+    char                            *err;
+    ngx_str_t                        eval_src;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    /* Eval nginx variables in code path string first */
+    if (ngx_http_complex_value(r, &llcf->access_src, &eval_src) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
+            eval_src.len);
+
+    if (script_path == NULL) {
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    L = lmcf->lua;
+
+    /*  load Lua script file (w/ cache)        sp = 1 */
+    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
+            &err, llcf->enable_code_cache ? 1 : 0);
+
+    if (rc != NGX_OK) {
+        if (err == NULL) {
+            err = "unknown error";
+        }
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Failed to load Lua inlined code: %s", err);
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    /*  make sure we have a valid code chunk */
+    assert(lua_isfunction(L, -1));
+
+    return ngx_http_lua_access_by_chunk(L, r);
+}
+
+
+static ngx_int_t
+ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
+{
+    int                      cc_ref;
+    lua_State               *cc;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_http_cleanup_t      *cln;
+    ngx_int_t                rc;
+
+    /*  {{{ new coroutine to handle request */
+    cc = ngx_http_lua_new_thread(r, L, &cc_ref);
+
+    if (cc == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "lua: failed to create new coroutine "
+                "to handle request");
+
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    /*  move code closure to new coroutine */
+    lua_xmove(L, cc, 1);
+
+    /*  set closure's env table to new coroutine's globals table */
+    lua_pushvalue(cc, LUA_GLOBALSINDEX);
+    lua_setfenv(cc, -2);
+
+    /*  save reference of code to ease forcing stopping */
+    lua_pushvalue(cc, -1);
+    lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
+
+    /*  save nginx request in coroutine globals table */
+    lua_pushlightuserdata(cc, r);
+    lua_setglobal(cc, GLOBALS_SYMBOL_REQUEST);
+    /*  }}} */
+
+    /*  {{{ initialize request context */
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_http_lua_reset_ctx(r, L, ctx);
+
+    ctx->entered_access_phase = 1;
+
+    ctx->cc = cc;
+    ctx->cc_ref = cc_ref;
+
+    /*  }}} */
+
+    /*  {{{ register request cleanup hooks */
+    if (ctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        cln->handler = ngx_http_lua_request_cleanup;
+        cln->data = r;
+        ctx->cleanup = &cln->handler;
+    }
+    /*  }}} */
+
+    rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
@@ -308,7 +294,8 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        return NGX_HTTP_OK;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
     }
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {

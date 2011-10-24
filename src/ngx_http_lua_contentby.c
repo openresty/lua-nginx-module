@@ -143,10 +143,11 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    if (llcf->force_read_body &&
-            ! ctx->read_body_done &&
-            ((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_PUT)))
-    {
+    if (llcf->force_read_body && !ctx->read_body_done) {
+        r->request_body_in_single_buf = 1;
+        r->request_body_in_persistent_file = 1;
+        r->request_body_in_clean_file = 1;
+
         rc = ngx_http_read_client_request_body(r,
                 ngx_http_lua_content_phase_post_read);
 
@@ -175,8 +176,6 @@ static void
 ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t  *ctx;
-
-    r->read_event_handler = ngx_http_request_empty_handler;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 

@@ -80,6 +80,8 @@ typedef struct {
 
 
 typedef struct {
+    ngx_buf_tag_t           tag;
+
     ngx_flag_t              force_read_body; /* whether force request body to
                                                 be read */
 
@@ -115,8 +117,6 @@ typedef struct {
 
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
-
-
 
 } ngx_http_lua_loc_conf_t;
 
@@ -178,6 +178,7 @@ typedef struct {
 
     unsigned         waiting_more_body:1;   /* 1: waiting for more data;
                                                0: no need to wait */
+    unsigned         req_read_body_done:1;  /* used by ngx.req.read_body */
 
     unsigned         headers_set:1;
     unsigned         entered_rewrite_phase:1;
@@ -187,7 +188,6 @@ typedef struct {
     /* whether it has run post_subrequest */
     unsigned         run_post_subrequest:1;
     unsigned         req_header_cached:1;
-
 } ngx_http_lua_ctx_t;
 
 

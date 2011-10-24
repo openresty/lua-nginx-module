@@ -420,3 +420,129 @@ GET /lua
 foo = 3
 bar = 4
 
+
+
+=== TEST 19: jump to internal locations requires ctx cleared
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        content_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
+
+
+=== TEST 20: exec + rewrite + named locations
+--- config
+    location @proxy {
+        rewrite_by_lua return;
+        echo hello;
+    }
+    location /main {
+        rewrite_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+--- request
+    GET /main
+--- response_body
+hello
+
+
+
+=== TEST 21: exec(named location) in subrequests
+--- config
+    location /entry {
+        echo_location /foo;
+        echo_location /foo2;
+    }
+  location /foo {
+      content_by_lua '
+          ngx.exec("@bar")
+      ';
+  }
+  location /foo2 {
+      content_by_lua '
+          ngx.exec("@bar")
+      ';
+  }
+
+  location @bar {
+      proxy_pass http://127.0.0.1:$server_port/bar;
+  }
+  location /bar {
+      echo hello;
+  }
+--- request
+    GET /entry
+--- response_body
+hello
+hello
+
+
+
+=== TEST 22: exec(normal location) in subrequests
+--- config
+    location /entry {
+        echo_location /foo;
+        echo_location /foo2;
+    }
+  location /foo {
+      content_by_lua '
+          ngx.exec("/baz")
+      ';
+  }
+  location /foo2 {
+      content_by_lua '
+          ngx.exec("/baz")
+      ';
+  }
+
+  location /baz {
+      proxy_pass http://127.0.0.1:$server_port/bar;
+  }
+  location /bar {
+      echo hello;
+  }
+--- request
+    GET /entry
+--- response_body
+hello
+hello
+
+
+
+=== TEST 23: content_by_lua + ngx.exec + subrequest capture
+--- config
+    location /main {
+        rewrite_by_lua '
+            res = ngx.location.capture("/test_loc");
+            ngx.print("hello, ", res.body)
+        ';
+        content_by_lua return;
+    }
+    location /test_loc {
+        content_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+    location @proxy {
+        #echo proxy;
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+    location /foo {
+        echo bah;
+    }
+--- request
+    GET /main
+--- response_body
+hello, bah
+

@@ -439,3 +439,31 @@ GET /lua
 --- response_body
 hello
 
+
+
+=== TEST 12: 501 Method Not Implemented
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.exit(501)
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 501
+--- response_body_like: 501 Method Not Implemented
+
+
+
+=== TEST 13: 501 Method Not Implemented
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.exit(ngx.HTTP_METHOD_NOT_IMPLEMENTED)
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 501
+--- response_body_like: 501 Method Not Implemented
+

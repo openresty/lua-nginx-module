@@ -64,8 +64,8 @@ Content-Type: text/html
 GET /read
 --- response_headers
 Content-Length: 3
---- response_body
-Hello
+--- response_body chop
+Hel
 
 
 
@@ -115,7 +115,7 @@ Hello
 --- request
 GET /read
 --- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: bc$
+X-Foo: a\r\n.*?X-Foo: bc\r\n
 --- response_body
 Hello
 
@@ -186,7 +186,7 @@ Hello
 --- request
 GET /read
 --- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: abc$
+X-Foo: a\r\n.*?X-Foo: abc\r\n
 --- response_body
 Hello
 
@@ -686,7 +686,7 @@ WWW-Authenticate: blah
 
 
 
-=== TEST 34: set and clear the www-authenticate response header
+=== TEST 35: set and clear the www-authenticate response header
 --- config
     location /lua {
         content_by_lua '

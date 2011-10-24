@@ -1,7 +1,6 @@
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
-
 #include "ddebug.h"
 
 #include "ngx_http_lua_args.h"
@@ -10,11 +9,68 @@
 
 static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
         u_char *buf, u_char *last);
+static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
-int
+static int
+ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
+    ngx_http_request_t          *r;
+    ngx_str_t                    args;
+    const char                  *msg;
+    size_t                       len;
+    u_char                      *p;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument but seen %d",
+                lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    switch (lua_type(L, 1)) {
+    case LUA_TNUMBER:
+    case LUA_TSTRING:
+        p = (u_char *) lua_tolstring(L, 1, &len);
+
+        args.data = ngx_palloc(r->pool, len);
+        ngx_memcpy(args.data, p, len);
+
+        args.len = len;
+        break;
+
+    case LUA_TTABLE:
+        ngx_http_lua_process_args_option(r, L, 1, &args);
+
+        dd("args: %.*s", (int) args.len, args.data);
+
+        break;
+
+    default:
+        msg = lua_pushfstring(L, "string, number, or table expected, "
+                "but got %s", luaL_typename(L, 2));
+        return luaL_argerror(L, 1, msg);
+    }
+
+    dd("args: %.*s", (int) args.len, args.data);
+
+    r->args.data = args.data;
+    r->args.len = args.len;
+
+    r->valid_unparsed_uri = 0;
+
+    return 0;
+}
+
+
+static int
 ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
@@ -56,7 +112,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
 }
 
 
-int
+static int
 ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -253,6 +309,9 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 void
 ngx_http_lua_inject_req_args_api(lua_State *L)
 {
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_set_uri_args);
+    lua_setfield(L, -2, "set_uri_args");
+
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
     lua_setfield(L, -2, "get_uri_args");
 

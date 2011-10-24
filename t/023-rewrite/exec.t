@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
+repeat_each(2);
 #repeat_each(1);
 
 plan tests => blocks() * repeat_each() * 2;
@@ -249,8 +249,8 @@ hello
     }
     location /p{
         #content_by_lua '
-            #local res = ngx.location.capture("/sub")
-            #ngx.print(res.body)
+        #local res = ngx.location.capture("/sub")
+        #ngx.print(res.body)
         #';
         echo_location /sub;
     }
@@ -321,4 +321,61 @@ hello
     GET /lua
 --- response_body
 hello
+
+
+
+=== TEST 15: rewrite_by_lua + ngx.exec + subrequest capture
+--- config
+    location /main {
+        rewrite_by_lua '
+            res = ngx.location.capture("/test_loc");
+            ngx.print("hello, ", res.body)
+        ';
+        content_by_lua return;
+    }
+    location /test_loc {
+        rewrite_by_lua '
+            ngx.exec("@proxy")
+        ';
+    }
+    location @proxy {
+        #echo proxy;
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+    location /foo {
+        echo bah;
+    }
+--- request
+    GET /main
+--- response_body
+hello, bah
+
+
+
+=== TEST 16: rewrite_by_lua_file + ngx.exec + subrequest capture
+--- config
+    location /main {
+        rewrite_by_lua '
+            res = ngx.location.capture("/test_loc");
+            ngx.print("hello, ", res.body)
+        ';
+        content_by_lua return;
+    }
+    location /test_loc {
+        rewrite_by_lua_file html/jump.lua;
+    }
+    location @proxy {
+        #echo proxy;
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+    location /foo {
+        echo bah;
+    }
+--- user_files
+>>> jump.lua
+ngx.exec("@proxy")
+--- request
+    GET /main
+--- response_body
+hello, bah
 
