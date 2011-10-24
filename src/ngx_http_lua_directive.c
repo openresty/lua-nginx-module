@@ -34,12 +34,18 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_lua_main_conf_t *lmcf = conf;
 
     ngx_str_t                  *value, name;
-    ngx_shm_zone_t             *shm_zone;
+    ngx_shm_zone_t             *zone;
+    ngx_shm_zone_t            **zp;
     ngx_http_lua_shdict_ctx_t  *ctx;
     ssize_t                     size;
 
-    if (lmcf->shm_zone != NULL) {
-        return "is duplicate";
+    if (lmcf->shm_zones == NULL) {
+        lmcf->shm_zones = ngx_palloc(cf->pool, sizeof(ngx_array_t));
+        if (lmcf->shm_zones == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        ngx_array_init(lmcf->shm_zones, cf->pool, 2, sizeof(ngx_shm_zone_t *));
     }
 
     value = cf->args->elts;
@@ -69,14 +75,14 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ctx->name = name;
 
-    shm_zone = ngx_shared_memory_add(cf, &name, (size_t) size,
+    zone = ngx_shared_memory_add(cf, &name, (size_t) size,
                                      &ngx_http_lua_module);
-    if (shm_zone == NULL) {
+    if (zone == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    if (shm_zone->data) {
-        ctx = shm_zone->data;
+    if (zone->data) {
+        ctx = zone->data;
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                    "lua_shared_dict \"%V\" is already defined as \"%V\"",
@@ -84,10 +90,11 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    shm_zone->init = ngx_http_lua_shdict_init_zone;
-    shm_zone->data = ctx;
+    zone->init = ngx_http_lua_shdict_init_zone;
+    zone->data = ctx;
 
-    lmcf->shm_zone = shm_zone;
+    zp = ngx_array_push(lmcf->shm_zones);
+    *zp = zone;
 
     return NGX_CONF_OK;
 }

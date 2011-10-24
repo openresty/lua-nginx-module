@@ -69,9 +69,7 @@ typedef struct {
     ngx_int_t        regex_cache_entries;
     ngx_int_t        regex_cache_max_entries;
 
-    /* FIXME we should define an ngx_hash_t object here because we can have
-     * multiple shared_dict zones */
-    ngx_shm_zone_t  *shm_zone;
+    ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
 
     unsigned    postponed_to_rewrite_phase_end:1;
     unsigned    postponed_to_access_phase_end:1;
