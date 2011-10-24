@@ -138,6 +138,8 @@ ngx_http_lua_var_set(lua_State *L)
     ngx_str_t                    name;
     ngx_uint_t                   hash;
     ngx_http_request_t          *r;
+    int                          value_type;
+    const char                  *msg;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -167,14 +169,34 @@ ngx_http_lua_var_set(lua_State *L)
 
     /* we read the variable new value */
 
-    p = (u_char *) luaL_checklstring(L, 3, &len);
+    value_type = lua_type(L, 3);
+    switch (value_type) {
+    case LUA_TNUMBER:
+    case LUA_TSTRING:
+        p = (u_char *) luaL_checklstring(L, 3, &len);
 
-    val = ngx_palloc(r->pool, len);
-    if (val == NULL) {
-        return luaL_error(L, "memory allocation erorr");
+        val = ngx_palloc(r->pool, len);
+        if (val == NULL) {
+            return luaL_error(L, "memory allocation erorr");
+        }
+
+        ngx_memcpy(val, p, len);
+
+        break;
+
+    case LUA_TNIL:
+        /* undef the variable */
+
+        val = NULL;
+        len = 0;
+
+        break;
+
+    default:
+        msg = lua_pushfstring(L, "string, number, or nil expected, "
+                "but got %s", lua_typename(L, value_type));
+        return luaL_argerror(L, 1, msg);
     }
-
-    ngx_memcpy(val, p, len);
 
     /* we fetch the variable itself */
 
@@ -188,17 +210,29 @@ ngx_http_lua_var_set(lua_State *L)
         }
 
         if (v->set_handler) {
+
+            dd("set variables with set_handler");
+
             vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
             if (vv == NULL) {
                 return luaL_error(L, "out of memory");
             }
 
-            vv->valid = 1;
-            vv->not_found = 0;
-            vv->no_cacheable = 0;
+            if (value_type == LUA_TNIL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+                vv->data = NULL;
+                vv->len = 0;
 
-            vv->data = val;
-            vv->len = len;
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+            }
 
             v->set_handler(r, vv, v->data);
 
@@ -208,12 +242,24 @@ ngx_http_lua_var_set(lua_State *L)
         if (v->flags & NGX_HTTP_VAR_INDEXED) {
             vv = &r->variables[v->index];
 
-            vv->valid = 1;
-            vv->not_found = 0;
-            vv->no_cacheable = 0;
+            dd("set indexed variable");
 
-            vv->data = val;
-            vv->len = len;
+            if (value_type == LUA_TNIL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+
+                vv->data = NULL;
+                vv->len = 0;
+
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+            }
 
             return 0;
         }
