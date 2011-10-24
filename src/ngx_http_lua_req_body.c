@@ -1,5 +1,5 @@
 #ifndef DDEBUG
-#define DDEBUG 0
+#define DDEBUG 1
 #endif
 #include "ddebug.h"
 
@@ -239,13 +239,14 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_chain_t                 *cl;
     ngx_temp_file_t             *tf;
     ngx_buf_t                   *b;
     ngx_str_t                    body, key, value;
 #if 1
     ngx_int_t                    rc;
 #endif
+    ngx_chain_t                 *cl;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     n = lua_gettop(L);
 
@@ -298,10 +299,19 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
     }
 
     if (body.len == 0) {
+
         if (rb->bufs) {
+
+            llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
             for (cl = rb->bufs; cl; cl = cl->next) {
-                if (cl->buf->temporary) {
+                if (cl->buf->tag == llcf->tag && cl->buf->temporary) {
+
+                    dd("free old request body buffer: size:%d",
+                        (int) ngx_buf_size(cl->buf));
+
                     ngx_pfree(r->pool, cl->buf->start);
+                    cl->buf->tag = (ngx_buf_tag_t) NULL;
                     cl->buf->temporary = 0;
                 }
             }
@@ -314,10 +324,17 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         goto set_header;
     }
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
     if (rb->bufs) {
+
         for (cl = rb->bufs; cl; cl = cl->next) {
-            if (cl->buf->temporary) {
+            if (cl->buf->tag == llcf->tag && cl->buf->temporary) {
+                dd("free old request body buffer: size:%d",
+                    (int) ngx_buf_size(cl->buf));
+
                 ngx_pfree(r->pool, cl->buf->start);
+                cl->buf->tag = (ngx_buf_tag_t) NULL;
                 cl->buf->temporary = 0;
             }
         }
@@ -327,7 +344,10 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         b = rb->bufs->buf;
 
         ngx_memzero(b, sizeof(ngx_buf_t));
+
         b->temporary = 1;
+        b->tag = llcf->tag;
+
         b->start = ngx_palloc(r->pool, body.len);
         if (b->start == NULL) {
             return luaL_error(L, "out of memory");
@@ -346,6 +366,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         rb->bufs->next = NULL;
 
         b = ngx_create_temp_buf(r->pool, body.len);
+        b->tag = llcf->tag;
         b->last = ngx_copy(b->pos, body.data, body.len);
 
         rb->bufs->buf = b;
@@ -416,7 +437,6 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_chain_t                 *cl;
     ngx_temp_file_t             *tf;
     ngx_buf_t                   *b;
     ngx_str_t                    name;
@@ -427,6 +447,8 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     ngx_pool_cleanup_t          *cln;
     ngx_pool_cleanup_file_t     *clnf;
     ngx_err_t                    err;
+    ngx_chain_t                 *cl;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     n = lua_gettop(L);
 
@@ -472,12 +494,18 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
     /* clean up existing r->request_body->bufs (if any) */
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
     if (rb->bufs) {
         dd("XXX reusing buf");
 
         for (cl = rb->bufs; cl; cl = cl->next) {
-            if (cl->buf->temporary) {
+            if (cl->buf->tag == llcf->tag && cl->buf->temporary) {
+                dd("free old request body buffer: size:%d",
+                        (int) ngx_buf_size(cl->buf));
+
                 ngx_pfree(r->pool, cl->buf->start);
+                cl->buf->tag = (ngx_buf_tag_t) NULL;
                 cl->buf->temporary = 0;
             }
         }
@@ -486,6 +514,8 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         b = rb->bufs->buf;
 
         ngx_memzero(b, sizeof(ngx_buf_t));
+
+        b->tag = llcf->tag;
 
     } else {
 
@@ -501,6 +531,8 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         if (b == NULL) {
             return luaL_error(L, "out of memory");
         }
+
+        b->tag = llcf->tag;
 
         rb->bufs->buf = b;
         rb->buf = b;

@@ -73,6 +73,8 @@ typedef struct {
 
 
 typedef struct {
+    ngx_buf_tag_t           tag;
+
     ngx_flag_t              force_read_body; /* whether force request body to
                                                 be read */
 
@@ -108,8 +110,6 @@ typedef struct {
 
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
-
-
 
 } ngx_http_lua_loc_conf_t;
 

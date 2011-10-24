@@ -725,3 +725,71 @@ a=1&a=2&b=hello&c=world
 B=HELLO&A=1&A=2&C=WORLD
 --- SKIP
 
+
+
+=== TEST 29: read buffered body to memory and reset it with data in memory + proxy twice
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hiya, dear dear friend!")
+            ngx.req.set_body_data("howdy, my dear little sister!")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world
+--- response_body chomp
+howdy, my dear little sister!
+
+
+
+=== TEST 30: read buffered body to memory and reset it with data in memory and then reset it to file
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hiya, dear dear friend!")
+            ngx.req.set_body_file(ngx.var.realpath_root .. "/a.txt")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- user_files
+>>> a.txt
+howdy, my dear little sister!
+--- request
+POST /test
+hello, world
+--- response_body
+howdy, my dear little sister!
+
+
+
+=== TEST 31: read buffered body to memory and reset it with empty string + proxy twice
+--- config
+    location = /test {
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_data("hiya, dear dear friend!")
+            ngx.req.set_body_data("")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+    location = /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+hello, world
+--- response_body chomp
+
