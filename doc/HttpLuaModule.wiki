@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc19] released on 22 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc20] released on 24 October 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1578,9 +1578,9 @@ See also [[#ngx.req.read_body|ngx.req.read_body]].
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Retrieves the in-memory request body data.
+Retrieves the in-memory request body data. It returns a Lua string rather than a Lua table holding all the parsed query arguments. If you want the latter, use [[#ngx.req.get_post_args|ngx.req.get_post_args]] instead.
 
-Returns <code>nil</code> if
+This function returns <code>nil</code> if
 # the request body has not been read,
 # the request body has been read into disk temporary files,
 # or the request body has zero size.

@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc19](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 October 2011.
+This document describes ngx_lua [v0.3.1rc20](https://github.com/chaoslawful/lua-nginx-module/tags) released on 24 October 2011.
 
 Synopsis
 ========
@@ -1621,9 +1621,9 @@ ngx.req.get_body_data
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Retrieves the in-memory request body data.
+Retrieves the in-memory request body data. It returns a Lua string rather than a Lua table holding all the parsed query arguments. If you want the latter, use [ngx.req.get_post_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_post_args) instead.
 
-Returns `nil` if
+This function returns `nil` if
 1. the request body has not been read,
 1. the request body has been read into disk temporary files,
 1. or the request body has zero size.
