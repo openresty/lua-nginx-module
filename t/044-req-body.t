@@ -692,3 +692,36 @@ hello, world"]
 --- response_body eval
 ["body: [nil]\n","body: [nil]\n"]
 
+
+
+=== TEST 28: read and set body
+--- config
+    location /test {
+        lua_need_request_body on;
+        access_by_lua_file html/myscript.lua;
+        echo_request_body;
+    }
+--- user_files
+>>> myscript.lua
+    local data, data2 = ngx.req.get_post_args(), {}
+    for k, v in pairs(data) do
+        if type(v) == "table" then
+            for i, val in ipairs(v) do
+                local s = ngx.escape_uri(string.upper(k)) .. '='
+                        .. ngx.escape_uri(string.upper(val))
+                table.insert(data2, s)
+            end
+        else
+            local s = ngx.escape_uri(string.upper(k)) .. '='
+                    .. ngx.escape_uri(string.upper(v))
+            table.insert(data2, s)
+        end
+    end
+    ngx.req.set_body_data(table.concat(data2, "&"))
+--- request
+POST /test
+a=1&a=2&b=hello&c=world
+--- response_body
+B=HELLO&A=1&A=2&C=WORLD
+--- SKIP
+
