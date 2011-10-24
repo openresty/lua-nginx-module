@@ -322,7 +322,7 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     hash = ngx_crc32_short(key.data, key.len);
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
+    dd("oloking up key %s in shared dict %s", key.data, name.data);
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
@@ -333,9 +333,8 @@ ngx_http_lua_shdict_get(lua_State *L)
     rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
             &sd);
 
-    ngx_shmtx_unlock(&ctx->shpool->mutex);
-
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnil(L);
         return 1;
     }
@@ -349,11 +348,16 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     switch (value_type) {
     case LUA_TSTRING:
+
         lua_pushlstring(L, (char *) value.data, value.len);
         break;
 
     case LUA_TNUMBER:
+
         if (value.len != sizeof(lua_Number)) {
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
             return luaL_error(L, "bad lua number value size found for key %s "
                     "in shared_dict %s: %lu", key.data, name.data,
                     (unsigned long) value.len);
@@ -365,7 +369,11 @@ ngx_http_lua_shdict_get(lua_State *L)
         break;
 
     case LUA_TBOOLEAN:
+
         if (value.len != sizeof(u_char)) {
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
             return luaL_error(L, "bad lua boolean value size found for key %s "
                     "in shared_dict %s: %lu", key.data, name.data,
                     (unsigned long) value.len);
@@ -377,10 +385,15 @@ ngx_http_lua_shdict_get(lua_State *L)
         break;
 
     default:
+
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
         return luaL_error(L, "bad value type found for key %s in "
                 "shared_dict %s: %lu", key.data, name.data,
                 value_type);
     }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return 1;
 }
