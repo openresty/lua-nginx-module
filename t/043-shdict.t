@@ -188,7 +188,7 @@ GET /test
             while i < 1000 do
                 i = i + 1
                 local val = string.rep(" hello " .. i, 10)
-                local override = dogs:set("key_" .. i, val, 0.02)
+                local override = dogs:set("key_" .. i, val)
                 if override then
                     break
                 end
@@ -231,4 +231,23 @@ GET /test
 hello, world
 56
 hello, world
+
+
+
+=== TEST 10: get non-existent keys
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            ngx.say(dogs:get("foo"))
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+nil
 
