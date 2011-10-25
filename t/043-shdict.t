@@ -389,3 +389,48 @@ GET /test
 --- response_body
 false unsupported value type for key "foo" in shared_dict "dogs": userdata
 
+
+
+=== TEST 16: set nil after setting values
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            ngx.say(dogs:get("foo"))
+            dogs:set("foo", nil)
+            ngx.say(dogs:get("foo"))
+            dogs:set("foo", "hello, world")
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32
+nil
+hello, world
+
+
+
+=== TEST 17: set nil at first
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", nil)
+            ngx.say(dogs:get("foo"))
+            dogs:set("foo", "hello, world")
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+hello, world
+

@@ -487,6 +487,11 @@ ngx_http_lua_shdict_set(lua_State *L)
         value.data = &c;
         break;
 
+    case LUA_TNIL:
+        value.len = 0;
+        value.data = NULL;
+        break;
+
     default:
         return luaL_error(L, "unsupported value type for key \"%s\" in "
                 "shared_dict \"%s\": %s", key.data, name.data,
@@ -512,6 +517,10 @@ ngx_http_lua_shdict_set(lua_State *L)
             &sd);
 
     if (rc == NGX_OK || rc == NGX_DONE) {
+
+        if (value_type == LUA_TNIL) {
+            goto remove;
+        }
 
         if (value.len == sd->value_len) {
 
@@ -552,6 +561,7 @@ ngx_http_lua_shdict_set(lua_State *L)
             "lua shared dict set: found old entry bug value size NOT matched, "
             "removing it first");
 
+remove:
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -560,9 +570,16 @@ ngx_http_lua_shdict_set(lua_State *L)
         ngx_rbtree_delete(&ctx->sh->rbtree, node);
 
         ngx_slab_free_locked(ctx->shpool, node);
+
     }
 
     /* rc == NGX_DECLINED or value size unmatch */
+
+    if (value_type == LUA_TNIL) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
         "lua shared dict set: creating a new entry");
