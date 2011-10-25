@@ -784,6 +784,11 @@ Nginx API for Lua
     by this interface as well, by writing "ngx.var[1]", "ngx.var[2]",
     "ngx.var[3]", and etc.
 
+    Setting "nil" values to "ngx.var.Foo" will effectively make Nginx
+    variable $Foo undefined. For instance,
+
+        ngx.var.args = nil
+
   Core constants
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -2477,6 +2482,38 @@ Performance
     You can get better performance when building this module with LuaJIT
     2.0.
 
+Typical Use Cases
+    Just to name a few:
+
+    *   Mashup'ing and processing outputs of various nginx upstream outputs
+        (proxy, drizzle, postgres, redis, memcached, and etc) in Lua,
+
+    *   doing arbitrarily complex access control and security checks in Lua
+        before requests actually reach the upstream backends,
+
+    *   manipulating response headers in an arbitrary way (by Lua)
+
+    *   fetching backend information from external storage backends (like
+        redis, memcached, mysql, postgresql) and use that information to
+        choose which upstream backend to access on-the-fly,
+
+    *   coding up arbitrarily complex web applications in a content handler
+        using synchronous but still non-blocking access to the database
+        backends and other storage,
+
+    *   doing very complex URL dispatch in Lua at rewrite phase,
+
+    *   using Lua to implement advanced caching mechanism for nginx
+        subrequests and arbitrary locations.
+
+    Actually the possibilities are unlimited, the Lua language is plays the
+    role of glueing existing stuffs in Nginx.
+
+    This module gives the flexibility of scripting but also offers
+    performance comparable with C (in terms of both CPU time and memory
+    footprint), especially when LuaJIT 2.0 is enabled, which other scripting
+    language implementations are hard to catch up.
+
 Installation
     You're recommended to install this module as well as the Lua interpreter
     or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty
@@ -2685,6 +2722,15 @@ Known Issues
         event model. When it is done, the user code will be able to use the
         Lua coroutine mechanism freely as in standard Lua again!
 
+    *   Lua's "dofile" builtin is implemented as a C function in both Lua
+        5.1 and LuaJIT 2.0. And when you call ngx.location.capture,
+        ngx.exec, ngx.exit or ngx.req.read_body or something like those in
+        the .lua file to be loaded, it'll effectively initiate a coroutine
+        yield and that yield will run across C function boundary, which is
+        disallowed, and usually result in error messages like "lua handler
+        aborted: runtime error: attempt to yield across C-call boundary".
+        You should use Lua's "require" builtin instead.
+
     *   Because the standard Lua 5.1 interpreter's VM is not fully
         resumable, the methods ngx.location.capture,
         ngx.location.capture_multi, ngx.redirect, ngx.exec, and ngx.exit
@@ -2796,9 +2842,6 @@ Authors
 
 Copyright & License
     This module is licenced under the BSD license.
-
-    Copyright (C) 2009, 2010, 2011, Taobao Inc., Alibaba Group (
-    http://www.taobao.com ).
 
     Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful)
     <chaoslawful@gmail.com>.

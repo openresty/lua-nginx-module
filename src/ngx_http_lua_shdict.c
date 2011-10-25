@@ -148,16 +148,18 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
                 ngx_queue_remove(&sd->queue);
                 ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-                tp = ngx_timeofday();
-
-                now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
-                ms = (ngx_msec_int_t) (sd->expires - now);
-
                 *sdp = sd;
 
-                if (ms < 0) {
-                    /* already expired */
-                    return NGX_DONE;
+                if (sd->expires != 0) {
+                    tp = ngx_timeofday();
+
+                    now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
+                    ms = (ngx_msec_int_t) (sd->expires - now);
+
+                    if (ms < 0) {
+                        /* already expired */
+                        return NGX_DONE;
+                    }
                 }
 
                 return NGX_OK;
@@ -207,6 +209,10 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
 
         if (n++ != 0) {
+
+            if (sd->expires == 0) {
+                return;
+            }
 
             ms = (ngx_msec_int_t) (sd->expires - now);
             if (ms > 0) {
@@ -282,7 +288,6 @@ ngx_http_lua_shdict_get(lua_State *L)
     ngx_int_t                    rc;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
-    ngx_uint_t                   expires;
     ngx_str_t                    value;
     int                          value_type;
     lua_Number                   num;
@@ -322,7 +327,7 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     hash = ngx_crc32_short(key.data, key.len);
 
-    dd("oloking up key %s in shared dict %s", key.data, name.data);
+    dd("looking up key %s in shared dict %s", key.data, name.data);
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
@@ -341,8 +346,11 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     /* rc == NGX_OK */
 
-    expires = sd->expires;
     value_type = sd->value_type;
+
+    dd("data: %p", sd->data);
+    dd("key len: %d", (int) sd->key_len);
+
     value.data = sd->data + sd->key_len;
     value.len = sd->value_len;
 
@@ -389,7 +397,7 @@ ngx_http_lua_shdict_get(lua_State *L)
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         return luaL_error(L, "bad value type found for key %s in "
-                "shared_dict %s: %lu", key.data, name.data,
+                "shared_dict %s: %d", key.data, name.data,
                 value_type);
     }
 
@@ -414,7 +422,7 @@ ngx_http_lua_shdict_set(lua_State *L)
     int                          value_type;
     lua_Number                   num;
     u_char                       c;
-    lua_Number                   exptime = 60;
+    lua_Number                   exptime = 0;
     u_char                      *p;
     ngx_rbtree_node_t           *node;
     ngx_time_t                  *tp;
@@ -516,11 +524,19 @@ ngx_http_lua_shdict_set(lua_State *L)
 
             sd->key_len = key.len;
 
-            tp = ngx_timeofday();
-            sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
-                    + (ngx_msec_t) (exptime * 1000);
+            if (exptime > 0) {
+                tp = ngx_timeofday();
+                sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
+                        + (ngx_msec_t) (exptime * 1000);
+
+            } else {
+                sd->expires = 0;
+            }
 
             sd->value_len = value.len;
+
+            dd("setting value type to %d", value_type);
+
             sd->value_type = value_type;
 
             p = ngx_copy(sd->data, key.data, key.len);
@@ -582,11 +598,19 @@ ngx_http_lua_shdict_set(lua_State *L)
     node->key = hash;
     sd->key_len = key.len;
 
-    tp = ngx_timeofday();
-    sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
-            + (ngx_msec_t) (exptime * 1000);
+    if (exptime > 0) {
+        tp = ngx_timeofday();
+        sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
+                + (ngx_msec_t) (exptime * 1000);
+
+    } else {
+        sd->expires = 0;
+    }
 
     sd->value_len = value.len;
+
+    dd("setting value type to %d", value_type);
+
     sd->value_type = value_type;
 
     p = ngx_copy(sd->data, key.data, key.len);

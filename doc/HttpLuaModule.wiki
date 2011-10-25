@@ -754,6 +754,12 @@ some are not, like <code>$arg_PARAMETER</code>.
 Nginx regex group capturing variables <code>$1</code>, <code>$2</code>, <code>$3</code>, and etc, can be read by this
 interface as well, by writing <code>ngx.var[1]</code>, <code>ngx.var[2]</code>, <code>ngx.var[3]</code>, and etc.
 
+Setting <code>nil</code> values to <code>ngx.var.Foo</code> will effectively make Nginx variable <code>$Foo</code> undefined. For instance,
+
+<geshi lang="lua">
+    ngx.var.args = nil
+</geshi>
+
 == Core constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -2359,6 +2365,22 @@ w/o keepalive and 37k+ req/sec with keepalive.
 You can get better performance when building this module
 with LuaJIT 2.0.
 
+= Typical Use Cases =
+
+Just to name a few:
+
+* Mashup'ing and processing outputs of various nginx upstream outputs (proxy, drizzle, postgres, redis, memcached, and etc) in Lua,
+* doing arbitrarily complex access control and security checks in Lua before requests actually reach the upstream backends,
+* manipulating response headers in an arbitrary way (by Lua)
+* fetching backend information from external storage backends (like redis, memcached, mysql, postgresql) and use that information to choose which upstream backend to access on-the-fly,
+* coding up arbitrarily complex web applications in a content handler using synchronous but still non-blocking access to the database backends and other storage,
+* doing very complex URL dispatch in Lua at rewrite phase,
+* using Lua to implement advanced caching mechanism for nginx subrequests and arbitrary locations.
+
+Actually the possibilities are unlimited, the Lua language is plays the role of glueing existing stuffs in Nginx.
+
+This module gives the flexibility of scripting but also offers performance comparable with C (in terms of both CPU time and memory footprint), especially when LuaJIT 2.0 is enabled, which other scripting language implementations are hard to catch up.
+
 = Installation =
 
 You're recommended to install this module as well as the Lua interpreter or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty bundle:
@@ -2485,6 +2507,7 @@ filtering chain affects a lot. The correct configure adding order is:
 = Known Issues =
 
 * As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [[#ngx.location.capture|ngx.location.capture]] (actually coroutine modules have been masked off in [[#content_by_lua|content_by_lua]] directives and others). This limitation is a little crucial, but don't worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
+* Lua's <code>dofile</code> builtin is implemented as a C function in both Lua 5.1 and LuaJIT 2.0. And when you call [[#ngx.location.capture|ngx.location.capture]], [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]] or [[#ngx.req.read_body|ngx.req.read_body]] or something like those in the .lua file to be loaded, it'll effectively initiate a coroutine yield and that yield will run across C function boundary, which is disallowed, and usually result in error messages like <code>lua handler aborted: runtime error: attempt to yield across C-call boundary</code>. You should use Lua's <code>require</code> builtin instead.
 * Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] when the standard Lua 5.1 interpreter is used; you'll get the error <code>attempt to yield across metamethod/C-call boundary</code>. To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
 * The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations configured by [[HttpEchoModule]]'s [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives. This won't be fixed in the future due to technical problems.
 * '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request isolation design. Especially watch yourself when using <code>require()</code> to import modules, and use this form:
@@ -2542,8 +2565,6 @@ assuming your current Lua module is named <code>foo.bar</code>. This will guaran
 = Copyright & License =
 
 This module is licenced under the BSD license.
-
-Copyright (C) 2009, 2010, 2011, Taobao Inc., Alibaba Group ( http://www.taobao.com ).
 
 Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
