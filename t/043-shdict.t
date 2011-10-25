@@ -8,10 +8,10 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 #master_on();
 #workers(2);
 run_tests();
@@ -27,15 +27,17 @@ __DATA__
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             dogs:set("bah", 10502)
-            ngx.say(dogs:get("foo"))
-            ngx.say(dogs:get("bah"))
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
         ';
     }
 --- request
 GET /test
 --- response_body
-32
-10502
+32 number
+10502 number
 
 
 
@@ -49,15 +51,17 @@ GET /test
             cats:set("foo", 3.14159)
             cats:set("baz", 1.28)
             cats:set("baz", 3.96)
-            ngx.say(cats:get("foo"))
-            ngx.say(cats:get("baz"))
+            local val = cats:get("foo")
+            ngx.say(val, " ", type(val))
+            val = cats:get("baz")
+            ngx.say(val, " ", type(val))
         ';
     }
 --- request
 GET /test
 --- response_body
-3.14159
-3.96
+3.14159 number
+3.96 number
 
 
 
@@ -70,15 +74,17 @@ GET /test
             local cats = ngx.shared.cats
             cats:set("foo", true)
             cats:set("bar", false)
-            ngx.say(cats:get("foo"))
-            ngx.say(cats:get("bar"))
+            local val = cats:get("foo")
+            ngx.say(val, " ", type(val))
+            val = cats:get("bar")
+            ngx.say(val, " ", type(val))
         ';
     }
 --- request
 GET /test
 --- response_body
-true
-false
+true boolean
+false boolean
 
 
 
@@ -94,7 +100,8 @@ false
             ngx.say(cats:set(256, "bird"))
             ngx.say(cats:get(1234))
             ngx.say(cats:get("1234"))
-            ngx.say(cats:get("256"))
+            local val = cats:get("256")
+            ngx.say(val, " ", type(val))
         ';
     }
 --- request
@@ -105,7 +112,7 @@ false
 false
 dog
 dog
-bird
+bird string
 
 
 
@@ -194,19 +201,63 @@ GET /test
                 end
             end
             ngx.say("abort at ", i)
-            ngx.say("value: ", dogs:get("key_" .. i))
+            ngx.say("cur value: ", dogs:get("key_" .. i))
+            if i > 1 then
+                ngx.say("1st value: ", dogs:get("key_1"))
+            end
+            if i > 2 then
+                ngx.say("2nd value: ", dogs:get("key_2"))
+            end
         ';
     }
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-["abort at 353\nvalue: " . (" hello 353" x 10) . "\n",
-"abort at 1\nvalue: " . (" hello 1" x 10) . "\n"
+["abort at 353\ncur value: " . (" hello 353" x 10) . "\n1st value: nil\n2nd value: " . (" hello 2" x 10) . "\n",
+"abort at 1\ncur value: " . (" hello 1" x 10) . "\n"
 ]
 
 
 
-=== TEST 9: dogs and cats dicts
+=== TEST 9: forcibly override other valid entries and test LRU
+--- http_config
+    lua_shared_dict dogs 100k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local i = 0
+            while i < 1000 do
+                i = i + 1
+                local val = string.rep(" hello " .. i, 10)
+                if i == 10 then
+                    dogs:get("key_1")
+                end
+                local override = dogs:set("key_" .. i, val)
+                if override then
+                    break
+                end
+            end
+            ngx.say("abort at ", i)
+            ngx.say("cur value: ", dogs:get("key_" .. i))
+            if i > 1 then
+                ngx.say("1st value: ", dogs:get("key_1"))
+            end
+            if i > 2 then
+                ngx.say("2nd value: ", dogs:get("key_2"))
+            end
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test"]
+--- response_body eval
+["abort at 353\ncur value: " . (" hello 353" x 10) . "\n1st value: " . (" hello 1" x 10) . "\n2nd value: nil\n",
+"abort at 2\ncur value: " . (" hello 2" x 10) . "\n1st value: " . (" hello 1" x 10) . "\n"
+]
+
+
+
+=== TEST 10: dogs and cats dicts
 --- http_config
     lua_shared_dict dogs 1m;
     lua_shared_dict cats 1m;
@@ -234,7 +285,7 @@ hello, world
 
 
 
-=== TEST 10: get non-existent keys
+=== TEST 11: get non-existent keys
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -250,4 +301,91 @@ GET /test
 --- response_body
 nil
 nil
+
+
+
+=== TEST 12: not feed the object into the call
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local rc, err = pcall(dogs.set, "foo", 3, 0.01)
+            ngx.say(rc, " ", err)
+            rc, err = pcall(dogs.set, "foo", 3)
+            ngx.say(rc, " ", err)
+            rc, err = pcall(dogs.get, "foo")
+            ngx.say(rc, " ", err)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+false bad argument #1 to '?' (userdata expected, got string)
+false expecting 3 or 4 arguments, but only seen 2
+false expecting exactly two arguments, but only seen 1
+
+
+
+=== TEST 13: too big value
+--- http_config
+    lua_shared_dict dogs 50k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local rc, err = pcall(dogs.set, dogs, "foo", string.rep("helloworld", 10000))
+            ngx.say(rc, " ", err)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+false failed to allocate memory for shared_dict dogs (maybe the total capacity is too small?)
+
+
+
+=== TEST 14: too big key
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local key = string.rep("a", 65535)
+            local rc, err = pcall(dogs.set, dogs, key, "hello")
+            ngx.say(rc, " ", err)
+            ngx.say(dogs:get(key))
+
+            key = string.rep("a", 65536)
+            rc, err = pcall(dogs.set, dogs, key, "world")
+            ngx.say(rc, " ", err)
+
+        ';
+    }
+--- request
+GET /test
+--- response_body
+true false
+hello
+false the key argument is more than 65535 bytes: 65536
+
+
+
+=== TEST 15: bad value type
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local rc, err = pcall(dogs.set, dogs, "foo", dogs)
+            ngx.say(rc, " ", err)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+false unsupported value type for key "foo" in shared_dict "dogs": userdata
 

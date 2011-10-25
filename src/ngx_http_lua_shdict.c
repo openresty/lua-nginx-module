@@ -454,8 +454,8 @@ ngx_http_lua_shdict_set(lua_State *L)
 
     if (key.len > 65535) {
         return luaL_error(L,
-                      "the key argument is more than 65535 bytes: \"%s\"",
-                      key.data);
+                      "the key argument is more than 65535 bytes: %d",
+                      (int) key.len);
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -480,8 +480,8 @@ ngx_http_lua_shdict_set(lua_State *L)
         break;
 
     default:
-        return luaL_error(L, "unsupported value type for key %s in "
-                "shared_dict %s: %s", key.data, name.data,
+        return luaL_error(L, "unsupported value type for key \"%s\" in "
+                "shared_dict \"%s\": %s", key.data, name.data,
                 lua_typename(L, value_type));
     }
 
