@@ -434,3 +434,28 @@ GET /test
 nil
 hello, world
 
+
+=== TEST 17: set nil at first
+--- http_config
+    lua_shared_dict dogs 100k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local i = 0
+            while i < 1000 do
+                i = i + 1
+                local val = string.rep("hello", i )
+                local override = dogs:set("key_" .. i, val)
+                if override then
+                    break
+                end
+            end
+            ngx.say("abort at ", i)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+abort at 139
+

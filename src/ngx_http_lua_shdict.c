@@ -9,7 +9,7 @@
 
 static int ngx_http_lua_shdict_set(lua_State *L);
 static int ngx_http_lua_shdict_get(lua_State *L);
-static void ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx,
+static int ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx,
     ngx_uint_t n);
 static ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone,
     ngx_uint_t hash, u_char *kdata, size_t klen,
@@ -178,7 +178,7 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 }
 
 
-static void
+static int
 ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
 {
     ngx_time_t                  *tp;
@@ -187,6 +187,7 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
     ngx_msec_int_t               ms;
     ngx_rbtree_node_t           *node;
     ngx_http_lua_shdict_node_t  *sd;
+    int                          freed = 0;
 
     tp = ngx_timeofday();
 
@@ -198,10 +199,10 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
      *        and one or two zero rate entries
      */
 
-    while (n < 3) {
+    while (n < 5) {
 
         if (ngx_queue_empty(&ctx->sh->queue)) {
-            return;
+            return freed;
         }
 
         q = ngx_queue_last(&ctx->sh->queue);
@@ -211,12 +212,12 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
         if (n++ != 0) {
 
             if (sd->expires == 0) {
-                return;
+                return freed;
             }
 
             ms = (ngx_msec_int_t) (sd->expires - now);
             if (ms > 0) {
-                return;
+                return freed;
             }
         }
 
@@ -228,7 +229,11 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
         ngx_rbtree_delete(&ctx->sh->rbtree, node);
 
         ngx_slab_free_locked(ctx->shpool, node);
+
+        freed++;
     }
+
+    return freed;
 }
 
 
@@ -411,7 +416,7 @@ static int
 ngx_http_lua_shdict_set(lua_State *L)
 {
     ngx_http_request_t          *r;
-    int                          n;
+    int                          i, n;
     ngx_str_t                    name;
     ngx_str_t                    key;
     uint32_t                     hash;
@@ -427,7 +432,6 @@ ngx_http_lua_shdict_set(lua_State *L)
     ngx_rbtree_node_t           *node;
     ngx_time_t                  *tp;
     ngx_shm_zone_t              *zone;
-
     int                          override = 0;
                          /* indicates whether to override other valid entries */
 
@@ -598,18 +602,25 @@ remove:
 
         override = 1;
 
-        ngx_http_lua_shdict_expire(ctx, 0);
+        for (i = 0; i < 30; i++) {
+            if (ngx_http_lua_shdict_expire(ctx, 0) == 0) {
+                break;
+            }
 
-        node = ngx_slab_alloc_locked(ctx->shpool, n);
-        if (node == NULL) {
-            ngx_shmtx_unlock(&ctx->shpool->mutex);
-
-            return luaL_error(L, "failed to allocate memory for "
-                    "shared_dict %s (maybe the total capacity is too small?)",
-                    name.data);
+            node = ngx_slab_alloc_locked(ctx->shpool, n);
+            if (node != NULL) {
+                goto allocated;
+            }
         }
+
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        return luaL_error(L, "failed to allocate memory for "
+                "shared_dict %s (maybe the total capacity is too "
+                "small?)", name.data);
     }
 
+allocated:
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
