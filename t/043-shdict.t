@@ -435,7 +435,8 @@ nil
 hello, world
 
 
-=== TEST 17: set nil at first
+
+=== TEST 18: set nil at first
 --- http_config
     lua_shared_dict dogs 100k;
 --- config
