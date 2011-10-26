@@ -2,7 +2,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-worker_connections(1014);
+#worker_connections(1014);
 #master_on();
 #workers(2);
 #log_level('warn');
