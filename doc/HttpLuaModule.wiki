@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc20] released on 24 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc21] released on 26 October 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -664,6 +664,31 @@ content phase).
 You're recommended to use the [[#ngx.req.read_body|ngx.req.read_body]] function and [[#ngx.req.discard_body|ngx.req.discard_body]] for finer control over the request body reading process though.
 
 The same applies to [[#access_by_lua|access_by_lua]] and [[#access_by_lua_file|access_by_lua_file]].
+
+== lua_shared_dict ==
+
+'''syntax:''' ''lua_shared_dict <name> <size>''
+
+'''default:''' ''no''
+
+'''context:''' ''main''
+
+'''phase:''' ''depends on usage''
+
+Declares a shared memory zone named <code><name></code> to serve as the storage for the shm-based Lua dictionary <code>ngx.shared.<name></code>.
+
+The <code><size></code> argument can take a size unit like <code>k</code> and <code>m</code>. For example,
+
+<geshi lang="nginx">
+    http {
+        lua_shared_dict dogs 10m;
+        ...
+    }
+</geshi>
+
+See [[#ngx.shared.DICT|ngx.shared.DICT]] for details.
+
+This directive was first introduced in the <code>v0.3.1rc21</code> release.
 
 = Nginx API for Lua =
 
@@ -2253,6 +2278,124 @@ Here is some examples:
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the <code>v0.2.1rc15</code> release.
+
+== ngx.shared.DICT ==
+'''syntax:''' ''dict = ngx.shared.DICT''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Fetching the shm-based Lua dictionary object for the shared memory zone named <code>DICT</code> defined by the [[#lua_shared_dict|lua_shared_dict]] directive.
+
+The resulting object <code>dict</code> has the following methods:
+
+* [[#ngx.shared.DICT.get|get]]
+* [[#ngx.shared.DICT.set|set]]
+
+Here is an example:
+
+<geshi lang="nginx">
+    http {
+        lua_shared_dict dogs 10m;
+        server {
+            location /set {
+                content_by_lua '
+                    local dogs = ngx.shared.dogs
+                    dogs:set("Jim", 8)
+                    ngx.say("STORED")
+                ';
+            }
+            location /get {
+                content_by_lua '
+                    local dogs = ngx.shared.dogs
+                    ngx.say(dogs:get("Jim"))
+                ';
+            }
+        }
+    }
+</geshi>
+
+Let's test it:
+
+<geshi lang="bash">
+    $ curl localhost/set
+    STORED
+
+    $ curl localhost/get
+    8
+
+    $ curl localhost/get
+    8
+</geshi>
+
+You will consistently get the output <code>8</code> when accessing <code>/get</code> regardless how many Nginx workers there are because the <code>dogs</code> dictionary resides in the shared memory and visible to ''all'' of the worker processes.
+
+The shared dictionary will retain its contents through a server config reload (either by means of the <code>HUP</code> signal or by the <code>-s reload</code> command-line option).
+
+This feature was first introduced in the <code>v0.3.1rc21</code> release.
+
+== ngx.shared.DICT.get ==
+'''syntax:''' ''value = ngx.shared.DICT:get(key)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Retrieving the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. If the key does not exist or has been expired, then <code>nil</code> will be returned.
+
+The value returned will have the original data type when they were inserted into the dictionary, for example, Lua booleans, numbers, or strings.
+
+The first argument to this method must be the dictionary object itself, for example,
+
+<geshi lang="lua">
+    local cats = ngx.shared.cats
+    local value = cats.get(cats, "Marry")
+</geshi>
+
+or use Lua's syntactic sugar for method calls:
+
+<geshi lang="lua">
+    local cats = ngx.shared.cats
+    local value = cats:get("Marry")
+</geshi>
+
+These two forms are fundamentally equivalent.
+
+This feature was first introduced in the <code>v0.3.1rc21</code> release.
+
+See also [[#ngx.shared.DICT.set|ngx.shared.DICT.set]].
+
+== ngx.shared.DICT.set ==
+'''syntax:''' ''forcible = ngx.shared.DICT:set(key, value, exptime?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Setting the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. Returns a boolean value to indicate whether other valid items have been removed forcibly when out of storage in the shared memory zone.
+
+The value inserted can be Lua booleans, numbers, strings, or <code>nil</code>. Their value type will also be stored into the dictionary, thus you can get exactly the same data type when later retrieving the value out of the dictionary via the [[#ngx.shared.DICT.get|get]] method.
+
+The optional <code>exptime</code> argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is <code>0.001</code> seconds. If the <code>exptime</code> takes the value <code>0</code> (which is the default), then the item will never be expired.
+
+When it fails to allocate memory for the current key-value item, then <code>set</code> will try removing existing items in the storage according to the Least-Recently Used (LRU) algorithm. Note that, LRU takes priority over expiration time here. If up to tens of existing items have been removed and the storage left is still insufficient (either due to the total capacity limit specified by [[#lua_shared_dict|lua_shared_dict]] or memory segmentation), then a Lua exception will be thrown).
+
+If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, it will return the <code>true</code> value. If it stores the item without forcibly removing other valid items, then <code>false</code> will be returned.
+
+The first argument to this method must be the dictionary object itself, for example,
+
+<geshi lang="lua">
+    local cats = ngx.shared.cats
+    cats.set(cats, "Marry", "it is a nice cat!")
+</geshi>
+
+or use Lua's syntactic sugar for method calls:
+
+<geshi lang="lua">
+    local cats = ngx.shared.cats
+    cats:set("Marry", "it is a nice cat!")
+</geshi>
+
+These two forms are fundamentally equivalent.
+
+This feature was first introduced in the <code>v0.3.1rc21</code> release.
+
+See also [[#ngx.shared.DICT.get|ngx.shared.DICT.get]].
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''

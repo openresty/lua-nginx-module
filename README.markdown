@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc20](https://github.com/chaoslawful/lua-nginx-module/tags) released on 24 October 2011.
+This document describes ngx_lua [v0.3.1rc21](https://github.com/chaoslawful/lua-nginx-module/tags) released on 26 October 2011.
 
 Synopsis
 ========
@@ -685,6 +685,32 @@ content phase).
 You're recommended to use the [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) function and [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body) for finer control over the request body reading process though.
 
 The same applies to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) and [access_by_lua_file](http://wiki.nginx.org/HttpLuaModule#access_by_lua_file).
+
+lua_shared_dict
+---------------
+
+**syntax:** *lua_shared_dict &lt;name&gt; &lt;size&gt;*
+
+**default:** *no*
+
+**context:** *main*
+
+**phase:** *depends on usage*
+
+Declares a shared memory zone named `<name>` to serve as the storage for the shm-based Lua dictionary `ngx.shared.<name>`.
+
+The `<size>` argument can take a size unit like `k` and `m`. For example,
+
+
+    http {
+        lua_shared_dict dogs 10m;
+        ...
+    }
+
+
+See [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) for details.
+
+This directive was first introduced in the `v0.3.1rc21` release.
 
 Nginx API for Lua
 =================
@@ -2328,6 +2354,127 @@ Here is some examples:
 This method requires the PCRE library enabled in your Nginx build.
 
 This feature was first introduced in the `v0.2.1rc15` release.
+
+ngx.shared.DICT
+---------------
+**syntax:** *dict = ngx.shared.DICT*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Fetching the shm-based Lua dictionary object for the shared memory zone named `DICT` defined by the [lua_shared_dict](http://wiki.nginx.org/HttpLuaModule#lua_shared_dict) directive.
+
+The resulting object `dict` has the following methods:
+
+* [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get)
+* [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set)
+
+Here is an example:
+
+
+    http {
+        lua_shared_dict dogs 10m;
+        server {
+            location /set {
+                content_by_lua '
+                    local dogs = ngx.shared.dogs
+                    dogs:set("Jim", 8)
+                    ngx.say("STORED")
+                ';
+            }
+            location /get {
+                content_by_lua '
+                    local dogs = ngx.shared.dogs
+                    ngx.say(dogs:get("Jim"))
+                ';
+            }
+        }
+    }
+
+
+Let's test it:
+
+
+    $ curl localhost/set
+    STORED
+
+    $ curl localhost/get
+    8
+
+    $ curl localhost/get
+    8
+
+
+You will consistently get the output `8` when accessing `/get` regardless how many Nginx workers there are because the `dogs` dictionary resides in the shared memory and visible to *all* of the worker processes.
+
+The shared dictionary will retain its contents through a server config reload (either by means of the `HUP` signal or by the `-s reload` command-line option).
+
+This feature was first introduced in the `v0.3.1rc21` release.
+
+ngx.shared.DICT.get
+-------------------
+**syntax:** *value = ngx.shared.DICT:get(key)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Retrieving the value in the dictionary [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) for the key `key`. If the key does not exist or has been expired, then `nil` will be returned.
+
+The value returned will have the original data type when they were inserted into the dictionary, for example, Lua booleans, numbers, or strings.
+
+The first argument to this method must be the dictionary object itself, for example,
+
+
+    local cats = ngx.shared.cats
+    local value = cats.get(cats, "Marry")
+
+
+or use Lua's syntactic sugar for method calls:
+
+
+    local cats = ngx.shared.cats
+    local value = cats:get("Marry")
+
+
+These two forms are fundamentally equivalent.
+
+This feature was first introduced in the `v0.3.1rc21` release.
+
+See also [ngx.shared.DICT.set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set).
+
+ngx.shared.DICT.set
+-------------------
+**syntax:** *forcible = ngx.shared.DICT:set(key, value, exptime?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Setting the value in the dictionary [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) for the key `key`. Returns a boolean value to indicate whether other valid items have been removed forcibly when out of storage in the shared memory zone.
+
+The value inserted can be Lua booleans, numbers, strings, or `nil`. Their value type will also be stored into the dictionary, thus you can get exactly the same data type when later retrieving the value out of the dictionary via the [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get) method.
+
+The optional `exptime` argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is `0.001` seconds. If the `exptime` takes the value `0` (which is the default), then the item will never be expired.
+
+When it fails to allocate memory for the current key-value item, then `set` will try removing existing items in the storage according to the Least-Recently Used (LRU) algorithm. Note that, LRU takes priority over expiration time here. If up to tens of existing items have been removed and the storage left is still insufficient (either due to the total capacity limit specified by [lua_shared_dict](http://wiki.nginx.org/HttpLuaModule#lua_shared_dict) or memory segmentation), then a Lua exception will be thrown).
+
+If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, it will return the `true` value. If it stores the item without forcibly removing other valid items, then `false` will be returned.
+
+The first argument to this method must be the dictionary object itself, for example,
+
+
+    local cats = ngx.shared.cats
+    cats.set(cats, "Marry", "it is a nice cat!")
+
+
+or use Lua's syntactic sugar for method calls:
+
+
+    local cats = ngx.shared.cats
+    cats:set("Marry", "it is a nice cat!")
+
+
+These two forms are fundamentally equivalent.
+
+This feature was first introduced in the `v0.3.1rc21` release.
+
+See also [ngx.shared.DICT.get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get).
 
 ndk.set_var.DIRECTIVE
 ---------------------
