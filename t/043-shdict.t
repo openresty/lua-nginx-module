@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
 no_long_string();
@@ -461,4 +461,92 @@ hello, world
 GET /test
 --- response_body_like
 ^abort at (?:139|142)$
+
+
+
+=== TEST 19: string key, int value (write_by_lua)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        rewrite_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+        ';
+        content_by_lua return;
+    }
+--- request
+GET /test
+--- response_body
+32 number
+10502 number
+
+
+
+=== TEST 20: string key, int value (access_by_lua)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        access_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+        ';
+        content_by_lua return;
+    }
+--- request
+GET /test
+--- response_body
+32 number
+10502 number
+
+
+
+=== TEST 21: string key, int value (set_by_lua)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        set_by_lua $res '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            return dogs:get("foo")
+        ';
+        echo $res;
+    }
+--- request
+GET /test
+--- response_body
+32
+
+
+
+=== TEST 21: string key, int value (header_by_lua)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        echo hello;
+        header_filter_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            ngx.header["X-Foo"] = dogs:get("foo")
+        ';
+    }
+--- request
+GET /test
+--- response_headers
+X-Foo: 32
+--- response_body
+hello
 

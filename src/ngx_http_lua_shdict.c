@@ -238,14 +238,12 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
 
 
 void
-ngx_http_lua_inject_shdict_api(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 {
-    ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
     if (lmcf->shm_zones != NULL) {
         lua_createtable(L, 0, 1 /* nrec */);    /* ngx.shared */

@@ -500,6 +500,10 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
 static void
 init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
 {
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua globals");
 
@@ -529,7 +533,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_req_api(L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(cf, L);
+    ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_misc_api(L);
 
     lua_getglobal(L, "package"); /* ngx package */

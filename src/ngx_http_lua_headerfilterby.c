@@ -19,6 +19,7 @@
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
+#include "ngx_http_lua_shdict.h"
 
 
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
@@ -38,6 +39,10 @@ static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
 static void
 ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 {
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
     /*  set nginx request pointer to current lua thread's globals table */
     lua_pushlightuserdata(L, r);
     lua_setglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -74,6 +79,7 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_inject_req_api_no_io(L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
+    ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_misc_api(L);
 
     lua_setfield(L, -2, "ngx");
