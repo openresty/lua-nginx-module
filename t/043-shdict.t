@@ -194,7 +194,7 @@ GET /test
             local i = 0
             while i < 1000 do
                 i = i + 1
-                local val = string.rep(" hello " .. i, 10)
+                local val = string.rep(" hello", 10) .. i
                 local override = dogs:set("key_" .. i, val)
                 if override then
                     break
@@ -213,8 +213,9 @@ GET /test
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-["abort at 353\ncur value: " . (" hello 353" x 10) . "\n1st value: nil\n2nd value: " . (" hello 2" x 10) . "\n",
-"abort at 1\ncur value: " . (" hello 1" x 10) . "\n"
+my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: nil\n2nd value: " . (" hello" x 10) . "2\n";
+[qr/$a/,
+"abort at 1\ncur value: " . (" hello" x 10) . "1\n"
 ]
 
 
@@ -229,7 +230,7 @@ GET /test
             local i = 0
             while i < 1000 do
                 i = i + 1
-                local val = string.rep(" hello " .. i, 10)
+                local val = string.rep(" hello", 10) .. i
                 if i == 10 then
                     dogs:get("key_1")
                 end
@@ -251,8 +252,9 @@ GET /test
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-["abort at 353\ncur value: " . (" hello 353" x 10) . "\n1st value: " . (" hello 1" x 10) . "\n2nd value: nil\n",
-"abort at 2\ncur value: " . (" hello 2" x 10) . "\n1st value: " . (" hello 1" x 10) . "\n"
+my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: " . (" hello" x 10) . "1\n2nd value: nil\n";
+[qr/$a/,
+"abort at 2\ncur value: " . (" hello" x 10) . "2\n1st value: " . (" hello" x 10) . "1\n"
 ]
 
 
@@ -457,6 +459,6 @@ hello, world
     }
 --- request
 GET /test
---- response_body
-abort at 139
+--- response_body_like
+^abort at (?:139|142)$
 
