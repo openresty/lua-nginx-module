@@ -352,7 +352,7 @@ ngx_http_lua_shdict_get(lua_State *L)
     dd("key len: %d", (int) sd->key_len);
 
     value.data = sd->data + sd->key_len;
-    value.len = sd->value_len;
+    value.len = (size_t) sd->value_len;
 
     switch (value_type) {
     case LUA_TSTRING:
@@ -522,7 +522,7 @@ ngx_http_lua_shdict_set(lua_State *L)
             goto remove;
         }
 
-        if (value.len == sd->value_len) {
+        if (value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua shared dict set: found old entry and value size matched, "
@@ -542,7 +542,7 @@ ngx_http_lua_shdict_set(lua_State *L)
                 sd->expires = 0;
             }
 
-            sd->value_len = value.len;
+            sd->value_len = (uint32_t) value.len;
 
             dd("setting value type to %d", value_type);
 
@@ -624,7 +624,7 @@ remove:
         sd->expires = 0;
     }
 
-    sd->value_len = value.len;
+    sd->value_len = (uint32_t) value.len;
 
     dd("setting value type to %d", value_type);
 

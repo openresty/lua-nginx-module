@@ -11,8 +11,8 @@ typedef struct {
     u_short                      key_len;
     ngx_queue_t                  queue;
     ngx_msec_t                   expires;
-    int                          value_type;
-    u_short                      value_len;
+    uint8_t                      value_type;
+    uint32_t                     value_len;
     u_char                       data[1];
 } ngx_http_lua_shdict_node_t;
 
