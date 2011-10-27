@@ -172,7 +172,7 @@ nil
             dogs:set("bar", 56, 0.001)
             dogs:set("baz", 78, 0.001)
             dogs:set("foo", 32, 0.01)
-            ngx.location.capture("/sleep/0.01")
+            ngx.location.capture("/sleep/0.012")
             ngx.say(dogs:get("foo"))
         ';
     }
