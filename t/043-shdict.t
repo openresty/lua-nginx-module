@@ -851,14 +851,14 @@ foo = nil
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:incr("foo", 10502)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: true nil
+incr: 10534 nil
 foo = 10534
 
 
@@ -872,14 +872,14 @@ foo = 10534
             local dogs = ngx.shared.dogs
             dogs:set("bah", 32)
             local res, err = dogs:incr("foo", 2)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: false not found
+incr: nil not found
 foo = nil
 
 
@@ -896,7 +896,7 @@ foo = nil
             dogs:set("foo", 32, 0.001)
             ngx.location.capture("/sleep/0.002")
             local res, err = dogs:incr("foo", 10502)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
@@ -906,7 +906,7 @@ foo = nil
 --- request
 GET /test
 --- response_body
-replace: false not found
+incr: nil not found
 foo = nil
 
 
@@ -920,14 +920,14 @@ foo = nil
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:incr("foo", 0)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: true nil
+incr: 32 nil
 foo = 32
 
 
@@ -941,14 +941,14 @@ foo = 32
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:incr("foo", 0.14)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: true nil
+incr: 32.14 nil
 foo = 32.14
 
 
@@ -962,14 +962,14 @@ foo = 32.14
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:incr("foo", -0.14)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: true nil
+incr: 31.86 nil
 foo = 31.86
 
 
@@ -983,13 +983,13 @@ foo = 31.86
             local dogs = ngx.shared.dogs
             dogs:set("foo", true)
             local res, err = dogs:incr("foo", -0.14)
-            ngx.say("replace: ", res, " ", err)
+            ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         ';
     }
 --- request
 GET /test
 --- response_body
-replace: false not a number
+incr: nil not a number
 foo = true
 

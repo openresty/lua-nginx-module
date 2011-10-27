@@ -823,12 +823,6 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     value = luaL_checknumber(L, 3);
 
-    if (value == 0) {
-        lua_pushboolean(L, 1);
-        lua_pushnil(L);
-        return 2;
-    }
-
     dd("looking up key %s in shared dict %s", key.data, name.data);
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
@@ -845,7 +839,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        lua_pushboolean(L, 0);
+        lua_pushnil(L);
         lua_pushliteral(L, "not found");
         return 2;
     }
@@ -855,7 +849,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     if (sd->value_type != LUA_TNUMBER || sd->value_len != sizeof(lua_Number)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        lua_pushboolean(L, 0);
+        lua_pushnil(L);
         lua_pushliteral(L, "not a number");
         return 2;
     }
@@ -875,7 +869,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-    lua_pushboolean(L, 1);
+    lua_pushnumber(L, num);
     lua_pushnil(L);
     return 2;
 }
