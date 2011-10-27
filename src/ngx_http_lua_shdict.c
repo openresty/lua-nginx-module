@@ -477,7 +477,9 @@ ngx_http_lua_shdict_set(lua_State *L)
 static int
 ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 {
+#if (NGX_DEBUG)
     ngx_http_request_t          *r;
+#endif
     int                          i, n;
     ngx_str_t                    name;
     ngx_str_t                    key;
@@ -516,9 +518,11 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     name = ctx->name;
 
+#if (NGX_DEBUG)
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+#endif
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 

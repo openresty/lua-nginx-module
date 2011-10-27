@@ -35,6 +35,6 @@ ngx-build $force $version \
                 --add-module=$root/../drizzle-nginx-module \
                 --add-module=$home/work/nginx/ngx_http_upstream_keepalive-2ce9d8a1ca93 \
                 --add-module=$root/../rds-json-nginx-module \
-                $opts \
-                --with-debug
+                $opts #\
+                #--with-debug
 
