@@ -75,6 +75,12 @@ ngx_http_lua_run_set_var_directive(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
+#if 1
+    ngx_memzero(&arg, sizeof(ngx_http_variable_value_t));
+
+    arg.valid = 1;
+#endif
+
     arg.data = (u_char *) luaL_checklstring(L, 1, &len);
     arg.len = len;
 

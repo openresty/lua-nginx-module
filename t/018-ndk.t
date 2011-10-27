@@ -77,3 +77,23 @@ Foo: %20%25
 --- response_body
 hi
 
+
+
+=== TEST 5: bug: ndk.set_var not initialize ngx_http_variable_value_t variable properly
+--- config
+   location /luaset {
+     content_by_lua "
+
+       local version = '2011.10.13+0000'
+       local e_version = ndk.set_var.set_encode_base32(version)
+       local s_version= ndk.set_var.set_quote_sql_str(version)
+       ngx.say(e_version)
+       ngx.say(s_version)
+     ";
+   }
+--- request
+GET /luaset
+--- response_body
+68o32c9e64o2sc9j5co30c1g
+'2011.10.13+0000'
+
