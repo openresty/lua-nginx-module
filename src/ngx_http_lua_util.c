@@ -1732,6 +1732,7 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
 }
 
 
+/* XXX ngx_open_and_stat_file is static in the core. sigh. */
 ngx_int_t
 ngx_http_lua_open_and_stat_file(u_char *name, ngx_open_file_info_t *of,
         ngx_log_t *log)
@@ -1823,7 +1824,9 @@ done:
     of->uniq = ngx_file_uniq(&fi);
     of->mtime = ngx_file_mtime(&fi);
     of->size = ngx_file_size(&fi);
+#if defined(nginx_version) && nginx_version >= 1000001 
     of->fs_size = ngx_file_fs_size(&fi);
+#endif
     of->is_dir = ngx_is_dir(&fi);
     of->is_file = ngx_is_file(&fi);
     of->is_link = ngx_is_link(&fi);
