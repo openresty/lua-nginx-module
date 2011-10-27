@@ -776,7 +776,6 @@ allocated:
 static int
 ngx_http_lua_shdict_incr(lua_State *L)
 {
-    ngx_http_request_t          *r;
     int                          n;
     ngx_str_t                    key;
     uint32_t                     hash;
@@ -803,10 +802,6 @@ ngx_http_lua_shdict_incr(lua_State *L)
     }
 
     ctx = zone->data;
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
