@@ -14,6 +14,15 @@ static int ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx,
 static ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone,
     ngx_uint_t hash, u_char *kdata, size_t klen,
     ngx_http_lua_shdict_node_t **sdp);
+static int ngx_http_lua_shdict_set_helper(lua_State *L, int flags);
+static int ngx_http_lua_shdict_add(lua_State *L);
+static int ngx_http_lua_shdict_replace(lua_State *L);
+static int ngx_http_lua_shdict_incr(lua_State *L);
+static int ngx_http_lua_shdict_delete(lua_State *L);
+
+
+#define NGX_HTTP_LUA_SHDICT_ADD         0x0001
+#define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 
 
 ngx_int_t
@@ -199,7 +208,7 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
      *        and one or two zero rate entries
      */
 
-    while (n < 5) {
+    while (n < 3) {
 
         if (ngx_queue_empty(&ctx->sh->queue)) {
             return freed;
@@ -252,8 +261,22 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
+
         lua_pushcfunction(L, ngx_http_lua_shdict_set);
         lua_setfield(L, -2, "set");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_add);
+        lua_setfield(L, -2, "add");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_replace);
+        lua_setfield(L, -2, "replace");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_incr);
+        lua_setfield(L, -2, "incr");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_delete);
+        lua_setfield(L, -2, "delete");
+
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
 
@@ -341,6 +364,8 @@ ngx_http_lua_shdict_get(lua_State *L)
     rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
             &sd);
 
+    dd("shdict lookup returns %d", (int) rc);
+
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnil(L);
@@ -411,7 +436,46 @@ ngx_http_lua_shdict_get(lua_State *L)
 
 
 static int
+ngx_http_lua_shdict_delete(lua_State *L)
+{
+    int             n;
+
+    n = lua_gettop(L);
+
+    if (n != 2) {
+        return luaL_error(L, "expecting 2 arguments, "
+                "but only seen %d", n);
+    }
+
+    lua_pushnil(L);
+
+    return ngx_http_lua_shdict_set_helper(L, 0);
+}
+
+
+static int
+ngx_http_lua_shdict_add(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_ADD);
+}
+
+
+static int
+ngx_http_lua_shdict_replace(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_REPLACE);
+}
+
+
+static int
 ngx_http_lua_shdict_set(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, 0);
+}
+
+
+static int
+ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 {
     ngx_http_request_t          *r;
     int                          i, n;
@@ -430,8 +494,9 @@ ngx_http_lua_shdict_set(lua_State *L)
     ngx_rbtree_node_t           *node;
     ngx_time_t                  *tp;
     ngx_shm_zone_t              *zone;
-    int                          override = 0;
-                         /* indicates whether to override other valid entries */
+    int                          forcible = 0;
+                         /* indicates whether to foricibly override other
+                          * valid entries */
 
     n = lua_gettop(L);
 
@@ -458,8 +523,7 @@ ngx_http_lua_shdict_set(lua_State *L)
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        lua_pushnil(L);
-        return 1;
+        return luaL_error(L, "attemp to use empty keys");
     }
 
     if (key.len > 65535) {
@@ -490,6 +554,10 @@ ngx_http_lua_shdict_set(lua_State *L)
         break;
 
     case LUA_TNIL:
+        if (flags & (NGX_HTTP_LUA_SHDICT_ADD|NGX_HTTP_LUA_SHDICT_REPLACE)) {
+            return luaL_error(L, "attempt to add or replace nil values");
+        }
+
         value.len = 0;
         value.data = NULL;
         break;
@@ -518,12 +586,55 @@ ngx_http_lua_shdict_set(lua_State *L)
     rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
             &sd);
 
+    dd("shdict lookup returned %d", (int) rc);
+
+    if (flags & NGX_HTTP_LUA_SHDICT_REPLACE) {
+
+        if (rc == NGX_DECLINED || rc == NGX_DONE) {
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            lua_pushboolean(L, 0);
+            lua_pushliteral(L, "not found");
+            lua_pushboolean(L, forcible);
+            return 3;
+        }
+
+        /* rc == NGX_OK */
+
+        goto replace;
+    }
+
+    if (flags & NGX_HTTP_LUA_SHDICT_ADD) {
+
+        if (rc == NGX_OK) {
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            lua_pushboolean(L, 0);
+            lua_pushliteral(L, "exists");
+            lua_pushboolean(L, forcible);
+            return 3;
+        }
+
+        if (rc == NGX_DONE) {
+            /* exists but expired */
+
+            dd("go to replace");
+            goto replace;
+        }
+
+        /* rc == NGX_DECLINED */
+
+        dd("go to insert");
+        goto insert;
+    }
+
     if (rc == NGX_OK || rc == NGX_DONE) {
 
         if (value_type == LUA_TNIL) {
             goto remove;
         }
 
+replace:
         if (value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -555,8 +666,10 @@ ngx_http_lua_shdict_set(lua_State *L)
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-            lua_pushboolean(L, override);
-            return 1;
+            lua_pushboolean(L, 1);
+            lua_pushnil(L);
+            lua_pushboolean(L, forcible);
+            return 3;
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -575,12 +688,16 @@ remove:
 
     }
 
+insert:
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (value_type == LUA_TNIL) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        lua_pushboolean(L, 1);
+        lua_pushnil(L);
         lua_pushboolean(L, 0);
-        return 1;
+        return 3;
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -598,12 +715,12 @@ remove:
             "lua shared dict set: overriding non-expired items due to memory "
             "shortage for entry \"%V\"", &name);
 
-        override = 1;
-
         for (i = 0; i < 30; i++) {
             if (ngx_http_lua_shdict_expire(ctx, 0) == 0) {
                 break;
             }
+
+            forcible = 1;
 
             node = ngx_slab_alloc_locked(ctx->shpool, n);
             if (node != NULL) {
@@ -613,9 +730,10 @@ remove:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        return luaL_error(L, "failed to allocate memory for "
-                "shared_dict %s (maybe the total capacity is too "
-                "small?)", name.data);
+        lua_pushboolean(L, 0);
+        lua_pushliteral(L, "no memory");
+        lua_pushboolean(L, forcible);
+        return 3;
     }
 
 allocated:
@@ -648,7 +766,121 @@ allocated:
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-    lua_pushboolean(L, override);
-    return 1;
+    lua_pushboolean(L, 1);
+    lua_pushnil(L);
+    lua_pushboolean(L, forcible);
+    return 3;
+}
+
+
+static int
+ngx_http_lua_shdict_incr(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    int                          n;
+    ngx_str_t                    name;
+    ngx_str_t                    key;
+    uint32_t                     hash;
+    ngx_int_t                    rc;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_http_lua_shdict_node_t  *sd;
+    lua_Number                   num;
+    u_char                      *p;
+    ngx_shm_zone_t              *zone;
+    lua_Number                   value;
+
+    n = lua_gettop(L);
+
+    if (n != 3) {
+        return luaL_error(L, "expecting 3 arguments, "
+                "but only seen %d", n);
+    }
+
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+
+    zone = lua_touserdata(L, 1);
+    if (zone == NULL) {
+        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+    }
+
+    ctx = zone->data;
+
+    name = ctx->name;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
+
+    if (key.len == 0) {
+        return luaL_error(L, "attemp to use empty keys");
+    }
+
+    if (key.len > 65535) {
+        return luaL_error(L,
+                      "the key argument is more than 65535 bytes: %d",
+                      (int) key.len);
+    }
+
+    hash = ngx_crc32_short(key.data, key.len);
+
+    value = luaL_checknumber(L, 3);
+
+    if (value == 0) {
+        lua_pushboolean(L, 1);
+        lua_pushnil(L);
+        return 2;
+    }
+
+    dd("looking up key %s in shared dict %s", key.data, name.data);
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+#if 1
+    ngx_http_lua_shdict_expire(ctx, 1);
+#endif
+
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
+            &sd);
+
+    dd("shdict lookup returned %d", (int) rc);
+
+    if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        lua_pushboolean(L, 0);
+        lua_pushliteral(L, "not found");
+        return 2;
+    }
+
+    /* rc == NGX_OK */
+
+    if (sd->value_type != LUA_TNUMBER || sd->value_len != sizeof(lua_Number)) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        lua_pushboolean(L, 0);
+        lua_pushliteral(L, "not a number");
+        return 2;
+    }
+
+    ngx_queue_remove(&sd->queue);
+    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+
+    dd("setting value type to %d", value_type);
+
+    p = sd->data + key.len;
+
+    num = *(lua_Number *) p;
+
+    num += value;
+
+    ngx_memcpy(p, (lua_Number *) &num, sizeof(lua_Number));
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    lua_pushboolean(L, 1);
+    lua_pushnil(L);
+    return 2;
 }
 
