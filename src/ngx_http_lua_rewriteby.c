@@ -24,6 +24,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
 
+    /* XXX we need to take into account ngx_rewrite's location dump */
     if (r->uri_changed) {
         return NGX_DECLINED;
     }
