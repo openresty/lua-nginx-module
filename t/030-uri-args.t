@@ -623,3 +623,33 @@ err: attempt to call ngx.req.set_uri to do location jump in contexts other than 
 --- response_body
 uri: /bar
 
+
+
+=== TEST 26: ngx.encode_query_args (sanity)
+--- config
+    location /lua {
+        set_by_lua $args_str '
+            local t = {a = "bar", b = "foo"}
+            return ngx.req.encode_query_args(t)
+        ';
+        echo $args_str;
+    }
+--- request
+GET /lua
+--- response_body
+a=bar&b=foo
+
+
+
+=== TEST 27: ngx.encode_query_args (empty table)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {a = nil}
+            ngx.say("args:" .. ngx.req.encode_query_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+args:
