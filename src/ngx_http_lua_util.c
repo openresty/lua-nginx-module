@@ -1,7 +1,7 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
 #ifndef DDEBUG
-#define DDEBUG 0
+#define DDEBUG 1
 #endif
 #include "ddebug.h"
 
@@ -1639,18 +1639,33 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
         }
 
         key = (u_char *) lua_tolstring(L, -2, &key_len);
-
         total_escape += 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
                 NGX_ESCAPE_URI);
 
-        value = (u_char *) lua_tolstring(L, -1, &value_len);
+        if (lua_type(L, -1) == LUA_TTABLE) {
 
-        total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
-                NGX_ESCAPE_URI);
+            lua_pushnil(L);
+            while (lua_next(L, -2) != 0) {
 
-        len += key_len + value_len + (sizeof("=") - 1);
+                value = (u_char *) lua_tolstring(L, -1, &value_len);
+                total_escape += 2 * ngx_http_lua_escape_uri(NULL, value,
+                        value_len, NGX_ESCAPE_URI);
+                len += key_len + value_len + (sizeof("=") - 1);
 
-        n++;
+                n++;
+
+                lua_pop(L, 1);
+            }
+
+        } else {
+
+            value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+            total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
+                    NGX_ESCAPE_URI);
+            len += key_len + value_len + (sizeof("=") - 1);
+            n++;
+        }
 
         lua_pop(L, 1);
     }
@@ -1677,34 +1692,77 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     while (lua_next(L, table) != 0) {
         key = (u_char *) lua_tolstring(L, -2, &key_len);
 
-        if (total_escape) {
-            p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                    NGX_ESCAPE_URI);
+        if (lua_type(L, -1) == LUA_TTABLE) {
+
+            lua_pushnil(L);
+            while (lua_next(L, -2) != 0) {
+
+                value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+                if (total_escape) {
+                    p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
+                            NGX_ESCAPE_URI);
+
+                } else {
+                    dd("shortcut: no escape required");
+
+                    p = ngx_copy(p, key, key_len);
+                }
+
+                *p++ = '=';
+
+                value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+                if (total_escape) {
+                    p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
+                            NGX_ESCAPE_URI);
+
+                } else {
+                    p = ngx_copy(p, value, value_len);
+                }
+
+                if (i != n - 1) {
+                    /* not the last pair */
+                    *p++ = '&';
+                }
+
+                i++;
+
+                lua_pop(L, 1);
+            }
 
         } else {
-            dd("shortcut: no escape required");
 
-            p = ngx_copy(p, key, key_len);
+            if (total_escape) {
+                p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
+                        NGX_ESCAPE_URI);
+
+            } else {
+                dd("shortcut: no escape required");
+
+                p = ngx_copy(p, key, key_len);
+            }
+
+            *p++ = '=';
+
+            value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+            if (total_escape) {
+                p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
+                        NGX_ESCAPE_URI);
+
+            } else {
+                p = ngx_copy(p, value, value_len);
+            }
+
+            if (i != n - 1) {
+                /* not the last pair */
+                *p++ = '&';
+            }
+
+            i++;
         }
 
-        *p++ = '=';
-
-        value = (u_char *) lua_tolstring(L, -1, &value_len);
-
-        if (total_escape) {
-            p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                    NGX_ESCAPE_URI);
-
-        } else {
-            p = ngx_copy(p, value, value_len);
-        }
-
-        if (i != n - 1) {
-            /* not the last pair */
-            *p++ = '&';
-        }
-
-        i++;
         lua_pop(L, 1);
     }
 

@@ -653,3 +653,18 @@ a=bar&b=foo
 GET /lua
 --- response_body
 args:
+
+
+
+=== TEST 28: ngx.encode_query_args (value is table)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {a = {9, 2}, b = 3}
+            ngx.say("args:" .. ngx.req.encode_query_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+args:a=9&a=2&b=3
