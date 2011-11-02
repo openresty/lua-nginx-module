@@ -107,9 +107,9 @@ false boolean
 --- request
 GET /test
 --- response_body
-false
-false
-false
+truenilfalse
+truenilfalse
+truenilfalse
 dog
 dog
 bird string
@@ -140,7 +140,7 @@ hello
 
 
 
-=== TEST 6: expired entries
+=== TEST 6: expired entries (can be auto-removed by get)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -162,7 +162,31 @@ nil
 
 
 
-=== TEST 7: not yet expired entries
+=== TEST 7: expired entries (can NOT be auto-removed by get)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 56, 0.001)
+            dogs:set("baz", 78, 0.001)
+            dogs:set("foo", 32, 0.01)
+            ngx.location.capture("/sleep/0.012")
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+    location ~ '^/sleep/(.+)' {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+nil
+
+
+
+=== TEST 8: not yet expired entries
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -184,7 +208,7 @@ GET /test
 
 
 
-=== TEST 8: forcibly override other valid entries
+=== TEST 9: forcibly override other valid entries
 --- http_config
     lua_shared_dict dogs 100k;
 --- config
@@ -195,8 +219,9 @@ GET /test
             while i < 1000 do
                 i = i + 1
                 local val = string.rep(" hello", 10) .. i
-                local override = dogs:set("key_" .. i, val)
-                if override then
+                local res, err, forcible = dogs:set("key_" .. i, val)
+                if not res or forcible then
+                    ngx.say(res, " ", err, " ", forcible)
                     break
                 end
             end
@@ -213,14 +238,14 @@ GET /test
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: nil\n2nd value: " . (" hello" x 10) . "2\n";
+my $a = "true nil true\nabort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: nil\n2nd value: " . (" hello" x 10) . "2\n";
 [qr/$a/,
-"abort at 1\ncur value: " . (" hello" x 10) . "1\n"
+"true nil true\nabort at 1\ncur value: " . (" hello" x 10) . "1\n"
 ]
 
 
 
-=== TEST 9: forcibly override other valid entries and test LRU
+=== TEST 10: forcibly override other valid entries and test LRU
 --- http_config
     lua_shared_dict dogs 100k;
 --- config
@@ -234,8 +259,9 @@ my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: n
                 if i == 10 then
                     dogs:get("key_1")
                 end
-                local override = dogs:set("key_" .. i, val)
-                if override then
+                local res, err, forcible = dogs:set("key_" .. i, val)
+                if not res or forcible then
+                    ngx.say(res, " ", err, " ", forcible)
                     break
                 end
             end
@@ -252,14 +278,14 @@ my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: n
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "abort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: " . (" hello" x 10) . "1\n2nd value: nil\n";
+my $a = "true nil true\nabort at (353|705)\ncur value: " . (" hello" x 10) . "\\1\n1st value: " . (" hello" x 10) . "1\n2nd value: nil\n";
 [qr/$a/,
-"abort at 2\ncur value: " . (" hello" x 10) . "2\n1st value: " . (" hello" x 10) . "1\n"
+"true nil true\nabort at 2\ncur value: " . (" hello" x 10) . "2\n1st value: " . (" hello" x 10) . "1\n"
 ]
 
 
 
-=== TEST 10: dogs and cats dicts
+=== TEST 11: dogs and cats dicts
 --- http_config
     lua_shared_dict dogs 1m;
     lua_shared_dict cats 1m;
@@ -287,7 +313,7 @@ hello, world
 
 
 
-=== TEST 11: get non-existent keys
+=== TEST 12: get non-existent keys
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -306,7 +332,7 @@ nil
 
 
 
-=== TEST 12: not feed the object into the call
+=== TEST 13: not feed the object into the call
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -330,25 +356,25 @@ false expecting exactly two arguments, but only seen 1
 
 
 
-=== TEST 13: too big value
+=== TEST 14: too big value
 --- http_config
     lua_shared_dict dogs 50k;
 --- config
     location = /test {
         content_by_lua '
             local dogs = ngx.shared.dogs
-            local rc, err = pcall(dogs.set, dogs, "foo", string.rep("helloworld", 10000))
-            ngx.say(rc, " ", err)
+            local res, err, forcible = dogs:set("foo", string.rep("helloworld", 10000))
+            ngx.say(res, " ", err, " ", forcible)
         ';
     }
 --- request
 GET /test
 --- response_body
-false failed to allocate memory for shared_dict dogs (maybe the total capacity is too small?)
+false no memory false
 
 
 
-=== TEST 14: too big key
+=== TEST 15: too big key
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -356,7 +382,7 @@ false failed to allocate memory for shared_dict dogs (maybe the total capacity i
         content_by_lua '
             local dogs = ngx.shared.dogs
             local key = string.rep("a", 65535)
-            local rc, err = pcall(dogs.set, dogs, key, "hello")
+            local rc, err = dogs:set(key, "hello")
             ngx.say(rc, " ", err)
             ngx.say(dogs:get(key))
 
@@ -369,13 +395,13 @@ false failed to allocate memory for shared_dict dogs (maybe the total capacity i
 --- request
 GET /test
 --- response_body
-true false
+true nil
 hello
 false the key argument is more than 65535 bytes: 65536
 
 
 
-=== TEST 15: bad value type
+=== TEST 16: bad value type
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -393,7 +419,52 @@ false unsupported value type for key "foo" in shared_dict "dogs": userdata
 
 
 
-=== TEST 16: set nil after setting values
+=== TEST 17: delete after setting values
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            ngx.say(dogs:get("foo"))
+            dogs:delete("foo")
+            ngx.say(dogs:get("foo"))
+            dogs:set("foo", "hello, world")
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32
+nil
+hello, world
+
+
+
+=== TEST 18: delete at first
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:delete("foo")
+            ngx.say(dogs:get("foo"))
+            dogs:set("foo", "hello, world")
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+hello, world
+
+
+
+=== TEST 19: set nil after setting values
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -417,7 +488,7 @@ hello, world
 
 
 
-=== TEST 17: set nil at first
+=== TEST 20: set nil at first
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -438,7 +509,7 @@ hello, world
 
 
 
-=== TEST 18: set nil at first
+=== TEST 21: fail to allocate memory
 --- http_config
     lua_shared_dict dogs 100k;
 --- config
@@ -449,8 +520,9 @@ hello, world
             while i < 1000 do
                 i = i + 1
                 local val = string.rep("hello", i )
-                local override = dogs:set("key_" .. i, val)
-                if override then
+                local res, err, forcible = dogs:set("key_" .. i, val)
+                if not res or forcible then
+                    ngx.say(res, " ", err, " ", forcible)
                     break
                 end
             end
@@ -460,11 +532,11 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^abort at (?:139|142)$
+^true nil true\nabort at (?:139|142)$
 
 
 
-=== TEST 19: string key, int value (write_by_lua)
+=== TEST 22: string key, int value (write_by_lua)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -488,7 +560,7 @@ GET /test
 
 
 
-=== TEST 20: string key, int value (access_by_lua)
+=== TEST 23: string key, int value (access_by_lua)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -512,7 +584,7 @@ GET /test
 
 
 
-=== TEST 21: string key, int value (set_by_lua)
+=== TEST 24: string key, int value (set_by_lua)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -531,7 +603,7 @@ GET /test
 
 
 
-=== TEST 21: string key, int value (header_by_lua)
+=== TEST 25: string key, int value (header_by_lua)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -549,4 +621,375 @@ GET /test
 X-Foo: 32
 --- response_body
 hello
+
+
+
+=== TEST 26: too big value (forcible)
+--- http_config
+    lua_shared_dict dogs 50k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", "hello")
+            local res, err, forcible = dogs:set("foo", string.rep("helloworld", 10000))
+            ngx.say(res, " ", err, " ", forcible)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+false no memory true
+
+
+
+=== TEST 27: add key (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err, forcible = dogs:add("foo", 10502)
+            ngx.say("add: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+add: false exists false
+foo = 32
+
+
+
+=== TEST 28: add key (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32)
+            local res, err, forcible = dogs:add("foo", 10502)
+            ngx.say("add: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+add: true nil false
+foo = 10502
+
+
+
+=== TEST 29: add key (key expired)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 32, 0.001)
+            dogs:set("baz", 32, 0.001)
+            dogs:set("foo", 32, 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err, forcible = dogs:add("foo", 10502)
+            ngx.say("add: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+add: true nil false
+foo = 10502
+
+
+
+=== TEST 30: add key (key expired and value size unmatched)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 32, 0.001)
+            dogs:set("baz", 32, 0.001)
+            dogs:set("foo", "hi", 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err, forcible = dogs:add("foo", "hello")
+            ngx.say("add: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+add: true nil false
+foo = hello
+
+
+
+=== TEST 31: incr key (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err, forcible = dogs:replace("foo", 10502)
+            ngx.say("replace: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+
+            local res, err, forcible = dogs:replace("foo", "hello")
+            ngx.say("replace: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+
+        ';
+    }
+--- request
+GET /test
+--- response_body
+replace: true nil false
+foo = 10502
+replace: true nil false
+foo = hello
+
+
+
+=== TEST 32: replace key (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32)
+            local res, err, forcible = dogs:replace("foo", 10502)
+            ngx.say("replace: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+replace: false not found false
+foo = nil
+
+
+
+=== TEST 33: replace key (key expired)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 3, 0.001)
+            dogs:set("baz", 2, 0.001)
+            dogs:set("foo", 32, 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err, forcible = dogs:replace("foo", 10502)
+            ngx.say("replace: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+replace: false not found false
+foo = nil
+
+
+
+=== TEST 34: replace key (key expired and value size unmatched)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 32, 0.001)
+            dogs:set("baz", 32, 0.001)
+            dogs:set("foo", "hi", 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local rc, err, forcible = dogs:replace("foo", "hello")
+            ngx.say("replace: ", rc, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+replace: false not found false
+foo = nil
+
+
+
+=== TEST 35: incr key (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", 10502)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 10534 nil
+foo = 10534
+
+
+
+=== TEST 36: replace key (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32)
+            local res, err = dogs:incr("foo", 2)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: nil not found
+foo = nil
+
+
+
+=== TEST 37: replace key (key expired)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 3, 0.001)
+            dogs:set("baz", 2, 0.001)
+            dogs:set("foo", 32, 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err = dogs:incr("foo", 10502)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+incr: nil not found
+foo = nil
+
+
+
+=== TEST 38: incr key (incr by 0)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", 0)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 32 nil
+foo = 32
+
+
+
+=== TEST 39: incr key (incr by floating point number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", 0.14)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 32.14 nil
+foo = 32.14
+
+
+
+=== TEST 40: incr key (incr by negative numbers)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", -0.14)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 31.86 nil
+foo = 31.86
+
+
+
+=== TEST 41: incr key (original value is not number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", true)
+            local res, err = dogs:incr("foo", -0.14)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: nil not a number
+foo = true
 

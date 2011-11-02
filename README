@@ -8,8 +8,8 @@ Status
     This module is under active development and is already production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc21
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 26
+    This document describes ngx_lua v0.3.1rc22
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 27
     October 2011.
 
 Synopsis
@@ -717,7 +717,7 @@ Directives
 
     See ngx.shared.DICT for details.
 
-    This directive was first introduced in the "v0.3.1rc21" release.
+    This directive was first introduced in the "v0.3.1rc22" release.
 
 Nginx API for Lua
     The Nginx API exposed to the Lua land is provided in the form of two
@@ -2384,6 +2384,14 @@ Nginx API for Lua
 
     *   set
 
+    *   add
+
+    *   replace
+
+    *   incr
+
+    *   delete
+
     Here is an example:
 
         http {
@@ -2421,10 +2429,13 @@ Nginx API for Lua
     in the shared memory and visible to *all* of the worker processes.
 
     The shared dictionary will retain its contents through a server config
-    reload (either by means of the "HUP" signal or by the "-s reload"
-    command-line option).
+    reload (either by sending the "HUP" signal to the Nginx process or by
+    using the "-s reload" command-line option).
 
-    This feature was first introduced in the "v0.3.1rc21" release.
+    The contents in the dictionary storage will be lost, however, when the
+    Nginx server quits.
+
+    This feature was first introduced in the "v0.3.1rc22" release.
 
   ngx.shared.DICT.get
     syntax: *value = ngx.shared.DICT:get(key)*
@@ -2453,24 +2464,33 @@ Nginx API for Lua
 
     These two forms are fundamentally equivalent.
 
-    This feature was first introduced in the "v0.3.1rc21" release.
+    This feature was first introduced in the "v0.3.1rc22" release.
 
-    See also ngx.shared.DICT.set.
+    See also ngx.shared.DICT.
 
   ngx.shared.DICT.set
-    syntax: *forcible = ngx.shared.DICT:set(key, value, exptime?)*
+    syntax: *success, err, forcible = ngx.shared.DICT:set(key, value,
+    exptime?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
 
-    Setting the value in the dictionary ngx.shared.DICT for the key "key".
-    Returns a boolean value to indicate whether other valid items have been
-    removed forcibly when out of storage in the shared memory zone.
+    Unconditionally sets a key-value pair into the shm-based dictionary
+    ngx.shared.DICT. Returns three values:
 
-    The value inserted can be Lua booleans, numbers, strings, or "nil".
-    Their value type will also be stored into the dictionary, thus you can
-    get exactly the same data type when later retrieving the value out of
-    the dictionary via the get method.
+    *   "success": boolean value to indicate whether the key-value pair is
+        stored or not.
+
+    *   "err": textual error message, can be "no memory".
+
+    *   "forcible": a boolean value to indicate whether other valid items
+        have been removed forcibly when out of storage in the shared memory
+        zone.
+
+    The "value" argument inserted can be Lua booleans, numbers, strings, or
+    "nil". Their value type will also be stored into the dictionary, thus
+    you can get exactly the same data type when later retrieving the value
+    out of the dictionary via the get method.
 
     The optional "exptime" argument specifies expiration time (in seconds)
     for the inserted key-value pair. The time resolution is 0.001 seconds.
@@ -2483,29 +2503,106 @@ Nginx API for Lua
     expiration time here. If up to tens of existing items have been removed
     and the storage left is still insufficient (either due to the total
     capacity limit specified by lua_shared_dict or memory segmentation),
-    then a Lua exception will be thrown).
+    then the "err" return value will be "no memory" and "success" will be
+    "false".
 
     If this method succeeds in storing the current item by forcibly removing
-    other not-yet-expired items in the dictionary via LRU, it will return
-    the "true" value. If it stores the item without forcibly removing other
-    valid items, then "false" will be returned.
+    other not-yet-expired items in the dictionary via LRU, the "forcible"
+    return value will be "true". If it stores the item without forcibly
+    removing other valid items, then the return value "forcible" will be
+    "false".
 
     The first argument to this method must be the dictionary object itself,
     for example,
 
         local cats = ngx.shared.cats
-        cats.set(cats, "Marry", "it is a nice cat!")
+        local succ, err, forcible = cats.set(cats, "Marry", "it is a nice cat!")
 
     or use Lua's syntactic sugar for method calls:
 
         local cats = ngx.shared.cats
-        cats:set("Marry", "it is a nice cat!")
+        local succ, err, forcible = cats:set("Marry", "it is a nice cat!")
 
     These two forms are fundamentally equivalent.
 
-    This feature was first introduced in the "v0.3.1rc21" release.
+    This feature was first introduced in the "v0.3.1rc22" release.
 
-    See also ngx.shared.DICT.get.
+    See also ngx.shared.DICT.
+
+  ngx.shared.DICT.add
+    syntax: *success, err, forcible = ngx.shared.DICT:add(key, value,
+    exptime?)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Just like the set method, but only stores the key-value pair into the
+    dictionary ngx.shared.DICT if the key does *not* exist.
+
+    If the "key" argument already exists in the dictionary (and not expired
+    for sure), the "success" return value will be "false" and the "err"
+    return value will be "exists".
+
+    This feature was first introduced in the "v0.3.1rc22" release.
+
+    See also ngx.shared.DICT.
+
+  ngx.shared.DICT.replace
+    syntax: *success, err, forcible = ngx.shared.DICT:replace(key, value,
+    exptime?)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Just like the set method, but only stores the key-value pair into the
+    dictionary ngx.shared.DICT if the key *does* exist.
+
+    If the "key" argument does *not* exist in the dictionary (or expired
+    already), the "success" return value will be "false" and the "err"
+    return value will be "not found".
+
+    This feature was first introduced in the "v0.3.1rc22" release.
+
+    See also ngx.shared.DICT.
+
+  ngx.shared.DICT.delete
+    syntax: *ngx.shared.DICT:delete(key)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Unconditionally removes the key-value pair from the shm-based dictionary
+    ngx.shared.DICT.
+
+    It is equivalent to "ngx.shared.DICT:set(key, nil)".
+
+    This feature was first introduced in the "v0.3.1rc22" release.
+
+    See also ngx.shared.DICT.
+
+  ngx.shared.DICT.incr
+    syntax: *newval, err = ngx.shared.DICT:incr(key, value)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Increments the (numerical) value for "key" in the shm-based dictionary
+    ngx.shared.DICT by the step value "value". Returns the new resulting
+    number if the operation is successfully completed or "nil" and an error
+    message otherwise.
+
+    The key must already exist in the dictionary, otherwise it will return
+    "nil" and "not found".
+
+    If the original value is not a valid Lua number in the dictionary, it
+    will return "nil" and "not a number".
+
+    The "value" argument can be any valid Lua numbers, like negative numbers
+    or floating-point numbers.
+
+    This feature was first introduced in the "v0.3.1rc22" release.
+
+    See also ngx.shared.DICT.
 
   ndk.set_var.DIRECTIVE
     syntax: *res = ndk.set_var.DIRECTIVE_NAME*
