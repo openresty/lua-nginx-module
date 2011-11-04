@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc22] released on 27 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc25] released on 4 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -95,6 +95,12 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
  
             content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
+
+               if num > 50 then
+                   ngx.say("num too big")
+                   return
+               end
+
                ngx.say("num is: ", num)
  
                if num > 0 then
@@ -174,6 +180,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
         }
     }
 </geshi>
+
 = Description =
 
 This module embeds the Lua interpreter or LuaJIT into the nginx core and integrates the powerful Lua threads (aka Lua coroutines) into the nginx event model
@@ -1010,8 +1017,19 @@ the nginx core. Use normal locations combined with the <code>internal</code> dir
 prepare internal-only locations.
 
 An optional option table can be fed as the second
-argument, which support various options like
-<code>method</code>, <code>body</code>, <code>args</code>, and <code>share_all_vars</code>.
+argument, which support the options:
+
+* <code>method</code>
+: specify the subrequest's request method, which only accepts constants like <code>ngx.HTTP_POST</code>.
+* <code>body</code>
+: specify the subrequest's request body (string value only).
+* <code>args</code>
+: specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
+* <code>ctx</code>
+: specify a Lua table to be the [[#ngx.ctx|ngx.ctx]] table for the subrequest. It can be the current request's [[#ngx.ctx|ngx.ctx]] table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the <code>v0.3.1rc25</code> release.
+* <code>share_all_vars</code>
+: specify whether to share all the variables of the subrequest with the current (parent) request.
+
 Issuing a POST subrequest, for example,
 can be done as follows
 

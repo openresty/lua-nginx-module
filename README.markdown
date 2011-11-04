@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc22](https://github.com/chaoslawful/lua-nginx-module/tags) released on 27 October 2011.
+This document describes ngx_lua [v0.3.1rc25](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 November 2011.
 
 Synopsis
 ========
@@ -99,6 +99,12 @@ Synopsis
  
             content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
+
+               if num > 50 then
+                   ngx.say("num too big")
+                   return
+               end
+
                ngx.say("num is: ", num)
  
                if num > 0 then
@@ -177,6 +183,7 @@ Synopsis
            # proxy_pass/fastcgi_pass/etc settings
         }
     }
+
 
 Description
 ===========
@@ -1042,8 +1049,19 @@ the nginx core. Use normal locations combined with the `internal` directive to
 prepare internal-only locations.
 
 An optional option table can be fed as the second
-argument, which support various options like
-`method`, `body`, `args`, and `share_all_vars`.
+argument, which support the options:
+
+* `method`
+	specify the subrequest's request method, which only accepts constants like `ngx.HTTP_POST`.
+* `body`
+	specify the subrequest's request body (string value only).
+* `args`
+	specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
+* `ctx`
+	specify a Lua table to be the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for the subrequest. It can be the current request's [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the `v0.3.1rc25` release.
+* `share_all_vars`
+	specify whether to share all the variables of the subrequest with the current (parent) request.
+
 Issuing a POST subrequest, for example,
 can be done as follows
 
