@@ -1708,10 +1708,10 @@ Nginx API for Lua
 
     This function requires patching the Nginx core to function properly
     because the Nginx core does not allow modifying request bodies by the
-    current design. Here is a patch for Nginx 1.0.8:
-    nginx-1.0.8-allow_request_body_updating.patch
+    current design. Here is a patch for Nginx 1.0.9:
+    nginx-1.0.9-allow_request_body_updating.patch
     (<https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0
-    .8-allow_request_body_updating.patch>), and this patch should be applied
+    .9-allow_request_body_updating.patch>), and this patch should be applied
     cleanly to other releases of Nginx as well.
 
     If you're using ngx_openresty (<http://openresty.org/>) 1.0.8.17+, then
@@ -1746,10 +1746,10 @@ Nginx API for Lua
 
     This function requires patching the Nginx core to function properly
     because the Nginx core does not allow modifying request bodies by the
-    current design. Here is a patch for Nginx 1.0.8:
-    nginx-1.0.8-allow_request_body_updating.patch
+    current design. Here is a patch for Nginx 1.0.9:
+    nginx-1.0.9-allow_request_body_updating.patch
     (<https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0
-    .8-allow_request_body_updating.patch>), and this patch should be applied
+    .9-allow_request_body_updating.patch>), and this patch should be applied
     cleanly to other releases of Nginx as well.
 
     If you're using ngx_openresty (<http://openresty.org/>) 1.0.8.17+, then
@@ -2824,12 +2824,12 @@ Installation
         (<http://github.com/chaoslawful/lua-nginx-module/tags>).
 
     4.  Grab the nginx source code from nginx.org (<http://nginx.org/>), for
-        example, the version 1.0.5 (see nginx compatibility), and then build
+        example, the version 1.0.9 (see nginx compatibility), and then build
         the source with this module:
 
-            wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
-            tar -xzvf nginx-1.0.5.tar.gz
-            cd nginx-1.0.5/
+            wget 'http://nginx.org/download/nginx-1.0.9.tar.gz'
+            tar -xzvf nginx-1.0.9.tar.gz
+            cd nginx-1.0.9/
 
             # tell nginx's build system where to find lua:
             export LUA_LIB=/path/to/lua/lib
@@ -2854,7 +2854,7 @@ Compatibility
           1.1.x (last tested: 1.1.5)
 
     *
-          1.0.x (last tested: 1.0.8)
+          1.0.x (last tested: 1.0.9)
 
     *
           0.9.x (last tested: 0.9.4)

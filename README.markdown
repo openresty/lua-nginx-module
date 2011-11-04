@@ -1720,7 +1720,7 @@ Set the current request's request body using the in-memory data specified by the
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [nginx-1.0.8-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [nginx-1.0.9-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
 
 If you're using [ngx_openresty](http://openresty.org/) 1.0.8.17+, then you've already had this patch applied.
 
@@ -1742,7 +1742,7 @@ You must ensure that the file specified by the `file_name` argument exists and i
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [nginx-1.0.8-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [nginx-1.0.9-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
 
 If you're using [ngx_openresty](http://openresty.org/) 1.0.8.17+, then you've already had this patch applied.
 
@@ -2710,12 +2710,12 @@ Alternatively, you can compile this module with nginx core's source by hand:
 1. Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/tags).
 1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/tags).
-1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.9 (see nginx compatibility), and then build the source with this module:
 
 
-        wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
-        tar -xzvf nginx-1.0.5.tar.gz
-        cd nginx-1.0.5/
+        wget 'http://nginx.org/download/nginx-1.0.9.tar.gz'
+        tar -xzvf nginx-1.0.9.tar.gz
+        cd nginx-1.0.9/
  
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -2740,7 +2740,7 @@ Compatibility
 The following versions of Nginx should work with this module:
 
 *   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.8)
+*   1.0.x (last tested: 1.0.9)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
