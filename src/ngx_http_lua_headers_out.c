@@ -280,7 +280,13 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
         }
 
         ph[0]->value = *value;
-        ph[0]->hash = hv->hash;
+
+        if (value->len == 0) {
+            ph[0]->hash = 0;
+
+        } else {
+            ph[0]->hash = hv->hash;
+        }
 
         return NGX_OK;
     }

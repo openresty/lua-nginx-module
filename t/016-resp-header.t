@@ -7,7 +7,7 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 3;
 
@@ -709,16 +709,16 @@ Foo: nil
     location /lua {
         content_by_lua '
             ngx.header.cache_control = { "private", "no-store", "foo", "bar", "baz" }
-            ngx.header.cache_control = { "no-cache", "blah", "foo" }
+            ngx.header.cache_control = {}
+            ngx.send_headers()
             ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
-            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, "; "))
         ';
+        add_header Cache-Control "blah";
     }
 --- request
     GET /lua
 --- response_headers
-Cache-Control: no-cache, blah, foo
+Cache-Control: blah
 --- response_body
-Cache-Control: no-cache; blah; foo
-Cache-Control: no-cache; blah; foo
+Cache-Control: blah
 
