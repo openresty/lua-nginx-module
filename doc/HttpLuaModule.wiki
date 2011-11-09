@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc22] released on 27 October 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc25] released on 4 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -95,6 +95,12 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
  
             content_by_lua '
                local num = tonumber(ngx.var.arg_num) or 0
+
+               if num > 50 then
+                   ngx.say("num too big")
+                   return
+               end
+
                ngx.say("num is: ", num)
  
                if num > 0 then
@@ -174,6 +180,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
         }
     }
 </geshi>
+
 = Description =
 
 This module embeds the Lua interpreter or LuaJIT into the nginx core and integrates the powerful Lua threads (aka Lua coroutines) into the nginx event model
@@ -1010,8 +1017,19 @@ the nginx core. Use normal locations combined with the <code>internal</code> dir
 prepare internal-only locations.
 
 An optional option table can be fed as the second
-argument, which support various options like
-<code>method</code>, <code>body</code>, <code>args</code>, and <code>share_all_vars</code>.
+argument, which support the options:
+
+* <code>method</code>
+: specify the subrequest's request method, which only accepts constants like <code>ngx.HTTP_POST</code>.
+* <code>body</code>
+: specify the subrequest's request body (string value only).
+* <code>args</code>
+: specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
+* <code>ctx</code>
+: specify a Lua table to be the [[#ngx.ctx|ngx.ctx]] table for the subrequest. It can be the current request's [[#ngx.ctx|ngx.ctx]] table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the <code>v0.3.1rc25</code> release.
+* <code>share_all_vars</code>
+: specify whether to share all the variables of the subrequest with the current (parent) request.
+
 Issuing a POST subrequest, for example,
 can be done as follows
 
@@ -1656,7 +1674,7 @@ Set the current request's request body using the in-memory data specified by the
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch nginx-1.0.8-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well.
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch nginx-1.0.9-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well.
 
 If you're using [http://openresty.org/ ngx_openresty] 1.0.8.17+, then you've already had this patch applied.
 
@@ -1677,7 +1695,7 @@ You must ensure that the file specified by the <code>file_name</code> argument e
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.8: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.8-allow_request_body_updating.patch nginx-1.0.8-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well.
+This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch nginx-1.0.9-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well.
 
 If you're using [http://openresty.org/ ngx_openresty] 1.0.8.17+, then you've already had this patch applied.
 
@@ -2603,12 +2621,12 @@ Alternatively, you can compile this module with nginx core's source by hand:
 # Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [http://www.lua.org/ homepage].  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 # Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [http://github.com/simpl/ngx_devel_kit/tags file list].
 # Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/tags file list].
-# Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.5 (see nginx compatibility), and then build the source with this module:
+# Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.9 (see nginx compatibility), and then build the source with this module:
 
 <geshi lang="bash">
-        wget 'http://nginx.org/download/nginx-1.0.5.tar.gz'
-        tar -xzvf nginx-1.0.5.tar.gz
-        cd nginx-1.0.5/
+        wget 'http://nginx.org/download/nginx-1.0.9.tar.gz'
+        tar -xzvf nginx-1.0.9.tar.gz
+        cd nginx-1.0.9/
  
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -2632,7 +2650,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
 The following versions of Nginx should work with this module:
 
 *   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.8)
+*   1.0.x (last tested: 1.0.9)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 

@@ -5,6 +5,7 @@
 
 #include "ngx_http_lua_subrequest.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_ctx.h"
 #include "ngx_http_lua_contentby.h"
 
 
@@ -90,6 +91,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     size_t                           sr_statuses_len;
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
+    unsigned                         custom_ctx;
 
     n = lua_gettop(L);
     if (n != 1) {
@@ -177,10 +179,12 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         share_all_vars = 0;
 
+        custom_ctx = 0;
+
         if (nargs == 2) {
             /* check out the options table */
 
-            lua_rawgeti(L, 2, 2);
+            lua_rawgeti(L, 2, 2); /* queries query uri opts */
 
             if (lua_type(L, 4) != LUA_TTABLE) {
                 return luaL_error(L, "expecting table as the 2nd argument for "
@@ -234,7 +238,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             lua_pop(L, 1);
 
-            /* check the method option */
+            /* check the "method" option */
 
             lua_getfield(L, 4, "method");
 
@@ -253,7 +257,22 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             lua_pop(L, 1);
 
-            /* check the body option */
+            /* check the "ctx" option */
+
+            lua_getfield(L, 4, "ctx");
+
+            type = lua_type(L, -1);
+
+            if (type != LUA_TNIL) {
+                if (type != LUA_TTABLE) {
+                    return luaL_error(L, "Bad ctx option value type %s, "
+                            "expected a Lua table", lua_typename(L, type));
+                }
+
+                custom_ctx = 1;
+            }
+
+            /* check the "body" option */
 
             lua_getfield(L, 4, "body");
 
@@ -295,10 +314,17 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                 }
             }
 
-            lua_pop(L, 2); /* pop body and opts table */
+            lua_pop(L, 1); /* pop the body */
+
+            /* stack: queries query uri opts ctx? */
+
+            lua_remove(L, 4);
+
         } else {
             method = NGX_HTTP_GET;
         }
+
+        /* stack: queries query uri ctx? */
 
         n = lua_gettop(L);
         dd("top size so far: %d", n);
@@ -386,7 +412,17 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                     (int) rc);
         }
 
-        lua_pop(L, 2); /* pop the subrequest argument and uri */
+        /* stack: queries query uri opts ctx? */
+
+        if (custom_ctx) {
+            ngx_http_lua_ngx_set_ctx_helper(L, sr, sr_ctx, -1);
+            lua_pop(L, 3);
+
+        } else {
+            lua_pop(L, 2);
+        }
+
+        /* stack: queries */
     }
 
     return lua_yield(L, 0);

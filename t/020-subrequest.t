@@ -754,3 +754,47 @@ hello, static file
 [A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4} \d{2}:\d{2}:\d{2} GMT
 hello, static file$
 
+
+
+=== TEST 30: custom ctx table for subrequest
+--- config
+    location /sub {
+        content_by_lua '
+            ngx.ctx.foo = "bar";
+        ';
+    }
+    location /lua {
+        content_by_lua '
+            local ctx = {}
+            res = ngx.location.capture("/sub", { ctx = ctx })
+
+            ngx.say(ctx.foo);
+            ngx.say(ngx.ctx.foo);
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+bar
+nil
+
+
+
+=== TEST 31: share the ctx with the parent
+--- config
+    location /sub {
+        content_by_lua '
+            ngx.ctx.foo = "bar";
+        ';
+    }
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/sub", { ctx = ngx.ctx })
+            ngx.say(ngx.ctx.foo);
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+bar
+
