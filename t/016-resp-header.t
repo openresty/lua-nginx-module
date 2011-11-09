@@ -702,3 +702,23 @@ WWW-Authenticate: blah
 --- response_body
 Foo: nil
 
+
+
+=== TEST 36: set multi values to cache-control and override it with multiple values (to reproduce a bug)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.cache_control = { "private", "no-store", "foo", "bar", "baz" }
+            ngx.header.cache_control = { "no-cache", "blah", "foo" }
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, "; "))
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+Cache-Control: no-cache, blah, foo
+--- response_body
+Cache-Control: no-cache; blah; foo
+Cache-Control: no-cache; blah; foo
+
