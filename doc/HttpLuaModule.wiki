@@ -10,7 +10,7 @@ This module is under active development and is already production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc25] released on 4 November 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc27] released on 9 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -436,7 +436,7 @@ The right way of doing this is as follows:
         set $b ''; # create and initialize $b
         rewrite_by_lua '
             ngx.var.b = tonumber(ngx.var.a) + 1
-            if ngx.var.b == 13 then
+            if tonumber(ngx.var.b) == 13 then
                 return ngx.redirect("/bar");
             end
         ';
@@ -1051,7 +1051,7 @@ Note that variable sharing can have unexpected side-effects
 and lead to confusing issues, use it with special
 care. So, by default, the option is set to <code>false</code>.
 
-The <code>args</code> option can specify extra url arguments, for instance,
+The <code>args</code> option can specify extra URI arguments, for instance,
 
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1',
@@ -1066,10 +1066,9 @@ is equivalent to
 </geshi>
 
 that is, this method will automatically escape argument keys and values according to URI rules and
-concatenating them together into a complete query string. Because it's all done in hand-written C,
-it should be faster than your own Lua code.
+concatenating them together into a complete query string. The format for the Lua table passed as the <code>args</code> argument is identical to the format used in the [[#ngx.encode_args|ngx.encode_args]] method.
 
-The <code>args</code> option can also take plain query string:
+The <code>args</code> option can also take plain query strings:
 
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1',
@@ -1434,7 +1433,7 @@ regardless of the actual request query string.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Returns a Lua table holds all of the current request's POST query arguments. It's required to read the request body first by calling [[#ngx.req.read_body|ngx.req.read_body]] or to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
+Returns a Lua table holds all of the current request's POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). It's required to read the request body first by calling [[#ngx.req.read_body|ngx.req.read_body]] or to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
 
 Here's an example,
 
@@ -1442,6 +1441,7 @@ Here's an example,
     location = /test {
         content_by_lua '
             ngx.req.read_body()
+            local args = ngx.req.get_post_args()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -1749,7 +1749,7 @@ Alternatively, you can pass a Lua table for the <code>args</code> argument and l
     ngx.exec("/foo", { a = 3, b = "hello world" })
 </geshi>
 
-The result is exactly the same as the previous example.
+The result is exactly the same as the previous example. The format for the Lua table passed as the <code>args</code> argument is identical to the format used in the [[#ngx.encode_args|ngx.encode_args]] method.
 
 Note that this is very different from [[#ngx.redirect|ngx.redirect]] in that
 it's just an internal redirect and no new HTTP traffic is involved.
@@ -1781,6 +1781,12 @@ which is equivalent to
 
 <geshi lang="lua">
     return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
+</geshi>
+
+We can also use the numberical code directly as the second <code>status</code> argument:
+
+<geshi lang="lua">
+    return ngx.redirect("/foo", 301)
 </geshi>
 
 assuming the current server name is <code>localhost</code> and it's listening on the <code>1984</code> port.
@@ -1955,6 +1961,69 @@ Escape <code>str</code> as a URI component.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Unescape <code>str</code> as an escaped URI component.
+
+For example,
+
+<geshi lang="lua">
+    ngx.say(ngx.unescape_uri("b%20r56+7"))
+</geshi>
+
+gives the output
+
+<geshi lang="text">
+    b r56 7
+</geshi>
+
+== ngx.encode_args ==
+'''syntax:''' ''str = ngx.encode_args(table)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Encode the Lua table to a query args string according to the URI encoded rules.
+
+For example,
+
+<geshi lang="lua">
+    ngx.encode_args({foo = 3, ["b r"] = "hello world"})
+</geshi>
+
+yields
+
+<geshi lang="text">
+    foo=3&b%20r=hello%20world
+</geshi>
+
+The table keys must be Lua strings.
+
+Multi-value query args are also supported. Just use a Lua table for the arg's value, for example:
+
+<geshi lang="lua">
+    ngx.encode_args({baz = {32, "hello"}})
+</geshi>
+
+gives
+
+<geshi lang="text">
+    baz=32&baz=hello
+</geshi>
+
+If the value table is empty and the effect is equivalent to the <code>nil</code> value.
+
+Boolean argument values are also supported, for instance,
+
+<geshi lang="lua">
+    ngx.encode_args({a = true, b = 1})
+</geshi>
+
+yields
+
+<geshi lang="text">
+    a&b=1
+</geshi>
+
+If the argument value is <code>false</code>, then the effect is equivalent to the <code>nil</code> value.
+
+This method was first introduced in the <code>v0.3.1rc27</code> release.
 
 == ngx.encode_base64 ==
 '''syntax:''' ''newstr = ngx.encode_base64(str)''

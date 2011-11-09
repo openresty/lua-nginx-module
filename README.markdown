@@ -13,7 +13,7 @@ This module is under active development and is already production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc25](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 November 2011.
+This document describes ngx_lua [v0.3.1rc27](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 November 2011.
 
 Synopsis
 ========
@@ -451,7 +451,7 @@ The right way of doing this is as follows:
         set $b ''; # create and initialize $b
         rewrite_by_lua '
             ngx.var.b = tonumber(ngx.var.a) + 1
-            if ngx.var.b == 13 then
+            if tonumber(ngx.var.b) == 13 then
                 return ngx.redirect("/bar");
             end
         ';
@@ -1083,7 +1083,7 @@ Note that variable sharing can have unexpected side-effects
 and lead to confusing issues, use it with special
 care. So, by default, the option is set to `false`.
 
-The `args` option can specify extra url arguments, for instance,
+The `args` option can specify extra URI arguments, for instance,
 
 
     ngx.location.capture('/foo?a=1',
@@ -1098,10 +1098,9 @@ is equivalent to
 
 
 that is, this method will automatically escape argument keys and values according to URI rules and
-concatenating them together into a complete query string. Because it's all done in hand-written C,
-it should be faster than your own Lua code.
+concatenating them together into a complete query string. The format for the Lua table passed as the `args` argument is identical to the format used in the [ngx.encode_args](http://wiki.nginx.org/HttpLuaModule#ngx.encode_args) method.
 
-The `args` option can also take plain query string:
+The `args` option can also take plain query strings:
 
 
     ngx.location.capture('/foo?a=1',
@@ -1473,7 +1472,7 @@ ngx.req.get_post_args
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns a Lua table holds all of the current request's POST query arguments. It's required to read the request body first by calling [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or to turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, or a Lua exception will be thrown.
+Returns a Lua table holds all of the current request's POST query arguments (of the MIME type `application/x-www-form-urlencoded`). It's required to read the request body first by calling [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or to turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, or a Lua exception will be thrown.
 
 Here's an example,
 
@@ -1481,6 +1480,7 @@ Here's an example,
     location = /test {
         content_by_lua '
             ngx.req.read_body()
+            local args = ngx.req.get_post_args()
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -1798,7 +1798,7 @@ Alternatively, you can pass a Lua table for the `args` argument and let ngx_lua 
     ngx.exec("/foo", { a = 3, b = "hello world" })
 
 
-The result is exactly the same as the previous example.
+The result is exactly the same as the previous example. The format for the Lua table passed as the `args` argument is identical to the format used in the [ngx.encode_args](http://wiki.nginx.org/HttpLuaModule#ngx.encode_args) method.
 
 Note that this is very different from [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect) in that
 it's just an internal redirect and no new HTTP traffic is involved.
@@ -1831,6 +1831,12 @@ which is equivalent to
 
 
     return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
+
+
+We can also use the numberical code directly as the second `status` argument:
+
+
+    return ngx.redirect("/foo", 301)
 
 
 assuming the current server name is `localhost` and it's listening on the `1984` port.
@@ -2015,6 +2021,70 @@ ngx.unescape_uri
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
 Unescape `str` as an escaped URI component.
+
+For example,
+
+
+    ngx.say(ngx.unescape_uri("b%20r56+7"))
+
+
+gives the output
+
+
+    b r56 7
+
+
+ngx.encode_args
+---------------
+**syntax:** *str = ngx.encode_args(table)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Encode the Lua table to a query args string according to the URI encoded rules.
+
+For example,
+
+
+    ngx.encode_args({foo = 3, ["b r"] = "hello world"})
+
+
+yields
+
+
+    foo=3&b%20r=hello%20world
+
+
+The table keys must be Lua strings.
+
+Multi-value query args are also supported. Just use a Lua table for the arg's value, for example:
+
+
+    ngx.encode_args({baz = {32, "hello"}})
+
+
+gives
+
+
+    baz=32&baz=hello
+
+
+If the value table is empty and the effect is equivalent to the `nil` value.
+
+Boolean argument values are also supported, for instance,
+
+
+    ngx.encode_args({a = true, b = 1})
+
+
+yields
+
+
+    a&b=1
+
+
+If the argument value is `false`, then the effect is equivalent to the `nil` value.
+
+This method was first introduced in the `v0.3.1rc27` release.
 
 ngx.encode_base64
 -----------------
