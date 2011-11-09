@@ -1,7 +1,7 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
 #ifndef DDEBUG
-#define DDEBUG 1
+#define DDEBUG 0
 #endif
 #include "ddebug.h"
 
@@ -1642,12 +1642,40 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
         total_escape += 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
                 NGX_ESCAPE_URI);
 
-        if (lua_type(L, -1) == LUA_TTABLE) {
+        switch (lua_type(L, -1)) {
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+            total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
+                    NGX_ESCAPE_URI);
+
+            len += key_len + value_len + (sizeof("=") - 1);
+            n++;
+
+            break;
+
+        case LUA_TBOOLEAN:
+            if (lua_toboolean(L, -1)) {
+                len += key_len;
+                n++;
+            }
+
+            break;
+
+        case LUA_TTABLE:
 
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
 
                 value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+                if (value == NULL) {
+                    luaL_error(L, "attempt to use %s as query arg value",
+                            luaL_typename(L, -1));
+                    return;
+                }
+
                 total_escape += 2 * ngx_http_lua_escape_uri(NULL, value,
                         value_len, NGX_ESCAPE_URI);
                 len += key_len + value_len + (sizeof("=") - 1);
@@ -1657,14 +1685,12 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 lua_pop(L, 1);
             }
 
-        } else {
+            break;
 
-            value = (u_char *) lua_tolstring(L, -1, &value_len);
-
-            total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
-                    NGX_ESCAPE_URI);
-            len += key_len + value_len + (sizeof("=") - 1);
-            n++;
+        default:
+            luaL_error(L, "attempt to use %s as query arg value",
+                    luaL_typename(L, -1));
+            return;
         }
 
         lua_pop(L, 1);
@@ -1692,7 +1718,64 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     while (lua_next(L, table) != 0) {
         key = (u_char *) lua_tolstring(L, -2, &key_len);
 
-        if (lua_type(L, -1) == LUA_TTABLE) {
+        switch (lua_type(L, -1)) {
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+
+            if (total_escape) {
+                p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
+                        NGX_ESCAPE_URI);
+
+            } else {
+                dd("shortcut: no escape required");
+
+                p = ngx_copy(p, key, key_len);
+            }
+
+            *p++ = '=';
+
+            value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+            if (total_escape) {
+                p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
+                        NGX_ESCAPE_URI);
+
+            } else {
+                p = ngx_copy(p, value, value_len);
+            }
+
+            if (i != n - 1) {
+                /* not the last pair */
+                *p++ = '&';
+            }
+
+            i++;
+
+            break;
+
+        case LUA_TBOOLEAN:
+            if (lua_toboolean(L, -1)) {
+                if (total_escape) {
+                    p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
+                            NGX_ESCAPE_URI);
+
+                } else {
+                    dd("shortcut: no escape required");
+
+                    p = ngx_copy(p, key, key_len);
+                }
+
+                if (i != n - 1) {
+                    /* not the last pair */
+                    *p++ = '&';
+                }
+
+                i++;
+            }
+
+            break;
+
+        case LUA_TTABLE:
 
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
@@ -1731,36 +1814,11 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 lua_pop(L, 1);
             }
 
-        } else {
+            break;
 
-            if (total_escape) {
-                p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                        NGX_ESCAPE_URI);
-
-            } else {
-                dd("shortcut: no escape required");
-
-                p = ngx_copy(p, key, key_len);
-            }
-
-            *p++ = '=';
-
-            value = (u_char *) lua_tolstring(L, -1, &value_len);
-
-            if (total_escape) {
-                p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                        NGX_ESCAPE_URI);
-
-            } else {
-                p = ngx_copy(p, value, value_len);
-            }
-
-            if (i != n - 1) {
-                /* not the last pair */
-                *p++ = '&';
-            }
-
-            i++;
+        default:
+            luaL_error(L, "should not reach here");
+            return;
         }
 
         lua_pop(L, 1);

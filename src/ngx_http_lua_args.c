@@ -12,7 +12,7 @@ static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
-static int ngx_http_lua_ngx_encode_query_args(lua_State *L);
+static int ngx_http_lua_ngx_encode_args(lua_State *L);
 
 
 static int
@@ -308,10 +308,9 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 
 
 static int
-ngx_http_lua_ngx_encode_query_args(lua_State *L) {
+ngx_http_lua_ngx_encode_args(lua_State *L) {
     ngx_http_request_t          *r;
     ngx_str_t                    args;
-    u_char                      *p;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting 1 argument but seen %d",
@@ -329,12 +328,9 @@ ngx_http_lua_ngx_encode_query_args(lua_State *L) {
 
     ngx_http_lua_process_args_option(r, L, 1, &args);
 
-    p = ngx_palloc(r->pool, args.len);
-    if (p == NULL) {
-        return luaL_error(L, "out of memory");
-    }
-
     lua_pushlstring(L, (char *) args.data, args.len);
+
+    ngx_pfree(r->pool, args.data);
 
     return 1;
 }
@@ -355,6 +351,6 @@ ngx_http_lua_inject_req_args_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_post_args);
     lua_setfield(L, -2, "get_post_args");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_encode_query_args);
-    lua_setfield(L, -2, "encode_query_args");
+    lua_pushcfunction(L, ngx_http_lua_ngx_encode_args);
+    lua_setfield(L, -2, "encode_args");
 }

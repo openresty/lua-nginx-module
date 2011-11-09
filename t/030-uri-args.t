@@ -625,12 +625,12 @@ uri: /bar
 
 
 
-=== TEST 26: ngx.encode_query_args (sanity)
+=== TEST 26: ngx.encode_args (sanity)
 --- config
     location /lua {
         set_by_lua $args_str '
             local t = {a = "bar", b = "foo"}
-            return ngx.req.encode_query_args(t)
+            return ngx.req.encode_args(t)
         ';
         echo $args_str;
     }
@@ -641,12 +641,12 @@ a=bar&b=foo
 
 
 
-=== TEST 27: ngx.encode_query_args (empty table)
+=== TEST 27: ngx.encode_args (empty table)
 --- config
     location /lua {
         content_by_lua '
             local t = {a = nil}
-            ngx.say("args:" .. ngx.req.encode_query_args(t))
+            ngx.say("args:" .. ngx.req.encode_args(t))
         ';
     }
 --- request
@@ -656,15 +656,95 @@ args:
 
 
 
-=== TEST 28: ngx.encode_query_args (value is table)
+=== TEST 28: ngx.encode_args (value is table)
 --- config
     location /lua {
         content_by_lua '
             local t = {a = {9, 2}, b = 3}
-            ngx.say("args:" .. ngx.req.encode_query_args(t))
+            ngx.say("args:" .. ngx.req.encode_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like
+^args:(?:a=9&a=2&b=3|b=3&a=9&a=2)$
+
+
+
+=== TEST 29: ngx.encode_args (boolean values)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {a = true, foo = 3}
+            ngx.say("args: " .. ngx.req.encode_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like
+^args: (?:a&foo=3|foo=3&a)$
+
+
+
+=== TEST 30: ngx.encode_args (boolean values, false)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {a = false, foo = 3}
+            ngx.say("args: " .. ngx.req.encode_args(t))
         ';
     }
 --- request
 GET /lua
 --- response_body
-args:a=9&a=2&b=3
+args: foo=3
+
+
+
+=== TEST 31: ngx.encode_args (bad table value)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {bar = {32, true}, foo = 3}
+            rc, err = pcall(ngx.req.encode_args, t)
+            ngx.say("rc: ", rc, ", err: ", err)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+rc: false, err: attempt to use boolean as query arg value
+
+
+
+=== TEST 32: ngx.encode_args (bad user data value)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {bar = ngx.shared.dogs, foo = 3}
+            rc, err = pcall(ngx.req.encode_args, t)
+            ngx.say("rc: ", rc, ", err: ", err)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+rc: false, err: attempt to use userdata as query arg value
+
+
+
+=== TEST 33: ngx.encode_args (empty table)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {}
+            ngx.say("args: ", ngx.req.encode_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+args: 
+
