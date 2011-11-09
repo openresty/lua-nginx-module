@@ -20,6 +20,7 @@ static int ngx_http_lua_ngx_decode_base64(lua_State *L);
 static int ngx_http_lua_ngx_encode_base64(lua_State *L);
 static int ngx_http_lua_ngx_crc32_short(lua_State *L);
 static int ngx_http_lua_ngx_crc32_long(lua_State *L);
+static int ngx_http_lua_ngx_encode_args(lua_State *L);
 
 
 void
@@ -30,6 +31,9 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_unescape_uri);
     lua_setfield(L, -2, "unescape_uri");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_encode_args);
+    lua_setfield(L, -2, "encode_args");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
@@ -475,6 +479,32 @@ ngx_http_lua_ngx_crc32_long(lua_State *L)
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
     lua_pushnumber(L, (lua_Number) ngx_crc32_long(p, len));
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_encode_args(lua_State *L) {
+    ngx_http_request_t          *r;
+    ngx_str_t                    args;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument but seen %d",
+                lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    ngx_http_lua_process_args_option(r, L, 1, &args);
+
+    lua_pushlstring(L, (char *) args.data, args.len);
+
+    ngx_pfree(r->pool, args.data);
+
     return 1;
 }
 

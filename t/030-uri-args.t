@@ -630,7 +630,7 @@ uri: /bar
     location /lua {
         set_by_lua $args_str '
             local t = {a = "bar", b = "foo"}
-            return ngx.req.encode_args(t)
+            return ngx.encode_args(t)
         ';
         echo $args_str;
     }
@@ -646,7 +646,7 @@ a=bar&b=foo
     location /lua {
         content_by_lua '
             local t = {a = nil}
-            ngx.say("args:" .. ngx.req.encode_args(t))
+            ngx.say("args:" .. ngx.encode_args(t))
         ';
     }
 --- request
@@ -661,7 +661,7 @@ args:
     location /lua {
         content_by_lua '
             local t = {a = {9, 2}, b = 3}
-            ngx.say("args:" .. ngx.req.encode_args(t))
+            ngx.say("args:" .. ngx.encode_args(t))
         ';
     }
 --- request
@@ -676,7 +676,7 @@ GET /lua
     location /lua {
         content_by_lua '
             local t = {a = true, foo = 3}
-            ngx.say("args: " .. ngx.req.encode_args(t))
+            ngx.say("args: " .. ngx.encode_args(t))
         ';
     }
 --- request
@@ -691,7 +691,7 @@ GET /lua
     location /lua {
         content_by_lua '
             local t = {a = false, foo = 3}
-            ngx.say("args: " .. ngx.req.encode_args(t))
+            ngx.say("args: " .. ngx.encode_args(t))
         ';
     }
 --- request
@@ -706,7 +706,7 @@ args: foo=3
     location /lua {
         content_by_lua '
             local t = {bar = {32, true}, foo = 3}
-            rc, err = pcall(ngx.req.encode_args, t)
+            rc, err = pcall(ngx.encode_args, t)
             ngx.say("rc: ", rc, ", err: ", err)
         ';
     }
@@ -724,7 +724,7 @@ rc: false, err: attempt to use boolean as query arg value
     location /lua {
         content_by_lua '
             local t = {bar = ngx.shared.dogs, foo = 3}
-            rc, err = pcall(ngx.req.encode_args, t)
+            rc, err = pcall(ngx.encode_args, t)
             ngx.say("rc: ", rc, ", err: ", err)
         ';
     }
@@ -740,11 +740,26 @@ rc: false, err: attempt to use userdata as query arg value
     location /lua {
         content_by_lua '
             local t = {}
-            ngx.say("args: ", ngx.req.encode_args(t))
+            ngx.say("args: ", ngx.encode_args(t))
         ';
     }
 --- request
 GET /lua
 --- response_body
 args: 
+
+
+
+=== TEST 34: ngx.encode_args (bad arg)
+--- config
+    location /lua {
+        content_by_lua '
+            local rc, err = pcall(ngx.encode_args, true)
+            ngx.say("rc: ", rc, ", err: ", err)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+rc: false, err: bad argument #1 to '?' (table expected, got boolean)
 
