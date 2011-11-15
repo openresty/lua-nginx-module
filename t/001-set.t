@@ -8,6 +8,7 @@ repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
+log_level("warn");
 no_long_string();
 
 run_tests();
