@@ -13,6 +13,7 @@ force=$2
             #--without-http_rewrite_module \
 
 ngx-build $force $version \
+        --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
             --with-cc-opt=$'-O0' \

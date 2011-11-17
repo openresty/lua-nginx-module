@@ -9,17 +9,17 @@
 
 #include "ddebug.h"
 
+#include <nginx.h>
+#include <ngx_core.h>
+#include <ngx_http.h>
+#include <ngx_md5.h>
+
 #include <assert.h>
 #include <setjmp.h>
 
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
-
-#include <nginx.h>
-#include <ngx_core.h>
-#include <ngx_http.h>
-#include <ngx_md5.h>
 
 #if defined(NDK) && NDK
 #include <ndk.h>
