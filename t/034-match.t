@@ -592,3 +592,22 @@ end
 regex: (?:>[\w\s]*</?\w{2,}>)
 [>2</impact>]
 
+
+
+=== TEST 29: long brackets
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello, 1234", [[\\d+]])
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+

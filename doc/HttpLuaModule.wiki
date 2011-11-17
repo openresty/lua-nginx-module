@@ -6,11 +6,11 @@ ngx_lua - Embed the power of Lua into Nginx
 
 = Status =
 
-This module is under active development and is already production ready.
+This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc27] released on 9 November 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc29] released on 17 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -219,10 +219,10 @@ Enable or disable the Lua code cache for [[#set_by_lua_file|set_by_lua_file]],
 
 The Lua files referenced in [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#access_by_lua_file|access_by_lua_file]],
-and [[#rewrite_by_lua_file|rewrite_by_lua_file]] won't be cached at all,
+and [[#rewrite_by_lua_file|rewrite_by_lua_file]] will not be cached at all,
 and Lua's <code>package.loaded</code> table will be cleared
 at every request's entry point (such that Lua modules
-won't be cached either). So developers and enjoy
+will not be cached either). So developers can enjoy
 the PHP-way, i.e., edit-and-refresh.
 
 But please note that Lua code inlined into nginx.conf
@@ -260,7 +260,7 @@ When the user Lua programs are exceeding this limit, those new regexes will not 
     2011/08/27 23:18:26 [warn] 31997#0: *1 lua exceeding regex cache max entries (1024), ...
 </geshi>
 
-You shouldn't specify the <code>o</code> regex option for regexes (and/or <code>replace</code> string arguments for [[#ngx.re.sub|ngx.re.sub]] and [[#ngx.re.gsub|ngx.re.gsub]]) that are generated ''on the fly'' and give rise to infinite variations, or you'll quickly reach the limit specified here.
+You should not specify the <code>o</code> regex option for regexes (and/or <code>replace</code> string arguments for [[#ngx.re.sub|ngx.re.sub]] and [[#ngx.re.gsub|ngx.re.gsub]]) that are generated ''on the fly'' and give rise to infinite variations, or you'll quickly reach the limit specified here.
 
 == lua_package_path ==
 
@@ -363,7 +363,7 @@ content.
 
 The use code is executed in a new spawned coroutine with independent global environment (i.e. a sandbox).
 
-Do not use this directive and other content handler directives in a same location. For example, it's bad to use this directive with a [[HttpProxyModule#proxy_pass|proxy_pass]] directive in the same location.
+Do not use this directive and other content handler directives in a same location. For example, this directive and the [[HttpProxyModule#proxy_pass|proxy_pass]] directive should not be used in the same location.
 
 == content_by_lua_file ==
 
@@ -426,7 +426,7 @@ On the other hand, the following will not work as expected:
     ?  }
 </geshi>
 
-because <code>if</code> runs ''before'' [[#rewrite_by_lua|rewrite_by_lua]] even if it's put after [[#rewrite_by_lua|rewrite_by_lua]] in the config.
+because <code>if</code> runs ''before'' [[#rewrite_by_lua|rewrite_by_lua]] even if it is put after [[#rewrite_by_lua|rewrite_by_lua]] in the config.
 
 The right way of doing this is as follows:
 
@@ -445,7 +445,7 @@ The right way of doing this is as follows:
     }
 </geshi>
 
-It's worth mentioning that, the <code>ngx_eval</code> module can be approximately implemented by [[#rewrite_by_lua|rewrite_by_lua]]. For example,
+It is worth mentioning that, the <code>ngx_eval</code> module can be approximately implemented by [[#rewrite_by_lua|rewrite_by_lua]]. For example,
 
 <geshi lang="nginx">
     location / {
@@ -549,9 +549,9 @@ Note that this handler always runs ''after'' the standard [[HttpAccessModule]]. 
     }
 </geshi>
 
-That is, if a client address appears in the blacklist, then we don't have to bother sending a MySQL query to do more advanced authentication in [[#access_by_lua|access_by_lua]].
+That is, if a client address appears in the blacklist, then we do not have to bother sending a MySQL query to do more advanced authentication in [[#access_by_lua|access_by_lua]].
 
-It's worth mentioning that, the <code>ngx_auth_request</code> module can be approximately implemented by [[#access_by_lua|access_by_lua]]. For example,
+It is worth mentioning that, the <code>ngx_auth_request</code> module can be approximately implemented by [[#access_by_lua|access_by_lua]]. For example,
 
 <geshi lang="nginx">
     location / {
@@ -621,7 +621,7 @@ Use Lua defined in <code><lua-script-str></code> to define an output header filt
 * Control APIs (e.g., [[#ngx.exit|ngx.exit]]) 
 * Subrequest APIs (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 
-Here's a small example of overriding a response header (or adding if it does not exist) in our Lua header filter:
+Here is a small example of overriding a response header (or adding if it does not exist) in our Lua header filter:
 
 <geshi lang="nginx">
     location / {
@@ -656,7 +656,7 @@ This directive was first introduced in the <code>v0.2.1rc20</code> release.
 
 '''phase:''' ''depends on usage''
 
-Force reading request body data or not. The client request body won't be read, so you have to explicitly force reading the body if you need its content.
+Force reading request body data or not. The client request body will not be read, so you have to explicitly force reading the body if you need its content.
 
 If you want to read the request body data from the [[HttpCoreModule#$request_body|$request_body]] variable, make sure that
 your have configured [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] to have exactly the same value as [[HttpCoreModule#client_max_body_size|client_max_body_size]].
@@ -664,7 +664,7 @@ your have configured [[HttpCoreModule#client_body_buffer_size|client_body_buffer
 If the current location defines [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]],
 then the request body will be read just before the [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]] code is run (and also at the
 <code>rewrite</code> phase). Similarly, if only [[#content_by_lua|content_by_lua]] is specified,
-the request body won't be read until the content handler's Lua code is
+the request body will not be read until the content handler's Lua code is
 about to run (i.e., the request body will be read at the
 content phase).
 
@@ -740,7 +740,7 @@ Index the input arguments to the [[#set_by_lua|set_by_lua]] and [[#set_by_lua_fi
     value = ngx.arg[n]
 </geshi>
 
-Here's an example
+Here is an example
 
 <geshi lang="nginx">
     location /foo {
@@ -864,7 +864,7 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 
 Emit args concatenated to nginx's <code>error.log</code> file, with log level <code>ngx.NOTICE</code> and prefix <code>lua print: </code>.
 
-It's equivalent to
+It is equivalent to
 
 <geshi lang="lua">
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
@@ -979,11 +979,11 @@ Issue a synchronous but still non-blocking ''Nginx Subrequest'' using <code>uri<
 Nginx subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or ''any'' other nginx C modules like <code>ngx_proxy</code>, <code>ngx_fastcgi</code>, <code>ngx_memc</code>,
 <code>ngx_postgres</code>, <code>ngx_drizzle</code>, and even <code>ngx_lua</code> itself and etc etc etc.
 
-Also note that subrequests just mimic the HTTP interface but there's ''no'' extra HTTP/TCP traffic ''nor'' IPC involved. Everything works internally, efficiently, on the C level.
+Also note that subrequests just mimic the HTTP interface but there is ''no'' extra HTTP/TCP traffic ''nor'' IPC involved. Everything works internally, efficiently, on the C level.
 
 Subrequests are completely different from HTTP 301/302 redirection (via [[#ngx.redirect|ngx.redirect]]) and internal redirection (via [[#ngx.exec|ngx.exec]]).
 
-Here's a basic example:
+Here is a basic example:
 
 <geshi lang="lua">
     res = ngx.location.capture(uri)
@@ -1085,6 +1085,8 @@ your subrequests, then an "Accept-Encoding: gzip" header in your main request ma
 in gzip'd responses that your Lua code is not able to handle properly. So always set
 [[HttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] <code>off</code> in your subrequest location to ignore the original request headers.
 
+Please also refer to restrictions on capturing locations using [[#Locations_Using_HttpEchoModule_Directives|HttpEchoModule]] directives.
+
 == ngx.location.capture_multi ==
 '''syntax:''' ''res1, res2, ... = ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })''
 
@@ -1113,7 +1115,7 @@ This function issue several parallel subrequests specified by the input table, a
 This function will not return until all the subrequests terminate.
 The total latency is the longest latency of the subrequests, instead of their sum.
 
-When you don't know inadvance how many subrequests you want to issue,
+When you do not know how many subrequests you want to issue in advance,
 you can use Lua tables for both requests and responses. For instance,
 
 <geshi lang="lua">
@@ -1142,6 +1144,8 @@ of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.c
             return ngx.location.capture_multi({ {uri, args} })
         end
 </geshi>
+
+Please also refer to restrictions on capturing locations using [[#Locations_Using_HttpEchoModule_Directives|HttpEchoModule]] directives.
 
 == ngx.status ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -1365,7 +1369,7 @@ See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 
 Returns a Lua table holds all of the current request's request URL query arguments.
 
-Here's an example,
+Here is an example,
 
 <geshi lang="nginx">
     location = /test {
@@ -1433,9 +1437,9 @@ regardless of the actual request query string.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Returns a Lua table holds all of the current request's POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). It's required to read the request body first by calling [[#ngx.req.read_body|ngx.req.read_body]] or to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
+Returns a Lua table holds all of the current request's POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). It is required to read the request body first by calling [[#ngx.req.read_body|ngx.req.read_body]] or to turn on the [[#lua_need_request_body|lua_need_request_body]] directive, or a Lua exception will be thrown.
 
-Here's an example,
+Here is an example,
 
 <geshi lang="nginx">
     location = /test {
@@ -1505,7 +1509,7 @@ Empty key arguments are discarded, for instance, <code>POST /test</code> with bo
 
 Returns a Lua table holds all of the current request's request headers.
 
-Here's an example,
+Here is an example,
 
 <geshi lang="lua">
     local h = ngx.req.get_headers()
@@ -1544,7 +1548,7 @@ Another way to read individual request headers is to use <code>ngx.var.http_HEAD
 Set the current request's request header named <code>header_name</code> to value <code>header_value</code>, overriding any existing ones.
 None of the current request's subrequests will be affected.
 
-Here's an example of setting the <code>Content-Length</code> header:
+Here is an example of setting the <code>Content-Length</code> header:
 
 <geshi lang="lua">
     ngx.req.set_header("Content-Type", "text/css")
@@ -1564,7 +1568,7 @@ will produce two new request headers:
     Foo: abc
 </geshi>
 
-and old <code>Foo</code> headers will be overridden if there's any.
+and old <code>Foo</code> headers will be overridden if there is any.
 
 When the <code>header_value</code> argument is <code>nil</code>, the request header will be removed. So
 
@@ -1596,9 +1600,9 @@ You can later either retrieve the request body data via [[#ngx.req.get_body_data
 # whether the current request body is already exceeding your [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]],
 # and whether you have turned on [[HttpCoreModule#client_body_in_file_only|client_body_in_file_only]].
 
-In case that you do not want to read the request body and the current request may have a request body, then it's crucial to use the [[#ngx.req.discard_body|ngx.req.discard_body]] function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
+In case that you do not want to read the request body and the current request may have a request body, then it is crucial to use the [[#ngx.req.discard_body|ngx.req.discard_body]] function to explicitly discard the request body, or you'll break HTTP 1.1 keepalive and HTTP 1.1 pipelining.
 
-Here's a small example:
+Here is a small example:
 
 <geshi lang="lua">
     ngx.req.read_body()
@@ -1752,7 +1756,7 @@ Alternatively, you can pass a Lua table for the <code>args</code> argument and l
 The result is exactly the same as the previous example. The format for the Lua table passed as the <code>args</code> argument is identical to the format used in the [[#ngx.encode_args|ngx.encode_args]] method.
 
 Note that this is very different from [[#ngx.redirect|ngx.redirect]] in that
-it's just an internal redirect and no new HTTP traffic is involved.
+it is just an internal redirect and no new HTTP traffic is involved.
 
 This method never returns.
 
@@ -1769,9 +1773,9 @@ This method is very much like the [[HttpEchoModule#echo_exec|echo_exec]] directi
 Issue an <code>HTTP 301<code> or <code>302</code> redirection to <code>uri</code>.
 
 The optional <code>status</code> parameter specifies whether
-<code>301</code> or <code>302</code> to be used. It's <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
+<code>301</code> or <code>302</code> to be used. It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
 
-Here's a small example:
+Here is a small example:
 
 <geshi lang="lua">
     return ngx.redirect("/foo")
@@ -1789,7 +1793,7 @@ We can also use the numberical code directly as the second <code>status</code> a
     return ngx.redirect("/foo", 301)
 </geshi>
 
-assuming the current server name is <code>localhost</code> and it's listening on the <code>1984</code> port.
+assuming the current server name is <code>localhost</code> and it is listening on the Port <code>1984</code>.
 
 This method ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
@@ -1833,7 +1837,7 @@ URI arguments can be specified as well, for example:
 
 Explicitly send out the response headers.
 
-Usually you don't have to send headers yourself. <code>ngx_lua</code> will automatically send out headers right before you
+Usually you do not have to send headers yourself. <code>ngx_lua</code> will automatically send out headers right before you
 output contents via [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]].
 
 Headers will also be sent automatically when [[#content_by_lua|content_by_lua]] exits normally.
@@ -2065,12 +2069,72 @@ Behind the scene, it is just a thin wrapper around the <code>ngx_crc32_long</cod
 
 This API was first introduced in the <code>v0.3.1rc8</code> release.
 
+== ngx.hmac_sha1 ==
+'''syntax:''' ''digest = ngx.hmac_sha1(secret_key, str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Computes the [http://en.wikipedia.org/wiki/HMAC HMAC-SHA1] digest of the argument <code>str</code> and turns the result using the secret key <code><secret_key></code>.
+
+The raw binary form of the <code>HMAC-SHA1</code> digest will be generated, use [[#ngx.encode_base64|ngx.encode_base64]], for example, to encode the result to a textual representation if desired.
+
+For example,
+
+<geshi lang="lua">
+    local key = "thisisverysecretstuff"
+    local src = "some string we want to sign"
+    local digest = ngx.hmac_sha1(key, src)
+    ngx.say(ngx.encode_base64(digest))
+</geshi>
+
+yields the output
+
+<geshi lang="text">
+    R/pvxzHC4NLtj7S+kXFg/NePTmk=
+</geshi>
+
+This API requires the OpenSSL library enabled in your Nignx build (usually by passing the <code>--with-http_ssl_module</code> option to the <code>./configure</code> script).
+
+This function was first introduced in the <code>v0.3.1rc29</code> release.
+
+== ngx.md5 ==
+'''syntax:''' ''digest = ngx.md5(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Returns the hexadecimal representation of the MD5 digest of the <code>str</code> argument.
+
+For example,
+
+<geshi lang="nginx">
+    location = /md5 {
+        content_by_lua 'ngx.say(ngx.md5("hello"))';
+    }
+</geshi>
+
+yields the output
+
+<geshi lang="text">
+    5d41402abc4b2a76b9719d911017c592
+</geshi>
+
+See also [[#ngx.md5_bin|ngx.md5_bin]] if you want the raw binary MD5 digest.
+
+== ngx.md5_bin ==
+'''syntax:''' ''digest = ngx.md5_bin(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Returns the binary form of the MD5 digest of the <code>str</code> argument.
+
+See also [[#ngx.md5|ngx.md5]] if you want the hexadecimal form of the MD5 digest.
+
 == ngx.today ==
 '''syntax:''' ''str = ngx.today()''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Returns today's date (in the format <code>yyyy-mm-dd</code>) from nginx cached time (no syscall involved unlike Lua's date library).
+Returns current date (in the format <code>yyyy-mm-dd</code>) from the nginx cached time (no syscall involved unlike Lua's date library).
 
 This is the local time.
 
@@ -2153,7 +2217,7 @@ Matches the <code>subject</code> string using the Perl-compatible regular expres
 
 Only the first occurrence of the match is returned, or <code>nil</code> if no match is found. In case of fatal errors, like seeing bad <code>UTF-8</code> sequences in <code>UTF-8</code> mode, a Lua exception will be raised.
 
-When a match is found, a Lua table <code>captures</code> is returned, where <code>captures[0]</code> holds the whole substring being matched, and <code>captures[1]</code> holds the first parenthesized subpattern's capturing, <code>captures[2]</code> the second, and so on. Here's some examples:
+When a match is found, a Lua table <code>captures</code> is returned, where <code>captures[0]</code> holds the whole substring being matched, and <code>captures[1]</code> holds the first parenthesized subpattern's capturing, <code>captures[2]</code> the second, and so on.
 
 <geshi lang="lua">
     local m = ngx.re.match("hello, 1234", "[0-9]+")
@@ -2166,36 +2230,13 @@ When a match is found, a Lua table <code>captures</code> is returned, where <cod
     -- m[1] == "1"
 </geshi>
 
-Unmatched subpatterns will take <code>nil</code> values in their <code>captures</code> table fields. For instance,
+Unmatched subpatterns will have <code>nil</code> values in their <code>captures</code> table fields.
 
 <geshi lang="lua">
     local m = ngx.re.match("hello, world", "(world)|(hello)")
     -- m[0] == "hello"
     -- m[1] == nil
     -- m[2] == "hello"
-</geshi>
-
-Escaping sequences in Perl-compatible regular expressions like <code>\d</code>, <code>\s</code>, and <code>\w</code>, require special care when specifying them in Lua string literals, because the backslash character, <code>\</code>, needs to be escaped in Lua string literals too, for example,
-
-<geshi lang="lua">
-    ? m = ngx.re.match("hello, 1234", "\d+")
-</geshi>
-
-won't work as expected and won't match at all. Intead, you should escape the backslash itself and write
-
-<geshi lang="lua">
-    m = ngx.re.match("hello, 1234", "\\d+")
-</geshi>
-
-When you put the Lua code snippet in your <code>nginx.conf</code> file, you have to escape the backslash one more time, because your Lua code is now in an nginx string literal, and backslashes in nginx string literals require escaping as well. For instance,
-
-<geshi lang="nginx">
-    location /test {
-        content_by_lua '
-            local m = ngx.re.match("hello, 1234", "\\\\d+")
-            if m then ngx.say(m[0]) else ngx.say("not matched!") end
-        ';
-    }
 </geshi>
 
 You can also specify <code>options</code> to control how the match will be performed. The following option characters are supported:
@@ -2224,9 +2265,9 @@ These characters can be combined together, for example,
     -- m[1] == "美好"
 </geshi>
 
-The <code>o</code> regex option is good for performance tuning, because the regex in question will only be compiled once, cached in the worker-process level, and shared among all the requests in the current Nginx worker process. You can tune the upper limit of the regex cache via the [[#lua_regex_cache_max_entries|lua_regex_cache_max_entries]] directive.
+The <code>o</code> regex option is useful for performance tuning, because the regex in question will only be compiled once, cached in the worker-process level, and shared among all requests in the current Nginx worker process. You can tune the upper limit of the regex cache via the [[#lua_regex_cache_max_entries|lua_regex_cache_max_entries]] directive.
 
-The optional fourth argument, <code>ctx</code>, can be a Lua table holding an optional <code>pos</code> field. When the <code>pos</code> field in the <code>ctx</code> table argument is specified, <code>ngx.re.match</code> will start matching from that offset. Regardless of the presence of the <code>pos</code> field in the <code>ctx</code> table, <code>ngx.re.match</code> will always set this <code>pos</code> field to the position ''after'' the substring matched by the whole pattern in case of a successful match. When match fails, the <code>ctx</code> table will leave intact. Here is some examples,
+The optional fourth argument, <code>ctx</code>, can be a Lua table holding an optional <code>pos</code> field. When the <code>pos</code> field in the <code>ctx</code> table argument is specified, <code>ngx.re.match</code> will start matching from that offset. Regardless of the presence of the <code>pos</code> field in the <code>ctx</code> table, <code>ngx.re.match</code> will always set this <code>pos</code> field to the position ''after'' the substring matched by the whole pattern in case of a successful match. When match fails, the <code>ctx</code> table will be left intact.
 
 <geshi lang="lua">
     local ctx = {}
@@ -2246,18 +2287,18 @@ The <code>ctx</code> table argument combined with the <code>a</code> regex modif
 
 Note that, the <code>options</code> argument is not optional when the <code>ctx</code> argument is specified; use the empty Lua string (<code>""</code>) as the placeholder for <code>options</code> if you do not want to specify any regex options.
 
-This method requires the PCRE library enabled in your Nginx build.
+This method requires the PCRE library enabled in your Nginx build.  ([[#Special PCRE Sequences|Known Issue With Special PCRE Sequences]]).
 
-This feature is introduced in the <code>v0.2.1rc11</code> release.
+This feature was introduced in the <code>v0.2.1rc11</code> release.
 
 == ngx.re.gmatch ==
 '''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the Perl-compatible regular expression <code>regex</code>.
+Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the PCRE <code>regex</code>.
 
-Here's a small exmple to demonstrate its basic usage:
+Here is a small exmple to demonstrate its basic usage:
 
 <geshi lang="lua">
     local iterator = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
@@ -2280,7 +2321,7 @@ The optional <code>options</code> argument takes exactly the same semantics as t
 
 The current implementation requires that the iterator returned should only be used in a single request. That is, one should ''not'' assign it to a variable belonging to persistent namespace like a Lua package.
 
-This method requires the PCRE library enabled in your Nginx build.
+This method requires the PCRE library enabled in your Nginx build.  ([[#Special PCRE Sequences|Known Issue With Special PCRE Sequences]]).
 
 This feature was first introduced in the <code>v0.2.1rc12</code> release.
 
@@ -2319,7 +2360,7 @@ Literal dollar sign characters (<code>$</code>) in the <code>replace</code> stri
         -- n == 1
 </geshi>
 
-Do not use backlashes to escape dollar signs; it won't work as expected.
+Do not use backlashes to escape dollar signs; it will not work as expected.
 
 When the <code>replace</code> argument is of type "function", then it will be invoked with the "match table" as the argument to generate the replace string literal for substitution. The "match table" fed into the <code>replace</code> function is exactly the same as the return value of [[#ngx.re.match|ngx.re.match]]. Here is an example:
 
@@ -2334,7 +2375,7 @@ When the <code>replace</code> argument is of type "function", then it will be in
 
 The dollar sign characters in the return value of the <code>replace</code> function argument are not special at all.
 
-This method requires the PCRE library enabled in your Nginx build.
+This method requires the PCRE library enabled in your Nginx build.  ([[#Special PCRE Sequences|Known Issue With Special PCRE Sequences]]).
 
 This feature was first introduced in the <code>v0.2.1rc13</code> release.
 
@@ -2362,7 +2403,7 @@ Here is some examples:
         -- n == 2
 </geshi>
 
-This method requires the PCRE library enabled in your Nginx build.
+This method requires the PCRE library enabled in your Nginx build.  ([[#Special PCRE Sequences|Known Issue With Special PCRE Sequences]]).
 
 This feature was first introduced in the <code>v0.2.1rc15</code> release.
 
@@ -2405,7 +2446,7 @@ Here is an example:
     }
 </geshi>
 
-Let's test it:
+Let us test it:
 
 <geshi lang="bash">
     $ curl localhost/set
@@ -2557,7 +2598,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simpl/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
 
-For example, [[HttpSetMiscModule]]'s following directives can be invoked this way:
+For example, the following [[HttpSetMiscModule]] directives can be invoked this way:
 
 * [[HttpSetMiscModule#set_quote_sql_str|set_quote_sql_str]]
 * [[HttpSetMiscModule#set_quote_pgsql_str|set_quote_pgsql_str]]
@@ -2607,7 +2648,7 @@ the <code>-0</code> option.
 
 If you want to globally share user data among all the requests handled by the same nginx worker process, you can encapsulate your shared data into a Lua module, require the module in your code, and manipulate shared data through it. It works because required Lua modules are loaded only once, and all coroutines will share the same copy of the module.
 
-Here's a complete small example:
+Here is a complete small example:
 
 <geshi lang="lua">
     -- mydata.lua
@@ -2643,23 +2684,150 @@ module as well as the same copy of the data in it,
 until you send a <code>HUP</code> signal to the nginx master
 process to enforce a reload.
 
-This data sharing technique is essential for high-performance Lua apps built atop this module. It's common to cache reusable data globally.
+This data sharing technique is essential for high-performance Lua apps built atop this module. It is common to cache reusable data globally.
 
-It's worth noting that this is ''per-worker'' sharing, not ''per-server'' sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundary. If you indeed need server-wide data sharing, you can
+It is worth noting that this is ''per-worker'' sharing, not ''per-server'' sharing. That is, when you have multiple nginx worker processes under an nginx master, this data sharing cannot pass process boundary. If you indeed need server-wide data sharing, you can
 
 # Use only a single nginx worker and a single server. This is not recommended when you have a multi-core CPU or multiple CPUs in a single machine.
 # Use some true backend storage like <code>memcached</code>, <code>redis</code>, or an RDBMS like <code>mysql</code>.
+
+= Known Issues =
+
+== Coroutine Yielding/Resuming ==
+* As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [[#ngx.location.capture|ngx.location.capture]] (actually coroutine modules have been masked off in [[#content_by_lua|content_by_lua]] directives and others). This limitation is a little crucial, but do not worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
+* Lua's <code>dofile</code> builtin is implemented as a C function in both Lua 5.1 and LuaJIT 2.0. And when you call [[#ngx.location.capture|ngx.location.capture]], [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]] or [[#ngx.req.read_body|ngx.req.read_body]] or something like those in the .lua file to be loaded, it'll effectively initiate a coroutine yield and that yield will run across C function boundary, which is disallowed, and usually result in error messages like <code>lua handler aborted: runtime error: attempt to yield across C-call boundary</code>. You should use Lua's <code>require</code> builtin instead.
+* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] when the standard Lua 5.1 interpreter is used; you'll get the error <code>attempt to yield across metamethod/C-call boundary</code>. To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
+
+== Locations Using [[HttpEchoModule]] Directives ==
+The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives cannot capture locations that include the [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives.
+
+<geshi lang="nginx">
+    location /foo {
+        content_by_lua '
+            res = ngx.location.capature("/bar")
+        ';
+    }
+    location /bar {
+        echo_location /blah;
+    }
+    location /blah {
+        echo "Success!";
+    }
+</geshi>
+
+<geshi lang="nginx">
+    $ curl -i http://example.com/foo
+</geshi>
+
+will not work as expected and there are no plans to fix this issue.
+
+== Lua Variable Scope ==
+Lua global variables WILL NOT persist between requests because of the one-coroutine-per-request isolation design. In particular, care should be taken when importing modules and this form should be used:
+
+<geshi lang="nginx">
+        local xxx = require('xxx')
+</geshi>
+
+: instead of the old deprecated form:
+
+<geshi lang="nginx">
+        require('xxx')
+</geshi>
+
+: If you have to use the old form, force reload the module for every request by using the <code>package.loaded.<module></code> command:
+
+<geshi lang="nginx">
+        package.loaded.xxx = nil
+        require('xxx')
+</geshi>
+
+It is recommended to always place the following piece of code at the end of Lua modules that use the [[#ngx.location.capture|ngx.location.capture]] or [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives to prevent casual use of module-level global variables that are shared among ''all'' requests:
+
+<geshi lang="nginx">
+    getmetatable(foo.bar).__newindex = function (table, key, val)
+        error('Attempt to write to undeclared variable "' .. key .. '": '
+                .. debug.traceback())
+    end
+</geshi>
+
+Assuming your current Lua module is named <code>foo.bar</code>, this will guarantee that local variables in module <code>foo.bar</code> functions have been declared as "local". It prevents undesirable race conditions while accessing such variables. See [[#Data_Sharing_within_an_Nginx_Worker|Data Sharing within an Nginx Worker]] for the reasons behind this.
+
+== Special PCRE Sequences ==
+
+Special PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention.
+This is because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by Nginx config file parser before processing. So the following config snippet will not work as expected:
+
+<geshi lang="nginx">
+    ? location /test {
+    ?     content_by_lua '
+    ?         local regex = "\d+"  -- THIS IS WRONG!!
+    ?         local m = ngx.re.match("hello, 1234", regex)
+    ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
+    ?         -- evaluates to "not matched!"
+    ?     ';
+    ? }
+</geshi>
+
+To avoid this, you need to escape the backslash ''twice'':
+
+<geshi lang="nginx">
+    location /test {
+        content_by_lua '
+            local regex = "\\\\d+"
+            local m = ngx.re.match("hello, 1234", regex)
+            if m then ngx.say(m[0]) else ngx.say("not matched!") end
+            -- evaluates to "1234"
+        ';
+    }
+</geshi>
+
+Here, <code>\\\\d+</code> is stripped down to <code>\\d+</code> by the Nginx config file parser and this is further stripped down to <code>\d+</code> by the Lua language parser before running.
+
+Alternatively, you can present the regex as a long-bracketed lua string literal by encasing it in "long brackets" in which case backslashes have to only be escaped once for the Nginx config parser. Typical long brackets are <code>&#91;[...]]</code>, <code>[=[...]=]</code>, <code>[==[...]==]</code>, and etc.
+
+<geshi lang="nginx">
+    location /test {
+        content_by_lua '
+            local regex = [[\\d+]]
+            local m = ngx.re.match("hello, 1234", regex)
+            if m then ngx.say(m[0]) else ngx.say("not matched!") end
+            -- evaluates to "1234"
+        ';
+    }
+</geshi>
+
+Here, <code>&#91;[\\d+]]</code> is stripped down to <code>&#91;[\d+]]</code> by the Nginx config file parser and this is processed correctly.
+
+An alternative approach to escaping PCRE sequences is to ensure that Lua code is placed in external script files and executed using the various <code>*_by_lua_file</code> directives.
+
+With this approach, the backslashes are only stripped by the Lua language parser and therefore only need to be escaped once each.
+
+<geshi lang="lua">
+    -- test.lua
+    local regex = "\\d+"
+    local m = ngx.re.match("hello, 1234", regex)
+    if m then ngx.say(m[0]) else ngx.say("not matched!") end
+    -- evaluates to "1234"
+</geshi>
+
+Within external script files, special PCRE sequences presented as long-bracketed Lua string literals by encasing them in "long brackets" do not require modification. 
+ 
+<geshi lang="lua">
+    -- test.lua
+    local regex = [[\d+]]
+    local m = ngx.re.match("hello, 1234", regex)
+    if m then ngx.say(m[0]) else ngx.say("not matched!") end
+    -- evaluates to "1234"
+</geshi>
 
 = Performance =
 
 The Lua state (aka the Lua vm instance) is shared across all the requests
 handled by a single nginx worker process to miminize memory use.
 
-On a ThinkPad T400 2.80 GHz laptop, it's easy to achieve 25k req/sec using ab
-w/o keepalive and 37k+ req/sec with keepalive.
+On a ThinkPad T400 2.80 GHz laptop, the HelloWorld example is easy to achieve 28k req/sec using <code>http_load -p 10</code>. In contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [http://nodejs.org/ Node.js] v0.6.1 yields 10.2k req/sec for their HelloWorld equivalents.
 
-You can get better performance when building this module
-with LuaJIT 2.0.
+You can get better performance when building this module with [http://luajit.org/luajit.html LuaJIT 2.0].
 
 = Typical Use Cases =
 
@@ -2690,28 +2858,28 @@ Alternatively, you can compile this module with nginx core's source by hand:
 # Install Lua or LuaJIT into your system. At least Lua 5.1 is required.  Lua can be obtained freely from its project [http://www.lua.org/ homepage].  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
 # Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [http://github.com/simpl/ngx_devel_kit/tags file list].
 # Download the latest version of the release tarball of this module from lua-nginx-module [http://github.com/chaoslawful/lua-nginx-module/tags file list].
-# Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.9 (see nginx compatibility), and then build the source with this module:
+# Grab the nginx source code from [http://nginx.org/ nginx.org], for example, the version 1.0.10 (see nginx compatibility), and then build the source with this module:
 
 <geshi lang="bash">
-        wget 'http://nginx.org/download/nginx-1.0.9.tar.gz'
-        tar -xzvf nginx-1.0.9.tar.gz
-        cd nginx-1.0.9/
+    wget 'http://nginx.org/download/nginx-1.0.10.tar.gz'
+    tar -xzvf nginx-1.0.10.tar.gz
+    cd nginx-1.0.10/
  
-        # tell nginx's build system where to find lua:
-        export LUA_LIB=/path/to/lua/lib
-        export LUA_INC=/path/to/lua/include
+    # tell nginx's build system where to find lua:
+    export LUA_LIB=/path/to/lua/lib
+    export LUA_INC=/path/to/lua/include
  
-        # or tell where to find LuaJIT when you want to use JIT instead
-        # export LUAJIT_LIB=/path/to/luajit/lib
-        # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+    # or tell where to find LuaJIT when you want to use JIT instead
+    # export LUAJIT_LIB=/path/to/luajit/lib
+    # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
  
-        # Here we assume you would install you nginx under /opt/nginx/.
-        ./configure --prefix=/opt/nginx \
+    # Here we assume you would install you nginx under /opt/nginx/.
+    ./configure --prefix=/opt/nginx \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
  
-        make -j2
-        make install
+    make -j2
+    make install
 </geshi>
 
 = Compatibility =
@@ -2719,7 +2887,7 @@ Alternatively, you can compile this module with nginx core's source by hand:
 The following versions of Nginx should work with this module:
 
 *   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.9)
+*   1.0.x (last tested: 1.0.10)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
@@ -2730,7 +2898,7 @@ work with this module, please consider reporting a bug.
 
 = Report Bugs =
 
-Although a lot of effort has been put into testing and code tuning, there must be some serious bugs lurking somewhere in this module. So whenever you are bitten by any quirks, please don't hesitate to
+Although a lot of effort has been put into testing and code tuning, there must be some serious bugs lurking somewhere in this module. So whenever you are bitten by any quirks, please do not hesitate to
 
 # create a ticket on the [http://github.com/chaoslawful/lua-nginx-module/issues issue tracking interface] provided by GitHub,
 # or send a bug report or even patches to the [http://mailman.nginx.org/mailman/listinfo/nginx nginx mailing list].
@@ -2769,8 +2937,8 @@ To run the test suite, you also need the following dependencies:
 ** mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
 ** memcached
 
-These module's adding order is IMPORTANT! For filter modules's position in
-filtering chain affects a lot. The correct configure adding order is:
+The adding order of these modules is important as the position of any filter module in the
+filtering chain determines the final output. The correct adding order during configuration is:
 
 # ngx_devel_kit
 # set-misc-nginx-module
@@ -2792,41 +2960,13 @@ filtering chain affects a lot. The correct configure adding order is:
 * expose nginx's shared memory facility to the Lua land.
 * add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its <code>args</code> argument is a Lua table.
 
-= Future Plan =
+= Future Plans =
 
 * add the <code>lua_require</code> directive to load module into main thread's globals.
 * add the "cosocket" mechamism that will emulate a common set of Lua socket API that will give you totally transparently non-blocking capability out of the box by means of a completely new upstream layer atop the nginx event model and no nginx subrequest overheads.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * make set_by_lua using the same mechanism as content_by_lua.
 * add coroutine API back to the Lua land.
-
-= Known Issues =
-
-* As ngx_lua's predefined Nginx I/O APIs use coroutine yielding/resuming mechanism, the user code should not call any Lua modules that use coroutine API to prevent obfuscating the predefined Nginx APIs like [[#ngx.location.capture|ngx.location.capture]] (actually coroutine modules have been masked off in [[#content_by_lua|content_by_lua]] directives and others). This limitation is a little crucial, but don't worry, we're working on an alternative coroutine implementation that can fit into the Nginx event model. When it is done, the user code will be able to use the Lua coroutine mechanism freely as in standard Lua again!
-* Lua's <code>dofile</code> builtin is implemented as a C function in both Lua 5.1 and LuaJIT 2.0. And when you call [[#ngx.location.capture|ngx.location.capture]], [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]] or [[#ngx.req.read_body|ngx.req.read_body]] or something like those in the .lua file to be loaded, it'll effectively initiate a coroutine yield and that yield will run across C function boundary, which is disallowed, and usually result in error messages like <code>lua handler aborted: runtime error: attempt to yield across C-call boundary</code>. You should use Lua's <code>require</code> builtin instead.
-* Because the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] when the standard Lua 5.1 interpreter is used; you'll get the error <code>attempt to yield across metamethod/C-call boundary</code>. To fix this, please use LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able VM.
-* The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] Lua methods cannot capture locations configured by [[HttpEchoModule]]'s [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives. This won't be fixed in the future due to technical problems.
-* '''WATCH OUT: Globals WON'T persist between requests''', because of the one-coroutine-per-request isolation design. Especially watch yourself when using <code>require()</code> to import modules, and use this form:
-<geshi lang="nginx">
-        local xxx = require('xxx')
-</geshi>
-: instead of the old deprecated form:
-<geshi lang="nginx">
-        require('xxx')
-</geshi>
-: The old form will cause module unusable in requests for the reason told previously. If you have to stick with the old form, you can always force loading module for every request by clean <code>package.loaded.<module></code>, like this:
-<geshi lang="nginx">
-        package.loaded.xxx = nil
-        require('xxx')
-</geshi>
-* It's recommended to always put the following piece of code at the end of your Lua modules using [[#ngx.location.capture|ngx.location.capture]] or [[#ngx.location.capture_multi|ngx.location.capture_multi]] to prevent casual use of module-level global variables that are shared among ''all'' requests, which is usually not what you want:
-<geshi lang="nginx">
-    getmetatable(foo.bar).__newindex = function (table, key, val)
-        error('Attempt to write to undeclared variable "' .. key .. '": '
-                .. debug.traceback())
-    end
-</geshi>
-assuming your current Lua module is named <code>foo.bar</code>. This will guarantee that you have declared your Lua functions' local Lua variables as "local" in your Lua modules, or bad race conditions while accessing these variables under load will tragically happen. See the <code>Data Sharing within an Nginx Worker</code> for the reasons of this danger.
 
 = Changes =
 
@@ -2862,9 +3002,9 @@ assuming your current Lua module is named <code>foo.bar</code>. This will guaran
 
 This module is licenced under the BSD license.
 
-Copyright (C) 2009, 2010, 2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009, 2010, 2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
 
 All rights reserved.
 
@@ -2878,6 +3018,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 = See Also =
 
+* [http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs Routing requests to different MySQL queries based on URI arguments]
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]
 * [https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction Introduction to ngx_lua]
