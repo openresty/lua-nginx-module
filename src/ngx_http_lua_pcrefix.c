@@ -7,7 +7,7 @@
 
 #if (NGX_PCRE)
 
-static ngx_pool_t *ngx_http_lua_pcre_pool;
+ngx_pool_t *ngx_http_lua_pcre_pool;
 
 static void *(*old_pcre_malloc)(size_t);
 static void (*old_pcre_free)(void *ptr);
@@ -23,6 +23,8 @@ ngx_http_lua_pcre_malloc(size_t size)
 	if (ngx_http_lua_pcre_pool) {
 		return ngx_palloc(ngx_http_lua_pcre_pool, size);
 	}
+
+    dd("returning NULL");
 
 	return NULL;
 }

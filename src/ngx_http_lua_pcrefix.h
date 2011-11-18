@@ -6,6 +6,8 @@
 
 
 #if (NGX_PCRE)
+extern ngx_pool_t *ngx_http_lua_pcre_pool;
+
 void ngx_http_lua_pcre_malloc_init(ngx_pool_t *pool);
 void ngx_http_lua_pcre_malloc_done();
 #endif
