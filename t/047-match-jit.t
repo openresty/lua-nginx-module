@@ -91,3 +91,25 @@ not matched!
 --- response_body
 not matched!
 
+
+=== TEST 17: bad pattern
+--- config
+    location /re {
+        content_by_lua '
+            rc, m = pcall(ngx.re.match, "hello\\nworld", "(abc", "j")
+            if rc then
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            else
+                ngx.say("error: ", m)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() failed: missing ) in "(abc")
+

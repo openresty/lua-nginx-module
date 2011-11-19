@@ -7,7 +7,7 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 
@@ -94,4 +94,102 @@ done
     GET /re
 --- response_body
 hello
+
+
+
+=== TEST 5: gmatch matched + o
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("hello, world", "[a-z]+", "jo") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+world
+
+
+
+=== TEST 6: fail to match + o
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[0-9]", "jo")
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+nil
+nil
+nil
+
+
+
+=== TEST 7: gmatch matched but no iterate + o
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "jo")
+            ngx.say("done")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+
+
+
+=== TEST 8: gmatch matched but only iterate once and still matches remain + o
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "jo")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+
+
+=== TEST 17: bad pattern
+--- config
+    location /re {
+        content_by_lua '
+            rc, err = pcall(ngx.re.gmatch, "hello\\nworld", "(abc", "j")
+            if not rc then
+                ngx.say("error: ", err)
+                return
+            end
+            ngx.say("success")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+error: bad argument #2 to '?' (failed to compile regex "(abc": pcre_compile() failed: missing ) in "(abc")
 

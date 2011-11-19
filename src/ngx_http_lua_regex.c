@@ -815,14 +815,23 @@ compiled:
     return 1;
 
 error:
-    if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
+    if ((flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
+        if (cln) {
+             cln->handler(cln->data);
+             cln->data = NULL;
+             cln = NULL;
+
+        } else {
+            if (sd) {
+                ngx_http_lua_pcre_pool = pool;
 #if LUA_HAVE_PCRE_JIT
-        if (sd) {
-            ngx_http_lua_pcre_pool = pool;
-            pcre_free_study(sd);
-            ngx_http_lua_pcre_pool = r->pool;
-        }
+                pcre_free_study(sd);
+#else
+                pcre_free(sd);
 #endif
+                ngx_http_lua_pcre_pool = r->pool;
+            }
+        }
 
         if (re_comp.regex) {
             ngx_pfree(pool, re_comp.regex);
@@ -906,15 +915,16 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         lua_pushinteger(L, -1);
         lua_replace(L, lua_upvalueindex(3));
 
-        if (ctx->cleanup) {
-             ctx->cleanup->handler(ctx->cleanup->data);
-             ctx->cleanup->data = NULL;
-             ctx->cleanup = NULL;
-        }
+        if ((ctx->flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
+            if (ctx->cleanup) {
+                 ctx->cleanup->handler(ctx->cleanup->data);
+                 ctx->cleanup->data = NULL;
+                 ctx->cleanup = NULL;
+            }
 
-        if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             ngx_pfree(r->pool, cap);
         }
+
         ngx_pfree(r->pool, ctx);
 
         lua_pushnil(L);
@@ -959,15 +969,16 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     if (offset == (ssize_t) subj.len) {
         offset = -1;
 
-        if (ctx->cleanup) {
-             ctx->cleanup->handler(ctx->cleanup->data);
-             ctx->cleanup->data = NULL;
-             ctx->cleanup = NULL;
-        }
+        if ((ctx->flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
+            if (ctx->cleanup) {
+                 ctx->cleanup->handler(ctx->cleanup->data);
+                 ctx->cleanup->data = NULL;
+                 ctx->cleanup = NULL;
+            }
 
-        if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             ngx_pfree(r->pool, cap);
         }
+
         ngx_pfree(r->pool, ctx);
     }
 
@@ -980,13 +991,13 @@ error:
     lua_pushinteger(L, -1);
     lua_replace(L, lua_upvalueindex(3));
 
-    if (ctx->cleanup) {
-         ctx->cleanup->handler(ctx->cleanup->data);
-         ctx->cleanup->data = NULL;
-         ctx->cleanup = NULL;
-    }
-
     if ((ctx->flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
+        if (ctx->cleanup) {
+             ctx->cleanup->handler(ctx->cleanup->data);
+             ctx->cleanup->data = NULL;
+             ctx->cleanup = NULL;
+        }
+
         ngx_pfree(r->pool, cap);
     }
 
@@ -1552,7 +1563,11 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
         old_pool = ngx_http_lua_pcre_pool;
         ngx_http_lua_pcre_pool = pool;
 
+#if LUA_HAVE_PCRE_JIT
         pcre_free_study(sd);
+#else
+        pcre_free(sd);
+#endif
 
         ngx_http_lua_pcre_pool = old_pool;
         return;
@@ -1560,7 +1575,11 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
 
     ngx_http_lua_pcre_malloc_init(pool);
 
+#if LUA_HAVE_PCRE_JIT
     pcre_free_study(sd);
+#else
+    pcre_free(sd);
+#endif
 
     ngx_http_lua_pcre_malloc_done();
 }
