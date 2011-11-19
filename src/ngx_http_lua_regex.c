@@ -1543,6 +1543,18 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
     p += sizeof(void *);
     pool = *(ngx_pool_t **) p;
 
+    if (pcre_malloc == ngx_http_lua_pcre_malloc) {
+        ngx_pool_t          *old_pool;
+
+        old_pool = ngx_http_lua_pcre_pool;
+        ngx_http_lua_pcre_pool = pool;
+
+        pcre_free_study(sd);
+
+        ngx_http_lua_pcre_pool = old_pool;
+        return;
+    }
+
     ngx_http_lua_pcre_malloc_init(pool);
 
     pcre_free_study(sd);
