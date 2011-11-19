@@ -16,7 +16,14 @@
 #   define LUA_HAVE_PCRE_JIT 1
 #else
 #   define LUA_HAVE_PCRE_JIT 0
-#endif /* PCRE_STUDY_JIT_COMPILE */
+#endif
+
+
+#if (PCRE_MAJOR >= 6)
+#   define LUA_HAVE_PCRE_DFA 1
+#else
+#   define LUA_HAVE_PCRE_DFA 0
+#endif
 
 
 static int ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L);
@@ -55,6 +62,7 @@ typedef struct {
     int                     *captures;
     int                      captures_len;
     uint8_t                  flags;
+    ngx_pool_cleanup_t      *cleanup;
 } ngx_http_lua_regex_ctx_t;
 
 
@@ -231,9 +239,9 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua compiling match regex \"%s\" with options \"%s\" "
             "(compile once: %d) (dfa mode: %d) (jit mode: %d)", pat.data, opts.data,
-            ((flags & NGX_LUA_RE_COMPILE_ONCE) != 0),
-            ((flags & NGX_LUA_RE_MODE_DFA) != 0),
-            ((flags & NGX_LUA_RE_MODE_JIT) != 0));
+            (flags & NGX_LUA_RE_COMPILE_ONCE) != 0,
+            (flags & NGX_LUA_RE_MODE_DFA) != 0,
+            (flags & NGX_LUA_RE_MODE_JIT) != 0);
 
     ngx_http_lua_pcre_malloc_done();
 
@@ -287,7 +295,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
         if (msg != NULL) {
             ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "pcre_study failed with PCRE_STUDY_JIT_COMPILE: %s (%p)",
+                "pcre study failed with PCRE_STUDY_JIT_COMPILE: %s (%p)",
                 msg, sd);
         }
 
@@ -301,7 +309,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
             ngx_http_lua_pcre_pool = r->pool;
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "pattern JIT compiling result: %d", jitted);
+                "pcre JIT compiling result: %d", jitted);
         }
 #   endif /* NGX_DEBUG */
 
@@ -327,7 +335,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "your PCRE build does not have JIT support and "
+                "your pcre build does not have JIT support and "
                 "the \"j\" regex option is ignored");
     }
 
@@ -380,9 +388,18 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
 exec:
     if (flags & NGX_LUA_RE_MODE_DFA) {
+
+#if LUA_HAVE_PCRE_DFA
+
         int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
         rc = ngx_http_lua_regex_dfa_exec(re_comp.regex, sd, &subj,
             (int) pos, cap, ovecsize, ws, NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT);
+
+#else /* LUA_HAVE_PCRE_DFA */
+        msg = "at least pcre 6.0 is required for the DFA mode";
+        goto error;
+
+#endif /* LUA_HAVE_PCRE_DFA */
 
     } else {
         rc = ngx_http_lua_regex_exec(re_comp.regex, sd, &subj, (int) pos, cap,
@@ -428,7 +445,7 @@ exec:
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, re_comp.captures /* narr */, 1 /* nrec */);
+    lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -505,11 +522,12 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     const char                  *msg;
     int                          nargs;
     ngx_int_t                    flags;
-    int                         *cap;
+    int                         *cap = NULL;
     ngx_int_t                    rc;
     ngx_pool_t                  *pool;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
+    ngx_pool_cleanup_t          *cln = NULL;
 
     nargs = lua_gettop(L);
 
@@ -586,7 +604,12 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
             re_comp.captures = re->ncaptures;
             cap = re->captures;
 
-            ovecsize = (re->ncaptures + 1) * 3;
+            if (flags & NGX_LUA_RE_MODE_DFA) {
+                ovecsize = 2;
+
+            } else {
+                ovecsize = (re->ncaptures + 1) * 3;
+            }
 
             goto compiled;
         }
@@ -618,10 +641,12 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     re_comp.err.data = errstr;
     re_comp.pool = pool;
 
-    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua compiling match regex \"%s\" with options \"%s\" "
-            "(compile once: %d)", pat.data, opts.data,
-            flags & NGX_LUA_RE_COMPILE_ONCE);
+    ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua compiling gmatch regex \"%s\" with options \"%s\" "
+            "(compile once: %d) (dfa mode: %d) (jit mode: %d)", pat.data, opts.data,
+            (flags & NGX_LUA_RE_COMPILE_ONCE) != 0,
+            (flags & NGX_LUA_RE_MODE_DFA) != 0,
+            (flags & NGX_LUA_RE_MODE_JIT) != 0);
 
     ngx_http_lua_pcre_malloc_done();
 
@@ -640,18 +665,99 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     }
 
 #if LUA_HAVE_PCRE_JIT
+
     if (flags & NGX_LUA_RE_MODE_JIT) {
+
+        ngx_http_lua_pcre_pool = pool;
+
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+
+        ngx_http_lua_pcre_pool = r->pool;
+
+        if (sd) {
+            /* XXX PCRE 8.20 uses SLJIT_MALLOC to allocate memory
+               in its JIT engine, which is not controlled
+               by pcre_malloc, so we have to free the study
+               data by ourselves */
+            u_char                  *p;
+
+            cln = ngx_pool_cleanup_add(pool, sizeof(void *) * 2);
+            if (cln == NULL) {
+                msg = "out of memory";
+                goto error;
+            }
+
+            cln->handler = ngx_http_lua_cleanup_pcre_study_data;
+            p = cln->data;
+            *(pcre_extra **) p = sd;
+            p += sizeof(void *);
+            *(ngx_pool_t **) p = pool;
+        }
+
+#   if (NGX_DEBUG)
+        dd("sd = %p", sd);
+
+        if (msg != NULL) {
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "pcre_study failed with PCRE_STUDY_JIT_COMPILE: %s (%p)",
+                msg, sd);
+        }
+
+        if (sd != NULL) {
+            int         jitted;
+
+            ngx_http_lua_pcre_pool = pool;
+
+            pcre_fullinfo(re_comp.regex, sd, PCRE_INFO_JIT, &jitted);
+
+            ngx_http_lua_pcre_pool = r->pool;
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "pcre JIT compiling result: %d", jitted);
+        }
+#   endif /* NGX_DEBUG */
+
+    } else {
+        ngx_http_lua_pcre_pool = pool;
+
+        sd = pcre_study(re_comp.regex, 0, &msg);
+
+        ngx_http_lua_pcre_pool = r->pool;
+
+#   if (NGX_DEBUG)
+        dd("sd = %p", sd);
+
+        if (msg != NULL) {
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "pcre study failed with PCRE_STUDY_JIT_COMPILE: %s (%p)",
+                msg, sd);
+        }
+#   endif /* NGX_DEBUG */
     }
+
+#else  /* LUA_HAVE_PCRE_JIT */
+
+    if (flags & NGX_LUA_RE_MODE_JIT) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "your pcre build does not have JIT support and "
+                "the \"j\" regex option is ignored");
+    }
+
 #endif /* LUA_HAVE_PCRE_JIT */
 
     dd("compile done, captures %d", re_comp.captures);
 
-    ovecsize = (re_comp.captures + 1) * 3;
+    if (flags & NGX_LUA_RE_MODE_DFA) {
+        ovecsize = 2;
+
+    } else {
+        ovecsize = (re_comp.captures + 1) * 3;
+    }
 
     cap = ngx_palloc(pool, ovecsize * sizeof(int));
     if (cap == NULL) {
-        return luaL_error(L, "out of memory");
+        msg = "out of memory";
+        goto error;
     }
 
     if (flags & NGX_LUA_RE_COMPILE_ONCE) {
@@ -694,6 +800,7 @@ compiled:
     ctx->captures = cap;
     ctx->captures_len = ovecsize;
     ctx->flags = flags;
+    ctx->cleanup = cln;
 
     lua_settop(L, 1);
 
@@ -703,6 +810,27 @@ compiled:
     lua_pushcclosure(L, ngx_http_lua_ngx_re_gmatch_iterator, 3);
 
     return 1;
+
+error:
+    if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
+#if LUA_HAVE_PCRE_JIT
+        if (sd) {
+            ngx_http_lua_pcre_pool = pool;
+            pcre_free_study(sd);
+            ngx_http_lua_pcre_pool = r->pool;
+        }
+#endif
+
+        if (re_comp.regex) {
+            ngx_pfree(pool, re_comp.regex);
+        }
+
+        if (cap) {
+            ngx_pfree(pool, cap);
+        }
+    }
+
+    return luaL_error(L, msg);
 }
 
 
@@ -717,6 +845,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     int                          i;
     ngx_str_t                    subj;
     int                          offset;
+    const char                  *msg;
 
     /* upvalues in order: subj ctx offset */
 
@@ -749,11 +878,20 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     dd("regex exec...");
 
     if (ctx->flags & NGX_LUA_RE_MODE_DFA) {
+
+#if LUA_HAVE_PCRE_DFA
+
         int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
 
         rc = ngx_http_lua_regex_dfa_exec(ctx->regex, ctx->regex_sd, &subj,
             offset, cap, ctx->captures_len, ws,
             NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT);
+
+#else /* LUA_HAVE_PCRE_DFA */
+        msg = "at least pcre 6.0 is required for the DFA mode";
+        goto error;
+
+#endif /* LUA_HAVE_PCRE_DFA */
 
     } else {
         rc = ngx_http_lua_regex_exec(ctx->regex, ctx->regex_sd, &subj, offset, cap,
@@ -765,6 +903,12 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         lua_pushinteger(L, -1);
         lua_replace(L, lua_upvalueindex(3));
 
+        if (ctx->cleanup) {
+             ctx->cleanup->handler(ctx->cleanup->data);
+             ctx->cleanup->data = NULL;
+             ctx->cleanup = NULL;
+        }
+
         if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             ngx_pfree(r->pool, cap);
         }
@@ -775,33 +919,23 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     if (rc < 0) {
-        lua_pushinteger(L, -1);
-        lua_replace(L, lua_upvalueindex(3));
-
-        if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
-            ngx_pfree(r->pool, cap);
-        }
-        ngx_pfree(r->pool, ctx);
-
-        return luaL_error(L, ngx_regex_exec_n " failed: %d on \"%s\"",
+        msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d on \"%s\"",
                 (int) rc, subj.data);
+        goto error;
     }
 
     if (rc == 0) {
-        lua_pushinteger(L, -1);
-        lua_replace(L, lua_upvalueindex(3));
+        if (ctx->flags & NGX_LUA_RE_MODE_DFA) {
+            rc = 1;
 
-        if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
-            ngx_pfree(r->pool, cap);
+        } else {
+            goto error;
         }
-        ngx_pfree(r->pool, ctx);
-
-        return luaL_error(L, "capture size too small");
     }
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, ctx->ncaptures /* narr */, 1 /* nrec */);
+    lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -822,6 +956,12 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     if (offset == (ssize_t) subj.len) {
         offset = -1;
 
+        if (ctx->cleanup) {
+             ctx->cleanup->handler(ctx->cleanup->data);
+             ctx->cleanup->data = NULL;
+             ctx->cleanup = NULL;
+        }
+
         if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             ngx_pfree(r->pool, cap);
         }
@@ -832,6 +972,24 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     lua_replace(L, lua_upvalueindex(3));
 
     return 1;
+
+error:
+    lua_pushinteger(L, -1);
+    lua_replace(L, lua_upvalueindex(3));
+
+    if (ctx->cleanup) {
+         ctx->cleanup->handler(ctx->cleanup->data);
+         ctx->cleanup->data = NULL;
+         ctx->cleanup = NULL;
+    }
+
+    if ((ctx->flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
+        ngx_pfree(r->pool, cap);
+    }
+
+    ngx_pfree(r->pool, ctx);
+
+    return luaL_error(L, msg);
 }
 
 
@@ -1376,6 +1534,10 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
     u_char              *p = data;
     pcre_extra          *sd;
     ngx_pool_t          *pool;
+
+    if (p == NULL) {
+        return;
+    }
 
     sd = *(pcre_extra **) p;
     p += sizeof(void *);
