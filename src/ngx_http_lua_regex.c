@@ -71,7 +71,8 @@ typedef struct {
               captures, size)
 
 
-#define ngx_http_lua_regex_dfa_exec(re, e, s, start, captures, size, ws, wscount) \
+#define ngx_http_lua_regex_dfa_exec(re, e, s, start, captures, size, ws, \
+        wscount) \
     pcre_dfa_exec(re, e, (const char *) (s)->data, (s)->len, start, 0, \
               captures, size, ws, wscount)
 
@@ -238,7 +239,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua compiling match regex \"%s\" with options \"%s\" "
-            "(compile once: %d) (dfa mode: %d) (jit mode: %d)", pat.data, opts.data,
+            "(compile once: %d) (dfa mode: %d) (jit mode: %d)",
+            pat.data, opts.data,
             (flags & NGX_LUA_RE_COMPILE_ONCE) != 0,
             (flags & NGX_LUA_RE_MODE_DFA) != 0,
             (flags & NGX_LUA_RE_MODE_JIT) != 0);
@@ -643,7 +645,8 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua compiling gmatch regex \"%s\" with options \"%s\" "
-            "(compile once: %d) (dfa mode: %d) (jit mode: %d)", pat.data, opts.data,
+            "(compile once: %d) (dfa mode: %d) (jit mode: %d)",
+            pat.data, opts.data,
             (flags & NGX_LUA_RE_COMPILE_ONCE) != 0,
             (flags & NGX_LUA_RE_MODE_DFA) != 0,
             (flags & NGX_LUA_RE_MODE_JIT) != 0);
@@ -894,8 +897,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 #endif /* LUA_HAVE_PCRE_DFA */
 
     } else {
-        rc = ngx_http_lua_regex_exec(ctx->regex, ctx->regex_sd, &subj, offset, cap,
-                ctx->captures_len);
+        rc = ngx_http_lua_regex_exec(ctx->regex, ctx->regex_sd, &subj, offset,
+            cap, ctx->captures_len);
     }
 
     if (rc == NGX_REGEX_NO_MATCHED) {
@@ -1364,11 +1367,11 @@ exec:
             break;
         }
 
-        if (flags & NGX_LUA_RE_MODE_DFA)
-        {
+        if (flags & NGX_LUA_RE_MODE_DFA) {
             int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
-            rc = ngx_http_lua_regex_dfa_exec(re_comp.regex, sd, &subj, offset, cap,
-                    ovecsize, ws, NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT);
+            rc = ngx_http_lua_regex_dfa_exec(re_comp.regex, sd, &subj,
+                offset, cap, ovecsize, ws, NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT);
+
         } else {
             rc = ngx_http_lua_regex_exec(re_comp.regex, sd, &subj, offset, cap,
                     ovecsize);
