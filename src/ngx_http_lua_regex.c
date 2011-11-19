@@ -1064,6 +1064,13 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_regex_compile_t *re,
         p++;
     }
 
+    /* pcre does not support JIT for DFA mode yet,
+     * so if DFA mode is specified, we turn off JIT automatically
+     * */
+    if ((flags & NGX_LUA_RE_MODE_JIT) && (flags & NGX_LUA_RE_MODE_DFA)) {
+        flags &= ~NGX_LUA_RE_MODE_JIT;
+    }
+
     return flags;
 }
 

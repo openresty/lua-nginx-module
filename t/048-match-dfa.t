@@ -36,7 +36,26 @@ hell
 
 
 
-=== TEST 2: not matched with j
+=== TEST 2: matched with d + j
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello", "(he|hell)", "jd")
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hell
+
+
+
+=== TEST 3: not matched with j
 --- config
     location /re {
         content_by_lua '
@@ -55,7 +74,7 @@ not matched!
 
 
 
-=== TEST 3: matched with do
+=== TEST 4: matched with do
 --- config
     location /re {
         content_by_lua '
@@ -78,7 +97,7 @@ nil
 
 
 
-=== TEST 4: not matched with do
+=== TEST 5: not matched with do
 --- config
     location /re {
         content_by_lua '

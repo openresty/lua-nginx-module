@@ -92,7 +92,8 @@ not matched!
 not matched!
 
 
-=== TEST 17: bad pattern
+
+=== TEST 5: bad pattern
 --- config
     location /re {
         content_by_lua '

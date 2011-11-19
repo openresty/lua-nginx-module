@@ -21,7 +21,108 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            for m in ngx.re.gmatch("hello, world", "[a-z]+", "j") do
+            for m in ngx.re.gmatch("hello, halo", "h[a-z]|h[a-z][a-z]", "d") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hel
+hal
+
+
+
+=== TEST 2: d + j
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("hello, halo", "h[a-z]|h[a-z][a-z]", "dj") do
+                if m then
+                    ngx.say(m[0])
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hel
+hal
+
+
+
+=== TEST 3: fail to match
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[0-9]", "d")
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+
+            local m = it()
+            if m then ngx.say(m[0]) else ngx.say(m) end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+nil
+nil
+nil
+
+
+
+=== TEST 4: gmatch matched but no iterate
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "d")
+            ngx.say("done")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+
+
+
+=== TEST 5: gmatch matched but only iterate once and still matches remain
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "d")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+
+
+
+=== TEST 6: gmatch matched + o
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("hello, world", "[a-z]+", "do") do
                 if m then
                     ngx.say(m[0])
                 else
@@ -38,11 +139,11 @@ world
 
 
 
-=== TEST 2: fail to match
+=== TEST 7: fail to match + o
 --- config
     location /re {
         content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[0-9]", "j")
+            local it = ngx.re.gmatch("hello, world", "[0-9]", "do")
             local m = it()
             if m then ngx.say(m[0]) else ngx.say(m) end
 
@@ -62,11 +163,11 @@ nil
 
 
 
-=== TEST 3: gmatch matched but no iterate
+=== TEST 8: gmatch matched but no iterate + o
 --- config
     location /re {
         content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[a-z]+", "j")
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "do")
             ngx.say("done")
         ';
     }
@@ -77,11 +178,11 @@ done
 
 
 
-=== TEST 4: gmatch matched but only iterate once and still matches remain
+=== TEST 9: gmatch matched but only iterate once and still matches remain + o
 --- config
     location /re {
         content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[a-z]+", "j")
+            local it = ngx.re.gmatch("hello, world", "[a-z]+", "do")
             local m = it()
             if m then
                 ngx.say(m[0])
@@ -97,91 +198,11 @@ hello
 
 
 
-=== TEST 5: gmatch matched + o
+=== TEST 10: bad pattern
 --- config
     location /re {
         content_by_lua '
-            for m in ngx.re.gmatch("hello, world", "[a-z]+", "jo") do
-                if m then
-                    ngx.say(m[0])
-                else
-                    ngx.say("not matched: ", m)
-                end
-            end
-        ';
-    }
---- request
-    GET /re
---- response_body
-hello
-world
-
-
-
-=== TEST 6: fail to match + o
---- config
-    location /re {
-        content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[0-9]", "jo")
-            local m = it()
-            if m then ngx.say(m[0]) else ngx.say(m) end
-
-            local m = it()
-            if m then ngx.say(m[0]) else ngx.say(m) end
-
-            local m = it()
-            if m then ngx.say(m[0]) else ngx.say(m) end
-        ';
-    }
---- request
-    GET /re
---- response_body
-nil
-nil
-nil
-
-
-
-=== TEST 7: gmatch matched but no iterate + o
---- config
-    location /re {
-        content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[a-z]+", "jo")
-            ngx.say("done")
-        ';
-    }
---- request
-    GET /re
---- response_body
-done
-
-
-
-=== TEST 8: gmatch matched but only iterate once and still matches remain + o
---- config
-    location /re {
-        content_by_lua '
-            local it = ngx.re.gmatch("hello, world", "[a-z]+", "jo")
-            local m = it()
-            if m then
-                ngx.say(m[0])
-            else
-                ngx.say("not matched")
-            end
-        ';
-    }
---- request
-    GET /re
---- response_body
-hello
-
-
-
-=== TEST 9: bad pattern
---- config
-    location /re {
-        content_by_lua '
-            rc, err = pcall(ngx.re.gmatch, "hello\\nworld", "(abc", "j")
+            rc, err = pcall(ngx.re.gmatch, "hello\\nworld", "(abc", "d")
             if not rc then
                 ngx.say("error: ", err)
                 return
