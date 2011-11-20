@@ -34,7 +34,9 @@ static int ngx_http_lua_ngx_re_match(lua_State *L);
 static int ngx_http_lua_ngx_re_gmatch(lua_State *L);
 static int ngx_http_lua_ngx_re_sub(lua_State *L);
 static int ngx_http_lua_ngx_re_gsub(lua_State *L);
+#if LUA_HAVE_PCRE_JIT
 static void ngx_http_lua_cleanup_pcre_study_data(void *data);
+#endif
 
 
 #define NGX_LUA_RE_COMPILE_ONCE      (1<<0)
@@ -1698,6 +1700,7 @@ ngx_http_lua_inject_regex_api(lua_State *L)
 }
 
 
+#if LUA_HAVE_PCRE_JIT
 static void
 ngx_http_lua_cleanup_pcre_study_data(void *data)
 {
@@ -1719,11 +1722,7 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
         old_pool = ngx_http_lua_pcre_pool;
         ngx_http_lua_pcre_pool = pool;
 
-#if LUA_HAVE_PCRE_JIT
         pcre_free_study(sd);
-#else
-        pcre_free(sd);
-#endif
 
         ngx_http_lua_pcre_pool = old_pool;
         return;
@@ -1739,6 +1738,7 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
 
     ngx_http_lua_pcre_malloc_done();
 }
+#endif /* LUA_HAVE_PCRE_JIT */
 
 
 #endif /* NGX_PCRE */
