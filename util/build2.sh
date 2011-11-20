@@ -16,8 +16,8 @@ ngx-build $force $version \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-cc-opt=$'-O0 -I/opt/pcre60/include' \
-            --with-ld-opt="-L/opt/pcre60/lib -Wl,-rpath,/opt/pcre60/lib:/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
+            --with-cc-opt=$'-O0 -I/opt/pcre820jit/include' \
+            --with-ld-opt="-L/opt/pcre820jit/lib -Wl,-rpath,/opt/pcre820jit/lib:/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --without-mail_smtp_module \
