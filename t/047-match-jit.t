@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 no_long_string();
@@ -33,6 +33,8 @@ __DATA__
     GET /re
 --- response_body
 1234
+--- error_log
+pcre JIT compiling result: 1
 
 
 
@@ -52,6 +54,8 @@ __DATA__
     GET /re
 --- response_body
 not matched!
+--- error_log
+pcre JIT compiling result: 1
 
 
 
@@ -71,6 +75,8 @@ not matched!
     GET /re
 --- response_body
 1234
+--- error_log
+pcre JIT compiling result: 1
 
 
 
@@ -90,6 +96,8 @@ not matched!
     GET /re
 --- response_body
 not matched!
+--- error_log
+pcre JIT compiling result: 1
 
 
 
