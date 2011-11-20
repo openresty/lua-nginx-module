@@ -864,7 +864,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     int                          i;
     ngx_str_t                    subj;
     int                          offset;
-    const char                  *msg;
+    const char                  *msg = NULL;
 
     /* upvalues in order: subj ctx offset */
 
