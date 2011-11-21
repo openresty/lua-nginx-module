@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.3.1rc29
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 17
+    This document describes ngx_lua v0.3.1rc30
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 21
     November 2011.
 
 Synopsis
@@ -1112,8 +1112,8 @@ Nginx API for Lua
     So always set proxy_pass_request_headers "off" in your subrequest
     location to ignore the original request headers.
 
-    Please also refer to restrictions on capturing locations using
-    HttpEchoModule directives.
+    Please also refer to restrictions on capturing locations that include
+    Echo Module directives.
 
   ngx.location.capture_multi
     syntax: *res1, res2, ... = ngx.location.capture_multi({ {uri, options?},
@@ -1172,8 +1172,8 @@ Nginx API for Lua
                 return ngx.location.capture_multi({ {uri, args} })
             end
 
-    Please also refer to restrictions on capturing locations using
-    HttpEchoModule directives.
+    Please also refer to restrictions on capturing locations that include
+    Echo Module directives.
 
   ngx.status
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
@@ -1836,7 +1836,8 @@ Nginx API for Lua
     The optional "status" parameter specifies whether 301 or 302 to be used.
     It is 302 ("ngx.HTTP_MOVED_TEMPORARILY") by default.
 
-    Here is a small example:
+    Here is an example assuming the current server name is "localhost" and
+    that it is listening on Port 1984:
 
         return ngx.redirect("/foo")
 
@@ -1848,9 +1849,6 @@ Nginx API for Lua
     argument:
 
         return ngx.redirect("/foo", 301)
-
-    assuming the current server name is "localhost" and it is listening on
-    the Port 1984.
 
     This method *must* be called before ngx.send_headers or explicit
     response body outputs by either ngx.print or ngx.say.
@@ -2322,12 +2320,27 @@ Nginx API for Lua
     performed. The following option characters are supported:
 
         a             anchored mode (only match from the beginning)
+
+        d             enable the DFA mode (or the longest token match semantics),
+                      this requires PCRE 6.0+ or a Lua exception will be thrown.
+                      first introduced in ngx_lua v0.3.1rc30.
+
         i             caseless mode (just like Perl's /i modifier)
+
+        j             enable PCRE JIT compilation, this requires PCRE 8.20+ and
+                      PCRE must be built with the --enable-jit option, or it is
+                      a no-op. first introduced in ngx_lua v0.3.1rc30.
+
         m             multi-line mode (just like Perl's /m modifier)
+
         o             compile-once mode (similar to Perl's /o modifer),
                       to enable the worker-process-level compiled-regex cache
+
         s             single-line mode (just like Perl's /s modifier)
-        u             UTF-8 mode
+
+        u             UTF-8 mode. this requires PCRE to be built with
+                      the --enable-utf8 option, or a Lua exception will be thrown.
+
         x             extended mode (just like Perl's /x modifier)
 
     These characters can be combined together, for example,
@@ -2817,6 +2830,8 @@ Data Sharing within an Nginx Worker
     into a Lua module, require the module in your code, and manipulate
     shared data through it. It works because required Lua modules are loaded
     only once, and all coroutines will share the same copy of the module.
+    Note however that Lua global variables WILL NOT persist between requests
+    because of the one-coroutine-per-request isolation design.
 
     Here is a complete small example:
 
@@ -2864,25 +2879,27 @@ Data Sharing within an Nginx Worker
         like "mysql".
 
 Known Issues
-  Coroutine Yielding/Resuming
-    *   As ngx_lua's predefined Nginx I/O APIs use coroutine
-        yielding/resuming mechanism, the user code should not call any Lua
-        modules that use coroutine API to prevent obfuscating the predefined
-        Nginx APIs like ngx.location.capture (actually coroutine modules
-        have been masked off in content_by_lua directives and others). This
-        limitation is a little crucial, but do not worry, we're working on
-        an alternative coroutine implementation that can fit into the Nginx
-        event model. When it is done, the user code will be able to use the
-        Lua coroutine mechanism freely as in standard Lua again!
+  Lua Coroutine Yielding/Resuming
+    *   As the module's predefined Nginx I/O API uses the coroutine
+        yielding/resuming mechanism, user code should not call any Lua
+        modules that use the Lua coroutine mechanism in order to prevent
+        conflicts with the module's predefined Nginx API methods such as
+        ngx.location.capture (Actually, coroutine modules have been masked
+        off in content_by_lua directives and others). This limitation is
+        significant and work is ongoing on an alternative coroutine
+        implementation that can fit into the Nginx event model to address
+        this. When this is done, it will be possible to use the Lua
+        coroutine mechanism freely as it is in standard Lua implementations.
 
     *   Lua's "dofile" builtin is implemented as a C function in both Lua
-        5.1 and LuaJIT 2.0. And when you call ngx.location.capture,
-        ngx.exec, ngx.exit or ngx.req.read_body or something like those in
-        the .lua file to be loaded, it'll effectively initiate a coroutine
-        yield and that yield will run across C function boundary, which is
-        disallowed, and usually result in error messages like "lua handler
-        aborted: runtime error: attempt to yield across C-call boundary".
-        You should use Lua's "require" builtin instead.
+        5.1 and LuaJIT 2.0 and when you call ngx.location.capture, ngx.exec,
+        ngx.exit or ngx.req.read_body or similar in the file to be loaded by
+        "dofile", a coroutine yield across the C function boundary will be
+        initiated. This however is not allowed within ngx_lua and will
+        usually result in error messages like "lua handler aborted: runtime
+        error: attempt to yield across C-call boundary". To avoid this,
+        define a real Lua module in your ".lua" file and use Lua's "require"
+        builtin instead.
 
     *   Because the standard Lua 5.1 interpreter's VM is not fully
         resumable, the methods ngx.location.capture,
@@ -2895,32 +2912,9 @@ Known Issues
         LuaJIT 2.0 instead, because LuaJIT 2.0 supports a fully resume-able
         VM.
 
-  Locations Using [[HttpEchoModule]] Directives
-    The ngx.location.capture and ngx.location.capture_multi directives
-    cannot capture locations that include the echo_location,
-    echo_location_async, echo_subrequest, or echo_subrequest_async
-    directives.
-
-        location /foo {
-            content_by_lua '
-                res = ngx.location.capature("/bar")
-            ';
-        }
-        location /bar {
-            echo_location /blah;
-        }
-        location /blah {
-            echo "Success!";
-        }
-
-        $ curl -i http://example.com/foo
-
-    will not work as expected and there are no plans to fix this issue.
-
   Lua Variable Scope
-    Lua global variables WILL NOT persist between requests because of the
-    one-coroutine-per-request isolation design. In particular, care should
-    be taken when importing modules and this form should be used:
+    Care should be taken when importing modules and this form should be
+    used:
 
             local xxx = require('xxx')
 
@@ -2946,60 +2940,99 @@ Known Issues
     variables. See Data Sharing within an Nginx Worker for the reasons
     behind this.
 
-  Special PCRE Sequences
-    Special PCRE sequences such as "\d", "\s", or "\w", require special
-    attention. This is because in string literals, the backslash character,
-    "\", is stripped out by both the Lua language parser and by Nginx config
-    file parser before processing. So the following config snippet will not
-    work as expected:
+  Locations With [[HttpEchoModule]] Directives
+    The ngx.location.capture and ngx.location.capture_multi directives
+    cannot capture locations that include the echo_location,
+    echo_location_async, echo_subrequest, or echo_subrequest_async
+    directives.
 
+        location /foo {
+            content_by_lua '
+                res = ngx.location.capature("/bar")
+            ';
+        }
+        location /bar {
+            echo_location /blah;
+        }
+        location /blah {
+            echo "Success!";
+        }
+
+        $ curl -i http://example.com/foo
+
+    will not work as expected.
+
+  Special PCRE Sequences
+    PCRE sequences such as "\d", "\s", or "\w", require special attention
+    because in string literals, the backslash character, "\", is stripped
+    out by both the Lua language parser and by the Nginx config file parser
+    before processing. So the following snippet will not work as expected:
+
+        # nginx.conf
         ? location /test {
         ?     content_by_lua '
         ?         local regex = "\d+"  -- THIS IS WRONG!!
         ?         local m = ngx.re.match("hello, 1234", regex)
         ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
-        ?         -- evaluates to "not matched!"
         ?     ';
         ? }
+        # evaluates to "not matched!"
 
-    To avoid this, you need to escape the backslash *twice*:
+    To avoid this, you need to *double* escape the backslash:
 
+        # nginx.conf
         location /test {
             content_by_lua '
                 local regex = "\\\\d+"
                 local m = ngx.re.match("hello, 1234", regex)
                 if m then ngx.say(m[0]) else ngx.say("not matched!") end
-                -- evaluates to "1234"
             ';
         }
+        # evaluates to "1234"
 
     Here, "\\\\d+" is stripped down to "\\d+" by the Nginx config file
     parser and this is further stripped down to "\d+" by the Lua language
     parser before running.
 
-    Alternatively, you can present the regex as a long-bracketed lua string
-    literal by encasing it in "long brackets" in which case backslashes have
-    to only be escaped once for the Nginx config parser. Typical long
-    brackets are "[[...]]", "[=[...]=]", "[==[...]==]", and etc.
+    Alternatively, you can present the regex pattern as a long-bracketed lua
+    string literal by encasing it in "long brackets", "[[...]]", in which
+    case backslashes have to only be escaped once for the Nginx config file
+    parser.
 
+        # nginx.conf
         location /test {
             content_by_lua '
                 local regex = [[\\d+]]
                 local m = ngx.re.match("hello, 1234", regex)
                 if m then ngx.say(m[0]) else ngx.say("not matched!") end
-                -- evaluates to "1234"
             ';
         }
+        # evaluates to "1234"
 
     Here, "[[\\d+]]" is stripped down to "[[\d+]]" by the Nginx config file
     parser and this is processed correctly.
 
+    Note that you may need to use a longer from of the long bracket,
+    "[=[...]=]", if the regex pattern contains "[...]" sequences. You can
+    also, if you wish, use the "[=[...]=]" form as your default form and it
+    may help with readability if you put a space between your long brackets
+    and your regex patterns.
+
+        # nginx.conf
+        location /test {
+            content_by_lua '
+                local regex = [=[ [0-9]+ ]=]
+                local m = ngx.re.match("hello, 1234", regex)
+                if m then ngx.say(m[0]) else ngx.say("not matched!") end
+            ';
+        }
+        # evaluates to "1234"
+
     An alternative approach to escaping PCRE sequences is to ensure that Lua
     code is placed in external script files and executed using the various
-    *_by_lua_file directives.
-
-    With this approach, the backslashes are only stripped by the Lua
-    language parser and therefore only need to be escaped once each.
+    *_by_lua_file directives. With this approach, the backslashes are only
+    stripped by the Lua language parser and therefore only need to be
+    escaped once each.
 
         -- test.lua
         local regex = "\\d+"
@@ -3007,9 +3040,8 @@ Known Issues
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
         -- evaluates to "1234"
 
-    Within external script files, special PCRE sequences presented as
-    long-bracketed Lua string literals by encasing them in "long brackets"
-    do not require modification.
+    Within external script files, PCRE sequences presented as long-bracketed
+    lua string literals do not require modification.
 
         -- test.lua
         local regex = [[\d+]]
@@ -3055,18 +3087,20 @@ Typical Use Cases
     *   using Lua to implement advanced caching mechanism for nginx
         subrequests and arbitrary locations.
 
-    Actually the possibilities are unlimited, the Lua language is plays the
-    role of glueing existing stuffs in Nginx.
+    The possibilities are unlimited as the module allows bringing together
+    various elements within Nginx as well as exposing the power of the Lua
+    language to the user. The module provides the full flexibility of
+    scripting while offering performance levels comparable with native C
+    language programs both in terms of CPU time as well as memory footprint.
+    This is particularly the case when LuaJIT 2.0 is enabled.
 
-    This module gives the flexibility of scripting but also offers
-    performance comparable with C (in terms of both CPU time and memory
-    footprint), especially when LuaJIT 2.0 is enabled, which other scripting
-    language implementations are hard to catch up.
+    Other scripting language implementations typically struggle to match
+    this performance level.
 
 Installation
-    You're recommended to install this module as well as the Lua interpreter
-    or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty
-    bundle:
+    You're recommended to install this module as well as the Lua 5.1
+    interpreter or LuaJIT 2.0 (with many other good stuffs) via the
+    ngx_openresty bundle:
 
     http://openresty.org
 
@@ -3076,10 +3110,10 @@ Installation
     Alternatively, you can compile this module with nginx core's source by
     hand:
 
-    1.  Install Lua or LuaJIT into your system. At least Lua 5.1 is
-        required. Lua can be obtained freely from its project homepage
-        (<http://www.lua.org/>). For Ubuntu/Debian users, just install the
-        liblua5.1-0-dev package (or something like that).
+    1.  Install Lua 5.1 or LuaJIT 2.0 into your system. Lua can be obtained
+        freely from its project homepage (<http://www.lua.org/>). For
+        Ubuntu/Debian users, just install the liblua5.1-0-dev package (or
+        something like that).
 
     2.  Download the latest version of the release tarball of the
         ngx_devel_kit (NDK) module from lua-nginx-module file list
@@ -3114,7 +3148,7 @@ Installation
         make install
 
 Compatibility
-    The following versions of Nginx should work with this module:
+    The module is compatible with the following versions of Nginx:
 
     *
           1.1.x (last tested: 1.1.5)
@@ -3128,10 +3162,13 @@ Compatibility
     *
           0.8.x >= 0.8.54 (last tested: 0.8.54)
 
-    Earlier versions of Nginx like 0.6.x and 0.5.x will not work.
+    The module may work with Nginx Versions 0.7.x and 0.8.x < 0.8.54 but
+    these have not been tested.
 
-    If you find that any particular version of Nginx above 0.8.54 does not
-    work with this module, please consider reporting a bug.
+    Nginx Versions < 0.7.0 are not compatible.
+
+    Please consider filing a bug report if you find that any particular
+    version of Nginx above Version 0.8.54 does not work with this module.
 
 Report Bugs
     Although a lot of effort has been put into testing and code tuning,
