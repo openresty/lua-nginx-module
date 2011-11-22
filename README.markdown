@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc30](https://github.com/chaoslawful/lua-nginx-module/tags) released on 21 November 2011.
+This document describes ngx_lua [v0.3.1rc31](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 November 2011.
 
 Synopsis
 ========
@@ -1059,11 +1059,14 @@ argument, which support the options:
 	specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
 * `ctx`
 	specify a Lua table to be the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for the subrequest. It can be the current request's [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the `v0.3.1rc25` release.
+* `vars`
+	take a Lua table as this option's value which holds the values to set the specified Nginx variables in the subrequest. This option was first introduced in the `v0.3.1rc31` release.
+* `copy_all_vars`
+	specify whether to copy over all the Nginx variable values of the current request to the subrequest in question. modifications of the nginx variables in the subrequest will not affect the current (parent) request. This option was first introduced in the `v0.3.1rc31` release.
 * `share_all_vars`
-	specify whether to share all the variables of the subrequest with the current (parent) request.
+	specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
 
-Issuing a POST subrequest, for example,
-can be done as follows
+Issuing a POST subrequest, for example, can be done as follows
 
 
     res = ngx.location.capture(
@@ -1074,14 +1077,6 @@ can be done as follows
 
 See HTTP method constants methods other than POST.
 The `method` option is `ngx.HTTP_GET` by default.
-
-The `share_all_vars` option can control whether to share nginx variables
-among the current request and the new subrequest. If this option is set to `true`, then
-the subrequest can see all the variable values of the current request while the current
-requeset can also see any variable value changes made by the subrequest.
-Note that variable sharing can have unexpected side-effects
-and lead to confusing issues, use it with special
-care. So, by default, the option is set to `false`.
 
 The `args` option can specify extra URI arguments, for instance,
 
@@ -1109,6 +1104,158 @@ The `args` option can also take plain query strings:
 
 
 This is functionally identical to the previous examples.
+
+The `share_all_vars` option can control whether to share nginx variables
+among the current request and the new subrequest. If this option is set to `true`, then
+the subrequest can see all the variable values of the current request while the current
+requeset can also see any variable value changes made by the subrequest.
+Note that variable sharing can have unexpected side-effects
+and lead to confusing issues, use it with special
+care. So, by default, the option is set to `false`.
+
+Here is an example for the `share_all_vars` option:
+
+
+    location /other {
+        set $dog "$dog world";                  
+        echo "$uri dog: $dog";                    
+    }                                     
+    
+    location /lua {
+        set $dog 'hello';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { share_all_vars = true });
+                
+            ngx.print(res.body)
+            ngx.say(ngx.var.uri, ": ", ngx.var.dog)
+        ';  
+    }           
+
+
+Accessing location `/lua` gives
+
+
+    /other dog: hello world
+    /lua: hello world
+
+
+You're discouraged to enable the `share_all_vars` option due to its unexpectied side-effects happened from time to time. You're encouraged to use the `args`, `vars`, or even `copy_all_vars` options instead.
+
+The `copy_all_vars` options instead gives the subrequest a copy of the
+parent's Nginx variables at the time of issuing the subrequest, but changes
+made to the child after this point will not affect the variables of the
+parent's request or any other subrequests sharing the parent's variables.
+
+
+    location /other {
+        set $dog "$dog world";
+        echo "$uri dog: $dog";
+    }
+
+    location /lua {
+        set $dog 'hello';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { copy_all_vars = true });
+
+            ngx.print(res.body)
+            ngx.say(ngx.var.uri, ": ", ngx.var.dog)
+        ';
+    }
+
+
+Request `GET /lua` will give the output
+
+
+    /other dog: hello world
+    /lua: hello
+
+
+Note that if both `share_all_vars` and `copy_all_vars` are set to true,
+then the variables will be shared.
+
+In addition to the above two settings, it is possible to specify
+values for variables in the subrequest using the `vars` option. These
+variables are set after the sharing/copying of variables has been
+evaluated, and provides a more efficient method of passing specific
+values to a subrequest than encoding them as URL arguments and 
+unescaping them in the Nginx config file.
+
+
+    location /other {
+        content_by_lua '
+            ngx.say("dog = ", ngx.var.dog)
+            ngx.say("cat = ", ngx.var.cat)
+        ';
+    }
+
+    location /lua {
+        set $dog '';
+        set $cat '';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { vars = { dog = "hello", cat = 32 }});
+
+            ngx.print(res.body)
+        ';
+    }
+
+
+Accessing `/lua` will yield the output
+
+
+    dog = hello
+    cat = 32
+
+
+The `ctx` option can be used to specify a custom Lua table to serve as the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for the subrequest.
+
+
+    location /sub {
+        content_by_lua '                          
+            ngx.ctx.foo = "bar";                  
+        ';
+    }   
+    location /lua {
+        content_by_lua '
+            local ctx = {}                        
+            res = ngx.location.capture("/sub", { ctx = ctx })
+            
+            ngx.say(ctx.foo);
+            ngx.say(ngx.ctx.foo);                 
+        ';                                        
+    }
+
+
+Then request `GET /lua` gives
+
+
+    bar                                               
+    nil
+
+
+It's also possible to use this `ctx` option to share the same [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table between the current (parent) request and the subrequest:
+
+
+    location /sub {
+        content_by_lua '
+            ngx.ctx.foo = "bar";
+        ';
+    }
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/sub", { ctx = ngx.ctx })
+            ngx.say(ngx.ctx.foo);
+        ';
+    }
+
+
+Request `GET /lua` yields the output
+
+
+    bar
+
 
 Note that, by default, subrequests issued by [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) inherit all the
 request headers of the current request. This may have unexpected side-effects on the

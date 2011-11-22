@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc30] released on 21 November 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc31] released on 22 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1027,11 +1027,14 @@ argument, which support the options:
 : specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
 * <code>ctx</code>
 : specify a Lua table to be the [[#ngx.ctx|ngx.ctx]] table for the subrequest. It can be the current request's [[#ngx.ctx|ngx.ctx]] table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the <code>v0.3.1rc25</code> release.
+* <code>vars</code>
+: take a Lua table as this option's value which holds the values to set the specified Nginx variables in the subrequest. This option was first introduced in the <code>v0.3.1rc31</code> release.
+* <code>copy_all_vars</code>
+: specify whether to copy over all the Nginx variable values of the current request to the subrequest in question. modifications of the nginx variables in the subrequest will not affect the current (parent) request. This option was first introduced in the <code>v0.3.1rc31</code> release.
 * <code>share_all_vars</code>
-: specify whether to share all the variables of the subrequest with the current (parent) request.
+: specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
 
-Issuing a POST subrequest, for example,
-can be done as follows
+Issuing a POST subrequest, for example, can be done as follows
 
 <geshi lang="lua">
     res = ngx.location.capture(
@@ -1042,14 +1045,6 @@ can be done as follows
 
 See HTTP method constants methods other than POST.
 The <code>method</code> option is <code>ngx.HTTP_GET</code> by default.
-
-The <code>share_all_vars</code> option can control whether to share nginx variables
-among the current request and the new subrequest. If this option is set to <code>true</code>, then
-the subrequest can see all the variable values of the current request while the current
-requeset can also see any variable value changes made by the subrequest.
-Note that variable sharing can have unexpected side-effects
-and lead to confusing issues, use it with special
-care. So, by default, the option is set to <code>false</code>.
 
 The <code>args</code> option can specify extra URI arguments, for instance,
 
@@ -1077,6 +1072,158 @@ The <code>args</code> option can also take plain query strings:
 </geshi>
 
 This is functionally identical to the previous examples.
+
+The <code>share_all_vars</code> option can control whether to share nginx variables
+among the current request and the new subrequest. If this option is set to <code>true</code>, then
+the subrequest can see all the variable values of the current request while the current
+requeset can also see any variable value changes made by the subrequest.
+Note that variable sharing can have unexpected side-effects
+and lead to confusing issues, use it with special
+care. So, by default, the option is set to <code>false</code>.
+
+Here is an example for the <code>share_all_vars</code> option:
+
+<geshi lang="nginx">
+    location /other {
+        set $dog "$dog world";                  
+        echo "$uri dog: $dog";                    
+    }                                     
+    
+    location /lua {
+        set $dog 'hello';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { share_all_vars = true });
+                
+            ngx.print(res.body)
+            ngx.say(ngx.var.uri, ": ", ngx.var.dog)
+        ';  
+    }           
+</geshi>
+
+Accessing location <code>/lua</code> gives
+
+<geshi lang="text">
+    /other dog: hello world
+    /lua: hello world
+</geshi>
+
+You're discouraged to enable the <code>share_all_vars</code> option due to its unexpectied side-effects happened from time to time. You're encouraged to use the <code>args</code>, <code>vars</code>, or even <code>copy_all_vars</code> options instead.
+
+The <code>copy_all_vars</code> options instead gives the subrequest a copy of the
+parent's Nginx variables at the time of issuing the subrequest, but changes
+made to the child after this point will not affect the variables of the
+parent's request or any other subrequests sharing the parent's variables.
+
+<geshi lang="nginx">
+    location /other {
+        set $dog "$dog world";
+        echo "$uri dog: $dog";
+    }
+
+    location /lua {
+        set $dog 'hello';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { copy_all_vars = true });
+
+            ngx.print(res.body)
+            ngx.say(ngx.var.uri, ": ", ngx.var.dog)
+        ';
+    }
+</geshi>
+
+Request <code>GET /lua</code> will give the output
+
+<geshi lang="text">
+    /other dog: hello world
+    /lua: hello
+</geshi>
+
+Note that if both <code>share_all_vars</code> and <code>copy_all_vars</code> are set to true,
+then the variables will be shared.
+
+In addition to the above two settings, it is possible to specify
+values for variables in the subrequest using the <code>vars</code> option. These
+variables are set after the sharing/copying of variables has been
+evaluated, and provides a more efficient method of passing specific
+values to a subrequest than encoding them as URL arguments and 
+unescaping them in the Nginx config file.
+
+<geshi lang="nginx">
+    location /other {
+        content_by_lua '
+            ngx.say("dog = ", ngx.var.dog)
+            ngx.say("cat = ", ngx.var.cat)
+        ';
+    }
+
+    location /lua {
+        set $dog '';
+        set $cat '';
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { vars = { dog = "hello", cat = 32 }});
+
+            ngx.print(res.body)
+        ';
+    }
+</geshi>
+
+Accessing <code>/lua</code> will yield the output
+
+<geshi lang="text">
+    dog = hello
+    cat = 32
+</geshi>
+
+The <code>ctx</code> option can be used to specify a custom Lua table to serve as the [[#ngx.ctx|ngx.ctx]] table for the subrequest.
+
+<geshi lang="nginx">
+    location /sub {
+        content_by_lua '                          
+            ngx.ctx.foo = "bar";                  
+        ';
+    }   
+    location /lua {
+        content_by_lua '
+            local ctx = {}                        
+            res = ngx.location.capture("/sub", { ctx = ctx })
+            
+            ngx.say(ctx.foo);
+            ngx.say(ngx.ctx.foo);                 
+        ';                                        
+    }
+</geshi>
+
+Then request <code>GET /lua</code> gives
+
+<geshi lang="text">
+    bar                                               
+    nil
+</geshi>
+
+It's also possible to use this <code>ctx</code> option to share the same [[#ngx.ctx|ngx.ctx]] table between the current (parent) request and the subrequest:
+
+<geshi lang="nginx">
+    location /sub {
+        content_by_lua '
+            ngx.ctx.foo = "bar";
+        ';
+    }
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/sub", { ctx = ngx.ctx })
+            ngx.say(ngx.ctx.foo);
+        ';
+    }
+</geshi>
+
+Request <code>GET /lua</code> yields the output
+
+<geshi lang="text">
+    bar
+</geshi>
 
 Note that, by default, subrequests issued by [[#ngx.location.capture|ngx.location.capture]] inherit all the
 request headers of the current request. This may have unexpected side-effects on the
