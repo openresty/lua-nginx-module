@@ -8,6 +8,7 @@
 
 static int ngx_http_lua_ngx_today(lua_State *L);
 static int ngx_http_lua_ngx_time(lua_State *L);
+static int ngx_http_lua_ngx_now(lua_State *L);
 static int ngx_http_lua_ngx_localtime(lua_State *L);
 static int ngx_http_lua_ngx_utctime(lua_State *L);
 static int ngx_http_lua_ngx_cookie_time(lua_State *L);
@@ -97,6 +98,32 @@ ngx_http_lua_ngx_time(lua_State *L)
     }
 
     lua_pushnumber(L, (lua_Number) ngx_time());
+
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_now(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    ngx_time_t              *tp;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (lua_gettop(L) > 0) {
+        return luaL_error(L, "shouldn't have argument");
+    }
+
+    tp = ngx_timeofday();
+
+    lua_pushnumber(L, (lua_Number) (tp->sec + tp->msec / 1000.0));
 
     return 1;
 }
@@ -222,6 +249,9 @@ ngx_http_lua_inject_time_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_time);
     lua_setfield(L, -2, "time");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_now);
+    lua_setfield(L, -2, "now");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_today);
     lua_setfield(L, -2, "get_today"); /* deprecated */
