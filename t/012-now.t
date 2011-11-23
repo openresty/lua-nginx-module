@@ -16,7 +16,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: use ngx.now in content_by_lua
+=== TEST 1: use ngx.localtime in content_by_lua
 --- config
     location = /now {
         content_by_lua 'ngx.say(ngx.localtime())';
@@ -27,7 +27,7 @@ GET /now
 
 
 
-=== TEST 2: use ngx.now in set_by_lua
+=== TEST 2: use ngx.localtime in set_by_lua
 --- config
     location = /now {
         set_by_lua $a 'return ngx.localtime()';
@@ -75,13 +75,30 @@ GET /time
 --- request
 GET /time
 --- response_body_like chomp
-        ';
-    }
---- request
-GET /time
---- response_body_like chomp
 ^\d{10,}
 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 \w+, .*? GMT$
 
+
+
+=== TEST 6: use ngx.now in set_by_lua
+--- config
+    location = /time {
+        set_by_lua $a 'return ngx.now()';
+        echo $a;
+    }
+--- request
+GET /time
+--- response_body_like: ^\d{10,}(\.\d{1,3})?$
+
+
+
+=== TEST 7: use ngx.time in content_by_lua
+--- config
+    location = /time {
+        content_by_lua 'ngx.say(ngx.time())';
+    }
+--- request
+GET /time
+--- response_body_like: ^\d{10,}(\.\d{1,3})?$
