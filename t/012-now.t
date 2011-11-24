@@ -102,3 +102,18 @@ GET /time
 --- request
 GET /time
 --- response_body_like: ^\d{10,}(\.\d{1,3})?$
+
+
+
+=== TEST 8: use ngx.update_time & ngx.now in content_by_lua
+--- config
+    location = /time {
+        content_by_lua '
+            ngx.update_time()
+            ngx.say(ngx.now())
+        ';
+    }
+--- request
+GET /time
+--- response_body_like: ^\d{10,}(\.\d{1,3})?$
+
