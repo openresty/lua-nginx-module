@@ -274,7 +274,7 @@ GET /lua
 
 
 
-=== TEST 3: capture_multi: good "vars" option: user variables
+=== TEST 11: capture_multi: good "vars" option: user variables
 --- config
     location /other {
         content_by_lua '

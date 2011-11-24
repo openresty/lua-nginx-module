@@ -146,7 +146,8 @@ blah: 33
 32
 
 
-=== TEST 3: capture_multi
+
+=== TEST 7: capture_multi
 --- config
     location /other {
         content_by_lua '
