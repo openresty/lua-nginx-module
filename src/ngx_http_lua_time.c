@@ -20,14 +20,9 @@ static int ngx_http_lua_ngx_update_time(lua_State *L);
 static int
 ngx_http_lua_ngx_today(lua_State *L)
 {
-    ngx_http_request_t      *r;
     time_t                   now;
     ngx_tm_t                 tm;
     u_char                   buf[sizeof("2010-11-19") - 1];
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     now = ngx_time();
     ngx_gmtime(now + ngx_cached_time->gmtoff * 60, &tm);
@@ -44,14 +39,9 @@ ngx_http_lua_ngx_today(lua_State *L)
 static int
 ngx_http_lua_ngx_localtime(lua_State *L)
 {
-    ngx_http_request_t      *r;
     ngx_tm_t                 tm;
 
     u_char buf[sizeof("2010-11-19 20:56:31") - 1];
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     ngx_gmtime(ngx_time() + ngx_cached_time->gmtoff * 60, &tm);
 
@@ -68,12 +58,6 @@ ngx_http_lua_ngx_localtime(lua_State *L)
 static int
 ngx_http_lua_ngx_time(lua_State *L)
 {
-    ngx_http_request_t      *r;
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
     lua_pushnumber(L, (lua_Number) ngx_time());
 
     return 1;
@@ -83,12 +67,7 @@ ngx_http_lua_ngx_time(lua_State *L)
 static int
 ngx_http_lua_ngx_now(lua_State *L)
 {
-    ngx_http_request_t      *r;
     ngx_time_t              *tp;
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     tp = ngx_timeofday();
 
@@ -109,14 +88,9 @@ ngx_http_lua_ngx_update_time(lua_State *L)
 static int
 ngx_http_lua_ngx_utctime(lua_State *L)
 {
-    ngx_http_request_t      *r;
     ngx_tm_t                 tm;
 
     u_char buf[sizeof("2010-11-19 20:56:31") - 1];
-
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     ngx_gmtime(ngx_time(), &tm);
 
