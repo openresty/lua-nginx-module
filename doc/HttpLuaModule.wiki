@@ -2288,7 +2288,7 @@ You can enforce updating the Nginx time cache by calling [[#ngx.update_time|ngx.
 
 Returns a floating-point number for the elapsed time in seconds (including microseconds as the decimal part) from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-You can enforce updating the Nginx time cache by calling [[#ngx.update_time|ngx.update_time]] first.
+You can use the standard Nginx directive [[CoreModule#timer_resolution|timer_resolution]] to adjust the accuracy or forcibly updating the Nginx time cache by calling [[#ngx.update_time|ngx.update_time]] first.
 
 This API was first introduced in <code>v0.3.1rc32</code>.
 

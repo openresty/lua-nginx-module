@@ -2361,8 +2361,9 @@ Nginx API for Lua
     current timestamp from the nginx cached time (no syscall involved unlike
     Lua's date library).
 
-    You can enforce updating the Nginx time cache by calling ngx.update_time
-    first.
+    You can use the standard Nginx directive timer_resolution to adjust the
+    accuracy or forcibly updating the Nginx time cache by calling
+    ngx.update_time first.
 
     This API was first introduced in "v0.3.1rc32".
 

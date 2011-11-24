@@ -2359,7 +2359,7 @@ ngx.now
 
 Returns a floating-point number for the elapsed time in seconds (including microseconds as the decimal part) from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-You can enforce updating the Nginx time cache by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
+You can use the standard Nginx directive [timer_resolution](http://wiki.nginx.org/CoreModule#timer_resolution) to adjust the accuracy or forcibly updating the Nginx time cache by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
 
 This API was first introduced in `v0.3.1rc32`.
 
