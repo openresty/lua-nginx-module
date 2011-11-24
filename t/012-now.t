@@ -94,10 +94,10 @@ GET /time
 
 
 
-=== TEST 7: use ngx.time in content_by_lua
+=== TEST 7: use ngx.now in content_by_lua
 --- config
     location = /time {
-        content_by_lua 'ngx.say(ngx.time())';
+        content_by_lua 'ngx.say(ngx.now())';
     }
 --- request
 GET /time
