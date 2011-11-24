@@ -28,14 +28,6 @@ ngx_http_lua_ngx_today(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (lua_gettop(L) > 0) {
-        return luaL_error(L, "shouldn't have argument");
-    }
-
     now = ngx_time();
     ngx_gmtime(now + ngx_cached_time->gmtoff * 60, &tm);
 
@@ -60,14 +52,6 @@ ngx_http_lua_ngx_localtime(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (lua_gettop(L) > 0) {
-        return luaL_error(L, "shouldn't have argument");
-    }
-
     ngx_gmtime(ngx_time() + ngx_cached_time->gmtoff * 60, &tm);
 
     ngx_sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", tm.ngx_tm_year,
@@ -89,14 +73,6 @@ ngx_http_lua_ngx_time(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (lua_gettop(L) > 0) {
-        return luaL_error(L, "shouldn't have argument");
-    }
-
     lua_pushnumber(L, (lua_Number) ngx_time());
 
     return 1;
@@ -113,17 +89,9 @@ ngx_http_lua_ngx_now(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (lua_gettop(L) > 0) {
-        return luaL_error(L, "shouldn't have argument");
-    }
-
     tp = ngx_timeofday();
 
-    lua_pushnumber(L, (lua_Number) (tp->sec + tp->msec / 1000.0));
+    lua_pushnumber(L, (lua_Number) (tp->sec + tp->msec / 1000.0L));
 
     return 1;
 }
@@ -140,14 +108,6 @@ ngx_http_lua_ngx_utctime(lua_State *L)
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    if (lua_gettop(L) > 0) {
-        return luaL_error(L, "shouldn't have argument");
-    }
 
     ngx_gmtime(ngx_time(), &tm);
 
