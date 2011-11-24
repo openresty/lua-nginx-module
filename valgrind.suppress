@@ -3,6 +3,14 @@
    Memcheck:Leak
    fun:malloc
    fun:ngx_alloc
+   fun:ngx_calloc
+   fun:ngx_event_process_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:ngx_alloc
    fun:ngx_malloc
    fun:ngx_pcalloc
 }

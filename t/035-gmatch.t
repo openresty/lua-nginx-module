@@ -370,3 +370,38 @@ nil
 567
 98
 
+
+
+=== TEST 16: gmatch matched but no iterate
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+")
+            ngx.say("done")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+
+
+
+=== TEST 17: gmatch matched but only iterate once and still matches remain
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, world", "[a-z]+")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+

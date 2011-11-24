@@ -85,6 +85,7 @@ ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
         lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
         lua_pushvalue(L, index);
         ctx->ctx_ref = luaL_ref(L, -2);
+        lua_pop(L, 1);
         return 0;
     }
 
@@ -95,6 +96,7 @@ ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
     luaL_unref(L, -1, ctx->ctx_ref);
     lua_pushvalue(L, index);
     ctx->ctx_ref = luaL_ref(L, -2);
+    lua_pop(L, 1);
 
     return 0;
 }

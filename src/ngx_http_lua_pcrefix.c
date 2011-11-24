@@ -7,7 +7,7 @@
 
 #if (NGX_PCRE)
 
-static ngx_pool_t *ngx_http_lua_pcre_pool;
+ngx_pool_t *ngx_http_lua_pcre_pool;
 
 static void *(*old_pcre_malloc)(size_t);
 static void (*old_pcre_free)(void *ptr);
@@ -17,12 +17,14 @@ static void (*old_pcre_free)(void *ptr);
  * to use PCRE functions. As PCRE still has memory-leaking problems,
  * and nginx overwrote pcre_malloc/free hooks with its own static
  * functions, so nobody else can reuse nginx regex subsystem... */
-static void *
+void *
 ngx_http_lua_pcre_malloc(size_t size)
 {
 	if (ngx_http_lua_pcre_pool) {
 		return ngx_palloc(ngx_http_lua_pcre_pool, size);
 	}
+
+    dd("returning NULL");
 
 	return NULL;
 }

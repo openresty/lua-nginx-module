@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('warn');
+#log_level('warn');
 
 repeat_each(2);
 #repeat_each(1);
@@ -144,4 +144,38 @@ GET /lua
 blah: 33
 --- response_body
 32
+
+
+=== TEST 3: capture_multi
+--- config
+    location /other {
+        content_by_lua '
+            ngx.say("dog = ", ngx.ctx.dog)
+        ';
+    }
+
+    location /lua {
+        set $dog 'blah';
+        set $cat 'foo';
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                {"/other/1",
+                    { ctx = { dog = "hello" }}
+                },
+                {"/other/2",
+                    { ctx = { dog = "hiya" }}
+                }
+            };
+
+            ngx.print(res1.body)
+            ngx.print(res2.body)
+            ngx.say("parent: ", ngx.ctx.dog)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+dog = hello
+dog = hiya
+parent: nil
 
