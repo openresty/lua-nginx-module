@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc32] released on 24 November 2011.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.3.1rc34] released on 25 November 2011.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2013,6 +2013,8 @@ will yield the output
 
 Non-array table arguments will cause a Lua exception to be thrown.
 
+This is an asynchronous call, that is, this function will return immediately without waiting for all the data has actually been written into the system send buffer. If you want to wait for the data to be flushed before proceeding, you should call <code>ngx.flush(true)</code> right after this call. See [[#ngx.flush|ngx.flush]] for more details.
+
 == ngx.say ==
 '''syntax:''' ''ngx.say(...)''
 
@@ -2032,11 +2034,19 @@ Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</c
 The <code>log_level</code> argument can take constants like <code>ngx.ERR</code> and <code>ngx.WARN</code>. Check out [[#Nginx log level constants|Nginx log level constants]] for details.
 
 == ngx.flush ==
-'''syntax:''' ''ngx.flush()''
+'''syntax:''' ''ngx.flush(wait?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Force flushing the response outputs. This operation has no effect in HTTP 1.0 buffering output mode. See [[#HTTP 1.0 support|HTTP 1.0 support]].
+Flushing the response outputs. This operation has no effect in HTTP 1.0 buffering output mode. See [[#HTTP 1.0 support|HTTP 1.0 support]].
+
+By default, this function is an asynchronous call, that is, it returns immediately without waiting for the ouptuts to be actually flushed into the system socket send buffer.
+
+This function takes an optional boolean <code>wait</code> argument. When it is given <code>true</code> (which is default to <code>false</code>), this function becomes a synchronous call, that is, it will not return until all the outputs have actually been flushed into the system socket send buffer or the [[HttpCoreModule#send_timeout|send_timeout]] setting has expired. Note that, even in the synchronous mode, this function still works nonblockingly (thanks to the Lua coroutine mechanism!).
+
+Synchronous flushing is very useful for streaming output in Lua.
+
+The <code>wait</code> argument was first introduced in the <code>v0.3.1rc34</code> release.
 
 == ngx.exit ==
 '''syntax:''' ''ngx.exit(status)''
