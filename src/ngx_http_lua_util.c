@@ -881,15 +881,21 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
     int                          nret = 0;
+    ngx_connection_t            *c;
+    ngx_event_t                 *wev;
+    ngx_http_core_loc_conf_t    *clcf;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    c = r->connection;
+    wev = c->write;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "lua run write event handler");
 
     dd("wev handler %.*s %.*s a:%d, postponed:%p",
             (int) r->uri.len, r->uri.data,
             (int) ngx_cached_err_log_time.len,
             ngx_cached_err_log_time.data,
-            r == r->connection->data,
+            r == c->data,
             r->postponed);
 #if 0
     ngx_http_lua_dump_postponed(r);
@@ -917,7 +923,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     if (ctx->waiting_more_body && !ctx->req_read_body_done) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua write event handler waiting for more request body data");
 
         return NGX_DONE;
@@ -926,22 +932,22 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     dd("waiting: %d, done: %d", (int) ctx->waiting,
             ctx->done);
 
-    if (ctx->waiting && ! ctx->done) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    if (ctx->waiting && !ctx->done) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua waiting for pending subrequests");
 
 #if 0
         ngx_http_lua_dump_postponed(r);
 #endif
 
-        if (r == r->connection->data && r->postponed) {
+        if (r == c->data && r->postponed) {
             if (r->postponed->request) {
-                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                         "lua activating the next postponed request %V?%V",
                         &r->postponed->request->uri,
                         &r->postponed->request->args);
 
-                r->connection->data = r->postponed->request;
+                c->data = r->postponed->request;
 
 #if defined(nginx_version) && nginx_version >= 8012
                 ngx_http_post_request(r->postponed->request, NULL);
@@ -950,7 +956,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 #endif
 
             } else {
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                         "lua flushing postponed output");
 
                 ngx_http_lua_flush_postponed_outputs(r);
@@ -962,14 +968,63 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     dd("req read body done: %d", (int) ctx->req_read_body_done);
 
-    if (ctx->req_read_body_done) {
+    if (c->buffered) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                "lua wev handler flushing output: buffered 0x%uxd",
+                c->buffered);
+
+        rc = ngx_http_output_filter(r, NULL);
+
+        if (rc == NGX_ERROR || rc > NGX_OK) {
+            if (ctx->entered_content_phase) {
+                ngx_http_finalize_request(r, rc);
+                return NGX_DONE;
+            }
+
+            return rc;
+        }
+
+        if (c->buffered) {
+
+            clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+            if (!wev->delayed) {
+                ngx_add_timer(wev, clcf->send_timeout);
+            }
+
+            if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+                if (ctx->entered_content_phase) {
+                    ngx_http_finalize_request(r, NGX_ERROR);
+                    return NGX_DONE;
+                }
+
+                return NGX_ERROR;
+            }
+
+            if (ctx->waiting_flush) {
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                        "lua flush still waiting: buffered 0x%uxd",
+                        c->buffered);
+
+                return NGX_DONE;
+            }
+        }
+    }
+
+    if (ctx->waiting_flush) {
+
+        nret = 0;
+
+        goto run;
+
+    } else if (ctx->req_read_body_done) {
         dd("turned off req read body done");
 
         ctx->req_read_body_done = 0;
 
         nret = 0;
 
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua read req body done, resuming lua thread");
 
         goto run;
@@ -977,7 +1032,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     } else if (ctx->done) {
         ctx->done = 0;
 
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua run subrequests done, resuming lua thread");
 
         dd("nsubreqs: %d", (int) ctx->nsubreqs);
@@ -999,7 +1054,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         goto run;
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "useless lua write event handler");
 
     if (ctx->entered_content_phase) {
@@ -1015,7 +1070,7 @@ run:
 
     rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
