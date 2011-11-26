@@ -998,7 +998,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     dd("req read body done: %d", (int) ctx->req_read_body_done);
 
     if (c->buffered) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua wev handler flushing output: buffered 0x%uxd",
                 c->buffered);
 
@@ -1029,7 +1029,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             }
 
             if (ctx->waiting_flush) {
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                         "lua flush still waiting: buffered 0x%uxd",
                         c->buffered);
 
