@@ -886,10 +886,44 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_core_loc_conf_t    *clcf;
 
     c = r->connection;
-    wev = c->write;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "lua run write event handler");
+
+    wev = c->write;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        goto error;
+    }
+
+    clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+    if (wev->timedout) {
+        if (!wev->delayed) {
+            ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT,
+                          "client timed out");
+            c->timedout = 1;
+
+            if (ctx->entered_content_phase) {
+                ngx_http_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
+            }
+
+            return NGX_HTTP_REQUEST_TIME_OUT;
+        }
+
+        wev->timedout = 0;
+        wev->delayed = 0;
+
+        if (!wev->ready) {
+            ngx_add_timer(wev, clcf->send_timeout);
+
+            if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+                ngx_http_finalize_request(r, NGX_ERROR);
+                return NGX_ERROR;
+            }
+        }
+    }
 
     dd("wev handler %.*s %.*s a:%d, postponed:%p",
             (int) r->uri.len, r->uri.data,
@@ -900,11 +934,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 #if 0
     ngx_http_lua_dump_postponed(r);
 #endif
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        goto error;
-    }
 
     dd("ctx = %p", ctx);
     dd("request done: %d", (int) r->done);
@@ -985,8 +1014,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
 
         if (c->buffered) {
-
-            clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
 
             if (!wev->delayed) {
                 ngx_add_timer(wev, clcf->send_timeout);

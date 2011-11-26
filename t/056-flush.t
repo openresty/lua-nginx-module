@@ -37,6 +37,7 @@ hiya
 
 === TEST 2: flush no wait - content
 --- config
+    send_timeout 100ms;
     location /test {
         content_by_lua '
             ngx.say("hello, world")
