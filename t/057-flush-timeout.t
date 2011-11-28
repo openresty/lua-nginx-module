@@ -7,9 +7,9 @@ BEGIN {
 
     if ($ENV{LD_PRELOAD} !~ /\bmockeagain\.so\b/) {
         $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
-        $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
     }
 
+    $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
     $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'hello, world';
 }
 
