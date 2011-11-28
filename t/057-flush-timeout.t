@@ -1,4 +1,18 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
+
+BEGIN {
+    if (!defined $ENV{LD_PRELOAD}) {
+        $ENV{LD_PRELOAD} = '';
+    }
+
+    if ($ENV{LD_PRELOAD} !~ /\bmockeagain\.so\b/) {
+        $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
+        $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+    }
+
+    $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'hello, world';
+}
+
 use lib 'lib';
 use Test::Nginx::Socket;
 
@@ -12,11 +26,6 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 1);
 
-if ($ENV{LD_PRELOAD} !~ /\bmockeagain\.so\b/) {
-    $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
-}
-
-$ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'hello, world';
 #no_diff();
 #no_long_string();
 run_tests();
