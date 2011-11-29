@@ -95,7 +95,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     int                          i;
     ngx_int_t                    pos = 0;
     int                          nargs;
-    int                         *cap;
+    int                         *cap = NULL;
     int                          ovecsize;
     ngx_uint_t                   flags;
     ngx_pool_t                  *pool, *old_pool;
@@ -1120,7 +1120,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     ngx_uint_t                   n;
     ngx_int_t                    i;
     int                          nargs;
-    int                         *cap;
+    int                         *cap = NULL;
     int                          ovecsize;
     int                          type;
     unsigned                     func;
