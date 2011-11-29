@@ -98,7 +98,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     int                         *cap;
     int                          ovecsize;
     ngx_uint_t                   flags;
-    ngx_pool_t                  *pool;
+    ngx_pool_t                  *pool, *old_pool;
     ngx_http_lua_main_conf_t    *lmcf = NULL;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
@@ -247,11 +247,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
             (flags & NGX_LUA_RE_MODE_DFA) != 0,
             (flags & NGX_LUA_RE_MODE_JIT) != 0);
 
-    ngx_http_lua_pcre_malloc_done();
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
     rc = ngx_regex_compile(&re_comp);
 
-    ngx_http_lua_pcre_malloc_init(r->pool);
+    ngx_http_lua_pcre_malloc_done(old_pool);
 
     if (rc != NGX_OK) {
         dd("compile failed");
@@ -267,11 +267,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
 
-        ngx_http_lua_pcre_pool = pool;
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
         if (sd && (flags & NGX_LUA_RE_COMPILE_ONCE) != 0) {
             /* XXX PCRE 8.20 uses SLJIT_MALLOC to allocate memory
@@ -307,11 +307,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         if (sd != NULL) {
             int         jitted;
 
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
             pcre_fullinfo(re_comp.regex, sd, PCRE_INFO_JIT, &jitted);
 
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "pcre JIT compiling result: %d", jitted);
@@ -319,11 +319,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 #   endif /* NGX_DEBUG */
 
     } else {
-        ngx_http_lua_pcre_pool = pool;
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, 0, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
 #   if (NGX_DEBUG)
         dd("sd = %p", sd);
@@ -421,9 +421,9 @@ exec:
         if ((flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
 #if LUA_HAVE_PCRE_JIT
             if (sd) {
-                ngx_http_lua_pcre_pool = pool;
+                old_pool = ngx_http_lua_pcre_malloc_init(pool);
                 pcre_free_study(sd);
-                ngx_http_lua_pcre_pool = r->pool;
+                ngx_http_lua_pcre_malloc_done(old_pool);
             }
 #endif
             ngx_pfree(pool, re_comp.regex);
@@ -479,9 +479,11 @@ exec:
 
 #if LUA_HAVE_PCRE_JIT
         if (sd) {
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
+            dd("pcre free study begin, old pool %p, pool %p", old_pool, pool);
             pcre_free_study(sd);
-            ngx_http_lua_pcre_pool = r->pool;
+            dd("pcre free study end");
+            ngx_http_lua_pcre_malloc_done(old_pool);
         }
 #endif
 
@@ -495,9 +497,9 @@ error:
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
 #if LUA_HAVE_PCRE_JIT
         if (sd) {
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
             pcre_free_study(sd);
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
         }
 #endif
 
@@ -531,7 +533,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     ngx_int_t                    flags;
     int                         *cap = NULL;
     ngx_int_t                    rc;
-    ngx_pool_t                  *pool;
+    ngx_pool_t                  *pool, *old_pool;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
     ngx_pool_cleanup_t          *cln = NULL;
@@ -656,11 +658,11 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
             (flags & NGX_LUA_RE_MODE_DFA) != 0,
             (flags & NGX_LUA_RE_MODE_JIT) != 0);
 
-    ngx_http_lua_pcre_malloc_done();
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
     rc = ngx_regex_compile(&re_comp);
 
-    ngx_http_lua_pcre_malloc_init(r->pool);
+    ngx_http_lua_pcre_malloc_done(old_pool);
 
     if (rc != NGX_OK) {
         dd("compile failed");
@@ -676,11 +678,11 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
 
-        ngx_http_lua_pcre_pool = pool;
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
         if (sd) {
             /* XXX PCRE 8.20 uses SLJIT_MALLOC to allocate memory
@@ -715,11 +717,11 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         if (sd != NULL) {
             int         jitted;
 
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
             pcre_fullinfo(re_comp.regex, sd, PCRE_INFO_JIT, &jitted);
 
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "pcre JIT compiling result: %d", jitted);
@@ -727,11 +729,12 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 #   endif /* NGX_DEBUG */
 
     } else {
-        ngx_http_lua_pcre_pool = pool;
+
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, 0, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
 #   if (NGX_DEBUG)
         dd("sd = %p", sd);
@@ -829,14 +832,18 @@ error:
              cln = NULL;
 
         } else {
+
             if (sd) {
-                ngx_http_lua_pcre_pool = pool;
+
+                old_pool = ngx_http_lua_pcre_malloc_init(pool);
+
 #if LUA_HAVE_PCRE_JIT
                 pcre_free_study(sd);
 #else
                 pcre_free(sd);
 #endif
-                ngx_http_lua_pcre_pool = r->pool;
+
+                ngx_http_lua_pcre_malloc_done(old_pool);
             }
         }
 
@@ -1106,7 +1113,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     ngx_str_t                    opts;
     ngx_str_t                    tpl;
     ngx_http_lua_main_conf_t    *lmcf = NULL;
-    ngx_pool_t                  *pool;
+    ngx_pool_t                  *pool, *old_pool;
     ngx_regex_compile_t          re_comp;
     const char                  *msg;
     ngx_int_t                    rc;
@@ -1290,11 +1297,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
             (flags & NGX_LUA_RE_MODE_DFA) != 0,
             (flags & NGX_LUA_RE_MODE_JIT) != 0);
 
-    ngx_http_lua_pcre_malloc_done();
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
     rc = ngx_regex_compile(&re_comp);
 
-    ngx_http_lua_pcre_malloc_init(r->pool);
+    ngx_http_lua_pcre_malloc_done(old_pool);
 
     if (rc != NGX_OK) {
         dd("compile failed");
@@ -1310,11 +1317,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
 
-        ngx_http_lua_pcre_pool = pool;
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
         if (sd && (flags & NGX_LUA_RE_COMPILE_ONCE) != 0) {
             /* XXX PCRE 8.20 uses SLJIT_MALLOC to allocate memory
@@ -1350,11 +1357,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
         if (sd != NULL) {
             int         jitted;
 
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
             pcre_fullinfo(re_comp.regex, sd, PCRE_INFO_JIT, &jitted);
 
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "pcre JIT compiling result: %d", jitted);
@@ -1362,11 +1369,12 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 #   endif /* NGX_DEBUG */
 
     } else {
-        ngx_http_lua_pcre_pool = pool;
+
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, 0, &msg);
 
-        ngx_http_lua_pcre_pool = r->pool;
+        ngx_http_lua_pcre_malloc_done(old_pool);
 
 #   if (NGX_DEBUG)
         dd("sd = %p", sd);
@@ -1628,9 +1636,9 @@ exec:
     if ((flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
 #if LUA_HAVE_PCRE_JIT
         if (sd) {
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
             pcre_free_study(sd);
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
         }
 #endif
 
@@ -1654,9 +1662,9 @@ error:
     if ((flags & NGX_LUA_RE_COMPILE_ONCE) == 0) {
 #if LUA_HAVE_PCRE_JIT
         if (sd) {
-            ngx_http_lua_pcre_pool = pool;
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
             pcre_free_study(sd);
-            ngx_http_lua_pcre_pool = r->pool;
+            ngx_http_lua_pcre_malloc_done(old_pool);
         }
 #endif
 
@@ -1706,7 +1714,7 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
 {
     u_char              *p = data;
     pcre_extra          *sd;
-    ngx_pool_t          *pool;
+    ngx_pool_t          *pool, *old_pool;
 
     if (p == NULL) {
         return;
@@ -1716,27 +1724,13 @@ ngx_http_lua_cleanup_pcre_study_data(void *data)
     p += sizeof(void *);
     pool = *(ngx_pool_t **) p;
 
-    if (pcre_malloc == ngx_http_lua_pcre_malloc) {
-        ngx_pool_t          *old_pool;
-
-        old_pool = ngx_http_lua_pcre_pool;
-        ngx_http_lua_pcre_pool = pool;
+    if (sd) {
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         pcre_free_study(sd);
 
-        ngx_http_lua_pcre_pool = old_pool;
-        return;
+        ngx_http_lua_pcre_malloc_done(old_pool);
     }
-
-    ngx_http_lua_pcre_malloc_init(pool);
-
-#if LUA_HAVE_PCRE_JIT
-    pcre_free_study(sd);
-#else
-    pcre_free(sd);
-#endif
-
-    ngx_http_lua_pcre_malloc_done();
 }
 #endif /* LUA_HAVE_PCRE_JIT */
 

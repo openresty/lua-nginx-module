@@ -9,6 +9,8 @@ force=$2
 
 # the ngx-build script is from https://github.com/agentzh/nginx-devel-utils
 
+            #--add-module=$home/work/nginx_upload_module-2.2.0 \
+
             #--without-pcre \
             #--without-http_rewrite_module \
 

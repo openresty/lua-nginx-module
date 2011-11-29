@@ -656,3 +656,43 @@ lua handler aborted: runtime error: [string "content_by_lua"]:2: bad argument #2
 --- response_body
 1234
 
+
+
+=== TEST 32: bug report (github issue #72)
+--- config
+    location /re {
+        content_by_lua '
+            ngx.re.match("hello", "hello", "j")
+            ngx.say("done")
+        ';
+        header_filter_by_lua '
+            ngx.re.match("hello", "world", "j")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+
+
+
+=== TEST 33: bug report (github issue #72)
+--- config
+    location /re {
+        content_by_lua '
+            ngx.re.match("hello", "hello", "j")
+            ngx.exec("/foo")
+        ';
+    }
+
+    location /foo {
+        content_by_lua '
+            ngx.re.match("hello", "world", "j")
+            ngx.say("done")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+

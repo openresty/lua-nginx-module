@@ -101,6 +101,9 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     ngx_int_t        rc;
     u_char          *err_msg;
+#if (NGX_PCRE)
+    ngx_pool_t      *old_pool;
+#endif
 
     /*  set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
@@ -110,7 +113,7 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
-    ngx_http_lua_pcre_malloc_init(r->pool);
+    old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
     /*  protected call user code */
@@ -118,7 +121,7 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
-    ngx_http_lua_pcre_malloc_done();
+    ngx_http_lua_pcre_malloc_done(old_pool);
 #endif
 
     if (rc != 0) {

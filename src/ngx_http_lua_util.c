@@ -746,6 +746,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     lua_State               *cc;
     const char              *err, *msg;
     ngx_int_t                rc;
+#if (NGX_PCRE)
+    ngx_pool_t              *old_pool;
+#endif
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua run thread");
@@ -761,7 +764,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
-        ngx_http_lua_pcre_malloc_init(r->pool);
+        old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
         dd("calling lua_resume: vm %p, nret %d", cc, (int) nret);
@@ -771,7 +774,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
-        ngx_http_lua_pcre_malloc_done();
+        ngx_http_lua_pcre_malloc_done(old_pool);
 #endif
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
