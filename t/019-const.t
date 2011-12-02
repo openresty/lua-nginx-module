@@ -32,3 +32,17 @@ GET /read
 -4
 -1
 
+
+
+=== TEST 2: http constants
+--- config
+    location /read {
+        content_by_lua '
+            ngx.say(ngx.HTTP_GATEWAY_TIMEOUT)
+        ';
+    }
+--- request
+GET /read
+--- response_body
+504
+
