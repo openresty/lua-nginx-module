@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc37](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 November 2011.
+This document describes ngx_lua [v0.3.1rc38](https://github.com/chaoslawful/lua-nginx-module/tags) released on 2 December 2011.
 
 Synopsis
 ========
@@ -384,8 +384,7 @@ content_by_lua_file
 Same as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except the code to be executed is in the file
 specified by `<path-lua-script>`.
 
-Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
-greater flexibility in practice. This however carries some risks and is not ordinarily recommended.
+Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time you modify the lua code file.
@@ -518,7 +517,7 @@ rewrite_by_lua_file
 
 Same as [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except the code to be executed is in the file specified by `<path-lua-script>`.
 
-Nginx variables can be used in `<path-to-lua-script>` string, in order to provide greater flexibility in practice. This however carries some risks and is not ordinarily recommended. 
+Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time you modify the Lua source file. You can temporarily disable the Lua code cache during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` to avoid reloading Nginx.
 
@@ -603,8 +602,7 @@ access_by_lua_file
 Same as [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), except the code to be executed is in the file
 specified by `<path-lua-script>`.
 
-Nginx variables can be used in `<path-to-lua-script>` string, in order to provide
-greater flexibility in practice. This however carries some risks and is not ordinarily recommended.
+Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time you modify the lua code file.
@@ -850,6 +848,7 @@ HTTP status constants
       value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
       value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
       value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
+      value = ngx.HTTP_GATEWAY_TIMEOUT (504) (first added in the v0.3.1rc38 release)
 
 
 Nginx log level constants
