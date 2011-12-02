@@ -95,6 +95,9 @@ ngx_http_lua_inject_http_consts(lua_State *L)
 
     lua_pushinteger(L, NGX_HTTP_SERVICE_UNAVAILABLE);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
+
+    lua_pushinteger(L, 504);
+    lua_setfield(L, -2, "HTTP_GATEWAY_TIMEOUT");
     /* }}} */
 }
 
