@@ -109,7 +109,7 @@ ngx_http_lua_var_get(lua_State *L)
 
     vv = ngx_http_get_variable(r, &name, hash);
 
-    if (vv == NULL || vv->not_found) {
+    if (vv == NULL || vv->not_found || !vv->valid) {
         lua_pushnil(L);
         return 1;
     }
