@@ -15,7 +15,7 @@ __DATA__
 --- config
     location /t {
         content_by_lua '
-            local sock = ngx.socket.tcp
+            local sock = ngx.socket.tcp()
             local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
             if not ok then
                 ngx.say("failed to connect: ", err)

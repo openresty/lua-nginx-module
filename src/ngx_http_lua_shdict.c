@@ -253,11 +253,11 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-
     if (lmcf->shm_zones != NULL) {
-        lua_createtable(L, 0, 1 /* nrec */);    /* ngx.shared */
+        lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
+                /* ngx.shared */
 
-        lua_createtable(L, 0, 2 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 7 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");

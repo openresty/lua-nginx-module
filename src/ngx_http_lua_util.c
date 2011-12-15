@@ -26,6 +26,7 @@
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_socket.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -516,7 +517,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0, 22);    /* ngx.* */
+    lua_createtable(L, 0, 24);    /* ngx.* */
 
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
@@ -534,6 +535,8 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
+    ngx_http_lua_inject_socket_api(L);
+
     ngx_http_lua_inject_misc_api(L);
 
     lua_getglobal(L, "package"); /* ngx package */
