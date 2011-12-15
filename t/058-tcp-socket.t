@@ -16,7 +16,7 @@ __DATA__
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp
-            local ok, err = sock:connect(127.0.0.1, ngx.var.server_port)
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -46,7 +46,7 @@ __DATA__
         echo foo;
     }
 --- request
-GET /lua
+GET /t
 --- response_body
 connected.
 request sent.
