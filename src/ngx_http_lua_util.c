@@ -517,7 +517,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0, 24);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 24 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
@@ -1051,6 +1051,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         goto run;
 
     } else if (ctx->req_read_body_done) {
+
         dd("turned off req read body done");
 
         ctx->req_read_body_done = 0;
@@ -1063,6 +1064,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         goto run;
 
     } else if (ctx->done) {
+
         ctx->done = 0;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,

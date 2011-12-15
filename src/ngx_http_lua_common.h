@@ -188,6 +188,9 @@ typedef struct {
     unsigned         req_header_cached:1;
 
     unsigned         waiting_flush:1;
+
+    unsigned         socket_busy:1;
+    unsigned         socket_ready:1;
 } ngx_http_lua_ctx_t;
 
 
