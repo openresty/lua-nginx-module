@@ -69,6 +69,10 @@ ngx_http_lua_ngx_exec(lua_State *L)
     }
 
     uri.data = ngx_palloc(r->pool, len);
+    if (uri.data == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
     ngx_memcpy(uri.data, p, len);
 
     uri.len = len;
@@ -91,6 +95,10 @@ ngx_http_lua_ngx_exec(lua_State *L)
             p = (u_char *) lua_tolstring(L, 2, &len);
 
             user_args.data = ngx_palloc(r->pool, len);
+            if (user_args.data == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+
             ngx_memcpy(user_args.data, p, len);
 
             user_args.len = len;

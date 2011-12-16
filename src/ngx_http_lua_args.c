@@ -41,6 +41,10 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
         p = (u_char *) lua_tolstring(L, 1, &len);
 
         args.data = ngx_palloc(r->pool, len);
+        if (args.data == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
         ngx_memcpy(args.data, p, len);
 
         args.len = len;
