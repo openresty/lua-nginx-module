@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc38](https://github.com/chaoslawful/lua-nginx-module/tags) released on 2 December 2011.
+This document describes ngx_lua [v0.3.1rc39](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 December 2011.
 
 Synopsis
 ========
@@ -303,12 +303,10 @@ set_by_lua
 
 **phase:** *rewrite*
 
-Execute user code specified by `<lua-script-str>` with input arguments `$arg1 $arg2 ...`, and set the script's return value to `$res` in string form. In
-`<lua-script-str>` code the input arguments can be retrieved from `ngx.arg`
-table (index starts from `1` and increased sequentially).
+Execute user code specified by `<lua-script-str>` with input arguments `$arg1 $arg2 ...`, and set the script's return value to `$res` in string form. 
+The code in `<lua-script-str>` can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially) and the lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua).
 
-[set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) directive is designed to execute short, fast running code blocks. The Nginx
-event loop is blocked during code execution and time consuming code sequences should be avoided.
+The [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
 
 Note that [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) can only output a value to a single Nginx variable at
 a time but a workaround is possible by using the [ngx.var.VARIABLE](http://wiki.nginx.org/HttpLuaModule#ngx.var.VARIABLE) interface.
@@ -342,17 +340,16 @@ This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_k
 
 set_by_lua_file
 ---------------
-**syntax:** *set_by_lua_file $res &lt;path-to-lua-script&gt; [$arg1 $arg2 ...]*
+**syntax:** *set_by_lua_file $res &lt;path-to-lua-script-file&gt; [$arg1 $arg2 ...]*
 
 **context:** *main, server, location, server if, location if*
 
 **phase:** *rewrite*
 
-Basically the same as [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except the code to be executed is in the
-file specified by `<path-lua-script>`.
+Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
-and the Nginx config must be reloaded each time you modify the lua code file.
+and the Nginx config must be reloaded each time you modify the Lua source file.
 You can temporarily disable the Lua code cache during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` to avoid reloading Nginx.
 
@@ -368,26 +365,25 @@ content_by_lua
 **phase:** *content*
 
 Acts as a "content handler" and executes lua code string specified in `<lua-script-str>` for every request. 
-The lua code may call predefined APIs to generate response content and is executed in a new spawned coroutine in an independent global environment (i.e. a sandbox).
+The lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Do not use this directive and other content handler directives in a same location. For example, this directive and the [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass) directive should not be used in the same location.
+Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass) directive should not be used in the same location.
 
 content_by_lua_file
 -------------------
 
-**syntax:** *content_by_lua_file &lt;path-to-lua-script&gt;*
+**syntax:** *content_by_lua_file &lt;path-to-lua-script-file&gt;*
 
 **context:** *location, location if*
 
 **phase:** *content*
 
-Same as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except the code to be executed is in the file
-specified by `<path-lua-script>`.
+Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
 
-Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
+Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
-and the Nginx config must be reloaded each time you modify the lua code file.
+and the Nginx config must be reloaded each time you modify the Lua source file.
 You can temporarily disable the Lua code cache during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` to avoid reloading Nginx.
 
@@ -400,9 +396,8 @@ rewrite_by_lua
 
 **phase:** *post-rewrite*
 
-Acts as a rewrite phase handler and executes lua code string specified in `<lua-script-str>` for every request. The lua code may call predefined APIs to generate response content and is executed in a new spawned coroutine in an independent global environment (i.e. a sandbox).
-
-This directive uses exactly the same mechamism as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) so all the nginx APIs defined there are also available here.
+Acts as a rewrite phase handler and executes lua code string specified in `<lua-script-str>` for every request.
+The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Note that this handler always runs *after* the standard [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule). So the following will work as expected:
 
@@ -509,15 +504,15 @@ Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewr
 rewrite_by_lua_file
 -------------------
 
-**syntax:** *rewrite_by_lua_file &lt;path-to-lua-script&gt;*
+**syntax:** *rewrite_by_lua_file &lt;path-to-lua-script-file&gt;*
 
 **context:** *http, server, location, location if*
 
 **phase:** *post-rewrite*
 
-Same as [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except the code to be executed is in the file specified by `<path-lua-script>`.
+Equivalent to [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
-Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
+Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time you modify the Lua source file. You can temporarily disable the Lua code cache during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` to avoid reloading Nginx.
 
@@ -530,9 +525,8 @@ access_by_lua
 
 **phase:** *post-access*
 
-Acts as an access phase handler and executes lua code string specified in `<lua-script-str>` for every request. The user code may call predefined APIs to generate response content.
-
-This directive uses exactly the same mechanism as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) so all the nginx APIs defined there are also available here.
+Acts as an access phase handler and executes lua code string specified in `<lua-script-str>` for every request.
+The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Note that this handler always runs *after* the standard [HttpAccessModule](http://wiki.nginx.org/HttpAccessModule). So the following will work as expected:
 
@@ -593,19 +587,18 @@ Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](http://wiki.n
 access_by_lua_file
 ------------------
 
-**syntax:** *access_by_lua_file &lt;path-to-lua-script&gt;*
+**syntax:** *access_by_lua_file &lt;path-to-lua-script-file&gt;*
 
 **context:** *http, server, location, location if*
 
 **phase:** *post-access*
 
-Same as [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), except the code to be executed is in the file
-specified by `<path-lua-script>`.
+Equivalent to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
-Nginx variables can be used in `<path-to-lua-script>` string to provide flexibility. This however carries some risks and is not ordinarily recommended. 
+Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
-and the Nginx config must be reloaded each time you modify the lua code file.
+and the Nginx config must be reloaded each time you modify the Lua source file.
 You can temporarily disable the Lua code cache during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in your `nginx.conf` to avoid reloading Nginx.
 
@@ -618,11 +611,11 @@ header_filter_by_lua
 
 **phase:** *output-header-filter*
 
-Uses Lua code specified in `<lua-script-str>` to define an output header filter. Note that the following Nginx Lua APIs are currently disabled within this context:
+Uses Lua code specified in `<lua-script-str>` to define an output header filter. Note that the following API functions are currently disabled within this context:
 
-* Output API (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
-* Control APIs (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
-* Subrequest APIs (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
+* Output API functions (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
+* Control API functions (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
+* Subrequest API functions (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
 
 Here is an example of overriding a response header (or adding one if absent) in our Lua header filter:
 
@@ -644,9 +637,7 @@ header_filter_by_lua_file
 
 **phase:** *output-header-filter*
 
-Use Lua code defined in a separate file specified by `<path-to-lua-script-file>` to define an output header filter.
-
-This is very much like [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua) except that it loads Lua code from an external Lua source file.
+Equivalent to [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
 
 This directive was first introduced in the `v0.2.1rc20` release.
 
@@ -704,9 +695,11 @@ This directive was first introduced in the `v0.3.1rc22` release.
 
 Nginx API for Lua
 =================
-General Considerations
-----------------------
-The Nginx API exposed to the Lua land is provided in the form of two standard packages `ngx` and `ndk`. These packages are in the default global scope within `ngx_lua` and can also be introduced to external Lua modules by using the [package.seeall](http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall) option:
+Introduction
+------------
+The various `*_by_lua` and `*_by_lua_file` configuration directives serve as gateways to the Lua API within the `nginx.conf` file. The Lua API described below can only be called within the user Lua code run in the context of these configuration directives.
+
+The API is exposed to Lua in the form of two standard packages `ngx` and `ndk`. These packages are in the default global scope within `ngx_lua` and can also be introduced to external Lua modules by using the [package.seeall](http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall) option:
 
 
     module("my_module", package.seeall)
@@ -714,7 +707,7 @@ The Nginx API exposed to the Lua land is provided in the form of two standard pa
     function say(a) ngx.say(a) end
 
 
-Alternatively, they can be imported  external Lua modules by using file scoped local Lua variables:
+Alternatively, they can be imported to external Lua modules by using file scoped local Lua variables:
 
 
     local ngx = ngx
@@ -732,7 +725,7 @@ It is also possible to directly require the packages:
 
 The ability to require these packages was introduced in the `v0.2.1rc19` release.
 
-Network I/O operations in user code should only be done through Nginx API calls as the Nginx event loop may be blocked and performance may drop off dramatically otherwise. Minor disk file operations may be done via Lua's standard `io` and `file` libraries but these should be avoided wherever possible as these also block the Nginx process. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and its friends) is strongly recommended for maximum performance.
+Network I/O operations in user code should only be done through the Lua API calls as the Nginx event loop may be blocked and performance may drop off dramatically otherwise. Minor disk file operations may be done via Lua's standard `io` and `file` libraries but these should be avoided wherever possible as these also block the Nginx process. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and its friends) is strongly recommended for maximum performance.
 
 ngx.arg
 -------
@@ -3243,17 +3236,19 @@ filtering chain determines the final output. The correct adding order during con
 
 TODO
 ====
+
+Short Term
+----------
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
 * add directives to run lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
 * add options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) in order to share and copy a particular set of nginx variables with subrequests, specified by the user.
 * add an option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) so as to specify the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for subrequests.
-* expose nginx's shared memory facility to the Lua land.
 * add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its `args` argument is a Lua table.
+* add APIs to access cookies as key/value pairs.
 
-Future Plans
-============
-
+Longer Term
+-----------
 * add the `lua_require` directive to load module into main thread's globals.
 * add the "cosocket" mechamism that will emulate a common set of Lua socket API that will give you totally transparently non-blocking capability out of the box by means of a completely new upstream layer atop the nginx event model and no nginx subrequest overheads.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
