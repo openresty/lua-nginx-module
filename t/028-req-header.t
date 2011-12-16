@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => (2 * blocks() + 1) * repeat_each();
 
 #no_diff();
 #no_long_string();
@@ -334,4 +334,27 @@ Foo: baz
 value is of type table.
 Foo takes 3 values.
 They are foo, bar, baz.
+
+
+
+=== TEST 17: Accept-Encoding
+--- config
+    location /bar {
+        default_type 'text/plain';
+        rewrite_by_lua '
+            ngx.req.set_header("Accept-Encoding", "gzip")
+        ';
+        gzip on;
+        gzip_min_length  1;
+        gzip_buffers     4 8k;
+        gzip_types       text/plain;
+    }
+--- user_files
+">>> bar
+" . ("hello" x 512)
+--- request
+GET /bar
+--- response_headers
+Content-Encoding: gzip
+--- response_body_like: .{20}
 
