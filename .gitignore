@@ -122,6 +122,7 @@ src/filter.[ch]
 src/shdict.[ch]
 src/body.[ch]
 src/uri.[ch]
+src/socket.[ch]
 a.patch
 all
 build1[01]
