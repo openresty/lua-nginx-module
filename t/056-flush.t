@@ -37,7 +37,7 @@ hiya
 
 === TEST 2: flush no wait - content
 --- config
-    send_timeout 100ms;
+    send_timeout 500ms;
     location /test {
         content_by_lua '
             ngx.say("hello, world")
@@ -121,4 +121,26 @@ GET /test
 hello, world
 hiya
 --- SKIP
+
+
+
+=== TEST 7: flush wait - content
+--- config
+    location /test {
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(true)
+            local res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.flush(true)
+        ';
+    }
+    location /sub {
+        echo sub;
+    }
+--- request
+GET /test
+--- response_body
+hello, world
+sub
 

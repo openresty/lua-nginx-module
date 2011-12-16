@@ -1043,6 +1043,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (ctx->waiting_flush) {
 
+        ctx->waiting_flush = 0;
         nret = 0;
 
         goto run;
