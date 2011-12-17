@@ -1046,6 +1046,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (ctx->waiting_flush) {
 
+        ctx->waiting_flush = 0;
         nret = 0;
 
         goto run;
@@ -1795,7 +1796,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     dd("len 1: %d", (int) len);
 
     p = ngx_palloc(r->pool, len);
-    if (p == 0) {
+    if (p == NULL) {
         luaL_error(L, "out of memory");
         return;
     }

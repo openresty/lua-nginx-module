@@ -1,8 +1,9 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 /* Copyright (C) agentzh */
 
+#ifndef DDEBUG
 #define DDEBUG 0
-
+#endif
 #include "ddebug.h"
 
 #include <nginx.h>
@@ -41,6 +42,12 @@ static ngx_int_t ngx_http_lua_rm_header(ngx_list_t *l, ngx_table_elt_t *h);
 
 
 static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
+
+#if (NGX_HTTP_GZIP)
+    { ngx_string("Accept-Encoding"),
+                 offsetof(ngx_http_headers_in_t, accept_encoding),
+                 ngx_http_set_builtin_header },
+#endif
 
     { ngx_string("Host"),
                  offsetof(ngx_http_headers_in_t, host),
