@@ -1,5 +1,39 @@
 {
    <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:ngx_http_lua_ndk_set_var_get
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:lj_str_new
+   fun:lua_getfield
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:lj_str_new
+   fun:lua_setfield
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:ngx_http_variables_init_vars
+   fun:ngx_http_block
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:ngx_conf_parse
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:ngx_vslprintf
+   fun:ngx_log_error_core
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Leak
    fun:malloc
    fun:ngx_alloc
