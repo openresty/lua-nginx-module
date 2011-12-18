@@ -206,7 +206,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     c->read->handler = ngx_http_lua_socket_tcp_handler;
 
     u->write_event_handler = ngx_http_lua_socket_resume_handler;
-    u->read_event_handler = ngx_http_lua_socket_block_reading;
+    u->read_event_handler = ngx_http_lua_socket_resume_handler;
 
     c->pool = r->pool;
     c->log = r->connection->log;
@@ -356,6 +356,7 @@ ngx_http_lua_socket_resume_handler(ngx_http_request_t *r,
     ctx->socket_busy = 0;
     ctx->socket_ready = 1;
 
+    u->read_event_handler = ngx_http_lua_socket_block_reading;
     u->write_event_handler = ngx_http_lua_socket_block_writing;
 
     r->write_event_handler(r);
