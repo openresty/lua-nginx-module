@@ -89,6 +89,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->enable_code_cache = NGX_CONF_UNSET;
     conf->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
+    conf->connect_timeout = NGX_CONF_UNSET_MSEC;
+    conf->send_timeout = NGX_CONF_UNSET_MSEC;
+    conf->read_timeout = NGX_CONF_UNSET_MSEC;
+
     return conf;
 }
 
@@ -125,6 +129,15 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
+
+    ngx_conf_merge_msec_value(conf->connect_timeout,
+                              prev->connect_timeout, 60000);
+
+    ngx_conf_merge_msec_value(conf->send_timeout,
+                              prev->send_timeout, 60000);
+
+    ngx_conf_merge_msec_value(conf->read_timeout,
+                              prev->read_timeout, 60000);
 
     return NGX_CONF_OK;
 }

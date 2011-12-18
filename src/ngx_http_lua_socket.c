@@ -103,6 +103,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_connection_t            *c;
     ngx_url_t                    url;
     ngx_http_cleanup_t          *cln;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     ngx_http_lua_socket_upstream_t          *u;
 
@@ -152,6 +153,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     u->request = r; /* set the controlling request */
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    u->conf = llcf;
 
     pc = &u->peer;
 
@@ -220,6 +225,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         lua_pushnil(L);
         return 2;
     }
+
+    /* rc == NGX_AGAIN */
+
+    ngx_add_timer(c->write, llcf->connect_timeout);
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;

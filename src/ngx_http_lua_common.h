@@ -116,6 +116,9 @@ typedef struct {
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
 
+    ngx_msec_t                       connect_timeout;
+    ngx_msec_t                       send_timeout;
+    ngx_msec_t                       read_timeout;
 } ngx_http_lua_loc_conf_t;
 
 
