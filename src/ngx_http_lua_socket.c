@@ -21,6 +21,11 @@ static void ngx_http_lua_socket_block_reading(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 static void ngx_http_lua_socket_resume_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
+static void ngx_http_lua_socket_cleanup(void *data);
+static void ngx_http_lua_socket_finalize_request(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u, ngx_int_t rc);
+static void ngx_http_lua_socket_block_writing(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u);
 
 
 void
@@ -97,6 +102,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_peer_connection_t       *pc;
     ngx_connection_t            *c;
     ngx_url_t                    url;
+    ngx_http_cleanup_t          *cln;
 
     ngx_http_lua_socket_upstream_t          *u;
 
@@ -139,12 +145,15 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     r->connection->single_connection = 0;
 
     /* TODO we should not allocate the peer connection in the nginx pool */
-    pc = ngx_pcalloc(r->pool, sizeof(ngx_peer_connection_t));
-    if (pc == NULL) {
+
+    u = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_socket_upstream_t));
+    if (u == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    /* TODO set pc->data */
+    u->request = r; /* set the controlling request */
+
+    pc = &u->peer;
 
     pc->log = r->connection->log;
     pc->log_error = NGX_ERROR_ERR;
@@ -180,13 +189,14 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* rc == NGX_OK || rc == NGX_AGAIN */
 
-    u = ngx_palloc(r->pool, sizeof(ngx_http_lua_socket_upstream_t));
-    if (u == NULL) {
+    cln = ngx_http_cleanup_add(r, 0);
+    if (cln == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    u->request = r; /* set the controlling request */
-    u->peer = pc;
+    cln->handler = ngx_http_lua_socket_cleanup;
+    cln->data = u;
+    u->cleanup = &cln->handler;
 
     c = pc->connection;
 
@@ -273,11 +283,12 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     c = ev->data;
     u = c->data;
     r = u->request;
+    c = r->connection;
 
     ctx = c->log->data;
     ctx->current_request = r;
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket request: \"%V?%V\"", &r->uri, &r->args);
 
     if (ev->write) {
@@ -309,6 +320,25 @@ ngx_http_lua_socket_block_reading(ngx_http_request_t *r,
         && r->connection->read->active)
     {
         if (ngx_del_event(r->connection->read, NGX_READ_EVENT, 0) != NGX_OK) {
+            /* XXX we should return errors to the Lua land */
+            ngx_http_finalize_request(r, NGX_ERROR);
+        }
+    }
+}
+
+
+static void
+ngx_http_lua_socket_block_writing(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u)
+{
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket reading blocked");
+
+    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT)
+        && r->connection->write->active)
+    {
+        if (ngx_del_event(r->connection->write, NGX_WRITE_EVENT, 0) != NGX_OK) {
+            /* XXX we should return errors to the Lua land */
             ngx_http_finalize_request(r, NGX_ERROR);
         }
     }
@@ -326,6 +356,50 @@ ngx_http_lua_socket_resume_handler(ngx_http_request_t *r,
     ctx->socket_busy = 0;
     ctx->socket_ready = 1;
 
+    u->write_event_handler = ngx_http_lua_socket_block_writing;
+
     r->write_event_handler(r);
+}
+
+
+static void
+ngx_http_lua_socket_cleanup(void *data)
+{
+    ngx_http_lua_socket_upstream_t  *u = data;
+
+    ngx_http_request_t  *r;
+
+    r = u->request;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "cleanup lua socket upstream request: \"%V\"", &r->uri);
+
+    ngx_http_lua_socket_finalize_request(r, u, NGX_DONE);
+}
+
+
+static void
+ngx_http_lua_socket_finalize_request(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u, ngx_int_t rc)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "finalize lua socket upstream request: %i", rc);
+
+    if (u->cleanup) {
+        *u->cleanup = NULL;
+        u->cleanup = NULL;
+    }
+
+    if (u->peer.free) {
+        u->peer.free(&u->peer, u->peer.data, 0);
+    }
+
+    if (u->peer.connection) {
+        ngx_close_connection(u->peer.connection);
+    }
+
+    u->peer.connection = NULL;
+
+    ngx_http_finalize_request(r, rc);
 }
 

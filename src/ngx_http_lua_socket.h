@@ -15,8 +15,9 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_http_lua_socket_upstream_handler_pt     read_event_handler;
     ngx_http_lua_socket_upstream_handler_pt     write_event_handler;
 
+    ngx_http_cleanup_pt             *cleanup;
     ngx_http_request_t              *request;
-    ngx_peer_connection_t           *peer;
+    ngx_peer_connection_t            peer;
 
     ngx_buf_t                        buffer;
     size_t                           length;

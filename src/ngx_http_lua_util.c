@@ -1044,7 +1044,17 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    if (ctx->waiting_flush) {
+    if (!ctx->socket_busy && ctx->socket_ready) {
+
+        dd("resuming socket api");
+
+        ctx->socket_ready = 0;
+        lua_pushinteger(ctx->cc, 1);
+        lua_pushnil(ctx->cc);
+        nret = 2;
+        goto run;
+
+    } else if (ctx->waiting_flush) {
 
         ctx->waiting_flush = 0;
         nret = 0;
