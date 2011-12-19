@@ -7,6 +7,7 @@ use Test::Nginx::Socket;
 
 plan tests => blocks() * repeat_each() * 2;
 
+#no_long_string();
 run_tests();
 
 __DATA__
@@ -24,7 +25,7 @@ __DATA__
                 return
             end
 
-            ngx.say("connected.")
+            ngx.say("connected: ", ok)
 
             local req = [[GET /foo HTTP/1.0\r
 Host: localhost\r
@@ -43,7 +44,7 @@ Connection: close\r
 
             local line, err = sock:receive()
             if not line then
-                ngx.say("failed to receive the first line")
+                ngx.say("failed to receive the first line: ", err)
             end
 
             ngx.say("received: ", line)
@@ -58,7 +59,7 @@ Connection: close\r
 --- request
 GET /t
 --- response_body
-connected.
+connected: 1
 request sent: 53
-received: 200 OK HTTP/1.1
+received: HTTP/1.1 200 OK
 

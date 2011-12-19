@@ -17,6 +17,7 @@ typedef void (*ngx_http_lua_socket_upstream_handler_pt)(ngx_http_request_t *r,
 
 
 struct ngx_http_lua_socket_upstream_s {
+    ngx_http_lua_socket_retval_handler          prepare_retvals;
     ngx_http_lua_socket_upstream_handler_pt     read_event_handler;
     ngx_http_lua_socket_upstream_handler_pt     write_event_handler;
 
@@ -28,7 +29,7 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_buf_t                        buffer;
     size_t                           length;
 
-    ngx_uint_t                       err_type;
+    ngx_uint_t                       ft_type;
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
@@ -36,11 +37,15 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_chain_t                     *free_bufs;
     ngx_chain_t                     *busy_bufs;
 
+    luaL_Buffer                      luabuf;
+
+    ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
+    void                            *input_filter_ctx;
+
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
-    ngx_http_lua_socket_retval_handler  prepare_retvals;
-
+    unsigned                         luabuf_inited;
     unsigned                         request_sent:1;
 
     unsigned                         waiting:1;

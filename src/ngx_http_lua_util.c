@@ -1046,6 +1046,10 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
+    if (ctx->socket_busy && !ctx->socket_ready) {
+        return NGX_DONE;
+    }
+
     if (!ctx->socket_busy && ctx->socket_ready) {
 
         dd("resuming socket api");
