@@ -92,6 +92,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
     conf->send_timeout = NGX_CONF_UNSET_MSEC;
     conf->read_timeout = NGX_CONF_UNSET_MSEC;
+    conf->send_lowat = NGX_CONF_UNSET_SIZE;
 
     return conf;
 }
@@ -138,6 +139,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_msec_value(conf->read_timeout,
                               prev->read_timeout, 60000);
+
+    ngx_conf_merge_size_value(conf->send_lowat,
+                              prev->send_lowat, 0);
 
     return NGX_CONF_OK;
 }

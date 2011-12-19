@@ -891,6 +891,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
 
+    ngx_http_lua_socket_upstream_t      *u;
+
     c = r->connection;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -1049,9 +1051,10 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         dd("resuming socket api");
 
         ctx->socket_ready = 0;
-        lua_pushinteger(ctx->cc, 1);
-        lua_pushnil(ctx->cc);
-        nret = 2;
+
+        u = ctx->data;
+        nret = u->prepare_retvals(r, u, ctx->cc);
+
         goto run;
 
     } else if (ctx->waiting_flush) {

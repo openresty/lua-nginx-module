@@ -119,10 +119,13 @@ typedef struct {
     ngx_msec_t                       connect_timeout;
     ngx_msec_t                       send_timeout;
     ngx_msec_t                       read_timeout;
+    size_t                           send_lowat;
 } ngx_http_lua_loc_conf_t;
 
 
 typedef struct {
+    void            *data;
+
     lua_State       *cc;                /*  coroutine to handle request */
 
     int              cc_ref;            /*  reference to anchor coroutine in
@@ -147,8 +150,11 @@ typedef struct {
 
     ngx_str_t       *sr_bodies;   /* all captured subrequest bodies */
 
-    ngx_uint_t       index; /* index of the current subrequest in its
-                               parent request */
+    ngx_uint_t       index;              /* index of the current subrequest
+                                            in its parent request */
+
+    unsigned         waiting;           /*  1: subrequest is still running;
+                                            0: subrequest is not running */
 
     ngx_str_t        exec_uri;
     ngx_str_t        exec_args;
@@ -156,24 +162,21 @@ typedef struct {
     ngx_int_t        exit_code;
     unsigned         exited:1;
 
-    unsigned       headers_sent:1;    /*  1: response header has been sent;
+    unsigned         headers_sent:1;    /*  1: response header has been sent;
                                             0: header not sent yet */
 
-    unsigned       eof:1;             /*  1: last_buf has been sent;
+    unsigned         eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
 
-    unsigned       waiting;         /*  1: subrequest is still running;
-                                            0: subrequest is not running */
-
-    unsigned       done:1;            /*  1: subrequest is just done;
+    unsigned         done:1;            /*  1: subrequest is just done;
                                             0: subrequest is not done
                                             yet or has already done */
 
-    unsigned       capture:1;         /*  1: body of current request is
+    unsigned         capture:1;         /*  1: body of current request is
                                             to be captured;
                                             0: not captured */
 
-    unsigned       read_body_done:1;      /* 1: request body has been all
+    unsigned         read_body_done:1;      /* 1: request body has been all
                                                read; 0: body has not been
                                                all read */
 

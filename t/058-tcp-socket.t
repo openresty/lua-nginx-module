@@ -16,7 +16,9 @@ __DATA__
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            local port = ngx.var.server_port
+            -- local port = 1234
+            local ok, err = sock:connect("127.0.0.1", port)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -24,12 +26,20 @@ __DATA__
 
             ngx.say("connected.")
 
-            local ok, err = sock:send("GET /foo HTTP/1.0")
-            if not ok then
+            local req = [[GET /foo HTTP/1.0\r
+Host: localhost\r
+Connection: close\r
+\r
+]]
+
+            req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
                 ngx.say("failed to send request: ", err)
             end
 
-            ngx.say("request sent")
+            ngx.say("request sent: ", bytes)
 
             local line, err = sock:receive()
             if not line then
@@ -49,6 +59,6 @@ __DATA__
 GET /t
 --- response_body
 connected.
-request sent.
+request sent: 53
 received: 200 OK HTTP/1.1
 
