@@ -32,7 +32,7 @@ Connection: close\r
 \r
 ]]
 
-            req = "OK"
+            -- req = "OK"
 
             local bytes, err = sock:send(req)
             if not bytes then
