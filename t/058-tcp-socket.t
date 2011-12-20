@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -146,4 +146,101 @@ received: Connection: close
 received: 
 failed to receive a line: closed
 closed
+
+
+
+=== TEST 3: no resolver defined
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 1234;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("agentzh.org", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = [[GET /foo HTTP/1.0\r
+Host: localhost\r
+Connection: close\r
+\r
+]]
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+            end
+
+            ngx.say("request sent: ", bytes)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: no resolver defined to resolve "agentzh.org"
+
+
+
+=== TEST 4: with resolver
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = 80
+            local ok, err = sock:connect("agentzh.org", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = [[GET / HTTP/1.0\r
+Host: agentzh.org\r
+Connection: close\r
+\r
+]]
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local line, err = sock:receive()
+            if line then
+                ngx.say("first line received: ", line)
+
+            else
+                ngx.say("failed to receive the first line: ", err)
+            end
+
+            line, err = sock:receive()
+            if line then
+                ngx.say("second line received: ", line)
+
+            else
+                ngx.say("failed to receive the second line: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 52
+first line received: HTTP/1.1 200 OK
+second line received: Server: ngx_openresty
 

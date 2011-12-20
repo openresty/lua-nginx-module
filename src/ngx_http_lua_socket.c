@@ -1,5 +1,5 @@
 #ifndef DDEBUG
-#define DDEBUG 0
+#define DDEBUG 1
 #endif
 #include "ddebug.h"
 
@@ -10,6 +10,7 @@
 #define NGX_HTTP_LUA_SOCKET_FT_ERROR        0x0001
 #define NGX_HTTP_LUA_SOCKET_FT_TIMEOUT      0x0002
 #define NGX_HTTP_LUA_SOCKET_FT_CLOSED       0x0004
+#define NGX_HTTP_LUA_SOCKET_FT_RESOLVER     0x0008
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -51,6 +52,9 @@ static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
 static int ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_line(void *data, ssize_t bytes);
+static void ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx);
+static int ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u, lua_State *L);
 
 
 void
@@ -123,12 +127,14 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_int_t                    rc;
-    ngx_peer_connection_t       *pc;
-    ngx_connection_t            *c;
-    ngx_url_t                    url;
-    ngx_http_cleanup_t          *cln;
-    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_str_t                    host;
+    int                          port;
+    ngx_resolver_ctx_t          *rctx, temp;
+    ngx_http_core_loc_conf_t    *clcf;
+    int                          saved_top;
+    int                          n;
+    u_char                      *p;
+    size_t                       len;
 
     ngx_http_lua_socket_upstream_t          *u;
 
@@ -141,43 +147,233 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    ngx_memzero(&url, sizeof(ngx_url_t));
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+    port = luaL_checkinteger(L, 3);
 
-    url.url.data = (u_char *) luaL_checklstring(L, 2, &url.url.len);
-    url.default_port = luaL_checkinteger(L, 3);
-    /* TODO: u.no_resolve = 1; */
-
-    if (ngx_parse_url(r->pool, &url) != NGX_OK) {
-
-        if (url.err) {
-            lua_pushnil(L);
-            lua_pushfstring(L, "bad server name: %s", url.err);
-            return 2;
-        }
-
+    if (port < 0 || port > 65536) {
         lua_pushnil(L);
-        lua_pushliteral(L, "bad server name: %s");
+        lua_pushfstring(L, "bad port number: %d", port);
         return 2;
     }
 
-    if (!url.addrs || !url.addrs[0].sockaddr) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "DNS resolver not supported yet");
-        return 2;
+    host.data = ngx_palloc(r->pool, len + 1);
+    if (host.data == NULL) {
+        return luaL_error(L, "out of memory");
     }
 
-    r->connection->log->action = "connecting to upstream via lua tcp socket";
+    host.len = len;
+
+    ngx_memcpy(host.data, p, len);
+    host.data[len] = '\0';
 
     r->connection->single_connection = 0;
-
-    /* TODO we should not allocate the peer connection in the nginx pool */
 
     u = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_socket_upstream_t));
     if (u == NULL) {
         return luaL_error(L, "out of memory");
     }
 
+    lua_pushlightuserdata(L, u);
+    lua_setfield(L, 1, "_ud");
+
     u->request = r; /* set the controlling request */
+
+    u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
+    if (u->resolved == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    u->resolved->host = host;
+    u->resolved->port = (in_port_t) port;
+
+    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+    temp.name = host;
+    rctx = ngx_resolve_start(clcf->resolver, &temp);
+    if (rctx == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "failed to start the resolver");
+        return 2;
+    }
+
+    if (rctx == NGX_NO_RESOLVER) {
+        lua_pushnil(L);
+        lua_pushfstring(L, "no resolver defined to resolve \"%s\"", host.data);
+        return 2;
+    }
+
+    rctx->name = host;
+    rctx->type = NGX_RESOLVE_A;
+    rctx->handler = ngx_http_lua_socket_resolve_handler;
+    rctx->data = u;
+    rctx->timeout = clcf->resolver_timeout;
+
+    u->resolved->ctx = rctx;
+
+    saved_top = lua_gettop(L);
+
+    if (ngx_resolve_name(rctx) != NGX_OK) {
+        u->resolved->ctx = NULL;
+        lua_pushnil(L);
+        lua_pushfstring(L, "failed to resolve host \"%s\"", host.data);
+        return 2;
+    }
+
+    if (u->waiting == 1) {
+        /* resolved and already connecting */
+        return lua_yield(L, 0);
+    }
+
+    n = lua_gettop(L) - saved_top;
+    if (n) {
+        /* errors occurred during resolving or connecting
+         * or already connected */
+        return n;
+    }
+
+    /* still resolving */
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ctx->data = u;
+    ctx->socket_busy = 1;
+    ctx->socket_ready = 0;
+
+    u->waiting = 0;
+    u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
+
+    return lua_yield(L, 0);
+}
+
+
+static void
+ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
+{
+    ngx_http_request_t                  *r;
+    ngx_http_upstream_resolved_t        *ur;
+    ngx_http_lua_ctx_t                  *lctx;
+    lua_State                           *L;
+    ngx_http_lua_socket_upstream_t      *u;
+    u_char                              *p;
+    size_t                               len;
+    struct sockaddr_in                  *sin;
+    ngx_uint_t                           i;
+
+    u = ctx->data;
+    r = u->request;
+    ur = u->resolved;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket resolve handler");
+
+    lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    L = lctx->cc;
+
+    u->waiting = 0;
+    lctx->socket_busy = 0;
+    lctx->socket_ready = 1;
+
+    if (ctx->state) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
+        lua_pushnil(L);
+        lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
+        lua_pushfstring(L, " could not be resolved (%d: %s)",
+                        (int) ctx->state,
+                        ngx_resolver_strerror(ctx->state));
+        lua_concat(L, 2);
+
+        return;
+    }
+
+    ur->naddrs = ctx->naddrs;
+    ur->addrs = ctx->addrs;
+
+#if (NGX_DEBUG)
+    {
+    in_addr_t   addr;
+    ngx_uint_t  i;
+
+    for (i = 0; i < ctx->naddrs; i++) {
+        dd("addr i: %d %p", (int) i,  &ctx->addrs[i]);
+
+        addr = ntohl(ctx->addrs[i]);
+
+        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "name was resolved to %ud.%ud.%ud.%ud",
+                       (addr >> 24) & 0xff, (addr >> 16) & 0xff,
+                       (addr >> 8) & 0xff, addr & 0xff);
+    }
+    }
+#endif
+
+    if (ur->naddrs == 1) {
+        i = 0;
+
+    } else {
+        i = ngx_random() % ur->naddrs;
+    }
+
+    dd("selected addr index: %d", (int) i);
+
+    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
+
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
+
+        lua_pushnil(L);
+        lua_pushliteral(L, "out of memory");
+        return;
+    }
+
+    len = ngx_inet_ntop(AF_INET, &ur->addrs[i], p, NGX_INET_ADDRSTRLEN);
+    len = ngx_sprintf(&p[len], ":%d", ur->port) - p;
+
+    sin = ngx_pcalloc(r->pool, sizeof(struct sockaddr_in));
+    if (sin == NULL) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
+
+        lua_pushnil(L);
+        lua_pushliteral(L, "out of memory");
+        return;
+    }
+
+    sin->sin_family = AF_INET;
+    sin->sin_port = htons(ur->port);
+    sin->sin_addr.s_addr = ur->addrs[i];
+
+    ur->sockaddr = (struct sockaddr *) sin;
+    ur->socklen = sizeof(struct sockaddr_in);
+
+    ur->host.data = p;
+    ur->host.len = len;
+
+    ur->ctx = NULL;
+    ngx_resolve_name_done(ctx);
+
+    (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
+}
+
+
+static int
+ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
+    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+{
+    ngx_http_lua_ctx_t              *ctx;
+    ngx_http_lua_loc_conf_t         *llcf;
+    ngx_peer_connection_t           *pc;
+    ngx_connection_t                *c;
+    ngx_http_cleanup_t              *cln;
+    ngx_http_upstream_resolved_t    *ur;
+    ngx_int_t                        rc;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket resolve retval handler");
+
+    if (u->ft_type & NGX_HTTP_LUA_SOCKET_FT_RESOLVER) {
+        return 2;
+    }
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -188,9 +384,18 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     pc->log = r->connection->log;
     pc->log_error = NGX_ERROR_ERR;
 
-    pc->sockaddr = url.addrs[0].sockaddr;
-    pc->socklen = url.addrs[0].socklen;
-    pc->name = &url.host;
+    ur = u->resolved;
+
+    if (ur->sockaddr) {
+        pc->sockaddr = ur->sockaddr;
+        pc->socklen = ur->socklen;
+        pc->name = &ur->host;
+
+    } else {
+        lua_pushnil(L);
+        lua_pushliteral(L, "resolver not working");
+        return 2;
+    }
 
     pc->get = ngx_http_lua_socket_tcp_get_peer;
 
@@ -219,12 +424,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* rc == NGX_OK || rc == NGX_AGAIN */
 
-    lua_pushlightuserdata(L, u);
-    lua_setfield(L, 1, "_ud");
-
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
-        return luaL_error(L, "out of memory");
+        lua_pushnil(L);
+        lua_pushliteral(L, "out of memory");
+        return 2;
     }
 
     cln->handler = ngx_http_lua_socket_cleanup;
@@ -277,12 +481,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     u->waiting = 1;
 
     ctx->data = u;
+
     u->prepare_retvals = ngx_http_lua_socket_tcp_connect_retval_handler;
 
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
 
-    return lua_yield(L, 0);
+    return NGX_AGAIN;
 }
 
 
@@ -874,6 +1079,9 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 
     /* rc == NGX_OK */
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+            "lua socket sent all the data");
+
     u->request_bufs = NULL;
     u->request_sent = 0;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
@@ -938,6 +1146,9 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 {
     ngx_http_lua_ctx_t          *ctx;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket connected");
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     ctx->socket_busy = 0;
@@ -966,6 +1177,11 @@ ngx_http_lua_socket_cleanup(void *data)
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "cleanup lua socket upstream request: \"%V\"", &r->uri);
+
+    if (u->resolved && u->resolved->ctx) {
+        ngx_resolve_name_done(u->resolved->ctx);
+        u->resolved->ctx = NULL;
+    }
 
     ngx_http_lua_socket_finalize(r, u);
 }

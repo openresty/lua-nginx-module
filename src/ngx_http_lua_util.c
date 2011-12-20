@@ -1058,6 +1058,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         u = ctx->data;
         nret = u->prepare_retvals(r, u, ctx->cc);
+        if (nret == NGX_AGAIN) {
+            return NGX_DONE;
+        }
 
         goto run;
 
