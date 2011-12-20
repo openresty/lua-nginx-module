@@ -1,5 +1,5 @@
 #ifndef DDEBUG
-#define DDEBUG 1
+#define DDEBUG 0
 #endif
 #include "ddebug.h"
 
@@ -486,7 +486,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             }
 
             if (rc == NGX_ERROR) {
-                ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                ngx_http_lua_socket_handle_error(r, u,
+                                                 NGX_HTTP_LUA_SOCKET_FT_ERROR);
                 return NGX_ERROR;
             }
 
@@ -505,7 +506,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
 
         if (size == 0) {
             /* TODO: flush the buffer onto luaL_Buffer */
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
         }
 
@@ -519,12 +521,14 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 
         if (n == 0) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_CLOSED);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_CLOSED);
             return NGX_ERROR;
         }
 
         if (n == NGX_ERROR) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
         }
 
@@ -830,7 +834,8 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
         ngx_add_timer(c->write, u->conf->send_timeout);
 
         if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
         }
 
