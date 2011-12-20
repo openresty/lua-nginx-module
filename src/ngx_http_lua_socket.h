@@ -32,6 +32,7 @@ struct ngx_http_lua_socket_upstream_s {
     size_t                           length;
 
     ngx_uint_t                       ft_type;
+    ngx_err_t                        socket_errno;
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;

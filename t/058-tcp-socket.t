@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -18,7 +18,7 @@ __DATA__
 --- config
     server_tokens off;
     location /t {
-        #set $port 1234;
+        #set $port 5000;
         set $port $TEST_NGINX_CLIENT_PORT;
 
         content_by_lua '
@@ -32,16 +32,13 @@ __DATA__
 
             ngx.say("connected: ", ok)
 
-            local req = [[GET /foo HTTP/1.0\r
-Host: localhost\r
-Connection: close\r
-\r
-]]
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send request: ", err)
+                return
             end
 
             ngx.say("request sent: ", bytes)
@@ -69,7 +66,7 @@ Connection: close\r
 GET /t
 --- response_body
 connected: 1
-request sent: 53
+request sent: 57
 received: HTTP/1.1 200 OK
 received: Server: nginx
 received: Content-Type: text/plain
@@ -99,16 +96,13 @@ failed to receive a line: closed
 
             ngx.say("connected: ", ok)
 
-            local req = [[GET /foo HTTP/1.0\r
-Host: localhost\r
-Connection: close\r
-\r
-]]
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send request: ", err)
+                return
             end
 
             ngx.say("request sent: ", bytes)
@@ -137,7 +131,7 @@ Connection: close\r
 GET /t
 --- response_body
 connected: 1
-request sent: 53
+request sent: 57
 received: HTTP/1.1 200 OK
 received: Server: nginx
 received: Content-Type: text/plain
@@ -167,16 +161,13 @@ closed
 
             ngx.say("connected: ", ok)
 
-            local req = [[GET /foo HTTP/1.0\r
-Host: localhost\r
-Connection: close\r
-\r
-]]
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send request: ", err)
+                return
             end
 
             ngx.say("request sent: ", bytes)
@@ -205,16 +196,13 @@ failed to connect: no resolver defined to resolve "agentzh.org"
 
             ngx.say("connected: ", ok)
 
-            local req = [[GET / HTTP/1.0\r
-Host: agentzh.org\r
-Connection: close\r
-\r
-]]
+            local req = "GET / HTTP/1.0\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send request: ", err)
+                return
             end
 
             ngx.say("request sent: ", bytes)
@@ -240,7 +228,7 @@ Connection: close\r
 GET /t
 --- response_body
 connected: 1
-request sent: 52
+request sent: 56
 first line received: HTTP/1.1 200 OK
 second line received: Server: ngx_openresty
 
