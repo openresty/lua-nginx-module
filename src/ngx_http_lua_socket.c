@@ -697,7 +697,33 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
 static int
 ngx_http_lua_socket_tcp_close(lua_State *L)
 {
-    /* TODO */
+    ngx_http_request_t                  *r;
+    ngx_http_lua_socket_upstream_t      *u;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "ngx.socket close: expecting 1 argument "
+                          "(including the object) but seen %d", lua_gettop(L));
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_getfield(L, 1, "_ud");
+    u = lua_touserdata(L, -1);
+    if (u == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "not connected");
+        return 2;
+    }
+
+    ngx_http_lua_socket_finalize(r, u);
+
+    lua_pushnil(L);
+    lua_setfield(L, 1, "_ud");
+
     return 0;
 }
 
@@ -950,7 +976,7 @@ ngx_http_lua_socket_finalize(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "finalize lua socket");
+                   "lua finalize socket");
 
     if (u->cleanup) {
         *u->cleanup = NULL;
@@ -962,6 +988,9 @@ ngx_http_lua_socket_finalize(ngx_http_request_t *r,
     }
 
     if (u->peer.connection) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua close socket connection");
+
         ngx_close_connection(u->peer.connection);
     }
 
