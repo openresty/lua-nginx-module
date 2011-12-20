@@ -416,10 +416,11 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
     ngx_http_lua_socket_upstream_t      *u = data;
 
     ngx_buf_t                   *b;
-    u_char                      *pos;
-    u_char                      *last;
+    u_char                      *begin;
+    u_char                      *dst;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_request_t          *r;
+    u_char                       c;
 
     if (!u->luabuf_inited) {
         r = u->request;
@@ -429,24 +430,27 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
     }
 
     b = &u->buffer;
-    pos = b->pos;
+    begin = b->pos;
+    dst = begin;
 
     while (bytes--) {
-        if (*b->pos++ == '\n') {
-            last = b->pos - 2;
-            if (last >= pos && *last == '\r') {
-                /* do nothing */
-
-            } else {
-                last++;
-            }
-
-            luaL_addlstring(&u->luabuf, (char *) pos, last - pos);
+        c = *b->pos++;
+        switch (c) {
+        case '\n':
+            luaL_addlstring(&u->luabuf, (char *) begin, dst - begin);
             return NGX_OK;
+
+        case '\r':
+            /* ignore it */
+            break;
+
+        default:
+            *dst++ = c;
+            break;
         }
     }
 
-    luaL_addlstring(&u->luabuf, (char *) pos, b->pos - pos);
+    luaL_addlstring(&u->luabuf, (char *) begin, dst - begin);
 
     return NGX_AGAIN;
 }

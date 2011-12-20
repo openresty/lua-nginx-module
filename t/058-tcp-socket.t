@@ -7,9 +7,9 @@ use Test::Nginx::Socket;
 
 plan tests => blocks() * repeat_each() * 2;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= 1984;
+$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 
-no_long_string();
+#no_long_string();
 run_tests();
 
 __DATA__
@@ -52,7 +52,7 @@ Connection: close\r
                     ngx.say("received: ", line)
 
                 else
-                    ngx.say("failed to receive the first line: ", err)
+                    ngx.say("failed to receive a line: ", err)
                     break
                 end
             end
@@ -77,5 +77,5 @@ received: Content-Length: 4
 received: Connection: close
 received: 
 received: foo
-failed to receive the first line: closed
+failed to receive a line: closed
 
