@@ -429,11 +429,11 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
     }
 
     b = &u->buffer;
-    pos = b->last;
+    pos = b->pos;
 
     while (bytes--) {
-        if (*b->last++ == '\n') {
-            last = b->last - 2;
+        if (*b->pos++ == '\n') {
+            last = b->pos - 2;
             if (last >= pos && *last == '\r') {
                 /* do nothing */
 
@@ -446,7 +446,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
         }
     }
 
-    luaL_addlstring(&u->luabuf, (char *) pos, b->last - pos);
+    luaL_addlstring(&u->luabuf, (char *) pos, b->pos - pos);
+
     return NGX_AGAIN;
 }
 
@@ -461,6 +462,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
     ngx_event_t                 *rev;
     size_t                       size;
     ssize_t                      n;
+    unsigned                     read;
 
     c = u->peer.connection;
     rev = c->read;
@@ -469,8 +471,35 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                    "lua socket read data");
 
     b = &u->buffer;
+    read = 0;
 
     for ( ;; ) {
+
+        size = b->last - b->pos;
+        if (size) {
+            rc = u->input_filter(u->input_filter_ctx, size);
+            if (rc == NGX_OK) {
+                dd("lua socket read done");
+                u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+                ngx_http_lua_socket_handle_success(r, u);
+                break;
+            }
+
+            if (rc == NGX_ERROR) {
+                ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                return NGX_ERROR;
+            }
+
+            /* rc == NGX_AGAIN */
+            continue;
+        }
+
+        if (read && !rev->ready) {
+            rc = NGX_AGAIN;
+            break;
+        }
+
+        /* try to read the socket */
 
         size = b->end - b->last;
 
@@ -481,6 +510,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 
         n = c->recv(c, b->last, size);
+        read = 1;
 
         if (n == NGX_AGAIN) {
             rc = NGX_AGAIN;
@@ -498,24 +528,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             return NGX_ERROR;
         }
 
-        rc = u->input_filter(u->input_filter_ctx, n);
-        if (rc == NGX_OK) {
-            dd("lua socket read done");
-            u->write_event_handler = ngx_http_lua_socket_dummy_handler;
-            ngx_http_lua_socket_handle_success(r, u);
-            break;
-        }
-
-        if (rc == NGX_ERROR) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
-            return NGX_ERROR;
-        }
-
-        /* rc == NGX_AGAIN */
-
-        if (!rev->ready) {
-            break;
-        }
+        b->last += n;
     }
 
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
