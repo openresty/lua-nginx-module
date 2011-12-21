@@ -534,14 +534,16 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
          * event poll and wasting CPU cycles. */
 
         if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle write event");
             return 2;
         }
 
         if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
-            ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle write event");
             return 2;
@@ -819,7 +821,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                 ngx_http_lua_socket_handle_success(r, u);
 
                 if (ngx_handle_read_event(rev, 0) != NGX_OK) {
-                    ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                    ngx_http_lua_socket_handle_error(r, u,
+                                                 NGX_HTTP_LUA_SOCKET_FT_ERROR);
                     return NGX_ERROR;
                 }
 
@@ -1108,8 +1111,8 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     ctx->current_request = r;
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua socket handler for \"%V?%V\", wev %d", &r->uri, &r->args,
-                   (int) ev->write);
+                   "lua socket handler for \"%V?%V\", wev %d", &r->uri,
+                   &r->args, (int) ev->write);
 
     if (ev->write) {
         u->write_event_handler(r, u);
