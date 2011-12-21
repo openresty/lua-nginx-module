@@ -1296,6 +1296,11 @@ ngx_http_lua_socket_finalize(ngx_http_request_t *r,
         ngx_close_connection(u->peer.connection);
     }
 
+    if (u->buffer.start != NULL) {
+        ngx_pfree(r->pool, u->buffer.start);
+        u->buffer.start = NULL;
+    }
+
     u->peer.connection = NULL;
 }
 
