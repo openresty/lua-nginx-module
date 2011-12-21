@@ -20,11 +20,25 @@ __DATA__
         content_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("unix:/tmp/nosuchfile.sock")
-            ngx.say(ok, " ", err)
+            ngx.say("connect: ", ok, " ", err)
+
+            local bytes
+            bytes, err = sock:send("hello")
+            ngx.say("send: ", bytes, " ", err)
+
+            local line
+            line, err = sock:receive()
+            ngx.say("receive: ", line, " ", err)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
         ';
     }
 --- request
     GET /test
 --- response_body
-nil no such file or directory
+connect: nil no such file or directory
+send: nil closed
+receive: nil closed
+close: nil closed
 

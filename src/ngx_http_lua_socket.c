@@ -624,7 +624,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u = lua_touserdata(L, -1);
     if (u == NULL || u->ft_type) {
         lua_pushnil(L);
-        lua_pushliteral(L, "not connected");
+        lua_pushliteral(L, "closed");
         return 2;
     }
 
@@ -857,7 +857,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     u = lua_touserdata(L, -1);
     if (u == NULL || u->ft_type) {
         lua_pushnil(L);
-        lua_pushliteral(L, "not connected");
+        lua_pushliteral(L, "closed");
         return 2;
     }
 
@@ -988,7 +988,7 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
     u = lua_touserdata(L, -1);
     if (u == NULL || u->ft_type) {
         lua_pushnil(L);
-        lua_pushliteral(L, "not connected");
+        lua_pushliteral(L, "closed");
         return 2;
     }
 
@@ -997,7 +997,9 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
     lua_pushnil(L);
     lua_setfield(L, 1, "_ud");
 
-    return 0;
+    lua_pushinteger(L, 1);
+    lua_pushnil(L);
+    return 2;
 }
 
 
