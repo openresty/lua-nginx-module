@@ -42,3 +42,103 @@ send: nil closed
 receive: nil closed
 close: nil closed
 
+
+
+=== TEST 2: invalid host argument
+--- http_server
+    server {
+        listen /tmp/test-nginx.sock;
+        default_type 'text/plain';
+
+        server_tokens off;
+        location /foo {
+            echo foo;
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /test {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("/tmp/test-nginx.sock")
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+        ';
+    }
+--- request
+    GET /test
+--- response_body
+failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid host
+
+
+
+=== TEST 3: sanity
+--- http_config
+    server {
+        listen unix:/tmp/test-nginx.sock;
+        default_type 'text/plain';
+
+        server_tokens off;
+        location /foo {
+            echo foo;
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /test {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("unix:/tmp/test-nginx.sock")
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                print("calling receive")
+                local line, err = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err)
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+--- request
+    GET /test
+--- response_body
+connected: 1
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+failed to receive a line: closed
+close: nil closed
+
