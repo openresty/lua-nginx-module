@@ -232,3 +232,19 @@ request sent: 56
 first line received: HTTP/1.1 200 OK
 second line received: Server: ngx_openresty
 
+
+
+=== TEST 5: connection refused
+--- config
+    location /test {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", 16787)
+            ngx.say(ok, " ", err)
+        ';
+    }
+--- request
+    GET /test
+--- response_body
+nil connection refused
+
