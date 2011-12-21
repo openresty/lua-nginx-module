@@ -332,7 +332,7 @@ connected: 1
 
 
 
-=== TEST 8: resolver error
+=== TEST 8: resolver error (host not found)
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
@@ -358,22 +358,6 @@ connected: 1
             end
 
             ngx.say("request sent: ", bytes)
-
-            local line, err = sock:receive()
-            if line then
-                ngx.say("first line received: ", line)
-
-            else
-                ngx.say("failed to receive the first line: ", err)
-            end
-
-            line, err = sock:receive()
-            if line then
-                ngx.say("second line received: ", line)
-
-            else
-                ngx.say("failed to receive the second line: ", err)
-            end
         ';
     }
 --- request
@@ -381,6 +365,45 @@ GET /t
 --- timeout: 5
 --- response_body
 failed to connect: blah-blah-not-found.agentzh.org could not be resolved (3: Host not found)
+connected: nil
+failed to send request: closed
+
+
+
+=== TEST 9: resolver error (timeout)
+--- config
+    server_tokens off;
+    resolver 121.14.24.241;
+    resolver_timeout 100ms;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = 80
+            local ok, err = sock:connect("blah-blah-not-found.agentzh.org", port)
+            print("connected: ", ok, " ", err, " ", not ok)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET / HTTP/1.0\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+        ';
+    }
+--- request
+GET /t
+--- timeout: 5
+--- response_body
+failed to connect: blah-blah-not-found.agentzh.org could not be resolved (110: Operation timed out)
 connected: nil
 failed to send request: closed
 
