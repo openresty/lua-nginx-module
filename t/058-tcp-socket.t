@@ -158,7 +158,6 @@ closed
             local ok, err = sock:connect("agentzh.org", port)
             if not ok then
                 ngx.say("failed to connect: ", err)
-                return
             end
 
             ngx.say("connected: ", ok)
@@ -179,6 +178,8 @@ closed
 GET /t
 --- response_body
 failed to connect: no resolver defined to resolve "agentzh.org"
+connected: nil
+failed to send request: closed
 
 
 
@@ -260,6 +261,40 @@ second line received: Server: ngx_openresty
     GET /test
 --- response_body
 connect: nil connection refused
+send: nil closed
+receive: nil closed
+close: nil closed
+
+
+
+=== TEST 6: connection timeout (tcp)
+--- config
+    resolver $TEST_NGINX_RESOLVER;
+    lua_socket_connect_timeout 100ms;
+    lua_socket_send_timeout 100ms;
+    lua_socket_read_timeout 100ms;
+    location /test {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("taobao.com", 16787)
+            ngx.say("connect: ", ok, " ", err)
+
+            local bytes
+            bytes, err = sock:send("hello")
+            ngx.say("send: ", bytes, " ", err)
+
+            local line
+            line, err = sock:receive()
+            ngx.say("receive: ", line, " ", err)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+--- request
+    GET /test
+--- response_body
+connect: nil timeout
 send: nil closed
 receive: nil closed
 close: nil closed
