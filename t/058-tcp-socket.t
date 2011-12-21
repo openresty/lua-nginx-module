@@ -234,7 +234,7 @@ second line received: Server: ngx_openresty
 
 
 
-=== TEST 5: connection refused
+=== TEST 5: connection refused (tcp)
 --- config
     location /test {
         content_by_lua '

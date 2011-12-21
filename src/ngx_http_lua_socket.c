@@ -142,9 +142,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     ngx_http_lua_socket_upstream_t          *u;
 
-    if (lua_gettop(L) != 3) {
-        return luaL_error(L, "ngx.socket connect: expecting 2 argument but "
-                "seen %d", lua_gettop(L));
+    n = lua_gettop(L);
+    if (n != 2 && n != 3) {
+        return luaL_error(L, "ngx.socket connect: expecting 2 or 3 arguments "
+                          "(including the object), but seen %d", lua_gettop(L));
     }
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -152,12 +153,18 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     lua_pop(L, 1);
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
-    port = luaL_checkinteger(L, 3);
 
-    if (port < 0 || port > 65536) {
-        lua_pushnil(L);
-        lua_pushfstring(L, "bad port number: %d", port);
-        return 2;
+    if (n == 3) {
+        port = luaL_checkinteger(L, 3);
+
+        if (port < 0 || port > 65536) {
+            lua_pushnil(L);
+            lua_pushfstring(L, "bad port number: %d", port);
+            return 2;
+        }
+
+    } else { /* n == 2 */
+        port = 0;
     }
 
     host.data = ngx_palloc(r->pool, len + 1);
@@ -464,6 +471,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     if (rc == NGX_DECLINED) {
+        dd("socket errno: %d", (int) ngx_socket_errno);
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
         u->socket_errno = ngx_socket_errno;
         return ngx_http_lua_socket_error_retval_handler(r, u, L);
@@ -543,6 +551,9 @@ static int
 ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u, lua_State *L)
 {
+    u_char           errstr[NGX_MAX_ERROR_STR];
+    u_char          *p;
+
     lua_pushnil(L);
 
     switch (u->ft_type) {
@@ -555,34 +566,14 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
         break;
 
     default:
-        switch (u->socket_errno) {
-        case NGX_ECONNREFUSED:
-            lua_pushliteral(L, "connection refused");
-            break;
+        if (u->socket_errno) {
+            p = ngx_strerror(u->socket_errno, errstr, sizeof(errstr));
+            /* for compatibility with LuaSocket */
+            ngx_strlow(errstr, errstr, p - errstr);
+            lua_pushlstring(L, (char *) errstr, p - errstr);
 
-        case NGX_ECONNRESET:
-            lua_pushliteral(L, "connection reset by peer");
-            break;
-
-        case NGX_EHOSTUNREACH:
-            lua_pushliteral(L, "host unreachable");
-            break;
-
-        case NGX_EHOSTDOWN:
-            lua_pushliteral(L, "host down");
-            break;
-
-        case NGX_ENETUNREACH:
-            lua_pushliteral(L, "network unreachable");
-            break;
-
-        case ENETDOWN:
-            lua_pushliteral(L, "network down");
-            break;
-
-        default:
-            lua_pushfstring(L, "error");
-            break;
+        } else {
+            lua_pushliteral(L, "error");
         }
 
         break;
