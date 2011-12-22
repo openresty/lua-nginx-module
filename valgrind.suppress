@@ -59,6 +59,12 @@
 {
    <insert_a_suppression_name_here>
    exp-sgcheck:SorG
+   fun:lj_str_new
+   fun:lua_pushlstring
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
    fun:ngx_http_lua_ndk_set_var_get
 }
 {
