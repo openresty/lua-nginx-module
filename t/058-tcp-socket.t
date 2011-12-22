@@ -616,3 +616,76 @@ err: nil
 close: nil closed
 "
 
+
+
+=== TEST 13: receive by chunks
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local data, err = sock:receive(10)
+                if data then
+                    local len = string.len(data)
+                    if len >= 0 and len <= 10 then
+                        -- ngx.print("[", data, "]")
+                        ngx.print(data)
+                    else
+                        ngx.say("ERROR: returned invalid length of data: ", len)
+                    end
+
+                else
+                    ngx.say("failed to receive a line: ", err)
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+request sent: 57
+HTTP/1.1 200 OK\r
+Server: nginx\r
+Content-Type: text/plain\r
+Content-Length: 4\r
+Connection: close\r
+\r
+foo
+failed to receive a line: closed
+close: nil closed
+"
+

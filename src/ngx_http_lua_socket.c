@@ -58,6 +58,7 @@ static int ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 static int ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_all(void *data, ssize_t bytes);
+static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
 
 
 void
@@ -679,6 +680,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     ngx_http_lua_ctx_t                  *ctx;
     int                                  n;
     ngx_str_t                            pat;
+    lua_Integer                          bytes;
 
     /* TODO: support the pattern argument */
 
@@ -706,18 +708,37 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     }
 
     if (n > 1) {
-        pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
-        if (pat.len != 2 || pat.data[0] != '*') {
-            return luaL_argerror(L, 2, "bad pattern argument");
-        }
+        switch (lua_type(L, 2)) {
+        case LUA_TSTRING:
+            pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
+            if (pat.len != 2 || pat.data[0] != '*') {
+                return luaL_argerror(L, 2, "bad pattern argument");
+            }
 
-        switch (pat.data[1]) {
-        case 'l':
-            u->input_filter = ngx_http_lua_socket_read_line;
+            switch (pat.data[1]) {
+            case 'l':
+                u->input_filter = ngx_http_lua_socket_read_line;
+                break;
+
+            case 'a':
+                u->input_filter = ngx_http_lua_socket_read_all;
+                break;
+
+            default:
+                return luaL_argerror(L, 2, "bad pattern argument");
+                break;
+            }
+
             break;
 
-        case 'a':
-            u->input_filter = ngx_http_lua_socket_read_all;
+        case LUA_TNUMBER:
+            bytes = lua_tointeger(L, 2);
+            if (bytes <= 0) {
+                return luaL_argerror(L, 2, "bad pattern argument");
+            }
+
+            u->input_filter = ngx_http_lua_socket_read_chunk;
+            u->recv_bytes = bytes;
             break;
 
         default:
@@ -792,6 +813,44 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     ctx->socket_ready = 0;
 
     return lua_yield(L, 0);
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
+{
+    ngx_http_lua_socket_upstream_t      *u = data;
+
+    ngx_buf_t                   *b;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_request_t          *r;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+                   "lua socket read chunk");
+
+    r = u->request;
+
+    if (!u->luabuf_inited) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+        luaL_buffinit(ctx->cc, &u->luabuf);
+        u->luabuf_inited = 1;
+    }
+
+    if (bytes == 0) {
+        return NGX_OK;
+    }
+
+    if (bytes > u->recv_bytes) {
+        bytes = u->recv_bytes;
+    }
+
+    b = &u->buffer;
+
+    luaL_addlstring(&u->luabuf, (char *) b->pos, bytes);
+
+    b->pos += bytes;
+
+    return NGX_OK;
 }
 
 
