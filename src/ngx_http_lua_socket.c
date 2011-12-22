@@ -704,6 +704,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     int                                  n;
     ngx_str_t                            pat;
     lua_Integer                          bytes;
+    char                                *p;
+    int                                  typ;
 
     n = lua_gettop(L);
     if (n != 1 && n != 2) {
@@ -729,11 +731,21 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     }
 
     if (n > 1) {
-        switch (lua_type(L, 2)) {
+        if (lua_isnumber(L, 2)) {
+            typ = LUA_TNUMBER;
+
+        } else {
+            typ = lua_type(L, 2);
+        }
+
+        switch (typ) {
         case LUA_TSTRING:
             pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
             if (pat.len != 2 || pat.data[0] != '*') {
-                return luaL_argerror(L, 2, "bad pattern argument");
+                p = (char *) lua_pushfstring(L, "bad pattern argument: %s",
+                                    (char *) pat.data);
+
+                return luaL_argerror(L, 2, p);
             }
 
             switch (pat.data[1]) {
