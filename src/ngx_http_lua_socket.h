@@ -30,6 +30,7 @@ struct ngx_http_lua_socket_upstream_s {
 
     ngx_buf_t                        buffer;
     size_t                           length;
+    size_t                           rest;
 
     ngx_uint_t                       ft_type;
     ngx_err_t                        socket_errno;

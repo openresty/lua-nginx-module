@@ -738,7 +738,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
             }
 
             u->input_filter = ngx_http_lua_socket_read_chunk;
-            u->recv_bytes = bytes;
+            u->length = (size_t) bytes;
+            u->rest = u->length;
             break;
 
         default:
@@ -771,7 +772,10 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     rc = ngx_http_lua_socket_read(r, u);
 
     if (rc == NGX_ERROR) {
-        return ngx_http_lua_socket_error_retval_handler(r, u, L);
+        dd("read failed: %d", (int) u->ft_type);
+        rc = ngx_http_lua_socket_tcp_receive_retval_handler(r, u, L);
+        dd("tcp receive retval returned: %d", (int) rc);
+        return rc;
     }
 
     if (rc == NGX_OK) {
@@ -779,18 +783,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
                        "lua socket receive done in a single run");
 
-        if (u->luabuf_inited) {
-            dd("push the luabuf result");
-            luaL_pushresult(&u->luabuf);
-            u->luabuf_inited = 0;
-
-        } else {
-            dd("push nil result");
-            lua_pushnil(L);
-        }
-
-        lua_pushnil(L);
-        return 2;
+        return ngx_http_lua_socket_tcp_receive_retval_handler(r, u, L);
     }
 
     /* rc == NGX_AGAIN */
@@ -837,20 +830,30 @@ ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
     }
 
     if (bytes == 0) {
-        return NGX_OK;
-    }
-
-    if (bytes > u->recv_bytes) {
-        bytes = u->recv_bytes;
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
+        return NGX_ERROR;
     }
 
     b = &u->buffer;
 
+    if (bytes >= (ssize_t) u->rest) {
+
+        luaL_addlstring(&u->luabuf, (char *) b->pos, u->rest);
+
+        b->pos += u->rest;
+        u->rest = 0;
+
+        return NGX_OK;
+    }
+
+    /* bytes < u->rest */
+
     luaL_addlstring(&u->luabuf, (char *) b->pos, bytes);
 
     b->pos += bytes;
+    u->rest -= bytes;
 
-    return NGX_OK;
+    return NGX_AGAIN;
 }
 
 
@@ -1198,8 +1201,19 @@ static int
 ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u, lua_State *L)
 {
+    int         n;
+
     if (u->ft_type) {
-        return ngx_http_lua_socket_error_retval_handler(r, u, L);
+        n = ngx_http_lua_socket_error_retval_handler(r, u, L);
+        if (u->luabuf_inited) {
+            luaL_pushresult(&u->luabuf);
+            u->luabuf_inited = 0;
+
+        } else {
+            lua_pushliteral(L, "");
+        }
+
+        return n + 1;
     }
 
     if (u->luabuf_inited) {

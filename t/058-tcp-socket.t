@@ -44,12 +44,12 @@ __DATA__
             ngx.say("request sent: ", bytes)
 
             while true do
-                local line, err = sock:receive()
+                local line, err, part = sock:receive()
                 if line then
                     ngx.say("received: ", line)
 
                 else
-                    ngx.say("failed to receive a line: ", err)
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
                     break
                 end
             end
@@ -75,7 +75,7 @@ received: Content-Length: 4
 received: Connection: close
 received: 
 received: foo
-failed to receive a line: closed
+failed to receive a line: closed []
 close: nil closed
 
 
@@ -110,12 +110,12 @@ close: nil closed
             ngx.say("request sent: ", bytes)
 
             while true do
-                local line, err = sock:receive()
+                local line, err, part = sock:receive()
                 if line then
                     ngx.say("received: ", line)
 
                 else
-                    ngx.say("failed to receive a line: ", err)
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
                     break
                 end
             end
@@ -140,7 +140,7 @@ received: Content-Type: text/plain
 received: Content-Length: 3
 received: Connection: close
 received: 
-failed to receive a line: closed
+failed to receive a line: closed [foo]
 closed
 
 
@@ -648,18 +648,17 @@ close: nil closed
             ngx.say("request sent: ", bytes)
 
             while true do
-                local data, err = sock:receive(10)
+                local data, err, partial = sock:receive(10)
                 if data then
                     local len = string.len(data)
-                    if len >= 0 and len <= 10 then
-                        -- ngx.print("[", data, "]")
-                        ngx.print(data)
+                    if len == 10 then
+                        ngx.print("[", data, "]")
                     else
                         ngx.say("ERROR: returned invalid length of data: ", len)
                     end
 
                 else
-                    ngx.say("failed to receive a line: ", err)
+                    ngx.say("failed to receive a line: ", err, " [", partial, "]")
                     break
                 end
             end
@@ -678,14 +677,14 @@ GET /t
 --- response_body eval
 "connected: 1
 request sent: 57
-HTTP/1.1 200 OK\r
-Server: nginx\r
-Content-Type: text/plain\r
-Content-Length: 4\r
-Connection: close\r
+[HTTP/1.1 2][00 OK\r
+Ser][ver: nginx][\r
+Content-][Type: text][/plain\r
+Co][ntent-Leng][th: 4\r
+Con][nection: c][lose\r
 \r
-foo
-failed to receive a line: closed
+fo]failed to receive a line: closed [o
+]
 close: nil closed
 "
 
