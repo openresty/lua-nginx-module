@@ -268,9 +268,15 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     saved_top = lua_gettop(L);
 
     if (ngx_resolve_name(rctx) != NGX_OK) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua socket fail to run resolver immediately");
+
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
+
         u->resolved->ctx = NULL;
         lua_pushnil(L);
-        lua_pushfstring(L, "failed to resolve host \"%s\"", host.data);
+        lua_pushfstring(L, "%s could not be resolved", host.data);
+
         return 2;
     }
 
@@ -425,6 +431,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     ur->naddrs = 1;
 
     ur->ctx = NULL;
+
     ngx_resolve_name_done(ctx);
 
     u->waiting = 0;

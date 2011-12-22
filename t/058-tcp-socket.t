@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
@@ -363,10 +363,10 @@ connected: 1
 --- request
 GET /t
 --- timeout: 5
---- response_body
-failed to connect: blah-blah-not-found.agentzh.org could not be resolved (3: Host not found)
+--- response_body_like
+^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(3: Host not found\))?
 connected: nil
-failed to send request: closed
+failed to send request: closed$
 
 
 
@@ -402,10 +402,10 @@ failed to send request: closed
 --- request
 GET /t
 --- timeout: 5
---- response_body
-failed to connect: blah-blah-not-found.agentzh.org could not be resolved (110: Operation timed out)
+--- response_body_like
+^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(110: Operation timed out\))?
 connected: nil
-failed to send request: closed
+failed to send request: closed$
 
 
 
