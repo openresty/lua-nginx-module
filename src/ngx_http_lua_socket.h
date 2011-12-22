@@ -58,7 +58,7 @@ struct ngx_http_lua_socket_upstream_s {
 };
 
 
-void ngx_http_lua_inject_socket_api(lua_State *L);
+void ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_SOCKET_H */

@@ -535,7 +535,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_socket_api(L);
+    ngx_http_lua_inject_socket_api(cf->log, L);
 
     ngx_http_lua_inject_misc_api(L);
 

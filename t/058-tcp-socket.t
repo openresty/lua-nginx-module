@@ -828,3 +828,98 @@ received: foo
 failed to receive a line: closed []
 close: nil closed
 
+
+
+=== TEST 16: ngx.socket.connect (working)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local port = ngx.var.port
+            local sock, err = ngx.socket.connect("127.0.0.1", port)
+            if not sock then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected.")
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected.
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+failed to receive a line: closed []
+close: nil closed
+
+
+
+=== TEST 17: ngx.socket.connect() shortcut (connection refused)
+--- config
+    location /test {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local sock, err = sock:connect("127.0.0.1", 16787)
+            if not sock then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes
+            bytes, err = sock:send("hello")
+            ngx.say("send: ", bytes, " ", err)
+
+            local line
+            line, err = sock:receive()
+            ngx.say("receive: ", line, " ", err)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+--- request
+    GET /test
+--- response_body
+failed to connect: connection refused
+

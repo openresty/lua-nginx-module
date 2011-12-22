@@ -63,11 +63,29 @@ static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
 
 
 void
-ngx_http_lua_inject_socket_api(lua_State *L)
+ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 {
+    ngx_int_t         rc;
+
     lua_createtable(L, 0, 4 /* nrec */);    /* ngx.socket */
     lua_pushcfunction(L, ngx_http_lua_socket_tcp);
     lua_setfield(L, -2, "tcp");
+
+    {
+        const char    buf[] = "local sock = ngx.socket.tcp()"
+                   " local ok, err = sock:connect(...)"
+                   " if ok then return sock else return nil, err end";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.socket.connect");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx.socket.connect(): %i", rc);
+
+    } else {
+        lua_setfield(L, -2, "connect");
+    }
 
     /* {{{tcp object metatable */
 
