@@ -407,3 +407,212 @@ failed to connect: blah-blah-not-found.agentzh.org could not be resolved (110: O
 connected: nil
 failed to send request: closed
 
+
+
+=== TEST 10: explicit *l pattern for receive
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err = sock:receive("*l")
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err)
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+failed to receive a line: closed
+close: nil closed
+
+
+
+=== TEST 11: *a pattern for receive
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local data, err = sock:receive("*a")
+            if data then
+                ngx.say("receive: ", data)
+                ngx.say("err: ", err)
+
+            else
+                ngx.say("failed to receive: ", err)
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+request sent: 57
+receive: HTTP/1.1 200 OK\r
+Server: nginx\r
+Content-Type: text/plain\r
+Content-Length: 4\r
+Connection: close\r
+\r
+foo
+
+err: nil
+close: nil closed
+"
+
+
+
+=== TEST 12: mixing *a and *l patterns for receive
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local line, err = sock:receive("*l")
+            if line then
+                ngx.say("receive: ", line)
+                ngx.say("err: ", err)
+
+            else
+                ngx.say("failed to receive: ", err)
+            end
+
+            local data
+            data, err = sock:receive("*a")
+            if data then
+                ngx.say("receive: ", data)
+                ngx.say("err: ", err)
+
+            else
+                ngx.say("failed to receive: ", err)
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+request sent: 57
+receive: HTTP/1.1 200 OK
+err: nil
+receive: Server: nginx\r
+Content-Type: text/plain\r
+Content-Length: 4\r
+Connection: close\r
+\r
+foo
+
+err: nil
+close: nil closed
+"
+

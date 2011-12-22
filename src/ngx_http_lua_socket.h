@@ -48,10 +48,11 @@ struct ngx_http_lua_socket_upstream_s {
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
-    unsigned                         luabuf_inited;
+    unsigned                         luabuf_inited:1;
     unsigned                         request_sent:1;
 
     unsigned                         waiting:1;
+    unsigned                         eof:1;
 };
 
 
