@@ -363,7 +363,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     waiting = u->waiting;
 
     if (ctx->state) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
                        "lua socket resolver error: %s (waiting: %d)",
                        ngx_resolver_strerror(ctx->state), (int) u->waiting);
 
@@ -1018,7 +1018,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             rc = u->input_filter(u->input_filter_ctx, size);
 
             if (rc == NGX_OK) {
-                ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "lua socket receive done: wait:%d, eof:%d, "
                                "uri:\"%V?%V\"", (int) u->waiting, (int) u->eof,
                                &r->uri, &r->args);
