@@ -31,7 +31,6 @@ __DATA__
         content_by_lua '
             package.loaded["socket"] = ngx.socket
             local Redis = require "Redis"
-            -- Redis.socket = ngx.socket
 
             local redis = Redis.connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
 
