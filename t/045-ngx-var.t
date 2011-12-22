@@ -51,3 +51,18 @@ GET /test?hello=world
 old: hello=world
 new: nil
 
+
+
+=== TEST 3: reference nonexistent variable
+--- config
+    location = /test {
+        set $var 32;
+        content_by_lua '
+            ngx.say("value: ", ngx.var.notfound)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+value: nil
+
