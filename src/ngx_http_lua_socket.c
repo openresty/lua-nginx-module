@@ -81,7 +81,8 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 
     if (rc != NGX_OK) {
         ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx.socket.connect(): %i", rc);
+                      "failed to load Lua code for ngx.socket.connect(): %i",
+                      rc);
 
     } else {
         lua_setfield(L, -2, "connect");
@@ -1052,7 +1053,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         if (size == 0) {
             /* TODO: flush the buffer onto luaL_Buffer */
             ngx_http_lua_socket_handle_error(r, u,
-                                             NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL);
+                                         NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL);
+
             return NGX_ERROR;
         }
 
