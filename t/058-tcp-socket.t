@@ -688,3 +688,143 @@ fo]failed to receive a line: closed [o
 close: nil closed
 "
 
+
+
+=== TEST 14: receive by chunks (very small buffer)
+--- config
+    server_tokens off;
+    lua_socket_buffer_size 1;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local data, err, partial = sock:receive(10)
+                if data then
+                    local len = string.len(data)
+                    if len == 10 then
+                        ngx.print("[", data, "]")
+                    else
+                        ngx.say("ERROR: returned invalid length of data: ", len)
+                    end
+
+                else
+                    ngx.say("failed to receive a line: ", err, " [", partial, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+request sent: 57
+[HTTP/1.1 2][00 OK\r
+Ser][ver: nginx][\r
+Content-][Type: text][/plain\r
+Co][ntent-Leng][th: 4\r
+Con][nection: c][lose\r
+\r
+fo]failed to receive a line: closed [o
+]
+close: nil closed
+"
+
+
+
+=== TEST 15: line reading (very small buffer)
+--- config
+    server_tokens off;
+    lua_socket_buffer_size 1;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+failed to receive a line: closed []
+close: nil closed
+

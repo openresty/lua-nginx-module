@@ -11,6 +11,7 @@
 #define NGX_HTTP_LUA_SOCKET_FT_TIMEOUT      0x0002
 #define NGX_HTTP_LUA_SOCKET_FT_CLOSED       0x0004
 #define NGX_HTTP_LUA_SOCKET_FT_RESOLVER     0x0008
+#define NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL  0x0010
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -640,6 +641,9 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
     } else if (u->ft_type & NGX_HTTP_LUA_SOCKET_FT_CLOSED) {
         lua_pushliteral(L, "closed");
 
+    } else if (u->ft_type & NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL) {
+        lua_pushliteral(L, "buffer too small");
+
     } else {
 
         if (u->socket_errno) {
@@ -681,8 +685,6 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     int                                  n;
     ngx_str_t                            pat;
     lua_Integer                          bytes;
-
-    /* TODO: support the pattern argument */
 
     n = lua_gettop(L);
     if (n != 1 && n != 2) {
@@ -1020,12 +1022,19 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
 
         /* try to read the socket */
 
+#if 1
+        if (b->pos > b->start && b->pos == b->last) {
+            b->pos = b->start;
+            b->last = b->start;
+        }
+#endif
+
         size = b->end - b->last;
 
         if (size == 0) {
             /* TODO: flush the buffer onto luaL_Buffer */
             ngx_http_lua_socket_handle_error(r, u,
-                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                             NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL);
             return NGX_ERROR;
         }
 
