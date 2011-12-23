@@ -325,12 +325,17 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
                 lua_rawgeti(L, 2, i);
                 p = (u_char *) luaL_checklstring(L, -1, &len);
 
-                value.data = ngx_palloc(r->pool, len);
+                /*
+                 * we also copy the trailling '\0' char here because nginx
+                 * header values must be null-terminated
+                 * */
+
+                value.data = ngx_palloc(r->pool, len + 1);
                 if (value.data == NULL) {
                     return luaL_error(L, "out of memory");
                 }
 
-                ngx_memcpy(value.data, p, len);
+                ngx_memcpy(value.data, p, len + 1);
                 value.len = len;
 
                 rc = ngx_http_lua_set_input_header(r, key, value,
@@ -347,13 +352,19 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
         }
 
     } else {
+
+        /*
+         * we also copy the trailling '\0' char here because nginx
+         * header values must be null-terminated
+         * */
+
         p = (u_char *) luaL_checklstring(L, 2, &len);
-        value.data = ngx_palloc(r->pool, len);
+        value.data = ngx_palloc(r->pool, len + 1);
         if (value.data == NULL) {
             return luaL_error(L, "out of memory");
         }
 
-        ngx_memcpy(value.data, p, len);
+        ngx_memcpy(value.data, p, len + 1);
         value.len = len;
     }
 
