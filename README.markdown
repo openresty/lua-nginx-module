@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc39](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 December 2011.
+This document describes ngx_lua [v0.3.1rc42](https://github.com/chaoslawful/lua-nginx-module/tags) released on 24 December 2011.
 
 Synopsis
 ========
@@ -188,26 +188,13 @@ Synopsis
 Description
 ===========
 
-This module embeds the Lua interpreter or LuaJIT into the nginx core and integrates the powerful Lua threads (aka Lua coroutines) into the nginx event model
-by means of nginx subrequests.
+This module embeds Lua, via the standard interpreter or LuaJIT, into Nginx and by leveraging Nginx subrequests, allows the integration of the powerful Lua threads ( Lua coroutines) into the Nginx event model.
 
-Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code written atop this module can be *100% non-blocking* on network traffic
-as long as you use the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or
-[ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) interfaces
-to let the nginx core do all your
-requests to mysql, postgresql, memcached, redis,
-upstream http web services, and etc etc etc (see
-[HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as either of the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) interfaces are used to handle
+requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (see [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
-The Lua interpreter instance is shared across all
-the requests in a single nginx worker process.
-
-Request contexts are isolated from each other
-by means of Lua (lightweight) threads (aka Lua coroutines).
-And Lua modules loaded are persistent on
-the nginx worker process level. So the memory
-footprint is quite small even when your
-nginx worker process is handling 10K requests at the same time.
+The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
+Loaded Lua modules persist at the nginx worker process level resulting in a small memory footprint even when under heavy loads.
 
 Directives
 ==========
@@ -546,9 +533,9 @@ Note that this handler always runs *after* the standard [HttpAccessModule](http:
     }
 
 
-That is, if a client address appears in the blacklist, then we do not have to bother sending a MySQL query to do more advanced authentication in [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua).
+That is, if a client IP address is in the blacklist, it will be denied before the MySQL query for more complex authentication is executed by [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua).
 
-It is worth mentioning that, the `ngx_auth_request` module can be approximately implemented by [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua). For example,
+It is worth mentioning that the `ngx_auth_request` module can be approximated using [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua):
 
 
     location / {
@@ -580,7 +567,7 @@ can be implemented in terms of `ngx_lua` like this
     }
 
 
-Just as any other access phase handlers, [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) will *not* run in subrequests.
+As with other access phase handlers, [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) will *not* run in subrequests.
 
 Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) handler, calling [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
@@ -644,7 +631,7 @@ This directive was first introduced in the `v0.2.1rc20` release.
 lua_need_request_body
 ---------------------
 
-**syntax:** *lua_need_request_body &lt;on | off&gt;*
+**syntax:** *lua_need_request_body &lt;on|off&gt;*
 
 **default:** *off*
 
@@ -652,7 +639,7 @@ lua_need_request_body
 
 **phase:** *depends on usage*
 
-Determines whether to force reading of the request body data before running rewrite/access/access_by_lua* or not. The Nginx core does not read the client request body by default and if you need the request body then you must turn this directive `on` or call the [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) function from within your Lua code.
+Determines whether to force the request body data to be read before running rewrite/access/access_by_lua* or not. The Nginx core does not read the client request body by default and if request body data is required, then this directive should be turned `on` or the [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) function should be called within the Lua code.
 
 To read the request body data within the [$request_body](http://wiki.nginx.org/HttpCoreModule#.24request_body) variable, 
 [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) must have the same value as [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size). Because when the content length exceeds [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) but less than [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size), Nginx will automatically buffer the data into a temporary file on the disk, which will lead to empty value in the [$request_body](http://wiki.nginx.org/HttpCoreModule#.24request_body) variable.
@@ -725,7 +712,7 @@ It is also possible to directly require the packages:
 
 The ability to require these packages was introduced in the `v0.2.1rc19` release.
 
-Network I/O operations in user code should only be done through the Lua API calls as the Nginx event loop may be blocked and performance may drop off dramatically otherwise. Minor disk file operations may be done via Lua's standard `io` and `file` libraries but these should be avoided wherever possible as these also block the Nginx process. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and its friends) is strongly recommended for maximum performance.
+Network I/O operations in user code should only be done through the Lua API calls as the Nginx event loop may be blocked and performance may drop off dramatically otherwise. Minor disk file operations may be done via Lua's standard `io` and `file` libraries but these should be avoided wherever possible as these also block the Nginx process. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and similar) is strongly recommended for maximum performance.
 
 ngx.arg
 -------
@@ -1140,8 +1127,7 @@ Request `GET /lua` will give the output
     /lua: hello
 
 
-Note that if both `share_all_vars` and `copy_all_vars` are set to true,
-then the variable scope will be shared.
+Note that if both `share_all_vars` and `copy_all_vars` are set to true, then `share_all_vars` takes precedence.
 
 In addition to the two settings above, it is possible to specify
 values for variables in the subrequest using the `vars` option. These
@@ -1225,12 +1211,12 @@ Request `GET /lua` yields the output
     bar
 
 
-Note that, by default, subrequests issued by [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) inherit all the
-request headers of the current request. This may have unexpected side effects on the
-subrequest responses. For example, when you are using the standard `ngx_proxy` module to serve
-your subrequests, then an "Accept-Encoding: gzip" header in your main request may result
-in gzipped responses that your Lua code will not able to handle properly. So always set
-[proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) `off` in your subrequest location to ignore the original request headers.
+Note that subrequests issued by [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) inherit all the
+request headers of the current request by default and that this may have unexpected side effects on the
+subrequest responses. For example, when using the standard `ngx_proxy` module to serve
+subrequests, an "Accept-Encoding: gzip" header in the main request may result
+in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
+[proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
 
 Please also refer to restrictions on [capturing locations that include Echo Module directives](http://wiki.nginx.org/HttpLuaModule#Locations_With_HttpEchoModule_Directives).
 
@@ -1242,7 +1228,7 @@ ngx.location.capture_multi
 
 Just like [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), but supports multiple subrequests running in parallel.
 
-This function issue several parallel subrequests specified by the input table, and returns their results in the same order. For example,
+This function issues several parallel subrequests specified by the input table and returns their results in the same order. For example,
 
 
     res1, res2, res3 = ngx.location.capture_multi{
@@ -1261,10 +1247,9 @@ This function issue several parallel subrequests specified by the input table, a
 
 
 This function will not return until all the subrequests terminate.
-The total latency is the longest latency of the subrequests, instead of their sum.
+The total latency is the longest latency of the individual subrequests rather than the sum.
 
-When you do not know how many subrequests you want to issue in advance,
-you can use Lua tables for both requests and responses. For instance,
+Lua tables can be used for both requests and responses when the number of subrequests to be issued is not known in advance:
 
 
     -- construct the requests table
@@ -1315,7 +1300,7 @@ ngx.header.HEADER
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-When assigning to `ngx.header.HEADER` will set, add, or clear the current request's response header named `HEADER`. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insensitively.
+Set, add to, or clear the current request `HEADER` response header. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insensitively.
 
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
@@ -1337,10 +1322,9 @@ will yield
     Set-Cookie: b=4; path=/
 
 
-in the response headers. Only array-like tables are accepted.
+in the response headers. 
 
-Note that, for those standard headers that only accepts a single value, like `Content-Type`, only the last element
-in the (array) table will take effect. So
+Only Lua tables are accepted (Only the last element in the table will take effect for standard headers such as `Content-Type` that only accept a single value).
 
 
     ngx.header.content_type = {'a', 'b'}
@@ -1358,15 +1342,17 @@ Setting a slot to `nil` effectively removes it from the response headers:
     ngx.header["X-My-Header"] = nil;
 
 
-same does assigning an empty table:
+The same applies to assigning an empty table:
 
 
     ngx.header["X-My-Header"] = {};
 
 
-Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly with [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) and its friends) will throw out a Lua exception.
+Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly with [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) and similar) will throw out a Lua exception.
 
-Reading `ngx.header.HEADER` will return the value of the response header named `HEADER`. Underscores (`_`) in the header names will also be replaced by dashes (`-`) and the header names will be matched case-insensitively. If the response header is not present at all, `nil` will be returned.
+Reading `ngx.header.HEADER` will return the value of the response header named `HEADER`. 
+
+Underscores (`_`) in the header names will also be replaced by dashes (`-`) and the header names will be matched case-insensitively. If the response header is not present at all, `nil` will be returned.
 
 This is particularly useful in the context of [filter_header_by_lua](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua) and [filter_header_by_lua_file](http://wiki.nginx.org/HttpLuaModule#filter_header_by_lua_file), for example,
 
@@ -1413,7 +1399,9 @@ ngx.req.set_uri
 
 Rewrite the current request's (parsed) URI by the `uri` argument. The `uri` argument must be a Lua string and cannot be of zero length, or a Lua exception will be thrown.
 
-The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location. Location jump will not be triggered otherwise, and only the current request's URI will be modified, which is also the default behavior. This function will return but with no returned values when the `jump` argument is `false` or absent altogether.
+The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location.
+
+Location jump will not be triggered otherwise, and only the current request's URI will be modified, which is also the default behavior. This function will return but with no returned values when the `jump` argument is `false` or absent altogether.
 
 For example, the following nginx config snippet
 
@@ -1841,7 +1829,7 @@ If the current request's request body has not been read, then it will be properl
 
 This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [nginx-1.0.9-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
 
-If you're using [ngx_openresty](http://openresty.org/) 1.0.8.17+, then you've already had this patch applied.
+This patch has already been applied to [ngx_openresty](http://openresty.org/) 1.0.8.17 and above.
 
 This function was first introduced in the `v0.3.1rc18` release.
 
@@ -1927,7 +1915,7 @@ This method never returns.
 This method *must* be called before [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or explicit response body
 outputs by either [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say).
 
-This method is very much like the [echo_exec](http://wiki.nginx.org/HttpEchoModule#echo_exec) directive in [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule).
+This method is similar to the [echo_exec](http://wiki.nginx.org/HttpEchoModule#echo_exec) directive of the [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule).
 
 ngx.redirect
 ------------
@@ -2022,11 +2010,11 @@ ngx.print
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Emit arguments concatenated to the HTTP client (as response body). If response headers have not been sent yet, this function will first send the headers out, and then output the body data.
+Emit arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
 
-Lua `nil` value will result in outputing `"nil"`, and Lua boolean values will emit literal `"true"` or `"false"`, accordingly.
+Lua `nil` values will output string `"nil"` and Lua boolean values will output literal strings `"true"` and `"false"` respectively.
 
-Also, nested arrays of strings are also allowed. The elements in the arrays will be sent one by one. For example
+Nested arrays of strings are permitted and the elements in the arrays will be sent one by one:
 
 
     local table = {
@@ -2045,7 +2033,7 @@ will yield the output
 
 Non-array table arguments will cause a Lua exception to be thrown.
 
-This is an asynchronous call, that is, this function will return immediately without waiting for all the data has actually been written into the system send buffer. If you want to wait for the data to be flushed before proceeding, you should call `ngx.flush(true)` right after this call. See [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) for more details.
+This is an asynchronous call and will return immediately without waiting for all the data to be written into the system send buffer. To run in synchronous mode, call `ngx.flush(true)` after calling `ngx.print`. This can be particularly useful for streaming output. See [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) for more details.
 
 ngx.say
 -------
@@ -2073,15 +2061,15 @@ ngx.flush
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Flushing the response outputs. This operation has no effect in HTTP 1.0 buffering output mode. See [HTTP 1.0 support](http://wiki.nginx.org/HttpLuaModule#HTTP_1.0_support).
+Flushes response output to the client. 
 
-By default, this function is an asynchronous call, that is, it returns immediately without waiting for the ouptuts to be actually flushed into the system send buffer.
+`ngx.flush` accepts an optional boolean `wait` argument (Default: `false`) first introduced in the `v0.3.1rc34` release. When called with the default argument, it issues an asynchronous call (Returns immediately without waiting for output data to be written into the system send buffer). Calling the function with the `wait` argument set to `true` switches to synchronous mode. 
 
-This function takes an optional boolean `wait` argument. When it is given `true` (which is default to `false`), this function becomes a synchronous call, that is, it will not return until all the outputs have actually been flushed into the system send buffer or the [send_timeout](http://wiki.nginx.org/HttpCoreModule#send_timeout) setting has expired. Note that, even in the synchronous mode, this function still works nonblockingly (thanks to the Lua coroutine mechanism!).
+In synchronous mode, the function will not return until all output data has been written into the system send buffer or until the [send_timeout](http://wiki.nginx.org/HttpCoreModule#send_timeout) setting has expired. Note that using the Lua coroutine mechanism means that this function does not block the Nginx event loop even in the synchronous mode.
 
-Synchronous flushing is very useful for streaming output in Lua.
+When `ngx.flush(true)` is called immediately after `ngx.print` or `ngx.say`, it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
-The `wait` argument was first introduced in the `v0.3.1rc34` release.
+Note that `ngx.flush` is non functional when in the HTTP 1.0 output buffering mode. See [HTTP 1.0 support](http://wiki.nginx.org/HttpLuaModule#HTTP_1.0_support).
 
 ngx.exit
 --------
@@ -2091,7 +2079,7 @@ ngx.exit
 
 When `status >= 200` (i.e., `ngx.HTTP_OK` and above), it will interrupt the execution of the current request and return status code to nginx.
 
-When `status == 0` (i.e., `ngx.OK`), it will only quit the current phase handler (or the content handler if the [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) directive is used) and continue to run laster phases (if any) for the current request.
+When `status == 0` (i.e., `ngx.OK`), it will only quit the current phase handler (or the content handler if the [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) directive is used) and continue to run later phases (if any) for the current request.
 
 The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
 `ngx.HTTP_MOVED_TEMPORARILY`, or other [HTTP status constants](http://wiki.nginx.org/HttpLuaModule#HTTP_status_constants).
@@ -3094,18 +3082,8 @@ Within external script files, PCRE sequences presented as long-bracketed lua str
     -- evaluates to "1234"
 
 
-Performance
-===========
-
-The Lua state (aka the Lua vm instance) is shared across all the requests
-handled by a single nginx worker process to miminize memory use.
-
-On a ThinkPad T400 2.80 GHz laptop, the HelloWorld example is easy to achieve 28k req/sec using `http_load -p 10`. In contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [Node.js](http://nodejs.org/) v0.6.1 yields 10.2k req/sec for their HelloWorld equivalents.
-
-You can get better performance when building this module with [LuaJIT 2.0](http://luajit.org/luajit.html).
-
-Typical Use Cases
-=================
+Typical Uses
+============
 
 Just to name a few:
 
@@ -3121,21 +3099,43 @@ The possibilities are unlimited as the module allows bringing together various e
 
 Other scripting language implementations typically struggle to match this performance level.
 
+The Lua state (Lua VM instance) is shared across all the requests handled by a single nginx worker process to miminize memory use.
+
+On a ThinkPad T400 2.80 GHz laptop, the HelloWorld example readily achieves 28k req/sec using `http_load -p 10`. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [Node.js](http://nodejs.org/) v0.6.1 yields 10.2k req/sec for their HelloWorld equivalents.
+
+This module performs best when built with [LuaJIT 2.0](http://luajit.org/luajit.html).
+
+Nginx Compatibility
+===================
+The module is compatible with the following versions of Nginx:
+
+*   1.1.x (last tested: 1.1.5)
+*   1.0.x (last tested: 1.0.10)
+*   0.9.x (last tested: 0.9.4)
+*   0.8.x >= 0.8.54 (last tested: 0.8.54)
+
+Code Repository
+===============
+
+The code repository of this project is hosted on github at [chaoslawful/lua-nginx-module](http://github.com/chaoslawful/lua-nginx-module).
+
 Installation
 ============
 
-You're recommended to install this module as well as the Lua 5.1 interpreter or LuaJIT 2.0 (with many other good stuffs) via the ngx_openresty bundle:
+You may wish to consider using the ngx_openresty bundle to install Nginx, ngx_lua, either one of the Standard Lua interpreter or LuaJIT, as well as a package of powerful companion Nginx modules:
 
 <http://openresty.org> 
 
-The installation steps are usually as simple as `./configure && make && make install`.
+The basic installation step is a simple `./configure --with-luajit && make && make install`.
 
-Alternatively, you can compile this module with nginx core's source by hand:
+Alternatively, you can manually compile ngx_lua into Nginx:
 
-1. Install Lua 5.1 or LuaJIT 2.0 into your system. Lua can be obtained freely from its project [homepage](http://www.lua.org/).  For Ubuntu/Debian users, just install the liblua5.1-0-dev package (or something like that).
-1. Download the latest version of the release tarball of the ngx_devel_kit (NDK) module from lua-nginx-module [file list](http://github.com/simpl/ngx_devel_kit/tags).
-1. Download the latest version of the release tarball of this module from lua-nginx-module [file list](http://github.com/chaoslawful/lua-nginx-module/tags).
-1. Grab the nginx source code from [nginx.org](http://nginx.org/), for example, the version 1.0.10 (see nginx compatibility), and then build the source with this module:
+1. Install Lua 5.1 or LuaJIT 2.0 (Recommended). Lua can be obtained free from the [Lua homepage](http://www.lua.org/).  Your distribution package manager may also distribute Lua.
+1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
+1. Download the latest version of this module [HERE](http://github.com/chaoslawful/lua-nginx-module/tags).
+1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](http://wiki.nginx.org/HttpLuaModule#Nginx_Compatibility))
+
+Build the source with this module:
 
 
     wget 'http://nginx.org/download/nginx-1.0.10.tar.gz'
@@ -3159,80 +3159,13 @@ Alternatively, you can compile this module with nginx core's source by hand:
     make install
 
 
-Compatibility
-=============
+Bugs and Patches
+================
 
-The module is compatible with the following versions of Nginx:
+Please report bugs or submit patches by:
 
-*   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.10)
-*   0.9.x (last tested: 0.9.4)
-*   0.8.x >= 0.8.54 (last tested: 0.8.54)
-
-The module **may** work with Nginx Versions 0.7.x and 0.8.x < 0.8.54 but these have not been tested.
-
-Nginx Versions < 0.7.0 are **not** compatible.
-
-Please consider filing a bug report if you find that any particular version of Nginx above Version 0.8.54 does not
-work with this module.
-
-Report Bugs
-===========
-
-Although a lot of effort has been put into testing and code tuning, there must be some serious bugs lurking somewhere in this module. So whenever you are bitten by any quirks, please do not hesitate to
-
-1. create a ticket on the [issue tracking interface](http://github.com/chaoslawful/lua-nginx-module/issues) provided by GitHub,
-1. or send a bug report or even patches to the [nginx mailing list](http://mailman.nginx.org/mailman/listinfo/nginx).
-
-Source Repository
-=================
-
-Available on github at [chaoslawful/lua-nginx-module](http://github.com/chaoslawful/lua-nginx-module).
-
-Test Suite
-==========
-
-To run the test suite, you also need the following dependencies:
-
-* Nginx version >= 0.8.54
-
-* Perl modules:
-	* test-nginx: <http://github.com/agentzh/test-nginx> 
-
-* Nginx modules:
-	* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module> 
-	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module> 
-	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module> 
-	* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module> 
-	* headers-more-nginx-module: <http://github.com/agentzh/headers-more-nginx-module> 
-	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module> 
-	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module> 
-	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/> 
-
-* C libraries:
-	* yajl: <https://github.com/lloyd/yajl> 
-
-* Lua modules:
-	* lua-yajl: <https://github.com/brimworks/lua-yajl> 
-		* Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
-
-* Applications:
-	* mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
-	* memcached
-
-The adding order of these modules is important as the position of any filter module in the
-filtering chain determines the final output. The correct adding order during configuration is:
-
-1. ngx_devel_kit
-1. set-misc-nginx-module
-1. ngx_http_auth_request_module
-1. echo-nginx-module
-1. memc-nginx-module
-1. lua-nginx-module (i.e. this module)
-1. headers-more-nginx-module
-1. srcache-nginx-module
-1. drizzle-nginx-module
-1. rds-json-nginx-module
+1. Creating a ticket on the GitHub [issue tracker](http://github.com/chaoslawful/lua-nginx-module/issues) (Recommended)
+1. Posting to the [Nginx mailing list](http://mailman.nginx.org/mailman/listinfo/nginx).
 
 TODO
 ====
@@ -3282,14 +3215,53 @@ v0.3.0
 * made setting `ngx.header.HEADER` after sending out response headers throw out a Lua exception to help debugging issues like github issue #49. thanks Bill Donahue (ikhoyo).
 * fixed an issue regarding defining global variables in C header files: we should have defined the global `ngx_http_lua_exception` in a single compilation unit. thanks @姜大炮.
 
-Authors
-=======
+Test Suite
+==========
 
-* chaoslawful (王晓哲) <chaoslawful at gmail dot com>
-* Zhang "agentzh" Yichun (章亦春) <agentzh at gmail dot com>
+To run the test suite, you also need the following dependencies:
 
-Copyright & License
-===================
+* Nginx version >= 0.8.54
+
+* Perl modules:
+	* test-nginx: <http://github.com/agentzh/test-nginx> 
+
+* Nginx modules:
+	* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module> 
+	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module> 
+	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module> 
+	* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module> 
+	* headers-more-nginx-module: <http://github.com/agentzh/headers-more-nginx-module> 
+	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module> 
+	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module> 
+	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/> 
+
+* C libraries:
+	* yajl: <https://github.com/lloyd/yajl> 
+
+* Lua modules:
+	* lua-yajl: <https://github.com/brimworks/lua-yajl> 
+		* Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
+
+* Applications:
+	* mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
+	* memcached
+
+The order in which these modules are added during configuration is important as the position of any filter module in the
+filtering chain determines the final output. The correct adding order is:
+
+1. ngx_devel_kit
+1. set-misc-nginx-module
+1. ngx_http_auth_request_module
+1. echo-nginx-module
+1. memc-nginx-module
+1. lua-nginx-module (i.e. this module)
+1. headers-more-nginx-module
+1. srcache-nginx-module
+1. drizzle-nginx-module
+1. rds-json-nginx-module
+
+Copyright and License
+=====================
 
 This module is licenced under the BSD license.
 
