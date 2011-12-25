@@ -13,12 +13,12 @@ force=$2
 
             #--without-pcre \
             #--without-http_rewrite_module \
+            #--with-cc=gcc46 \
 
 time ngx-build $force $version \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-cc=gcc46 \
             --with-cc-opt=$'-I/opt/pcre820jit/include' \
             --with-ld-opt="-L/opt/pcre820jit/lib -Wl,-rpath,/opt/pcre820jit/lib:/opt/drizzle/lib:/usr/local/lib:/home/lz/lib:/usr/local/openresty/luajit/lib" \
             --without-mail_pop3_module \
