@@ -522,3 +522,42 @@ ngx.location.capture("/echo")
 --- response_body
 --- SKIP
 
+
+
+=== TEST 25: set 20+ headers
+--- config
+    location /test {
+        rewrite_by_lua '
+            ngx.req.clear_header("Authorization")
+        ';
+        echo $http_a1;
+        echo $http_authorization;
+        echo $http_a2;
+        echo $http_a3;
+        echo $http_a23;
+        echo $http_a24;
+        echo $http_a25;
+    }
+--- request
+    GET /test
+--- more_headers eval
+my $i = 1;
+my $s;
+while ($i <= 25) {
+    $s .= "A$i: $i\n";
+    if ($i == 22) {
+        $s .= "Authorization: blah\n";
+    }
+    $i++;
+}
+#warn $s;
+$s
+--- response_body
+1
+
+2
+3
+23
+24
+25
+

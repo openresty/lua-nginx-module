@@ -382,6 +382,8 @@ ngx_http_lua_rm_header(ngx_list_t *l, ngx_table_elt_t *h)
             }
 
             part = part->next;
+            data = part->elts;
+
             h = part->elts;
             i = 0;
         }

@@ -66,3 +66,25 @@ GET /test
 --- response_body
 value: nil
 
+
+
+=== TEST 4: no-hash variables
+--- config
+    location = /test {
+        proxy_pass http://127.0.0.1:$server_port/foo;
+        header_filter_by_lua '
+            ngx.header["X-My-Host"] = ngx.var.proxy_host
+        ';
+    }
+
+    location = /foo {
+        echo foo;
+    }
+--- request
+GET /test
+--- response_headers
+X-My-Host: foo
+--- response_body
+foo
+--- SKIP
+
