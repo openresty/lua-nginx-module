@@ -880,4 +880,5 @@ for my $k (@k) {
     }
 }
 CORE::join("", @k);
+--- timeout: 4
 
