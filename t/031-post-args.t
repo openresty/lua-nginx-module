@@ -96,3 +96,128 @@ a=3&b=4&c
 POST /lua
 --- response_body
 
+
+
+=== TEST 4: max args (limited after normal key=value)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args(2)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+POST /lua
+foo=3&bar=4&baz=2
+--- response_body
+bar = 4
+foo = 3
+
+
+
+=== TEST 5: max args (limited after an orphan key)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args(2)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+POST /lua
+foo=3&bar&baz=2
+--- response_body
+bar = true
+foo = 3
+
+
+
+=== TEST 6: max args (limited after an empty key, but non-emtpy values)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args(2)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+POST /lua
+foo=3&=hello&=world
+--- response_body
+foo = 3
+done
+
+
+
+=== TEST 7: default max 100 args
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request eval
+my $s = "POST /lua\n";
+my $i = 1;
+while ($i <= 102) {
+    if ($i != 1) {
+        $s .= '&';
+    }
+    $s .= "a$i=$i";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 100) {
+    push @k, "a$i";
+    $i++;
+}
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= " = $&\n";
+    }
+}
+CORE::join("", @k);
+
