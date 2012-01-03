@@ -222,3 +222,95 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 
+
+
+=== TEST 8: custom max 102 args
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+            local args = ngx.req.get_post_args(102)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request eval
+my $s = "POST /lua\n";
+my $i = 1;
+while ($i <= 103) {
+    if ($i != 1) {
+        $s .= '&';
+    }
+    $s .= "a$i=$i";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 102) {
+    push @k, "a$i";
+    $i++;
+}
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= " = $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+
+
+
+=== TEST 9: custom unlimited args
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+            local args = ngx.req.get_post_args(0)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request eval
+my $s = "POST /lua\n";
+my $i = 1;
+while ($i <= 105) {
+    if ($i != 1) {
+        $s .= '&';
+    }
+    $s .= "a$i=$i";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 105) {
+    push @k, "a$i";
+    $i++;
+}
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= " = $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+
