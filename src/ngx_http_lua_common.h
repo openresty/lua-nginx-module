@@ -63,6 +63,11 @@ typedef struct {
 #endif
 
 
+#ifndef NGX_HTTP_LUA_MAX_HEADERS
+#define NGX_HTTP_LUA_MAX_HEADERS 100
+#endif
+
+
 typedef struct {
     lua_State       *lua;
 

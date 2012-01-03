@@ -23,10 +23,22 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     ngx_table_elt_t              *header;
     ngx_http_request_t           *r;
     ngx_uint_t                    i;
+    int                           n;
+    int                           max;
+    int                           count = 0;
 
-    if (lua_gettop(L) != 0) {
-        return luaL_error(L, "expecting 0 arguments but seen %d",
-                lua_gettop(L));
+    n = lua_gettop(L);
+
+    if (n != 0 && n != 1) {
+        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
+    }
+
+    if (n == 1) {
+        max = luaL_checkinteger(L, 1);
+        lua_pop(L, 1);
+
+    } else {
+        max = NGX_HTTP_LUA_MAX_HEADERS;
     }
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -65,6 +77,10 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua request header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
+
+        if (max > 0 && ++count == max) {
+            return 1;
+        }
     }
 
     return 1;

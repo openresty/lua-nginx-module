@@ -381,3 +381,141 @@ GET /bar
 Content-Encoding: gzip
 --- response_body_like: .{20}
 
+
+
+=== TEST 19: default max 100 headers
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers()
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $i = 1;
+my $s;
+while ($i <= 102) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 98) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+
+
+
+=== TEST 20: custom max 102 args
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers(102)
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $i = 1;
+my $s;
+while ($i <= 103) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 100) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+
+
+
+=== TEST 21: custom unlimited args
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers(0)
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $s;
+my $i = 1;
+while ($i <= 105) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 105) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+
