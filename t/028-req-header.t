@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => (2 * blocks() + 2) * repeat_each();
+plan tests => (2 * blocks() + 4) * repeat_each();
 
 #no_diff();
 #no_long_string();
@@ -426,10 +426,12 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+--- error_log
+lua hit request header limit 100
 
 
 
-=== TEST 20: custom max 102 args
+=== TEST 20: custom max 102 headers
 --- config
     location /lua {
         content_by_lua '
@@ -472,10 +474,12 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+--- error_log
+lua hit request header limit 102
 
 
 
-=== TEST 21: custom unlimited args
+=== TEST 21: custom unlimited headers
 --- config
     location /lua {
         content_by_lua '

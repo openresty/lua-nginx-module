@@ -79,6 +79,9 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
                        &header[i].key, &header[i].value);
 
         if (max > 0 && ++count == max) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                    "lua hit request header limit %d", max);
+
             return 1;
         }
     }
