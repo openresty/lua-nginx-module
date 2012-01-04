@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.3.1rc42](https://github.com/chaoslawful/lua-nginx-module/tags) released on 24 December 2011.
+This document describes ngx_lua [v0.3.1rc45](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 January 2012.
 
 Synopsis
 ========
@@ -381,7 +381,7 @@ rewrite_by_lua
 
 **context:** *http, server, location, location if*
 
-**phase:** *post-rewrite*
+**phase:** *rewrite tail*
 
 Acts as a rewrite phase handler and executes lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -495,7 +495,7 @@ rewrite_by_lua_file
 
 **context:** *http, server, location, location if*
 
-**phase:** *post-rewrite*
+**phase:** *rewrite tail*
 
 Equivalent to [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
@@ -510,7 +510,7 @@ access_by_lua
 
 **context:** *http, server, location, location if*
 
-**phase:** *post-access*
+**phase:** *access tail*
 
 Acts as an access phase handler and executes lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -578,7 +578,7 @@ access_by_lua_file
 
 **context:** *http, server, location, location if*
 
-**phase:** *post-access*
+**phase:** *access tail*
 
 Equivalent to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
@@ -749,8 +749,12 @@ ngx.var.VARIABLE
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
+Read and write Nginx variable values.
+
+
     value = ngx.var.some_nginx_variable_name
     ngx.var.some_nginx_variable_name = value
+
 
 Note that you can only write to nginx variables that are already defined.
 For example:
@@ -1504,7 +1508,7 @@ See also [ngx.req.set_uri](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri).
 
 ngx.req.get_uri_args
 --------------------
-**syntax:** *args = ngx.req.get_uri_args()*
+**syntax:** *args = ngx.req.get_uri_args(count_limit?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1573,9 +1577,25 @@ Here the `args` table will always look like
 
 regardless of the actual request query string.
 
+By default, this method only parses at most `100` query arguments (including those with the same name) to defend DoS attacks, and remaining ones are silently discarded. The user can specify a custom argument count limit via the optional `count_limit` function argument:
+
+
+    local args = ngx.req.get_uri_args(10)
+
+
+then only up to `10` query arguments are parsed.
+
+If the user wants to remove the limit, she can just specifies `0`, for instance,
+
+
+    local args = ngx.req.get_uri_args(0)
+
+
+but this is strongly discouraged due to security considerations.
+
 ngx.req.get_post_args
 ---------------------
-**syntax:** *ngx.req.get_post_args()*
+**syntax:** *ngx.req.get_post_args(count_limit?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1644,9 +1664,25 @@ That is, they will take Lua boolean values `true`. However, they're different fr
 
 Empty key arguments are discarded, for instance, `POST /test` with body `=hello&=world` will yield empty outputs.
 
+By default, this method only parses at most `100` query arguments (including those with the same name) to defend DoS attacks, and remaining ones are silently discarded. The user can specify a custom argument count limit via the optional `count_limit` function argument:
+
+
+    local args = ngx.req.get_post_args(10)
+
+
+then only up to `10` query arguments are parsed.
+
+If the user wants to remove the limit, she can just specifies `0`, for instance,
+
+
+    local args = ngx.req.get_post_args(0)
+
+
+but this is strongly discouraged due to security considerations.
+
 ngx.req.get_headers
 -------------------
-**syntax:** *headers = ngx.req.get_headers()*
+**syntax:** *headers = ngx.req.get_headers(count_limit?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1682,6 +1718,22 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table like thi
 
 
 Another way to read individual request headers is to use `ngx.var.http_HEADER`, that is, nginx's standard [$http_HEADER](http://wiki.nginx.org/HttpCoreModule#.24http_HEADER) variables.
+
+By default, this method only collects at most 100 request headers (including those with the same name) to defend DoS attacks, and remaining ones are silently discarded. The user can specify a custom header count limit via the optional `count_limit` function argument:
+
+
+    local args = ngx.req.get_headers(10)
+
+
+then only up to `10` request headers are parsed.
+
+If the user wants to remove the limit, she can just specifies `0`, for instance,
+
+
+    local args = ngx.req.get_headers(0)
+
+
+but this is strongly discouraged due to security considerations.
 
 ngx.req.set_header
 ------------------
