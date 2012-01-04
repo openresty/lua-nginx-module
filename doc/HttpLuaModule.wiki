@@ -2434,7 +2434,7 @@ You can also specify <code>options</code> to control how the match will be perfo
 
     i             caseless mode (similar to Perl's /i modifier)
 
-    j             enable PCRE JIT compilation, this requires PCRE 8.20+ and
+    j             enable PCRE JIT compilation, this requires PCRE 8.21+ and
                   PCRE must be built with the --enable-jit option, or it is
                   a no-op. this should always be used along with the <code>o</code> 
                   option to gain the full performance benefit.
