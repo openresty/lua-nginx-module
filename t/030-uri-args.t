@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 no_root_location();
 
@@ -786,6 +786,8 @@ GET /lua?foo=3&bar=4&baz=2
 --- response_body
 bar = 4
 foo = 3
+--- error_log
+lua hit query args limit 2
 
 
 
@@ -810,6 +812,8 @@ GET /lua?foo=3&bar&baz=2
 --- response_body
 bar = true
 foo = 3
+--- error_log
+lua hit query args limit 2
 
 
 
@@ -836,6 +840,8 @@ GET /lua?foo=3&=hello&=world
 --- response_body
 foo = 3
 done
+--- error_log
+lua hit query args limit 2
 
 
 
@@ -881,6 +887,8 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+--- error_log
+lua hit query args limit 100
 
 
 
@@ -926,6 +934,8 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+--- error_log
+lua hit query args limit 102
 
 
 

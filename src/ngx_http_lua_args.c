@@ -291,8 +291,8 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
             }
 
             if (max > 0 && ++count == max) {
-                dd("gettop: %d", lua_gettop(L));
-                dd("type: %s", lua_typename(L, lua_type(L, 1)));
+                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                        "lua hit query args limit %d", max);
 
                 return 1;
             }
