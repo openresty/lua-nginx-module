@@ -13,9 +13,10 @@ force=$2
 
             #--without-pcre \
             #--without-http_rewrite_module \
-            #--with-cc=gcc46 \
+            #--without-http_autoindex_module \
 
 time ngx-build $force $version \
+            --with-cc=gcc46 \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
@@ -28,7 +29,6 @@ time ngx-build $force $version \
             --without-http_empty_gif_module \
             --without-http_memcached_module \
             --without-http_referer_module \
-            --without-http_autoindex_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
                 --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
