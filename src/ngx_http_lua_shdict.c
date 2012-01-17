@@ -823,7 +823,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     value = luaL_checknumber(L, 3);
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
+    dd("looking up key %.*s in shared dict %.*s", (int) key.len, key.data,
+       (int) ctx->name.len, ctx->name.data);
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
@@ -857,7 +858,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_queue_remove(&sd->queue);
     ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-    dd("setting value type to %d", value_type);
+    dd("setting value type to %d", (int) sd->value_type);
 
     p = sd->data + key.len;
 

@@ -14,9 +14,9 @@ force=$2
             #--without-pcre \
             #--without-http_rewrite_module \
             #--without-http_autoindex_module \
+            #--with-cc=gcc46 \
 
 time ngx-build $force $version \
-            --with-cc=gcc46 \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
