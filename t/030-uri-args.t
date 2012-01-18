@@ -440,7 +440,7 @@ foo: /bar?hello
 --- request
     GET /foo?world
 --- response_body
-err: attempt to use zero-length uri
+err: [string "ngx.req.set_uri"]:1: attempt to use zero-length uri
 foo: /foo?world
 
 
@@ -523,7 +523,7 @@ hello
 --- request
     GET /foo?world
 --- response_body
-err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+err: [string "ngx.req.set_uri"]:1: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
 
 
 
@@ -562,7 +562,7 @@ uri: /bar
 --- request
     GET /foo?world
 --- response_body
-err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+err: [string "ngx.req.set_uri"]:1: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
 
 
 
@@ -602,7 +602,7 @@ uri: /bar
 --- request
     GET /foo?world
 --- response_body
-err: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
+err: [string "ngx.req.set_uri"]:1: attempt to call ngx.req.set_uri to do location jump in contexts other than rewrite_by_lua and rewrite_by_lua_file
 
 
 

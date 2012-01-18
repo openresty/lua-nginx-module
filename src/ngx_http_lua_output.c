@@ -183,6 +183,9 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     cl->next = NULL;
     cl->buf = b;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   newline ? "lua say response" : "lua print response");
+
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -440,6 +443,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return lua_yield(L, 0);
     }
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua flush asynchronously");
+
     return 0;
 }
 
@@ -467,6 +473,9 @@ ngx_http_lua_ngx_eof(lua_State *L)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua send eof");
 
     rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
 
@@ -504,8 +513,8 @@ ngx_http_lua_inject_output_api(lua_State *L)
 static int
 ngx_http_lua_ngx_send_headers(lua_State *L)
 {
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
+    ngx_http_request_t      *r;
+    ngx_http_lua_ctx_t      *ctx;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -513,13 +522,18 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
 
     if (r) {
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if (ctx != NULL && ctx->headers_sent == 0) {
+
+        if (ctx && ctx->headers_sent == 0) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua send headers");
+
             ngx_http_lua_send_header_if_needed(r, ctx);
         }
 
-    } else {
-        dd("(lua-ngx-send-headers) can't find nginx request object!");
+        return 0;
     }
+
+    dd("(lua-ngx-send-headers) can't find nginx request object!");
 
     return 0;
 }

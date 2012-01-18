@@ -68,15 +68,17 @@ void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
     size_t size, ngx_uint_t type);
 
-void ngx_http_lua_inject_req_api(lua_State *L);
+void ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L);
 
-void ngx_http_lua_inject_req_api_no_io(lua_State *L);
+void ngx_http_lua_inject_req_api_no_io(ngx_log_t *log, lua_State *L);
 
 void ngx_http_lua_process_args_option(ngx_http_request_t *r,
     lua_State *L, int table, ngx_str_t *args);
 
 ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
     ngx_open_file_info_t *of, ngx_log_t *log);
+
+void ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */

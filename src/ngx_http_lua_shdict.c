@@ -253,7 +253,6 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-
     if (lmcf->shm_zones != NULL) {
         lua_createtable(L, 0, 1 /* nrec */);    /* ngx.shared */
 
@@ -307,6 +306,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
+#if (NGX_DEBUG)
+    ngx_http_request_t          *r;
+#endif
     int                          n;
     ngx_str_t                    name;
     ngx_str_t                    key;
@@ -347,13 +349,20 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     if (key.len > 65535) {
         return luaL_error(L,
-                      "the key argument is more than 65535 bytes: \"%s\"",
-                      key.data);
+                          "the key argument is more than 65535 bytes: \"%s\"",
+                          key.data);
     }
 
     hash = ngx_crc32_short(key.data, key.len);
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
+#if (NGX_DEBUG)
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "fetching key \"%V\" in shared dict \"%V\"", &key, &name);
+#endif /* NGX_DEBUG */
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 

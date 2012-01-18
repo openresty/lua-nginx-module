@@ -13,19 +13,78 @@ static int ngx_http_lua_ngx_exit(lua_State *L);
 
 
 void
-ngx_http_lua_inject_control_api(lua_State *L)
+ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
 {
+    ngx_int_t         rc;
+
+    /* ngx.redirect */
+
     lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
-    lua_setfield(L, -2, "redirect");
+    lua_setfield(L, -2, "_redirect");
+
+#if 1
+    {
+        const char    buf[] = "ngx._redirect(...) ngx._check_aborted()";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.redirect");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx.redirect(): %i",
+                      rc);
+
+    } else {
+        lua_setfield(L, -2, "redirect");
+    }
+#endif
+
+    /* ngx.exec */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exec);
-    lua_setfield(L, -2, "exec");
+    lua_setfield(L, -2, "_exec");
+
+#if 1
+    {
+        const char    buf[] = "ngx._exec(...) ngx._check_aborted()";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.exec");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx.exec(): %i",
+                      rc);
+
+    } else {
+        lua_setfield(L, -2, "exec");
+    }
+#endif
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
     lua_setfield(L, -2, "throw_error"); /* deprecated */
 
+    /* ngx.exit */
+
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
-    lua_setfield(L, -2, "exit");
+    lua_setfield(L, -2, "_exit");
+
+#if 1
+    {
+        const char    buf[] = "ngx._exit(...) ngx._check_aborted()";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.exit");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx.exit(): %i",
+                      rc);
+
+    } else {
+        lua_setfield(L, -2, "exit");
+    }
+#endif
 }
 
 
@@ -80,7 +139,8 @@ ngx_http_lua_ngx_exec(lua_State *L)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
-            != NGX_OK) {
+        != NGX_OK)
+    {
         ctx->headers_sent = 1;
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -147,6 +207,10 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     ctx->exec_uri = uri;
     ctx->exec_args = args;
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua exec \"%V?%V\"",
+                   &ctx->exec_uri, &ctx->exec_args);
 
     return lua_yield(L, 0);
 }
@@ -234,6 +298,10 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     ctx->exit_code = rc;
     ctx->exited = 1;
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua redirect to \"%V\" with code %i",
+                   &r->headers_out.location->value, ctx->exit_code);
+
     return lua_yield(L, 0);
 }
 
@@ -271,6 +339,9 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     ctx->exit_code = rc;
     ctx->exited = 1;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua exit with code %i", ctx->exit_code);
 
     dd("calling yield");
     return lua_yield(L, 0);
