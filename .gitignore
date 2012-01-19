@@ -129,3 +129,5 @@ build1[01]
 g
 buildroot/
 src/headerfilterby.[ch]
+*.patch
+analyze
