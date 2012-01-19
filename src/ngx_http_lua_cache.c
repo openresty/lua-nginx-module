@@ -1,6 +1,8 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
 #define DDEBUG 0
+#endif
 #include "ddebug.h"
 
 #include <nginx.h>

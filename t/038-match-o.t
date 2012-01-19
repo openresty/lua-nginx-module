@@ -9,7 +9,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
 #no_long_string();
@@ -69,8 +69,10 @@ __DATA__
     }
 --- request
     GET /re
---- response_body
-not matched!
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+[qr/invalid escape sequence near '"\('/]
 
 
 
@@ -88,8 +90,10 @@ not matched!
     }
 --- request
     GET /re
---- response_body
-not matched!
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+[qr/invalid escape sequence near '"\[\['/]
 
 
 

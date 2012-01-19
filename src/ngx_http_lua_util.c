@@ -41,6 +41,7 @@ static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
+static int ngx_http_lua_ngx_check_aborted(lua_State *L);
 
 
 #ifndef LUA_PATH_SEP
@@ -215,6 +216,8 @@ void
 ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
         int force_quit)
 {
+    ngx_http_lua_ctx_t  *ctx;
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua deleting thread");
 
@@ -224,7 +227,16 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
     lua_State *cr = lua_tothread(L, -1);
     lua_pop(L, 1);
 
+    dd("cr: %p, force quit: %d", cr, (int) force_quit);
+
     if (cr && force_quit) {
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua terminate thread forcibly");
+
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+        ctx->aborted = 1;
+
         /* {{{ save orig code closure's env */
         lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
         lua_getfenv(cr, -1);
@@ -517,7 +529,9 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0 /* narr */, 24 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 82 /* nrec */);    /* ngx.* */
+
+    ngx_http_lua_inject_internal_utils(cf->log, L);
 
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
@@ -526,12 +540,12 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_output_api(L);
     ngx_http_lua_inject_time_api(L);
     ngx_http_lua_inject_string_api(L);
-    ngx_http_lua_inject_control_api(L);
+    ngx_http_lua_inject_control_api(cf->log, L);
     ngx_http_lua_inject_subrequest_api(L);
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
-    ngx_http_lua_inject_req_api(L);
+    ngx_http_lua_inject_req_api(cf->log, L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
@@ -652,6 +666,8 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->sr_statuses = NULL;
     ctx->sr_headers = NULL;
     ctx->sr_bodies = NULL;
+
+    ctx->aborted = 0;
 }
 
 
@@ -1152,7 +1168,7 @@ run:
     return rc;
 
 error:
-    if (ctx->entered_content_phase) {
+    if (ctx && ctx->entered_content_phase) {
         ngx_http_finalize_request(r,
                 ctx->headers_sent ? NGX_ERROR: NGX_HTTP_INTERNAL_SERVER_ERROR);
     }
@@ -1574,15 +1590,15 @@ done:
 
 
 void
-ngx_http_lua_inject_req_api_no_io(lua_State *L)
+ngx_http_lua_inject_req_api_no_io(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_newtable(L);    /* .req */
+    lua_createtable(L, 0 /* narr */, 9 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
-    ngx_http_lua_inject_req_uri_api(L);
+    ngx_http_lua_inject_req_uri_api(log, L);
 
     ngx_http_lua_inject_req_args_api(L);
 
@@ -1591,15 +1607,15 @@ ngx_http_lua_inject_req_api_no_io(lua_State *L)
 
 
 void
-ngx_http_lua_inject_req_api(lua_State *L)
+ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_newtable(L);    /* .req */
+    lua_createtable(L, 0 /* narr */, 15 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
-    ngx_http_lua_inject_req_uri_api(L);
+    ngx_http_lua_inject_req_uri_api(log, L);
 
     ngx_http_lua_inject_req_args_api(L);
 
@@ -2067,5 +2083,82 @@ failed:
     of->err = ngx_errno;
 
     return NGX_ERROR;
+}
+
+
+void
+ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L)
+{
+    ngx_int_t         rc;
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_check_aborted);
+    lua_setfield(L, -2, "_check_aborted"); /* deprecated */
+
+    /* override the default pcall */
+
+    lua_getglobal(L, "pcall");
+    lua_setfield(L, -2, "_pcall");
+
+    {
+        const char    buf[] = "local ret = {ngx._pcall(...)} "
+                              "ngx._check_aborted() return unpack(ret)";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua pcall");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx_lua pcall(): %i",
+                      rc);
+
+    } else {
+        lua_setglobal(L, "pcall");
+    }
+
+    /* override the default xpcall */
+
+    lua_getglobal(L, "xpcall");
+    lua_setfield(L, -2, "_xpcall");
+
+    {
+        const char    buf[] = "local ret = {ngx._xpcall(...)} "
+                              "ngx._check_aborted() return unpack(ret)";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua xpcall");
+    }
+
+    if (rc != NGX_OK) {
+        ngx_log_error(NGX_LOG_CRIT, log, 0,
+                      "failed to load Lua code for ngx_lua xpcall(): %i",
+                      rc);
+
+    } else {
+        lua_setglobal(L, "xpcall");
+    }
+}
+
+
+static int
+ngx_http_lua_ngx_check_aborted(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return 0;
+    }
+
+    NGX_HTTP_LUA_CHECK_ABORTED(L, ctx);
+
+    return 0;
 }
 

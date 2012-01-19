@@ -307,6 +307,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
+#if (NGX_DEBUG)
+    ngx_http_request_t          *r;
+#endif
     int                          n;
     ngx_str_t                    name;
     ngx_str_t                    key;
@@ -347,13 +350,20 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     if (key.len > 65535) {
         return luaL_error(L,
-                      "the key argument is more than 65535 bytes: \"%s\"",
-                      key.data);
+                          "the key argument is more than 65535 bytes: \"%s\"",
+                          key.data);
     }
 
     hash = ngx_crc32_short(key.data, key.len);
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
+#if (NGX_DEBUG)
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "fetching key \"%V\" in shared dict \"%V\"", &key, &name);
+#endif /* NGX_DEBUG */
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
@@ -639,7 +649,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
 replace:
-        if (value.len == (size_t) sd->value_len) {
+        if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua shared dict set: found old entry and value size matched, "
@@ -695,7 +705,7 @@ remove:
 insert:
     /* rc == NGX_DECLINED or value size unmatch */
 
-    if (value_type == LUA_TNIL) {
+    if (value.data == NULL) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushboolean(L, 1);
@@ -713,6 +723,7 @@ insert:
         + value.len;
 
     node = ngx_slab_alloc_locked(ctx->shpool, n);
+
     if (node == NULL) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -823,7 +834,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     value = luaL_checknumber(L, 3);
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
+    dd("looking up key %.*s in shared dict %.*s", (int) key.len, key.data,
+       (int) ctx->name.len, ctx->name.data);
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
@@ -857,7 +869,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_queue_remove(&sd->queue);
     ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-    dd("setting value type to %d", value_type);
+    dd("setting value type to %d", (int) sd->value_type);
 
     p = sd->data + key.len;
 

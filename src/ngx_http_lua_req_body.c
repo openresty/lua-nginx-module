@@ -375,14 +375,15 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
 set_header:
 
-    /* override input header Content-Length */
+    /* override input header Content-Length (value must be null terminated) */
 
-    value.data = ngx_palloc(r->pool, NGX_SIZE_T_LEN);
+    value.data = ngx_palloc(r->pool, NGX_SIZE_T_LEN + 1);
     if (value.data == NULL) {
         return luaL_error(L, "out of memory");
     }
 
     value.len = ngx_sprintf(value.data, "%uz", body.len) - value.data;
+    value.data[value.len] = '\0';
 
     dd("setting request Content-Length to %.*s (%d)",
             (int) value.len, value.data, (int) body.len);
@@ -645,14 +646,15 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     dd("buf file: %p, f:%u", b->file, b->in_file);
 
 set_header:
-    /* override input header Content-Length */
+    /* override input header Content-Length (value must be null terminated) */
 
-    value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+    value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN + 1);
     if (value.data == NULL) {
         return luaL_error(L, "out of memory");
     }
 
     value.len = ngx_sprintf(value.data, "%O", of.size) - value.data;
+    value.data[value.len] = '\0';
 
     r->headers_in.content_length_n = of.size;
 
@@ -661,6 +663,7 @@ set_header:
         r->headers_in.content_length->value.len = value.len;
 
     } else {
+
         ngx_str_set(&key, "Content-Length");
 
         rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);

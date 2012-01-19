@@ -45,6 +45,6 @@ __DATA__
 --- request
 GET /test
 --- ignore_response
---- error_log chop
-client timed out (110: Connection timed out)
+--- error_log eval
+[qr/client timed out \(\d+: .*?timed out\)/]
 

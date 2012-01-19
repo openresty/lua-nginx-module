@@ -3,10 +3,6 @@
 #ifndef NGX_HTTP_LUA_COMMON_H
 #define NGX_HTTP_LUA_COMMON_H
 
-#ifndef DDEBUG
-#define DDEBUG 0
-#endif
-
 #include "ddebug.h"
 
 #include <nginx.h>
@@ -28,6 +24,11 @@
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
 #endif
+
+#define NGX_HTTP_LUA_CHECK_ABORTED(L, ctx) \
+        if (ctx && ctx->aborted) { \
+            return luaL_error(L, "coroutine aborted"); \
+        }
 
 /* Nginx HTTP Lua Inline tag prefix */
 
@@ -55,6 +56,16 @@ typedef struct {
     size_t       size;
     u_char      *key;
 } ngx_http_lua_set_var_data_t;
+#endif
+
+
+#ifndef NGX_HTTP_LUA_MAX_ARGS
+#define NGX_HTTP_LUA_MAX_ARGS 100
+#endif
+
+
+#ifndef NGX_HTTP_LUA_MAX_HEADERS
+#define NGX_HTTP_LUA_MAX_HEADERS 100
 #endif
 
 
@@ -155,8 +166,7 @@ typedef struct {
     ngx_uint_t       index;              /* index of the current subrequest
                                             in its parent request */
 
-    unsigned         waiting;           /*  1: subrequest is still running;
-                                            0: subrequest is not running */
+    unsigned         waiting;     /* number of subrequests being waited */
 
     ngx_str_t        exec_uri;
     ngx_str_t        exec_args;
@@ -199,6 +209,8 @@ typedef struct {
 
     unsigned         socket_busy:1;
     unsigned         socket_ready:1;
+
+    unsigned         aborted:1;
 } ngx_http_lua_ctx_t;
 
 

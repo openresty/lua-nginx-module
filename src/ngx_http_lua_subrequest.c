@@ -694,7 +694,8 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
                 v->set_handler(sr, vv, v->data);
 
                 ngx_log_debug2(NGX_LOG_DEBUG_HTTP, sr->connection->log, 0,
-                      "variable \"%V\" set to value \"%v\"", &name, vv);
+                               "variable \"%V\" set to value \"%v\"", &name,
+                               vv);
 
                 continue;
             }
@@ -1221,7 +1222,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 void
 ngx_http_lua_inject_subrequest_api(lua_State *L)
 {
-    lua_createtable(L, 0, 2 /* nrec */); /* .location */
+    lua_createtable(L, 0 /* narr */, 2 /* nrec */); /* .location */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_location_capture);
     lua_setfield(L, -2, "capture");

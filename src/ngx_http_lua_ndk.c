@@ -158,11 +158,11 @@ ngx_http_lookup_ndk_set_var_directive(u_char *name,
 void
 ngx_http_lua_inject_ndk_api(lua_State *L)
 {
-    lua_createtable(L, 0, 1);    /* ndk.* */
+    lua_createtable(L, 0, 1 /* nrec */);    /* ndk.* */
 
     lua_newtable(L);    /* .set_var */
 
-    lua_createtable(L, 0, 2); /* metatable for .set_var */
+    lua_createtable(L, 0, 2 /* nrec */); /* metatable for .set_var */
     lua_pushcfunction(L, ngx_http_lua_ndk_set_var_get);
     lua_setfield(L, -2, "__index");
     lua_pushcfunction(L, ngx_http_lua_ndk_set_var_set);

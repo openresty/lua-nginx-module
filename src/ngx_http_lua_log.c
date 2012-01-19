@@ -25,7 +25,7 @@ static void ngx_http_lua_inject_log_consts(lua_State *L);
 int
 ngx_http_lua_ngx_log(lua_State *L)
 {
-    ngx_http_request_t *r;
+    ngx_http_request_t          *r;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -38,9 +38,9 @@ ngx_http_lua_ngx_log(lua_State *L)
         lua_remove(L, 1);
 
         return log_wrapper(r, "", level, L);
-    } else {
-        dd("(lua-log) can't output log due to invalid logging context!");
     }
+
+    dd("(lua-log) can't output log due to invalid logging context!");
 
     return 0;
 }
@@ -56,7 +56,7 @@ ngx_http_lua_ngx_log(lua_State *L)
 int
 ngx_http_lua_print(lua_State *L)
 {
-    ngx_http_request_t *r;
+    ngx_http_request_t          *r;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);

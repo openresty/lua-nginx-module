@@ -194,17 +194,21 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 #endif /* defined(NDK) && NDK */
 
     /*  {{{ initialize ngx.* namespace */
-    lua_newtable(L);    /*  ngx.* */
+
+    lua_createtable(L, 0 /* narr */, 67 /* nrec */);    /*  ngx.* */
+
+    ngx_http_lua_inject_internal_utils(r->connection->log, L);
 
     ngx_http_lua_inject_core_consts(L);
     ngx_http_lua_inject_http_consts(L);
+
     ngx_http_lua_inject_log_api(L);
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
     ngx_http_lua_inject_time_api(L);
     ngx_http_lua_inject_string_api(L);
     ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_req_api_no_io(L);
+    ngx_http_lua_inject_req_api_no_io(r->connection->log, L);
     ngx_http_lua_inject_arg_api(L, nargs, args);
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);

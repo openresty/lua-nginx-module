@@ -217,6 +217,7 @@ new_header:
     return NGX_OK;
 }
 
+
 static ngx_int_t
 ngx_http_set_builtin_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value)
@@ -333,6 +334,7 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 
     hv.offset = 0;
     hv.no_override = ! override;
+    hv.handler = NULL;
 
     for (i = 0; handlers[i].name.len; i++) {
         if (hv.key.len != handlers[i].name.len
@@ -358,6 +360,12 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
         hv.handler = handlers[i].handler;
     }
 
+#if 1
+    if (hv.handler == NULL) {
+        return NGX_ERROR;
+    }
+#endif
+
     return hv.handler(r, &hv, &value);
 }
 
@@ -381,6 +389,8 @@ ngx_http_lua_rm_header(ngx_list_t *l, ngx_table_elt_t *h)
             }
 
             part = part->next;
+            data = part->elts;
+
             h = part->elts;
             i = 0;
         }

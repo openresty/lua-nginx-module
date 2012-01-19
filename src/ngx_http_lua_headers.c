@@ -23,10 +23,22 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     ngx_table_elt_t              *header;
     ngx_http_request_t           *r;
     ngx_uint_t                    i;
+    int                           n;
+    int                           max;
+    int                           count = 0;
 
-    if (lua_gettop(L) != 0) {
-        return luaL_error(L, "expecting 0 arguments but seen %d",
-                lua_gettop(L));
+    n = lua_gettop(L);
+
+    if (n != 0 && n != 1) {
+        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
+    }
+
+    if (n == 1) {
+        max = luaL_checkinteger(L, 1);
+        lua_pop(L, 1);
+
+    } else {
+        max = NGX_HTTP_LUA_MAX_HEADERS;
     }
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -65,6 +77,13 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua request header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
+
+        if (max > 0 && ++count == max) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                    "lua hit request header limit %d", max);
+
+            return 1;
+        }
     }
 
     return 1;
@@ -325,12 +344,17 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
                 lua_rawgeti(L, 2, i);
                 p = (u_char *) luaL_checklstring(L, -1, &len);
 
-                value.data = ngx_palloc(r->pool, len);
+                /*
+                 * we also copy the trailling '\0' char here because nginx
+                 * header values must be null-terminated
+                 * */
+
+                value.data = ngx_palloc(r->pool, len + 1);
                 if (value.data == NULL) {
                     return luaL_error(L, "out of memory");
                 }
 
-                ngx_memcpy(value.data, p, len);
+                ngx_memcpy(value.data, p, len + 1);
                 value.len = len;
 
                 rc = ngx_http_lua_set_input_header(r, key, value,
@@ -347,13 +371,19 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
         }
 
     } else {
+
+        /*
+         * we also copy the trailling '\0' char here because nginx
+         * header values must be null-terminated
+         * */
+
         p = (u_char *) luaL_checklstring(L, 2, &len);
-        value.data = ngx_palloc(r->pool, len);
+        value.data = ngx_palloc(r->pool, len + 1);
         if (value.data == NULL) {
             return luaL_error(L, "out of memory");
         }
 
-        ngx_memcpy(value.data, p, len);
+        ngx_memcpy(value.data, p, len + 1);
         value.len = len;
     }
 

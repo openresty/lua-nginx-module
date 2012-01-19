@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => (2 * blocks() + 1) * repeat_each();
+plan tests => (2 * blocks() + 4) * repeat_each();
 
 #no_diff();
 #no_long_string();
@@ -337,7 +337,7 @@ They are foo, bar, baz.
 
 
 
-=== TEST 17: Accept-Encoding
+=== TEST 17: Accept-Encoding (scalar)
 --- config
     location /bar {
         default_type 'text/plain';
@@ -357,4 +357,169 @@ GET /bar
 --- response_headers
 Content-Encoding: gzip
 --- response_body_like: .{20}
+
+
+
+=== TEST 18: Accept-Encoding (table)
+--- config
+    location /bar {
+        default_type 'text/plain';
+        rewrite_by_lua '
+            ngx.req.set_header("Accept-Encoding", {"gzip"})
+        ';
+        gzip on;
+        gzip_min_length  1;
+        gzip_buffers     4 8k;
+        gzip_types       text/plain;
+    }
+--- user_files
+">>> bar
+" . ("hello" x 512)
+--- request
+GET /bar
+--- response_headers
+Content-Encoding: gzip
+--- response_body_like: .{20}
+
+
+
+=== TEST 19: default max 100 headers
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers()
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $i = 1;
+my $s;
+while ($i <= 102) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 98) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+--- error_log
+lua hit request header limit 100
+
+
+
+=== TEST 20: custom max 102 headers
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers(102)
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $i = 1;
+my $s;
+while ($i <= 103) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 100) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+--- error_log
+lua hit request header limit 102
+
+
+
+=== TEST 21: custom unlimited headers
+--- config
+    location /lua {
+        content_by_lua '
+            local headers = ngx.req.get_headers(0)
+            local keys = {}
+            for key, val in pairs(headers) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, ": ", headers[key])
+            end
+        ';
+    }
+--- request
+GET /lua
+--- more_headers eval
+my $s;
+my $i = 1;
+while ($i <= 105) {
+    $s .= "X-$i:$i\n";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 105) {
+    push @k, "X-$i";
+    $i++;
+}
+push @k, "Connection: Close\n";
+push @k, "Host: localhost\n";
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= ": $&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
 
