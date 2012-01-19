@@ -178,7 +178,8 @@ n = 9
 [error]
 
 
-=== TEST 7: entries under ngx.location
+
+=== TEST 8: entries under ngx.location
 --- config
         location = /test {
             content_by_lua '
