@@ -648,7 +648,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
 replace:
-        if (value.len == (size_t) sd->value_len) {
+        if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua shared dict set: found old entry and value size matched, "
@@ -704,7 +704,7 @@ remove:
 insert:
     /* rc == NGX_DECLINED or value size unmatch */
 
-    if (value_type == LUA_TNIL) {
+    if (value.data == NULL) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushboolean(L, 1);
@@ -722,6 +722,7 @@ insert:
         + value.len;
 
     node = ngx_slab_alloc_locked(ctx->shpool, n);
+
     if (node == NULL) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,

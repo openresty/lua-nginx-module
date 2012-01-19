@@ -357,7 +357,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua saving compiled regex (%d captures) into the cache "
-                "(entries %i)", re_comp.captures, lmcf->regex_cache_entries);
+                "(entries %i)", re_comp.captures,
+                 lmcf ? lmcf->regex_cache_entries : 0);
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
@@ -377,7 +378,9 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         lua_rawset(L, -3); /* table */
         lua_pop(L, 1);
 
-        lmcf->regex_cache_entries++;
+        if (lmcf) {
+            lmcf->regex_cache_entries++;
+        }
     }
 
 exec:
@@ -730,7 +733,8 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua saving compiled regex (%d captures) into the cache "
-                "(entries %i)", re_comp.captures, lmcf->regex_cache_entries);
+                "(entries %i)", re_comp.captures,
+                lmcf ? lmcf->regex_cache_entries : 0);
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
@@ -750,7 +754,9 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         lua_rawset(L, -3); /* table */
         lua_pop(L, 1);
 
-        lmcf->regex_cache_entries++;
+        if (lmcf) {
+            lmcf->regex_cache_entries++;
+        }
     }
 
 compiled:
@@ -1370,7 +1376,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua saving compiled sub regex (%d captures) into the cache "
-                "(entries %i)", re_comp.captures, lmcf->regex_cache_entries);
+                "(entries %i)", re_comp.captures,
+                lmcf ? lmcf->regex_cache_entries : 0);
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
@@ -1390,7 +1397,9 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
         lua_rawset(L, -3); /* table */
         lua_pop(L, 1);
 
-        lmcf->regex_cache_entries++;
+        if (lmcf) {
+            lmcf->regex_cache_entries++;
+        }
     }
 
 exec:

@@ -1143,7 +1143,7 @@ run:
     return rc;
 
 error:
-    if (ctx->entered_content_phase) {
+    if (ctx && ctx->entered_content_phase) {
         ngx_http_finalize_request(r,
                 ctx->headers_sent ? NGX_ERROR: NGX_HTTP_INTERNAL_SERVER_ERROR);
     }

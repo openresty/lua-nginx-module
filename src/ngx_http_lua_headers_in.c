@@ -334,6 +334,7 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 
     hv.offset = 0;
     hv.no_override = ! override;
+    hv.handler = NULL;
 
     for (i = 0; handlers[i].name.len; i++) {
         if (hv.key.len != handlers[i].name.len
@@ -358,6 +359,12 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
         hv.offset = handlers[i].offset;
         hv.handler = handlers[i].handler;
     }
+
+#if 1
+    if (hv.handler == NULL) {
+        return NGX_ERROR;
+    }
+#endif
 
     return hv.handler(r, &hv, &value);
 }
