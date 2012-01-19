@@ -26,6 +26,7 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_http_request_t              *request;
     ngx_peer_connection_t            peer;
 
+    ngx_msec_t                       timeout;
     ngx_http_upstream_resolved_t    *resolved;
 
     ngx_buf_t                        buffer;
