@@ -5,11 +5,15 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 5);
+
+our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 no_long_string();
+no_diff();
 run_tests();
 
 __DATA__
@@ -619,6 +623,7 @@ close: nil closed
 
 
 === TEST 13: receive by chunks
+--- timeout: 5
 --- config
     server_tokens off;
     location /t {
@@ -691,6 +696,7 @@ close: nil closed
 
 
 === TEST 14: receive by chunks (very small buffer)
+--- timeout: 5
 --- config
     server_tokens off;
     lua_socket_buffer_size 1;
@@ -994,4 +1000,433 @@ fo]failed to receive a line: closed [o
 ]
 close: nil closed
 "
+
+
+
+=== TEST 19: cannot survive across request boundary (send)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            test.go(ngx.var.port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function go(port)
+    if not sock then
+        sock = ngx.socket.tcp()
+        local port = ngx.var.port
+        local ok, err = sock:connect("127.0.0.1", port)
+        if not ok then
+            ngx.say("failed to connect: ", err)
+            return
+        end
+
+        ngx.say("connected: ", ok)
+    end
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+end
+--- request
+GET /t
+--- response_body_like eval
+"^(?:connected: 1
+request sent: 11
+received: OK|failed to send request: closed)\$"
+
+
+
+=== TEST 20: cannot survive across request boundary (receive)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            test.go(ngx.var.port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function go(port)
+    if not sock then
+        sock = ngx.socket.tcp()
+        local port = ngx.var.port
+        local ok, err = sock:connect("127.0.0.1", port)
+        if not ok then
+            ngx.say("failed to connect: ", err)
+            return
+        end
+
+        ngx.say("connected: ", ok)
+
+    else
+        local line, err, part = sock:receive()
+        if line then
+            ngx.say("received: ", line)
+
+        else
+            ngx.say("failed to receive a line: ", err, " [", part, "]")
+        end
+        return
+    end
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+end
+--- request
+GET /t
+--- response_body_like eval
+qr/^(?:connected: 1
+request sent: 11
+received: OK|failed to receive a line: closed \[nil\])$/
+
+
+
+=== TEST 21: cannot survive across request boundary (close)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            test.go(ngx.var.port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function go(port)
+    if not sock then
+        sock = ngx.socket.tcp()
+        local port = ngx.var.port
+        local ok, err = sock:connect("127.0.0.1", port)
+        if not ok then
+            ngx.say("failed to connect: ", err)
+            return
+        end
+
+        ngx.say("connected: ", ok)
+
+    else
+        local ok, err = sock:close()
+        if ok then
+            ngx.say("successfully closed")
+
+        else
+            ngx.say("failed to close: ", err)
+        end
+        return
+    end
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+end
+--- request
+GET /t
+--- response_body_like eval
+qr/^(?:connected: 1
+request sent: 11
+received: OK|failed to close: closed)$/
+
+
+
+=== TEST 22: cannot survive across request boundary (connect)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            test.go(ngx.var.port)
+            test.go(ngx.var.port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function go(port)
+    if not sock then
+        sock = ngx.socket.tcp()
+        local port = ngx.var.port
+        local ok, err = sock:connect("127.0.0.1", port)
+        if not ok then
+            ngx.say("failed to connect: ", err)
+            return
+        end
+
+        ngx.say("connected: ", ok)
+
+    else
+        local port = ngx.var.port
+        local ok, err = sock:connect("127.0.0.1", port)
+        if not ok then
+            ngx.say("failed to connect again: ", err)
+            return
+        end
+
+        ngx.say("connected again: ", ok)
+    end
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+end
+--- request
+GET /t
+--- response_body_like eval
+qr/^(?:connected(?: again)?: 1
+request sent: 11
+received: OK
+){2}$/
+--- error_log
+lua reuse socket upstream ctx
+
+
+
+=== TEST 23: connect again immediately
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected again: ", ok)
+
+            local req = "flush_all\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+connected again: 1
+request sent: 11
+received: OK
+close: 1 nil
+--- no_error_log
+[error]
+--- error_log eval
+["lua reuse socket upstream", "lua socket reconnect without shutting down"]
+
+
+
+=== TEST 24: two sockets mix together
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port1 $TEST_NGINX_MEMCACHED_PORT;
+        set $port2 $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock1 = ngx.socket.tcp()
+            local sock2 = ngx.socket.tcp()
+
+            local port1 = ngx.var.port1
+            local port2 = ngx.var.port2
+
+            local ok, err = sock1:connect("127.0.0.1", port1)
+            if not ok then
+                ngx.say("1: failed to connect: ", err)
+                return
+            end
+
+            ngx.say("1: connected: ", ok)
+
+            ok, err = sock2:connect("127.0.0.1", port2)
+            if not ok then
+                ngx.say("2: failed to connect: ", err)
+                return
+            end
+
+            ngx.say("2: connected: ", ok)
+
+            local req1 = "flush_all\\r\\n"
+            local bytes, err = sock1:send(req1)
+            if not bytes then
+                ngx.say("1: failed to send request: ", err)
+                return
+            end
+            ngx.say("1: request sent: ", bytes)
+
+            local req2 = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local bytes, err = sock2:send(req2)
+            if not bytes then
+                ngx.say("2: failed to send request: ", err)
+                return
+            end
+            ngx.say("2: request sent: ", bytes)
+
+            local line, err, part = sock1:receive()
+            if line then
+                ngx.say("1: received: ", line)
+
+            else
+                ngx.say("1: failed to receive a line: ", err, " [", part, "]")
+            end
+
+            line, err, part = sock2:receive()
+            if line then
+                ngx.say("2: received: ", line)
+
+            else
+                ngx.say("2: failed to receive a line: ", err, " [", part, "]")
+            end
+
+            ok, err = sock1:close()
+            ngx.say("1: close: ", ok, " ", err)
+
+            ok, err = sock2:close()
+            ngx.say("2: close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+1: connected: 1
+2: connected: 1
+1: request sent: 11
+2: request sent: 57
+1: received: OK
+2: received: HTTP/1.1 200 OK
+1: close: 1 nil
+2: close: 1 nil
+--- no_error_log
+[error]
 
