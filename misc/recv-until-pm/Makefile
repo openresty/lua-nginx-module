@@ -1,3 +1,3 @@
 test:
-	prove -Ilib *.t
+	prove -Ilib -r t
 
