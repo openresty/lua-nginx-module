@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3);
 
@@ -209,7 +209,7 @@ close: nil closed
 
 
 
-=== TEST 4: ambiguous boundary patterns
+=== TEST 4: ambiguous boundary patterns (abcabd)
 --- config
     server_tokens off;
     location /t {
@@ -272,6 +272,76 @@ qq{connected: 1
 request sent: 57
 read: abc
 failed to read a line: closed [
+]
+close: nil closed
+}
+--- no_error_log
+[error]
+
+
+=== TEST 4: ambiguous boundary patterns (aa)
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            collectgarbage("collect")
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local headers, err, part = read_headers()
+            if not headers then
+                ngx.say("failed to read headers: ", err, " [", part, "]")
+            end
+
+            local reader = sock:receiveuntil("aa")
+
+            for i = 1, 2 do
+                line, err, part = reader()
+                if line then
+                    ngx.say("read: ", line)
+
+                else
+                    ngx.say("failed to read a line: ", err, " [", part, "]")
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo abcabcaad;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 57
+read: abcabc
+failed to read a line: closed [d
 ]
 close: nil closed
 }

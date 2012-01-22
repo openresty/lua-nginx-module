@@ -2093,7 +2093,6 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     ngx_buf_t                               *b;
     u_char                                   c;
     u_char                                  *pat;
-    u_char                                  *begin, *end;
     size_t                                   pat_len;
     int                                      i;
     int                                      state, old_state;
@@ -2119,9 +2118,6 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
     b = &u->buffer;
 
-    begin = b->pos;
-    end = b->pos;
-
     pat = cp->pattern.data;
     pat_len = cp->pattern.len;
     state = cp->state;
@@ -2130,7 +2126,7 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     while (i < bytes) {
         c = b->pos[i];
 
-        dd("read char %c, state: %d", c, state);
+        dd("%d: read char %c, state: %d", i, c, state);
 
         if (c == pat[state]) {
             i++;
@@ -2139,13 +2135,6 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
             if (state == (int) pat_len) {
                 /* already matched the whole pattern */
                 dd("pat len: %d", (int) pat_len);
-
-                if (end != begin) {
-                    dd("adding final user data: %.*s", (int) (end - begin),
-                       begin);
-
-                    luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
-                }
 
                 b->pos += i;
 
@@ -2164,7 +2153,7 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
         if (state == 0) {
             i++;
-            end++;
+            luaL_addchar(&u->luabuf, c);
             continue;
         }
 
@@ -2183,15 +2172,8 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
         }
 
         if (!matched) {
-
-            if (end != begin) {
-                dd("adding user data: %.*s", (int) (end - begin), begin);
-                luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
-                end += state;
-                begin = end;
-            }
-
 #if 1
+            dd("adding pending data: %.*s", state, pat);
             luaL_addlstring(&u->luabuf, (char *) pat, state);
 #endif
 
@@ -2201,24 +2183,12 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
         /* matched */
 
-        if (end != begin) {
-            dd("adding user data: %.*s", (int) (end - begin), begin);
-            luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
-            end += old_state + 1 - state;
-            begin = end;
-        }
-
-        dd("adding user data: %.*s", (int) (old_state + 1 - state),
+        dd("adding pending data: %.*s", (int) (old_state + 1 - state),
            (char *) pat);
 
         luaL_addlstring(&u->luabuf, (char *) pat, old_state + 1 - state);
         i++;
         continue;
-    }
-
-    if (end != begin) {
-        dd("adding user data: %.*s", (int) (end - begin), begin);
-        luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
     }
 
     b->pos += i;
