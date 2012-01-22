@@ -59,12 +59,22 @@ struct ngx_http_lua_socket_upstream_s {
 };
 
 
+typedef struct ngx_http_lua_dfa_edge_s ngx_http_lua_dfa_edge_t;
+
+
+struct ngx_http_lua_dfa_edge_s {
+    u_char                           chr;
+    int                              new_state;
+    ngx_http_lua_dfa_edge_t         *next;
+};
+
+
 typedef struct {
     ngx_http_lua_socket_upstream_t      *upstream;
 
     ngx_str_t                            pattern;
     int                                  state;
-
+    ngx_http_lua_dfa_edge_t             *recovering[1];
 } ngx_http_lua_socket_compiled_pattern_t;
 
 

@@ -64,7 +64,8 @@ static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
 static int ngx_http_lua_socket_tcp_receiveuntil(lua_State *L);
 static int ngx_http_lua_socket_receiveuntil_iterator(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
-    ngx_http_lua_socket_compiled_pattern_t *cp);
+    ngx_http_lua_socket_compiled_pattern_t *cp, ngx_log_t *log);
+static int ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L);
 
 
 void
@@ -1801,6 +1802,7 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     int                                  n;
     ngx_str_t                            pat;
     ngx_int_t                            rc;
+    size_t                               size;
 
     ngx_http_lua_socket_compiled_pattern_t     *cp;
 
@@ -1826,14 +1828,24 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
         return 2;
     }
 
-    cp = lua_newuserdata(L, sizeof(ngx_http_lua_socket_compiled_pattern_t));
+    size = sizeof(ngx_http_lua_socket_compiled_pattern_t)
+                 + (pat.len - 1) * sizeof(ngx_http_lua_dfa_edge_t *);
+
+    cp = lua_newuserdata(L, size);
     if (cp == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    ngx_memzero(cp, sizeof(ngx_http_lua_socket_compiled_pattern_t));
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);
+    lua_pushcfunction(L, ngx_http_lua_socket_cleanup_compiled_pattern);
+    lua_setfield(L, -2, "__gc");
+    lua_setmetatable(L, -2);
 
-    rc = ngx_http_lua_socket_compile_pattern(pat.data, pat.len, cp);
+    ngx_memzero(cp, size);
+
+    rc = ngx_http_lua_socket_compile_pattern(pat.data, pat.len, cp,
+                                             r->connection->log);
+
     if (rc != NGX_OK) {
         lua_pushnil(L);
         lua_pushliteral(L, "failed to compile pattern");
@@ -1983,9 +1995,79 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
-    ngx_http_lua_socket_compiled_pattern_t *cp)
+    ngx_http_lua_socket_compiled_pattern_t *cp, ngx_log_t *log)
 {
-    /* TODO */
+    size_t              i;
+    size_t              prefix_len;
+    unsigned            found;
+    int                 cur_state, new_state;
+
+    ngx_http_lua_dfa_edge_t         *edge;
+    ngx_http_lua_dfa_edge_t        **last;
+
+    cp->pattern.len = len;
+
+    for (i = 1; i < len; i++) {
+        prefix_len = 1;
+
+        while (prefix_len <= len - i - 1) {
+
+            if (ngx_memcmp(data, &data[i], prefix_len) == 0) {
+                if (data[prefix_len] == data[i + prefix_len]) {
+                    prefix_len++;
+                    continue;
+                }
+
+                cur_state = i + prefix_len;
+                new_state = prefix_len + 1;
+
+                edge = cp->recovering[cur_state];
+
+                found = 0;
+
+                if (edge == NULL) {
+                    last = &cp->recovering[cur_state];
+
+                } else {
+
+                    for (; edge; edge = edge->next) {
+                        last = &edge->next;
+
+                        if (edge->chr == data[prefix_len]) {
+                            found = 1;
+
+                            if (edge->new_state < new_state) {
+                                edge->new_state = new_state;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if (!found) {
+                    ngx_log_debug7(NGX_LOG_DEBUG_HTTP, log, 0,
+                                   "lua socket read until recovering point: "
+                                   "on state %d (%*s), if next is '%c', then "
+                                   "recover to state %d (%*s)", cur_state,
+                                   (size_t) cur_state, data, data[prefix_len],
+                                   new_state, (size_t) new_state, data);
+
+                    edge = ngx_alloc(sizeof(ngx_http_lua_dfa_edge_t), log);
+                    edge->chr = data[prefix_len];
+                    edge->new_state = new_state;
+                    edge->next = NULL;
+
+                    *last = edge;
+                }
+
+                break;
+            }
+
+            break;
+        }
+    }
+
     return NGX_OK;
 }
 
@@ -2003,7 +2085,10 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     u_char                                  *pat;
     u_char                                  *begin, *end;
     size_t                                   pat_len;
-    int                                      i, state;
+    int                                      i;
+    int                                      state, old_state;
+    ngx_http_lua_dfa_edge_t                 *edge;
+    unsigned                                 matched;
 
     u = cp->upstream;
     r = u->request;
@@ -2046,7 +2131,9 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
                 dd("pat len: %d", (int) pat_len);
 
                 if (end != begin) {
-                    dd("adding final user data: %.*s", (int) (end - begin), begin);
+                    dd("adding final user data: %.*s", (int) (end - begin),
+                       begin);
+
                     luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
                 }
 
@@ -2071,20 +2158,49 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
             continue;
         }
 
-        /* TODO resolve state backtracking */
+        matched = 0;
+
+        for (edge = cp->recovering[state]; edge; edge = edge->next) {
+            if (edge->chr == c) {
+                dd("matched '%c' and jumping to state %d", c, edge->new_state);
+                old_state = state;
+                state = edge->new_state;
+                matched = 1;
+                break;
+            }
+        }
+
+        if (!matched) {
+
+            if (end != begin) {
+                dd("adding user data: %.*s", (int) (end - begin), begin);
+                luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
+                end += state;
+                begin = end;
+            }
+
+#if 1
+            luaL_addlstring(&u->luabuf, (char *) pat, state);
+#endif
+
+            state = 0;
+            continue;
+        }
+
+        /* matched */
 
         if (end != begin) {
             dd("adding user data: %.*s", (int) (end - begin), begin);
             luaL_addlstring(&u->luabuf, (char *) begin, end - begin);
-            end += state;
+            end += old_state + 1 - state;
             begin = end;
         }
 
-#if 1
-        luaL_addlstring(&u->luabuf, (char *) pat, state);
-#endif
+        dd("adding user data: %.*s", (int) (old_state + 1 - state),
+           (char *) pat);
 
-        state = 0;
+        luaL_addlstring(&u->luabuf, (char *) pat, old_state + 1 - state);
+        i++;
         continue;
     }
 
@@ -2097,5 +2213,41 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     cp->state = state;
 
     return NGX_AGAIN;
+}
+
+
+static int
+ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
+{
+    ngx_http_lua_socket_compiled_pattern_t      *cp;
+
+    ngx_http_lua_dfa_edge_t         *edge, *p;
+    unsigned                         i;
+
+    dd("cleanup compiled pattern");
+
+    cp = lua_touserdata(L, 1);
+    if (cp == NULL) {
+        return 0;
+    }
+
+    dd("pattern len: %d", (int) cp->pattern.len);
+
+    for (i = 0; i < cp->pattern.len; i++) {
+        edge = cp->recovering[i];
+
+        while (edge) {
+            p = edge;
+            edge = edge->next;
+
+            dd("freeing edge %p", p);
+
+            ngx_free(p);
+
+            dd("edge: %p", edge);
+        }
+    }
+
+    return 0;
 }
 
