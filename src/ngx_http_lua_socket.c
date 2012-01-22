@@ -1828,8 +1828,7 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
         return 2;
     }
 
-    size = sizeof(ngx_http_lua_socket_compiled_pattern_t)
-                 + (pat.len - 1) * sizeof(ngx_http_lua_dfa_edge_t *);
+    size = sizeof(ngx_http_lua_socket_compiled_pattern_t);
 
     cp = lua_newuserdata(L, size);
     if (cp == NULL) {
@@ -1999,6 +1998,7 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
 {
     size_t              i;
     size_t              prefix_len;
+    size_t              size;
     unsigned            found;
     int                 cur_state, new_state;
 
@@ -2020,6 +2020,16 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
 
                 cur_state = i + prefix_len;
                 new_state = prefix_len + 1;
+
+                if (cp->recovering == NULL) {
+                    size = sizeof(void *) * len;
+                    cp->recovering = ngx_alloc(size, log);
+                    if (cp->recovering == NULL) {
+                        return NGX_ERROR;
+                    }
+
+                    ngx_memzero(cp->recovering, size);
+                }
 
                 edge = cp->recovering[cur_state];
 
@@ -2160,13 +2170,15 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
         matched = 0;
 
-        for (edge = cp->recovering[state]; edge; edge = edge->next) {
-            if (edge->chr == c) {
-                dd("matched '%c' and jumping to state %d", c, edge->new_state);
-                old_state = state;
-                state = edge->new_state;
-                matched = 1;
-                break;
+        if (cp->recovering) {
+            for (edge = cp->recovering[state]; edge; edge = edge->next) {
+                if (edge->chr == c) {
+                    dd("matched '%c' and jumping to state %d", c, edge->new_state);
+                    old_state = state;
+                    state = edge->new_state;
+                    matched = 1;
+                    break;
+                }
             }
         }
 
@@ -2227,7 +2239,7 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
     dd("cleanup compiled pattern");
 
     cp = lua_touserdata(L, 1);
-    if (cp == NULL) {
+    if (cp == NULL || cp->recovering == NULL) {
         return 0;
     }
 
