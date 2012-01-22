@@ -59,6 +59,15 @@ struct ngx_http_lua_socket_upstream_s {
 };
 
 
+typedef struct {
+    ngx_http_lua_socket_upstream_t      *upstream;
+
+    ngx_str_t                            pattern;
+    int                                  state;
+
+} ngx_http_lua_socket_compiled_pattern_t;
+
+
 void ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L);
 
 
