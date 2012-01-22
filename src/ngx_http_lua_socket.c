@@ -2022,7 +2022,7 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
                 new_state = prefix_len + 1;
 
                 if (cp->recovering == NULL) {
-                    size = sizeof(void *) * len;
+                    size = sizeof(void *) * (len - 2);
                     cp->recovering = ngx_alloc(size, log);
                     if (cp->recovering == NULL) {
                         return NGX_ERROR;
@@ -2031,12 +2031,12 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
                     ngx_memzero(cp->recovering, size);
                 }
 
-                edge = cp->recovering[cur_state];
+                edge = cp->recovering[cur_state - 2];
 
                 found = 0;
 
                 if (edge == NULL) {
-                    last = &cp->recovering[cur_state];
+                    last = &cp->recovering[cur_state - 2];
 
                 } else {
 
@@ -2160,9 +2160,12 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
         matched = 0;
 
         if (cp->recovering) {
-            for (edge = cp->recovering[state]; edge; edge = edge->next) {
+            for (edge = cp->recovering[state - 2]; edge; edge = edge->next) {
+
                 if (edge->chr == c) {
-                    dd("matched '%c' and jumping to state %d", c, edge->new_state);
+                    dd("matched '%c' and jumping to state %d", c,
+                       edge->new_state);
+
                     old_state = state;
                     state = edge->new_state;
                     matched = 1;
@@ -2215,7 +2218,7 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
 
     dd("pattern len: %d", (int) cp->pattern.len);
 
-    for (i = 0; i < cp->pattern.len; i++) {
+    for (i = 0; i < cp->pattern.len - 2; i++) {
         edge = cp->recovering[i];
 
         while (edge) {
