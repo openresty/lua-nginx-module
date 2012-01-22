@@ -846,3 +846,78 @@ close: nil closed
 --- no_error_log
 [error]
 
+
+
+=== TEST 13: ambiguous boundary patterns (--abc)
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            collectgarbage("collect")
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local headers, err, part = read_headers()
+            if not headers then
+                ngx.say("failed to read headers: ", err, " [", part, "]")
+            end
+
+            local reader = sock:receiveuntil("--abc")
+
+            for i = 1, 6 do
+                line, err, part = reader(4)
+                if line then
+                    ngx.say("read: ", line)
+
+                else
+                    ngx.say("failed to read a line: ", err, " [", part, "]")
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo "hello, world ----abc";
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 57
+read: hell
+read: o, w
+read: orld
+read:  --
+failed to read a line: nil [nil]
+failed to read a line: closed [
+]
+close: nil closed
+}
+--- no_error_log
+[error]
+

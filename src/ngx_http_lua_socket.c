@@ -1918,11 +1918,13 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     cp = lua_touserdata(L, lua_upvalueindex(3));
 
+    dd("checking existing state: %d", cp->state);
+
     if (cp->state == -1) {
         cp->state = 0;
 
         lua_pushnil(L);
-        lua_pushliteral(L, "done");
+        lua_pushnil(L);
         lua_pushnil(L);
         return 3;
     }
@@ -1949,6 +1951,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     u->length = (size_t) bytes;
     u->rest = u->length;
+
     u->luabuf_inited = 0;
     u->waiting = 0;
 
@@ -2139,7 +2142,15 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
                 b->pos += i;
 
                 if (u->length) {
-                    cp->state = -1;
+                    if (u->rest != u->length) {
+                        dd("setting state to -1");
+                        cp->state = -1;
+
+                    } else {
+                        dd("setting state to 0");
+                        cp->state = 0;
+                        u->luabuf_inited = 0;
+                    }
 
                 } else {
                     cp->state = 0;
@@ -2152,8 +2163,16 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
         }
 
         if (state == 0) {
-            i++;
             luaL_addchar(&u->luabuf, c);
+
+            i++;
+
+            if (u->length && --u->rest == 0) {
+                cp->state = state;
+                b->pos += i;
+                return NGX_OK;
+            }
+
             continue;
         }
 
@@ -2179,6 +2198,18 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
             dd("adding pending data: %.*s", state, pat);
             luaL_addlstring(&u->luabuf, (char *) pat, state);
 #endif
+            if (u->length) {
+                if (u->rest <= (size_t) state) {
+                    u->rest = 0;
+
+                    cp->state = 0;
+                    b->pos += i;
+                    return NGX_OK;
+
+                } else {
+                    u->rest -= state;
+                }
+            }
 
             state = 0;
             continue;
@@ -2190,7 +2221,22 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
            (char *) pat);
 
         luaL_addlstring(&u->luabuf, (char *) pat, old_state + 1 - state);
+
         i++;
+
+        if (u->length) {
+            if (u->rest <= (size_t) state) {
+                u->rest = 0;
+
+                cp->state = state;
+                b->pos += i;
+                return NGX_OK;
+
+            } else {
+                u->rest -= state;
+            }
+        }
+
         continue;
     }
 
