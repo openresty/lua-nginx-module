@@ -1268,6 +1268,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     rc = ngx_http_lua_socket_send(r, u);
 
+    dd("socket send returned %d", (int) rc);
+
     if (rc == NGX_ERROR) {
         return ngx_http_lua_socket_error_retval_handler(r, u, L);
     }

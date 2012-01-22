@@ -123,3 +123,10 @@ __DATA__
 --- txt: ---- abc
 --- out: --
 
+
+=== TEST 15:
+--- pat: yz--ababyz
+--- txt: 
+--- out: --
+--- SKIP
+
