@@ -124,7 +124,8 @@ __DATA__
 --- out: --
 
 
-=== TEST 15:
+
+=== TEST 16:
 --- pat: yz--ababyz
 --- txt: 
 --- out: --
