@@ -529,7 +529,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0 /* narr */, 82 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 83 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_internal_utils(cf->log, L);
 
@@ -1611,7 +1611,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 15 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 16 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
