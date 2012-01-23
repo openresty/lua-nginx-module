@@ -11,6 +11,7 @@ our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 no_long_string();
 no_diff();
