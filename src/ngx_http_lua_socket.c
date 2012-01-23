@@ -2243,15 +2243,7 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
                 b->pos += i;
 
                 if (u->length) {
-                    if (u->rest != u->length) {
-                        dd("setting state to -1");
-                        cp->state = -1;
-
-                    } else {
-                        dd("setting state to 0");
-                        cp->state = 0;
-                        u->luabuf_inited = 0;
-                    }
+                    cp->state = -1;
 
                 } else {
                     cp->state = 0;

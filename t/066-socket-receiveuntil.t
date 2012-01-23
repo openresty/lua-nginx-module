@@ -885,7 +885,7 @@ close: nil closed
 
             local reader = sock:receiveuntil("--abc")
 
-            for i = 1, 6 do
+            for i = 1, 7 do
                 line, err, part = reader(4)
                 if line then
                     ngx.say("read: ", line)
@@ -913,6 +913,7 @@ read: hell
 read: o, w
 read: orld
 read:  --
+read: 
 failed to read a line: nil [nil]
 failed to read a line: closed [
 ]
