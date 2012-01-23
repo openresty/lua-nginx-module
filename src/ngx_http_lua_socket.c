@@ -1196,6 +1196,20 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                 r->header_in->pos += size;
                 r->request_length += size;
 
+                if (r->request_body->rest) {
+                    r->request_body->rest -= size;
+                }
+
+                continue;
+            }
+
+            if (r->request_body->rest == 0) {
+
+                u->eof = 1;
+
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+                               "lua request body exhausted");
+
                 continue;
             }
         }
@@ -1228,6 +1242,13 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             ngx_http_lua_socket_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
+        }
+
+        if (u->is_downstream) {
+            r->request_length += n;
+            if (r->request_body->rest) {
+                r->request_body->rest -= n;
+            }
         }
 
         b->last += n;
@@ -2406,6 +2427,8 @@ ngx_http_lua_req_socket(lua_State *L)
     if (rb == NULL) {
         return luaL_error(L, "out of memory");
     }
+
+    rb->rest = r->headers_in.content_length_n;
 
     r->request_body = rb;
 

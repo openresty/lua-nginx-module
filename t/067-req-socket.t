@@ -31,12 +31,12 @@ __DATA__
                 ngx.say("failed to get the request socket: ", err)
             end
 
-            for i = 1, 2 do
-                local data, err = sock:receive(5)
+            for i = 1, 3 do
+                local data, err, part = sock:receive(5)
                 if data then
                     ngx.say("received: ", data)
                 else
-                    ngx.say("failed to receive: ", err)
+                    ngx.say("failed to receive: ", err, " [", part, "]")
                 end
             end
         ';
@@ -48,6 +48,7 @@ hello world
 got the request socket
 received: hello
 received:  worl
+failed to receive: closed [d]
 --- no_error_log
 [error]
 
