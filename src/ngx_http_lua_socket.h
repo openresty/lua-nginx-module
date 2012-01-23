@@ -56,6 +56,7 @@ struct ngx_http_lua_socket_upstream_s {
 
     unsigned                         waiting:1;
     unsigned                         eof:1;
+    unsigned                         is_downstream:1;
 };
 
 
