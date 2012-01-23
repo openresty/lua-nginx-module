@@ -2415,7 +2415,7 @@ ngx_http_lua_req_socket(lua_State *L)
         return 2;
     }
 
-    if (r->content_length_n == 0) {
+    if (r->headers_in.content_length_n == 0) {
         lua_pushnil(L);
         lua_pushliteral(L, "request body empty");
         return 2;
