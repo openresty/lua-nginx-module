@@ -1207,7 +1207,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
 
                 u->eof = 1;
 
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "lua request body exhausted");
 
                 continue;
@@ -1232,7 +1232,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         if (n == 0) {
             u->eof = 1;
 
-            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "lua socket closed");
 
             continue;
@@ -2067,7 +2067,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     if (rc == NGX_OK) {
 
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua socket receive done in a single run");
 
         return ngx_http_lua_socket_tcp_receive_retval_handler(r, u, L);
