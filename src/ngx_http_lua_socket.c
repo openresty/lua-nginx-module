@@ -66,6 +66,7 @@ static int ngx_http_lua_socket_receiveuntil_iterator(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
     ngx_http_lua_socket_compiled_pattern_t *cp, ngx_log_t *log);
 static int ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L);
+static int ngx_http_lua_req_socket(lua_State *L);
 
 
 void
@@ -73,7 +74,8 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 {
     ngx_int_t         rc;
 
-    lua_createtable(L, 0, 4 /* nrec */);    /* ngx.socket */
+    lua_createtable(L, 0, 2 /* nrec */);    /* ngx.socket */
+
     lua_pushcfunction(L, ngx_http_lua_socket_tcp);
     lua_setfield(L, -2, "tcp");
 
@@ -94,9 +96,28 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
         lua_setfield(L, -2, "connect");
     }
 
+    /* {{{req socket object metatable */
+
+    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
+    lua_setfield(L, -2, "receive");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_receiveuntil);
+    lua_setfield(L, -2, "receiveuntil");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
+    lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
+
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+    lua_setfield(L, -3, "_reqsock_meta");
+
+    /* }}} */
+
     /* {{{tcp object metatable */
 
-    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 8 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -129,6 +150,14 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 }
 
 
+void
+ngx_http_lua_inject_req_socket_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_req_socket);
+    lua_setfield(L, -2, "socket");
+}
+
+
 static int
 ngx_http_lua_socket_tcp(lua_State *L)
 {
@@ -141,10 +170,12 @@ ngx_http_lua_socket_tcp(lua_State *L)
     lua_getglobal(L, "ngx");
     lua_getfield(L, -1, "_tcp_meta");
 
+#if 0
     dd("meta table: %s", luaL_typename(L, -1));
     lua_getfield(L, -1, "connect");
     dd("connect method: %s", luaL_typename(L, -1));
     lua_pop(L, 1);
+#endif
 
     lua_setmetatable(L, -3);
     lua_pop(L, 1);
@@ -2280,5 +2311,24 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
     }
 
     return 0;
+}
+
+
+static int
+ngx_http_lua_req_socket(lua_State *L)
+{
+    if (lua_gettop(L) != 0) {
+        return luaL_error(L, "expecting zero arguments, but got %d",
+                lua_gettop(L));
+    }
+
+    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_getglobal(L, "ngx");
+    lua_getfield(L, -1, "_reqsock_meta");
+
+    lua_setmetatable(L, -3);
+    lua_pop(L, 1);
+
+    return 1;
 }
 
