@@ -35,97 +35,104 @@ __DATA__
 
 
 === TEST 3:
+--- pat: ab
+--- txt: bbcabcaad
+--- out: bbc
+
+
+
+=== TEST 4:
 --- pat: aaa
 --- txt: abaabcaaaef
 --- out: abaabc
 
 
 
-=== TEST 4:
+=== TEST 5:
 --- pat: aaaaad
 --- txt: baaaaaaaaeaaaaaaadf
 --- out: baaaaaaaaeaa
 
 
 
-=== TEST 5:
+=== TEST 6:
 --- pat: abacadae
 --- txt: a
 --- out:
 
 
 
-=== TEST 6:
+=== TEST 7:
 --- pat: abacadae
 --- txt: ababacadae
 --- out: ab
 
 
 
-=== TEST 7:
+=== TEST 8:
 --- pat: abacadae
 --- txt: abacabacadae
 --- out: abac
 
 
 
-=== TEST 8:
+=== TEST 9:
 --- pat: abacadae
 --- txt: abaabacadae
 --- out: aba
 
 
 
-=== TEST 9:
+=== TEST 10:
 --- pat: abacadae
 --- txt: abacadabacadae
 --- out: abacad
 
 
 
-=== TEST 10:
+=== TEST 11:
 --- pat: abcabdabcabe
 --- txt: abcabdabcabdabcabe
 --- out: abcabd
 
 
 
-=== TEST 11:
+=== TEST 12:
 --- pat: abcabdabcabe
 --- txt: abcabdabcabcabdabcabe
 --- out: abcabdabc
 
 
 
-=== TEST 12:
+=== TEST 13:
 --- pat: abcabdabcabe
 --- txt: abcabcabdabcabe
 --- out: abc
 
 
 
-=== TEST 13:
+=== TEST 14:
 --- pat: abcabdabcabe
 --- txt: ababcabdabcabe
 --- out: ab
 
 
 
-=== TEST 14:
+=== TEST 15:
 --- pat: abcdef
 --- txt: abcabcdef
 --- out: abc
 
 
 
-=== TEST 15:
+=== TEST 16:
 --- pat: -- abc
 --- txt: ---- abc
 --- out: --
 
 
 
-=== TEST 16:
+=== TEST 17:
 --- pat: yz--ababyz
 --- txt: 
 --- out: --

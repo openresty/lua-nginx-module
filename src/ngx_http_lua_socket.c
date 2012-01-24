@@ -2111,6 +2111,10 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
 
     cp->pattern.len = len;
 
+    if (len <= 2) {
+        return NGX_OK;
+    }
+
     for (i = 1; i < len; i++) {
         prefix_len = 1;
 
