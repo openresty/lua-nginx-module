@@ -498,6 +498,10 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
 
+    /* create registry entry for the Lua socket connection pool table */
+    lua_newtable(L);
+    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+
     /* create registry entry for the Lua request ctx data table */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REGEX_CACHE);

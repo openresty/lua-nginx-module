@@ -192,6 +192,7 @@ failed to send request: closed
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -278,6 +279,7 @@ close: nil closed
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
+    resolver_timeout 1s;
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -341,6 +343,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()

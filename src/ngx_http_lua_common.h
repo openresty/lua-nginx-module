@@ -253,6 +253,9 @@ extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 /*  regex cache table key in Lua vm registry */
 #define NGX_LUA_REGEX_CACHE "ngx_lua_regex_cache"
 
+/*  socket connection pool table key in Lua vm registry */
+#define NGX_LUA_SOCKET_POOL "ngx_lua_socket_pool"
+
 /*  globals symbol to hold nginx request pointer */
 #define GLOBALS_SYMBOL_REQUEST    "ngx._req"
 

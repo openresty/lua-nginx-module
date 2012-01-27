@@ -51,6 +51,8 @@ struct ngx_http_lua_socket_upstream_s {
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
+    ngx_uint_t                       reused;
+
     unsigned                         luabuf_inited:1;
     unsigned                         request_sent:1;
 
@@ -77,6 +79,30 @@ typedef struct {
     int                                  state;
     ngx_http_lua_dfa_edge_t            **recovering;
 } ngx_http_lua_socket_compiled_pattern_t;
+
+
+typedef struct {
+    /* queues of ngx_http_lua_socket_pool_item_t: */
+    ngx_queue_t                        cache;
+    ngx_queue_t                        free;
+
+    u_char                             key[1];
+
+} ngx_http_lua_socket_pool_t;
+
+
+typedef struct {
+    ngx_http_lua_socket_pool_t     *socket_pool;
+
+    ngx_queue_t                      queue;
+    ngx_connection_t                *connection;
+
+    socklen_t                        socklen;
+    struct sockaddr_storage          sockaddr;
+
+    ngx_uint_t                       reused;
+
+} ngx_http_lua_socket_pool_item_t;
 
 
 void ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L);
