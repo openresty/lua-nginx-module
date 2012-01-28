@@ -16,10 +16,25 @@ typedef void (*ngx_http_lua_socket_upstream_handler_pt)(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 
 
+typedef struct {
+    ngx_http_lua_main_conf_t          *conf;
+    ngx_uint_t                         active_connections;
+
+    /* queues of ngx_http_lua_socket_pool_item_t: */
+    ngx_queue_t                        cache;
+    ngx_queue_t                        free;
+
+    u_char                             key[1];
+
+} ngx_http_lua_socket_pool_t;
+
+
 struct ngx_http_lua_socket_upstream_s {
     ngx_http_lua_socket_retval_handler          prepare_retvals;
     ngx_http_lua_socket_upstream_handler_pt     read_event_handler;
     ngx_http_lua_socket_upstream_handler_pt     write_event_handler;
+
+    ngx_http_lua_socket_pool_t      *socket_pool;
 
     ngx_http_lua_loc_conf_t         *conf;
     ngx_http_cleanup_pt             *cleanup;
@@ -82,17 +97,7 @@ typedef struct {
 
 
 typedef struct {
-    /* queues of ngx_http_lua_socket_pool_item_t: */
-    ngx_queue_t                        cache;
-    ngx_queue_t                        free;
-
-    u_char                             key[1];
-
-} ngx_http_lua_socket_pool_t;
-
-
-typedef struct {
-    ngx_http_lua_socket_pool_t     *socket_pool;
+    ngx_http_lua_socket_pool_t      *socket_pool;
 
     ngx_queue_t                      queue;
     ngx_connection_t                *connection;
