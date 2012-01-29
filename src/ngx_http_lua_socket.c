@@ -78,7 +78,6 @@ static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 static void ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev);
 static void ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
-static void ngx_http_lua_socket_keepalive_close(ngx_connection_t *c);
 static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
     ngx_http_lua_socket_pool_t *spool);
 
@@ -2721,7 +2720,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
 
-        ngx_http_lua_socket_keepalive_close(item->connection);
+        ngx_close_connection(item->connection);
 
     } else {
         q = ngx_queue_head(&spool->free);
@@ -2924,7 +2923,7 @@ close:
     item = c->data;
     spool = item->socket_pool;
 
-    ngx_http_lua_socket_keepalive_close(c);
+    ngx_close_connection(c);
 
     ngx_queue_remove(&item->queue);
     ngx_queue_insert_head(&spool->free, &item->queue);
@@ -2936,13 +2935,6 @@ close:
     if (spool->active_connections == 0) {
         ngx_http_lua_socket_free_pool(ev->log, spool);
     }
-}
-
-
-static void
-ngx_http_lua_socket_keepalive_close(ngx_connection_t *c)
-{
-    ngx_close_connection(c);
 }
 
 
