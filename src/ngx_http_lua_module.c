@@ -156,6 +156,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_header_filter_file },
 
+    { ngx_string("lua_socket_keepalive_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+          |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, keepalive_timeout),
+      NULL },
+
     { ngx_string("lua_socket_connect_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
           |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,

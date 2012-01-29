@@ -157,7 +157,7 @@ received: OK
 
 
 
-=== TEST 3: lua_socket_keepalive_timeout
+=== TEST 3: upstream sockets close prematurely
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -229,4 +229,156 @@ done
 ["lua socket keepalive close handler",
 "lua socket keepalive: free connection pool for "]
 --- timeout: 3
+
+
+
+=== TEST 4: http keepalive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+   server_tokens off;
+   location /t {
+        keepalive_timeout 60s;
+
+        set $port $TEST_NGINX_CLIENT_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local data, res = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            local ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("done")
+        ';
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 61
+received response of 156 bytes
+done
+--- no_error_log eval
+["[error]",
+"lua socket keepalive close handler",
+"lua socket keepalive: free connection pool for "]
+--- timeout: 4
+
+
+
+=== TEST 5: lua_socket_keepalive_timeout
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+   server_tokens off;
+   location /t {
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+
+        set $port $TEST_NGINX_CLIENT_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local data, res = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            local ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("done")
+        ';
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 61
+received response of 156 bytes
+done
+--- no_error_log
+[error]
+--- error_log eval
+["lua socket keepalive close handler",
+"lua socket keepalive: free connection pool for "]
+--- timeout: 4
 
