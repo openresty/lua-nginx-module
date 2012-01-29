@@ -248,7 +248,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
     if (ngx_http_lua_requires_header_filter) {
-        rc = ngx_http_lua_header_filter_init(cf);
+        rc = ngx_http_lua_header_filter_init();
         if (rc != NGX_OK) {
             return rc;
         }
