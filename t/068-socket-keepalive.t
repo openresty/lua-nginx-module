@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 3);
+plan tests => repeat_each() * (blocks() * 5 + 4);
 
 our $HtmlDir = html_dir;
 
@@ -378,7 +378,8 @@ done
 --- error_log eval
 ["lua socket keepalive close handler",
 "lua socket keepalive: free connection pool for ",
-"lua socket keepalive timeout: 100 ms"]
+"lua socket keepalive timeout: 100 ms",
+qr/lua socket connection pool size: 30\b/]
 --- timeout: 4
 
 
