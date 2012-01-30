@@ -2682,6 +2682,12 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         pool_size = llcf->pool_size;
 
+        if (pool_size == 0) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "zero pool size");
+            return 2;
+        }
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua socket connection pool size: %ui", pool_size);
 
