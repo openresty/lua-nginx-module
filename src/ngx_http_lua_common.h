@@ -135,6 +135,8 @@ typedef struct {
     size_t                           send_lowat;
     size_t                           buffer_size;
 
+    ngx_uint_t                       pool_size;
+
 } ngx_http_lua_loc_conf_t;
 
 

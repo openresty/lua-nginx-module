@@ -95,6 +95,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->read_timeout = NGX_CONF_UNSET_MSEC;
     conf->send_lowat = NGX_CONF_UNSET_SIZE;
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
+    conf->pool_size = NGX_CONF_UNSET_UINT;
 
     return conf;
 }
@@ -151,6 +152,8 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_size_value(conf->buffer_size,
                               prev->buffer_size,
                               (size_t) ngx_pagesize);
+
+    ngx_conf_merge_uint_value(conf->pool_size, prev->pool_size, 30);
 
     return NGX_CONF_OK;
 }
