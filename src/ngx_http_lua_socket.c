@@ -2751,6 +2751,9 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     timeout = llcf->keepalive_timeout;
 
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket keepalive timeout: %M ms", timeout);
+
     ngx_add_timer(c->read, timeout);
 
     c->write->handler = ngx_http_lua_socket_keepalive_dummy_handler;
