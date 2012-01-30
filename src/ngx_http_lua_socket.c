@@ -2032,7 +2032,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     ngx_int_t                            rc;
     ngx_http_lua_ctx_t                  *ctx;
     lua_Integer                          bytes;
-    int                                  timeout;
+    ngx_int_t                            timeout;
     int                                  n;
 
     ngx_http_lua_socket_compiled_pattern_t     *cp;
@@ -2069,7 +2069,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
                    "lua socket receiveuntil iterator");
 
     lua_getfield(L, lua_upvalueindex(1), "_tm");
-    timeout = lua_tointeger(L, -1);
+    timeout = (ngx_int_t) lua_tointeger(L, -1);
     lua_pop(L, 1);
 
     if (timeout > 0) {
@@ -2608,12 +2608,15 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_http_request_t                  *r;
     ngx_msec_t                           timeout;
     ngx_uint_t                           pool_size;
+    int                                  n;
 
     ngx_http_lua_socket_pool_item_t     *items, *item;
 
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting 1 argument "
-                          "(including the object), but got %d", lua_gettop(L));
+    n = lua_gettop(L);
+
+    if (n < 1 || n > 3) {
+        return luaL_error(L, "expecting 1 to 3 arguments "
+                          "(including the object), but got %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TTABLE);
@@ -2623,6 +2626,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     lua_getfield(L, 1, "_key");
     key.data = (u_char *) lua_tolstring(L, -1, &key.len);
     if (key.data == NULL) {
+        lua_pushnil(L);
         lua_pushliteral(L, "key not found");
         return 2;
     }
@@ -2665,11 +2669,11 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     dd("saving connection to key %s", lua_tostring(L, -1));
 
     lua_pushvalue(L, -1);
-    lua_rawget(L, 2);
+    lua_rawget(L, -3);
     spool = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    /* stack: obj cache key */
+    /* stack: obj timeout? size? cache key */
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -2680,7 +2684,12 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     if (spool == NULL) {
         /* create a new socket pool for the current peer key */
 
-        pool_size = llcf->pool_size;
+        if (n == 3) {
+            pool_size = luaL_checkinteger(L, 3);
+
+        } else {
+            pool_size = llcf->pool_size;
+        }
 
         if (pool_size == 0) {
             lua_pushnil(L);
@@ -2704,7 +2713,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
                        "lua socket keepalive create connection pool for key "
                        "\"%s\"", lua_tostring(L, -2));
 
-        lua_rawset(L, 2);
+        lua_rawset(L, -3);
 
         lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
@@ -2759,7 +2768,12 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         ngx_del_timer(c->write);
     }
 
-    timeout = llcf->keepalive_timeout;
+    if (n >= 2) {
+        timeout = (ngx_msec_t) luaL_checkinteger(L, 2);
+
+    } else {
+        timeout = llcf->keepalive_timeout;
+    }
 
 #if (NGX_DEBUG)
     if (timeout == 0) {
