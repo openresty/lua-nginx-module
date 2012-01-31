@@ -587,6 +587,8 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     size_t           len;
     ngx_buf_t       *b;
 
+    ngx_http_lua_loc_conf_t     *llcf;
+
     ll = chain;
 
     for (cl = *chain; cl; cl = cl->next) {
@@ -605,27 +607,19 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_OK;
     }
 
-    cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                          &ctx->free_bufs, len, llcf->tag);
+
     if (cl == NULL) {
         return NGX_ERROR;
     }
 
+    dd("chains get free buf: %d == %d", (int) (cl->buf->end - cl->buf->start),
+       (int) len);
+
     b = cl->buf;
-
-    b->start = ngx_palloc(r->pool, len);
-    if (b->start == NULL) {
-        return NGX_ERROR;
-    }
-
-    b->end = b->start + len;
-
-    b->pos  = b->start;
-    b->last = b->pos;
-    b->memory = 1;
-
-#if 1
-    b->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
-#endif
 
     while (in) {
         if (ngx_buf_in_memory(in->buf)) {
@@ -637,7 +631,6 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     *ll = cl;
-    cl->next = NULL;
 
     return NGX_OK;
 }
@@ -2166,5 +2159,76 @@ ngx_http_lua_ngx_check_aborted(lua_State *L)
     NGX_HTTP_LUA_CHECK_ABORTED(L, ctx);
 
     return 0;
+}
+
+
+ngx_chain_t *
+ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
+    ngx_chain_t **free, size_t len, ngx_buf_tag_t tag)
+{
+    ngx_chain_t  *cl;
+    ngx_buf_t    *b;
+
+    if (*free) {
+        cl = *free;
+        *free = cl->next;
+        cl->next = NULL;
+
+        b = cl->buf;
+        if (b->end - b->start >= (off_t) len) {
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, log, 0,
+                    "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
+                    (off_t) (b->end - b->last), len, cl, b->start);
+
+            b->pos = b->start;
+            b->last = b->start;
+            b->tag = tag;
+            return cl;
+        }
+
+        if (ngx_buf_in_memory(b) && b->start) {
+            ngx_pfree(p, b->start);
+        }
+
+        b->start = ngx_palloc(p, len);
+        if (b->start == NULL) {
+            return NULL;
+        }
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, log, 0,
+                       "lua reuse free buf chain, but reallocate memory "
+                       "because %uz >= %O, cl:%p, p:%p", len,
+                       (off_t) (b->end - b->start), cl, b->start);
+
+        dd("buf start: %p", cl->buf->start);
+
+        b->end = b->start + len;
+        b->pos = b->start;
+        b->last = b->start;
+        b->tag = tag;
+
+        return cl;
+    }
+
+    cl = ngx_alloc_chain_link(p);
+    if (cl == NULL) {
+        return NULL;
+    }
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, log, 0,
+                   "lua allocate new chainlink and new buf of size %uz, cl:%p",
+                   len, cl);
+
+    cl->buf = ngx_create_temp_buf(p, len);
+    if (cl->buf == NULL) {
+        return NULL;
+    }
+
+    dd("buf start: %p", cl->buf->start);
+
+    cl->buf->tag = tag;
+    cl->next = NULL;
+
+    return cl;
 }
 

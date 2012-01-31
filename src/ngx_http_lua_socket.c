@@ -4,6 +4,7 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
 
 
@@ -1342,6 +1343,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_http_lua_ctx_t                  *ctx;
     ngx_http_lua_socket_upstream_t      *u;
     int                                  timeout;
+    ngx_http_lua_loc_conf_t             *llcf;
 
     /* TODO: add support for the optional "i" and "j" arguments */
 
@@ -1386,21 +1388,17 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
-    cl = ngx_chain_get_free_buf(r->pool, &u->free_bufs);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                          &ctx->free_bufs, len, llcf->tag);
+
     if (cl == NULL) {
         return luaL_error(L, "out of memory");
     }
 
-    cl->buf->temporary = 1;
-    cl->buf->memory = 0;
-
-    cl->buf->start = ngx_palloc(r->pool, len);
-    if (cl->buf->start == NULL) {
-        return luaL_error(L, "out of memory");
-    }
-
-    cl->buf->end = cl->buf->start + len;
-    cl->buf->pos = cl->buf->start;
     cl->buf->last = ngx_copy(cl->buf->pos, p, len);
 
     u->request_bufs = cl;
@@ -1440,8 +1438,6 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     }
 
     /* rc == NGX_AGAIN */
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -1669,6 +1665,8 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 {
     ngx_int_t                    rc;
     ngx_connection_t            *c;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
 
@@ -1712,7 +1710,22 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "lua socket sent all the data: buffered 0x%d", (int) c->buffered);
 
-    u->request_bufs = NULL;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
+        return NGX_ERROR;
+    }
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+#if defined(nginx_version) && nginx_version >= 1001004
+    ngx_chain_update_chains(r->pool,
+#else
+    ngx_chain_update_chains(
+#endif
+                            &ctx->free_bufs, &ctx->busy_bufs, &u->request_bufs,
+                            llcf->tag);
+
     u->request_sent = 0;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 

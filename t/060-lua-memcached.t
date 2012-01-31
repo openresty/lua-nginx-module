@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 3;
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 our $HtmlDir = html_dir;
 
@@ -18,7 +18,7 @@ $ENV{TEST_NGINX_PWD} ||= $pwd;
 
 #master_on();
 workers(1);
-log_level('warn');
+#log_level('warn');
 #worker_connections(1014);
 no_long_string();
 run_tests();
@@ -156,4 +156,6 @@ end
 some_key: hello 1234
 --- no_error_log
 [error]
+--- error_log
+lua reuse free buf memory
 

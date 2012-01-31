@@ -11,7 +11,7 @@ workers(1);
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -387,7 +387,6 @@ cached: hello
 
             res = ngx.location.capture("/memc", { share_all_vars = true });
             ngx.say("cached: " .. res.body);
-
         ';
     }
 --- request
@@ -701,6 +700,8 @@ header foo: [bar]
 hello, a
 hello, b
 hello, c
+--- error_log
+lua reuse free buf memory
 
 
 
@@ -829,4 +830,8 @@ bar
 GET /t
 --- response_body
 some_key: hello 1234
+--- error_log
+lua reuse free buf chain, but reallocate memory because
+--- no_error_log
+[error]
 

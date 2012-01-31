@@ -152,7 +152,8 @@ typedef struct {
                                             data in lua registry */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
-    ngx_chain_t             *free; /* free bufs */
+    ngx_chain_t             *free_bufs;
+    ngx_chain_t             *busy_bufs;
 
     ngx_http_cleanup_pt     *cleanup;
 

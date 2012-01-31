@@ -54,9 +54,6 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
 
-    ngx_chain_t                     *free_bufs;
-    ngx_chain_t                     *busy_bufs;
-
     luaL_Buffer                      luabuf;
 
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);

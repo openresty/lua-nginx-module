@@ -792,6 +792,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ngx_str_t                     *body_str;
     u_char                        *p;
     ngx_chain_t                   *cl;
+    ngx_http_lua_loc_conf_t       *llcf;
 
     if (ctx->run_post_subrequest) {
         return rc;
@@ -858,66 +859,52 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     body_str = &pr_ctx->sr_bodies[ctx->index];
 
-    if (ctx->body && ctx->body->next == NULL) {
-        /* optimize for the single buf body */
+    len = 0;
+    for (cl = ctx->body; cl; cl = cl->next) {
+        /*  ignore all non-memory buffers */
+        len += cl->buf->last - cl->buf->pos;
+    }
 
-        cl = ctx->body;
+    body_str->len = len;
 
-        len = cl->buf->last - cl->buf->pos;
-
-        body_str->len = len;
-
-        if (len == 0) {
-            body_str->data = NULL;
-
-        } else {
-            body_str->data = cl->buf->pos;
-        }
+    if (len == 0) {
+        body_str->data = NULL;
 
     } else {
-        len = 0;
-        for (cl = ctx->body; cl; cl = cl->next) {
-            /*  ignore all non-memory buffers */
-            len += cl->buf->last - cl->buf->pos;
+        p = ngx_palloc(r->pool, len);
+        if (p == NULL) {
+            return NGX_ERROR;
         }
 
-        body_str->len = len;
+        body_str->data = p;
 
-        if (len == 0) {
-            body_str->data = NULL;
+        /* copy from and then free the data buffers */
 
-        } else {
-            p = ngx_palloc(r->pool, len);
-            if (p == NULL) {
-                return NGX_ERROR;
-            }
+        for (cl = ctx->body; cl; cl = cl->next) {
+            p = ngx_copy(p, cl->buf->pos,
+                    cl->buf->last - cl->buf->pos);
 
-            body_str->data = p;
+            cl->buf->last = cl->buf->pos;
 
-            /* copy from and then free the data buffers */
-
-            for (cl = ctx->body; cl; cl = cl->next) {
-                p = ngx_copy(p, cl->buf->pos,
-                        cl->buf->last - cl->buf->pos);
-
-                dd("free bod chain link buf ASAP");
-                ngx_pfree(r->pool, cl->buf->start);
-            }
+#if 0
+            dd("free body chain link buf ASAP");
+            ngx_pfree(r->pool, cl->buf->start);
+#endif
         }
     }
 
     if (ctx->body) {
-        /* free the ctx->body chain such that it can be reused by
-         * other subrequests */
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-        if (pr_ctx->free == NULL) {
-            pr_ctx->free = ctx->body;
+#if defined(nginx_version) && nginx_version >= 1001004
+        ngx_chain_update_chains(r->pool,
+#else
+        ngx_chain_update_chains(
+#endif
+                                &pr_ctx->free_bufs, &pr_ctx->busy_bufs,
+                                &ctx->body, llcf->tag);
 
-        } else {
-            for (cl = pr_ctx->free; cl->next; cl = cl->next) { /* void */ }
-
-            cl->next = ctx->body;
-        }
+        dd("free bufs: %p", pr_ctx->free_bufs);
     }
 
     /* work-around issues in nginx's event module */
