@@ -233,7 +233,7 @@ n = 2
 --- request
 GET /test
 --- response_body
-n = 8
+n = 10
 --- no_error_log
 [error]
 
