@@ -2080,6 +2080,30 @@ Nginx API for Lua
 
     See also ngx.req.set_body_data.
 
+  ngx.req.socket
+    syntax: *tcpsock, err = ngx.req.socket()*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Returns a read-only cosocket object that wraps the downstream
+    connection. Only receive and receiveuntil methods are supported on this
+    object.
+
+    In case of error, "nil" will be returned as well as a string describing
+    the error.
+
+    The socket object returned by this method is usually used to read the
+    current request's body in a streaming fashion. Do not turn on the
+    lua_need_request_body directive, and do not mix this call with
+    ngx.req.read_body and ngx.req.discard_body.
+
+    If there is any request body data that has been preread into the Nginx
+    core's request header buffer, the resulting cosocket object will take
+    care of that automatically. So there will not be any data loss due to
+    potential body data prereading.
+
+    This function was first introduced in the "v0.5.0rc1" release.
+
   ngx.req.clear_header
     syntax: *ngx.req.clear_header(header_name)*
 
