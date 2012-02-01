@@ -32,6 +32,7 @@ static void ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
 static void ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 static void ngx_http_lua_socket_cleanup(void *data);
+static void ngx_http_lua_req_socket_cleanup(void *data);
 static void ngx_http_lua_socket_finalize(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_send(ngx_http_request_t *r,
@@ -79,6 +80,7 @@ static void ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
 static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
     ngx_http_lua_socket_pool_t *spool);
 static int ngx_http_lua_socket_upstream_destroy(lua_State *L);
+static int ngx_http_lua_socket_downstream_destroy(lua_State *L);
 
 
 void
@@ -2480,6 +2482,7 @@ ngx_http_lua_req_socket(lua_State *L)
     ngx_http_lua_socket_upstream_t  *u;
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_request_body_t         *rb;
+    ngx_http_cleanup_t              *cln;
 
     if (lua_gettop(L) != 0) {
         return luaL_error(L, "expecting zero arguments, but got %d",
@@ -2531,6 +2534,13 @@ ngx_http_lua_req_socket(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
+#if 1
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_downstream_destroy);
+    lua_setfield(L, -2, "__gc");
+    lua_setmetatable(L, -2);
+#endif
+
     lua_setfield(L, 1, "_ctx");
 
     ngx_memzero(u, sizeof(ngx_http_lua_socket_upstream_t));
@@ -2542,6 +2552,18 @@ ngx_http_lua_req_socket(lua_State *L)
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     u->conf = llcf;
+
+    cln = ngx_http_cleanup_add(r, 0);
+    if (cln == NULL) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
+        lua_pushnil(L);
+        lua_pushliteral(L, "out of memory");
+        return 2;
+    }
+
+    cln->handler = ngx_http_lua_req_socket_cleanup;
+    cln->data = u;
+    u->cleanup = &cln->handler;
 
     pc = &u->peer;
 
@@ -3054,5 +3076,48 @@ ngx_http_lua_socket_upstream_destroy(lua_State *L)
     }
 
     return 0;
+}
+
+
+static int
+ngx_http_lua_socket_downstream_destroy(lua_State *L)
+{
+    ngx_http_lua_socket_upstream_t          *u;
+
+    dd("upstream destroy triggered by Lua GC");
+
+    u = lua_touserdata(L, 1);
+    if (u == NULL) {
+        return 0;
+    }
+
+    if (u->cleanup) {
+        ngx_http_lua_req_socket_cleanup(u); /* it will clear u->cleanup */
+    }
+
+    return 0;
+}
+
+
+static void
+ngx_http_lua_req_socket_cleanup(void *data)
+{
+    ngx_http_lua_socket_upstream_t  *u = data;
+
+    ngx_http_request_t  *r;
+
+    r = u->request;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "cleanup lua socket downstream request: \"%V\"", &r->uri);
+
+    if (u->cleanup) {
+        *u->cleanup = NULL;
+        u->cleanup = NULL;
+    }
+
+    if (u->peer.connection) {
+        u->peer.connection = NULL;
+    }
 }
 

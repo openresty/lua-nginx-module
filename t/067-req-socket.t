@@ -317,3 +317,51 @@ found the end of the stream
 --- no_error_log
 [error]
 
+
+
+=== TEST 4: sanity
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        content_by_lua '
+            local test = require "test"
+            test.go()
+            ngx.say("done")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock, err
+
+function go()
+    if not sock then
+        sock, err = ngx.req.socket()
+        if sock then
+            ngx.say("got the request socket")
+        else
+            ngx.say("failed to get the request socket: ", err)
+        end
+    else
+        for i = 1, 3 do
+            local data, err, part = sock:receive(5)
+            if data then
+                ngx.say("received: ", data)
+            else
+                ngx.say("failed to receive: ", err, " [", part, "]")
+            end
+        end
+    end
+end
+--- request
+POST /t
+hello world
+--- response_body_like
+(?:got the request socket
+|failed to receive: closed [d]
+)?done
+--- no_error_log
+[error]
+
