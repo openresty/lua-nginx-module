@@ -1,5 +1,63 @@
 {
    <insert_a_suppression_name_here>
+   Memcheck:Param
+   write(buf)
+   fun:__write_nocancel
+   fun:ngx_log_error_core
+   fun:ngx_resolver_read_response
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:ngx_sprintf_num
+   fun:ngx_vslprintf
+   fun:ngx_log_error_core
+   fun:ngx_resolver_read_response
+   fun:ngx_epoll_process_events
+   fun:ngx_process_events_and_timers
+   fun:ngx_single_process_cycle
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr1
+   fun:ngx_vslprintf
+   fun:ngx_snprintf
+   fun:ngx_sock_ntop
+   fun:ngx_event_accept
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   write(buf)
+   fun:__write_nocancel
+   fun:ngx_log_error_core
+   fun:ngx_resolver_read_response
+   fun:ngx_event_process_posted
+   fun:ngx_process_events_and_timers
+   fun:ngx_single_process_cycle
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:ngx_sprintf_num
+   fun:ngx_vslprintf
+   fun:ngx_log_error_core
+   fun:ngx_resolver_read_response
+   fun:ngx_event_process_posted
+   fun:ngx_process_events_and_timers
+   fun:ngx_single_process_cycle
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   exp-sgcheck:SorG
+   fun:lj_str_new
+   fun:lua_pushlstring
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Leak
    fun:malloc
    fun:ngx_alloc

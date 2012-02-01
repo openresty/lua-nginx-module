@@ -98,7 +98,7 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    if (! ctx || ! ctx->capture) {
+    if (!ctx || !ctx->capture) {
         dd("no ctx or no capture %.*s", (int) r->uri.len, r->uri.data);
 
         return ngx_http_lua_next_body_filter(r, in);
@@ -127,7 +127,6 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             &r->uri);
 
     rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->body, in);
-
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

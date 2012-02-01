@@ -80,6 +80,9 @@ ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
 
 void ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L);
 
+ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
+    ngx_chain_t **free, size_t len, ngx_buf_tag_t tag);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

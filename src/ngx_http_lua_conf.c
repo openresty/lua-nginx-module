@@ -89,6 +89,14 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->enable_code_cache = NGX_CONF_UNSET;
     conf->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
+    conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
+    conf->connect_timeout = NGX_CONF_UNSET_MSEC;
+    conf->send_timeout = NGX_CONF_UNSET_MSEC;
+    conf->read_timeout = NGX_CONF_UNSET_MSEC;
+    conf->send_lowat = NGX_CONF_UNSET_SIZE;
+    conf->buffer_size = NGX_CONF_UNSET_SIZE;
+    conf->pool_size = NGX_CONF_UNSET_UINT;
+
     return conf;
 }
 
@@ -125,6 +133,27 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
+
+    ngx_conf_merge_msec_value(conf->keepalive_timeout,
+                              prev->keepalive_timeout, 60000);
+
+    ngx_conf_merge_msec_value(conf->connect_timeout,
+                              prev->connect_timeout, 60000);
+
+    ngx_conf_merge_msec_value(conf->send_timeout,
+                              prev->send_timeout, 60000);
+
+    ngx_conf_merge_msec_value(conf->read_timeout,
+                              prev->read_timeout, 60000);
+
+    ngx_conf_merge_size_value(conf->send_lowat,
+                              prev->send_lowat, 0);
+
+    ngx_conf_merge_size_value(conf->buffer_size,
+                              prev->buffer_size,
+                              (size_t) ngx_pagesize);
+
+    ngx_conf_merge_uint_value(conf->pool_size, prev->pool_size, 30);
 
     return NGX_CONF_OK;
 }

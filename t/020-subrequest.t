@@ -2,14 +2,16 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
+#master_on();
+workers(1);
 #worker_connections(1014);
-#master_process_enabled(1);
 #log_level('warn');
+#master_process_enabled(1);
 
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -385,7 +387,6 @@ cached: hello
 
             res = ngx.location.capture("/memc", { share_all_vars = true });
             ngx.say("cached: " .. res.body);
-
         ';
     }
 --- request
@@ -699,6 +700,8 @@ header foo: [bar]
 hello, a
 hello, b
 hello, c
+--- error_log
+lua reuse free buf memory
 
 
 
@@ -797,4 +800,38 @@ nil
 GET /lua
 --- response_body
 bar
+
+
+
+=== TEST 32: test memcached with subrequests
+--- http_config
+    upstream memc {
+        server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+        keepalive 100 single;
+    }
+--- config
+    location /memc {
+        set $memc_key some_key;
+        set $memc_exptime 600;
+        memc_pass memc;
+    }
+
+    location /t {
+        content_by_lua '
+            res = ngx.location.capture("/memc",
+                { method = ngx.HTTP_PUT, body = "hello 1234" });
+            -- ngx.say("PUT: " .. res.status);
+
+            res = ngx.location.capture("/memc");
+            ngx.say("some_key: " .. res.body);
+        ';
+    }
+--- request
+GET /t
+--- response_body
+some_key: hello 1234
+--- error_log
+lua reuse free buf chain, but reallocate memory because
+--- no_error_log
+[error]
 

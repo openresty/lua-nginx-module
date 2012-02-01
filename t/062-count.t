@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 80
+ngx: 83
 --- no_error_log
 [error]
 
@@ -124,7 +124,7 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 15
+n = 16
 --- no_error_log
 [error]
 
@@ -194,6 +194,66 @@ n = 9
 GET /test
 --- response_body
 n = 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 9: entries under ngx.socket
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx.socket) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            ';
+        }
+--- request
+GET /test
+--- response_body
+n = 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 10: entries under ngx._tcp_meta
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx._tcp_meta) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            ';
+        }
+--- request
+GET /test
+--- response_body
+n = 10
+--- no_error_log
+[error]
+
+
+
+=== TEST 11: entries under ngx._reqsock_meta
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx._reqsock_meta) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            ';
+        }
+--- request
+GET /test
+--- response_body
+n = 4
 --- no_error_log
 [error]
 
