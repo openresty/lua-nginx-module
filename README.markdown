@@ -383,7 +383,7 @@ rewrite_by_lua
 
 **phase:** *rewrite tail*
 
-Acts as a rewrite phase handler and executes lua code string specified in `<lua-script-str>` for every request.
+Acts as a rewrite phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Note that this handler always runs *after* the standard [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule). So the following will work as expected:
@@ -660,7 +660,7 @@ lua_shared_dict
 
 **default:** *no*
 
-**context:** *main*
+**context:** *http*
 
 **phase:** *depends on usage*
 
@@ -678,6 +678,111 @@ The `<size>` argument accepts size units such as `k` and `m`:
 See [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) for details.
 
 This directive was first introduced in the `v0.3.1rc22` release.
+
+lua_socket_connect_timeout
+--------------------------
+
+**syntax:** *lua_socket_connect_timeout &lt;time&gt;*
+
+**default:** *lua_socket_connect_timeout 60s*
+
+**context:** *http, server, location*
+
+This directive controls the default timeout value used in TCP/unix-domain socket object's [connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method and can be overridden by the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method.
+
+The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, i.e., "second". The default setting is `60s`.
+
+This directive was first introduced in the `v0.5.0rc1` release.
+
+lua_socket_send_timeout
+-----------------------
+
+**syntax:** *lua_socket_send_timeout &lt;time&gt;*
+
+**default:** *lua_socket_send_timeout 60s*
+
+**context:** *http, server, location*
+
+Controls the default timeout value used in TCP/unix-domain socket object's [send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method and can be overridden by the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method.
+
+The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, i.e., "second". The default setting is `60s`.
+
+This directive was first introduced in the `v0.5.0rc1` release.
+
+lua_socket_send_lowat
+---------------------
+
+**syntax:** *lua_socket_send_lowat &lt;size&gt;*
+
+**default:** *lua_socket_send_lowat 0*
+
+**context:** *http, server, location*
+
+Controls the `lowat` (low water) value for the cosocket send buffer.
+
+lua_socket_read_timeout
+-----------------------
+
+**syntax:** *lua_socket_read_timeout &lt;time&gt;*
+
+**default:** *lua_socket_read_timeout 60s*
+
+**context:** *http, server, location*
+
+**phase:** *depends on usage*
+
+This directive controls the default timeout value used in TCP/unix-domain socket object's [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive) method and iterator functions returned by the [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil) method. This setting can be overridden by the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method.
+
+The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, i.e., "second". The default setting is `60s`.
+
+This directive was first introduced in the `v0.5.0rc1` release.
+
+lua_socket_buffer_size
+----------------------
+
+**syntax:** *lua_socket_buffer_size &lt;size&gt;*
+
+**default:** *lua_socket_buffer_size 4k/8k*
+
+**context:** *http, server, location*
+
+Specifies the buffer size used by cosocket reading operations.
+
+This buffer does not have to be that big to hold everything at the same time because cosocket supports 100% non-buffered reading and parsing. So even `1` byte buffer size should still work everywhere but the performance could be bad.
+
+This directive was first introduced in the `v0.5.0rc1` release.
+
+lua_socket_pool_size
+--------------------
+
+**syntax:** *lua_socket_pool_size &lt;size&gt;*
+
+**default:** *lua_socket_pool_size 30*
+
+**context:** *http, server, location*
+
+Specifies the size limit (in terms of connection count) for every cosocket connection pool associated with every remote server (i.e., identified by either the host-port pair or the unix domain socket file path).
+
+Default to 30 connections for every pool.
+
+When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection. 
+
+This directive was first introduced in the `v0.5.0rc1` release.
+
+lua_socket_keepalive_timeout
+----------------------------
+
+**syntax:** *lua_socket_keepalive_timeout &lt;time&gt;*
+
+**default:** *lua_socket_keepalive_timeout 60s*
+
+**context:** *http, server, location*
+
+This directive controls the default maximal idle time of the connections in the cosocket built-in connection pool. When this timeout reaches, idle connections will be closed automatically and removed from the pool. This setting can be overridden by cosocket objects' [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method.
+
+The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, ie, "second". The default setting is `60s`.
+
+This directive was first introduced in the `v0.5.0rc1` release.
 
 Nginx API for Lua
 =================
@@ -2886,6 +2991,257 @@ The `value` argument can be any valid Lua numbers, like negative numbers or floa
 This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
+ngx.socket.tcp
+--------------
+**syntax:** *tcpsock = ngx.socket.tcp()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Creates and returns a TCP (or Unix Domain) socket object (also known as the "cosocket" object). The following methods are supported on this object:
+
+* [connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect)
+* [send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send)
+* [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive)
+* [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close)
+* [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout)
+* [setoption](http://wiki.nginx.org/HttpLuaModule#tcpsock:setoption)
+* [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil)
+* [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive)
+* [getreusedtimes](http://wiki.nginx.org/HttpLuaModule#tcpsock:getreusedtimes)
+
+It is intended to be compatible with the TCP API of the [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) library but is 100% nonblocking out of the box. Also, we introduce some new APIs to provide more functionalities.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:connect
+---------------
+**syntax:** *ok, err = tcpsock:connect(host, port)*
+
+**syntax:** *ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket")*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Attempts to connect a TCP socket object to a remote server or to a unix domain socket file in a 100% nonblocking manner.
+
+Before actually resolving the host name and connecting to the remote backend, this method will always look up the connection pool for matched idle connections created by previous calls of this method or the [ngx.socket.connect](http://wiki.nginx.org/HttpLuaModule#ngx.socket.connect) function and saved by the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method.
+
+Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name nonblockingly and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in your `nginx.conf` file like this:
+
+
+    resolver 8.8.8.8;  # use Google's public DNS server
+
+
+In case of error, the method returns `nil` followed by a string describing the error. In case of success, the method returns `1`.
+
+Here is an example for connecting to a TCP server:
+
+
+    location /test {
+        resolver 8.8.8.8;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("www.google.com", 80)
+            if not ok then
+                ngx.say("failed to connect to google: ", err)
+                return
+            end
+            ngx.say("successfully connected to google!")
+            sock:close()
+        ';
+    }
+
+
+Connecting to a Unix Domain Socket file is also possible:
+
+
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("unix:/tmp/memcached.sock")
+    if not ok then
+        ngx.say("failed to connect to the memcached unix domain socket: ", err)
+        return
+    end
+
+
+assuming that your memcached (or something else) is listening on the unix domain socket file `/tmp/memcached.sock`.
+
+Timeout for the connecting operation is controlled by the [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
+
+
+    local sock = ngx.socket.tcp()
+    sock:settimeout(1000)  -- one second timeout
+    local ok, err = sock:connect(host, port)
+
+
+It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling this method.
+
+Calling this method on an already connected socket object will cause the original connection to be closed first.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:send
+------------
+**syntax:** *bytes, err = tcpsock:send(data)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Sends data nonblockingly on the current TCP or Unix Domain Socket connection.
+
+This method is a synchronous operation that will not return until *all* the data has been flushed into the system socket send buffer or an error occurs.
+
+In case of success, it returns the total number of bytes that have been sent. Otherwise, it returns `nil` and a string describing the error.
+
+Timeout for the sending operation is controlled by the [lua_socket_send_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_send_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
+
+
+    sock:settimeout(1000)  -- one second timeout
+    local bytes, err = sock:send(request)
+
+
+It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling this method.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:receive
+---------------
+**syntax:** *data, err, partial = tcpsock:receive(size)*
+
+**syntax:** *data, err, partial = tcpsock:receive(pattern?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Receives data from the connected socket according to the reading pattern or size.
+
+This method is a synchronous operation just like the [send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method and is 100% nonblocking.
+
+In case of success, it returns the data received; in case of error, it returns `nil` with a string describing the error and the partial data received so far.
+
+If a number-like argument is specified (including strings that look like numbers), then it is interpreted as a size. This method will not return until it reads exactly this size of data or an error occurs.
+
+If a non-number-like string argument is specified, then it is interpreted as a "pattern". The following patterns are supported:
+
+* `'*a'`: reads from the socket until the connection is closed. No end-of-line translation is performed;
+* `'*l'`: reads a line of text from the socket. The line is terminated by a `Line Feed` (LF) character (ASCII 10), optionally preceded by a `Carriage Return` (CR) character (ASCII 13). The CR and LF characters are not included in the returned line. In fact, all CR characters are ignored by the pattern.
+
+If no argument is specified, then it is assumed to be the pattern `'*l'`, that is, the line reading pattern.
+
+Timeout for the reading operation is controlled by the [lua_socket_read_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_read_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
+
+
+    sock:settimeout(1000)  -- one second timeout
+    local line, err, partial = sock:receive()
+    if not line then
+        ngx.say("failed to read a line: ", err)
+        return
+    end
+    ngx.say("successfully read a line: ", line)
+
+
+It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling this method.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:receiveuntil
+--------------------
+**syntax:** *iterator = tcpsock:receiveuntil(pattern)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:close
+-------------
+**syntax:** *ok, err = tcpsock:close()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Closes the current TCP or Unix Domain socket. It returns the `1` in case of success and returns `nil` with a string describing the error otherwise.
+
+For socket objects that have invoked the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method, there is no need to call this method on it because the socket object is already closed (and the current connection is saved into the builtin connection pool).
+
+For socket objects that have not invoked [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive), they (and their connections) will be automatically closed when the socket object is released by the Lua GC (Garbage Collector) or the current client HTTP request finishes processing.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:settimeout
+------------------
+**syntax:** *tcpsock:settimeout(time)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Set the timeout value in milliseconds for subsequent socket operations ([connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect), [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive), and iterators returned from [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil)).
+
+Settings done by this method takes priority over those config directives, i.e., [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout), [lua_socket_send_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_send_timeout), and [lua_socket_read_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_read_timeout).
+
+Note that this method does *not* affect the [lua_socket_keepalive_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method should be used for this purpose instead.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:setoption
+-----------------
+**syntax:** *tcpsock:setoption(option, value?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality will be implemented in future.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:setkeepalive
+--------------------
+**syntax:** *ok, err = tcpsock:setkeepalive(timeout?, size?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Puts the current socket's connection into the cosocket built-in connection pool and keep it alive until other [connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method calls request it or the associated maximal idle timeout is expired.
+
+The first optional argument, `timeout`, can be used to specify the maximal idle timeout for the current connection. If omitted, the default setting in the [lua_socket_keepalive_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_keepalive_timeout) config directive will be used.
+
+The first optional argument, `size`, can be used to specify the maximal number of connections allowed in the connection pool for the current server (i.e., the current host-port pair or the unix domain socket file path). Note that the size of the connection pool cannot be changed once the pool is created. When this argument is omitted, the default setting in the [lua_socket_pool_size](http://wiki.nginx.org/HttpLuaModule#lua_socket_pool_size) config directive will be used.
+
+When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection.
+
+In case of success, this method returns `1`; otherwise, it returns `nil` and a string describing the error.
+
+This method also makes the current cosocket object enter the "closed" state, so you do not need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:getreusedtimes
+----------------------
+**syntax:** *count, err = tcpsock:getreusedtimes()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+This method returns the (successfully) reused times for the current connection. In case of error, it returns `nil` and a string describing the error.
+
+If the current connection does not come from the built-in connection pool, then this method always returns `0`, that is, the connection has never been reused (yet). If the connection comes from the connection pool, then the return value is always non-zero. So this method can also be used to determine if the current connection comes from the pool.
+
+This feature was first introduced in the `v0.5.0rc1` release.
+
+ngx.socket.connect
+------------------
+**syntax:** *tcpsock, err = ngx.socket.connect(host, port)*
+
+**syntax:** *tcpsock, err = ngx.socket.connect("unix:/path/to/unix-domain.socket")*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+This function is a shortcut for combining [ngx.socket.tcp()](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and the [connect()](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method call in a single operation. It is actually implemented like this:
+
+
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect(...)
+    if not ok then
+        return nil, err
+    end
+    return sock
+
+
+There is no way to use the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method to specify connecting timeout for this method. You have to use the [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout) directive at configure time instead.
+
+This feature was first introduced in the `v0.5.0rc1` release.
 
 ndk.set_var.DIRECTIVE
 ---------------------
