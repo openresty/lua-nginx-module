@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.4.0
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 11
-    January 2012.
+    This document describes ngx_lua v0.4.1
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 1
+    February 2012.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -2020,6 +2020,9 @@ Nginx API for Lua
     This method *must* be called before ngx.send_headers or explicit
     response body outputs by either ngx.print or ngx.say.
 
+    It's strongly recommended to combine the "return" statement with this
+    call, i.e., "return ngx.exec(...)".
+
     This method is similar to the echo_exec directive of the
     [[HttpEchoModule]].
 
@@ -2028,7 +2031,7 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Issue an "HTTP 301<code> or <code>302" redirection to "uri".
+    Issue an "HTTP 301" or 302 redirection to "uri".
 
     The optional "status" parameter specifies whether 301 or 302 to be used.
     It is 302 ("ngx.HTTP_MOVED_TEMPORARILY") by default.
@@ -2073,6 +2076,9 @@ Nginx API for Lua
     URI arguments can be specified as well, for example:
 
         return ngx.redirect('/foo?a=3&b=4')
+
+    It's strongly recommended to combine the "return" statement with this
+    call, i.e., "return ngx.redirect(...)".
 
   ngx.send_headers
     syntax: *ngx.send_headers()*
@@ -2221,6 +2227,9 @@ Nginx API for Lua
 
     Note that while this method accepts all HTTP status constants as input,
     it only accepts "NGX_OK" and "NGX_ERROR" of the core constants.
+
+    It's strongly recommended to combine the "return" statement with this
+    call, i.e., "return ngx.exit(...)".
 
   ngx.eof
     syntax: *ngx.eof()*
@@ -3482,6 +3491,26 @@ TODO
     *   add "stat" mode similar to "mod_lua".
 
 Changes
+  v0.4.1
+    1 February, 2012
+
+    *   bugfix: ngx.exit, ngx.redirect, ngx.exec, and ngx.req.set_uri(uri,
+        true) could return (they should never return as per the
+        documentation). this bug had appeared in ngx_lua v0.3.1rc4 and
+        ngx_openresty 1.0.6.13. thanks @cyberty (<http://weibo.com/cyberty>)
+        for reporting it.
+
+    *   bugfix: "ngx_http_lua_header_filter_init" was called with an
+        argument which actually accepts none. this could cause compilation
+        errors at least with gcc 4.3.4 as reported in github issue #80
+        (<http://github.com/chaoslawful/lua-nginx-module/issues/80>). thanks
+        bigplum (Simon).
+
+    *   bugfix: fixed all the warnings from the clang static analyzer.
+
+    *   feature: allow use of the "DDEBUG" macro from the outside (via the
+        "-D DDEBUG=1" C compiler opton).
+
   v0.4.0
     11 January, 2012
 

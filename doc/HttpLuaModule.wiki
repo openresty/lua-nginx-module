@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.4.0] released on 11 January 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.4.1] released on 1 February 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1910,6 +1910,8 @@ This method never returns.
 This method ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body
 outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
+It's strongly recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exec(...)</code>.
+
 This method is similar to the [[HttpEchoModule#echo_exec|echo_exec]] directive of the [[HttpEchoModule]].
 
 == ngx.redirect ==
@@ -1917,7 +1919,7 @@ This method is similar to the [[HttpEchoModule#echo_exec|echo_exec]] directive o
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Issue an <code>HTTP 301<code> or <code>302</code> redirection to <code>uri</code>.
+Issue an <code>HTTP 301</code> or <code>302</code> redirection to <code>uri</code>.
 
 The optional <code>status</code> parameter specifies whether
 <code>301</code> or <code>302</code> to be used. It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
@@ -1974,6 +1976,8 @@ URI arguments can be specified as well, for example:
 <geshi lang="lua">
     return ngx.redirect('/foo?a=3&b=4')
 </geshi>
+
+It's strongly recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.redirect(...)</code>.
 
 == ngx.send_headers ==
 '''syntax:''' ''ngx.send_headers()''
@@ -2099,6 +2103,8 @@ Number literals can be used directly as the argument, for instance,
 </geshi>
 
 Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
+
+It's strongly recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>.
 
 == ngx.eof ==
 '''syntax:''' ''ngx.eof()''
@@ -3128,6 +3134,15 @@ Please report bugs or submit patches by:
 * add <code>stat</code> mode similar to <code>mod_lua</code>.
 
 = Changes =
+
+== v0.4.1 ==
+
+1 February, 2012
+
+* bugfix: [[#ngx.exit|ngx.exit]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]] could return (they should never return as per the documentation). this bug had appeared in ngx_lua v0.3.1rc4 and ngx_openresty 1.0.6.13. thanks [http://weibo.com/cyberty @cyberty] for reporting it.
+* bugfix: <code>ngx_http_lua_header_filter_init</code> was called with an argument which actually accepts none. this could cause compilation errors at least with gcc 4.3.4 as reported in [http://github.com/chaoslawful/lua-nginx-module/issues/80 github issue #80]. thanks bigplum (Simon).
+* bugfix: fixed all the warnings from the clang static analyzer.
+* feature: allow use of the <code>DDEBUG</code> macro from the outside (via the <code>-D DDEBUG=1</code> C compiler opton).
 
 == v0.4.0 ==
 

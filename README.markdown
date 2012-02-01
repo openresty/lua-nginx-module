@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.4.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 11 January 2012.
+This document describes ngx_lua [v0.4.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 1 February 2012.
 
 Synopsis
 ========
@@ -1960,6 +1960,8 @@ This method never returns.
 This method *must* be called before [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or explicit response body
 outputs by either [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say).
 
+It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
+
 This method is similar to the [echo_exec](http://wiki.nginx.org/HttpEchoModule#echo_exec) directive of the [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule).
 
 ngx.redirect
@@ -1968,7 +1970,7 @@ ngx.redirect
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Issue an `HTTP 301` or <code>302` redirection to <code>uri`.
+Issue an `HTTP 301` or `302` redirection to `uri`.
 
 The optional `status` parameter specifies whether
 `301` or `302` to be used. It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
@@ -2025,6 +2027,8 @@ URI arguments can be specified as well, for example:
 
     return ngx.redirect('/foo?a=3&b=4')
 
+
+It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`.
 
 ngx.send_headers
 ----------------
@@ -2157,6 +2161,8 @@ Number literals can be used directly as the argument, for instance,
 
 
 Note that while this method accepts all [HTTP status constants](http://wiki.nginx.org/HttpLuaModule#HTTP_status_constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](http://wiki.nginx.org/HttpLuaModule#core_constants).
+
+It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exit(...)`.
 
 ngx.eof
 -------
@@ -3235,6 +3241,16 @@ Longer Term
 
 Changes
 =======
+
+v0.4.1
+------
+
+1 February, 2012
+
+* bugfix: [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit), [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect), [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec), and [ngx.req.set_uri(uri, true)](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri) could return (they should never return as per the documentation). this bug had appeared in ngx_lua v0.3.1rc4 and ngx_openresty 1.0.6.13. thanks [@cyberty](http://weibo.com/cyberty) for reporting it.
+* bugfix: `ngx_http_lua_header_filter_init` was called with an argument which actually accepts none. this could cause compilation errors at least with gcc 4.3.4 as reported in [github issue #80](http://github.com/chaoslawful/lua-nginx-module/issues/80). thanks bigplum (Simon).
+* bugfix: fixed all the warnings from the clang static analyzer.
+* feature: allow use of the `DDEBUG` macro from the outside (via the `-D DDEBUG=1` C compiler opton).
 
 v0.4.0
 ------
