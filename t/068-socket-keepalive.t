@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 8);
+plan tests => repeat_each() * (blocks() * 5 + 10);
 
 our $HtmlDir = html_dir;
 
@@ -81,8 +81,11 @@ received: OK
 --- no_error_log eval
 ["[error]",
 "lua socket keepalive: free connection pool for "]
---- error_log
-lua socket get keepalive peer: using connection
+--- error_log eval
+[
+'lua socket get keepalive peer: using connection',
+'lua socket keepalive create connection pool for key "127.0.0.1:11211"',
+]
 
 
 
@@ -189,7 +192,7 @@ received: OK
             ngx.say("request sent: ", bytes)
 
             local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
-            local data, res = reader()
+            local data, err = reader()
 
             if not data then
                 ngx.say("failed to receive response body: ", err)
@@ -265,7 +268,7 @@ done
             ngx.say("request sent: ", bytes)
 
             local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
-            local data, res = reader()
+            local data, err = reader()
 
             if not data then
                 ngx.say("failed to receive response body: ", err)
@@ -764,4 +767,85 @@ done
 ["lua socket keepalive timeout: unlimited",
 qr/lua socket connection pool size: 30\b/]
 --- timeout: 4
+
+
+
+=== TEST 11: sanity (uds)
+--- http_config eval
+"
+    lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    server {
+        listen unix:/tmp/test-nginx.sock;
+        default_type 'text/plain';
+
+        server_tokens off;
+        location /foo {
+            echo foo;
+            more_clear_headers Date;
+        }
+    }
+"
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port)
+            test.go(port)
+        ';
+    }
+--- request
+GET /t
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("unix:/tmp/test-nginx.sock")
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local req = "GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local reader = sock:receiveuntil("\r\n0\r\n\r\n")
+    local data, err = reader()
+
+    if not data then
+        ngx.say("failed to receive response body: ", err)
+        return
+    end
+
+    ngx.say("received response of ", #data, " bytes")
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- response_body_like
+^connected: 1, reused: \d+
+request sent: 61
+received response of 119 bytes
+connected: 1, reused: [1-9]\d*
+request sent: 61
+received response of 119 bytes
+--- no_error_log eval
+["[error]",
+"lua socket keepalive: free connection pool for "]
+--- error_log eval
+["lua socket get keepalive peer: using connection",
+'lua socket keepalive create connection pool for key "unix:/tmp/test-nginx.sock"']
 
