@@ -3046,6 +3046,75 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
+This method returns an iterator Lua function that can be called to read the data stream until it sees the specified pattern or an error occurs.
+
+Here is an example for using this method to read a data stream with the boundary sequence <code>--abcedhb</code>:
+
+<geshi lang="lua">
+    local reader = sock:receiveuntil("\r\n--abcedhb")
+    local data, err, partial = reader()
+    if not data then
+        ngx.say("failed to read the data stream: ", err)
+    end
+    ngx.say("read the data stream: ", data)
+</geshi>
+
+When called without any argument, the iterator function returns the received data right ''before'' the specified pattern string in the incoming data stream. So for the example above, if the incoming data stream is <code>'hello, world! -agentzh\r\n--abcedhb blah blah'</code>, then the string <code>'hello, world! -agentzh'</code> will be returned.
+
+In case of error, the iterator function will return <code>nil</code> along with a string describing the error and the partial data bytes that have been read so far.
+
+The iterator function can be called multiple times and can be mixed safely with other cosocket method calls or other iterator function calls.
+
+The iterator function behaves differently (i.e., like a real iterator) when it is called with a <code>size</code> argument. That is, it will read that <code>size</code> of data at earch invocation and will return <code>nil</code> at the last invocation (either sees the boundary pattern or meets an error). For the last successful invocation of the iterator function, the <code>err</code> return value will be <code>nil</code> too. The iterator function will automatically reset after its last successful invocation that returns <code>nil</code> data and <code>nil</code> error. Consider the following example:
+
+<geshi lang="lua">
+    local reader = sock:receiveuntil("\r\n--abcedhb")
+
+    while true then
+        local data, err, partial = reader(4)
+        if not data then
+            if err then
+                ngx.say("failed to read the data stream: ", err)
+                break
+            end
+
+            ngx.say("read done")
+            break
+        end
+        ngx.say("read chunk: [", data, "]")
+    end
+</geshi>
+
+Then for the incoming data stream <code>'hello, world! -agentzh\r\n--abcedhb blah blah'</code>, we shall get the following output from the sample code above:
+
+<geshi lang="text">
+    read chunk: [hell]
+    read chunk: [o, w]
+    read chunk: [orld]
+    read chunk: [! -a]
+    read chunk: [gent]
+    read chunk: [zh]
+    read done
+</geshi>
+
+Note that, the actual data returned ''might'' be a little longer than the size limit specified by the <code>size</code> argument when your boundary pattern has ambiguity for streaming parsing. Near the boundary of the data stream, the data string actually returned could also be shorter than the size limit.
+
+Timeout for the iterator function's reading operation is controlled by the [[#lua_socket_read_timeout|lua_socket_read_timeout]] config directive and the [[#tcpsock:settimeout|settimeout]] method. And the latter takes priority. For example:
+
+<geshi lang="lua">
+    local readline = sock:receiveuntil("\r\n")
+
+    sock:settimeout(1000)  -- one second timeout
+    line, err, partial = readline()
+    if not line then
+        ngx.say("failed to read a line: ", err)
+        return
+    end
+    ngx.say("successfully read a line: ", line)
+</geshi>
+
+It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling the iterator function (note that the <code>receiveuntil</code> call is irrelevant here).
+
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:close ==

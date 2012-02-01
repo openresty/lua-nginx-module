@@ -3148,6 +3148,75 @@ tcpsock:receiveuntil
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
+This method returns an iterator Lua function that can be called to read the data stream until it sees the specified pattern or an error occurs.
+
+Here is an example for using this method to read a data stream with the boundary sequence `--abcedhb`:
+
+
+    local reader = sock:receiveuntil("\r\n--abcedhb")
+    local data, err, partial = reader()
+    if not data then
+        ngx.say("failed to read the data stream: ", err)
+    end
+    ngx.say("read the data stream: ", data)
+
+
+When called without any argument, the iterator function returns the received data right *before* the specified pattern string in the incoming data stream. So for the example above, if the incoming data stream is `'hello, world! -agentzh\r\n--abcedhb blah blah'`, then the string `'hello, world! -agentzh'` will be returned.
+
+In case of error, the iterator function will return `nil` along with a string describing the error and the partial data bytes that have been read so far.
+
+The iterator function can be called multiple times and can be mixed safely with other cosocket method calls or other iterator function calls.
+
+The iterator function behaves differently (i.e., like a real iterator) when it is called with a `size` argument. That is, it will read that `size` of data at earch invocation and will return `nil` at the last invocation (either sees the boundary pattern or meets an error). For the last successful invocation of the iterator function, the `err` return value will be `nil` too. The iterator function will automatically reset after its last successful invocation that returns `nil` data and `nil` error. Consider the following example:
+
+
+    local reader = sock:receiveuntil("\r\n--abcedhb")
+
+    while true then
+        local data, err, partial = reader(4)
+        if not data then
+            if err then
+                ngx.say("failed to read the data stream: ", err)
+                break
+            end
+
+            ngx.say("read done")
+            break
+        end
+        ngx.say("read chunk: [", data, "]")
+    end
+
+
+Then for the incoming data stream `'hello, world! -agentzh\r\n--abcedhb blah blah'`, we shall get the following output from the sample code above:
+
+
+    read chunk: [hell]
+    read chunk: [o, w]
+    read chunk: [orld]
+    read chunk: [! -a]
+    read chunk: [gent]
+    read chunk: [zh]
+    read done
+
+
+Note that, the actual data returned *might* be a little longer than the size limit specified by the `size` argument when your boundary pattern has ambiguity for streaming parsing. Near the boundary of the data stream, the data string actually returned could also be shorter than the size limit.
+
+Timeout for the iterator function's reading operation is controlled by the [lua_socket_read_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_read_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
+
+
+    local readline = sock:receiveuntil("\r\n")
+
+    sock:settimeout(1000)  -- one second timeout
+    line, err, partial = readline()
+    if not line then
+        ngx.say("failed to read a line: ", err)
+        return
+    end
+    ngx.say("successfully read a line: ", line)
+
+
+It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling the iterator function (note that the `receiveuntil` call is irrelevant here).
+
 This feature was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:close
