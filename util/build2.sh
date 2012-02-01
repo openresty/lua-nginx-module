@@ -14,10 +14,10 @@ force=$2
             #--without-pcre \
             #--without-http_rewrite_module \
             #--without-http_autoindex_module \
-            #--with-cc=gcc46 \
             #--with-cc=clang \
 
 time ngx-build $force $version \
+            --with-cc=gcc46 \
             --with-cc-opt=$'-I/opt/pcre821jit/include' \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
@@ -43,6 +43,6 @@ time ngx-build $force $version \
           --with-select_module \
           --with-poll_module \
           --with-rtsig_module \
-                $opts \
-                --with-debug
+                $opts #\
+                #--with-debug
 

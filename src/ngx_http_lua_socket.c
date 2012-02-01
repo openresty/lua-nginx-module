@@ -3104,12 +3104,14 @@ ngx_http_lua_req_socket_cleanup(void *data)
 {
     ngx_http_lua_socket_upstream_t  *u = data;
 
+#if (NGX_DEBUG)
     ngx_http_request_t  *r;
 
     r = u->request;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "cleanup lua socket downstream request: \"%V\"", &r->uri);
+#endif
 
     if (u->cleanup) {
         *u->cleanup = NULL;
