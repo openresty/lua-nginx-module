@@ -3180,6 +3180,8 @@ The first optional argument, <code>size</code>, can be used to specify the maxim
 
 When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection.
 
+Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
+
 In case of success, this method returns <code>1</code>; otherwise, it returns <code>nil</code> and a string describing the error.
 
 This method also makes the current cosocket object enter the "closed" state, so you do not need to manually call the [[#tcpsock:close|close]] method on it afterwards.

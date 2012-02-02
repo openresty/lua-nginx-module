@@ -3518,6 +3518,11 @@ Nginx API for Lua
     used (idle) connection already in the pool will be closed automatically
     to make room for the current connection.
 
+    Idle connections in the pool will be monitored for any exceptional
+    events like connection abortion or unexpected incoming data on the line,
+    in which cases the connection in question will be closed and removed
+    from the pool.
+
     In case of success, this method returns 1; otherwise, it returns "nil"
     and a string describing the error.
 

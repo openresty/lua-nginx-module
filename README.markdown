@@ -3287,6 +3287,8 @@ The first optional argument, `size`, can be used to specify the maximal number o
 
 When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection.
 
+Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
+
 In case of success, this method returns `1`; otherwise, it returns `nil` and a string describing the error.
 
 This method also makes the current cosocket object enter the "closed" state, so you do not need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
