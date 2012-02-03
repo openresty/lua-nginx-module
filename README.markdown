@@ -18,6 +18,7 @@ This document describes ngx_lua [v0.5.0rc1](https://github.com/chaoslawful/lua-n
 Synopsis
 ========
 
+
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
  
@@ -766,6 +767,8 @@ Specifies the size limit (in terms of connection count) for every cosocket conne
 Default to 30 connections for every pool.
 
 When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection. 
+
+Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so so size limit specified here also applies to every single nginx worker process.
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
@@ -3038,15 +3041,17 @@ tcpsock:connect
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Attempts to connect a TCP socket object to a remote server or to a unix domain socket file in a 100% nonblocking manner.
+Attempts to connect a TCP socket object to a remote server or to a unix domain socket file nonblockingly.
 
 Before actually resolving the host name and connecting to the remote backend, this method will always look up the connection pool for matched idle connections created by previous calls of this method or the [ngx.socket.connect](http://wiki.nginx.org/HttpLuaModule#ngx.socket.connect) function and saved by the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method.
 
 Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name nonblockingly and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in your `nginx.conf` file like this:
 
 
-    resolver 8.8.8.8;  # use Google's public DNS server
+    resolver 8.8.8.8;  # use Google's public DNS nameserver
 
+
+If the nameserver returns multiple IP addresses for the host name, this method will pick up one randomly.
 
 In case of error, the method returns `nil` followed by a string describing the error. In case of success, the method returns `1`.
 
@@ -3286,6 +3291,8 @@ The first optional argument, `timeout`, can be used to specify the maximal idle 
 The first optional argument, `size`, can be used to specify the maximal number of connections allowed in the connection pool for the current server (i.e., the current host-port pair or the unix domain socket file path). Note that the size of the connection pool cannot be changed once the pool is created. When this argument is omitted, the default setting in the [lua_socket_pool_size](http://wiki.nginx.org/HttpLuaModule#lua_socket_pool_size) config directive will be used.
 
 When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection.
+
+Note that the cosocket connection pool is per Nginx worker process rather than per Nginx server instance, so so size limit specified here also applies to every single Nginx worker process.
 
 Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
 
@@ -3665,22 +3672,21 @@ TODO
 
 Short Term
 ----------
-* add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and ngx.location.capture_multi` methods, to allow micro performance tuning on the user side.
-* add directives to run lua codes when nginx stops/reloads.
+* implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
+* add configure options for different strategies of handling the cosocket connection exceeding in the pools.
+* add directives to run Lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
-* add options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) in order to share and copy a particular set of nginx variables with subrequests, specified by the user.
-* add an option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) so as to specify the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for subrequests.
 * add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its `args` argument is a Lua table.
 * add APIs to access cookies as key/value pairs.
+* add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) methods, to allow micro performance tuning on the user side.
 
 Longer Term
 -----------
 * add the `lua_require` directive to load module into main thread's globals.
-* add the "cosocket" mechamism to emulate a common Lua socket API set that will provide transparent nonblocking capability out of the box and that avoids Nginx subrequest overheads.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* make set_by_lua use the same mechanism as content_by_lua.
-* add coroutine API back to Lua.
-* add `stat` mode similar to `mod_lua`.
+* make [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), and their variants use the same mechanism as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), and their variants.
+* add coroutine API back to the Lua user land.
+* add `stat` mode similar to [mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html).
 
 Changes
 =======
@@ -3824,11 +3830,11 @@ filtering chain determines the final output. The correct adding order is:
 Copyright and License
 =====================
 
-This module is licenced under the BSD license.
+This module is licensed under the BSD license.
 
-Copyright (C) 2009-2011, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2012, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2011, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2012, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
 
 All rights reserved.
 
@@ -3843,6 +3849,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
+* [lua-resty-memcached](http://github.com/agentzh/lua-resty-memcached) library based on ngx_lua cosocket
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
