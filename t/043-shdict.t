@@ -351,7 +351,7 @@ nil
 GET /test
 --- response_body
 false bad argument #1 to '?' (userdata expected, got string)
-false expecting 3 or 4 arguments, but only seen 2
+false expecting 3, 4 or 5 arguments, but only seen 2
 false expecting exactly two arguments, but only seen 1
 
 
