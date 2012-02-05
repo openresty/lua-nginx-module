@@ -322,6 +322,7 @@ ngx_http_lua_shdict_get(lua_State *L)
     lua_Number                   num;
     u_char                       c;
     ngx_shm_zone_t              *zone;
+    int32_t                      user_flags = 0;
 
     n = lua_gettop(L);
 
@@ -439,11 +440,16 @@ ngx_http_lua_shdict_get(lua_State *L)
                 value_type);
     }
 
-    lua_pushinteger(L, sd->user_flags);
+    user_flags = sd->user_flags;
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-    return 1;
+    if (user_flags) {
+        lua_pushinteger(L, user_flags);
+        return 2;
+    } else {
+        return 1;
+    }
 }
 
 
