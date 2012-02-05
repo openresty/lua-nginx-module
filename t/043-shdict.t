@@ -993,3 +993,30 @@ GET /test
 incr: nil not a number
 foo = true
 
+
+
+=== TEST 42: get and set with flags
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, 0, 199)
+            dogs:set("bah", 10502, 202)
+            local val, flags = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            ngx.say(flags, " ", type(flags))
+            val, flags = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+            ngx.say(flags, " ", type(flags))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32 number
+199 number
+10502 number
+202 number
+
