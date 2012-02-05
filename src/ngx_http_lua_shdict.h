@@ -13,6 +13,7 @@ typedef struct {
     ngx_msec_t                   expires;
     uint8_t                      value_type;
     uint32_t                     value_len;
+    uint32_t                     user_flags;
     u_char                       data[1];
 } ngx_http_lua_shdict_node_t;
 
