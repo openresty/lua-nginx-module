@@ -439,6 +439,8 @@ ngx_http_lua_shdict_get(lua_State *L)
                 value_type);
     }
 
+    lua_pushinteger(L, sd->user_flags);
+
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return 1;
@@ -509,11 +511,12 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     int                          forcible = 0;
                          /* indicates whether to foricibly override other
                           * valid entries */
+    int32_t                      user_flags = 0;
 
     n = lua_gettop(L);
 
-    if (n != 3 && n != 4) {
-        return luaL_error(L, "expecting 3 or 4 arguments, "
+    if (n != 3 && n != 4 && n != 5) {
+        return luaL_error(L, "expecting 3, 4 or 5 arguments, "
                 "but only seen %d", n);
     }
 
@@ -587,6 +590,10 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         if (exptime < 0) {
             exptime = 0;
         }
+    }
+
+    if (n == 5) {
+        user_flags = luaL_checkint(L, 5);
     }
 
     dd("looking up key %s in shared dict %s", key.data, name.data);
@@ -668,6 +675,8 @@ replace:
             } else {
                 sd->expires = 0;
             }
+
+            sd->user_flags = user_flags;
 
             sd->value_len = (uint32_t) value.len;
 
@@ -765,6 +774,8 @@ allocated:
     } else {
         sd->expires = 0;
     }
+
+    sd->user_flags = user_flags;
 
     sd->value_len = (uint32_t) value.len;
 
