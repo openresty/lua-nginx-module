@@ -13,11 +13,10 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 1 February 2012.
+This document describes ngx_lua [v0.5.0rc2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 5 February 2012.
 
 Synopsis
 ========
-
 
     # set search paths for pure Lua external libraries (';;' is the default path):
     lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
@@ -2883,7 +2882,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 ngx.shared.DICT.get
 -------------------
-**syntax:** *value = ngx.shared.DICT:get(key)*
+**syntax:** *value, flags = ngx.shared.DICT:get(key)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -2895,17 +2894,19 @@ The first argument to this method must be the dictionary object itself, for exam
 
 
     local cats = ngx.shared.cats
-    local value = cats.get(cats, "Marry")
+    local value, flags = cats.get(cats, "Marry")
 
 
 or use Lua's syntactic sugar for method calls:
 
 
     local cats = ngx.shared.cats
-    local value = cats:get("Marry")
+    local value, flags = cats:get("Marry")
 
 
 These two forms are fundamentally equivalent.
+
+If the user flags is `0` (the default), then no flags value will be returned.
 
 This feature was first introduced in the `v0.3.1rc22` release.
 
@@ -2913,7 +2914,7 @@ See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
 ngx.shared.DICT.set
 -------------------
-**syntax:** *success, err, forcible = ngx.shared.DICT:set(key, value, exptime?)*
+**syntax:** *success, err, forcible = ngx.shared.DICT:set(key, value, exptime?, flags?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -2926,6 +2927,8 @@ Unconditionally sets a key-value pair into the shm-based dictionary [ngx.shared.
 The `value` argument inserted can be Lua booleans, numbers, strings, or `nil`. Their value type will also be stored into the dictionary and the same data type can be retrieved later via the [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get) method.
 
 The optional `exptime` argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is `0.001` seconds. If the `exptime` takes the value `0` (which is the default), then the item will never be expired.
+
+The optional `flags` argument specifies a user flags value associated with the entry to be stored. It can also be retrieved later with the value. The user flags is stored as an unsigned 32-bit integer internally. Defaults to `0`. The user flags argument was first introduced in the `v0.5.0rc2` release.
 
 When it fails to allocate memory for the current key-value item, then `set` will try removing existing items in the storage according to the Least-Recently Used (LRU) algorithm. Note that, LRU takes priority over expiration time here. If up to tens of existing items have been removed and the storage left is still insufficient (either due to the total capacity limit specified by [lua_shared_dict](http://wiki.nginx.org/HttpLuaModule#lua_shared_dict) or memory segmentation), then the `err` return value will be `no memory` and `success` will be `false`.
 
@@ -2953,7 +2956,7 @@ See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
 ngx.shared.DICT.add
 -------------------
-**syntax:** *success, err, forcible = ngx.shared.DICT:add(key, value, exptime?)*
+**syntax:** *success, err, forcible = ngx.shared.DICT:add(key, value, exptime?, flags?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -2967,7 +2970,7 @@ See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
 ngx.shared.DICT.replace
 -----------------------
-**syntax:** *success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?)*
+**syntax:** *success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -3630,7 +3633,7 @@ The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, `
 
 Alternatively, `ngx_lua` can be manually compiled into Nginx:
 
-1. Install LuaJIT 2.0 (Recommended) or Lua 5.1. Lua can be obtained free from the [the LuaJIT download page](http://luajit.org/download.html) or [the standard Lua homepage](http://www.lua.org/).  Some distribution package managers also distribute Lua and LuaJIT.
+1. Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). Lua can be obtained free from the [the LuaJIT download page](http://luajit.org/download.html) or [the standard Lua homepage](http://www.lua.org/).  Some distribution package managers also distribute Lua and LuaJIT.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
 1. Download the latest version of this module [HERE](http://github.com/chaoslawful/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](http://wiki.nginx.org/HttpLuaModule#Nginx_Compatibility))
@@ -3672,6 +3675,7 @@ TODO
 
 Short Term
 ----------
+* make [tcpsock:send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
 * implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.

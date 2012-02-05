@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc1
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 1
+    This document describes ngx_lua v0.5.0rc2
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 5
     February 2012.
 
 Synopsis
@@ -3001,7 +3001,7 @@ Nginx API for Lua
     This feature was first introduced in the "v0.3.1rc22" release.
 
   ngx.shared.DICT.get
-    syntax: *value = ngx.shared.DICT:get(key)*
+    syntax: *value, flags = ngx.shared.DICT:get(key)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -3018,14 +3018,17 @@ Nginx API for Lua
     for example,
 
         local cats = ngx.shared.cats
-        local value = cats.get(cats, "Marry")
+        local value, flags = cats.get(cats, "Marry")
 
     or use Lua's syntactic sugar for method calls:
 
         local cats = ngx.shared.cats
-        local value = cats:get("Marry")
+        local value, flags = cats:get("Marry")
 
     These two forms are fundamentally equivalent.
+
+    If the user flags is 0 (the default), then no flags value will be
+    returned.
 
     This feature was first introduced in the "v0.3.1rc22" release.
 
@@ -3033,7 +3036,7 @@ Nginx API for Lua
 
   ngx.shared.DICT.set
     syntax: *success, err, forcible = ngx.shared.DICT:set(key, value,
-    exptime?)*
+    exptime?, flags?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -3058,6 +3061,12 @@ Nginx API for Lua
     for the inserted key-value pair. The time resolution is 0.001 seconds.
     If the "exptime" takes the value 0 (which is the default), then the item
     will never be expired.
+
+    The optional "flags" argument specifies a user flags value associated
+    with the entry to be stored. It can also be retrieved later with the
+    value. The user flags is stored as an unsigned 32-bit integer
+    internally. Defaults to 0. The user flags argument was first introduced
+    in the "v0.5.0rc2" release.
 
     When it fails to allocate memory for the current key-value item, then
     "set" will try removing existing items in the storage according to the
@@ -3093,7 +3102,7 @@ Nginx API for Lua
 
   ngx.shared.DICT.add
     syntax: *success, err, forcible = ngx.shared.DICT:add(key, value,
-    exptime?)*
+    exptime?, flags?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -3111,7 +3120,7 @@ Nginx API for Lua
 
   ngx.shared.DICT.replace
     syntax: *success, err, forcible = ngx.shared.DICT:replace(key, value,
-    exptime?)*
+    exptime?, flags?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -3966,11 +3975,11 @@ Installation
 
     Alternatively, "ngx_lua" can be manually compiled into Nginx:
 
-    1.  Install LuaJIT 2.0 (Recommended) or Lua 5.1. Lua can be obtained
-        free from the the LuaJIT download page
-        (<http://luajit.org/download.html>) or the standard Lua homepage
-        (<http://www.lua.org/>). Some distribution package managers also
-        distribute Lua and LuaJIT.
+    1.  Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is *not*
+        supported yet). Lua can be obtained free from the the LuaJIT
+        download page (<http://luajit.org/download.html>) or the standard
+        Lua homepage (<http://www.lua.org/>). Some distribution package
+        managers also distribute Lua and LuaJIT.
 
     2.  Download the latest version of the ngx_devel_kit (NDK) module HERE
         (<http://github.com/simpl/ngx_devel_kit/tags>).
@@ -4016,6 +4025,10 @@ Bugs and Patches
 
 TODO
   Short Term
+    *   make <tcpsock:send|/"tcpsock:send"> method accept (nested) Lua
+        tables of strings as its first argument to save string concatenation
+        operations on the Lua user land.
+
     *   implement LuaSocket UDP API
         (<http://w3.impa.br/~diego/software/luasocket/udp.html>) in our
         cosocket API.
