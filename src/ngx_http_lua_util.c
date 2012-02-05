@@ -2175,7 +2175,7 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         cl->next = NULL;
 
         b = cl->buf;
-        if (b->end - b->start >= (off_t) len) {
+        if ((size_t) (b->end - b->start) >= len) {
             ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
                     "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
                     (off_t) (b->end - b->last), len, cl, b->start);
@@ -2186,6 +2186,11 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
             return cl;
         }
 
+        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
+                       "lua reuse free buf chain, but reallocate memory "
+                       "because %uz >= %O, cl:%p, p:%p", len,
+                       (off_t) (b->end - b->start), cl, b->start);
+
         if (ngx_buf_in_memory(b) && b->start) {
             ngx_pfree(p, b->start);
         }
@@ -2194,11 +2199,6 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         if (b->start == NULL) {
             return NULL;
         }
-
-        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
-                       "lua reuse free buf chain, but reallocate memory "
-                       "because %uz >= %O, cl:%p, p:%p", len,
-                       (off_t) (b->end - b->start), cl, b->start);
 
         dd("buf start: %p", cl->buf->start);
 
