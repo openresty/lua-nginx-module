@@ -322,7 +322,7 @@ ngx_http_lua_shdict_get(lua_State *L)
     lua_Number                   num;
     u_char                       c;
     ngx_shm_zone_t              *zone;
-    int32_t                      user_flags = 0;
+    uint32_t                     user_flags = 0;
 
     n = lua_gettop(L);
 
@@ -445,11 +445,11 @@ ngx_http_lua_shdict_get(lua_State *L)
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     if (user_flags) {
-        lua_pushinteger(L, user_flags);
+        lua_pushinteger(L, (lua_Integer) user_flags);
         return 2;
-    } else {
-        return 1;
     }
+
+    return 1;
 }
 
 
@@ -599,7 +599,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     }
 
     if (n == 5) {
-        user_flags = luaL_checkint(L, 5);
+        user_flags = (uint32_t) luaL_checkinteger(L, 5);
     }
 
     dd("looking up key %s in shared dict %s", key.data, name.data);
