@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 5 February 2012.
+This document describes ngx_lua [v0.5.0rc3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 February 2012.
 
 Synopsis
 ========
@@ -3116,6 +3116,8 @@ This method is a synchronous operation that will not return until *all* the data
 
 In case of success, it returns the total number of bytes that have been sent. Otherwise, it returns `nil` and a string describing the error.
 
+The input argument `data` can either be a Lua string or a (nested) Lua table holding string fragments. In case of table arguments, this method will automatically copy all the string elements piece by piece to the underlying Nginx socket send buffers, which is usually optimal than doing string concatenation operations on the Lua land.
+
 Timeout for the sending operation is controlled by the [lua_socket_send_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_send_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
 
 
@@ -3677,6 +3679,7 @@ Short Term
 ----------
 * make [tcpsock:send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
 * implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
+* implement the `ngx.re.split` method.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
