@@ -5,6 +5,7 @@
 
 #include "ngx_http_lua_socket.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
 
 
@@ -1346,6 +1347,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_http_lua_socket_upstream_t      *u;
     int                                  timeout;
     ngx_http_lua_loc_conf_t             *llcf;
+    int                                  type;
+    const char                          *msg;
+    ngx_buf_t                           *b;
 
     /* TODO: add support for the optional "i" and "j" arguments */
 
@@ -1388,7 +1392,24 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket send timeout: %M", u->timeout);
 
-    p = (u_char *) luaL_checklstring(L, 2, &len);
+    type = lua_type(L, 2);
+    switch (type) {
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            lua_tolstring(L, 2, &len);
+            break;
+
+        case LUA_TTABLE:
+            len = ngx_http_lua_calc_strlen_in_table(L, 2, 1 /* strict */);
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "string, number, boolean, nil, "
+                    "or array table expected, got %s",
+                    lua_typename(L, type));
+
+            return luaL_argerror(L, 2, msg);
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -1401,7 +1422,22 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    cl->buf->last = ngx_copy(cl->buf->pos, p, len);
+    b = cl->buf;
+
+    switch (type) {
+        case LUA_TNUMBER:
+        case LUA_TSTRING:
+            p = (u_char *) lua_tolstring(L, -1, &len);
+            b->last = ngx_copy(b->last, (u_char *) p, len);
+            break;
+
+        case LUA_TTABLE:
+            b->last = ngx_http_lua_copy_str_in_table(L, b->last);
+            break;
+
+        default:
+            return luaL_error(L, "impossible to reach here");
+    }
 
     u->request_bufs = cl;
 

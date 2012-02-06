@@ -15,8 +15,6 @@ static int ngx_http_lua_ngx_flush(lua_State *L);
 static int ngx_http_lua_ngx_eof(lua_State *L);
 static int ngx_http_lua_ngx_send_headers(lua_State *L);
 static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
-static size_t ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i);
-static u_char * ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst);
 
 
 static int
@@ -100,7 +98,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                 break;
 
             case LUA_TTABLE:
-                size += ngx_http_lua_calc_strlen_in_table(L, i);
+                size += ngx_http_lua_calc_strlen_in_table(L, i, 0);
                 break;
 
             default:
@@ -196,8 +194,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 }
 
 
-static size_t
-ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i)
+size_t
+ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
 {
     double              key;
     int                 max;
@@ -243,10 +241,18 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i)
                 break;
 
             case LUA_TNIL:
+                if (strict) {
+                    goto bad_type;
+                }
+
                 size += sizeof("nil") - 1;
                 break;
 
             case LUA_TBOOLEAN:
+                if (strict) {
+                    goto bad_type;
+                }
+
                 if (lua_toboolean(L, -1)) {
                     size += sizeof("true") - 1;
 
@@ -257,14 +263,15 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i)
                 break;
 
             case LUA_TTABLE:
-                size += ngx_http_lua_calc_strlen_in_table(L, arg_i);
+                size += ngx_http_lua_calc_strlen_in_table(L, arg_i, strict);
                 break;
 
             default:
+
+bad_type:
                 msg = lua_pushfstring(L, "bad data type %s found",
                         lua_typename(L, type));
-                luaL_argerror(L, arg_i, msg);
-                return 0;
+                return luaL_argerror(L, arg_i, msg);
         }
 
         lua_pop(L, 1); /* stack: table */
@@ -274,7 +281,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i)
 }
 
 
-static u_char *
+u_char *
 ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
 {
     double               key;
