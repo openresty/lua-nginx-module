@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc3] released on 6 February 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc5] released on 7 February 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -869,6 +869,12 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
 </geshi>
 
 Note that only two of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> as input).
+
+<geshi lang="lua">
+  ngx.null
+</geshi>
+
+The <code>ngx.null</code> constant is a <code>NULL</code> light userdata which is usually used to represent nil values in Lua tables and etc. It is identical with the [http://www.kyne.com.au/~mark/software/lua-cjson.php lua-cjson] library's <code>cjson.null</code> constant. This constant was first introduced in the <code>v0.5.0rc5</code> release.
 
 == HTTP method constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -3556,10 +3562,12 @@ Please report bugs or submit patches by:
 * make [[#tcpsock:send|tcpsock:send]] method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
 * implement [http://w3.impa.br/~diego/software/luasocket/udp.html LuaSocket UDP API] in our cosocket API.
 * implement the <code>ngx.re.split</code> method.
+* use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
+* fix HTTP 1.0 support: we should by default close the current HTTP 1.0 connection right away if no <code>Content-Length</code> response header is set. the current automatic full buffering bahvior is way too expensive.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
-* add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its <code>args</code> argument is a Lua table.
+* add support for multi-value arguments to [[#ngx.req.set_uri_args|ngx.req.set_uri_args]] if its <code>args</code> argument is a Lua table.
 * add APIs to access cookies as key/value pairs.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 
@@ -3725,6 +3733,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 = See Also =
 
 * [http://github.com/agentzh/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket
+* [http://github.com/agentzh/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket
 * [http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs Routing requests to different MySQL queries based on URI arguments]
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]

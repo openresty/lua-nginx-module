@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 February 2012.
+This document describes ngx_lua [v0.5.0rc5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 7 February 2012.
 
 Synopsis
 ========
@@ -903,6 +903,12 @@ Core constants
 
 
 Note that only two of these constants are utilized by the [Nginx API for Lua](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) (i.e., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) accepts `NGX_OK` and `NGX_ERROR` as input).
+
+
+      ngx.null
+
+
+The `ngx.null` constant is a `NULL` light userdata which is usually used to represent nil values in Lua tables and etc. It is identical with the [lua-cjson](http://www.kyne.com.au/~mark/software/lua-cjson.php) library's `cjson.null` constant. This constant was first introduced in the `v0.5.0rc5` release.
 
 HTTP method constants
 ---------------------
@@ -3680,10 +3686,12 @@ Short Term
 * make [tcpsock:send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
 * implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
 * implement the `ngx.re.split` method.
+* use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_header), [ngx.header.HEADER](http://wiki.nginx.org/HttpLuaModule#ngx.header.HEADER), and etc.
+* fix HTTP 1.0 support: we should by default close the current HTTP 1.0 connection right away if no `Content-Length` response header is set. the current automatic full buffering bahvior is way too expensive.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
-* add support for multi-value arguments to [[#ngx.req.set_uri_args]] if its `args` argument is a Lua table.
+* add support for multi-value arguments to [ngx.req.set_uri_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri_args) if its `args` argument is a Lua table.
 * add APIs to access cookies as key/value pairs.
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) methods, to allow micro performance tuning on the user side.
 
@@ -3857,6 +3865,7 @@ See Also
 ========
 
 * [lua-resty-memcached](http://github.com/agentzh/lua-resty-memcached) library based on ngx_lua cosocket
+* [lua-resty-redis](http://github.com/agentzh/lua-resty-redis) library based on ngx_lua cosocket
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
