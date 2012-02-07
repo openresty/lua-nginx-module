@@ -329,6 +329,7 @@ ngx_http_set_content_type_header(ngx_http_request_t *r,
     return ngx_http_set_header_helper(r, hv, value, NULL, 1);
 }
 
+
 static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value)
 {

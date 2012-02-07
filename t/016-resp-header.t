@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 3;
+plan tests => repeat_each() * (blocks() * 3 - 1);
 
 #no_diff();
 no_long_string();
@@ -729,7 +729,7 @@ Cache-Control: blah
   location /lua {
         content_by_lua '
             ngx.header["Last-Modified"] = ngx.http_time(1290079655)
-	    ngx.say(ngx.header["Last-Modified"])
+            ngx.say(ngx.header["Last-Modified"])
         ';
     }
 --- request
@@ -747,7 +747,7 @@ Last-Modified: Thu, 18 Nov 2010 11:27:35 GMT
   location /lua {
         content_by_lua '
             ngx.header["Last-Modified"] = ngx.http_time(1290079655)
-	    ngx.say(ngx.header["Last-Modified"])
+            ngx.say(ngx.header["Last-Modified"])
         ';
     }
 --- request
