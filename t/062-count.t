@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 83
+ngx: 84
 --- no_error_log
 [error]
 
@@ -56,7 +56,7 @@ ngx: 83
 --- request
 GET /test
 --- response_body
-67
+68
 --- no_error_log
 [error]
 
@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 67
+n = 68
 --- no_error_log
 [error]
 
