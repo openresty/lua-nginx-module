@@ -22,6 +22,9 @@ ngx_http_lua_inject_core_consts(lua_State *L)
 
     lua_pushinteger(L, NGX_ERROR);
     lua_setfield(L, -2, "ERROR");
+
+    lua_pushlightuserdata(L, NULL);
+    lua_setfield(L, -2, "null");
     /* }}} */
 }
 

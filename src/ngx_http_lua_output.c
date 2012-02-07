@@ -75,19 +75,24 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     size = 0;
 
     for (i = 1; i <= nargs; i++) {
+
         type = lua_type(L, i);
+
         switch (type) {
             case LUA_TNUMBER:
             case LUA_TSTRING:
+
                 lua_tolstring(L, i, &len);
                 size += len;
                 break;
 
             case LUA_TNIL:
+
                 size += sizeof("nil") - 1;
                 break;
 
             case LUA_TBOOLEAN:
+
                 if (lua_toboolean(L, i)) {
                     size += sizeof("true") - 1;
 
@@ -98,13 +103,26 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                 break;
 
             case LUA_TTABLE:
+
                 size += ngx_http_lua_calc_strlen_in_table(L, i, 0);
                 break;
 
+            case LUA_TLIGHTUSERDATA:
+
+                dd("userdata: %p", lua_touserdata(L, i));
+
+                if (lua_touserdata(L, i) == NULL) {
+                    size += sizeof("null") - 1;
+                    break;
+                }
+
+                continue;
+
             default:
+
                 msg = lua_pushfstring(L, "string, number, boolean, nil, "
-                        "or array table expected, got %s",
-                        lua_typename(L, type));
+                                      "ngx.null, or array table expected, "
+                                      "but got %s", lua_typename(L, type));
 
                 return luaL_argerror(L, i, msg);
         }
@@ -158,6 +176,13 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
             case LUA_TTABLE:
                 b->last = ngx_http_lua_copy_str_in_table(L, b->last);
+                break;
+
+            case LUA_TLIGHTUSERDATA:
+                *b->last++ = 'n';
+                *b->last++ = 'u';
+                *b->last++ = 'l';
+                *b->last++ = 'l';
                 break;
 
             default:
@@ -266,6 +291,14 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
                 size += ngx_http_lua_calc_strlen_in_table(L, arg_i, strict);
                 break;
 
+            case LUA_TLIGHTUSERDATA:
+                if (lua_touserdata(L, -1) == NULL) {
+                    size += sizeof("null") - 1;
+                    break;
+                }
+
+                continue;
+
             default:
 
 bad_type:
@@ -338,6 +371,14 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
 
             case LUA_TTABLE:
                 dst = ngx_http_lua_copy_str_in_table(L, dst);
+                break;
+
+            case LUA_TLIGHTUSERDATA:
+
+                *dst++ = 'n';
+                *dst++ = 'u';
+                *dst++ = 'l';
+                *dst++ = 'l';
                 break;
 
             default:
