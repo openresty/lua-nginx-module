@@ -3221,8 +3221,8 @@ Nginx API for Lua
 
     Before actually resolving the host name and connecting to the remote
     backend, this method will always look up the connection pool for matched
-    idle connections created by previous calls of this method or the
-    ngx.socket.connect function and saved by the setkeepalive method.
+    idle connections created by previous calls of this method (or the
+    ngx.socket.connect function).
 
     Both IP addresses and domain names can be specified as the "host"
     argument. In case of domain names, this method will use Nginx core's
@@ -3529,7 +3529,7 @@ Nginx API for Lua
     setting in the lua_socket_keepalive_timeout config directive will be
     used.
 
-    The first optional argument, "size", can be used to specify the maximal
+    The second optional argument, "size", can be used to specify the maximal
     number of connections allowed in the connection pool for the current
     server (i.e., the current host-port pair or the unix domain socket file
     path). Note that the size of the connection pool cannot be changed once
