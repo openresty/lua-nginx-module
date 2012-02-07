@@ -21,11 +21,15 @@ static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_type_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_clear_last_modified_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_content_length_header(ngx_http_request_t *r,
         ngx_http_lua_header_val_t *hv, ngx_str_t *value);
@@ -55,7 +59,7 @@ static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
 
     { ngx_string("Last-Modified"),
                  offsetof(ngx_http_headers_out_t, last_modified),
-                 ngx_http_set_builtin_header },
+                 ngx_http_set_last_modified_header },
 
     { ngx_string("Content-Range"),
                  offsetof(ngx_http_headers_out_t, content_range),
@@ -323,6 +327,28 @@ ngx_http_set_content_type_header(ngx_http_request_t *r,
     value->len = 0;
 
     return ngx_http_set_header_helper(r, hv, value, NULL, 1);
+}
+
+static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
+        ngx_http_lua_header_val_t *hv, ngx_str_t *value)
+{
+    if (value->len == 0) {
+        return ngx_http_clear_last_modified_header(r, hv, value);
+    }
+
+    r->headers_out.last_modified_time = ngx_http_parse_time(value->data,
+                                                            value->len);
+    return ngx_http_set_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_clear_last_modified_header(ngx_http_request_t *r,
+        ngx_http_lua_header_val_t *hv, ngx_str_t *value)
+{
+    r->headers_out.last_modified_time = -1;
+
+    return ngx_http_clear_builtin_header(r, hv, value);
 }
 
 
