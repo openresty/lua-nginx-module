@@ -722,3 +722,40 @@ Cache-Control: blah
 --- response_body
 Cache-Control: blah
 
+
+
+=== TEST 37: set last-modified and return 304
+--- config
+  location /lua {
+        content_by_lua '
+            ngx.header["Last-Modified"] = ngx.http_time(1290079655)
+	    ngx.say(ngx.header["Last-Modified"])
+        ';
+    }
+--- request
+    GET /lua
+--- more_headers
+If-Modified-Since: Thu, 18 Nov 2010 11:27:35 GMT
+--- response_headers
+Last-Modified: Thu, 18 Nov 2010 11:27:35 GMT
+--- error_code: 304
+
+
+
+=== TEST 38: set last-modified and return 200
+--- config
+  location /lua {
+        content_by_lua '
+            ngx.header["Last-Modified"] = ngx.http_time(1290079655)
+	    ngx.say(ngx.header["Last-Modified"])
+        ';
+    }
+--- request
+    GET /lua
+--- more_headers
+If-Modified-Since: Thu, 18 Nov 2010 11:27:34 GMTT
+--- response_headers
+Last-Modified: Thu, 18 Nov 2010 11:27:35 GMT
+--- response_body
+Thu, 18 Nov 2010 11:27:35 GMT
+
