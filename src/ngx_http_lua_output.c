@@ -258,14 +258,17 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
     for (i = 1; i <= max; i++) {
         lua_rawgeti(L, -1, i); /* stack: table value */
         type = lua_type(L, -1);
+
         switch (type) {
             case LUA_TNUMBER:
             case LUA_TSTRING:
+
                 lua_tolstring(L, -1, &len);
                 size += len;
                 break;
 
             case LUA_TNIL:
+
                 if (strict) {
                     goto bad_type;
                 }
@@ -274,6 +277,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
                 break;
 
             case LUA_TBOOLEAN:
+
                 if (strict) {
                     goto bad_type;
                 }
@@ -288,10 +292,16 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
                 break;
 
             case LUA_TTABLE:
+
                 size += ngx_http_lua_calc_strlen_in_table(L, arg_i, strict);
                 break;
 
             case LUA_TLIGHTUSERDATA:
+
+                if (strict) {
+                    goto bad_type;
+                }
+
                 if (lua_touserdata(L, -1) == NULL) {
                     size += sizeof("null") - 1;
                     break;
