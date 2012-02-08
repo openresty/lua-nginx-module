@@ -40,6 +40,7 @@ time ngx-build $force $version \
                 --add-module=$root/../drizzle-nginx-module \
                 --add-module=$home/work/nginx/ngx_http_upstream_keepalive-2ce9d8a1ca93 \
                 --add-module=$root/../rds-json-nginx-module \
+                --add-module=$root/../coolkit-nginx-module \
           --with-select_module \
           --with-poll_module \
           --with-rtsig_module \

@@ -319,7 +319,7 @@ found the end of the stream
 
 
 
-=== TEST 4: sanity
+=== TEST 4: attempt to use the req socket across request boundary
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
