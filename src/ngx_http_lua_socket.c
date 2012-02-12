@@ -810,7 +810,11 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
     } else {
 
         if (u->socket_errno) {
+#if (nginx_version >= 1000000)
             p = ngx_strerror(u->socket_errno, errstr, sizeof(errstr));
+#else
+            p = ngx_strerror_r(u->socket_errno, errstr, sizeof(errstr));
+#endif
             /* for compatibility with LuaSocket */
             ngx_strlow(errstr, errstr, p - errstr);
             lua_pushlstring(L, (char *) errstr, p - errstr);
