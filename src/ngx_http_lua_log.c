@@ -116,6 +116,14 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
 
                 break;
 
+            case LUA_TLIGHTUSERDATA:
+                if (lua_touserdata(L, i) == NULL) {
+                    size += sizeof("null") - 1;
+                    break;
+                }
+
+                continue;
+
             default:
                 msg = lua_pushfstring(L, "string, number, boolean, or nil "
                          "expected, got %s", lua_typename(L, type));
@@ -158,6 +166,14 @@ log_wrapper(ngx_http_request_t *r, const char *ident, int level, lua_State *L)
                     *p++ = 's';
                     *p++ = 'e';
                 }
+
+                break;
+
+            case LUA_TLIGHTUSERDATA:
+                *p++ = 'n';
+                *p++ = 'u';
+                *p++ = 'l';
+                *p++ = 'l';
 
                 break;
 

@@ -11,7 +11,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -38,6 +38,8 @@ GET /lua
 --- response_body
 true
 null
+--- no_error_log
+[error]
 
 
 
@@ -52,6 +54,8 @@ null
 GET /lua
 --- response_body
 ngx.null: null
+--- no_error_log
+[error]
 
 
 
@@ -66,4 +70,25 @@ ngx.null: null
 GET /lua
 --- response_body
 ngx.null: null
+--- no_error_log
+[error]
+
+
+
+=== TEST 4: log ngx.null
+--- config
+    location /lua {
+        content_by_lua '
+            print("ngx.null: ", ngx.null)
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+done
+--- error_log
+ngx.null: null
+--- no_error_log
+[error]
 
