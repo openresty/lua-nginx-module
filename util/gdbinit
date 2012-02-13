@@ -1,0 +1,35 @@
+# This gdb script provides several useful routines for debugging ngx_lua or
+# standalone Lua/LuaJIT.
+#
+# Installation: place it at $HOME/.gdbinit
+#
+# -- chaoslawful <at> gmail <dot> com
+
+define luabt
+	if $argc != 1
+		echo Please specify Lua state as the 1st arg!\n
+	else
+		set $l = (lua_State*)$arg0
+		set $dbg = (lua_Debug*)malloc(sizeof(lua_Debug))
+		set $level = 0
+		set $rc = lua_getstack($l, $level, $dbg)
+		while $rc > 0
+			set $rc = lua_getinfo($l, "Sln", $dbg)
+			set $name = $dbg->name
+			if $name == 0
+				set $name = "-"
+			end
+			printf "#%d\t%s\t[%s]\tat %s:%d\n", $level, $name, $dbg->what, $dbg->source, $dbg->currentline
+			set $level = $level+1
+			set $rc = lua_getstack($l, $level, $dbg)
+		end
+		set $rc = free($dbg)
+	end
+end
+
+document luabt
+luabt <lua state>: Dump the backtrace of the specified Lua state.
+end
+
+# vi:ft=gdb ts=4 sw=4
+
