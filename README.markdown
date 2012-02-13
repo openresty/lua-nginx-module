@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 7 February 2012.
+This document describes ngx_lua [v0.5.0rc6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 13 February 2012.
 
 Synopsis
 ========
@@ -980,7 +980,7 @@ It is equivalent to
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 
 
-Lua `nil` arguments are accepted and result in literal `"nil"` strings while Lua booleans result in literal `"true"` or `"false"` strings.
+Lua `nil` arguments are accepted and result in literal `"nil"` strings while Lua booleans result in literal `"true"` or `"false"` strings. And the `ngx.null` constant will yield the `"null"` string output.
 
 ngx.ctx
 -------
@@ -2186,7 +2186,7 @@ ngx.print
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Emit arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
+Emits arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
 
 Lua `nil` values will output `"nil"` strings and Lua boolean values will output `"true"` and `"false"` literal strings respectively.
 
@@ -2209,6 +2209,8 @@ will yield the output
 
 Non-array table arguments will cause a Lua exception to be thrown.
 
+The `ngx.null` constant will yield the `"null"` string output.
+
 This is an asynchronous call and will return immediately without waiting for all the data to be written into the system send buffer. To run in synchronous mode, call `ngx.flush(true)` after calling `ngx.print`. This can be particularly useful for streaming output. See [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) for more details.
 
 ngx.say
@@ -2227,7 +2229,7 @@ ngx.log
 
 Log arguments concatenated to error.log with the given logging level.
 
-Lua `nil` arguments are accepted and result in literal `"nil"` string while Lua booleans result in literal `"true"` or `"false"` string outputs.
+Lua `nil` arguments are accepted and result in literal `"nil"` string while Lua booleans result in literal `"true"` or `"false"` string outputs. And the `ngx.null` constant will yield the `"null"` string output.
 
 The `log_level` argument can take constants like `ngx.ERR` and `ngx.WARN`. Check out [Nginx log level constants](http://wiki.nginx.org/HttpLuaModule#Nginx_log_level_constants) for details.
 
@@ -2487,6 +2489,16 @@ ngx.md5_bin
 Returns the binary form of the MD5 digest of the `str` argument.
 
 See [ngx.md5](http://wiki.nginx.org/HttpLuaModule#ngx.md5) if the hexadecimal form of the MD5 digest is required.
+
+ngx.sha1_bin
+------------
+**syntax:** *digest = ngx.sha1_bin(str)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Returns the binary form of the SHA-1 digest of the `str` argument.
+
+This function was first introduced in the `v0.5.0rc6`.
 
 ngx.today
 ---------
@@ -3876,4 +3888,8 @@ See Also
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
 * [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
+
+<div id="translations">
+* [ Chinese](http://wiki.nginx.org/HttpLuaModuleZh)
+</div>
 

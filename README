@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc5
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 7
+    This document describes ngx_lua v0.5.0rc6
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 13
     February 2012.
 
 Synopsis
@@ -1037,7 +1037,8 @@ Nginx API for Lua
         ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 
     Lua "nil" arguments are accepted and result in literal "nil" strings
-    while Lua booleans result in literal "true" or "false" strings.
+    while Lua booleans result in literal "true" or "false" strings. And the
+    "ngx.null" constant will yield the "null" string output.
 
   ngx.ctx
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
@@ -2260,7 +2261,7 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Emit arguments concatenated to the HTTP client (as response body). If
+    Emits arguments concatenated to the HTTP client (as response body). If
     response headers have not been sent, this function will send headers out
     first and then output body data.
 
@@ -2282,6 +2283,8 @@ Nginx API for Lua
         hello, world: true or false: nil
 
     Non-array table arguments will cause a Lua exception to be thrown.
+
+    The "ngx.null" constant will yield the "null" string output.
 
     This is an asynchronous call and will return immediately without waiting
     for all the data to be written into the system send buffer. To run in
@@ -2306,6 +2309,7 @@ Nginx API for Lua
 
     Lua "nil" arguments are accepted and result in literal "nil" string
     while Lua booleans result in literal "true" or "false" string outputs.
+    And the "ngx.null" constant will yield the "null" string output.
 
     The "log_level" argument can take constants like "ngx.ERR" and
     "ngx.WARN". Check out Nginx log level constants for details.
@@ -2572,6 +2576,16 @@ Nginx API for Lua
     Returns the binary form of the MD5 digest of the "str" argument.
 
     See ngx.md5 if the hexadecimal form of the MD5 digest is required.
+
+  ngx.sha1_bin
+    syntax: *digest = ngx.sha1_bin(str)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Returns the binary form of the SHA-1 digest of the "str" argument.
+
+    This function was first introduced in the "v0.5.0rc6".
 
   ngx.today
     syntax: *str = ngx.today()*
@@ -4487,4 +4501,6 @@ See Also
     *   [[HttpMemcModule]]
 
     *   The ngx_openresty bundle (<http://openresty.org>)
+
+    *   [Chinese (HttpLuaModuleZh)]
 

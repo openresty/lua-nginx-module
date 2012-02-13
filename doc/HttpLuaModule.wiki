@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc5] released on 7 February 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc6] released on 13 February 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -942,7 +942,7 @@ It is equivalent to
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 </geshi>
 
-Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings.
+Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
 
 == ngx.ctx ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -2124,7 +2124,7 @@ This API was first introduced in ngx_lua v0.3.1rc6.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Emit arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
+Emits arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
 
 Lua <code>nil</code> values will output <code>"nil"</code> strings and Lua boolean values will output <code>"true"</code> and <code>"false"</code> literal strings respectively.
 
@@ -2147,6 +2147,8 @@ will yield the output
 
 Non-array table arguments will cause a Lua exception to be thrown.
 
+The <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
+
 This is an asynchronous call and will return immediately without waiting for all the data to be written into the system send buffer. To run in synchronous mode, call <code>ngx.flush(true)</code> after calling <code>ngx.print</code>. This can be particularly useful for streaming output. See [[#ngx.flush|ngx.flush]] for more details.
 
 == ngx.say ==
@@ -2163,7 +2165,7 @@ Just as [[#ngx.print|ngx.print]] but also emit a trailing newline.
 
 Log arguments concatenated to error.log with the given logging level.
 
-Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> string while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> string outputs.
+Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> string while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> string outputs. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
 
 The <code>log_level</code> argument can take constants like <code>ngx.ERR</code> and <code>ngx.WARN</code>. Check out [[#Nginx log level constants|Nginx log level constants]] for details.
 
@@ -2410,6 +2412,15 @@ See [[#ngx.md5_bin|ngx.md5_bin]] if the raw binary MD5 digest is required.
 Returns the binary form of the MD5 digest of the <code>str</code> argument.
 
 See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
+
+== ngx.sha1_bin ==
+'''syntax:''' ''digest = ngx.sha1_bin(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
+
+This function was first introduced in the <code>v0.5.0rc6</code>.
 
 == ngx.today ==
 '''syntax:''' ''str = ngx.today()''
@@ -3744,4 +3755,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
+
+<div id="translations">
+* [[HttpLuaModuleZh| Chinese]]
+</div>
 
