@@ -464,6 +464,9 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     ctx->data = u;
     ctx->socket_busy = 1;
+
+    dd("setting socket_ready to 0");
+
     ctx->socket_ready = 0;
 
     u->waiting = 1;
@@ -501,6 +504,8 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     L = lctx->cc;
+
+    dd("setting socket_ready to 1");
 
     lctx->socket_busy = 0;
     lctx->socket_ready = 1;
@@ -746,6 +751,8 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+        dd("setting socket_ready to 1");
+
         ctx->socket_busy = 0;
         ctx->socket_ready = 1;
 
@@ -769,7 +776,10 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     u->prepare_retvals = ngx_http_lua_socket_tcp_connect_retval_handler;
 
+    dd("setting socket_ready to 0");
+
     ctx->socket_busy = 1;
+
     ctx->socket_ready = 0;
 
     if (ctx->entered_content_phase) {
@@ -1004,6 +1014,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 
     ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
+
+    dd("setting socket_ready to 0");
 
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
@@ -1465,6 +1477,10 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         u->writer.pool = r->pool;
     }
 
+#if 1
+    u->waiting = 0;
+#endif
+
     rc = ngx_http_lua_socket_send(r, u);
 
     dd("socket send returned %d", (int) rc);
@@ -1489,6 +1505,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_send_retval_handler;
+
+    dd("setting socket_ready to 0");
 
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
@@ -1798,6 +1816,8 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+        dd("setting socket_ready to 1");
+
         ctx->socket_busy = 0;
         ctx->socket_ready = 1;
 
@@ -1825,6 +1845,8 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
         u->waiting = 0;
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+        dd("setting socket_ready to 1");
 
         ctx->socket_busy = 0;
         ctx->socket_ready = 1;
@@ -1884,6 +1906,8 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("setting socket_ready to 1");
 
     ctx->socket_busy = 0;
     ctx->socket_ready = 1;
@@ -2220,6 +2244,8 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
+
+    dd("setting socket_ready to 0");
 
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;

@@ -1067,6 +1067,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         dd("resuming socket api");
 
+        dd("setting socket_ready to 0");
+
         ctx->socket_ready = 0;
 
         u = ctx->data;
@@ -1119,6 +1121,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 #endif
 
         nret = ctx->nsubreqs;
+
+        dd("location capture nret: %d", (int) nret);
 
         goto run;
     }
