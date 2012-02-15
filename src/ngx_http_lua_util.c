@@ -1231,18 +1231,10 @@ ngx_http_lua_dump_postponed(ngx_http_request_t *r)
 
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                 "postponed request for %V: "
-
-#if defined(nginx_version) && nginx_version >= 8011
                 "c:%d, "
-#endif
-
                 "a:%d, i:%d, r:%V, out:%V",
                 &r->uri,
-
-#if defined(nginx_version) && nginx_version >= 8011
                 r->main->count,
-#endif
-
                 r == r->connection->data, i,
                 pr->request ? &pr->request->uri : &nil_str, &out);
     }
