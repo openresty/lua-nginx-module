@@ -1293,9 +1293,19 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             }
         }
 
+#if 0
+        if (rev->active && !rev->ready) {
+            rc = NGX_AGAIN;
+            break;
+        }
+#endif
+
         /* try to read the socket */
 
         n = c->recv(c, b->last, size);
+
+        dd("read event ready: %d", (int) c->read->ready);
+
         read = 1;
 
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -3070,6 +3080,11 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
 
         goto close;
     }
+
+    dd("read event ready: %d", (int) c->read->ready);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ev->log, 0,
+                   "lua socket keepalive close handler check stale events");
 
     n = recv(c->fd, buf, 1, MSG_PEEK);
 

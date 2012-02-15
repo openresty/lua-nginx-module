@@ -33,8 +33,6 @@ __DATA__
             test.go(port)
         ';
     }
---- request
-GET /t
 --- user_files
 >>> test.lua
 module("test", package.seeall)
@@ -71,6 +69,8 @@ function go(port)
         ngx.say("failed to set reusable: ", err)
     end
 end
+--- request
+GET /t
 --- response_body_like
 ^connected: 1, reused: \d+
 request sent: 11
@@ -304,7 +304,7 @@ received response of 156 bytes
 done
 --- no_error_log eval
 ["[error]",
-"lua socket keepalive close handler",
+"lua socket keepalive close handler: fd:",
 "lua socket keepalive: free connection pool for "]
 --- timeout: 4
 

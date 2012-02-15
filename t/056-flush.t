@@ -8,9 +8,8 @@ use Test::Nginx::Socket;
 #log_level('warn');
 
 repeat_each(2);
-#repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 #no_long_string();
@@ -32,6 +31,8 @@ GET /test
 --- response_body
 hello, world
 hiya
+--- error_log
+lua reuse free buf memory 13 >= 5
 
 
 
@@ -103,6 +104,7 @@ GET /test HTTP/1.0
 --- response_body
 hello, world
 hiya
+--- timeout: 5
 
 
 

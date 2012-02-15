@@ -4,15 +4,15 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #repeat_each(20000);
-#repeat_each(1);
 repeat_each(2);
+
 #master_on();
 #workers(1);
 #log_level('debug');
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -59,8 +59,11 @@ GET /lua
     }
 --- request
 GET /lua
---- error_code:
---- response_body:
+--- ignore_response
+--- no_error_log
+[alert]
+--- error_log
+attempt to call ngx.exit after sending out the headers
 
 
 

@@ -903,6 +903,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
+    ngx_chain_t                 *cl;
 
     ngx_http_lua_socket_upstream_t      *u;
 
@@ -1032,6 +1033,23 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             }
 
             return rc;
+        }
+
+        if (ctx->busy_bufs) {
+            cl = NULL;
+
+            dd("updating chains...");
+
+#if nginx_version >= 1001004
+            ngx_chain_update_chains(r->pool,
+#else
+            ngx_chain_update_chains(
+#endif
+                                    &ctx->free_bufs, &ctx->busy_bufs, &cl,
+                                    (ngx_buf_tag_t) &ngx_http_lua_module);
+
+            dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
+                &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
         }
 
         if (c->buffered) {
