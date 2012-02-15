@@ -1293,7 +1293,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             }
         }
 
-#if 0
+#if 1
         if (rev->active && !rev->ready) {
             rc = NGX_AGAIN;
             break;
