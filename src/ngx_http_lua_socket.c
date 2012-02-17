@@ -1716,6 +1716,12 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
         return;
     }
 
+#if 1
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+#endif
+
     if (u->buffer.start != NULL) {
         (void) ngx_http_lua_socket_read(r, u);
     }
@@ -1909,13 +1915,8 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
         return;
     }
 
-    if (c->read->timedout) {
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "lua socket connect timed out");
-
-        ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
-        return;
+    if (c->write->timer_set) {
+        ngx_del_timer(c->write);
     }
 
     rc = ngx_http_lua_socket_test_connect(c);
@@ -1955,10 +1956,6 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
-
-    if (c->write->timer_set) {
-        ngx_del_timer(c->write);
-    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket waking up the current request");

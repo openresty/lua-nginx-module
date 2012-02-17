@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 our $HtmlDir = html_dir;
 
@@ -13,8 +13,8 @@ $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
-#no_long_string();
-no_diff();
+no_long_string();
+#no_diff();
 run_tests();
 
 __DATA__
@@ -1747,6 +1747,200 @@ received: OK
 close: 1 nil
 subrequest: 200, OK\r
 "
+--- no_error_log
+[error]
+
+
+
+=== TEST 30: read timer cleared in time
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            sock:settimeout(200)
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "flush_all\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+            end
+
+            ngx.location.capture("/sleep")
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent again: ", bytes)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /sleep {
+        echo_sleep 0.5;
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 11
+received: OK
+request sent again: 11
+close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 31: connect timer cleared in time
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            sock:settimeout(200)
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            ngx.location.capture("/sleep")
+
+            local req = "flush_all\\r\\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /sleep {
+        echo_sleep 0.5;
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 11
+close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 32: send timer cleared in time
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            sock:settimeout(200)
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "flush_all\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            ngx.location.capture("/sleep")
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+                return
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /sleep {
+        echo_sleep 0.5;
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 11
+received: OK
+close: 1 nil
 --- no_error_log
 [error]
 
