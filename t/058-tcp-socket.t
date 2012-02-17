@@ -185,6 +185,8 @@ GET /t
 failed to connect: no resolver defined to resolve "agentzh.org"
 connected: nil
 failed to send request: closed
+--- no_error_log
+[error]
 
 
 
