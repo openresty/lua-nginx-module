@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 our $HtmlDir = html_dir;
 
@@ -185,8 +185,8 @@ GET /t
 failed to connect: no resolver defined to resolve "agentzh.org"
 connected: nil
 failed to send request: closed
---- no_error_log
-[error]
+--- error_log
+attempt to send data on a closed socket:
 
 
 
