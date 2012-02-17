@@ -82,10 +82,9 @@ received: OK
 ["[error]",
 "lua socket keepalive: free connection pool for "]
 --- error_log eval
-[
-'lua socket get keepalive peer: using connection',
-'lua socket keepalive create connection pool for key "127.0.0.1:11211"',
-]
+qq{lua socket get keepalive peer: using connection
+lua socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
+}
 
 
 

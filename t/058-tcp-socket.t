@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 our $HtmlDir = html_dir;
 
@@ -345,7 +345,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -1763,7 +1763,7 @@ subrequest: 200, OK\r
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
-            sock:settimeout(200)
+            sock:settimeout(300)
 
             local ok, err = sock:connect("127.0.0.1", port)
             if not ok then
@@ -1836,7 +1836,7 @@ close: 1 nil
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
-            sock:settimeout(200)
+            sock:settimeout(300)
 
             local ok, err = sock:connect("127.0.0.1", port)
             if not ok then
@@ -1891,7 +1891,7 @@ close: 1 nil
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
-            sock:settimeout(200)
+            sock:settimeout(300)
 
             local ok, err = sock:connect("127.0.0.1", port)
             if not ok then

@@ -18,7 +18,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 10);
+plan tests => repeat_each() * (blocks() * 4 + 10);
 
 our $HtmlDir = html_dir;
 
@@ -55,6 +55,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua socket connect timeout: 100
+lua socket connect timed out
 
 
 
@@ -82,6 +83,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua socket connect timeout: 150
+lua socket connect timed out
 
 
 
@@ -109,6 +111,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua socket connect timeout: 102
+lua socket connect timed out
 
 
 
@@ -136,6 +139,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua socket connect timeout: 102
+lua socket connect timed out
 
 
 
@@ -163,6 +167,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua socket connect timeout: 102
+lua socket connect timed out
 
 
 
@@ -196,9 +201,10 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log eval
-["lua socket read timeout: 100",
-"lua socket connect timeout: 60000"]
+--- error_log
+lua socket read timeout: 100
+lua socket connect timeout: 60000
+lua socket read timed out
 
 
 
@@ -234,9 +240,10 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket read timeout: 150"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket read timeout: 150
+lua socket read timed out
 
 
 
@@ -272,9 +279,10 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket read timeout: 102"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket read timeout: 102
+lua socket read timed out
 
 
 
@@ -311,9 +319,10 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket read timeout: 102"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket read timeout: 102
+lua socket read timed out
 
 
 
@@ -349,9 +358,10 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log eval
-["lua socket read timeout: 102",
-"lua socket connect timeout: 60000"]
+--- error_log
+lua socket read timeout: 102
+lua socket connect timeout: 60000
+lua socket read timed out
 
 
 
@@ -385,9 +395,10 @@ GET /t
 --- response_body
 connected: 1
 failed to send: timeout
---- error_log eval
-["lua socket send timeout: 100",
-"lua socket connect timeout: 60000"]
+--- error_log
+lua socket send timeout: 100
+lua socket connect timeout: 60000
+lua socket write timed out
 
 
 
@@ -423,9 +434,10 @@ GET /t
 --- response_body
 connected: 1
 failed to send: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket send timeout: 150"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket send timeout: 150
+lua socket write timed out
 
 
 
@@ -461,9 +473,10 @@ GET /t
 --- response_body
 connected: 1
 failed to send: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket send timeout: 102"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket send timeout: 102
+lua socket write timed out
 
 
 
@@ -499,9 +512,10 @@ GET /t
 --- response_body
 connected: 1
 failed to send: timeout
---- error_log eval
-["lua socket connect timeout: 60000",
-"lua socket send timeout: 102"]
+--- error_log
+lua socket connect timeout: 60000
+lua socket send timeout: 102
+lua socket write timed out
 
 
 
@@ -537,7 +551,8 @@ GET /t
 --- response_body
 connected: 1
 failed to send: timeout
---- error_log eval
-["lua socket send timeout: 102",
-"lua socket connect timeout: 60000"]
+--- error_log
+lua socket send timeout: 102
+lua socket connect timeout: 60000
+lua socket write timed out
 
