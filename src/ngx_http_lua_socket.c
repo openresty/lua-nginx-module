@@ -1839,6 +1839,11 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
 {
     ngx_http_lua_ctx_t          *ctx;
 
+#if 1
+    u->read_event_handler = ngx_http_lua_socket_dummy_handler;
+    u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+#endif
+
 #if 0
     if (u->eof) {
         ngx_http_lua_socket_finalize(r, u);
@@ -2430,7 +2435,7 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     while (i < bytes) {
         c = b->pos[i];
 
-        dd("%d: read char %c, state: %d", i, c, state);
+        dd("%d: read char %d, state: %d", i, c, state);
 
         if (c == pat[state]) {
             i++;
@@ -2471,7 +2476,8 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
         matched = 0;
 
-        if (cp->recovering) {
+        if (cp->recovering && state >= 2) {
+            dd("accessing state: %d, index: %d", state, state - 2);
             for (edge = cp->recovering[state - 2]; edge; edge = edge->next) {
 
                 if (edge->chr == c) {

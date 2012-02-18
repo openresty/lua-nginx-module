@@ -1763,7 +1763,7 @@ subrequest: 200, OK\r
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
-            sock:settimeout(300)
+            sock:settimeout(400)
 
             local ok, err = sock:connect("127.0.0.1", port)
             if not ok then
