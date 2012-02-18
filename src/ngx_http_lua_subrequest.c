@@ -552,6 +552,19 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         if (rc != NGX_OK) {
             return NGX_ERROR;
         }
+
+    } else if (method != NGX_HTTP_PUT && method != NGX_HTTP_POST
+               && r->headers_in.content_length_n > 0)
+    {
+
+        rc = ngx_http_lua_set_content_length_header(sr, 0);
+        if (rc != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+#if 1
+        sr->request_body = NULL;
+#endif
     }
 
     sr->method = method;
