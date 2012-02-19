@@ -120,6 +120,16 @@ function get(self, key)
         return nil, err
     end
 
+    line, err = self.sock:receive(2) -- discard the trailing CRLF
+    if not line then
+        return nil, nil, "failed to receive CRLF: " .. (err or "")
+    end
+
+    line, err = self.sock:receive() -- discard "END\r\n"
+    if not line then
+        return nil, nil, "failed to receive END CRLF: " .. (err or "")
+    end
+
     return data
 end
 

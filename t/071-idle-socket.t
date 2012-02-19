@@ -12,7 +12,7 @@ our $HtmlDir = html_dir;
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
-#no_long_string();
+no_long_string();
 #no_diff();
 #log_level 'warn';
 
@@ -295,6 +295,142 @@ connected: 1
 request sent: 11
 received: OK
 close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: set keepalive when system socket recv buffer has unread data
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("foofoo\\r\\n")
+            local line, err, part = reader()
+            if line then
+                ngx.print("read: ", line)
+
+            else
+                ngx.say("failed to read a line: ", err, " [", part, "]")
+            end
+
+            ngx.location.capture("/sleep")
+
+            local ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set keepalive: ", err)
+            end
+        ';
+    }
+
+    location /sleep {
+        echo_sleep 0.5;
+        more_clear_headers Date;
+    }
+
+    location /foo {
+        echo -n foofoo;
+        echo_flush;
+        echo_sleep 0.3;
+        echo -n barbar;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 57
+read: HTTP/1.1 200 OK\r
+Server: nginx\r
+Content-Type: text/plain\r
+Transfer-Encoding: chunked\r
+Connection: close\r
+\r
+6\r
+failed to set keepalive: connection in dubious state
+}
+--- no_error_log
+[error]
+
+
+
+=== TEST 6: set keepalive when cosocket recv buffer has unread data
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "flush_all\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local data, err = sock:receive(1)
+            if not data then
+                ngx.say("failed to read the 1st byte: ", err)
+                return
+            end
+
+            ngx.say("read: ", data)
+
+            local ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set keepalive: ", err)
+            end
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 11
+read: O
+failed to set keepalive: unread data in buffer
+}
 --- no_error_log
 [error]
 

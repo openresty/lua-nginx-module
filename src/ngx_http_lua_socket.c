@@ -77,7 +77,8 @@ static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     lua_State *L, int obj_index, int key_index,
     ngx_http_lua_socket_upstream_t *u);
 static void ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev);
-static void ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
+static ngx_int_t ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
+static void ngx_http_lua_socket_keepalive_rev_handler(ngx_event_t *ev);
 static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
     ngx_http_lua_socket_pool_t *spool);
 static int ngx_http_lua_socket_upstream_destroy(lua_State *L);
@@ -329,12 +330,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);
-        lua_pushnil(L);
-        return 2;
+        return 1;
     }
 
     if (rc == NGX_ERROR) {
-        lua_pushinteger(L, 1);
+        lua_pushnil(L);
         lua_pushliteral(L, "error in get keepalive peer");
         return 2;
     }
@@ -760,8 +760,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
         lua_pushinteger(L, 1);
-        lua_pushnil(L);
-        return 2;
+        return 1;
     }
 
     /* rc == NGX_AGAIN */
@@ -847,8 +846,7 @@ ngx_http_lua_socket_tcp_connect_retval_handler(ngx_http_request_t *r,
     }
 
     lua_pushinteger(L, 1);
-    lua_pushnil(L);
-    return 2;
+    return 1;
 }
 
 
@@ -1513,8 +1511,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, len);
-        lua_pushnil(L);
-        return 2;
+        return 1;
     }
 
     /* rc == NGX_AGAIN */
@@ -1549,8 +1546,7 @@ ngx_http_lua_socket_tcp_send_retval_handler(ngx_http_request_t *r,
     }
 
     lua_pushinteger(L, u->request_len);
-    lua_pushnil(L);
-    return 2;
+    return 1;
 }
 
 
@@ -1625,8 +1621,7 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
     ngx_http_lua_socket_finalize(r, u);
 
     lua_pushinteger(L, 1);
-    lua_pushnil(L);
-    return 2;
+    return 1;
 }
 
 
@@ -2764,6 +2759,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_msec_t                           timeout;
     ngx_uint_t                           pool_size;
     int                                  n;
+    ngx_int_t                            rc;
+    ngx_buf_t                           *b;
 
     ngx_http_lua_socket_pool_item_t     *items, *item;
 
@@ -2798,6 +2795,14 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     if (u == NULL || c == NULL || u->ft_type || u->eof) {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    b = &u->buffer;
+
+    if (b->start && ngx_buf_size(b)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "unread data in buffer");
         return 2;
     }
 
@@ -2955,7 +2960,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     }
 
     c->write->handler = ngx_http_lua_socket_keepalive_dummy_handler;
-    c->read->handler = ngx_http_lua_socket_keepalive_close_handler;
+    c->read->handler = ngx_http_lua_socket_keepalive_rev_handler;
 
     c->data = item;
     c->idle = 1;
@@ -2968,12 +2973,16 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     item->reused = u->reused;
 
     if (c->read->ready) {
-        ngx_http_lua_socket_keepalive_close_handler(c->read);
+        rc = ngx_http_lua_socket_keepalive_close_handler(c->read);
+        if (rc != NGX_OK) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "connection in dubious state");
+            return 2;
+        }
     }
 
     lua_pushinteger(L, 1);
-    lua_pushnil(L);
-    return 2;
+    return 1;
 }
 
 
@@ -3093,6 +3102,13 @@ ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev)
 
 
 static void
+ngx_http_lua_socket_keepalive_rev_handler(ngx_event_t *ev)
+{
+    (void) ngx_http_lua_socket_keepalive_close_handler(ev);
+}
+
+
+static ngx_int_t
 ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
 {
     ngx_http_lua_socket_pool_item_t     *item;
@@ -3129,7 +3145,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
             goto close;
         }
 
-        return;
+        return NGX_OK;
     }
 
 close:
@@ -3152,6 +3168,8 @@ close:
     if (spool->active_connections == 0) {
         ngx_http_lua_socket_free_pool(ev->log, spool);
     }
+
+    return NGX_DECLINED;
 }
 
 
