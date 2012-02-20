@@ -532,7 +532,7 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^true nil true\nabort at (?:139|142)$
+^true nil true\nabort at (?:139|141)$
 
 
 
