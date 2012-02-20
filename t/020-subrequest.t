@@ -10,7 +10,7 @@ workers(1);
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -979,4 +979,19 @@ PUT
 hello, world
 --- no_error_log
 [error]
+
+
+
+=== TEST 37: recursive calls
+--- config
+    location /t {
+        content_by_lua '
+            ngx.location.capture("/t")
+        ';
+    }
+--- request
+    GET /t
+--- ignore_response
+--- error_log
+subrequests cycle while processing "/t"
 
