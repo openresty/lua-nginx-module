@@ -3357,12 +3357,12 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
         dd("copying input data chunk from %p: \"%.*s\"", u->buf_in,
             (int) (b->last - b->pos), b->pos);
 
-        b->pos = b->last;
-
         goto done;
     }
 
     /* nbufs > 1 */
+
+    dd("WARN: allocate a big memory: %d", (int) size);
 
     p = ngx_palloc(r->pool, size);
     if (p == NULL) {
