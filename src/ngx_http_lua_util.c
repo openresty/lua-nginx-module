@@ -587,8 +587,6 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     size_t           len;
     ngx_buf_t       *b;
 
-    ngx_http_lua_loc_conf_t     *llcf;
-
     ll = chain;
 
     for (cl = *chain; cl; cl = cl->next) {
@@ -607,10 +605,9 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_OK;
     }
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
     cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, len, llcf->tag);
+                                          &ctx->free_bufs, len,
+                                          (ngx_buf_tag_t) &ngx_http_lua_module);
 
     if (cl == NULL) {
         return NGX_ERROR;
@@ -2192,7 +2189,7 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         if ((size_t) (b->end - b->start) >= len) {
             ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
                     "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
-                    (off_t) (b->end - b->last), len, cl, b->start);
+                    (off_t) (b->end - b->start), len, cl, b->start);
 
             b->pos = b->start;
             b->last = b->start;
