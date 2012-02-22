@@ -22,7 +22,8 @@ jmp_buf ngx_http_lua_exception;
 int
 ngx_http_lua_atpanic(lua_State *L)
 {
-    const char              *s;
+    u_char                  *s;
+    size_t                   len = 0;
     ngx_http_request_t      *r;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -31,9 +32,9 @@ ngx_http_lua_atpanic(lua_State *L)
 
     /*  log Lua VM crashing reason to error log */
     if (r && r->connection && r->connection->log) {
-        s = luaL_checkstring(L, 1);
+        s = (u_char *) lua_tolstring(L, 1, &len);
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "(lua-atpanic) Lua VM crashed, reason: %s", s);
+                "(lua-atpanic) Lua VM crashed, reason: %*s", len, s);
 
     } else {
         dd("(lua-atpanic) can't output Lua VM crashing reason to error log"
