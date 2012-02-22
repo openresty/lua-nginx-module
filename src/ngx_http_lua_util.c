@@ -199,13 +199,13 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         *ref = luaL_ref(L, -2);
 
         if (*ref == LUA_NOREF) {
-            lua_settop(L, top);    /*  restore main trhead stack */
+            lua_settop(L, top);  /* restore main thread stack */
             return NULL;
         }
     }
 
-    /*  pop coroutine refernece on main thread's stack after anchoring it
-     *  in registery */
+    /*  pop coroutine reference on main thread's stack after anchoring it
+     *  in registry */
     lua_pop(L, 1);
 
     return cr;
@@ -488,21 +488,21 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua registry");
 
-    /* {{{ register table to anchor lua coroutines reliablly:
+    /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
     /* }}} */
 
-    /* create registry entry for the Lua request ctx data table */
+    /* create the registry entry for the Lua request ctx data table */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
 
-    /* create registry entry for the Lua socket connection pool table */
+    /* create the registry entry for the Lua socket connection pool table */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
 
-    /* create registry entry for the Lua request ctx data table */
+    /* create the registry entry for the Lua precompiled regex object cache */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REGEX_CACHE);
 
