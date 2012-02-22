@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc6] released on 13 February 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc14] released on 22 February 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -56,7 +56,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
             # MIME type determined by default_type:
             default_type 'text/plain';
  
-            content_by_lua "ngx.say('Hello,world!')"
+            content_by_lua "ngx.say('Hello,world!')";
         }
  
          location /nginx_var {
@@ -3201,7 +3201,7 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 Puts the current socket's connection into the cosocket built-in connection pool and keep it alive until other [[#tcpsock:connect|connect]] method calls request it or the associated maximal idle timeout is expired.
 
-The first optional argument, <code>timeout</code>, can be used to specify the maximal idle timeout for the current connection. If omitted, the default setting in the [[#lua_socket_keepalive_timeout|lua_socket_keepalive_timeout]] config directive will be used.
+The first optional argument, <code>timeout</code>, can be used to specify the maximal idle timeout (in milliseconds) for the current connection. If omitted, the default setting in the [[#lua_socket_keepalive_timeout|lua_socket_keepalive_timeout]] config directive will be used. If the <code>0</code> value is given, then the timeout interval is unlimited.
 
 The second optional argument, <code>size</code>, can be used to specify the maximal number of connections allowed in the connection pool for the current server (i.e., the current host-port pair or the unix domain socket file path). Note that the size of the connection pool cannot be changed once the pool is created. When this argument is omitted, the default setting in the [[#lua_socket_pool_size|lua_socket_pool_size]] config directive will be used.
 
@@ -3745,6 +3745,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 * [http://github.com/agentzh/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket
 * [http://github.com/agentzh/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket
+* [http://github.com/agentzh/lua-resty-mysql lua-resty-mysql] library based on ngx_lua cosocket
+* [http://github.com/agentzh/lua-resty-upload lua-resty-upload] library based on ngx_lua cosocket
 * [http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs Routing requests to different MySQL queries based on URI arguments]
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]
