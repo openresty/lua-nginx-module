@@ -1524,8 +1524,8 @@ Nginx API for Lua
     ("-") and the header names will be matched case-insensitively. If the
     response header is not present at all, "nil" will be returned.
 
-    This is particularly useful in the context of filter_header_by_lua and
-    filter_header_by_lua_file, for example,
+    This is particularly useful in the context of header_filter_by_lua and
+    header_filter_by_lua_file, for example,
 
         location /test {
             set $footer '';
@@ -3564,7 +3564,7 @@ Nginx API for Lua
     to make room for the current connection.
 
     Note that the cosocket connection pool is per Nginx worker process
-    rather than per Nginx server instance, so so size limit specified here
+    rather than per Nginx server instance, so the size limit specified here
     also applies to every single Nginx worker process.
 
     Idle connections in the pool will be monitored for any exceptional
