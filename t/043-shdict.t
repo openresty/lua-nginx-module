@@ -1019,3 +1019,27 @@ GET /test
 199 number
 10502 number
 nil nil
+
+
+
+=== TEST 43: expired entries (can be auto-removed by get), with flags set
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, 0.01, 255)
+            ngx.location.capture("/sleep/0.01")
+            local res, flags = dogs:get("foo")
+            ngx.say("res = ", res, ", flags = ", flags)
+        ';
+    }
+    location ~ '^/sleep/(.+)' {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+res = nil, flags = nil
+
