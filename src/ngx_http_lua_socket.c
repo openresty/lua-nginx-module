@@ -1778,7 +1778,6 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
 
@@ -1828,15 +1827,13 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
 #if defined(nginx_version) && nginx_version >= 1001004
     ngx_chain_update_chains(r->pool,
 #else
     ngx_chain_update_chains(
 #endif
                             &ctx->free_bufs, &ctx->busy_bufs, &u->request_bufs,
-                            llcf->tag);
+                            (ngx_buf_tag_t) &ngx_http_lua_module);
 
     u->request_sent = 0;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;

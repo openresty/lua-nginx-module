@@ -89,8 +89,6 @@ typedef struct {
 
 
 typedef struct {
-    ngx_buf_tag_t           tag;
-
     ngx_flag_t              force_read_body; /* whether force request body to
                                                 be read */
 
