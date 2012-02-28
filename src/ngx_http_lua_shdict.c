@@ -148,37 +148,32 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 
         /* hash == node->key */
 
-        do {
-            sd = (ngx_http_lua_shdict_node_t *) &node->color;
+        sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
-            rc = ngx_memn2cmp(kdata, sd->data, klen, (size_t) sd->key_len);
+        rc = ngx_memn2cmp(kdata, sd->data, klen, (size_t) sd->key_len);
 
-            if (rc == 0) {
-                ngx_queue_remove(&sd->queue);
-                ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        if (rc == 0) {
+            ngx_queue_remove(&sd->queue);
+            ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-                *sdp = sd;
+            *sdp = sd;
 
-                if (sd->expires != 0) {
-                    tp = ngx_timeofday();
+            if (sd->expires != 0) {
+                tp = ngx_timeofday();
 
-                    now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
-                    ms = (ngx_msec_int_t) (sd->expires - now);
+                now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
+                ms = (ngx_msec_int_t) (sd->expires - now);
 
-                    if (ms < 0) {
-                        /* already expired */
-                        return NGX_DONE;
-                    }
+                if (ms < 0) {
+                    /* already expired */
+                    return NGX_DONE;
                 }
-
-                return NGX_OK;
             }
 
-            node = (rc < 0) ? node->left : node->right;
+            return NGX_OK;
+        }
 
-        } while (node != sentinel && hash == node->key);
-
-        break;
+        node = (rc < 0) ? node->left : node->right;
     }
 
     *sdp = NULL;
