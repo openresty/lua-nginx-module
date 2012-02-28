@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc15
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 23
+    This document describes ngx_lua v0.5.0rc16
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 28
     February 2012.
 
 Synopsis
@@ -3820,7 +3820,7 @@ Known Issues
     variables. See Data Sharing within an Nginx Worker for the reasons
     behind this.
 
-  Locations With [[HttpEchoModule]] Directives
+  Locations Configured by Subrequest Directives of Other Modules
     The ngx.location.capture and ngx.location.capture_multi directives
     cannot capture locations that include the echo_location,
     echo_location_async, echo_subrequest, or echo_subrequest_async
@@ -4054,9 +4054,9 @@ Bugs and Patches
 
 TODO
   Short Term
-    *   make <tcpsock:send|/"tcpsock:send"> method accept (nested) Lua
-        tables of strings as its first argument to save string concatenation
-        operations on the Lua user land.
+    *   implement the "ngx.sleep(time)" Lua API.
+
+    *   implement the "ngx.worker.get_pid()" Lua API.
 
     *   implement LuaSocket UDP API
         (<http://w3.impa.br/~diego/software/luasocket/udp.html>) in our
@@ -4474,16 +4474,19 @@ Copyright and License
 See Also
     *   lua-resty-memcached
         (<http://github.com/agentzh/lua-resty-memcached>) library based on
-        ngx_lua cosocket
+        ngx_lua cosocket.
 
     *   lua-resty-redis (<http://github.com/agentzh/lua-resty-redis>)
-        library based on ngx_lua cosocket
+        library based on ngx_lua cosocket.
 
     *   lua-resty-mysql (<http://github.com/agentzh/lua-resty-mysql>)
-        library based on ngx_lua cosocket
+        library based on ngx_lua cosocket.
 
     *   lua-resty-upload (<http://github.com/agentzh/lua-resty-upload>)
-        library based on ngx_lua cosocket
+        library based on ngx_lua cosocket.
+
+    *   lua-resty-string (<http://github.com/agentzh/lua-resty-string>)
+        library based on LuaJIT FFI (<http://luajit.org/ext_ffi.html>).
 
     *   Routing requests to different MySQL queries based on URI arguments
         (<http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs>)

@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc15](https://github.com/chaoslawful/lua-nginx-module/tags) released on 23 February 2012.
+This document describes ngx_lua [v0.5.0rc16](https://github.com/chaoslawful/lua-nginx-module/tags) released on 28 February 2012.
 
 Synopsis
 ========
@@ -3501,8 +3501,8 @@ It is recommended to always place the following piece of code at the end of Lua 
 
 Assuming the current Lua module is named `foo.bar`, this will guarantee that local variables in module `foo.bar` functions have been declared as "local". It prevents undesirable race conditions while accessing such variables. See [Data Sharing within an Nginx Worker](http://wiki.nginx.org/HttpLuaModule#Data_Sharing_within_an_Nginx_Worker) for the reasons behind this.
 
-Locations With [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule) Directives
---------------------------------------------
+Locations Configured by Subrequest Directives of Other Modules
+--------------------------------------------------------------
 The [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) directives cannot capture locations that include the [echo_location](http://wiki.nginx.org/HttpEchoModule#echo_location), [echo_location_async](http://wiki.nginx.org/HttpEchoModule#echo_location_async), [echo_subrequest](http://wiki.nginx.org/HttpEchoModule#echo_subrequest), or [echo_subrequest_async](http://wiki.nginx.org/HttpEchoModule#echo_subrequest_async) directives.
 
 
@@ -3695,7 +3695,8 @@ TODO
 
 Short Term
 ----------
-* make [tcpsock:send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
+* implement the `ngx.sleep(time)` Lua API.
+* implement the `ngx.worker.get_pid()` Lua API.
 * implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
 * implement the `ngx.re.split` method.
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_header), [ngx.header.HEADER](http://wiki.nginx.org/HttpLuaModule#ngx.header.HEADER), and etc.
@@ -3876,10 +3877,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
-* [lua-resty-memcached](http://github.com/agentzh/lua-resty-memcached) library based on ngx_lua cosocket
-* [lua-resty-redis](http://github.com/agentzh/lua-resty-redis) library based on ngx_lua cosocket
-* [lua-resty-mysql](http://github.com/agentzh/lua-resty-mysql) library based on ngx_lua cosocket
-* [lua-resty-upload](http://github.com/agentzh/lua-resty-upload) library based on ngx_lua cosocket
+* [lua-resty-memcached](http://github.com/agentzh/lua-resty-memcached) library based on ngx_lua cosocket.
+* [lua-resty-redis](http://github.com/agentzh/lua-resty-redis) library based on ngx_lua cosocket.
+* [lua-resty-mysql](http://github.com/agentzh/lua-resty-mysql) library based on ngx_lua cosocket.
+* [lua-resty-upload](http://github.com/agentzh/lua-resty-upload) library based on ngx_lua cosocket.
+* [lua-resty-string](http://github.com/agentzh/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
