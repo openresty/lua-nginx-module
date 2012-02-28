@@ -536,13 +536,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
     sr->header_in = r->header_in;
 
-#if 1
-    /* XXX work-around a bug in ngx_http_subrequest */
-    if (r->headers_in.headers.last == &r->headers_in.headers.part) {
-        sr->headers_in.headers.last = &sr->headers_in.headers.part;
-    }
-#endif
-
     if (body) {
         sr->request_body = body;
 
