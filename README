@@ -1040,6 +1040,14 @@ Nginx API for Lua
     while Lua booleans result in literal "true" or "false" strings. And the
     "ngx.null" constant will yield the "null" string output.
 
+    There is a hard-coded length limitation on the error messages in the
+    Nginx core. It is 2048 bytes at most, including the trailing newlines
+    and the leading timestamps. You can manually modify this limit by
+    modifying the "NGX_MAX_ERROR_STR" macro definition in the
+    "src/core/ngx_log.h" file in the Nginx source tree. If the message size
+    exceeds this limit, the Nginx core will truncate the message text
+    automatically.
+
   ngx.ctx
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
@@ -1392,6 +1400,17 @@ Nginx API for Lua
     responses that cannot be handled properly in Lua code. Original request
     headers should be ignored by setting proxy_pass_request_headers to "off"
     in subrequest locations.
+
+    There is a hard-coded upper limit on the number of concurrent
+    subrequests every main request. In older versions of Nginx, the limit is
+    50, which is then increased to 200 in recent Nginx "1.1.x" releases. You
+    can manually edit this limit by modifying the definition of the
+    "NGX_HTTP_MAX_SUBREQUESTS" macro in the
+    "nginx/src/http/ngx_http_request.h" file in the Nginx source tree. When
+    you are exceeding this limit, you will get the following error message
+    in your "error.log" file:
+
+        [error] 13983#0: *1 subrequests cycle while processing "/uri"
 
     Please also refer to restrictions on capturing locations that include
     Echo Module directives.
@@ -2313,6 +2332,14 @@ Nginx API for Lua
 
     The "log_level" argument can take constants like "ngx.ERR" and
     "ngx.WARN". Check out Nginx log level constants for details.
+
+    There is a hard-coded length limitation on the error messages in the
+    Nginx core. It is 2048 bytes at most, including the trailing newlines
+    and the leading timestamps. You can manually modify this limit by
+    modifying the "NGX_MAX_ERROR_STR" macro definition in the
+    "src/core/ngx_log.h" file in the Nginx source tree. If the message size
+    exceeds this limit, the Nginx core will truncate the message text
+    automatically.
 
   ngx.flush
     syntax: *ngx.flush(wait?)*

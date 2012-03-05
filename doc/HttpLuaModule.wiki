@@ -944,6 +944,8 @@ It is equivalent to
 
 Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
 
+There is a hard-coded length limitation on the error messages in the Nginx core. It is <code>2048</code> bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
+
 == ngx.ctx ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -1294,6 +1296,12 @@ subrequest responses. For example, when using the standard <code>ngx_proxy</code
 subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [[HttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] to <code>off</code> in subrequest locations.
+
+There is a hard-coded upper limit on the number of concurrent subrequests every main request. In older versions of Nginx, the limit is <code>50</code>, which is then increased to <code>200</code> in recent Nginx <code>1.1.x</code> releases. You can manually edit this limit by modifying the definition of the <code>NGX_HTTP_MAX_SUBREQUESTS</code> macro in the <code>nginx/src/http/ngx_http_request.h</code> file in the Nginx source tree. When you are exceeding this limit, you will get the following error message in your <code>error.log</code> file:
+
+<geshi lang="text">
+    [error] 13983#0: *1 subrequests cycle while processing "/uri"
+</geshi>
 
 Please also refer to restrictions on [[#Locations_With_HttpEchoModule_Directives|capturing locations that include Echo Module directives]].
 
@@ -2168,6 +2176,8 @@ Log arguments concatenated to error.log with the given logging level.
 Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> string while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> string outputs. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
 
 The <code>log_level</code> argument can take constants like <code>ngx.ERR</code> and <code>ngx.WARN</code>. Check out [[#Nginx log level constants|Nginx log level constants]] for details.
+
+There is a hard-coded length limitation on the error messages in the Nginx core. It is <code>2048</code> bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
 
 == ngx.flush ==
 '''syntax:''' ''ngx.flush(wait?)''
