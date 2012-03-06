@@ -505,6 +505,8 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
         sd->expires = 1;
     }
 
+    ngx_http_lua_shdict_expire(ctx, 0);
+
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return 0;
