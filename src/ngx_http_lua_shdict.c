@@ -124,8 +124,8 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 {
     ngx_int_t                    rc;
     ngx_time_t                  *tp;
-    ngx_msec_t                   now;
-    ngx_msec_int_t               ms;
+    uint64_t                     now;
+    int64_t                      ms;
     ngx_rbtree_node_t           *node, *sentinel;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
@@ -159,14 +159,18 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 
             *sdp = sd;
 
+            dd("node expires: %lld", (long long) sd->expires);
+
             if (sd->expires != 0) {
                 tp = ngx_timeofday();
 
-                now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
-                ms = (ngx_msec_int_t) (sd->expires - now);
+                now = (uint64_t) tp->sec * 1000 + tp->msec;
+                ms = sd->expires - now;
+
+                dd("time to live: %lld", (long long) ms);
 
                 if (ms < 0) {
-                    /* already expired */
+                    dd("node already expired");
                     return NGX_DONE;
                 }
             }
@@ -187,16 +191,16 @@ static int
 ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
 {
     ngx_time_t                  *tp;
-    ngx_msec_t                   now;
+    uint64_t                     now;
     ngx_queue_t                 *q;
-    ngx_msec_int_t               ms;
+    int64_t                      ms;
     ngx_rbtree_node_t           *node;
     ngx_http_lua_shdict_node_t  *sd;
     int                          freed = 0;
 
     tp = ngx_timeofday();
 
-    now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
+    now = (uint64_t) tp->sec * 1000 + tp->msec;
 
     /*
      * n == 1 deletes one or two expired entries
@@ -220,7 +224,7 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
                 return freed;
             }
 
-            ms = (ngx_msec_int_t) (sd->expires - now);
+            ms = sd->expires - now;
             if (ms > 0) {
                 return freed;
             }
@@ -717,8 +721,8 @@ replace:
 
             if (exptime > 0) {
                 tp = ngx_timeofday();
-                sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
-                        + (ngx_msec_t) (exptime * 1000);
+                sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
+                        + exptime * 1000;
 
             } else {
                 sd->expires = 0;
@@ -816,8 +820,8 @@ allocated:
 
     if (exptime > 0) {
         tp = ngx_timeofday();
-        sd->expires = (ngx_msec_t) (tp->sec * 1000 + tp->msec)
-                + (ngx_msec_t) (exptime * 1000);
+        sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
+                + exptime * 1000;
 
     } else {
         sd->expires = 0;

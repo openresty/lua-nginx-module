@@ -14,6 +14,7 @@ plan tests => repeat_each() * (blocks() * 2 + 5);
 no_long_string();
 #master_on();
 #workers(2);
+
 run_tests();
 
 __DATA__
@@ -532,7 +533,7 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^true nil true\nabort at (?:139|141)$
+^true nil true\nabort at (?:139|140)$
 
 
 
@@ -1066,7 +1067,6 @@ res = nil, flags = nil
             ngx.say(val, " ", type(val))
             val = dogs:get("bah")
             ngx.say(val, " ", type(val))
-
         ';
     }
 --- request
