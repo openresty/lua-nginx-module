@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc16] released on 28 February 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc17] released on 6 March 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2770,6 +2770,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.replace|replace]]
 * [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.delete|delete]]
+* [[#ngx.shared.DICT.flush_all|flush_all]]
 
 Here is an example:
 
@@ -2940,6 +2941,17 @@ If the original value is not a valid Lua number in the dictionary, it will retur
 The <code>value</code> argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.flush_all ==
+'''syntax:''' ''ngx.shared.DICT:flush_all()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Flushes out all the items in the dictionary.
+
+This feature was first introduced in the <code>v0.5.0rc17</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 

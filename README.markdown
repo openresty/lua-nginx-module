@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc16](https://github.com/chaoslawful/lua-nginx-module/tags) released on 28 February 2012.
+This document describes ngx_lua [v0.5.0rc17](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 March 2012.
 
 Synopsis
 ========
@@ -2863,6 +2863,7 @@ The resulting object `dict` has the following methods:
 * [replace](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.replace)
 * [incr](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.incr)
 * [delete](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.delete)
+* [flush_all](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.flush_all)
 
 Here is an example:
 
@@ -3039,6 +3040,18 @@ If the original value is not a valid Lua number in the dictionary, it will retur
 The `value` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
 This feature was first introduced in the `v0.3.1rc22` release.
+
+See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
+ngx.shared.DICT.flush_all
+-------------------------
+**syntax:** *ngx.shared.DICT:flush_all()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Flushes out all the items in the dictionary.
+
+This feature was first introduced in the `v0.5.0rc17` release.
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 

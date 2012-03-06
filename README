@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc16
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 28
-    February 2012.
+    This document describes ngx_lua v0.5.0rc17
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 6
+    March 2012.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -3003,6 +3003,8 @@ Nginx API for Lua
 
     *   delete
 
+    *   flush_all
+
     Here is an example:
 
         http {
@@ -3221,6 +3223,18 @@ Nginx API for Lua
     or floating-point numbers.
 
     This feature was first introduced in the "v0.3.1rc22" release.
+
+    See also ngx.shared.DICT.
+
+  ngx.shared.DICT.flush_all
+    syntax: *ngx.shared.DICT:flush_all()*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Flushes out all the items in the dictionary.
+
+    This feature was first introduced in the "v0.5.0rc17" release.
 
     See also ngx.shared.DICT.
 
