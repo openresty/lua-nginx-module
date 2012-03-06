@@ -19,6 +19,7 @@ static int ngx_http_lua_shdict_add(lua_State *L);
 static int ngx_http_lua_shdict_replace(lua_State *L);
 static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
+static int ngx_http_lua_shdict_flush_all(lua_State *L);
 
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
@@ -272,6 +273,10 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_pushcfunction(L, ngx_http_lua_shdict_delete);
         lua_setfield(L, -2, "delete");
 
+        lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
+        lua_setfield(L, -2, "flush_all");
+
+
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
 
@@ -464,6 +469,57 @@ ngx_http_lua_shdict_delete(lua_State *L)
 
     return ngx_http_lua_shdict_set_helper(L, 0);
 }
+
+
+static int
+ngx_http_lua_shdict_flush_all(lua_State *L)
+{
+    ngx_time_t                  *tp;
+    ngx_msec_t                   now;
+    ngx_queue_t                 *q;
+    ngx_http_lua_shdict_node_t  *sd;
+    int                          flushed = 0, n;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_shm_zone_t              *zone;
+
+    n = lua_gettop(L);
+
+    if (n != 1) {
+        return luaL_error(L, "expecting 1 arguments, "
+                "but seen %d", n);
+    }
+
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+
+    zone = lua_touserdata(L, 1);
+    if (zone == NULL) {
+        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+    }
+
+    ctx = zone->data;
+
+    tp = ngx_timeofday();
+
+    now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    for(q = ngx_queue_last(&ctx->sh->queue);
+        q != ngx_queue_sentinel(&ctx->sh->queue);
+        q = ngx_queue_prev(q)) {
+
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+
+        sd->expires = now -1;
+
+        flushed++;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return flushed++;
+}
+
 
 
 static int
