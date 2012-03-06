@@ -257,3 +257,27 @@ n = 4
 --- no_error_log
 [error]
 
+
+
+=== TEST 12: shdict metatable
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local mt = dogs.__index
+            local n = 0
+            for k, v in pairs(mt) do
+                n = n + 1
+            end
+            ngx.say("n = ", n)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+n = 8
+--- no_error_log
+[error]
+

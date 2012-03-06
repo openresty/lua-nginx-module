@@ -253,7 +253,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 7 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 8 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
@@ -275,7 +275,6 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
         lua_setfield(L, -2, "flush_all");
-
 
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
@@ -474,18 +473,16 @@ ngx_http_lua_shdict_delete(lua_State *L)
 static int
 ngx_http_lua_shdict_flush_all(lua_State *L)
 {
-    ngx_time_t                  *tp;
-    ngx_msec_t                   now;
     ngx_queue_t                 *q;
     ngx_http_lua_shdict_node_t  *sd;
-    int                          flushed = 0, n;
+    int                          n;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_shm_zone_t              *zone;
 
     n = lua_gettop(L);
 
     if (n != 1) {
-        return luaL_error(L, "expecting 1 arguments, "
+        return luaL_error(L, "expecting 1 argument, "
                 "but seen %d", n);
     }
 
@@ -498,28 +495,20 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
 
     ctx = zone->data;
 
-    tp = ngx_timeofday();
-
-    now = (ngx_msec_t) (tp->sec * 1000 + tp->msec);
-
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    for(q = ngx_queue_last(&ctx->sh->queue);
-        q != ngx_queue_sentinel(&ctx->sh->queue);
-        q = ngx_queue_prev(q)) {
-
+    for (q = ngx_queue_head(&ctx->sh->queue);
+         q != ngx_queue_sentinel(&ctx->sh->queue);
+         q = ngx_queue_next(q))
+    {
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
-
-        sd->expires = now -1;
-
-        flushed++;
+        sd->expires = 1;
     }
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-    return flushed++;
+    return 0;
 }
-
 
 
 static int

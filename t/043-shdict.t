@@ -1043,3 +1043,37 @@ GET /test
 --- response_body
 res = nil, flags = nil
 
+
+
+=== TEST 44: flush_all
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+
+            dogs:flush_all()
+
+            val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+
+        ';
+    }
+--- request
+GET /t
+--- response_body
+32 number
+10502 number
+nil nil
+nil nil
+
