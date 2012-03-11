@@ -464,20 +464,36 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return luaL_error(L, "already seen eof");
     }
 
-    buf = ngx_calloc_buf(r->pool);
-    if (buf == NULL) {
-        return luaL_error(L, "memory allocation error");
+    if (ctx->buffering) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua http 1.0 buffering makes ngx.flush() a no-op");
+
+        return 0;
     }
 
-    buf->flush = 1;
+    if (ctx->flush_buf) {
+        cl = ctx->flush_buf;
 
-    cl = ngx_alloc_chain_link(r->pool);
-    if (cl == NULL) {
-        return luaL_error(L, "out of memory");
+    } else {
+        dd("allocating new flush buf");
+        buf = ngx_calloc_buf(r->pool);
+        if (buf == NULL) {
+            return luaL_error(L, "memory allocation error");
+        }
+
+        buf->flush = 1;
+
+        dd("allocating new flush chain");
+        cl = ngx_alloc_chain_link(r->pool);
+        if (cl == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        cl->next = NULL;
+        cl->buf = buf;
+
+        ctx->flush_buf = cl;
     }
-
-    cl->next = NULL;
-    cl->buf = buf;
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 

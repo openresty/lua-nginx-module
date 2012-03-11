@@ -19,6 +19,7 @@ force=$2
 
 time ngx-build $force $version \
             --with-cc-opt=$'-I/opt/pcre821jit/include' \
+            --with-http_realip_module \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \

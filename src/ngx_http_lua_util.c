@@ -373,11 +373,16 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return rc;
     }
 
+    if (!ctx->buffering && !ctx->headers_sent
+        && r->http_version < NGX_HTTP_VERSION_11)
+    {
+        ctx->buffering = 1;
+    }
+
     if (r->header_only) {
         ctx->eof = 1;
 
-        if (!ctx->headers_sent && r->http_version < NGX_HTTP_VERSION_11)
-        {
+        if (ctx->buffering) {
             return ngx_http_lua_send_http10_headers(r, ctx);
         }
 
@@ -385,7 +390,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     if (in == NULL) {
-        if (!ctx->headers_sent && r->http_version < NGX_HTTP_VERSION_11) {
+        if (ctx->buffering) {
             rc = ngx_http_lua_send_http10_headers(r, ctx);
             if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                 return rc;
@@ -427,7 +432,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     /* in != NULL */
 
-    if (r->http_version < NGX_HTTP_VERSION_11 && !ctx->headers_sent) {
+    if (ctx->buffering) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua buffering output bufs for the HTTP 1.0 request");
 

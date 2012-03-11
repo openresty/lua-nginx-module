@@ -14,7 +14,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
 #no_long_string();
@@ -95,13 +95,15 @@ hiya
 
 
 
-=== TEST 5: http 1.0
+=== TEST 5: http 1.0 (sync)
 --- config
     location /test {
         content_by_lua '
             ngx.say("hello, world")
             ngx.flush(true)
             ngx.say("hiya")
+            ngx.flush(true)
+            ngx.say("blah")
         ';
     }
 --- request
@@ -109,11 +111,39 @@ GET /test HTTP/1.0
 --- response_body
 hello, world
 hiya
+blah
+--- timeout: 5
+--- error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
+
+
+
+=== TEST 6: http 1.0 (async)
+--- config
+    location /test {
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(false)
+            ngx.say("hiya")
+            ngx.flush(false)
+            ngx.say("blah")
+        ';
+    }
+--- request
+GET /test HTTP/1.0
+--- response_body
+hello, world
+hiya
+blah
+--- error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
 --- timeout: 5
 
 
 
-=== TEST 6: flush wait - big data
+=== TEST 7: flush wait - big data
 --- config
     location /test {
         content_by_lua '
@@ -131,7 +161,7 @@ hiya
 
 
 
-=== TEST 7: flush wait - content
+=== TEST 8: flush wait - content
 --- config
     location /test {
         content_by_lua '

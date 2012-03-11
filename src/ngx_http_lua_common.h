@@ -153,6 +153,7 @@ typedef struct {
     ngx_chain_t             *free_bufs;
     ngx_chain_t             *busy_bufs;
     ngx_chain_t             *free_recv_bufs;
+    ngx_chain_t             *flush_buf;
 
     ngx_http_cleanup_pt     *cleanup;
 
@@ -215,6 +216,7 @@ typedef struct {
     unsigned         socket_ready:1;
 
     unsigned         aborted:1;
+    unsigned         buffering:1;
 
 } ngx_http_lua_ctx_t;
 
