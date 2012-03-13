@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 our $HtmlDir = html_dir;
 
@@ -13,8 +13,8 @@ $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
-no_long_string();
-no_diff();
+#no_long_string();
+#no_diff();
 run_tests();
 
 __DATA__
@@ -185,6 +185,8 @@ GET /t
 failed to connect: no resolver defined to resolve "agentzh.org"
 connected: nil
 failed to send request: closed
+--- error_log
+attempt to send data on a closed socket:
 
 
 
@@ -343,7 +345,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -1680,4 +1682,138 @@ GET /t
 --- ignore_response
 --- error_log
 bad argument #1 to 'send' (bad data type userdata found)
+
+
+
+=== TEST 29: cosocket before location capture (tcpsock:send did not clear u->waiting)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "flush_all\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+
+            local resp = ngx.location.capture("/memc")
+            if type(resp) ~= "table" then
+                ngx.say("bad resp: type ", type(resp), ": ", resp)
+                return
+            end
+
+            ngx.print("subrequest: ", resp.status, ", ", resp.body)
+        ';
+    }
+
+    location /memc {
+        set $memc_cmd flush_all;
+        memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+request sent: 11
+received: OK
+close: 1 nil
+subrequest: 200, OK\r
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 30: CR in a line
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo "foo\r\rbar\rbaz";
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 13
+received: Connection: close
+received: 
+received: foobarbaz
+failed to receive a line: closed []
+close: nil closed
+--- SKIP
 

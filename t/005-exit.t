@@ -56,8 +56,11 @@ GET /lua
     }
 --- request
 GET /lua
---- error_code:
---- response_body:
+--- error_log
+attempt to call ngx.exit after sending out the headers
+--- no_error_log
+alert
+--- ignore_response
 
 
 

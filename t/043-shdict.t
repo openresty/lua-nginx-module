@@ -14,6 +14,7 @@ plan tests => repeat_each() * (blocks() * 2 + 5);
 no_long_string();
 #master_on();
 #workers(2);
+
 run_tests();
 
 __DATA__
@@ -532,7 +533,7 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^true nil true\nabort at (?:139|142)$
+^true nil true\nabort at (?:139|140)$
 
 
 
@@ -1019,3 +1020,60 @@ GET /test
 199 number
 10502 number
 nil nil
+
+
+
+=== TEST 43: expired entries (can be auto-removed by get), with flags set
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, 0.01, 255)
+            ngx.location.capture("/sleep/0.01")
+            local res, flags = dogs:get("foo")
+            ngx.say("res = ", res, ", flags = ", flags)
+        ';
+    }
+    location ~ '^/sleep/(.+)' {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+res = nil, flags = nil
+
+
+
+=== TEST 44: flush_all
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+
+            dogs:flush_all()
+
+            val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+        ';
+    }
+--- request
+GET /t
+--- response_body
+32 number
+10502 number
+nil nil
+nil nil
+

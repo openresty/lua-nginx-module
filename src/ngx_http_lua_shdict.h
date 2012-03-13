@@ -10,7 +10,7 @@ typedef struct {
     u_char                       dummy;
     u_short                      key_len;
     ngx_queue_t                  queue;
-    ngx_msec_t                   expires;
+    uint64_t                     expires;
     uint8_t                      value_type;
     uint32_t                     value_len;
     uint32_t                     user_flags;

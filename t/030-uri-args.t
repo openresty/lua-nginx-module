@@ -982,3 +982,23 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 
+
+
+=== TEST 41: rewrite uri and args (multi-value args)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        #rewrite ^ /bar?hello? break;
+        rewrite_by_lua '
+            ngx.req.set_uri_args({a = 3, b = {5, 6}})
+            ngx.req.set_uri("/bar")
+        ';
+        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+    }
+--- request
+    GET /foo?world
+--- response_body
+HTTP/1.0 a=3&b=5&b=6
+

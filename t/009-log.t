@@ -6,7 +6,7 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('debug'); # to ensure any log-level can be outputed
 
-repeat_each(1);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2 + 2);
 
@@ -268,4 +268,20 @@ GET /log
 foo: 32
 --- response_body
 hi
+
+
+
+=== TEST 16: ngx.log() big data
+--- config
+    location /log {
+        content_by_lua '
+            ngx.log(ngx.ERR, "a" .. string.rep("h", 2000) .. "b")
+            ngx.say("hi")
+        ';
+    }
+--- request
+GET /log
+--- response_headers
+--- error_log eval
+[qr/ah{2000}b/]
 

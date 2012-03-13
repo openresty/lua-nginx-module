@@ -536,13 +536,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
     sr->header_in = r->header_in;
 
-#if 1
-    /* XXX work-around a bug in ngx_http_subrequest */
-    if (r->headers_in.headers.last == &r->headers_in.headers.part) {
-        sr->headers_in.headers.last = &sr->headers_in.headers.part;
-    }
-#endif
-
     if (body) {
         sr->request_body = body;
 
@@ -552,6 +545,19 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         if (rc != NGX_OK) {
             return NGX_ERROR;
         }
+
+    } else if (method != NGX_HTTP_PUT && method != NGX_HTTP_POST
+               && r->headers_in.content_length_n > 0)
+    {
+
+        rc = ngx_http_lua_set_content_length_header(sr, 0);
+        if (rc != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+#if 1
+        sr->request_body = NULL;
+#endif
     }
 
     sr->method = method;
@@ -792,7 +798,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ngx_str_t                     *body_str;
     u_char                        *p;
     ngx_chain_t                   *cl;
-    ngx_http_lua_loc_conf_t       *llcf;
 
     if (ctx->run_post_subrequest) {
         return rc;
@@ -894,7 +899,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     if (ctx->body) {
-        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
 #if defined(nginx_version) && nginx_version >= 1001004
         ngx_chain_update_chains(r->pool,
@@ -902,7 +906,8 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         ngx_chain_update_chains(
 #endif
                                 &pr_ctx->free_bufs, &pr_ctx->busy_bufs,
-                                &ctx->body, llcf->tag);
+                                &ctx->body,
+                                (ngx_buf_tag_t) &ngx_http_lua_module);
 
         dd("free bufs: %p", pr_ctx->free_bufs);
     }

@@ -44,7 +44,10 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_msec_t                       timeout;
     ngx_http_upstream_resolved_t    *resolved;
 
-    ngx_buf_t                        buffer;
+    ngx_chain_t                     *bufs_in; /* input data buffers */
+    ngx_chain_t                     *buf_in; /* last input data buffer */
+    ngx_buf_t                        buffer; /* receive buffer */
+
     size_t                           length;
     size_t                           rest;
 
@@ -53,8 +56,6 @@ struct ngx_http_lua_socket_upstream_s {
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
-
-    luaL_Buffer                      luabuf;
 
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
     void                            *input_filter_ctx;
@@ -65,7 +66,6 @@ struct ngx_http_lua_socket_upstream_s {
 
     ngx_uint_t                       reused;
 
-    unsigned                         luabuf_inited:1;
     unsigned                         request_sent:1;
 
     unsigned                         waiting:1;

@@ -274,10 +274,11 @@ Fooy: cony1, cony2
     }
 --- request
     GET /lua
---- response_headers
-Content-Type:
---- error_code:
---- response_body:
+--- ignore_response
+--- error_log
+attempt to set ngx.header.HEADER after sending out response headers
+--- no_error_log eval
+["alert", "warn"]
 
 
 

@@ -199,13 +199,13 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         *ref = luaL_ref(L, -2);
 
         if (*ref == LUA_NOREF) {
-            lua_settop(L, top);    /*  restore main trhead stack */
+            lua_settop(L, top);  /* restore main thread stack */
             return NULL;
         }
     }
 
-    /*  pop coroutine refernece on main thread's stack after anchoring it
-     *  in registery */
+    /*  pop coroutine reference on main thread's stack after anchoring it
+     *  in registry */
     lua_pop(L, 1);
 
     return cr;
@@ -373,11 +373,16 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return rc;
     }
 
+    if (!ctx->buffering && !ctx->headers_sent
+        && r->http_version < NGX_HTTP_VERSION_11)
+    {
+        ctx->buffering = 1;
+    }
+
     if (r->header_only) {
         ctx->eof = 1;
 
-        if (!ctx->headers_sent && r->http_version < NGX_HTTP_VERSION_11)
-        {
+        if (ctx->buffering) {
             return ngx_http_lua_send_http10_headers(r, ctx);
         }
 
@@ -385,7 +390,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     if (in == NULL) {
-        if (!ctx->headers_sent && r->http_version < NGX_HTTP_VERSION_11) {
+        if (ctx->buffering) {
             rc = ngx_http_lua_send_http10_headers(r, ctx);
             if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                 return rc;
@@ -427,7 +432,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     /* in != NULL */
 
-    if (r->http_version < NGX_HTTP_VERSION_11 && !ctx->headers_sent) {
+    if (ctx->buffering) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua buffering output bufs for the HTTP 1.0 request");
 
@@ -488,21 +493,21 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua registry");
 
-    /* {{{ register table to anchor lua coroutines reliablly:
+    /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
     /* }}} */
 
-    /* create registry entry for the Lua request ctx data table */
+    /* create the registry entry for the Lua request ctx data table */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
 
-    /* create registry entry for the Lua socket connection pool table */
+    /* create the registry entry for the Lua socket connection pool table */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
 
-    /* create registry entry for the Lua request ctx data table */
+    /* create the registry entry for the Lua precompiled regex object cache */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REGEX_CACHE);
 
@@ -587,8 +592,6 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     size_t           len;
     ngx_buf_t       *b;
 
-    ngx_http_lua_loc_conf_t     *llcf;
-
     ll = chain;
 
     for (cl = *chain; cl; cl = cl->next) {
@@ -607,10 +610,9 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_OK;
     }
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
     cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, len, llcf->tag);
+                                          &ctx->free_bufs, len,
+                                          (ngx_buf_tag_t) &ngx_http_lua_module);
 
     if (cl == NULL) {
         return NGX_ERROR;
@@ -903,6 +905,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
+    ngx_chain_t                 *cl;
 
     ngx_http_lua_socket_upstream_t      *u;
 
@@ -1034,6 +1037,23 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             return rc;
         }
 
+        if (ctx->busy_bufs) {
+            cl = NULL;
+
+            dd("updating chains...");
+
+#if nginx_version >= 1001004
+            ngx_chain_update_chains(r->pool,
+#else
+            ngx_chain_update_chains(
+#endif
+                                    &ctx->free_bufs, &ctx->busy_bufs, &cl,
+                                    (ngx_buf_tag_t) &ngx_http_lua_module);
+
+            dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
+                &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
+        }
+
         if (c->buffered) {
 
             if (!wev->delayed) {
@@ -1066,6 +1086,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     if (!ctx->socket_busy && ctx->socket_ready) {
 
         dd("resuming socket api");
+
+        dd("setting socket_ready to 0");
 
         ctx->socket_ready = 0;
 
@@ -1119,6 +1141,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 #endif
 
         nret = ctx->nsubreqs;
+
+        dd("location capture nret: %d", (int) nret);
 
         goto run;
     }
@@ -1227,18 +1251,10 @@ ngx_http_lua_dump_postponed(ngx_http_request_t *r)
 
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                 "postponed request for %V: "
-
-#if defined(nginx_version) && nginx_version >= 8011
                 "c:%d, "
-#endif
-
                 "a:%d, i:%d, r:%V, out:%V",
                 &r->uri,
-
-#if defined(nginx_version) && nginx_version >= 8011
                 r->main->count,
-#endif
-
                 r == r->connection->data, i,
                 pr->request ? &pr->request->uri : &nil_str, &out);
     }
@@ -2178,7 +2194,7 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         if ((size_t) (b->end - b->start) >= len) {
             ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
                     "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
-                    (off_t) (b->end - b->last), len, cl, b->start);
+                    (off_t) (b->end - b->start), len, cl, b->start);
 
             b->pos = b->start;
             b->last = b->start;

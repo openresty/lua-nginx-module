@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc5] released on 7 February 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc17] released on 6 March 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -56,7 +56,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
             # MIME type determined by default_type:
             default_type 'text/plain';
  
-            content_by_lua "ngx.say('Hello,world!')"
+            content_by_lua "ngx.say('Hello,world!')";
         }
  
          location /nginx_var {
@@ -942,7 +942,9 @@ It is equivalent to
     ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
 </geshi>
 
-Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings.
+Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
+
+There is a hard-coded length limitation on the error messages in the Nginx core. It is <code>2048</code> bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
 
 == ngx.ctx ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -1295,6 +1297,12 @@ subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [[HttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] to <code>off</code> in subrequest locations.
 
+There is a hard-coded upper limit on the number of concurrent subrequests every main request. In older versions of Nginx, the limit is <code>50</code>, which is then increased to <code>200</code> in recent Nginx <code>1.1.x</code> releases. You can manually edit this limit by modifying the definition of the <code>NGX_HTTP_MAX_SUBREQUESTS</code> macro in the <code>nginx/src/http/ngx_http_request.h</code> file in the Nginx source tree. When you are exceeding this limit, you will get the following error message in your <code>error.log</code> file:
+
+<geshi lang="text">
+    [error] 13983#0: *1 subrequests cycle while processing "/uri"
+</geshi>
+
 Please also refer to restrictions on [[#Locations_With_HttpEchoModule_Directives|capturing locations that include Echo Module directives]].
 
 == ngx.location.capture_multi ==
@@ -1428,7 +1436,7 @@ Reading <code>ngx.header.HEADER</code> will return the value of the response hea
 
 Underscores (<code>_</code>) in the header names will also be replaced by dashes (<code>-</code>) and the header names will be matched case-insensitively. If the response header is not present at all, <code>nil</code> will be returned.
 
-This is particularly useful in the context of [[#filter_header_by_lua|filter_header_by_lua]] and [[#filter_header_by_lua_file|filter_header_by_lua_file]], for example,
+This is particularly useful in the context of [[#header_filter_by_lua|header_filter_by_lua]] and [[#header_filter_by_lua_file|header_filter_by_lua_file]], for example,
 
 <geshi lang="nginx">
     location /test {
@@ -2124,7 +2132,7 @@ This API was first introduced in ngx_lua v0.3.1rc6.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Emit arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
+Emits arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
 
 Lua <code>nil</code> values will output <code>"nil"</code> strings and Lua boolean values will output <code>"true"</code> and <code>"false"</code> literal strings respectively.
 
@@ -2147,6 +2155,8 @@ will yield the output
 
 Non-array table arguments will cause a Lua exception to be thrown.
 
+The <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
+
 This is an asynchronous call and will return immediately without waiting for all the data to be written into the system send buffer. To run in synchronous mode, call <code>ngx.flush(true)</code> after calling <code>ngx.print</code>. This can be particularly useful for streaming output. See [[#ngx.flush|ngx.flush]] for more details.
 
 == ngx.say ==
@@ -2163,9 +2173,11 @@ Just as [[#ngx.print|ngx.print]] but also emit a trailing newline.
 
 Log arguments concatenated to error.log with the given logging level.
 
-Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> string while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> string outputs.
+Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> string while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> string outputs. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
 
 The <code>log_level</code> argument can take constants like <code>ngx.ERR</code> and <code>ngx.WARN</code>. Check out [[#Nginx log level constants|Nginx log level constants]] for details.
+
+There is a hard-coded length limitation on the error messages in the Nginx core. It is <code>2048</code> bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
 
 == ngx.flush ==
 '''syntax:''' ''ngx.flush(wait?)''
@@ -2410,6 +2422,15 @@ See [[#ngx.md5_bin|ngx.md5_bin]] if the raw binary MD5 digest is required.
 Returns the binary form of the MD5 digest of the <code>str</code> argument.
 
 See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
+
+== ngx.sha1_bin ==
+'''syntax:''' ''digest = ngx.sha1_bin(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
+
+This function was first introduced in the <code>v0.5.0rc6</code>.
 
 == ngx.today ==
 '''syntax:''' ''str = ngx.today()''
@@ -2749,6 +2770,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.replace|replace]]
 * [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.delete|delete]]
+* [[#ngx.shared.DICT.flush_all|flush_all]]
 
 Here is an example:
 
@@ -2919,6 +2941,17 @@ If the original value is not a valid Lua number in the dictionary, it will retur
 The <code>value</code> argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.flush_all ==
+'''syntax:''' ''ngx.shared.DICT:flush_all()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Flushes out all the items in the dictionary.
+
+This feature was first introduced in the <code>v0.5.0rc17</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
@@ -3190,13 +3223,13 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 Puts the current socket's connection into the cosocket built-in connection pool and keep it alive until other [[#tcpsock:connect|connect]] method calls request it or the associated maximal idle timeout is expired.
 
-The first optional argument, <code>timeout</code>, can be used to specify the maximal idle timeout for the current connection. If omitted, the default setting in the [[#lua_socket_keepalive_timeout|lua_socket_keepalive_timeout]] config directive will be used.
+The first optional argument, <code>timeout</code>, can be used to specify the maximal idle timeout (in milliseconds) for the current connection. If omitted, the default setting in the [[#lua_socket_keepalive_timeout|lua_socket_keepalive_timeout]] config directive will be used. If the <code>0</code> value is given, then the timeout interval is unlimited.
 
 The second optional argument, <code>size</code>, can be used to specify the maximal number of connections allowed in the connection pool for the current server (i.e., the current host-port pair or the unix domain socket file path). Note that the size of the connection pool cannot be changed once the pool is created. When this argument is omitted, the default setting in the [[#lua_socket_pool_size|lua_socket_pool_size]] config directive will be used.
 
 When the connection pool is exceeding the size limit, the least recently used (idle) connection already in the pool will be closed automatically to make room for the current connection.
 
-Note that the cosocket connection pool is per Nginx worker process rather than per Nginx server instance, so so size limit specified here also applies to every single Nginx worker process.
+Note that the cosocket connection pool is per Nginx worker process rather than per Nginx server instance, so the size limit specified here also applies to every single Nginx worker process.
 
 Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
 
@@ -3374,7 +3407,7 @@ It is recommended to always place the following piece of code at the end of Lua 
 
 Assuming the current Lua module is named <code>foo.bar</code>, this will guarantee that local variables in module <code>foo.bar</code> functions have been declared as "local". It prevents undesirable race conditions while accessing such variables. See [[#Data_Sharing_within_an_Nginx_Worker|Data Sharing within an Nginx Worker]] for the reasons behind this.
 
-== Locations With [[HttpEchoModule]] Directives ==
+== Locations Configured by Subrequest Directives of Other Modules ==
 The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives cannot capture locations that include the [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives.
 
 <geshi lang="nginx">
@@ -3559,7 +3592,8 @@ Please report bugs or submit patches by:
 = TODO =
 
 == Short Term ==
-* make [[#tcpsock:send|tcpsock:send]] method accept (nested) Lua tables of strings as its first argument to save string concatenation operations on the Lua user land.
+* implement the <code>ngx.sleep(time)</code> Lua API.
+* implement the <code>ngx.worker.get_pid()</code> Lua API.
 * implement [http://w3.impa.br/~diego/software/luasocket/udp.html LuaSocket UDP API] in our cosocket API.
 * implement the <code>ngx.re.split</code> method.
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
@@ -3732,8 +3766,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 = See Also =
 
-* [http://github.com/agentzh/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket
-* [http://github.com/agentzh/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket
+* [http://github.com/agentzh/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket.
+* [http://github.com/agentzh/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket.
+* [http://github.com/agentzh/lua-resty-mysql lua-resty-mysql] library based on ngx_lua cosocket.
+* [http://github.com/agentzh/lua-resty-upload lua-resty-upload] library based on ngx_lua cosocket.
+* [http://github.com/agentzh/lua-resty-string lua-resty-string] library based on [http://luajit.org/ext_ffi.html LuaJIT FFI].
 * [http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs Routing requests to different MySQL queries based on URI arguments]
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]
@@ -3744,4 +3781,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
+
+<div id="translations">
+* [[HttpLuaModuleZh| Chinese]]
+</div>
 

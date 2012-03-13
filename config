@@ -159,6 +159,7 @@ if [ $ngx_found = yes ]; then
 fi
 
 USE_MD5=YES
+USE_SHA1=YES
 
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"

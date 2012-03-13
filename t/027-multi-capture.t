@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(3);
+repeat_each(10);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 2 + 2);
@@ -12,6 +12,7 @@ plan tests => repeat_each() * (blocks() * 2 + 2);
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
+#log_level 'warn';
 no_long_string();
 
 run_tests();

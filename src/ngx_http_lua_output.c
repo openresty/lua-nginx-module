@@ -48,6 +48,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     int                          nargs;
     int                          type;
     const char                  *msg;
+    ngx_buf_tag_t                tag;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -137,10 +138,16 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         return 0;
     }
 
-    b = ngx_create_temp_buf(r->pool, size);
-    if (b == NULL) {
+    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+
+    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                          &ctx->free_bufs, size, tag);
+
+    if (cl == NULL) {
         return luaL_error(L, "out of memory");
     }
+
+    b = cl->buf;
 
     for (i = 1; i <= nargs; i++) {
         type = lua_type(L, i);
@@ -194,17 +201,11 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         *b->last++ = '\n';
     }
 
+#if 0
     if (b->last != b->end) {
         return luaL_error(L, "buffer error: %p != %p", b->last, b->end);
     }
-
-    cl = ngx_alloc_chain_link(r->pool);
-    if (cl == NULL) {
-        return luaL_error(L, "out of memory");
-    }
-
-    cl->next = NULL;
-    cl->buf = b;
+#endif
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    newline ? "lua say response" : "lua print response");
@@ -213,6 +214,22 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send data through the output filters");
+    }
+
+    dd("downstream write: %d, buf len: %d", (int) rc,
+            (int) (b->last - b->pos));
+
+    if (!ctx->out) {
+#if nginx_version >= 1001004
+        ngx_chain_update_chains(r->pool,
+#else
+        ngx_chain_update_chains(
+#endif
+                                &ctx->free_bufs, &ctx->busy_bufs, &cl, tag);
+
+        dd("out lua buf tag: %p, buffered: %x, busy bufs: %p",
+            &ngx_http_lua_module, (int) r->connection->buffered,
+            ctx->busy_bufs);
     }
 
     return 0;
@@ -447,20 +464,36 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return luaL_error(L, "already seen eof");
     }
 
-    buf = ngx_calloc_buf(r->pool);
-    if (buf == NULL) {
-        return luaL_error(L, "memory allocation error");
+    if (ctx->buffering) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua http 1.0 buffering makes ngx.flush() a no-op");
+
+        return 0;
     }
 
-    buf->flush = 1;
+    if (ctx->flush_buf) {
+        cl = ctx->flush_buf;
 
-    cl = ngx_alloc_chain_link(r->pool);
-    if (cl == NULL) {
-        return luaL_error(L, "out of memory");
+    } else {
+        dd("allocating new flush buf");
+        buf = ngx_calloc_buf(r->pool);
+        if (buf == NULL) {
+            return luaL_error(L, "memory allocation error");
+        }
+
+        buf->flush = 1;
+
+        dd("allocating new flush chain");
+        cl = ngx_alloc_chain_link(r->pool);
+        if (cl == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        cl->next = NULL;
+        cl->buf = buf;
+
+        ctx->flush_buf = cl;
     }
-
-    cl->next = NULL;
-    cl->buf = buf;
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 

@@ -87,7 +87,6 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
     conf->force_read_body   = NGX_CONF_UNSET;
     conf->enable_code_cache = NGX_CONF_UNSET;
-    conf->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
     conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;

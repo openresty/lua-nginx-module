@@ -363,5 +363,5 @@ hello world
 |failed to receive: closed [d]
 )?done
 --- no_error_log
-[error]
+[alert]
 

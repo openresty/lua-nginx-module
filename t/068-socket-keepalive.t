@@ -33,8 +33,6 @@ __DATA__
             test.go(port)
         ';
     }
---- request
-GET /t
 --- user_files
 >>> test.lua
 module("test", package.seeall)
@@ -71,6 +69,8 @@ function go(port)
         ngx.say("failed to set reusable: ", err)
     end
 end
+--- request
+GET /t
 --- response_body_like
 ^connected: 1, reused: \d+
 request sent: 11
@@ -82,10 +82,9 @@ received: OK
 ["[error]",
 "lua socket keepalive: free connection pool for "]
 --- error_log eval
-[
-'lua socket get keepalive peer: using connection',
-'lua socket keepalive create connection pool for key "127.0.0.1:11211"',
-]
+qq{lua socket get keepalive peer: using connection
+lua socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
+}
 
 
 
@@ -304,7 +303,7 @@ received response of 156 bytes
 done
 --- no_error_log eval
 ["[error]",
-"lua socket keepalive close handler",
+"lua socket keepalive close handler: fd:",
 "lua socket keepalive: free connection pool for "]
 --- timeout: 4
 
