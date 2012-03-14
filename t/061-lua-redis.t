@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 3);
 
 $ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
@@ -43,4 +43,6 @@ __DATA__
     GET /test
 --- response_body
 some_key: hello 1234
+--- no_error_log
+[error]
 
