@@ -205,7 +205,7 @@ ngx_http_lua_var_set(lua_State *L)
     v = ngx_hash_find(&cmcf->variables_hash, hash, name.data, name.len);
 
     if (v) {
-        if (! (v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
             return luaL_error(L, "variable \"%s\" not changeable", lowcase);
         }
 

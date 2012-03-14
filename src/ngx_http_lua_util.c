@@ -98,7 +98,7 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     lua_getglobal(L, "package");
 
-    if (! lua_istable(L, -1)) {
+    if (!lua_istable(L, -1)) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                 "the \"package\" table does not exist");
         return NULL;
@@ -319,16 +319,16 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 {
     ngx_int_t            rc;
 
-    if ( ! ctx->headers_sent ) {
+    if (!ctx->headers_sent ) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (! ctx->headers_set && ngx_http_set_content_type(r) != NGX_OK) {
+        if (!ctx->headers_set && ngx_http_set_content_type(r) != NGX_OK) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        if (! ctx->headers_set) {
+        if (!ctx->headers_set) {
             ngx_http_clear_content_length(r);
             ngx_http_clear_accept_ranges(r);
         }
@@ -1288,7 +1288,7 @@ ngx_http_lua_set_multi_value_table(lua_State *L, int index)
         lua_rawset(L, index); /* stack: table */
 
     } else {
-        if (! lua_istable(L, -1)) {
+        if (!lua_istable(L, -1)) {
             /* just inserted one value */
             lua_createtable(L, 4, 0);
                 /* stack: table key value value table */

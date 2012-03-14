@@ -36,7 +36,7 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *key)
 
     dd("Code cache table to load: %p", lua_topointer(L, -1));
 
-    if (! lua_istable(L, -1)) {
+    if (!lua_istable(L, -1)) {
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }
@@ -89,7 +89,7 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *key)
 
     dd("Code cache table to store: %p", lua_topointer(L, -1));
 
-    if (! lua_istable(L, -1)) {
+    if (!lua_istable(L, -1)) {
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }
@@ -120,7 +120,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
     dd("XXX cache key: [%s]", cache_key);
 
-    if (! enabled) {
+    if (!enabled) {
         ngx_http_lua_clear_package_loaded(L);
     }
 

@@ -312,7 +312,7 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 
         lua_pushlstring(L, (char *) q, dst - q);
 
-        if (! parsing_value) {
+        if (!parsing_value) {
             dd("pushing boolean true...");
             lua_pushboolean(L, 1);
         }
