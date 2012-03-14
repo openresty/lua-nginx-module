@@ -106,6 +106,11 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         dd("rewriteby: calling wev handler");
         rc = ngx_http_lua_wev_handler(r);
         dd("rewriteby: wev handler returns %d", (int) rc);
+
+        if (rc == NGX_OK) {
+            return NGX_DECLINED;
+        }
+
         return rc;
     }
 
