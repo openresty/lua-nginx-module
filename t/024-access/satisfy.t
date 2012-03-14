@@ -114,7 +114,7 @@ something important
 --- response_body_like: 403 Forbidden
 --- error_code: 403
 --- error_log
-post_access: access forbidden by rule
+access forbidden by rule
 
 
 
@@ -138,7 +138,7 @@ post_access: access forbidden by rule
 --- response_body_like: 403 Forbidden
 --- error_code: 403
 --- error_log
-post_access: access forbidden by rule
+access forbidden by rule
 
 
 
