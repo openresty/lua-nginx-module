@@ -14,7 +14,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => 82;
 
 #no_diff();
 #no_long_string();
@@ -112,6 +112,8 @@ GET /test HTTP/1.0
 hello, world
 hiya
 blah
+--- response_headers
+Content-Length: 23
 --- timeout: 5
 --- error_log
 lua buffering output bufs for the HTTP 1.0 request
@@ -136,6 +138,8 @@ GET /test HTTP/1.0
 hello, world
 hiya
 blah
+--- response_headers
+Content-Length: 23
 --- error_log
 lua buffering output bufs for the HTTP 1.0 request
 lua http 1.0 buffering makes ngx.flush() a no-op
@@ -180,4 +184,113 @@ GET /test
 --- response_body
 hello, world
 sub
+
+
+
+=== TEST 9: http 1.0 (sync + buffering off)
+--- config
+    lua_http10_buffering off;
+    location /test {
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(true)
+            ngx.say("hiya")
+            ngx.flush(true)
+            ngx.say("blah")
+        ';
+    }
+--- request
+GET /test HTTP/1.0
+--- response_body
+hello, world
+hiya
+blah
+--- response_headers
+!Content-Length
+--- timeout: 5
+--- no_error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
+
+
+
+=== TEST 10: http 1.0 (async)
+--- config
+    lua_http10_buffering on;
+    location /test {
+        lua_http10_buffering off;
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(false)
+            ngx.say("hiya")
+            ngx.flush(false)
+            ngx.say("blah")
+        ';
+    }
+--- request
+GET /test HTTP/1.0
+--- response_body
+hello, world
+hiya
+blah
+--- response_headers
+!Content-Length
+--- no_error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
+--- timeout: 5
+
+
+
+=== TEST 11: http 1.0 (sync) - buffering explicitly off
+--- config
+    location /test {
+        lua_http10_buffering on;
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(true)
+            ngx.say("hiya")
+            ngx.flush(true)
+            ngx.say("blah")
+        ';
+    }
+--- request
+GET /test HTTP/1.0
+--- response_body
+hello, world
+hiya
+blah
+--- response_headers
+Content-Length: 23
+--- timeout: 5
+--- error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
+
+
+
+=== TEST 12: http 1.0 (async) - buffering explicitly off
+--- config
+    location /test {
+        lua_http10_buffering on;
+        content_by_lua '
+            ngx.say("hello, world")
+            ngx.flush(false)
+            ngx.say("hiya")
+            ngx.flush(false)
+            ngx.say("blah")
+        ';
+    }
+--- request
+GET /test HTTP/1.0
+--- response_body
+hello, world
+hiya
+blah
+--- response_headers
+Content-Length: 23
+--- error_log
+lua buffering output bufs for the HTTP 1.0 request
+lua http 1.0 buffering makes ngx.flush() a no-op
+--- timeout: 5
 

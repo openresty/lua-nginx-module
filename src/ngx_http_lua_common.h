@@ -95,6 +95,8 @@ typedef struct {
     ngx_flag_t              enable_code_cache; /* whether to enable
                                                   code cache */
 
+    ngx_flag_t              http10_buffering;
+
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;

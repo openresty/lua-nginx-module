@@ -333,10 +333,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             ngx_http_clear_accept_ranges(r);
         }
 
-        if (r->http_version >= NGX_HTTP_VERSION_11
-            || r->headers_out.content_length)
-        {
-            /* Send response headers for HTTP version <= 1.0 elsewhere */
+        if (!ctx->buffering) {
             dd("sending headers");
             rc = ngx_http_send_header(r);
             ctx->headers_sent = 1;
@@ -352,9 +349,10 @@ ngx_int_t
 ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         ngx_chain_t *in)
 {
-    ngx_int_t            rc;
-    ngx_chain_t         *cl;
-    ngx_chain_t        **ll;
+    ngx_int_t                     rc;
+    ngx_chain_t                  *cl;
+    ngx_chain_t                 **ll;
+    ngx_http_lua_loc_conf_t      *llcf;
 
 #if 1
     if (ctx->eof) {
@@ -367,16 +365,21 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         r->header_only = 1;
     }
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->http10_buffering
+        && !ctx->buffering
+        && !ctx->headers_sent
+        && r->http_version < NGX_HTTP_VERSION_11
+        && r->headers_out.content_length_n < 0)
+    {
+        ctx->buffering = 1;
+    }
+
     rc = ngx_http_lua_send_header_if_needed(r, ctx);
 
     if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
-    }
-
-    if (!ctx->buffering && !ctx->headers_sent
-        && r->http_version < NGX_HTTP_VERSION_11)
-    {
-        ctx->buffering = 1;
     }
 
     if (r->header_only) {
