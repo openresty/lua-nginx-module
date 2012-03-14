@@ -1127,7 +1127,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                 lua_rawset(cc, -3); /* stack: table */
 
             } else {
-                if (! lua_istable(cc, -1)) { /* already inserted one value */
+
+                if (!lua_istable(cc, -1)) { /* already inserted one value */
                     lua_createtable(cc, 4, 0);
                         /* stack: table key value table */
 

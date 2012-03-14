@@ -114,7 +114,7 @@ ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     fp = (ngx_flag_t *) (p + cmd->offset);
 
-    if (! *fp) {
+    if (!*fp) {
         ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                 "lua_code_cache is off; this will hurt performance");
     }
@@ -383,7 +383,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     llcf->rewrite_handler = cmd->post;
 
-    if (! ngx_http_lua_requires_rewrite) {
+    if (!ngx_http_lua_requires_rewrite) {
         ngx_http_lua_requires_rewrite = 1;
         ngx_http_lua_requires_capture_filter = 1;
     }
@@ -464,7 +464,7 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     llcf->access_handler = cmd->post;
 
-    if (! ngx_http_lua_requires_access) {
+    if (!ngx_http_lua_requires_access) {
         ngx_http_lua_requires_access = 1;
         ngx_http_lua_requires_capture_filter = 1;
     }
