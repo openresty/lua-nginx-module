@@ -704,3 +704,31 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     return NGX_CONF_OK;
 }
 
+char *
+ngx_http_lua_rewrite_no_postpone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t    *lmcf = conf;
+    ngx_str_t                   *value;
+    ngx_int_t                   fp;
+
+    value = cf->args->elts;
+
+
+    if (ngx_strcasecmp(value[1].data, (u_char *) "on") == 0) {
+        fp = 1;
+
+    } else if (ngx_strcasecmp(value[1].data, (u_char *) "off") == 0) {
+        fp = 0;
+
+    } else {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                     "invalid value \"%s\" in \"%s\" directive, "
+                     "it must be \"on\" or \"off\"",
+                     value[1].data, cmd->name.data);
+        return NGX_CONF_ERROR;
+    }
+
+    lmcf->postponed_to_rewrite_phase_end = fp;
+
+    return NGX_CONF_OK;
+}
