@@ -1773,7 +1773,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     lua_pushnil(L);
     while (lua_next(L, table) != 0) {
         if (lua_type(L, -2) != LUA_TSTRING) {
-            luaL_error(L, "attemp to use a non-string key in the "
+            luaL_error(L, "attempt to use a non-string key in the "
                     "\"args\" option table");
             return;
         }

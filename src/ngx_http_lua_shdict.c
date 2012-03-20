@@ -592,7 +592,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attemp to use empty keys");
+        return luaL_error(L, "attempt to use empty keys");
     }
 
     if (key.len > 65535) {
@@ -884,7 +884,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attemp to use empty keys");
+        return luaL_error(L, "attempt to use empty keys");
     }
 
     if (key.len > 65535) {
