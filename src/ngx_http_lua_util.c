@@ -58,10 +58,21 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path)
 {
     const char *tmp_path;
+    ngx_cycle_t *cycle;
+    const char  *prefix;
 
     /* XXX here we use some hack to simplify string manipulation */
     tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
             LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
+
+    cycle = cf->cycle;
+
+    lua_pushlstring(L, (char *) cycle->prefix.data, cycle->prefix.len);
+    prefix = lua_tostring(L, -1);
+
+    tmp_path = luaL_gsub(L, tmp_path, "$ngx_prefix", prefix);
+
+    lua_pop(L, 2);
 
     dd("tmp_path path: %s", tmp_path);
 
