@@ -217,6 +217,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
         int force_quit)
 {
     ngx_http_lua_ctx_t  *ctx;
+    lua_State           *cr;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua deleting thread");
@@ -224,7 +225,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
     lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
 
     lua_rawgeti(L, -1, ref);
-    lua_State *cr = lua_tothread(L, -1);
+    cr = lua_tothread(L, -1);
     lua_pop(L, 1);
 
     dd("cr: %p, force quit: %d", cr, (int) force_quit);
