@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc19
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 15
+    This document describes ngx_lua v0.5.0rc21
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 22
     March 2012.
 
 Synopsis
@@ -1010,7 +1010,7 @@ Nginx API for Lua
       ngx.HTTP_POST
       ngx.HTTP_DELETE
 
-    These constants are usually used in ngx.location.catpure and
+    These constants are usually used in ngx.location.capture and
     ngx.location.capture_multi method calls.
 
   HTTP status constants
@@ -1797,7 +1797,7 @@ Nginx API for Lua
   ngx.req.get_post_args
     syntax: *ngx.req.get_post_args(count_limit?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
 
     Returns a Lua table holding all the current request POST query arguments
@@ -2645,6 +2645,10 @@ Nginx API for Lua
     header_filter_by_lua**
 
     Returns the binary form of the SHA-1 digest of the "str" argument.
+
+    This function requires enabling SHA-1 support in your Nginx build
+    (usually you just need to install OpenSSL to your system while building
+    Nginx).
 
     This function was first introduced in the "v0.5.0rc6".
 

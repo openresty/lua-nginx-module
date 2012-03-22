@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc19] released on 15 March 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc21] released on 22 March 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -908,7 +908,7 @@ The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0r
   ngx.HTTP_DELETE
 </geshi>
 
-These constants are usually used in [[#ngx.location.capture|ngx.location.catpure]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
+These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
 
 == HTTP status constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -1698,7 +1698,7 @@ Removing the <code>count_limit</code> cap is strongly discouraged.
 == ngx.req.get_post_args ==
 '''syntax:''' ''ngx.req.get_post_args(count_limit?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid Lua exception errors.
 
@@ -2458,6 +2458,8 @@ See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
+
+This function requires enabling SHA-1 support in your Nginx build (usually you just need to install OpenSSL to your system while building Nginx).
 
 This function was first introduced in the <code>v0.5.0rc6</code>.
 

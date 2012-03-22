@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc19](https://github.com/chaoslawful/lua-nginx-module/tags) released on 15 March 2012.
+This document describes ngx_lua [v0.5.0rc21](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 March 2012.
 
 Synopsis
 ========
@@ -944,7 +944,7 @@ HTTP method constants
       ngx.HTTP_DELETE
 
 
-These constants are usually used in [ngx.location.catpure](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) method calls.
+These constants are usually used in [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) method calls.
 
 HTTP status constants
 ---------------------
@@ -1746,7 +1746,7 @@ ngx.req.get_post_args
 ---------------------
 **syntax:** *ngx.req.get_post_args(count_limit?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
 Returns a Lua table holding all the current request POST query arguments (of the MIME type `application/x-www-form-urlencoded`). Call [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) to read the request body first or turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive to avoid Lua exception errors.
 
@@ -2537,6 +2537,8 @@ ngx.sha1_bin
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
 Returns the binary form of the SHA-1 digest of the `str` argument.
+
+This function requires enabling SHA-1 support in your Nginx build (usually you just need to install OpenSSL to your system while building Nginx).
 
 This function was first introduced in the `v0.5.0rc6`.
 
