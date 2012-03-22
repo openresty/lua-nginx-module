@@ -7,7 +7,11 @@
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_crc32.h"
+
+#if NGX_HAVE_SHA1
 #include "ngx_sha1.h"
+#endif
+
 #include "ngx_md5.h"
 
 #if (NGX_OPENSSL)
@@ -28,7 +32,11 @@ static int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 static int ngx_http_lua_ngx_quote_sql_str(lua_State *L);
 static int ngx_http_lua_ngx_md5(lua_State *L);
 static int ngx_http_lua_ngx_md5_bin(lua_State *L);
+
+#if (NGX_HAVE_SHA1)
 static int ngx_http_lua_ngx_sha1_bin(lua_State *L);
+#endif
+
 static int ngx_http_lua_ngx_decode_base64(lua_State *L);
 static int ngx_http_lua_ngx_encode_base64(lua_State *L);
 static int ngx_http_lua_ngx_crc32_short(lua_State *L);
@@ -66,8 +74,10 @@ ngx_http_lua_inject_string_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
 
+#if (NGX_HAVE_SHA1)
     lua_pushcfunction(L, ngx_http_lua_ngx_sha1_bin);
     lua_setfield(L, -2, "sha1_bin");
+#endif
 
     lua_pushcfunction(L, ngx_http_lua_ngx_crc32_short);
     lua_setfield(L, -2, "crc32_short");
@@ -382,6 +392,7 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
 }
 
 
+#if (NGX_HAVE_SHA1)
 static int
 ngx_http_lua_ngx_sha1_bin(lua_State *L)
 {
@@ -413,6 +424,7 @@ ngx_http_lua_ngx_sha1_bin(lua_State *L)
 
     return 1;
 }
+#endif
 
 
 static int
