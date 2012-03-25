@@ -41,7 +41,10 @@ struct ngx_http_lua_socket_upstream_s {
     ngx_http_request_t              *request;
     ngx_peer_connection_t            peer;
 
-    ngx_msec_t                       timeout;
+    ngx_msec_t                       read_timeout;
+    ngx_msec_t                       send_timeout;
+    ngx_msec_t                       connect_timeout;
+
     ngx_http_upstream_resolved_t    *resolved;
 
     ngx_chain_t                     *bufs_in; /* input data buffers */

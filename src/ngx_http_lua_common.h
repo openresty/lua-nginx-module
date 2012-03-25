@@ -266,7 +266,7 @@ extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 #define NGX_LUA_SOCKET_POOL "ngx_lua_socket_pool"
 
 /*  globals symbol to hold nginx request pointer */
-#define GLOBALS_SYMBOL_REQUEST    "ngx._req"
+#define GLOBALS_SYMBOL_REQUEST    "ngx._r"
 
 /*  globals symbol to hold code chunk handling nginx request */
 #define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
