@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <setjmp.h>
+#include <stdint.h>
 
 #include <lua.h>
 #include <lualib.h>
