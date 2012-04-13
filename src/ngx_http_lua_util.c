@@ -75,6 +75,21 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
     lua_setfield(L, tab_idx, fieldname);
 }
 
+void
+ngx_http_lua_add_preload(ngx_conf_t *cf, const char *package, lua_CFunction func)
+{
+    ngx_http_lua_main_conf_t *lmcf;
+    lua_State *L;
+    
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+    L = lmcf->lua;
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "preload");
+    lua_pushcfunction(L, func);
+    lua_setfield(L, -2, package);
+    lua_pop(L, 2);
+}
+
 
 lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
