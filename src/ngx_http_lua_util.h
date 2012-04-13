@@ -16,6 +16,8 @@
     (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
 #endif
 
+ngx_http_request_t *ngx_http_lua_get_request(lua_State *L);
+
 void ngx_http_lua_add_preload(ngx_conf_t *cf, const char *package,
     lua_CFunction func);
 
