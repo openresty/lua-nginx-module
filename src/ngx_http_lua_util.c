@@ -213,58 +213,12 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
 
 void
-ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
-        int force_quit)
+ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref)
 {
-    ngx_http_lua_ctx_t  *ctx;
-    lua_State           *cr;
-
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua deleting thread");
 
     lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
-
-    lua_rawgeti(L, -1, ref);
-    cr = lua_tothread(L, -1);
-    lua_pop(L, 1);
-
-    dd("cr: %p, force quit: %d", cr, (int) force_quit);
-
-    if (cr && force_quit) {
-
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua terminate thread forcibly");
-
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        ctx->aborted = 1;
-
-        dd("save orig code closure's env");
-
-        lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
-        lua_getfenv(cr, -1);
-        lua_xmove(cr, L, 1);
-
-        dd("clean code closure's env");
-
-        lua_newtable(cr);
-        lua_setfenv(cr, -2);
-
-        dd("blocking run code till ending");
-
-        NGX_LUA_EXCEPTION_TRY {
-            do {
-                lua_settop(cr, 0);
-            } while (lua_resume(cr, 0) == LUA_YIELD);
-        }
-
-        dd("restore orig code closure's env");
-
-        lua_settop(cr, 0);
-        lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
-        lua_xmove(L, cr, 1);
-        lua_setfenv(cr, -2);
-        lua_pop(cr, 1);
-    }
 
     /* release reference to coroutine */
     luaL_unref(L, -1, ref);
@@ -652,7 +606,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
             "lua reset ctx");
 
     if (ctx->cc_ref != LUA_NOREF) {
-        ngx_http_lua_del_thread(r, L, ctx->cc_ref, 0);
+        ngx_http_lua_del_thread(r, L, ctx->cc_ref);
         ctx->cc_ref = LUA_NOREF;
     }
 
@@ -746,7 +700,7 @@ ngx_http_lua_request_cleanup(void *data)
 
     if (lua_isthread(L, -1)) {
         /*  coroutine not finished yet, force quit */
-        ngx_http_lua_del_thread(r, L, ctx->cc_ref, 1);
+        ngx_http_lua_del_thread(r, L, ctx->cc_ref);
         ctx->cc_ref = LUA_NOREF;
 
     } else {
@@ -848,7 +802,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_http_lua_dump_postponed(r);
 #endif
 
-                ngx_http_lua_del_thread(r, L, cc_ref, 0);
+                ngx_http_lua_del_thread(r, L, cc_ref);
                 ctx->cc_ref = LUA_NOREF;
 
                 if (ctx->entered_content_phase) {
@@ -894,8 +848,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "lua handler aborted: %s: %s", err, msg);
 
-        ngx_http_lua_del_thread(r, L, cc_ref, 0);
+        ngx_http_lua_del_thread(r, L, cc_ref);
         ctx->cc_ref = LUA_NOREF;
+
         ngx_http_lua_request_cleanup(r);
 
         dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
@@ -1667,8 +1622,9 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
             "lua thread initiated internal redirect to %V",
             &ctx->exec_uri);
 
-    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ngx_http_lua_del_thread(r, L, cc_ref);
     ctx->cc_ref = LUA_NOREF;
+
     ngx_http_lua_request_cleanup(r);
 
     if (ctx->exec_uri.data[0] == '@') {
@@ -1747,8 +1703,9 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
             "lua thread aborting request with status %d",
             ctx->exit_code);
 
-    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ngx_http_lua_del_thread(r, L, cc_ref);
     ctx->cc_ref = LUA_NOREF;
+
     ngx_http_lua_request_cleanup(r);
 
     if ((ctx->exit_code == NGX_OK &&
@@ -1999,8 +1956,9 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
             "lua thread aborting request with URI rewrite jump: \"%V?%V\"",
             &r->uri, &r->args);
 
-    ngx_http_lua_del_thread(r, L, cc_ref, 1 /* force quit */);
+    ngx_http_lua_del_thread(r, L, cc_ref);
     ctx->cc_ref = LUA_NOREF;
+
     ngx_http_lua_request_cleanup(r);
 
     return NGX_OK;
