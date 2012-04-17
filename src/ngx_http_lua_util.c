@@ -238,30 +238,32 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref,
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
         ctx->aborted = 1;
 
-        /* {{{ save orig code closure's env */
+        dd("save orig code closure's env");
+
         lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
         lua_getfenv(cr, -1);
         lua_xmove(cr, L, 1);
-        /* }}} */
 
-        /* {{{ clean code closure's env */
+        dd("clean code closure's env");
+
         lua_newtable(cr);
         lua_setfenv(cr, -2);
-        /* }}} */
 
-        /* {{{ blocking run code till ending */
-        do {
-            lua_settop(cr, 0);
-        } while (lua_resume(cr, 0) == LUA_YIELD);
-        /* }}} */
+        dd("blocking run code till ending");
 
-        /* {{{ restore orig code closure's env */
+        NGX_LUA_EXCEPTION_TRY {
+            do {
+                lua_settop(cr, 0);
+            } while (lua_resume(cr, 0) == LUA_YIELD);
+        }
+
+        dd("restore orig code closure's env");
+
         lua_settop(cr, 0);
         lua_getglobal(cr, GLOBALS_SYMBOL_RUNCODE);
         lua_xmove(L, cr, 1);
         lua_setfenv(cr, -2);
         lua_pop(cr, 1);
-        /* }}} */
     }
 
     /* release reference to coroutine */
@@ -770,6 +772,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     ngx_int_t                rc;
 #if (NGX_PCRE)
     ngx_pool_t              *old_pool;
+    unsigned                 pcre_pool_resumed = 0;
 #endif
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -780,15 +783,15 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
     dd("ctx = %p", ctx);
 
-    NGX_LUA_EXCEPTION_TRY {
-        cc = ctx->cc;
-        cc_ref = ctx->cc_ref;
+    cc = ctx->cc;
+    cc_ref = ctx->cc_ref;
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
-        old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
+    old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+    NGX_LUA_EXCEPTION_TRY {
         dd("calling lua_resume: vm %p, nret %d", cc, (int) nret);
 
         /*  run code */
@@ -797,6 +800,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
         ngx_http_lua_pcre_malloc_done(old_pool);
+        pcre_pool_resumed = 1;
+#endif
+
+#if 0
+        /* test the longjmp thing */
+        if (rand() % 2 == 0) {
+            NGX_LUA_EXCEPTION_THROW(1);
+        }
 #endif
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -892,7 +903,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
     } NGX_LUA_EXCEPTION_CATCH {
+
         dd("nginx execution restored");
+
+#if (NGX_PCRE)
+        if (!pcre_pool_resumed) {
+            ngx_http_lua_pcre_malloc_done(old_pool);
+        }
+#endif
     }
 
     return NGX_ERROR;
