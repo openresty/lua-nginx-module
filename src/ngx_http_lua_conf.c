@@ -48,7 +48,8 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     if (lmcf->lua == NULL) {
         if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_ERROR, cf, 0, "Failed to initialize Lua VM");
+            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                               "Failed to initialize Lua VM");
             return NGX_CONF_ERROR;
         }
 
@@ -87,6 +88,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
     conf->force_read_body   = NGX_CONF_UNSET;
     conf->enable_code_cache = NGX_CONF_UNSET;
+    conf->http10_buffering  = NGX_CONF_UNSET;
 
     conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
@@ -132,6 +134,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
+    ngx_conf_merge_value(conf->http10_buffering, prev->http10_buffering, 1);
 
     ngx_conf_merge_msec_value(conf->keepalive_timeout,
                               prev->keepalive_timeout, 60000);

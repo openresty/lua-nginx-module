@@ -28,7 +28,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (! lmcf->postponed_to_access_phase_end) {
+    if (!lmcf->postponed_to_access_phase_end) {
         ngx_http_core_main_conf_t       *cmcf;
         ngx_http_phase_handler_t        tmp;
         ngx_http_phase_handler_t        *ph;
@@ -41,7 +41,12 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
         ph = cmcf->phase_engine.handlers;
         cur_ph = &ph[r->phase_handler];
-        last_ph = &ph[cur_ph->next - 1];
+
+        /* we should skip the post_access phase handler here too */
+        last_ph = &ph[cur_ph->next - 2];
+
+        dd("ph cur: %d, ph next: %d", (int) r->phase_handler,
+                (int) (cur_ph->next - 2));
 
 #if 0
         if (cur_ph == last_ph) {
@@ -101,10 +106,6 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         dd("calling wev handler");
         rc = ngx_http_lua_wev_handler(r);
         dd("wev handler returns %d", (int) rc);
-
-        if (rc == NGX_OK) {
-            return NGX_HTTP_OK;
-        }
 
         return rc;
     }
@@ -287,6 +288,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
+    dd("returned %d", (int) rc);
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
     }
@@ -302,6 +305,10 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
+    }
+
+    if (rc == NGX_OK) {
+        return NGX_OK;
     }
 
     return NGX_DECLINED;

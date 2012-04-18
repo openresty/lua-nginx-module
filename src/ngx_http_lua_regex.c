@@ -838,7 +838,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     if (r != ctx->request || r->pool != ctx->request->pool) {
-        return luaL_error(L, "attemp to use ngx.re.gmatch iterator in a "
+        return luaL_error(L, "attempt to use ngx.re.gmatch iterator in a "
                 "request that did not create it");
     }
 

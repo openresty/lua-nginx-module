@@ -257,7 +257,7 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
                 goto invalid_variable;
             }
 
-            if (! num_var) {
+            if (!num_var) {
                 ngx_log_error(NGX_LOG_ERR, sc->log, 0,
                        "attempt to use named capturing variable "
                        "\"%V\" (named captures not supported yet)", &name);

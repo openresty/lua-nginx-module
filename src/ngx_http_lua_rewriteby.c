@@ -34,7 +34,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (! lmcf->postponed_to_rewrite_phase_end) {
+    if (!lmcf->postponed_to_rewrite_phase_end) {
         ngx_http_core_main_conf_t       *cmcf;
         ngx_http_phase_handler_t        tmp;
         ngx_http_phase_handler_t        *ph;
@@ -106,6 +106,11 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         dd("rewriteby: calling wev handler");
         rc = ngx_http_lua_wev_handler(r);
         dd("rewriteby: wev handler returns %d", (int) rc);
+
+        if (rc == NGX_OK) {
+            return NGX_DECLINED;
+        }
+
         return rc;
     }
 

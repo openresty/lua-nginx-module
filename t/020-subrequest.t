@@ -10,7 +10,7 @@ workers(1);
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -994,4 +994,54 @@ hello, world
 --- ignore_response
 --- error_log
 subrequests cycle while processing "/t"
+
+
+
+=== TEST 38: OPTIONS
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_OPTIONS });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+OPTIONS
+--- no_error_log
+[error]
+
+
+
+=== TEST 39: OPTIONS with a body
+--- config
+    location /other {
+        default_type 'foo/bar';
+        echo $echo_request_method;
+        echo_request_body;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_OPTIONS, body = "hello world" });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body chop
+OPTIONS
+hello world
+--- no_error_log
+[error]
 

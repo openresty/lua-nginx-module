@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc17] released on 6 March 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc24] released on 18 April 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -757,6 +757,24 @@ The <code><time></code> argument can be an integer, with an optional time unit, 
 
 This directive was first introduced in the <code>v0.5.0rc1</code> release.
 
+== lua_http10_buffering ==
+
+'''syntax:''' ''lua_http10_buffering on|off''
+
+'''default:''' ''lua_http10_buffering on''
+
+'''context:''' ''http, server, location, location-if''
+
+Enables or disables the automatic response caching for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which replies on a proper <code>Content-Length</code> response header.
+
+If the Lua code explicitly sets a <code>Content-Length</code> response header before sending the headers (either explicity via [[#ngx.send_headers|ngx.send_headers]] or implicitly via the first [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] call).
+
+If you want to output huge response data in a streaming fashion (via the [[#ngx.flush|ngx.flush]] call, for example), then you MUST turn off this directive to prevent memory footprint boost.
+
+This directive is turned <code>on</code> by default.
+
+THis directive was first introduced in the <code>v0.5.0rc19</code> release.
+
 = Nginx API for Lua =
 == Introduction ==
 The various <code>*_by_lua</code> and <code>*_by_lua_file</code> configuration directives serve as gateways to the Lua API within the <code>nginx.conf</code> file. The Nginx Lua API described below can only be called within the user Lua code run in the context of these configuration directives.
@@ -866,9 +884,10 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
   ngx.ERROR (-1)
   ngx.AGAIN (-2)
   ngx.DONE (-4)
+  ngx.DECLINED (-5)
 </geshi>
 
-Note that only two of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> as input).
+Note that only three of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>NGX_OK</code>, <code>NGX_ERROR</code>, and <code>NGX_DECLINED</code> as input).
 
 <geshi lang="lua">
   ngx.null
@@ -876,18 +895,21 @@ Note that only two of these constants are utilized by the [[#Nginx API for Lua|N
 
 The <code>ngx.null</code> constant is a <code>NULL</code> light userdata which is usually used to represent nil values in Lua tables and etc. It is identical with the [http://www.kyne.com.au/~mark/software/lua-cjson.php lua-cjson] library's <code>cjson.null</code> constant. This constant was first introduced in the <code>v0.5.0rc5</code> release.
 
+The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0rc19</code> release.
+
 == HTTP method constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-<geshi lang="lua">
+<geshi lang="text">
   ngx.HTTP_GET
   ngx.HTTP_HEAD
   ngx.HTTP_PUT
   ngx.HTTP_POST
   ngx.HTTP_DELETE
+  ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
 </geshi>
 
-These constants are usually used in [[#ngx.location.capture|ngx.location.catpure]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
+These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
 
 == HTTP status constants ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
@@ -1578,6 +1600,14 @@ or a Lua table holding the query arguments' key-value pairs, as in
 
 where in the latter case, this method will automatically escape argument keys and values according to the URI escaping rule.
 
+Multi-value arguments are also supported:
+
+<geshi lang="lua">
+    ngx.req.set_uri_args({ a = 3, b = {5, 6} })
+</geshi>
+
+which will result in a querystring like <code>a=3&b=5&b=6</code>.
+
 This interface was first introduced in the <code>v0.3.1rc13</code> release.
 
 See also [[#ngx.req.set_uri|ngx.req.set_uri]].
@@ -1669,7 +1699,7 @@ Removing the <code>count_limit</code> cap is strongly discouraged.
 == ngx.req.get_post_args ==
 '''syntax:''' ''ngx.req.get_post_args(count_limit?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid Lua exception errors.
 
@@ -2429,6 +2459,8 @@ See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
+
+This function requires enabling SHA-1 support in your Nginx build (usually you just need to install OpenSSL to your system while building Nginx).
 
 This function was first introduced in the <code>v0.5.0rc6</code>.
 
@@ -3312,12 +3344,16 @@ This feature requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
 = HTTP 1.0 support =
 
 The HTTP 1.0 protocol does not support chunked outputs and always requires an
-explicit <code>Content-Length</code> header when the response body is non-empty. So when
-an HTTP 1.0 request is present, This module will automatically buffer all the
+explicit <code>Content-Length</code> header when the response body is non-empty in order to support the HTTP 1.0 keep-alive (as required by the ApacheBench (ab) tool). So when
+an HTTP 1.0 request is present and the [[#lua_http10_buffering|lua_http10_buffering]] directive is turned <code>on</code>, this module will automatically buffer all the
 outputs of user calls of [[#ngx.say|ngx.say]] and [[#ngx.print|ngx.print]] and
 postpone sending response headers until it sees all the outputs in the response
 body, and at that time ngx_lua can calculate the total length of the body and
 construct a proper <code>Content-Length</code> header for the HTTP 1.0 client.
+
+If the user Lua code sets the <code>Content-Length</code> response header itself, then the automatic buffering will be disabled even if the [[#lua_http10_buffering|lua_http10_buffering]] directive is turned <code>on</code>.
+
+For big responses' streaming outputs, it's important to disable the [[#lua_http10_buffering|lua_http10_buffering]] directive, otherwise the memory usage will grow very quickly.
 
 Note that, common HTTP benchmark tools like <code>ab</code> and <code>http_load</code> always issue
 HTTP 1.0 requests by default. To force <code>curl</code> to send HTTP 1.0 requests, use
@@ -3539,7 +3575,7 @@ This module performs best when built with [http://luajit.org/luajit.html LuaJIT 
 The module is compatible with the following versions of Nginx:
 
 *   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.11)
+*   1.0.x (last tested: 1.0.15)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
@@ -3561,9 +3597,9 @@ Alternatively, <code>ngx_lua</code> can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.0.11.tar.gz'
-    tar -xzvf nginx-1.0.11.tar.gz
-    cd nginx-1.0.11/
+    wget 'http://nginx.org/download/nginx-1.0.15.tar.gz'
+    tar -xzvf nginx-1.0.15.tar.gz
+    cd nginx-1.0.15/
  
     # tell nginx's build system where to find lua:
     export LUA_LIB=/path/to/lua/lib
@@ -3592,16 +3628,16 @@ Please report bugs or submit patches by:
 = TODO =
 
 == Short Term ==
-* implement the <code>ngx.sleep(time)</code> Lua API.
-* implement the <code>ngx.worker.get_pid()</code> Lua API.
+* implement the <code>ngx.sleep(time)</code> Lua API. (For now, use [[#ngx.location.capture|ngx.location.capture]] with [[HttpEchoModule]]'s [[HttpEchoModule#echo_sleep|echo_sleep]] config directive instead.)
+* implement the <code>ngx.worker.get_pid()</code> Lua API. (For now, use <code>ngx.var.pid</code> directly.)
 * implement [http://w3.impa.br/~diego/software/luasocket/udp.html LuaSocket UDP API] in our cosocket API.
+* implement the SSL cosocket API.
 * implement the <code>ngx.re.split</code> method.
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
 * fix HTTP 1.0 support: we should by default close the current HTTP 1.0 connection right away if no <code>Content-Length</code> response header is set. the current automatic full buffering bahvior is way too expensive.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
 * deal with TCP 3-second delay problem under great connection harness.
-* add support for multi-value arguments to [[#ngx.req.set_uri_args|ngx.req.set_uri_args]] if its <code>args</code> argument is a Lua table.
 * add APIs to access cookies as key/value pairs.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 
@@ -3782,7 +3818,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
 
-<div id="translations">
-* [[HttpLuaModuleZh| Chinese]]
-</div>
+= Translations =
+* [[HttpLuaModuleZh|Chinese]]
 

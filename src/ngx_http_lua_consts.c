@@ -20,6 +20,9 @@ ngx_http_lua_inject_core_consts(lua_State *L)
     lua_pushinteger(L, NGX_DONE);
     lua_setfield(L, -2, "DONE");
 
+    lua_pushinteger(L, NGX_DECLINED);
+    lua_setfield(L, -2, "DECLINED");
+
     lua_pushinteger(L, NGX_ERROR);
     lua_setfield(L, -2, "ERROR");
 
@@ -42,11 +45,15 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_PUT);
     lua_setfield(L, -2, "HTTP_PUT");
 
+    lua_pushinteger(L, NGX_HTTP_HEAD);
+    lua_setfield(L, -2, "HTTP_HEAD");
+
     lua_pushinteger(L, NGX_HTTP_DELETE);
     lua_setfield(L, -2, "HTTP_DELETE");
 
-    lua_pushinteger(L, NGX_HTTP_HEAD);
-    lua_setfield(L, -2, "HTTP_HEAD");
+    lua_pushinteger(L, NGX_HTTP_OPTIONS);
+    lua_setfield(L, -2, "HTTP_OPTIONS");
+    /* }}} */
 
     lua_pushinteger(L, NGX_HTTP_OK);
     lua_setfield(L, -2, "HTTP_OK");

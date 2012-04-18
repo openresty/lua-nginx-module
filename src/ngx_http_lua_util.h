@@ -23,8 +23,7 @@ lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
 
-void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *l, int ref,
-    int force_quit);
+void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *l, int ref);
 
 ngx_int_t ngx_http_lua_has_inline_var(ngx_str_t *s);
 

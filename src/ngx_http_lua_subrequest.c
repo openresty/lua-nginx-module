@@ -21,6 +21,8 @@ static ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
 static ngx_str_t  ngx_http_lua_head_method = ngx_http_lua_method_name("HEAD");
 static ngx_str_t  ngx_http_lua_delete_method =
         ngx_http_lua_method_name("DELETE");
+static ngx_str_t  ngx_http_lua_options_method =
+        ngx_http_lua_method_name("OPTIONS");
 
 
 static ngx_str_t  ngx_http_lua_content_length_header_key =
@@ -549,7 +551,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
     } else if (method != NGX_HTTP_PUT && method != NGX_HTTP_POST
                && r->headers_in.content_length_n > 0)
     {
-
         rc = ngx_http_lua_set_content_length_header(sr, 0);
         if (rc != NGX_OK) {
             return NGX_ERROR;
@@ -581,6 +582,10 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
         case NGX_HTTP_DELETE:
             sr->method_name = ngx_http_lua_delete_method;
+            break;
+
+        case NGX_HTTP_OPTIONS:
+            sr->method_name = ngx_http_lua_options_method;
             break;
 
         default:
@@ -1127,7 +1132,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                 lua_rawset(cc, -3); /* stack: table */
 
             } else {
-                if (! lua_istable(cc, -1)) { /* already inserted one value */
+
+                if (!lua_istable(cc, -1)) { /* already inserted one value */
                     lua_createtable(cc, 4, 0);
                         /* stack: table key value table */
 

@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc17
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 6
-    March 2012.
+    This document describes ngx_lua v0.5.0rc24
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 18
+    April 2012.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -845,6 +845,29 @@ Directives
 
     This directive was first introduced in the "v0.5.0rc1" release.
 
+  lua_http10_buffering
+    syntax: *lua_http10_buffering on|off*
+
+    default: *lua_http10_buffering on*
+
+    context: *http, server, location, location-if*
+
+    Enables or disables the automatic response caching for HTTP 1.0 (or
+    older) requests. This buffering mechanism is mainly used for HTTP 1.0
+    keep-alive which replies on a proper "Content-Length" response header.
+
+    If the Lua code explicitly sets a "Content-Length" response header
+    before sending the headers (either explicity via ngx.send_headers or
+    implicitly via the first ngx.say or ngx.print call).
+
+    If you want to output huge response data in a streaming fashion (via the
+    ngx.flush call, for example), then you MUST turn off this directive to
+    prevent memory footprint boost.
+
+    This directive is turned "on" by default.
+
+    THis directive was first introduced in the "v0.5.0rc19" release.
+
 Nginx API for Lua
   Introduction
     The various *_by_lua and *_by_lua_file configuration directives serve as
@@ -960,9 +983,11 @@ Nginx API for Lua
       ngx.ERROR (-1)
       ngx.AGAIN (-2)
       ngx.DONE (-4)
+      ngx.DECLINED (-5)
 
-    Note that only two of these constants are utilized by the Nginx API for
-    Lua (i.e., ngx.exit accepts "NGX_OK" and "NGX_ERROR" as input).
+    Note that only three of these constants are utilized by the Nginx API
+    for Lua (i.e., ngx.exit accepts "NGX_OK", "NGX_ERROR", and
+    "NGX_DECLINED" as input).
 
       ngx.null
 
@@ -971,6 +996,9 @@ Nginx API for Lua
     lua-cjson (<http://www.kyne.com.au/~mark/software/lua-cjson.php>)
     library's "cjson.null" constant. This constant was first introduced in
     the "v0.5.0rc5" release.
+
+    The "ngx.DECLINED" constant was first introduced in the "v0.5.0rc19"
+    release.
 
   HTTP method constants
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
@@ -981,8 +1009,9 @@ Nginx API for Lua
       ngx.HTTP_PUT
       ngx.HTTP_POST
       ngx.HTTP_DELETE
+      ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
 
-    These constants are usually used in ngx.location.catpure and
+    These constants are usually used in ngx.location.capture and
     ngx.location.capture_multi method calls.
 
   HTTP status constants
@@ -1677,6 +1706,12 @@ Nginx API for Lua
     where in the latter case, this method will automatically escape argument
     keys and values according to the URI escaping rule.
 
+    Multi-value arguments are also supported:
+
+        ngx.req.set_uri_args({ a = 3, b = {5, 6} })
+
+    which will result in a querystring like "a=3&b=5&b=6".
+
     This interface was first introduced in the "v0.3.1rc13" release.
 
     See also ngx.req.set_uri.
@@ -1763,7 +1798,7 @@ Nginx API for Lua
   ngx.req.get_post_args
     syntax: *ngx.req.get_post_args(count_limit?)*
 
-    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
 
     Returns a Lua table holding all the current request POST query arguments
@@ -2611,6 +2646,10 @@ Nginx API for Lua
     header_filter_by_lua**
 
     Returns the binary form of the SHA-1 digest of the "str" argument.
+
+    This function requires enabling SHA-1 support in your Nginx build
+    (usually you just need to install OpenSSL to your system while building
+    Nginx).
 
     This function was first introduced in the "v0.5.0rc6".
 
@@ -3722,12 +3761,22 @@ Nginx API for Lua
 HTTP 1.0 support
     The HTTP 1.0 protocol does not support chunked outputs and always
     requires an explicit "Content-Length" header when the response body is
-    non-empty. So when an HTTP 1.0 request is present, This module will
+    non-empty in order to support the HTTP 1.0 keep-alive (as required by
+    the ApacheBench (ab) tool). So when an HTTP 1.0 request is present and
+    the lua_http10_buffering directive is turned "on", this module will
     automatically buffer all the outputs of user calls of ngx.say and
     ngx.print and postpone sending response headers until it sees all the
     outputs in the response body, and at that time ngx_lua can calculate the
     total length of the body and construct a proper "Content-Length" header
     for the HTTP 1.0 client.
+
+    If the user Lua code sets the "Content-Length" response header itself,
+    then the automatic buffering will be disabled even if the
+    lua_http10_buffering directive is turned "on".
+
+    For big responses' streaming outputs, it's important to disable the
+    lua_http10_buffering directive, otherwise the memory usage will grow
+    very quickly.
 
     Note that, common HTTP benchmark tools like "ab" and "http_load" always
     issue HTTP 1.0 requests by default. To force "curl" to send HTTP 1.0
@@ -4023,7 +4072,7 @@ Nginx Compatibility
           1.1.x (last tested: 1.1.5)
 
     *
-          1.0.x (last tested: 1.0.11)
+          1.0.x (last tested: 1.0.15)
 
     *
           0.9.x (last tested: 0.9.4)
@@ -4062,9 +4111,9 @@ Installation
 
     Build the source with this module:
 
-        wget 'http://nginx.org/download/nginx-1.0.11.tar.gz'
-        tar -xzvf nginx-1.0.11.tar.gz
-        cd nginx-1.0.11/
+        wget 'http://nginx.org/download/nginx-1.0.15.tar.gz'
+        tar -xzvf nginx-1.0.15.tar.gz
+        cd nginx-1.0.15/
 
         # tell nginx's build system where to find lua:
         export LUA_LIB=/path/to/lua/lib
@@ -4095,13 +4144,18 @@ Bugs and Patches
 
 TODO
   Short Term
-    *   implement the "ngx.sleep(time)" Lua API.
+    *   implement the "ngx.sleep(time)" Lua API. (For now, use
+        ngx.location.capture with [[HttpEchoModule]]'s echo_sleep config
+        directive instead.)
 
-    *   implement the "ngx.worker.get_pid()" Lua API.
+    *   implement the "ngx.worker.get_pid()" Lua API. (For now, use
+        "ngx.var.pid" directly.)
 
     *   implement LuaSocket UDP API
         (<http://w3.impa.br/~diego/software/luasocket/udp.html>) in our
         cosocket API.
+
+    *   implement the SSL cosocket API.
 
     *   implement the "ngx.re.split" method.
 
@@ -4119,9 +4173,6 @@ TODO
     *   add directives to run Lua codes when nginx stops/reloads.
 
     *   deal with TCP 3-second delay problem under great connection harness.
-
-    *   add support for multi-value arguments to ngx.req.set_uri_args if its
-        "args" argument is a Lua table.
 
     *   add APIs to access cookies as key/value pairs.
 
@@ -4553,5 +4604,6 @@ See Also
 
     *   The ngx_openresty bundle (<http://openresty.org>)
 
-    *   [Chinese (HttpLuaModuleZh)]
+Translations
+    *   Chinese
 
