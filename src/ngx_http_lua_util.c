@@ -791,7 +791,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_http_lua_dump_postponed(r);
 #endif
 
-                lua_settop(cc, 0);
                 return NGX_AGAIN;
 
             case 0:
