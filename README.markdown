@@ -13,7 +13,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc21](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 March 2012.
+This document describes ngx_lua [v0.5.0rc24](https://github.com/chaoslawful/lua-nginx-module/tags) released on 18 April 2012.
 
 Synopsis
 ========
@@ -942,6 +942,7 @@ HTTP method constants
       ngx.HTTP_PUT
       ngx.HTTP_POST
       ngx.HTTP_DELETE
+      ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
 
 
 These constants are usually used in [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) method calls.
@@ -3696,7 +3697,7 @@ Nginx Compatibility
 The module is compatible with the following versions of Nginx:
 
 *   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.11)
+*   1.0.x (last tested: 1.0.15)
 *   0.9.x (last tested: 0.9.4)
 *   0.8.x >= 0.8.54 (last tested: 0.8.54)
 
@@ -3720,9 +3721,9 @@ Alternatively, `ngx_lua` can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.0.11.tar.gz'
-    tar -xzvf nginx-1.0.11.tar.gz
-    cd nginx-1.0.11/
+    wget 'http://nginx.org/download/nginx-1.0.15.tar.gz'
+    tar -xzvf nginx-1.0.15.tar.gz
+    cd nginx-1.0.15/
  
     # tell nginx's build system where to find lua:
     export LUA_LIB=/path/to/lua/lib
