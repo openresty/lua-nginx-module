@@ -1,5 +1,10 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
+#define DDEBUG 0
+#endif
+#include "ddebug.h"
+
 #include <nginx.h>
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_util.h"

@@ -3,8 +3,6 @@
 #ifndef NGX_HTTP_LUA_COMMON_H
 #define NGX_HTTP_LUA_COMMON_H
 
-#include "ddebug.h"
-
 #include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>

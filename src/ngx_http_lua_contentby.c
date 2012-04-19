@@ -3,6 +3,7 @@
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
+#include "ddebug.h"
 
 #include <nginx.h>
 #include "ngx_http_lua_contentby.h"

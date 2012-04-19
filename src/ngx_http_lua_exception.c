@@ -3,6 +3,7 @@
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
+#include "ddebug.h"
 
 #include "ngx_http_lua_exception.h"
 
