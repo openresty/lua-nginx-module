@@ -18,12 +18,12 @@ force=$2
             #--with-cc=clang \
 
 time ngx-build $force $version \
-            --with-cc-opt=$'-I/opt/pcre821jit/include' \
+            --with-cc-opt="-I$PCRE_INC" \
             --with-http_realip_module \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-ld-opt="-L/opt/pcre821jit/lib -Wl,-rpath,/opt/pcre821jit/lib:/opt/drizzle/lib:/home/lz/lib:/usr/local/openresty-debug/luajit/lib:/usr/local/lib" \
+            --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:/opt/drizzle/lib:/home/lz/lib:/usr/local/openresty-debug/luajit/lib:/usr/local/lib" \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --without-mail_smtp_module \
