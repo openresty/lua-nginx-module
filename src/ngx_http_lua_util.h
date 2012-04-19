@@ -19,6 +19,8 @@
 lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
     ngx_http_lua_main_conf_t *lmcf);
 
+lua_State * ngx_http_lua_get_state(ngx_conf_t *cf);
+
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
 
