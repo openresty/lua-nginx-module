@@ -133,6 +133,12 @@ define hook-disconnect
 	__free_set_instance
 end
 
+define _lua_pop
+	set $l = (lua_State*)$arg0
+	set $_n = (int)$arg1
+	set $_rc = lua_settop($l, -$_n-1)
+end
+
 define _lua_dump_locals
 	set $l = (lua_State*)$arg0
 	set $dbg = (lua_Debug*)$arg1
@@ -146,7 +152,7 @@ define _lua_dump_locals
 			__lua_dump_stack $l -1
 			printf "\n"
 
-			set $rc = lua_pop($l, 1)
+			_lua_pop $l 1
 			set $idx = $idx + 1
 			set $rc = lua_getlocal($l, $dbg, $idx)
 		end
@@ -171,14 +177,14 @@ define _lua_dump_upvalues
 				__lua_dump_stack $l -1
 				printf "\n"
 
-				set $rc = lua_pop($l, 1)
+				_lua_pop $l 1
 				set $idx = $idx + 1
 				set $rc = lua_getupvalue($l, -1, $idx)
 			end
 		else
 			printf "\tNo upvalues!\n"
 		end
-		set $rc = lua_pop($l, 1)
+		_lua_pop $l 1
 	else
 		printf "\tFailed to get function closure!\n"
 	end
@@ -223,7 +229,7 @@ define __lua_dump_stack_aux
 		set $tmp = lua_tolstring($l, -1, $tmplen)
 #printf "(string:%d) ", *$tmplen
 		eval "output/r *(const char (*)[%d])$tmp", *$tmplen
-		set $tmp = lua_pop($l, 1)
+		_lua_pop $l 1
 		set $tmp = free($tmplen)
 	end
 	if $vt_$arg2 == $__LUA_TTABLE
@@ -243,7 +249,7 @@ define __lua_dump_stack_aux
 				printf " = "
 				__lua_dump_stack_aux $l -1 $cidx_$arg2
 				printf ", "
-				set $rc = lua_pop($l, 1)
+				_lua_pop $l 1
 				set $rc = lua_next($l, $nidx_$arg2)
 			end
 		end
