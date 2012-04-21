@@ -426,7 +426,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
     int                         n;
     ngx_http_request_body_t     *rb;
     ngx_int_t                   rc;
-    size_t                      size;
+    ssize_t                     size;
 
     n = lua_gettop(L);
 
@@ -455,9 +455,22 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
             return luaL_error(L, "out of memory");
         }
 
+        rb->rest = r->headers_in.content_length_n;
+
         r->request_body = rb;
     } else {
         rb = r->request_body;
+    }
+
+    size += size >> 2;
+
+    if (rb->rest < size) {
+        size = rb->rest;
+    }
+
+    rb->buf = ngx_create_temp_buf(r->pool, size);
+    if (rb->buf == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     rb->buf = ngx_create_temp_buf(r->pool, size);
