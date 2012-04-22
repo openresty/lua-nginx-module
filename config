@@ -164,3 +164,4 @@ USE_SHA1=YES
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
 
+CORE_INCS="$CORE_INCS $ngx_addon_dir/src"
