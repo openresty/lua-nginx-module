@@ -347,7 +347,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
