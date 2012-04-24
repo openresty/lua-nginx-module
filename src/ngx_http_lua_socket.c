@@ -1348,14 +1348,29 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             return NGX_ERROR;
         }
 
+        b->last += n;
+
         if (u->is_downstream) {
             r->request_length += n;
+
             if (r->request_body->rest) {
-                r->request_body->rest -= n;
+                if (n >= r->request_body->rest) {
+                    r->request_body->rest = 0;
+
+#if 1
+                    u->eof = 1;
+
+                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                   "lua socket finished reading body");
+
+                    continue;
+#endif
+
+                } else {
+                    r->request_body->rest -= n;
+                }
             }
         }
-
-        b->last += n;
     }
 
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
