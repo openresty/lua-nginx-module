@@ -51,7 +51,7 @@ Connection: close\r
 
 hello, world"
 --- response_body:
---- error_code:
+--- error_code_like: ^(?:500)?$
 
 
 
