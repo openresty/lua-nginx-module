@@ -200,7 +200,7 @@ attempt to send data on a closed socket:
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -291,7 +291,7 @@ connect() failed (111: Connection refused)
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
