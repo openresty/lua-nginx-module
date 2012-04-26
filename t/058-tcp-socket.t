@@ -13,6 +13,8 @@ $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
+#log_level 'warn';
+
 #no_long_string();
 #no_diff();
 run_tests();

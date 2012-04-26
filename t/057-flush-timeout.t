@@ -9,6 +9,8 @@ BEGIN {
         $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
     }
 
+    $ENV{MOCKEAGAIN} = 'w';
+
     $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
     $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'hello, world';
 }
@@ -21,8 +23,7 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-repeat_each(2);
-#repeat_each(1);
+#repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 1);
 
