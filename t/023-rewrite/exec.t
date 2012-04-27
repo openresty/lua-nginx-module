@@ -30,7 +30,6 @@ __DATA__
 GET /read
 --- response_body
 Hello
---- timeout: 1
 
 
 

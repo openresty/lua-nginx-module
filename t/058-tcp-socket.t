@@ -504,6 +504,7 @@ close: nil closed
 [error]
 
 
+
 === TEST 11: *a pattern for receive
 --- config
     server_tokens off;
