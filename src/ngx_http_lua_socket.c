@@ -3127,6 +3127,11 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
         u->writer.limit = 0;
         u->request_sent = 0;
 
+#if 1
+        u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+        u->read_event_handler = ngx_http_lua_socket_dummy_handler;
+#endif
+
         if (u->cleanup == NULL) {
             cln = ngx_http_cleanup_add(r, 0);
             if (cln == NULL) {
