@@ -41,13 +41,14 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 #endif
 
     ngx_http_lua_ctx_t          *ctx;
+    ngx_http_cleanup_t          *cln;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx == NULL) {
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            return NGX_ERROR;
         }
 
         dd("setting new ctx: ctx = %p", ctx);
@@ -56,6 +57,20 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+
+    } else {
+        ngx_http_lua_reset_ctx(r, L, ctx);
+    }
+
+    if (ctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return NGX_ERROR;
+        }
+
+        cln->handler = ngx_http_lua_request_cleanup;
+        cln->data = r;
+        ctx->cleanup = &cln->handler;
     }
 
     /*  set Lua VM panic handler */
