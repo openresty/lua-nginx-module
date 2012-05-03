@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 #no_diff();
 #no_long_string();
@@ -30,6 +30,8 @@ __DATA__
 GET /lua
 --- response_body
 32
+--- no_error_log
+[error]
 
 
 
@@ -52,6 +54,8 @@ GET /lua
 --- response_body
 foo = nil
 79
+--- no_error_log
+[error]
 
 
 
@@ -73,6 +77,8 @@ foo = nil
 GET /lua?data=hello
 --- response_body
 nil
+--- no_error_log
+[error]
 
 
 
@@ -101,6 +107,8 @@ main pre: 73
 sub pre: nil
 sub post: 32
 main post: 73
+--- no_error_log
+[error]
 
 
 
@@ -124,6 +132,8 @@ GET /lua
 54
 nil
 56
+--- no_error_log
+[error]
 
 
 
@@ -144,6 +154,8 @@ GET /lua
 blah: 33
 --- response_body
 32
+--- no_error_log
+[error]
 
 
 
@@ -179,4 +191,22 @@ GET /lua
 dog = hello
 dog = hiya
 parent: nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 8: set_by_lua
+--- config
+    location /lua {
+        set_by_lua $bar 'ngx.ctx.foo = 3 return 4';
+        set_by_lua $foo 'return ngx.ctx.foo';
+        echo "foo = $foo, bar = $bar";
+    }
+--- request
+GET /lua
+--- response_body
+foo = 3, bar = 4
+--- no_error_log
+[error]
 

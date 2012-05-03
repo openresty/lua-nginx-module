@@ -11,6 +11,10 @@ our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+#$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
+
+$ENV{LUA_PATH} ||=
+    '/usr/local/openresty-debug/lualib/?.lua;/usr/local/openresty/lualib/?.lua;;';
 
 no_long_string();
 #no_diff();
@@ -847,4 +851,51 @@ received response of 119 bytes
 --- error_log eval
 ["lua socket get keepalive peer: using connection",
 'lua socket keepalive create connection pool for key "unix:/tmp/test-nginx.sock"']
+
+
+
+=== TEST 12: github issue #108: ngx.locaiton.capture + redis.set_keepalive
+--- http_config eval
+    qq{
+        lua_package_path "$::HtmlDir/?.lua;;";
+    }
+--- config
+    location /t {
+        default_type text/html;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        #lua_code_cache off;
+        lua_need_request_body on;
+        content_by_lua_file html/t.lua;
+    }
+
+    location /anyurl {
+        internal;
+        proxy_pass http://127.0.0.1:$server_port/dummy;
+    }
+
+    location = /dummy {
+        echo dummy;
+    }
+--- user_files
+>>> t.lua
+local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port)
+if not sock then ngx.say(err) return end
+sock:send("flush_all\r\n")
+sock:receive()
+sock:setkeepalive()
+
+sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port)
+if not sock then ngx.say(err) return end
+local res = ngx.location.capture("/anyurl") --3
+
+ngx.say("ok")
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+lua socket get keepalive peer: using connection
+--- no_error_log
+[error]
+[alert]
 

@@ -1,6 +1,26 @@
 {
    <insert_a_suppression_name_here>
    Memcheck:Cond
+   fun:lj_str_new
+}
+{
+<insert_a_suppression_name_here>
+Memcheck:Cond
+fun:lj_str_new
+fun:countint
+fun:index2adr
+fun:lua_type
+fun:ngx_http_lua_ngx_echo
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:lj_str_new
+   obj:*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
    fun:ngx_vslprintf
    fun:ngx_snprintf
    fun:ngx_sock_ntop

@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * 81;
 
 our $HtmlDir = html_dir;
 
@@ -84,6 +84,8 @@ received:
 received: foo
 failed to receive a line: closed []
 close: nil closed
+--- no_error_log
+[error]
 
 
 
@@ -149,6 +151,8 @@ received: Connection: close
 received: 
 failed to receive a line: closed [foo]
 closed
+--- no_error_log
+[error]
 
 
 
@@ -193,10 +197,11 @@ attempt to send data on a closed socket:
 
 
 === TEST 4: with resolver
+--- timeout: 5
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -244,6 +249,8 @@ connected: 1
 request sent: 56
 first line received: HTTP/1.1 200 OK
 second line received: Server: ngx_openresty
+--- no_error_log
+[error]
 
 
 
@@ -274,6 +281,8 @@ connect: nil connection refused
 send: nil closed
 receive: nil closed
 close: nil closed
+--- error_log
+connect() failed (111: Connection refused)
 
 
 
@@ -283,7 +292,7 @@ close: nil closed
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
-    resolver_timeout 1s;
+    resolver_timeout 2s;
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -309,6 +318,8 @@ connect: nil timeout
 send: nil closed
 receive: nil closed
 close: nil closed
+--- error_log
+lua socket connect timed out
 
 
 
@@ -340,6 +351,8 @@ close: nil closed
 GET /t
 --- response_body
 connected: 1
+--- no_error_log
+[error]
 
 
 
@@ -347,7 +360,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 2s;
+    resolver_timeout 4s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -374,19 +387,21 @@ connected: 1
     }
 --- request
 GET /t
---- timeout: 5
 --- response_body_like
 ^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(3: Host not found\))?
 connected: nil
 failed to send request: closed$
+--- error_log
+attempt to send data on a closed socket
+--- timeout: 5
 
 
 
 === TEST 9: resolver error (timeout)
 --- config
     server_tokens off;
-    resolver 121.14.24.241;
-    resolver_timeout 100ms;
+    resolver 8.8.8.8;
+    resolver_timeout 1ms;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -413,11 +428,12 @@ failed to send request: closed$
     }
 --- request
 GET /t
---- timeout: 5
 --- response_body_like
 ^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(110: Operation timed out\))?
 connected: nil
 failed to send request: closed$
+--- error_log
+attempt to send data on a closed socket
 
 
 
@@ -484,6 +500,8 @@ received:
 received: foo
 failed to receive a line: closed
 close: nil closed
+--- no_error_log
+[error]
 
 
 
@@ -550,6 +568,8 @@ foo
 err: nil
 close: nil closed
 "
+--- no_error_log
+[error]
 
 
 
@@ -627,6 +647,8 @@ foo
 err: nil
 close: nil closed
 "
+--- no_error_log
+[error]
 
 
 
@@ -700,6 +722,8 @@ fo]failed to receive a line: closed [o
 ]
 close: nil closed
 "
+--- no_error_log
+[error]
 
 
 
@@ -774,6 +798,8 @@ fo]failed to receive a line: closed [o
 ]
 close: nil closed
 "
+--- no_error_log
+[error]
 
 
 
@@ -841,6 +867,8 @@ received:
 received: foo
 failed to receive a line: closed []
 close: nil closed
+--- no_error_log
+[error]
 
 
 
@@ -906,6 +934,8 @@ received:
 received: foo
 failed to receive a line: closed []
 close: nil closed
+--- no_error_log
+[error]
 
 
 
@@ -936,6 +966,8 @@ close: nil closed
     GET /test
 --- response_body
 failed to connect: connection refused
+--- error_log
+connect() failed (111: Connection refused)
 
 
 
@@ -1008,6 +1040,8 @@ fo]failed to receive a line: closed [o
 ]
 close: nil closed
 "
+--- no_error_log
+[error]
 
 
 
@@ -1278,6 +1312,8 @@ received: OK
 ){2}$/
 --- error_log
 lua reuse socket upstream ctx
+--- no_error_log
+[error]
 
 
 
@@ -1817,5 +1853,7 @@ received:
 received: foobarbaz
 failed to receive a line: closed []
 close: nil closed
+--- no_error_log
+[error]
 --- SKIP
 

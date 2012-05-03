@@ -1153,8 +1153,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
         switch (c) {
         case '\n':
             ngx_log_debug2(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
-                           "lua socket read the final line part: %*s",
-                           dst - begin, begin);
+                           "lua socket read the final line part: \"%*s\"",
+                           b->pos - 1 - begin, begin);
 
             u->buf_in->buf->last = dst;
 
@@ -3172,6 +3172,11 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
         u->writer.connection = c;
         u->writer.limit = 0;
         u->request_sent = 0;
+
+#if 1
+        u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+        u->read_event_handler = ngx_http_lua_socket_dummy_handler;
+#endif
 
         if (u->cleanup == NULL) {
             cln = ngx_http_cleanup_add(r, 0);
