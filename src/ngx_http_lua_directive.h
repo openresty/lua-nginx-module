@@ -8,6 +8,7 @@
 
 extern unsigned  ngx_http_lua_requires_rewrite;
 extern unsigned  ngx_http_lua_requires_access;
+extern unsigned  ngx_http_lua_requires_log;
 extern unsigned  ngx_http_lua_requires_header_filter;
 extern unsigned  ngx_http_lua_requires_capture_filter;
 
@@ -22,6 +23,8 @@ char * ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 char * ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
 char * ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+        void *conf);
+char * ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
 char * ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
