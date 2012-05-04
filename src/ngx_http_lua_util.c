@@ -27,6 +27,7 @@
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_coroutine.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -529,6 +530,8 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     lua_pop(L, 2);
 
     lua_setglobal(L, "ngx");
+
+    ngx_http_lua_inject_coroutine_api(L);
 }
 
 

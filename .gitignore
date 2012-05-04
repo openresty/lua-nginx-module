@@ -124,6 +124,7 @@ src/body.[ch]
 src/uri.[ch]
 src/socket.[ch]
 src/api.[ch]
+src/coroutine.[ch]
 a.patch
 all
 build1[01]
@@ -134,3 +135,5 @@ src/headerfilterby.[ch]
 analyze
 tsock
 a.c
+test.lua
+

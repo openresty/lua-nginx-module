@@ -1,6 +1,8 @@
 # This gdb script provides several useful routines for debugging ngx_lua or
 # standalone Lua/LuaJIT.
 #
+# You need gdb >= v7.3 to make this script working correctly.
+#
 # Installation: place it at $HOME/.gdbinit
 #
 # -- chaoslawful <at> gmail <dot> com
