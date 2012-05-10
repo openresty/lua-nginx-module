@@ -3283,6 +3283,11 @@ tcpsock:receiveuntil
 
 This method returns an iterator Lua function that can be called to read the data stream until it sees the specified pattern or an error occurs.
 
+An optional option table can be given as the second argument, which support the options:
+
+* `inclusive`
+    specify wether the pattern itself should be returned as part of the matched data
+
 Here is an example for using this method to read a data stream with the boundary sequence `--abcedhb`:
 
 
