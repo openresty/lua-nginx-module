@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 24);
+plan tests => repeat_each() * (blocks() * 2 + 25);
 
 #no_diff();
 no_long_string();
@@ -792,4 +792,30 @@ howdy, my dear little sister!
 POST /test
 hello, world
 --- response_body chomp
+
+
+
+=== TEST 32: multi-buffer request body
+--- config
+    location /foo {
+        default_type text/css;
+        srcache_store POST /store;
+
+        echo hello;
+        echo world;
+    }
+
+    location /store {
+        content_by_lua '
+            local body = ngx.req.get_body_data()
+            ngx.log(ngx.WARN, "srcache_store: request body len: ", #body)
+        ';
+    }
+--- request
+GET /foo
+--- response_body
+hello
+world
+--- error_log
+srcache_store: request body len: 55
 
