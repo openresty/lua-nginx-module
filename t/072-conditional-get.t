@@ -18,7 +18,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: If-Last-Modified true
+=== TEST 1: If-Modified-Since true
 --- config
     location /lua {
         content_by_lua '
@@ -37,7 +37,7 @@ If-Modified-Since: Thu, 10 May 2012 07:50:59 GMT
 
 
 
-=== TEST 2: If-Last-Modified true
+=== TEST 2: If-Modified-Since true
 --- config
     location /lua {
         if_modified_since before;
@@ -54,4 +54,24 @@ If-Modified-Since: Thu, 10 May 2012 07:50:59 GMT
 --- error_code: 304
 --- no_error_log
 [error]
+
+
+
+=== TEST 3: If-Unmodified-Since false
+--- config
+    location /lua {
+        #if_modified_since before;
+        content_by_lua '
+            ngx.header.last_modified = "Thu, 10 May 2012 07:50:48 GMT"
+            ngx.say("hello")
+        ';
+    }
+--- request
+GET /lua
+--- more_headers
+If-Unmodified-Since: Thu, 10 May 2012 07:50:47 GMT
+--- response_body_like: 412 Precondition Failed
+--- error_code: 412
+--- error_log
+failed to send data through the output filters
 
