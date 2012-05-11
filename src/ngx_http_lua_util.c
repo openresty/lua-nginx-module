@@ -331,7 +331,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 #endif
 
-    if (!r->header_only && (r->method & NGX_HTTP_HEAD)) {
+    if ((r->method & NGX_HTTP_HEAD) && !r->header_only) {
         r->header_only = 1;
     }
 

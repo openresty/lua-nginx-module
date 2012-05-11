@@ -36,6 +36,7 @@ time ngx-build $force $version \
                 --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
                 --add-module=$root/../echo-nginx-module \
                 --add-module=$root/../memc-nginx-module \
+                --add-module=$root/../srcache-nginx-module \
                 --add-module=$root \
               --add-module=$root/../headers-more-nginx-module \
                 --add-module=$root/../drizzle-nginx-module \
