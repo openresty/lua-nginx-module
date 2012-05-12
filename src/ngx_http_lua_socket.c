@@ -2036,16 +2036,19 @@ ngx_http_lua_socket_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
-    if (u->bufs_in) {
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx && u->bufs_in) {
 
         ll = &u->bufs_in;
         for (cl = u->bufs_in; cl; cl = cl->next) {
+            dd("bufs_in chain: %p, next %p", cl, cl->next);
             cl->buf->pos = cl->buf->last;
             ll = &cl->next;
         }
 
+        dd("ctx: %p", ctx);
+        dd("free recv bufs: %p", ctx->free_recv_bufs);
         *ll = ctx->free_recv_bufs;
         ctx->free_recv_bufs = u->bufs_in;
         u->bufs_in = NULL;
