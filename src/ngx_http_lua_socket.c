@@ -3045,6 +3045,10 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         }
     }
 
+#if 1
+    ngx_http_lua_socket_finalize(r, u);
+#endif
+
     lua_pushinteger(L, 1);
     return 1;
 }
