@@ -2177,8 +2177,21 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
         }
 
         lua_getfield(L, -1, "inclusive");
-        if (!lua_isnil(L, -1)) {
-            inclusive = 1;
+
+        switch (lua_type(L, -1)) {
+            case LUA_TNIL:
+                /* do nothing */
+                break;
+
+            case LUA_TBOOLEAN:
+                if (lua_toboolean(L, -1)) {
+                    inclusive = 1;
+                }
+                break;
+
+            default:
+                return luaL_error(L, "Bad inclusive option value");
+
         }
         lua_pop(L, 2);
     }
