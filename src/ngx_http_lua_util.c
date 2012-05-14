@@ -53,6 +53,12 @@ static int debug_traceback(lua_State *L, lua_State *L1);
 #define AUX_MARK "\1"
 
 
+enum {
+    LEVELS1	= 12,       /* size of the first part of the stack */
+    LEVELS2	= 10        /* size of the second part of the stack */
+};
+
+
 static void
 ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path)
@@ -2229,49 +2235,62 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     return cl;
 }
 
-#define LEVELS1	12	/* size of the first part of the stack */
-#define LEVELS2	10	/* size of the second part of the stack */
 
 static int
 debug_traceback(lua_State *L, lua_State *L1) {
-    int arg = 0;
-    int level = 0;
-    int firstpart = 1;  /* still before eventual `...' */
-    lua_Debug ar;
+    int         arg = 0;
+    int         level = 0;
+    int         firstpart = 1;  /* still before eventual `...' */
+    lua_Debug   ar;
 
     lua_pushliteral(L, "stack traceback:");
+
     while (lua_getstack(L1, level++, &ar)) {
+
         if (level > LEVELS1 && firstpart) {
             /* no more than `LEVELS2' more levels? */
-            if (!lua_getstack(L1, level+LEVELS2, &ar)) {
+            if (!lua_getstack(L1, level + LEVELS2, &ar)) {
                 level--;  /* keep going */
+
             } else {
                 lua_pushliteral(L, "\n\t...");  /* too many levels */
                 /* This only works with LuaJIT 2.x. Avoids O(n^2) behaviour. */
                 lua_getstack(L1, -10, &ar);
                 level = ar.i_ci - LEVELS2;
             }
+
             firstpart = 0;
             continue;
         }
+
         lua_pushliteral(L, "\n\t");
         lua_getinfo(L1, "Snl", &ar);
         lua_pushfstring(L, "%s:", ar.short_src);
-        if (ar.currentline > 0)
+
+        if (ar.currentline > 0) {
             lua_pushfstring(L, "%d:", ar.currentline);
+        }
+
         if (*ar.namewhat != '\0') {  /* is there a name? */
             lua_pushfstring(L, " in function " LUA_QS, ar.name);
+
         } else {
-            if (*ar.what == 'm')  /* main? */
+            if (*ar.what == 'm') {  /* main? */
                 lua_pushfstring(L, " in main chunk");
-            else if (*ar.what == 'C' || *ar.what == 't')
+
+            } else if (*ar.what == 'C' || *ar.what == 't') {
                 lua_pushliteral(L, " ?");  /* C function or tail call */
-            else
+
+            } else {
                 lua_pushfstring(L, " in function <%s:%d>",
                                 ar.short_src, ar.linedefined);
+            }
         }
+
         lua_concat(L, lua_gettop(L) - arg);
     }
+
     lua_concat(L, lua_gettop(L) - arg);
     return 1;
 }
+
