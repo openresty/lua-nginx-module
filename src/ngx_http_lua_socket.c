@@ -93,6 +93,7 @@ static ngx_int_t ngx_http_lua_socket_add_input_buffer(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     ngx_http_lua_socket_upstream_t *u, u_char *pat, size_t prefix);
+static ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 
 
 enum {
@@ -1055,8 +1056,8 @@ ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
     r = u->request;
 #endif
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua socket read chunk");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket read chunk %z", bytes);
 
     if (bytes == 0) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
@@ -1242,6 +1243,11 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             }
 
             /* rc == NGX_AGAIN */
+
+            if (u->is_downstream && r->request_body->rest == 0) {
+                u->eof = 1;
+            }
+
             continue;
         }
 
@@ -1266,6 +1272,18 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 
         if (u->is_downstream) {
+            if (r->request_body->rest == 0) {
+
+                dd("request body rest is zero");
+
+                u->eof = 1;
+
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                               "lua request body exhausted");
+
+                continue;
+            }
+
             /* try to process the preread body */
 
             preread = r->header_in->last - r->header_in->pos;
@@ -1297,14 +1315,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                 continue;
             }
 
-            if (r->request_body->rest == 0) {
-
-                u->eof = 1;
-
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                               "lua request body exhausted");
-
-                continue;
+            if (size > (size_t) r->request_body->rest) {
+                size = (size_t) r->request_body->rest;
             }
         }
 
@@ -1315,7 +1327,9 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 #endif
 
-        /* try to read the socket */
+        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua socket try to recv data %uz: \"%V?%V\"",
+                       (int) size, &r->uri, &r->args);
 
         n = c->recv(c, b->last, size);
 
@@ -1358,8 +1372,6 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                     r->request_body->rest = 0;
 
 #if 1
-                    u->eof = 1;
-
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua socket finished reading body");
 
@@ -2036,16 +2048,19 @@ ngx_http_lua_socket_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
-    if (u->bufs_in) {
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx && u->bufs_in) {
 
         ll = &u->bufs_in;
         for (cl = u->bufs_in; cl; cl = cl->next) {
+            dd("bufs_in chain: %p, next %p", cl, cl->next);
             cl->buf->pos = cl->buf->last;
             ll = &cl->next;
         }
 
+        dd("ctx: %p", ctx);
+        dd("free recv bufs: %p", ctx->free_recv_bufs);
         *ll = ctx->free_recv_bufs;
         ctx->free_recv_bufs = u->bufs_in;
         u->bufs_in = NULL;
@@ -2669,47 +2684,6 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
     return 0;
 }
 
-static ngx_int_t
-ngx_http_test_expect(ngx_http_request_t *r)
-{
-    ngx_int_t   n;
-    ngx_str_t  *expect;
-
-    if (r->expect_tested
-        || r->headers_in.expect == NULL
-        || r->http_version < NGX_HTTP_VERSION_11)
-    {
-        return NGX_OK;
-    }
-
-    r->expect_tested = 1;
-
-    expect = &r->headers_in.expect->value;
-
-    if (expect->len != sizeof("100-continue") - 1
-        || ngx_strncasecmp(expect->data, (u_char *) "100-continue",
-                           sizeof("100-continue") - 1)
-           != 0)
-    {
-        return NGX_OK;
-    }
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "send 100 Continue");
-
-    n = r->connection->send(r->connection,
-                            (u_char *) "HTTP/1.1 100 Continue" CRLF CRLF,
-                            sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1);
-
-    if (n == sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1) {
-        return NGX_OK;
-    }
-
-    /* we assume that such small packet should be send successfully */
-
-    return NGX_ERROR;
-}
-
 
 static int
 ngx_http_lua_req_socket(lua_State *L)
@@ -2749,9 +2723,10 @@ ngx_http_lua_req_socket(lua_State *L)
         return 2;
     }
 
-    if (ngx_http_test_expect(r) != NGX_OK) {
+    if (ngx_http_lua_test_expect(r) != NGX_OK) {
         lua_pushnil(L);
-        lua_pushliteral(L, "request body test expect failed");
+        lua_pushliteral(L, "test expect failed");
+        return 2;
     }
 
     /* prevent other request body reader from running */
@@ -3123,6 +3098,10 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
             return 2;
         }
     }
+
+#if 1
+    ngx_http_lua_socket_finalize(r, u);
+#endif
 
     lua_pushinteger(L, 1);
     return 1;
@@ -3616,5 +3595,47 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
 #endif
 
     return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_test_expect(ngx_http_request_t *r)
+{
+    ngx_int_t   n;
+    ngx_str_t  *expect;
+
+    if (r->expect_tested
+        || r->headers_in.expect == NULL
+        || r->http_version < NGX_HTTP_VERSION_11)
+    {
+        return NGX_OK;
+    }
+
+    r->expect_tested = 1;
+
+    expect = &r->headers_in.expect->value;
+
+    if (expect->len != sizeof("100-continue") - 1
+        || ngx_strncasecmp(expect->data, (u_char *) "100-continue",
+                           sizeof("100-continue") - 1)
+           != 0)
+    {
+        return NGX_OK;
+    }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "send 100 Continue");
+
+    n = r->connection->send(r->connection,
+                            (u_char *) "HTTP/1.1 100 Continue" CRLF CRLF,
+                            sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1);
+
+    if (n == sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1) {
+        return NGX_OK;
+    }
+
+    /* we assume that such small packet should be send successfully */
+
+    return NGX_ERROR;
 }
 

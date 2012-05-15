@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 3 + 3);
 
 our $HtmlDir = html_dir;
 
@@ -366,7 +366,9 @@ hello world
 [alert]
 
 
-=== TEST 5: receive until on request_body
+
+=== TEST 5: receive until on request_body - receiveuntil(1) on the last byte of the body
+See https://groups.google.com/group/openresty/browse_thread/thread/43cf01da3c681aba for details
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -422,6 +424,100 @@ received: -----------------------------820127721219505131303151179
 received len: 8192
 received: $
 done
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 6: pipelined POST requests
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        content_by_lua '
+            local test = require "test"
+            test.go()
+            ngx.say("done")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go()
+   local sock, err = ngx.req.socket()
+   if sock then
+      ngx.say("got the request socket")
+   else
+      ngx.say("failed to get the request socket: ", err)
+      return
+   end
+
+   while true do
+       local data, err, part = sock:receive(4)
+       if data then
+          ngx.say("received: ", data)
+       else
+          ngx.say("failed to receive: ", err, " [", part, "]")
+          return
+       end
+   end
+end
+--- pipelined_requests eval
+["POST /t
+hello, world",
+"POST /t
+hiya, world"]
+--- response_body eval
+["got the request socket
+received: hell
+received: o, w
+received: orld
+failed to receive: closed []
+done
+",
+"got the request socket
+received: hiya
+received: , wo
+failed to receive: closed [rld]
+done
+"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 7: Expect & 100 Continue
+--- config
+    location /t {
+        content_by_lua '
+            local sock, err = ngx.req.socket()
+            if sock then
+                ngx.say("got the request socket")
+            else
+                ngx.say("failed to get the request socket: ", err)
+                return
+            end
+
+            for i = 1, 3 do
+                local data, err, part = sock:receive(5)
+                if data then
+                    ngx.say("received: ", data)
+                else
+                    ngx.say("failed to receive: ", err, " [", part, "]")
+                end
+            end
+        ';
+    }
+--- request
+POST /t
+hello world
+--- more_headers
+Expect: 100-Continue
+--- error_code: 100
+--- response_body_like chomp
+\breceived: hello\b.*?\breceived:  worl\b
 --- no_error_log
 [error]
 
