@@ -1315,8 +1315,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                 continue;
             }
 
-            if (size > r->request_body->rest) {
-                size = r->request_body->rest;
+            if (size > (size_t) r->request_body->rest) {
+                size = (size_t) r->request_body->rest;
             }
         }
 
