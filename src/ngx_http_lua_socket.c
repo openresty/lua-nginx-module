@@ -1055,8 +1055,8 @@ ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
     r = u->request;
 #endif
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua socket read chunk");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua socket read chunk %z", bytes);
 
     if (bytes == 0) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
@@ -1242,6 +1242,11 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
             }
 
             /* rc == NGX_AGAIN */
+
+            if (u->is_downstream && r->request_body->rest == 0) {
+                u->eof = 1;
+            }
+
             continue;
         }
 
@@ -1299,6 +1304,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
 
             if (r->request_body->rest == 0) {
 
+                dd("request body rest is zero");
+
                 u->eof = 1;
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1315,7 +1322,9 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 #endif
 
-        /* try to read the socket */
+        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua socket try to recv data %uz: \"%V?%V\"",
+                       (int) size, &r->uri, &r->args);
 
         n = c->recv(c, b->last, size);
 
@@ -1358,8 +1367,6 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                     r->request_body->rest = 0;
 
 #if 1
-                    u->eof = 1;
-
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua socket finished reading body");
 
