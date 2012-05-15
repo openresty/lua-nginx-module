@@ -1271,6 +1271,18 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 
         if (u->is_downstream) {
+            if (r->request_body->rest == 0) {
+
+                dd("request body rest is zero");
+
+                u->eof = 1;
+
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                               "lua request body exhausted");
+
+                continue;
+            }
+
             /* try to process the preread body */
 
             preread = r->header_in->last - r->header_in->pos;
@@ -1302,16 +1314,8 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
                 continue;
             }
 
-            if (r->request_body->rest == 0) {
-
-                dd("request body rest is zero");
-
-                u->eof = 1;
-
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                               "lua request body exhausted");
-
-                continue;
+            if (size > r->request_body->rest) {
+                size = r->request_body->rest;
             }
         }
 
