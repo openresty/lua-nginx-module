@@ -226,7 +226,6 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_ctx_t  *ctx;
     ngx_http_cleanup_t  *cln;
 
-
     /*  {{{ new coroutine to handle request */
     cc = ngx_http_lua_new_thread(r, L, &cc_ref);
 
