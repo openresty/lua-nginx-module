@@ -75,7 +75,7 @@ static void ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r);
 static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
-    lua_State *L, int obj_index, int key_index,
+    lua_State *L, int key_index,
     ngx_http_lua_socket_upstream_t *u);
 static void ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
@@ -359,7 +359,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     r->connection->single_connection = 0;
 
-    rc = ngx_http_lua_get_keepalive_peer(r, L, 1, 2, u);
+    rc = ngx_http_lua_get_keepalive_peer(r, L, 2, u);
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);
@@ -3059,7 +3059,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
-    int obj_index, int key_index, ngx_http_lua_socket_upstream_t *u)
+    int key_index, ngx_http_lua_socket_upstream_t *u)
 {
     ngx_http_lua_socket_pool_item_t     *item;
     ngx_http_lua_socket_pool_t          *spool;
@@ -3073,10 +3073,6 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
     if (key_index < 0) {
         key_index = top + key_index + 1;
-    }
-
-    if (obj_index < 0) {
-        obj_index = top + obj_index + 1;
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
