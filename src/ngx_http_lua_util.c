@@ -1908,8 +1908,6 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
 
-                value = (u_char *) lua_tolstring(L, -1, &value_len);
-
                 if (total_escape) {
                     p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
                             NGX_ESCAPE_URI);
