@@ -1366,22 +1366,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
 
         if (u->is_downstream) {
             r->request_length += n;
-
-            if (r->request_body->rest) {
-                if (n >= r->request_body->rest) {
-                    r->request_body->rest = 0;
-
-#if 1
-                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                                   "lua socket finished reading body");
-
-                    continue;
-#endif
-
-                } else {
-                    r->request_body->rest -= n;
-                }
-            }
+            r->request_body->rest -= n;
         }
     }
 
