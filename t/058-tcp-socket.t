@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 81;
+plan tests => repeat_each() * 84;
 
 our $HtmlDir = html_dir;
 
@@ -1856,4 +1856,62 @@ close: nil closed
 --- no_error_log
 [error]
 --- SKIP
+
+
+
+=== TEST 31: receive(0)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local data, err, part = sock:receive(0)
+            if not data then
+                ngx.say("failed to receive(0): ", err)
+                return
+            end
+
+            ngx.say("receive(0): [", data, "]")
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+receive(0): []
+close: 1 nil
+--- no_error_log
+[error]
 
