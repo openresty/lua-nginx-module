@@ -193,7 +193,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             q = ngx_copy(p, args.data, args.len);
             *q++ = '&';
-            q = ngx_copy(q, user_args.data, user_args.len);
+            ngx_memcpy(q, user_args.data, user_args.len);
 
             args.data = p;
             args.len += user_args.len + 1;
