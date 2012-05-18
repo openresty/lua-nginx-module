@@ -491,8 +491,6 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
         l->last = new;
     }
 
-    cur = new;
-
     return NGX_OK;
 }
 
