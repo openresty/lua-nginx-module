@@ -50,14 +50,6 @@
     (NGX_HTTP_LUA_FILE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
 
 
-#if defined(NDK) && NDK
-typedef struct {
-    size_t       size;
-    u_char      *key;
-} ngx_http_lua_set_var_data_t;
-#endif
-
-
 #ifndef NGX_HTTP_LUA_MAX_ARGS
 #define NGX_HTTP_LUA_MAX_ARGS 100
 #endif

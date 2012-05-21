@@ -71,7 +71,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, force_read_body),
       NULL },
 
-#if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
     { ngx_string("set_by_lua"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF
@@ -89,7 +88,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       ngx_http_lua_filter_set_by_lua_file },
-#endif
 
     /* rewrite_by_lua <inline script> */
     { ngx_string("rewrite_by_lua"),
