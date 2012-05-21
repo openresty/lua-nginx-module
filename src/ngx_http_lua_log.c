@@ -38,7 +38,7 @@ ngx_http_lua_ngx_log(lua_State *L)
         /* remove log-level param from stack */
         lua_remove(L, 1);
 
-        return log_wrapper(r, "", (ngx_uint_t) level, L);
+        return log_wrapper(r, "[lua] ", (ngx_uint_t) level, L);
     }
 
     dd("(lua-log) can't output log due to invalid logging context!");
@@ -64,7 +64,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if (r && r->connection && r->connection->log) {
-        return log_wrapper(r, "lua print: ", NGX_LOG_NOTICE, L);
+        return log_wrapper(r, "[lua] print: ", NGX_LOG_NOTICE, L);
 
     } else {
         dd("(lua-print) can't output print content to error log due "
