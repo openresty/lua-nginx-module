@@ -196,8 +196,19 @@ GET /lua
 --- error_code: 500
 
 
+=== TEST 14: symbol $ in lua code of set_by_lua
+--- config
+    location /lua {
+        set_by_lua $res 'return "$unknown"';
+        echo $res;
+    }
+--- request
+    GET /lua
+--- response_body
+$unknown
 
-=== TEST 14: set $limit_rate (variables with set_handler)
+
+=== TEST 15: set $limit_rate (variables with set_handler)
 --- config
     location /lua {
         set $limit_rate 1000;
@@ -213,7 +224,7 @@ limit rate = 180
 
 
 
-=== TEST 15: set $args and read $query_string
+=== TEST 16: set $args and read $query_string
 --- config
     location /lua {
         set $args 'hello';
@@ -229,7 +240,7 @@ world
 
 
 
-=== TEST 16: set $arg_xxx
+=== TEST 17: set $arg_xxx
 --- config
     location /lua {
         rewrite_by_lua '
