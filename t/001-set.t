@@ -6,9 +6,9 @@ use Test::Nginx::Socket;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
-log_level("warn");
+#log_level("warn");
 no_long_string();
 
 run_tests();
@@ -54,7 +54,7 @@ GET /lua
 
 
 
-=== TEST 4: internal script with argument
+=== TEST 4: inlined script with arguments
 --- config
     location /lua {
         set_by_lua $res "return ngx.arg[1]+ngx.arg[2]" $arg_a $arg_b;
@@ -241,4 +241,72 @@ world
     GET /lua?foo=3
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
+
+
+
+=== TEST 17: symbol $ in lua code of set_by_lua
+--- config
+    location /lua {
+        set_by_lua $res 'return "$unknown"';
+        echo $res;
+    }
+--- request
+    GET /lua
+--- response_body
+$unknown
+
+
+
+=== TEST 18: symbol $ in lua code of set_by_lua_file
+--- config
+    location /lua {
+        set_by_lua_file $res html/a.lua;
+        echo $res;
+    }
+--- user_files
+>>> a.lua
+return "$unknown"
+--- request
+    GET /lua
+--- response_body
+$unknown
+--- no_error_log
+[error]
+
+
+
+=== TEST 19: external script files with arguments
+--- config
+    location /lua {
+        set_by_lua_file $res html/a.lua $arg_a $arg_b;
+        echo $res;
+    }
+--- user_files
+>>> a.lua
+return ngx.arg[1]+ngx.arg[2]
+--- request
+GET /lua?a=5&b=2
+--- response_body
+7
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: variables in set_by_lua_file's file path
+--- config
+    location /lua {
+        set $path "html/a.lua";
+        set_by_lua_file $res $path $arg_a $arg_b;
+        echo $res;
+    }
+--- user_files
+>>> a.lua
+return ngx.arg[1]+ngx.arg[2]
+--- request
+GET /lua?a=5&b=2
+--- response_body
+7
+--- no_error_log
+[error]
 
