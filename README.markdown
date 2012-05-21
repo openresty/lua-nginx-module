@@ -31,7 +31,7 @@ Synopsis
  
             set $a "hello";
             set $b "world";
-            # inline lua script
+            # inline Lua script
             set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
             echo $res;
         }
@@ -333,7 +333,7 @@ set_by_lua_file
 
 **phase:** *rewrite*
 
-Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
+Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
 When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -351,8 +351,8 @@ content_by_lua
 
 **phase:** *content*
 
-Acts as a "content handler" and executes lua code string specified in `<lua-script-str>` for every request. 
-The lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
+Acts as a "content handler" and executes Lua code string specified in `<lua-script-str>` for every request. 
+The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass) directive should not be used in the same location.
 
@@ -365,7 +365,7 @@ content_by_lua_file
 
 **phase:** *content*
 
-Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
+Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
@@ -512,7 +512,7 @@ access_by_lua
 
 **phase:** *access tail*
 
-Acts as an access phase handler and executes lua code string specified in `<lua-script-str>` for every request.
+Acts as an access phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Note that this handler always runs *after* the standard [HttpAccessModule](http://wiki.nginx.org/HttpAccessModule). So the following will work as expected:
@@ -623,7 +623,7 @@ header_filter_by_lua_file
 
 **phase:** *output-header-filter*
 
-Equivalent to [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the lua code to be executed.
+Equivalent to [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
 This directive was first introduced in the `v0.2.1rc20` release.
 
@@ -2175,7 +2175,7 @@ This method is very much like the [rewrite](http://wiki.nginx.org/HttpRewriteMod
 is equivalent to the following Lua code
 
 
-    return ngx.redirect('/foo');  -- lua code
+    return ngx.redirect('/foo');  -- Lua code
 
 
 while
@@ -3617,7 +3617,7 @@ To avoid this, *double* escape the backslash:
 
 Here, `\\\\d+` is stripped down to `\\d+` by the Nginx config file parser and this is further stripped down to `\d+` by the Lua language parser before running.
 
-Alternatively, the regex pattern can be presented as a long-bracketed lua string literal by encasing it in "long brackets", `[[...]]`, in which case backslashes have to only be escaped once for the Nginx config file parser. 
+Alternatively, the regex pattern can be presented as a long-bracketed Lua string literal by encasing it in "long brackets", `[[...]]`, in which case backslashes have to only be escaped once for the Nginx config file parser. 
 
 
     # nginx.conf
@@ -3659,7 +3659,7 @@ With this approach, the backslashes are only stripped by the Lua language parser
     -- evaluates to "1234"
 
 
-Within external script files, PCRE sequences presented as long-bracketed lua string literals do not require modification. 
+Within external script files, PCRE sequences presented as long-bracketed Lua string literals do not require modification. 
  
 
     -- test.lua
