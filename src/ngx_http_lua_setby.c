@@ -20,6 +20,44 @@
 #include "ngx_http_lua_shdict.h"
 
 
+#if !(defined(NDK) && NDK)
+#define ngx_http_lua_script_exit  ((u_char *) &ngx_http_lua_script_exit_code)
+
+
+typedef struct {
+    ngx_http_script_code_pt     code;
+    void                       *func;
+    size_t                      size;
+    void                       *data;
+} ngx_http_lua_var_filter_code_t;
+
+
+typedef struct {
+    ngx_array_t                *codes;        /* uintptr_t */
+    ngx_uint_t                  stack_size;
+    ngx_flag_t                  log;
+    ngx_flag_t                  uninitialized_variable_warn;
+} ngx_http_lua_rewrite_loc_conf_t;
+
+
+typedef ngx_int_t (*ngx_http_lua_var_filter_pt)(ngx_http_request_t *r,
+    ngx_str_t *val, ngx_http_variable_value_t *v, void *data);
+
+
+static ngx_int_t ngx_http_lua_rewrite_var(ngx_http_request_t *r,
+        ngx_http_variable_value_t *v, uintptr_t data);
+static void ngx_http_lua_multi_value_filter_code(ngx_http_script_engine_t *e);
+static char *ngx_http_lua_set_var_filter(ngx_conf_t *cf,
+        ngx_http_lua_rewrite_loc_conf_t *rlcf,
+        ngx_http_lua_var_filter_t *filter);
+static char *ngx_http_lua_rewrite_value(ngx_conf_t *cf,
+        ngx_http_lua_rewrite_loc_conf_t *lcf, ngx_str_t *value);
+
+
+uintptr_t ngx_http_lua_script_exit_code = (uintptr_t) NULL;
+#endif
+
+
 static void ngx_http_lua_inject_arg_api(lua_State *L,
        size_t nargs,  ngx_http_variable_value_t *args);
 static int ngx_http_lua_param_get(lua_State *L);
@@ -262,3 +300,258 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
 }
 
+
+#if !(defined(NDK) && NDK)
+static ngx_int_t
+ngx_http_lua_rewrite_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
+    uintptr_t data)
+{
+    ngx_http_variable_t              *var;
+    ngx_http_core_main_conf_t        *cmcf;
+    ngx_http_lua_rewrite_loc_conf_t  *rlcf;
+
+    rlcf = ngx_http_get_module_loc_conf(r, ngx_http_rewrite_module);
+
+    if (rlcf->uninitialized_variable_warn == 0) {
+        *v = ngx_http_variable_null_value;
+        return NGX_OK;
+    }
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    var = cmcf->variables.elts;
+
+    /*
+     * the ngx_http_rewrite_module sets variables directly in r->variables,
+     * and they should be handled by ngx_http_get_indexed_variable(),
+     * so the handler is called only if the variable is not initialized
+     */
+
+    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                  "using uninitialized \"%V\" variable", &var[data].name);
+
+    *v = ngx_http_variable_null_value;
+
+    return  NGX_OK;
+}
+
+
+static void
+ngx_http_lua_multi_value_filter_code(ngx_http_script_engine_t *e)
+{
+    ngx_int_t                        rc;
+    ngx_str_t                        str;
+    ngx_http_variable_value_t       *v;
+    ngx_http_lua_var_filter_pt       func;
+    ngx_http_lua_var_filter_code_t  *vfc;
+
+    vfc = (ngx_http_lua_var_filter_code_t *) e->ip;
+
+    e->ip += sizeof(ngx_http_lua_var_filter_code_t);
+
+    v = e->sp - vfc->size;
+    e->sp = v + 1;
+
+    func = vfc->func;
+
+    rc = func(e->request, &str, v, vfc->data);
+
+    switch (rc) {
+
+    case NGX_OK :
+
+        v->data = str.data;
+        v->len = str.len;
+        v->valid = 1;
+        v->no_cacheable = 0;
+        v->not_found = 0;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
+                        "http script value (post filter): \"%v\"", v);
+        break;
+
+    case NGX_DECLINED :
+
+        v->valid = 0;
+        v->not_found = 1;
+        v->no_cacheable = 1;
+
+        break;
+
+    case NGX_ERROR :
+
+        e->ip = ngx_http_lua_script_exit;
+        e->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
+        break;
+    }
+}
+
+
+static char *
+ngx_http_lua_set_var_filter(ngx_conf_t *cf,
+        ngx_http_lua_rewrite_loc_conf_t *rlcf,
+        ngx_http_lua_var_filter_t *filter)
+{
+    ngx_http_lua_var_filter_code_t   *vfc;
+
+    vfc = ngx_http_script_start_code(cf->pool, &rlcf->codes,
+                                     sizeof(ngx_http_lua_var_filter_code_t));
+    if (vfc == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    vfc->code = ngx_http_lua_multi_value_filter_code;
+    vfc->func = filter->func;
+    vfc->size = filter->size;
+    vfc->data = filter->data;
+
+    return  NGX_CONF_OK;
+}
+
+
+static char *
+ngx_http_lua_rewrite_value(ngx_conf_t *cf,
+        ngx_http_lua_rewrite_loc_conf_t *lcf, ngx_str_t *value)
+{
+    ngx_int_t                              n;
+    ngx_http_script_compile_t              sc;
+    ngx_http_script_value_code_t          *val;
+    ngx_http_script_complex_value_code_t  *complex;
+
+    n = ngx_http_script_variables_count(value);
+
+    if (n == 0) {
+        val = ngx_http_script_start_code(cf->pool, &lcf->codes,
+                                         sizeof(ngx_http_script_value_code_t));
+        if (val == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        n = ngx_atoi(value->data, value->len);
+
+        if (n == NGX_ERROR) {
+            n = 0;
+        }
+
+        val->code = ngx_http_script_value_code;
+        val->value = (uintptr_t) n;
+        val->text_len = (uintptr_t) value->len;
+        val->text_data = (uintptr_t) value->data;
+
+        return NGX_CONF_OK;
+    }
+
+    complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
+                                 sizeof(ngx_http_script_complex_value_code_t));
+    if (complex == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    complex->code = ngx_http_script_complex_value_code;
+    complex->lengths = NULL;
+
+    ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
+
+    sc.cf = cf;
+    sc.source = value;
+    sc.lengths = &complex->lengths;
+    sc.values = &lcf->codes;
+    sc.variables = n;
+    sc.complete_lengths = 1;
+
+    if (ngx_http_script_compile(&sc) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_set_multi_var(ngx_conf_t *cf, ngx_str_t *name, ngx_str_t *value,
+        ngx_http_lua_var_filter_t *filter)
+{
+    ngx_int_t                            i, index;
+    ngx_http_variable_t                 *v;
+    ngx_http_script_var_code_t          *vcode;
+    ngx_http_lua_rewrite_loc_conf_t     *rlcf;
+    ngx_http_script_var_handler_code_t  *vhcode;
+
+    if (name->data[0] != '$') {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid variable name \"%V\"", name);
+        return NGX_CONF_ERROR;
+    }
+
+    name->len--;
+    name->data++;
+
+    v = ngx_http_add_variable(cf, name, NGX_HTTP_VAR_CHANGEABLE);
+    if (v == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    index = ngx_http_get_variable_index(cf, name);
+    if (index == NGX_ERROR) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (v->get_handler == NULL
+        && ngx_strncasecmp(name->data, (u_char *) "arg_", 4) != 0
+        && ngx_strncasecmp(name->data, (u_char *) "cookie_", 7) != 0
+        && ngx_strncasecmp(name->data, (u_char *) "http_", 5) != 0
+        && ngx_strncasecmp(name->data, (u_char *) "sent_http_", 10) != 0
+        && ngx_strncasecmp(name->data, (u_char *) "upstream_http_", 14) != 0)
+    {
+        v->get_handler = ngx_http_lua_rewrite_var;
+        v->data = index;
+    }
+
+    rlcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_rewrite_module);
+
+    for (i = filter->size; i; i--, value++) {
+        if (ngx_http_lua_rewrite_value(cf, rlcf, value)
+            != NGX_CONF_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    if (filter->size > 10) {
+        if (rlcf->stack_size == NGX_CONF_UNSET_UINT
+            || rlcf->stack_size < filter->size)
+        {
+            rlcf->stack_size = filter->size;
+        }
+    }
+
+    if (ngx_http_lua_set_var_filter(cf, rlcf, filter) != NGX_CONF_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (v->set_handler) {
+        vhcode = ngx_http_script_start_code(cf->pool, &rlcf->codes,
+                                   sizeof(ngx_http_script_var_handler_code_t));
+        if (vhcode == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        vhcode->code = ngx_http_script_var_set_handler_code;
+        vhcode->handler = v->set_handler;
+        vhcode->data = v->data;
+
+        return NGX_CONF_OK;
+    }
+
+    vcode = ngx_http_script_start_code(cf->pool, &rlcf->codes,
+                                       sizeof(ngx_http_script_var_code_t));
+    if (vcode == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    vcode->code = ngx_http_script_set_var_code;
+    vcode->index = (uintptr_t) index;
+
+    return NGX_CONF_OK;
+}
+#endif

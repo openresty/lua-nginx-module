@@ -16,10 +16,7 @@
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_shdict.h"
-
-#if defined(NDK) && NDK
 #include "ngx_http_lua_setby.h"
-#endif
 
 
 unsigned  ngx_http_lua_requires_rewrite = 0;
@@ -165,14 +162,18 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-#if defined(NDK) && NDK
 char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t           *value;
-    ngx_str_t            target;
-    ndk_set_var_t        filter;
-    u_char              *p;
+    u_char                          *p;
+    ngx_str_t                       *value;
+    ngx_str_t                        target;
+
+#if defined(NDK) && NDK
+    ndk_set_var_t                    filter;
+#else
+    ngx_http_lua_var_filter_t        filter;
+#endif
 
     ngx_http_lua_set_var_data_t     *filter_data;
 
@@ -185,7 +186,10 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
     target = value[1];
 
+#if defined(NDK) && NDK
     filter.type = NDK_SET_VAR_MULTI_VALUE_DATA;
+#endif
+
     filter.func = cmd->post;
     filter.size = cf->args->nelts - 2;    /*  get number of real params
                                               + 1 (lua script) */
@@ -208,9 +212,19 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     p = ngx_http_lua_digest_hex(p, value[2].data, value[2].len);
     *p = '\0';
 
+    filter_data->value = value[2];
+
+    if (cmd->post == ngx_http_lua_filter_set_by_lua_inline) {
+        ngx_str_set(&value[2], "");
+    }
+
     filter.data = filter_data;
 
+#if defined(NDK) && NDK
     return ndk_set_var_multi_value_core(cf, &target, &value[2], &filter);
+#else
+    return ngx_http_lua_set_multi_var(cf, &target, &value[2], &filter);
+#endif
 }
 
 
@@ -231,6 +245,9 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     L = lmcf->lua;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    v[0].data = filter_data->value.data;
+    v[0].len = filter_data->value.len;
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, v[0].data, v[0].len,
@@ -304,7 +321,6 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 
     return NGX_OK;
 }
-#endif /* defined(NDK) && NDK */
 
 
 char *
