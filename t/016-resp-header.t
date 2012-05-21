@@ -760,3 +760,26 @@ Last-Modified: Thu, 18 Nov 2010 11:27:35 GMT
 --- response_body
 Thu, 18 Nov 2010 11:27:35 GMT
 
+
+
+=== TEST 39: set response content-encoding header should bypass ngx_http_gzip_filter_module
+--- config
+    default_type text/plain;
+    gzip             on;
+    gzip_min_length  1;
+    gzip_types       text/plain;
+    location /read {
+        content_by_lua '
+            ngx.header.content_encoding = "gzip";
+            ngx.say("Hello, world, my dear friend!");
+        ';
+    }
+--- request
+GET /read
+--- more_headers
+Accept-Encoding: gzip
+--- response_headers
+Content-Type: text/plain
+--- response_body
+Hello, world, my dear friend!
+
