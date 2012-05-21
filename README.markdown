@@ -188,13 +188,13 @@ Synopsis
 Description
 ===========
 
-This module embeds Lua, via the standard interpreter or LuaJIT, into Nginx and by leveraging Nginx subrequests, allows the integration of the powerful Lua threads ( Lua coroutines) into the Nginx event model.
+This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
 Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as either of the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) interfaces are used to handle
 requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (see [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
-The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
-Loaded Lua modules persist at the nginx worker process level resulting in a small memory footprint even when under heavy loads.
+The Lua interpreter or LuaJIT instance is shared across all requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
+Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
 
 Directives
 ==========
@@ -216,7 +216,7 @@ The Lua files referenced in [set_by_lua_file](http://wiki.nginx.org/HttpLuaModul
 and [rewrite_by_lua_file](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_file) will not be cached
 and the Lua `package.loaded` table will be cleared
 at the entry point of every request (such that Lua modules
-will not be cached either). With this in place, developers can adopt an edit and refresh approach.
+will not be cached either). With this in place, developers can adopt an edit-and-refresh approach.
 
 Please note however, that Lua code inlined into nginx.conf
 such as those specified by [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua),
@@ -246,13 +246,13 @@ Specifies the maximum number of entries allowed in the worker process level comp
 
 The regular expressions used in [ngx.re.match](http://wiki.nginx.org/HttpLuaModule#ngx.re.match), [ngx.re.gmatch](http://wiki.nginx.org/HttpLuaModule#ngx.re.gmatch), [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub), and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub) will be cached within this cache if the regex option `o` (i.e., compile-once flag) is specified.
 
-The default number of entries allowed is 1024 and when this limit is reached, new regexes will not be cached (as if the `o` option was not specified) and there will be one, and only one, warning in the `error.log` file:
+The default number of entries allowed is 1024 and when this limit is reached, new regular expressions will not be cached (as if the `o` option was not specified) and there will be one, and only one, warning in the `error.log` file:
 
 
     2011/08/27 23:18:26 [warn] 31997#0: *1 lua exceeding regex cache max entries (1024), ...
 
 
-Do not activate the `o` option for regexes (and/or `replace` string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations to avoid hitting the specified limit.
+Do not activate the `o` option for regular expressions (and/or `replace` string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations to avoid hitting the specified limit.
 
 lua_package_path
 ----------------
@@ -296,7 +296,7 @@ This directive is designed to execute short, fast running code blocks as the Ngi
 
 Note that I/O operations such as [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec), [echo](http://wiki.nginx.org/HttpEchoModule#echo) and similar are not permitted within the context of this directive.
 
-In addition, note that this directive can only output a value to a single Nginx variable at
+In addition, note that this directive can only write out a value to a single Nginx variable at
 a time. However, a workaround is possible using the [ngx.var.VARIABLE](http://wiki.nginx.org/HttpLuaModule#ngx.var.VARIABLE) interface.
 
 
@@ -335,7 +335,7 @@ set_by_lua_file
 
 Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
-When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
@@ -369,7 +369,7 @@ Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
+When the Lua code cache is on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
@@ -415,7 +415,7 @@ On the other hand, the following will not work as expected:
     ?  }
 
 
-because `if` runs *before* [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) even if it is put after [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) in the config.
+because `if` runs *before* [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) even if it is placed after [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) in the config.
 
 The right way of doing this is as follows:
 
@@ -434,7 +434,7 @@ The right way of doing this is as follows:
     }
 
 
-Note that the [ngx_eval](http://www.grid.net.ru/nginx/eval.en.html) module can be approximated using [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua). For example,
+Note that the [ngx_eval](http://www.grid.net.ru/nginx/eval.en.html) module can be approximated by using [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua). For example,
 
 
     location / {
@@ -486,7 +486,7 @@ If the [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](
     }
 
 
-Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewrite ^ /bar last` is used as this will similarly initiate an internal redirection. If the `break` modifier is used instead, there will be no internal rediction and the rewrite_by_lua code will be executed.
+Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewrite ^ /bar last` is used as this will similarly initiate an internal redirection. If the `break` modifier is used instead, there will be no internal redirection and the rewrite_by_lua code will be executed.
 
 rewrite_by_lua_file
 -------------------
@@ -501,7 +501,7 @@ Equivalent to [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When the Lua code cache is on (default state), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
 access_by_lua
 -------------
@@ -535,7 +535,7 @@ Note that this handler always runs *after* the standard [HttpAccessModule](http:
 
 That is, if a client IP address is in the blacklist, it will be denied before the MySQL query for more complex authentication is executed by [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua).
 
-Note that the [ngx_auth_request](http://mdounin.ru/hg/ngx_http_auth_request_module/) module can be approximated using [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua):
+Note that the [ngx_auth_request](http://mdounin.ru/hg/ngx_http_auth_request_module/) module can be approximated by using [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua):
 
 
     location / {
@@ -584,7 +584,7 @@ Equivalent to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When the Lua code cache is on (default state), the user code is loaded once at the first request and cached 
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid repeatedly reloading Nginx.
 
@@ -748,7 +748,7 @@ lua_socket_buffer_size
 
 Specifies the buffer size used by cosocket reading operations.
 
-This buffer does not have to be that big to hold everything at the same time because cosocket supports 100% non-buffered reading and parsing. So even `1` byte buffer size should still work everywhere but the performance could be bad.
+This buffer does not have to be that big to hold everything at the same time because cosocket supports 100% non-buffered reading and parsing. So even `1` byte buffer size should still work everywhere but the performance could be terrible.
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
@@ -803,7 +803,7 @@ If you want to output huge response data in a streaming fashion (via the [ngx.fl
 
 This directive is turned `on` by default.
 
-THis directive was first introduced in the `v0.5.0rc19` release.
+This directive was first introduced in the `v0.5.0rc19` release.
 
 Nginx API for Lua
 =================
@@ -1131,7 +1131,7 @@ Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`
 `res.header` holds all the response headers of the
 subrequest and it is a normal Lua table. For multi-value response headers,
 the value is a Lua (array) table that holds all the values in the order that
-they appear. For instance, if the subrequest response headers contains the following
+they appear. For instance, if the subrequest response headers contain the following
 lines:
 
 
@@ -1163,7 +1163,7 @@ argument, which support the options:
 * `args`
 	specify the subrequest's URI query arguments (both string value and Lua tables are accepted)
 * `ctx`
-	specify a Lua table to be the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for the subrequest. It can be the current request's [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table, which effectively make the parent and its subrequest to share exactly the same context table. This option was first introduced in the `v0.3.1rc25` release.
+	specify a Lua table to be the [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table for the subrequest. It can be the current request's [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx) table, which effectively makes the parent and its subrequest to share exactly the same context table. This option was first introduced in the `v0.3.1rc25` release.
 * `vars`
 	take a Lua table which holds the values to set the specified Nginx variables in the subrequest as this option's value. This option was first introduced in the `v0.3.1rc31` release.
 * `copy_all_vars`
