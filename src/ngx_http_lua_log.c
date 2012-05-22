@@ -64,7 +64,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if (r && r->connection && r->connection->log) {
-        return log_wrapper(r, "[lua] print: ", NGX_LOG_NOTICE, L);
+        return log_wrapper(r, "[lua] ", NGX_LOG_NOTICE, L);
 
     } else {
         dd("(lua-print) can't output print content to error log due "
@@ -80,10 +80,11 @@ log_wrapper(ngx_http_request_t *r, const char *ident, ngx_uint_t level,
         lua_State *L)
 {
     u_char              *buf;
-    u_char              *p;
-    u_char              *q;
+    u_char              *p, *q;
+    ngx_str_t            name;
     int                  nargs, i;
     size_t               size, len;
+    size_t               src_len = 0;
     int                  type;
     const char          *msg;
     lua_Debug            ar;
@@ -99,30 +100,32 @@ log_wrapper(ngx_http_request_t *r, const char *ident, ngx_uint_t level,
     lua_getinfo(L, "Snl", &ar);
 
     /* get the basename of the Lua source file path, stored in q */
-    q = (u_char *) ar.short_src;
-    if (q) {
-        p = q;
+    name.data = (u_char *) ar.short_src;
+    if (name.data == NULL) {
+        name.len = 0;
+
+    } else {
+        p = name.data;
         while (*p != '\0') {
             if (*p == '/' || *p == '\\') {
-                q = p + 1;
+                name.data = p + 1;
             }
             p++;
         }
+
+        name.len = p - name.data;
     }
 
-    lua_pushfstring(L, "%s:%d: ", q,
-                    ar.currentline ? ar.currentline : ar.linedefined);
-    lua_insert(L, 1);
-
-    if (*ar.namewhat != '\0' && *ar.what == 'L') {
-        lua_pushfstring(L, "%s(): ", ar.name);
-        lua_insert(L, 2);
-    }
 #endif
 
     nargs = lua_gettop(L);
 
-    size = 0;
+    size = name.len + NGX_INT_T_LEN + sizeof(":: ") - 1;
+
+    if (*ar.namewhat != '\0' && *ar.what == 'L') {
+        src_len = ngx_strlen(ar.name);
+        size += src_len + sizeof("(): ") - 1;
+    }
 
     for (i = 1; i <= nargs; i++) {
         type = lua_type(L, i);
@@ -162,12 +165,25 @@ log_wrapper(ngx_http_request_t *r, const char *ident, ngx_uint_t level,
         }
     }
 
-    buf = ngx_palloc(r->pool, size + 1);
-    if (buf == NULL) {
-        return luaL_error(L, "out of memory");
+    buf = lua_newuserdata(L, size + 1);
+
+    p = ngx_copy(buf, name.data, name.len);
+
+    *p++ = ':';
+
+    p = ngx_snprintf(p, NGX_INT_T_LEN, "%d",
+                     ar.currentline ? ar.currentline : ar.linedefined);
+
+    *p++ = ':'; *p++ = ' ';
+
+    if (*ar.namewhat != '\0' && *ar.what == 'L') {
+        p = ngx_copy(p, ar.name, src_len);
+        *p++ = '(';
+        *p++ = ')';
+        *p++ = ':';
+        *p++ = ' ';
     }
 
-    p = buf;
     for (i = 1; i <= nargs; i++) {
         type = lua_type(L, i);
         switch (type) {
@@ -215,8 +231,13 @@ log_wrapper(ngx_http_request_t *r, const char *ident, ngx_uint_t level,
 
     *p++ = '\0';
 
-    ngx_log_error(level, r->connection->log, 0,
-            "%s%s", ident, (buf == NULL) ? (u_char *) "(null)" : buf);
+    if (p - buf > (off_t) (size + 1)) {
+        return luaL_error(L, "buffer error: %d > %d", (int) (p - buf),
+                          (int) (size + 1));
+    }
+
+    ngx_log_error(level, r->connection->log, 0, "%s%s", ident, buf);
+
     return 0;
 }
 
