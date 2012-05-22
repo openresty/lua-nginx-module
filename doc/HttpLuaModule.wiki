@@ -185,8 +185,8 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
 
 This module embeds Lua, via the standard interpreter or LuaJIT, into Nginx and by leveraging Nginx subrequests, allows the integration of the powerful Lua threads ( Lua coroutines) into the Nginx event model.
 
-Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as either of the [[#ngx.location.capture|ngx.location.capture]] or [[#ngx.location.capture_multi|ngx.location.capture_multi]] interfaces are used to handle
-requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (see [[HttpDrizzleModule]], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [[HttpMemcModule]], [[HttpRedis2Module]] and [[HttpProxyModule]] modules for details).
+Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
+requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.socket.tcp|ngx.socket.tcp]], [[HttpDrizzleModule]], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [[HttpMemcModule]], [[HttpRedis2Module]] and [[HttpProxyModule]] modules for details).
 
 The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
 Loaded Lua modules persist at the nginx worker process level resulting in a small memory footprint even when under heavy loads.
