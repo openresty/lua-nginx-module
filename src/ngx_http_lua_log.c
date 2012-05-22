@@ -64,7 +64,7 @@ ngx_http_lua_print(lua_State *L)
     lua_pop(L, 1);
 
     if (r && r->connection && r->connection->log) {
-        return log_wrapper(r, "[lua] print: ", NGX_LOG_NOTICE, L);
+        return log_wrapper(r, "[lua] ", NGX_LOG_NOTICE, L);
 
     } else {
         dd("(lua-print) can't output print content to error log due "
