@@ -63,7 +63,8 @@ static void
 ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path)
 {
-    const char *tmp_path;
+    const char          *tmp_path;
+    const char          *prefix;
 
     /* XXX here we use some hack to simplify string manipulation */
     tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
