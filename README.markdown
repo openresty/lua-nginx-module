@@ -1,3 +1,7 @@
+<!---
+This file was generated automatically from doc/HttpLuaModule.wiki by wiki2markdown.pl
+-->
+
 Name
 ====
 
