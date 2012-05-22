@@ -1,3 +1,8 @@
+<!---
+Don't edit this file manually! Instead you should generate it by using:
+    wiki2markdown.pl /path/to/the/wiki/file
+-->
+
 Name
 ====
 
@@ -190,8 +195,8 @@ Description
 
 This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
-Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as either of the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) interfaces are used to handle
-requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (see [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as the [Nginx API for Lua](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) provided by this module is used to handle
+requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi), [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp), [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
 The Lua interpreter or LuaJIT instance is shared across all requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
@@ -369,7 +374,7 @@ Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When the Lua code cache is on (by default), the user code is loaded once at the first request and cached 
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
@@ -1113,7 +1118,7 @@ ngx.location.capture
 
 Issue a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
 
-Nginx subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
+Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`, `ngx_drizzle`, and even `ngx_lua` itself and etc etc etc.
 
 Also note that subrequests just mimic the HTTP interface but there is *no* extra HTTP/TCP traffic *nor* IPC involved. Everything works internally, efficiently, on the C level.
@@ -1979,9 +1984,9 @@ ngx.req.get_body_data
 Retrieves in-memory request body data. It returns a Lua string rather than a Lua table holding all the parsed query arguments. Use the [ngx.req.get_post_args](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_post_args) function instead if a Lua table is required.
 
 This function returns `nil` if
-a) the request body has not been read,
-b) the request body has been read into disk temporary files,
-c) or the request body has zero size.
+1. the request body has not been read,
+1. the request body has been read into disk temporary files,
+1. or the request body has zero size.
 
 If the request body has not been read yet, call [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) first (or turned on [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) to force this module to read the request body automatically, but this is not recommended).
 
@@ -3680,7 +3685,7 @@ Just to name a few:
 * fetching backend information from external storage backends (like redis, memcached, mysql, postgresql) and use that information to choose which upstream backend to access on-the-fly,
 * coding up arbitrarily complex web applications in a content handler using synchronous but still non-blocking access to the database backends and other storage,
 * doing very complex URL dispatch in Lua at rewrite phase,
-* using Lua to implement advanced caching mechanism for nginx subrequests and arbitrary locations.
+* using Lua to implement advanced caching mechanism for Nginx's subrequests and arbitrary locations.
 
 The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.0 is enabled. 
 
