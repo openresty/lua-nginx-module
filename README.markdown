@@ -2428,6 +2428,16 @@ If the argument value is `false`, then the effect is equivalent to the `nil` val
 
 This method was first introduced in the `v0.3.1rc27` release.
 
+ngx.decode_args
+---------------
+**syntax:** *table = ngx.decode_args(str)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Decode a URI encoded string into a Lua table.
+
+This is the inverse function of ngx.encode_args.
+
 ngx.encode_base64
 -----------------
 **syntax:** *newstr = ngx.encode_base64(str)*
