@@ -1,3 +1,8 @@
+<!---
+Don't edit this file manually! Instead you should generate it by using:
+    wiki2markdown.pl /path/to/the/wiki/file
+-->
+
 Name
 ====
 
@@ -190,8 +195,8 @@ Description
 
 This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
-Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as either of the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) interfaces are used to handle
-requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (see [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as the [Nginx API for Lua](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) provided by this module is used to handle
+requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi), [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp), [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
 
 The Lua interpreter or LuaJIT instance is shared across all requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
@@ -369,7 +374,7 @@ Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When the Lua code cache is on (by default), the user code is loaded once at the first request and cached 
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
@@ -839,7 +844,7 @@ It is also possible to directly require the packages in external Lua modules:
 
 The ability to require these packages was introduced in the `v0.2.1rc19` release.
 
-Network I/O operations in user code should only be done through the Nginx Lua API calls as the Nginx event loop may be blocked and performance drop off dramatically otherwise. Disk operations with relatively small amount of data can be done using the standard Lua `io` library but huge file reading and writing should be avoided wherever possible as they may block the Nginx process significantly. Delegating all network and disk I/O operations to Nginx subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and similar) is strongly recommended for maximum performance.
+Network I/O operations in user code should only be done through the Nginx Lua API calls as the Nginx event loop may be blocked and performance drop off dramatically otherwise. Disk operations with relatively small amount of data can be done using the standard Lua `io` library but huge file reading and writing should be avoided wherever possible as they may block the Nginx process significantly. Delegating all network and disk I/O operations to Nginx's subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and similar) is strongly recommended for maximum performance.
 
 ngx.arg
 -------
@@ -868,7 +873,7 @@ Here is an example
     }
 
 
-that outputs `88`, the sum of `32` and `56`.
+that writes out `88`, the sum of `32` and `56`.
 
 ngx.var.VARIABLE
 ----------------
@@ -1097,7 +1102,7 @@ Then `GET /orig` will give
 
 rather than the original `"hello"` value.
 
-Arbitrary data values, including Lua closures and nested tables, can be inserted into this "matic" table. It also allows the registration of custom meta methods.
+Arbitrary data values, including Lua closures and nested tables, can be inserted into this "magic" table. It also allows the registration of custom meta methods.
 
 Overriding `ngx.ctx` with a new Lua table is also supported, for example,
 
@@ -1113,7 +1118,7 @@ ngx.location.capture
 
 Issue a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
 
-Nginx subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
+Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`, `ngx_drizzle`, and even `ngx_lua` itself and etc etc etc.
 
 Also note that subrequests just mimic the HTTP interface but there is *no* extra HTTP/TCP traffic *nor* IPC involved. Everything works internally, efficiently, on the C level.
@@ -1154,7 +1159,7 @@ the nginx core. Use normal locations combined with the `internal` directive to
 prepare internal-only locations.
 
 An optional option table can be fed as the second
-argument, which support the options:
+argument, which supports the options:
 
 * `method`
 	specify the subrequest's request method, which only accepts constants like `ngx.HTTP_POST`.
@@ -1210,7 +1215,7 @@ The `args` option can also take plain query strings:
 
 This is functionally identical to the previous examples.
 
-The `share_all_vars` option controls whether to share nginx variables among the current request and new subrequests. 
+The `share_all_vars` option controls whether to share nginx variables among the current request and its subrequests. 
 If this option is set to `true`, then the current request and associated subrequests will share the same Nginx variable scope. Hence, changes to Nginx variables made by a subrequest will affect the current request.
 
 Care should be taken in using this option as variable scope sharing can have unexpected side effects. The `args`, `vars`, or `copy_all_vars` options are generally preferable instead.
@@ -2112,7 +2117,7 @@ The optional second `args` can be used to specify extra URI query arguments, for
     ngx.exec("/foo", "a=3&b=hello%20world")
 
 
-Alternatively, a Lua table can passed for the `args` argument for ngx_lua to carry out URI escaping and string concatenation automatically.
+Alternatively, a Lua table can be passed for the `args` argument for ngx_lua to carry out URI escaping and string concatenation automatically.
 
 
     ngx.exec("/foo", { a = 3, b = "hello world" })
@@ -3680,7 +3685,7 @@ Just to name a few:
 * fetching backend information from external storage backends (like redis, memcached, mysql, postgresql) and use that information to choose which upstream backend to access on-the-fly,
 * coding up arbitrarily complex web applications in a content handler using synchronous but still non-blocking access to the database backends and other storage,
 * doing very complex URL dispatch in Lua at rewrite phase,
-* using Lua to implement advanced caching mechanism for nginx subrequests and arbitrary locations.
+* using Lua to implement advanced caching mechanism for Nginx's subrequests and arbitrary locations.
 
 The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.0 is enabled. 
 
