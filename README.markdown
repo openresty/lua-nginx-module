@@ -1,6 +1,6 @@
 <!---
 Don't edit this file manually! Instead you should generate it by using:
-    wiki2markdown.pl /path/to/the/wiki/file
+    wiki2markdown.pl doc/HttpLuaModule.wiki
 -->
 
 Name
