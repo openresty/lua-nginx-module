@@ -1,4 +1,4 @@
-= Name =
+﻿= Name =
 
 ngx_lua - Embed the power of Lua into Nginx
 
@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc24] released on 18 April 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc28] released on 16 May 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -188,7 +188,7 @@ This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx a
 Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
 requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.socket.tcp|ngx.socket.tcp]], [[HttpDrizzleModule]], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [[HttpMemcModule]], [[HttpRedis2Module]] and [[HttpProxyModule]] modules for details).
 
-The Lua interpreter or LuaJIT instance is shared across all requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
+The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
 
 = Directives =
@@ -2353,6 +2353,15 @@ If the argument value is <code>false</code>, then the effect is equivalent to th
 
 This method was first introduced in the <code>v0.3.1rc27</code> release.
 
+== ngx.decode_args ==
+'''syntax:''' ''table = ngx.decode_args(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Decodes a URI encoded query-string into a Lua table. This is the inverse function of [[#ngx.encode_args|ngx.encode_args]].
+
+This method was introduced in the <code>v0.5.0rc29</code>.
+
 == ngx.encode_base64 ==
 '''syntax:''' ''newstr = ngx.encode_base64(str)''
 
@@ -3634,10 +3643,8 @@ Please report bugs or submit patches by:
 * implement the SSL cosocket API.
 * implement the <code>ngx.re.split</code> method.
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
-* fix HTTP 1.0 support: we should by default close the current HTTP 1.0 connection right away if no <code>Content-Length</code> response header is set. the current automatic full buffering bahvior is way too expensive.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
-* deal with TCP 3-second delay problem under great connection harness.
 * add APIs to access cookies as key/value pairs.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 

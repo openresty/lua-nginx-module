@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc24
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 18
-    April 2012.
+    This document describes ngx_lua v0.5.0rc28
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 16
+    May 2012.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -196,11 +196,11 @@ Description
     (<http://github.com/FRiCKLE/ngx_postgres/>), [[HttpMemcModule]],
     [[HttpRedis2Module]] and [[HttpProxyModule]] modules for details).
 
-    The Lua interpreter or LuaJIT instance is shared across all requests in
-    a single nginx worker process but request contexts are segregated using
-    lightweight Lua coroutines. Loaded Lua modules persist in the nginx
-    worker process level resulting in a small memory footprint even when
-    under heavy loads.
+    The Lua interpreter or LuaJIT instance is shared across all the requests
+    in a single nginx worker process but request contexts are segregated
+    using lightweight Lua coroutines. Loaded Lua modules persist in the
+    nginx worker process level resulting in a small memory footprint even
+    when under heavy loads.
 
 Directives
   lua_code_cache
@@ -2531,9 +2531,10 @@ Nginx API for Lua
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua**
 
-    Decode a URI encoded string into a Lua table.
+    Decodes a URI encoded query-string into a Lua table. This is the inverse
+    function of ngx.encode_args.
 
-    This is the inverse function of ngx.encode_args.
+    This method was introduced in the "v0.5.0rc29".
 
   ngx.encode_base64
     syntax: *newstr = ngx.encode_base64(str)*
@@ -4173,17 +4174,10 @@ TODO
     *   use "ngx_hash_t" to optimize the built-in header look-up process for
         ngx.req.set_header, ngx.header.HEADER, and etc.
 
-    *   fix HTTP 1.0 support: we should by default close the current HTTP
-        1.0 connection right away if no "Content-Length" response header is
-        set. the current automatic full buffering bahvior is way too
-        expensive.
-
     *   add configure options for different strategies of handling the
         cosocket connection exceeding in the pools.
 
     *   add directives to run Lua codes when nginx stops/reloads.
-
-    *   deal with TCP 3-second delay problem under great connection harness.
 
     *   add APIs to access cookies as key/value pairs.
 
