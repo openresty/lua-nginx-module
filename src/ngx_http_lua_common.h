@@ -54,6 +54,7 @@
 typedef struct {
     size_t       size;
     u_char      *key;
+    ngx_str_t    script;
 } ngx_http_lua_set_var_data_t;
 #endif
 
