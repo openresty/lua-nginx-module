@@ -582,13 +582,13 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
     return 1;
 }
 
+
 static int
 ngx_http_lua_ngx_decode_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
     u_char                      *last;
     size_t                       len = 0;
-    int                          retval;
     int                          n;
     int                          max;
 
@@ -621,10 +621,9 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
 
     last = buf + len;
 
-    retval = ngx_http_lua_parse_args(r, L, buf, last, max);
-
-    return retval;
+    return ngx_http_lua_parse_args(r, L, buf, last, max);
 }
+
 
 #if (NGX_OPENSSL)
 

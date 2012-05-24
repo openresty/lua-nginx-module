@@ -212,8 +212,6 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 }
 
 
-
-
 int
 ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
         u_char *last, int max)
