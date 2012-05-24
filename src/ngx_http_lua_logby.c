@@ -1,4 +1,3 @@
-
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -22,9 +21,10 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
 
+
 static ngx_int_t ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r);
 
-/* inspired from ngx_http_lua_header_filter_by_lua_env() */
+
 static void
 ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
 {
@@ -86,6 +86,7 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
 }
 
+
 ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
@@ -124,6 +125,7 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     return llcf->log_handler(r);
 }
 
+
 ngx_int_t
 ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
 {
@@ -158,6 +160,7 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
 
     return ngx_http_lua_log_by_chunk(L, r);
 }
+
 
 ngx_int_t
 ngx_http_lua_log_handler_file(ngx_http_request_t *r)
@@ -252,3 +255,4 @@ ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     return NGX_OK;
 }
+

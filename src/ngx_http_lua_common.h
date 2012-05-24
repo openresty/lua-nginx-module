@@ -123,15 +123,14 @@ typedef struct {
     u_char                 *content_src_key; /* cached key for content_src */
 
 
-    /* log_by_lua inline script/script file path */
-    ngx_http_complex_value_t    log_src;
-    /* cached key for log_src */
-    u_char                      *log_src_key;
+    ngx_http_complex_value_t     log_src;     /* log_by_lua inline script/script
+                                                 file path */
 
+    u_char                      *log_src_key; /* cached key for log_src */
 
-    ngx_http_complex_value_t header_filter_src;    /*  header_filter_by_lua
-                                                inline script/script
-                                                file path */
+    ngx_http_complex_value_t header_filter_src;  /*  header_filter_by_lua
+                                                     inline script/script
+                                                     file path */
 
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
