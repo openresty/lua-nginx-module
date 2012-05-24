@@ -256,19 +256,23 @@ Do not activate the <code>o</code> option for regular expressions (and/or <code>
 
 Sets the Lua module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The path string is in standard Lua path form, and <code>;;</code>
-can be used to stand for the original path.
+can be used to stand for the original search paths.
+
+Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</code> or <code>${prefix}</code> can be used in the search path string to indicate the path of the <code>server prefix</code> usually determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 == lua_package_cpath ==
 
 '''syntax:''' ''lua_package_cpath <lua-style-cpath-str>''
 
-'''default:''' ''The content of LUA_CPATH environ variable or Lua's compiled-in defaults.''
+'''default:''' ''The content of LUA_CPATH environment variable or Lua's compiled-in defaults.''
 
 '''context:''' ''main''
 
 Sets the Lua C-module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The cpath string is in standard Lua cpath form, and <code>;;</code>
 can be used to stand for the original cpath.
+
+Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</code> or <code>${prefix}</code> can be used in the search path string to indicate the path of the <code>server prefix</code> usually determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 == set_by_lua ==
 
@@ -327,6 +331,8 @@ Equivalent to [[#set_by_lua|set_by_lua]], except that the file specified by <cod
 
 Nginx variable interpolation is supported in the <code><path-to-lua-script-file></code> argument string of this directive. But special care must be taken for injection attacks.
 
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
@@ -358,6 +364,8 @@ Do not use this directive and other content handler directives in the same locat
 Equivalent to [[#content_by_lua|content_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -489,6 +497,8 @@ Equivalent to [[#rewrite_by_lua|rewrite_by_lua]], except that the file specified
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid reloading Nginx.
 
 == access_by_lua ==
@@ -570,6 +580,8 @@ Equivalent to [[#access_by_lua|access_by_lua]], except that the file specified b
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid repeatedly reloading Nginx.
@@ -608,6 +620,8 @@ This directive was first introduced in the <code>v0.2.1rc20</code> release.
 '''phase:''' ''output-header-filter''
 
 Equivalent to [[#header_filter_by_lua|header_filter_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 This directive was first introduced in the <code>v0.2.1rc20</code> release.
 
