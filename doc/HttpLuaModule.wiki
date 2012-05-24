@@ -956,12 +956,12 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Writes <code>ngx.NOTICE</code> log level arguments prefixed with <code>lua print:</code> to the nginx <code>error.log</code> file.
+Writes argument values into the nginx <code>error.log</code> file with the <code>ngx.NOTICE</code> log level.
 
 It is equivalent to
 
 <geshi lang="lua">
-    ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
+    ngx.log(ngx.NOTICE, ...)
 </geshi>
 
 Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
@@ -2220,7 +2220,7 @@ Flushes response output to the client.
 
 In synchronous mode, the function will not return until all output data has been written into the system send buffer or until the [[HttpCoreModule#send_timeout|send_timeout]] setting has expired. Note that using the Lua coroutine mechanism means that this function does not block the Nginx event loop even in the synchronous mode.
 
-When <code>ngx.flush(true)</code> is called immediately after <code>ngx.print</code> or <code>ngx.say</code>, it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
+When <code>ngx.flush(true)</code> is called immediately after [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]], it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
 Note that <code>ngx.flush</code> is non functional when in the HTTP 1.0 output buffering mode. See [[#HTTP 1.0 support|HTTP 1.0 support]].
 
