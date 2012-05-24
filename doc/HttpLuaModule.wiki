@@ -312,6 +312,8 @@ This directive can be freely mixed with all directives of the [[HttpRewriteModul
     set $baz "bar: $bar";  # $baz == "bar: 33"
 </geshi>
 
+Since the <code>0.5.0rc29</code> release, Nginx variable interpolation is disabled in the <code><lua-script-str></code> argument of this directive, and you can use the dollar sign character (<code>$</code>) directly.
+
 This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
 
 == set_by_lua_file ==
@@ -322,6 +324,8 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 '''phase:''' ''rewrite''
 
 Equivalent to [[#set_by_lua|set_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
+
+Nginx variable interpolation is supported in the <code><path-to-lua-script-file></code> argument string of this directive. But special care must be taken for injection attacks.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
