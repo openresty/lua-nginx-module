@@ -65,7 +65,7 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 #endif /* defined(NDK) && NDK */
 
     /*  {{{ initialize ngx.* namespace */
-    lua_createtable(L, 0 /* narr */, 71 /* nrec */);    /*  ngx.* */
+    lua_createtable(L, 0 /* narr */, 72 /* nrec */);    /*  ngx.* */
 
     ngx_http_lua_inject_internal_utils(r->connection->log, L);
 
