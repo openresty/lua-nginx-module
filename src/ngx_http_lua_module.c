@@ -32,12 +32,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+#if (NGX_PCRE)
     { ngx_string("lua_regex_cache_max_entries"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
       offsetof(ngx_http_lua_main_conf_t, regex_cache_max_entries),
       NULL },
+#endif
 
     { ngx_string("lua_package_cpath"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
