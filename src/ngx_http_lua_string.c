@@ -601,13 +601,12 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
     buf = (u_char *) luaL_checklstring(L, 1, &len);
 
     if (n == 2) {
-        max = luaL_checkinteger(L, 2);
+        max = luaL_checkint(L, 2);
         lua_pop(L, 1);
 
     } else {
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
-    lua_pop(L, 1);
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
