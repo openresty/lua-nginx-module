@@ -1631,7 +1631,7 @@ This interface was first introduced in the <code>v0.3.1rc13</code> release.
 See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 
 == ngx.req.get_uri_args ==
-'''syntax:''' ''args = ngx.req.get_uri_args(count_limit?)''
+'''syntax:''' ''args = ngx.req.get_uri_args(max_args?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -1698,9 +1698,9 @@ Here the <code>args</code> table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
 
-However, the optional <code>count_limit</code> function argument can be used to override this limit:
+However, the optional <code>max_args</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
     local args = ngx.req.get_uri_args(10)
@@ -1712,7 +1712,7 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_uri_args(0)
 </geshi>
 
-Removing the <code>count_limit</code> cap is strongly discouraged.
+Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_post_args ==
 '''syntax:''' ''ngx.req.get_post_args(count_limit?)''
@@ -2372,11 +2372,25 @@ If the argument value is <code>false</code>, then the effect is equivalent to th
 This method was first introduced in the <code>v0.3.1rc27</code> release.
 
 == ngx.decode_args ==
-'''syntax:''' ''table = ngx.decode_args(str)''
+'''syntax:''' ''table = ngx.decode_args(str, max_args?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [[#ngx.encode_args|ngx.encode_args]].
+
+The optional <code>max_args</code> argument can be used to specify the maximal
+number of arguments parsed from the <code>str</code> argument. By default, a
+maximum of 100 request arguments are parsed (including those with the same name)
+and that additional URI arguments are silently discarded to guard
+against potential denial of service attacks.
+
+This argument can be set to zero to remove the limit and to process all request arguments received:
+
+<geshi lang="lua">
+    local args = ngx.decode_args(str, 0)
+</geshi>
+
+Removing the <code>max_args</code> cap is strongly discouraged.
 
 This method was introduced in the <code>v0.5.0rc29</code>.
 
