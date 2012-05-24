@@ -29,7 +29,7 @@ static void ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
-        ngx_http_variable_value_t *args, size_t nargs)
+        ngx_http_variable_value_t *args, size_t nargs, ngx_str_t *script)
 {
     size_t           i;
     ngx_int_t        rc;
@@ -42,6 +42,8 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_cleanup_t          *cln;
+
+    dd("nargs: %d", (int) nargs);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -168,6 +170,7 @@ ngx_http_lua_param_get(lua_State *L)
     ngx_http_variable_value_t       *v;
 
     idx = luaL_checkint(L, 2);
+    idx--;
 
     /*  get number of args from closure */
     n = luaL_checkint(L, lua_upvalueindex(1));
@@ -175,7 +178,7 @@ ngx_http_lua_param_get(lua_State *L)
     /*  get args from closure */
     v = lua_touserdata(L, lua_upvalueindex(2));
 
-    if (idx < 0 || idx > n-1) {
+    if (idx < 0 || idx > n - 1) {
         lua_pushnil(L);
 
     } else {
@@ -228,7 +231,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
     /*  {{{ initialize ngx.* namespace */
 
-    lua_createtable(L, 0 /* narr */, 71 /* nrec */);    /*  ngx.* */
+    lua_createtable(L, 0 /* narr */, 72 /* nrec */);    /*  ngx.* */
 
     ngx_http_lua_inject_internal_utils(r->connection->log, L);
 
