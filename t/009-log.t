@@ -372,7 +372,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:8: hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:8:(?: foo\(\):)? hello, log12343.14159/
 
 
 
