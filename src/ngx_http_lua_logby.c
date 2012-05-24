@@ -3,6 +3,7 @@
 #endif
 #include "ddebug.h"
 
+#include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
@@ -90,7 +91,10 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
+    ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
+    ngx_int_t                    rc;
+    lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -122,7 +126,26 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     }
 
     dd("calling log handler");
-    return llcf->log_handler(r);
+    rc = llcf->log_handler(r);
+
+    /* we must release the ngx.ctx table here because request cleanup runs
+     * before log phase handlers */
+
+    if (ctx->ctx_ref != LUA_NOREF) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                "lua release ngx.ctx");
+
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        L = lmcf->lua;
+
+        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        luaL_unref(L, -1, ctx->ctx_ref);
+        ctx->ctx_ref = LUA_NOREF;
+        lua_pop(L, 1);
+    }
+
+    return rc;
 }
 
 

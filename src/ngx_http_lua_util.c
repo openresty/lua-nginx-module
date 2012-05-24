@@ -7,6 +7,7 @@
 
 
 #include "nginx.h"
+#include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_pcrefix.h"
@@ -689,7 +690,10 @@ ngx_http_lua_request_cleanup(void *data)
 
     L = lmcf->lua;
 
-    if (ctx->ctx_ref != LUA_NOREF) {
+    /* we cannot release the ngx.ctx table if we have log_by_lua* hooks
+     * because request cleanup runs before log phase handlers */
+
+    if (ctx->ctx_ref != LUA_NOREF && !ngx_http_lua_requires_log) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua release ngx.ctx");
 
