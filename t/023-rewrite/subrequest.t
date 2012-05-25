@@ -618,3 +618,27 @@ copass: res 404
 copas: capture /memc_set
 copss: status 200
 
+
+
+=== TEST 23: I/O in named location
+the nginx core requires the patch https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.15-reset_wev_handler_in_named_locations.patch
+--- config
+    location /t {
+        echo_exec @named;
+    }
+
+    location @named {
+        rewrite_by_lua '
+            ngx.location.capture("/hello")
+        ';
+        echo done;
+    }
+
+    location /hello {
+        echo hello;
+    }
+--- request
+    GET /t
+--- response_body
+done
+

@@ -54,6 +54,7 @@
 typedef struct {
     size_t       size;
     u_char      *key;
+    ngx_str_t    script;
 } ngx_http_lua_set_var_data_t;
 #endif
 
@@ -76,8 +77,10 @@ typedef struct {
 
     ngx_pool_t      *pool;
 
+#if (NGX_PCRE)
     ngx_int_t        regex_cache_entries;
     ngx_int_t        regex_cache_max_entries;
+#endif
 
     ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
 

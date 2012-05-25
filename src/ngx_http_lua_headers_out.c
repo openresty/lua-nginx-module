@@ -45,9 +45,11 @@ static ngx_http_lua_set_header_t ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_out_t, date),
                  ngx_http_set_builtin_header },
 
+#if 1
     { ngx_string("Content-Encoding"),
                  offsetof(ngx_http_headers_out_t, content_encoding),
                  ngx_http_set_builtin_header },
+#endif
 
     { ngx_string("Location"),
                  offsetof(ngx_http_headers_out_t, location),
@@ -339,6 +341,9 @@ static ngx_int_t ngx_http_set_last_modified_header(ngx_http_request_t *r,
 
     r->headers_out.last_modified_time = ngx_http_parse_time(value->data,
                                                             value->len);
+
+    dd("last modified time: %d", (int) r->headers_out.last_modified_time);
+
     return ngx_http_set_builtin_header(r, hv, value);
 }
 

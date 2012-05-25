@@ -454,7 +454,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             q = ngx_copy(p, args.data, args.len);
             *q++ = '&';
-            q = ngx_copy(q, extra_args.data, extra_args.len);
+            ngx_memcpy(q, extra_args.data, extra_args.len);
 
             args.data = p;
             args.len = len;

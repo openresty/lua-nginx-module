@@ -512,3 +512,31 @@ morning
 This is our own content
 --- error_code: 410
 
+
+
+=== TEST 17: exit(404) after I/O
+--- config
+    error_page 400 /400.html;
+    error_page 404 /404.html;
+    location /foo {
+        access_by_lua '
+            ngx.location.capture("/sleep")
+            ngx.exit(ngx.HTTP_NOT_FOUND)
+        ';
+        echo Hello;
+    }
+
+    location /sleep {
+        echo_sleep 0.002;
+    }
+--- user_files
+>>> 400.html
+Bad request, dear...
+>>> 404.html
+Not found, dear...
+--- request
+    GET /bah
+--- response_body
+Not found, dear...
+--- error_code: 404
+
