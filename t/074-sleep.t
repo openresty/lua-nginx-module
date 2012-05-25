@@ -14,7 +14,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => 11;
+plan tests => 60;
 
 #no_diff();
 #no_long_string();
@@ -264,5 +264,4 @@ ok
 --- error_log
 lua ready to sleep
 --- timeout: 1
---- ONLY
 
