@@ -3,62 +3,16 @@
 #endif
 #include "ddebug.h"
 
+#include "nginx.h"
 #include "ngx_http_lua_coroutine.h"
+#include "ngx_http_lua_api.h"
 
 
 /*
  * Design:
  *
- * Info in Lua registry:
- * 1. A table stores 
- * Workflows:
- * 1. Create user coroutine
- *    When user code calls coroutine.create(...), control will be passed to the
- *    main thread (which manages all request-processing coroutines) by
- *    yielding. It will then call native coroutine library to create a new
- *    coroutine, inherits the parent coroutine's environment, and record the
- *    hierarchy in Lua registry. After that, control and the newly created
- *    coroutine will be passed back to the request processing coroutine by
- *    resuming.
- *
- * 2. Resume user coroutine
- *    When user code calls coroutine.resume(...) with a user coroutine, control
- *    will be passed to the main thread along with all arguments. It will then
- *    call native coroutine library to resume the execution of the given
- *    coroutine.
- *
- * 3. Yield user coroutine
- *    When user code calls coroutine.yield(...) in a user coroutine, control
- *    will be passed to the main thread. It will then look the parent coroutine
- *    up from Lua registry, and resume its execution.
- *
- * 4. User coroutine ends
- *    When user coroutine's execution ends normally/abnormally, control will be
- *    passed back to the main thread along with any return values. It will then
- *    look the parent coroutine up from Lua registry, and resume its execution
- *    with those return values.
- *
- * 5. Main thread ends
- *    When main thread ends normally/abnormally, ngx_lua will call
- *    ngx_http_lua_del_thread() to unanchor main thread from Lua registry so
- *    that it can be gc'd later. In this routine, we can look all user
- *    coroutines derived directly/indirectly from main thread up from Lua
- *    registry, and unanchor all of them. In this way, all user coroutines
- *    created by main thread will ends too.
- *
- * Decisions:
- * 1. How to represents user coroutine in Lua code?
- *    Method A: Represents user coroutine as-is, i.e. with a native thread
- *    value. The pros are that setfenv/getfenv/type works without further
- *    efforts. The cons are that we don't know when the coroutine is unref'd -
- *    because coroutine type don't have __gc metamethod, so we can't unanchor
- *    user coroutine but only do this job once when main thread ends. It maybe
- *    a problem if programs use lots of short-lived coroutines.
- *    
- *    Method B: Represents user coroutine using a userdata with __gc
- *    metamethod. The pros are that we can unanchor coroutine in __gc when the
- *    coroutine is unref'd. The cons are that setfenv/getfenv/type can't work
- *    without further wrapping.
+ * In order to support using ngx.* API in Lua coroutines, we have to create
+ * new coroutine in the main coroutine instead of the calling coroutine
  */
 
 static int ngx_http_lua_coroutine_create(lua_State *L);
@@ -72,17 +26,84 @@ static int ngx_http_lua_coroutine_yield(lua_State *L);
 static int
 ngx_http_lua_coroutine_create(lua_State *L)
 {
+	lua_State 					*cr;
+	lua_State 					*ml;
+	ngx_http_request_t 			*r;
+	ngx_http_lua_main_conf_t	*lmcf;
 
-	// TODO
-	return luaL_error(L, "not implemented yet");
+	luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
+			"Lua function expected");
+
+	r = ngx_http_lua_get_request(L);
+	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+	ml = lmcf->lua;
+
+	/* create new coroutine on main thread, so it always yield to main thread
+	 */
+	cr = lua_newthread(ml);
+
+	/* make new coroutine share globals of the parent coroutine.
+	 * NOTE: globals don't have to be separated! */
+	lua_pushvalue(L, LUA_GLOBALSINDEX);
+	lua_xmove(L, cr, 1);
+	lua_replace(cr, LUA_GLOBALSINDEX);
+
+	lua_xmove(ml, L, 1);	/* move coroutine from main L to L */
+
+	lua_pushvalue(L, 1);	/* copy entry function to top of L*/
+	lua_xmove(L, cr, 1);	/* move entry function from L to cr */
+
+	/* record parent-child relationship */
+	lua_getfield(ml, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+	lua_pushthread(cr); /* key: child coroutine */
+	lua_xmove(cr, ml, 1);
+	lua_pushthread(L); /* val: parent coroutine */
+	lua_xmove(L, ml, 1);
+	lua_settable(ml, -3);
+	lua_pop(ml, 1);
+
+	return 1;	/* return new coroutine to Lua */
 }
 
 
 static int
 ngx_http_lua_coroutine_resume(lua_State *L)
 {
-	// TODO
-	return luaL_error(L, "not implemented yet");
+	ngx_http_request_t *r;
+	ngx_http_lua_ctx_t *ctx;
+
+	luaL_argcheck(L, lua_isthread(L, 1), 1, "Lua coroutine expected");
+
+	r = ngx_http_lua_get_request(L);
+	ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+	if (ctx == NULL) {
+		return luaL_error(L, "no request ctx found");
+	}
+
+	ctx->cc_op = RESUME;
+
+	/* yield and pass args to main L, and resume target coroutine from there
+	 */
+	return lua_yield(L, lua_gettop(L));
+}
+
+
+static int
+ngx_http_lua_coroutine_yield(lua_State *L)
+{
+	ngx_http_request_t *r;
+	ngx_http_lua_ctx_t *ctx;
+
+	r = ngx_http_lua_get_request(L);
+	ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+	if (ctx == NULL) {
+		return luaL_error(L, "no request ctx found");
+	}
+
+	ctx->cc_op = YIELD;
+
+	/* yield and pass retvals to main L, and resume parent coroutine there */
+	return lua_yield(L, lua_gettop(L));
 }
 
 
@@ -104,14 +125,6 @@ ngx_http_lua_coroutine_status(lua_State *L)
 
 static int
 ngx_http_lua_coroutine_wrap(lua_State *L)
-{
-	// TODO
-	return luaL_error(L, "not implemented yet");
-}
-
-
-static int
-ngx_http_lua_coroutine_yield(lua_State *L)
 {
 	// TODO
 	return luaL_error(L, "not implemented yet");

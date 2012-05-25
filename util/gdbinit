@@ -392,5 +392,24 @@ document lr
 lr <lua state>: Dump all entries in Lua registry table.
 end
 
+define ls
+	if $argc != 1
+		echo Please specify Lua state!\n
+	else
+		set $l = (lua_State*)$arg0
+		set $idx = lua_gettop($l)
+		while $idx >= 1
+			printf "#%d ", $idx
+			__lua_dump_stack $l $idx
+			printf "\n"
+			set $idx = $idx - 1
+		end
+	end
+end
+
+document ls
+ls <lua state>: Dump all entries in call stack.
+end
+
 # vi:ft=gdb ts=4 sw=4
 

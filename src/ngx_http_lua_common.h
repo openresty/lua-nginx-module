@@ -142,13 +142,25 @@ typedef struct {
 typedef struct {
     void            *data;
 
-    lua_State       *cc;                /*  coroutine to handle request */
+    lua_State       *cc;                /*  coroutine to handle request. it
+                                            point to the current running
+                                            coroutine (not necessarily the
+                                            request's entry coroutine */
 
     int              cc_ref;            /*  reference to anchor coroutine in
-                                            the lua registry */
+                                            the lua registry. it always
+                                            ref to the entry coroutine of the
+                                            request */
 
     int              ctx_ref;           /*  reference to anchor request ctx
                                             data in lua registry */
+
+    enum {
+        NONE = 0,
+        RESUME = 1,
+        YIELD = 2
+    }                cc_op;             /*  coroutine API operation */
+
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
@@ -248,6 +260,9 @@ extern ngx_module_t ngx_http_lua_module;
 extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
+
+/*  weak table to record coroutine relationships */
+#define NGX_LUA_CORT_REL "ngx_http_lua_cort_rel"
 
 /*  user code cache table key in Lua vm registry */
 #define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"

@@ -473,9 +473,21 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REGEX_CACHE);
 
     /* {{{ register table to cache user code:
-     * {([string]cache_key) = [code closure]} */
+     * { [(string)cache_key] = <code closure> } */
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);
+    /* }}} */
+
+    /* {{{ create weak table to record coroutine relationship:
+     * { [(thread)child] = (thread)parent } */
+    lua_newtable(L);
+    /* create metatable */
+    lua_newtable(L);
+    lua_pushstring(L, "kv");
+    lua_setfield(L, -2, "__mode");
+    /* setup metatable to make key/val weak-ref table */
+    lua_setmetatable(L, -2);
+    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
     /* }}} */
 }
 
@@ -743,6 +755,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     cc = ctx->cc;
     cc_ref = ctx->cc_ref;
 
+start_run:
+
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
     old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
@@ -794,6 +808,59 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_http_lua_dump_postponed(r);
 #endif
 
+                // TODO: 这里判断是否是因coroutine.resume/yield操作而退出，若是则应查找相关的target coroutine来resume
+                switch(ctx->cc_op) {
+                    case RESUME:
+                        // coroutine.resume时目标coroutine由其parent保存引用直接给出，因此不需要查找
+                        ctx->cc_op = NONE;
+                        {
+                            int nargs = lua_gettop(cc) - 1;
+                            lua_State *next_cc = lua_tothread(cc, 1);
+
+                            // move any args to the target coroutine
+                            if (nargs) {
+                                lua_xmove(cc, next_cc, nargs);
+                            }
+                            nret = nargs;
+
+                            ctx->cc = cc = next_cc;
+                        }
+                        goto start_run;
+
+                    case YIELD:
+                        // coroutine.yield时目标coroutine需要显式查找registry中weak table的相关记录
+                        ctx->cc_op = NONE;
+                        {
+                            int nrets = lua_gettop(cc);
+                            lua_State *next_cc;
+
+                            /* find parent coroutine in weak ref table */
+                            lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+                            lua_pushthread(cc);
+                            lua_xmove(cc, L, 1);
+                            lua_gettable(L, -2);
+
+                            // TODO: 检查parent coroutine是否存在?
+
+                            next_cc = lua_tothread(L, -1);
+                            lua_pop(L, 2);
+
+                            // yield successful, coroutine.resume returns true plus any retvals
+                            lua_pushboolean(next_cc, 1);
+                            if (nrets) {
+                                lua_xmove(cc, next_cc, nrets);
+                            }
+                            nret = nrets + 1;
+
+                            ctx->cc = cc = next_cc;
+                        }
+                        goto start_run;
+
+                    case NONE:
+                    default:
+                        break;
+                }
+
                 lua_settop(cc, 0);
                 return NGX_AGAIN;
 
@@ -805,8 +872,33 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_http_lua_dump_postponed(r);
 #endif
 
-                ngx_http_lua_del_thread(r, L, cc_ref);
-                ctx->cc_ref = LUA_NOREF;
+                // TODO: 这里要判断当前运行的coroutine有无parent，若有则应直接resume其parent coroutine，否则才删除main coroutine
+                {
+                    int nrets = lua_gettop(cc);
+                    lua_State *next_cc;
+                    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+                    lua_pushthread(cc);
+                    lua_xmove(cc, L, 1);
+                    lua_gettable(L, -2);
+
+                    if (lua_isthread(L, -1)) {
+                        next_cc = lua_tothread(L, -1);
+                        lua_pop(L, 2);
+
+                        // ended successful, coroutine.resume returns true plus any return values
+                        lua_pushboolean(next_cc, 1);
+                        if (nrets) {
+                            lua_xmove(cc, next_cc, nrets);
+                        }
+                        nret = nrets + 1;
+
+                        ctx->cc = cc = next_cc;
+                        goto start_run;
+                    }
+
+                    ngx_http_lua_del_thread(r, L, cc_ref);
+                    ctx->cc_ref = LUA_NOREF;
+                }
 
                 if (ctx->entered_content_phase) {
                     rc = ngx_http_lua_send_chain_link(r, ctx,
@@ -851,8 +943,31 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "lua handler aborted: %s: %s", err, msg);
 
-        ngx_http_lua_del_thread(r, L, cc_ref);
-        ctx->cc_ref = LUA_NOREF;
+        // TODO: 这里同coroutine正常运行结束时的处理一样，要根据有无parent coroutine决定是删除main thread还是resume parent coroutine
+        // 别忘了把错误信息也传递给parent coroutine!
+        {
+            lua_State *next_cc;
+            lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+            lua_pushthread(cc);
+            lua_xmove(cc, L, 1);
+            lua_gettable(L, -2);
+
+            if (lua_isthread(L, -1)) {
+                next_cc = lua_tothread(L, -1);
+                lua_pop(L, 2);
+
+                // ended with error, coroutine.resume returns false plus err msg
+                lua_pushboolean(next_cc, 0);
+                lua_xmove(cc, next_cc, 1);
+                nret = 2;
+
+                ctx->cc = cc = next_cc;
+                goto start_run;
+            }
+
+            ngx_http_lua_del_thread(r, L, cc_ref);
+            ctx->cc_ref = LUA_NOREF;
+        }
 
         ngx_http_lua_request_cleanup(r);
 
