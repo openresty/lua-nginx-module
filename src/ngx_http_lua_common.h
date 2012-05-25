@@ -180,6 +180,9 @@ typedef struct {
     ngx_str_t        exec_args;
 
     ngx_int_t        exit_code;
+
+    ngx_event_t      sleep;      /* used for ngx.sleep */
+
     unsigned         exited:1;
 
     unsigned         headers_sent:1;    /*  1: response header has been sent;

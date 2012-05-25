@@ -27,6 +27,7 @@
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_sleep.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -519,6 +520,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_string_api(L);
     ngx_http_lua_inject_control_api(cf->log, L);
     ngx_http_lua_inject_subrequest_api(L);
+    ngx_http_lua_inject_sleep_api(L);
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
@@ -936,6 +938,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 return NGX_ERROR;
             }
         }
+    }
+
+    if (ctx->sleep.timedout) {
+        ctx->sleep.timedout = 0;
+        goto run;
     }
 
     dd("wev handler %.*s %.*s a:%d, postponed:%p",
