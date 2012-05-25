@@ -84,8 +84,8 @@ typedef struct {
 
     ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
 
-    unsigned    postponed_to_rewrite_phase_end:1;
-    unsigned    postponed_to_access_phase_end:1;
+    ngx_flag_t       postponed_to_rewrite_phase_end;
+    ngx_flag_t       postponed_to_access_phase_end;
 
 } ngx_http_lua_main_conf_t;
 
