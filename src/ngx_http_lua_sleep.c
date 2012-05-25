@@ -46,7 +46,7 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     ngx_http_cleanup_t          *cln;
 
     n = lua_gettop(L);
-    if (n > 1) {
+    if (n != 1) {
         return luaL_error(L, "attempt to pass %d arguments, but accepted 1", n);
     }
 
