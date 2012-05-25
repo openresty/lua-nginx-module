@@ -20,6 +20,8 @@ static int ngx_http_lua_ngx_req_set_body_file(lua_State *L);
 static int ngx_http_lua_ngx_req_init_body(lua_State *L);
 static int ngx_http_lua_ngx_req_append_body(lua_State *L);
 static int ngx_http_lua_ngx_req_body_finish(lua_State *L);
+static ngx_int_t ngx_http_lua_write_request_body(ngx_http_request_t *r,
+        ngx_chain_t *body);
 
 
 void
@@ -449,27 +451,40 @@ set_header:
     return 0;
 }
 
+
 static int
 ngx_http_lua_ngx_req_init_body(lua_State *L)
 {
     ngx_http_request_t          *r;
-    int                         n;
+    int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_int_t                   rc;
-    size_t                      size;
+    ngx_int_t                    rc;
+    size_t                       size;
+    lua_Integer                  num;
+    ngx_http_core_loc_conf_t    *clcf;
 
     n = lua_gettop(L);
 
-    if (n != 1) {
-        return luaL_error(L, "expecting 1 argument but seen %d", n);
+    if (n != 1 && n != 0) {
+        return luaL_error(L, "expecting 0 or 1 argument but seen %d", n);
     }
-
-    luaL_checktype(L, 1, LUA_TNUMBER);
-    size = lua_tointeger(L, 1);
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (n == 1) {
+        num = luaL_checkinteger(L, 1);
+        if (num <= 0) {
+            return luaL_error(L, "bad size argument: %d", (int) num);
+        }
+
+        size = (size_t) num;
+
+    } else {
+        clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+        size = clcf->client_body_buffer_size;
+    }
 
     if (r->request_body == NULL) {
 
@@ -486,6 +501,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         }
 
         r->request_body = rb;
+
     } else {
         rb = r->request_body;
     }
@@ -508,52 +524,6 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
     return 0;
 }
 
-static ngx_int_t
-lua_write_request_body(ngx_http_request_t *r, ngx_chain_t *body)
-{
-    ssize_t                    n;
-    ngx_temp_file_t           *tf;
-    ngx_http_request_body_t   *rb;
-    ngx_http_core_loc_conf_t  *clcf;
-
-    rb = r->request_body;
-
-    if (rb->temp_file == NULL) {
-        tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
-        if (tf == NULL) {
-            return NGX_ERROR;
-        }
-
-        clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
-
-        tf->file.fd = NGX_INVALID_FILE;
-        tf->file.log = r->connection->log;
-        tf->path = clcf->client_body_temp_path;
-        tf->pool = r->pool;
-        tf->warn = "a client request body is buffered to a temporary file";
-        tf->log_level = r->request_body_file_log_level;
-        tf->persistent = r->request_body_in_persistent_file;
-        tf->clean = r->request_body_in_clean_file;
-
-        if (r->request_body_file_group_access) {
-            tf->access = 0660;
-        }
-
-        rb->temp_file = tf;
-    }
-
-    n = ngx_write_chain_to_temp_file(rb->temp_file, body);
-
-    /* TODO: n == 0 or not complete and level event */
-
-    if (n == NGX_ERROR) {
-        return NGX_ERROR;
-    }
-
-    rb->temp_file->offset += n;
-
-    return NGX_OK;
-}
 
 static int
 ngx_http_lua_ngx_req_append_body(lua_State *L)
@@ -589,7 +559,7 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
 
     while (rest > 0) {
         if (rb->buf->last == rb->buf->end) {
-            if (lua_write_request_body(r, rb->to_write) != NGX_OK) {
+            if (ngx_http_lua_write_request_body(r, rb->to_write) != NGX_OK) {
                 return luaL_error(L, "fail to write file");
             }
 
@@ -651,7 +621,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
 
         /* save the last part */
 
-        if (lua_write_request_body(r, rb->to_write) != NGX_OK) {
+        if (ngx_http_lua_write_request_body(r, rb->to_write) != NGX_OK) {
             return luaL_error(L, "fail to write file");
         }
 
@@ -706,6 +676,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     return 0;
 
 }
+
 
 static void
 ngx_http_lua_pool_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
@@ -972,5 +943,53 @@ set_header:
     }
 
     return 0;
+}
+
+
+static ngx_int_t
+ngx_http_lua_write_request_body(ngx_http_request_t *r, ngx_chain_t *body)
+{
+    ssize_t                    n;
+    ngx_temp_file_t           *tf;
+    ngx_http_request_body_t   *rb;
+    ngx_http_core_loc_conf_t  *clcf;
+
+    rb = r->request_body;
+
+    if (rb->temp_file == NULL) {
+        tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
+        if (tf == NULL) {
+            return NGX_ERROR;
+        }
+
+        clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+        tf->file.fd = NGX_INVALID_FILE;
+        tf->file.log = r->connection->log;
+        tf->path = clcf->client_body_temp_path;
+        tf->pool = r->pool;
+        tf->warn = "a client request body is buffered to a temporary file";
+        tf->log_level = r->request_body_file_log_level;
+        tf->persistent = r->request_body_in_persistent_file;
+        tf->clean = r->request_body_in_clean_file;
+
+        if (r->request_body_file_group_access) {
+            tf->access = 0660;
+        }
+
+        rb->temp_file = tf;
+    }
+
+    n = ngx_write_chain_to_temp_file(rb->temp_file, body);
+
+    /* TODO: n == 0 or not complete and level event */
+
+    if (n == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    rb->temp_file->offset += n;
+
+    return NGX_OK;
 }
 
