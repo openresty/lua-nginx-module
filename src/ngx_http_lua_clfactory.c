@@ -8,6 +8,7 @@ typedef struct {
     int sent_begin;
     int sent_end;
     int extraline;
+    int is_binary;
     FILE *f;
     char buff[LUAL_BUFFERSIZE];
 } clfactory_file_ctx_t;
@@ -70,7 +71,13 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
     if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
         /* no binary file supported as closure factory code needs to be */
         /* compiled to bytecode along with user code */
-        return clfactory_errfile(L, "load binary file", fname_index);
+        
+        lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
+        if (lf.f == NULL) return clfactory_errfile(L, "reopen", fname_index);
+         /* skip eventual `#!...' */
+        while ((c = getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) ;
+        lf.extraline = 0;
+        lf.is_binary = 1;
     }
 
     ungetc(c, lf.f);
@@ -122,7 +129,7 @@ clfactory_getF(lua_State *L, void *ud, size_t *size)
 
     lf = (clfactory_file_ctx_t *) ud;
 
-    if (lf->sent_begin == 0) {
+    if (!lf->is_binary && lf->sent_begin == 0) {
         lf->sent_begin = 1;
         *size = CLFACTORY_BEGIN_SIZE;
         return CLFACTORY_BEGIN_CODE;
@@ -134,7 +141,7 @@ clfactory_getF(lua_State *L, void *ud, size_t *size)
         return "\n";
     }
 
-    if (feof(lf->f)) {
+    if (!lf->is_binary && feof(lf->f)) {
         if (lf->sent_end == 0) {
             lf->sent_end = 1;
             *size = CLFACTORY_END_SIZE;
