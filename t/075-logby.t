@@ -69,7 +69,7 @@ Hello from log_by_lua: 8
 
 
 
-=== TEST 4: ngx.ctx not available in log_by_lua (already defined)
+=== TEST 4: ngx.ctx available in log_by_lua (already defined)
 --- config
     location /lua {
         content_by_lua 'ngx.ctx.counter = 3 ngx.say(ngx.ctx.counter)';
@@ -85,7 +85,7 @@ lua release ngx.ctx
 
 
 
-=== TEST 5: ngx.ctx not available in log_by_lua (not defined yet)
+=== TEST 5: ngx.ctx available in log_by_lua (not defined yet)
 --- config
     location /lua {
         echo hello;
