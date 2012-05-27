@@ -2526,7 +2526,13 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
                 }
 
                 if (cp->inclusive) {
-                    u->buf_in->buf->last += state;
+                    rc = ngx_http_lua_socket_add_pending_data(r, u, b->pos, 0, pat,
+                                                              state, state);
+
+                    if (rc != NGX_OK) {
+                        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
+                        return NGX_ERROR;
+                    }
                 }
 
                 return NGX_OK;
@@ -3496,6 +3502,8 @@ ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
     u_char          *last;
     ngx_buf_t       *b;
 
+    dd("resuming data: %d: [%.*s]", prefix, prefix, pat);
+
     last = &pos[len];
 
     b = u->buf_in->buf;
@@ -3505,7 +3513,7 @@ ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    dd("resumed data: %d: [%.*s]", prefix, prefix, pat);
+    dd("need more buffers because %d != %d", (int) (last - b->last), (int) old_state);
 
     if (ngx_http_lua_socket_insert_buffer(r, u, pat, prefix) != NGX_OK) {
         return NGX_ERROR;

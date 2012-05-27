@@ -1302,6 +1302,7 @@ close: nil closed
 [error]
 
 
+
 === TEST 19: ambiguous boundary patterns (abcabd) - inclusive mode
 --- config
     server_tokens off;
@@ -1442,3 +1443,149 @@ close: nil closed
 }
 --- no_error_log
 [error]
+
+
+
+=== TEST 21: ambiguous boundary patterns (abcabd) - inclusive mode - small buffers
+--- config
+    server_tokens off;
+    lua_socket_buffer_size 1;
+    location /t {
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            -- collectgarbage("collect")
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local headers, err, part = read_headers()
+            if not headers then
+                ngx.say("failed to read headers: ", err, " [", part, "]")
+            end
+
+            local reader = sock:receiveuntil("abcabd", { inclusive = true })
+
+            for i = 1, 3 do
+                line, err, part = reader()
+                if line then
+                    ngx.say("read: ", line)
+
+                else
+                    ngx.say("failed to read a line: ", err, " [", part, "]")
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo abcabcabdabcabd;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 57
+read: abcabcabd
+read: abcabd
+failed to read a line: closed [
+]
+close: nil closed
+}
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: ambiguous boundary patterns (abcabdabcabe 4) - inclusive mode - small buffers
+--- config
+    server_tokens off;
+    lua_socket_buffer_size 1;
+    location /t {
+        set $port $TEST_NGINX_CLIENT_PORT;
+
+        content_by_lua '
+            -- collectgarbage("collect")
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local headers, err, part = read_headers()
+            if not headers then
+                ngx.say("failed to read headers: ", err, " [", part, "]")
+            end
+
+            local reader = sock:receiveuntil("abcabdabcabe", { inclusive = true })
+
+            for i = 1, 2 do
+                line, err, part = reader()
+                if line then
+                    ngx.say("read: ", line)
+
+                else
+                    ngx.say("failed to read a line: ", err, " [", part, "]")
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo ababcabdabcabe;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+qq{connected: 1
+request sent: 57
+read: ababcabdabcabe
+failed to read a line: closed [
+]
+close: nil closed
+}
+--- no_error_log
+[error]
+
