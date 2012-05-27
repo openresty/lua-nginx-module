@@ -793,6 +793,18 @@ This directive is turned <code>on</code> by default.
 
 This directive was first introduced in the <code>v0.5.0rc19</code> release.
 
+== rewrite_by_lua_no_postpone ==
+
+'''syntax:''' ''rewrite_by_lua_no_postpone on|off''
+
+'''default:''' ''rewrite_by_lua_no_postpone off''
+
+'''context:''' ''http, server, location, location-if''
+
+Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
+
+This directive was first introduced in the <code>v0.5.0rc29</code> release.
+
 = Nginx API for Lua =
 == Introduction ==
 The various <code>*_by_lua</code> and <code>*_by_lua_file</code> configuration directives serve as gateways to the Lua API within the <code>nginx.conf</code> file. The Nginx Lua API described below can only be called within the user Lua code run in the context of these configuration directives.

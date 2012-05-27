@@ -828,6 +828,19 @@ This directive is turned `on` by default.
 
 This directive was first introduced in the `v0.5.0rc19` release.
 
+rewrite_by_lua_no_postpone
+--------------------------
+
+**syntax:** *rewrite_by_lua_no_postpone on|off*
+
+**default:** *rewrite_by_lua_no_postpone off*
+
+**context:** *http, server, location, location-if*
+
+Controls whether or not to disable postponing [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) and [rewrite_by_lua_file](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_file) directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
+
+This directive was first introduced in the `v0.5.0rc29` release.
+
 Nginx API for Lua
 =================
 Introduction
