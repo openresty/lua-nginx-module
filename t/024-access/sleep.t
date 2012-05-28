@@ -18,15 +18,16 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: sleep 0.5 - content
+=== TEST 1: sleep 0.5g
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.update_time()
             local before = ngx.now()
             ngx.sleep(0.5)
             local now = ngx.now()
             ngx.say(now - before)
+            ngx.exit(200)
         ';
     }
 --- request
@@ -40,15 +41,16 @@ lua sleep timer expired: "/test?"
 
 
 
-=== TEST 2: sleep a - content
+=== TEST 2: sleep ag
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.update_time()
             local before = ngx.now()
             ngx.sleep("a")
             local now = ngx.now()
             ngx.say(now - before)
+            ngx.exit(200)
         ';
     }
 --- request
@@ -59,16 +61,17 @@ GET /test
 bad argument #1 to 'sleep'
 
 
-=== TEST 4: sleep 0.5 in subrequest - content
+=== TEST 4: sleep 0.5 in subrequestg
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.update_time()
             local before = ngx.now()
             ngx.location.capture("/sleep")
             local now = ngx.now()
             local delay = now - before
             ngx.say(delay)
+            ngx.exit(200)
         ';
     }
     location /sleep {
@@ -90,8 +93,10 @@ lua sleep timer expired: "/sleep?"
 === TEST 5: sleep a in subrequest with bad argument
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             local res = ngx.location.capture("/sleep");
+            ngx.say(res.status)
+            ngx.exit(200)
         ';
     }
     location /sleep {
@@ -99,22 +104,24 @@ lua sleep timer expired: "/sleep?"
     }
 --- request
 GET /test
---- response_body_like:
+--- response_body
+500
 --- error_log
 bad argument #1 to 'sleep'
 
 
 
-=== TEST 7: sleep 0.5 - multi-times in content
+=== TEST 7: sleep 0.5 - multi-times
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.update_time()
             local start = ngx.now()
             ngx.sleep(0.3)
             ngx.sleep(0.3)
             ngx.sleep(0.3)
             ngx.say(ngx.now() - start)
+            ngx.exit(200)
         ';
     }
 --- request
@@ -133,13 +140,14 @@ lua sleep timer expired: "/test?"
 === TEST 8: sleep 0.5 - interleaved by ngx.say() - ended by ngx.sleep
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.send_headers()
             -- ngx.location.capture("/sleep")
             ngx.sleep(1)
             ngx.say("blah")
             ngx.sleep(1)
             -- ngx.location.capture("/sleep")
+            ngx.exit(200)
         ';
     }
     location = /sleep {
@@ -161,7 +169,7 @@ lua sleep timer expired: "/test?"
 === TEST 9: sleep 0.5 - interleaved by ngx.say() - not ended by ngx.sleep
 --- config
     location /test {
-        content_by_lua '
+        access_by_lua '
             ngx.send_headers()
             -- ngx.location.capture("/sleep")
             ngx.sleep(0.3)
@@ -169,6 +177,7 @@ lua sleep timer expired: "/test?"
             ngx.sleep(0.5)
             -- ngx.location.capture("/sleep")
             ngx.say("hiya")
+            ngx.exit(200)
         ';
     }
     location = /sleep {

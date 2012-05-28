@@ -687,6 +687,12 @@ ngx_http_lua_request_cleanup(void *data)
         ctx->cleanup = NULL;
     }
 
+    if (ctx->sleep.timer_set) {
+        dd("cleanup: deleting timer for ngx.sleep");
+
+        ngx_del_timer(&ctx->sleep);
+    }
+
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     L = lmcf->lua;
@@ -940,11 +946,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    if (ctx->sleep.timedout) {
-        ctx->sleep.timedout = 0;
-        goto run;
-    }
-
     dd("wev handler %.*s %.*s a:%d, postponed:%p",
             (int) r->uri.len, r->uri.data,
             (int) ngx_cached_err_log_time.len,
@@ -1073,6 +1074,22 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 return NGX_DONE;
             }
         }
+    }
+
+    if (ctx->sleep.timer_set) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "lua still waiting for a sleep timer: \"%V?%V\"",
+                       &r->uri, &r->args);
+
+        ngx_handle_write_event(wev, 0);
+
+        return NGX_DONE;
+    }
+
+    if (ctx->sleep.timedout) {
+        ctx->sleep.timedout = 0;
+        nret = 0;
+        goto run;
     }
 
     if (ctx->socket_busy && !ctx->socket_ready) {
