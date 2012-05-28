@@ -7,8 +7,6 @@
 #include "ngx_http_lua_util.h"
 
 
-static int ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L,
-    u_char *buf, u_char *last, int max);
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
@@ -214,7 +212,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 }
 
 
-static int
+int
 ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
         u_char *last, int max)
 {
@@ -223,6 +221,9 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
     unsigned                     parsing_value;
     size_t                       len;
     int                          count = 0;
+    int                          top;
+
+    top = lua_gettop(L);
 
     p = buf;
 
@@ -287,7 +288,7 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 
             } else {
                 dd("setting table...");
-                ngx_http_lua_set_multi_value_table(L, 1);
+                ngx_http_lua_set_multi_value_table(L, top);
             }
 
             if (max > 0 && ++count == max) {
@@ -326,14 +327,14 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
 
         } else {
             dd("setting table...");
-            ngx_http_lua_set_multi_value_table(L, 1);
+            ngx_http_lua_set_multi_value_table(L, top);
         }
     }
 
     dd("gettop: %d", lua_gettop(L));
     dd("type: %s", lua_typename(L, lua_type(L, 1)));
 
-    if (lua_gettop(L) != 1) {
+    if (lua_gettop(L) != top) {
         return luaL_error(L, "internal error: stack in bad state");
     }
 

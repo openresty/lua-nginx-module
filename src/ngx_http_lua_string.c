@@ -6,6 +6,7 @@
 
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_args.h"
 #include "ngx_crc32.h"
 
 #if NGX_HAVE_SHA1
@@ -42,6 +43,7 @@ static int ngx_http_lua_ngx_encode_base64(lua_State *L);
 static int ngx_http_lua_ngx_crc32_short(lua_State *L);
 static int ngx_http_lua_ngx_crc32_long(lua_State *L);
 static int ngx_http_lua_ngx_encode_args(lua_State *L);
+static int ngx_http_lua_ngx_decode_args(lua_State *L);
 #if (NGX_OPENSSL)
 static int ngx_http_lua_ngx_hmac_sha1(lua_State *L);
 #endif
@@ -58,6 +60,9 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_encode_args);
     lua_setfield(L, -2, "encode_args");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_decode_args);
+    lua_setfield(L, -2, "decode_args");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
@@ -576,6 +581,48 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
 
     return 1;
 }
+
+
+static int
+ngx_http_lua_ngx_decode_args(lua_State *L) {
+    ngx_http_request_t          *r;
+    u_char                      *buf;
+    u_char                      *last;
+    size_t                       len = 0;
+    int                          n;
+    int                          max;
+
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting 1 or 2 arguments but seen %d", n);
+    }
+
+    buf = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (n == 2) {
+        max = luaL_checkint(L, 2);
+        lua_pop(L, 1);
+
+    } else {
+        max = NGX_HTTP_LUA_MAX_ARGS;
+    }
+
+    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    lua_createtable(L, 0, 4);
+
+    last = buf + len;
+
+    return ngx_http_lua_parse_args(r, L, buf, last, max);
+}
+
 
 #if (NGX_OPENSSL)
 

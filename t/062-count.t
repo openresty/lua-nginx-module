@@ -2,7 +2,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-worker_connections(1014);
+#worker_connections(1014);
 #master_on();
 #workers(4);
 #log_level('warn');
@@ -56,7 +56,7 @@ ngx: 88
 --- request
 GET /test
 --- response_body
-71
+72
 --- no_error_log
 [error]
 
@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 71
+n = 72
 --- no_error_log
 [error]
 

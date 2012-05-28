@@ -1,4 +1,4 @@
-= Name =
+﻿= Name =
 
 ngx_lua - Embed the power of Lua into Nginx
 
@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc24] released on 18 April 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.0rc28] released on 16 May 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -188,7 +188,7 @@ This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx a
 Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
 requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.socket.tcp|ngx.socket.tcp]], [[HttpDrizzleModule]], [http://github.com/FRiCKLE/ngx_postgres/ ngx_postgres], [[HttpMemcModule]], [[HttpRedis2Module]] and [[HttpProxyModule]] modules for details).
 
-The Lua interpreter or LuaJIT instance is shared across all requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
+The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
 
 = Directives =
@@ -256,19 +256,23 @@ Do not activate the <code>o</code> option for regular expressions (and/or <code>
 
 Sets the Lua module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The path string is in standard Lua path form, and <code>;;</code>
-can be used to stand for the original path.
+can be used to stand for the original search paths.
+
+Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</code> or <code>${prefix}</code> can be used in the search path string to indicate the path of the <code>server prefix</code> usually determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 == lua_package_cpath ==
 
 '''syntax:''' ''lua_package_cpath <lua-style-cpath-str>''
 
-'''default:''' ''The content of LUA_CPATH environ variable or Lua's compiled-in defaults.''
+'''default:''' ''The content of LUA_CPATH environment variable or Lua's compiled-in defaults.''
 
 '''context:''' ''main''
 
 Sets the Lua C-module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The cpath string is in standard Lua cpath form, and <code>;;</code>
 can be used to stand for the original cpath.
+
+Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</code> or <code>${prefix}</code> can be used in the search path string to indicate the path of the <code>server prefix</code> usually determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 == set_by_lua ==
 
@@ -312,6 +316,8 @@ This directive can be freely mixed with all directives of the [[HttpRewriteModul
     set $baz "bar: $bar";  # $baz == "bar: 33"
 </geshi>
 
+Since the <code>0.5.0rc29</code> release, Nginx variable interpolation is disabled in the <code><lua-script-str></code> argument of this directive, and you can use the dollar sign character (<code>$</code>) directly.
+
 This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
 
 == set_by_lua_file ==
@@ -322,6 +328,10 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 '''phase:''' ''rewrite''
 
 Equivalent to [[#set_by_lua|set_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
+
+Nginx variable interpolation is supported in the <code><path-to-lua-script-file></code> argument string of this directive. But special care must be taken for injection attacks.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -354,6 +364,8 @@ Do not use this directive and other content handler directives in the same locat
 Equivalent to [[#content_by_lua|content_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -485,6 +497,8 @@ Equivalent to [[#rewrite_by_lua|rewrite_by_lua]], except that the file specified
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid reloading Nginx.
 
 == access_by_lua ==
@@ -566,6 +580,8 @@ Equivalent to [[#access_by_lua|access_by_lua]], except that the file specified b
 
 Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid repeatedly reloading Nginx.
@@ -604,6 +620,8 @@ This directive was first introduced in the <code>v0.2.1rc20</code> release.
 '''phase:''' ''output-header-filter''
 
 Equivalent to [[#header_filter_by_lua|header_filter_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absoluate path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 This directive was first introduced in the <code>v0.2.1rc20</code> release.
 
@@ -774,6 +792,18 @@ If you want to output huge response data in a streaming fashion (via the [[#ngx.
 This directive is turned <code>on</code> by default.
 
 This directive was first introduced in the <code>v0.5.0rc19</code> release.
+
+== rewrite_by_lua_no_postpone ==
+
+'''syntax:''' ''rewrite_by_lua_no_postpone on|off''
+
+'''default:''' ''rewrite_by_lua_no_postpone off''
+
+'''context:''' ''http, server, location, location-if''
+
+Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
+
+This directive was first introduced in the <code>v0.5.0rc29</code> release.
 
 = Nginx API for Lua =
 == Introduction ==
@@ -956,12 +986,12 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Writes <code>ngx.NOTICE</code> log level arguments prefixed with <code>lua print:</code> to the nginx <code>error.log</code> file.
+Writes argument values into the nginx <code>error.log</code> file with the <code>ngx.NOTICE</code> log level.
 
 It is equivalent to
 
 <geshi lang="lua">
-    ngx.log(ngx.NOTICE, 'lua print: ', a, b, ...)
+    ngx.log(ngx.NOTICE, ...)
 </geshi>
 
 Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</code> strings while Lua booleans result in literal <code>"true"</code> or <code>"false"</code> strings. And the <code>ngx.null</code> constant will yield the <code>"null"</code> string output.
@@ -1613,7 +1643,7 @@ This interface was first introduced in the <code>v0.3.1rc13</code> release.
 See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 
 == ngx.req.get_uri_args ==
-'''syntax:''' ''args = ngx.req.get_uri_args(count_limit?)''
+'''syntax:''' ''args = ngx.req.get_uri_args(max_args?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -1680,9 +1710,9 @@ Here the <code>args</code> table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
 
-However, the optional <code>count_limit</code> function argument can be used to override this limit:
+However, the optional <code>max_args</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
     local args = ngx.req.get_uri_args(10)
@@ -1694,10 +1724,10 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_uri_args(0)
 </geshi>
 
-Removing the <code>count_limit</code> cap is strongly discouraged.
+Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_post_args ==
-'''syntax:''' ''ngx.req.get_post_args(count_limit?)''
+'''syntax:''' ''ngx.req.get_post_args(max_args?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -1768,7 +1798,7 @@ Empty key arguments are discarded. <code>POST /test</code> with body <code>=hell
 
 Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
 
-However, the optional <code>count_limit</code> function argument can be used to override this limit:
+However, the optional <code>max_args</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
     local args = ngx.req.get_post_args(10)
@@ -1780,10 +1810,10 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_post_args(0)
 </geshi>
 
-Removing the <code>count_limit</code> cap is strongly discouraged.
+Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_headers ==
-'''syntax:''' ''headers = ngx.req.get_headers(count_limit?)''
+'''syntax:''' ''headers = ngx.req.get_headers(max_headers?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
@@ -1820,7 +1850,7 @@ the value of <code>ngx.req.get_headers()["Foo"]</code> will be a Lua (array) tab
 
 Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks.  
 
-However, the optional <code>count_limit</code> function argument can be used to override this limit:
+However, the optional <code>max_headers</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
     local args = ngx.req.get_headers(10)
@@ -1832,7 +1862,7 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_headers(0)
 </geshi>
 
-Removing the <code>count_limit</code> cap is strongly discouraged.
+Removing the <code>max_headers</code> cap is strongly discouraged.
 
 == ngx.req.set_header ==
 '''syntax:''' ''ngx.req.set_header(header_name, header_value)''
@@ -2220,7 +2250,7 @@ Flushes response output to the client.
 
 In synchronous mode, the function will not return until all output data has been written into the system send buffer or until the [[HttpCoreModule#send_timeout|send_timeout]] setting has expired. Note that using the Lua coroutine mechanism means that this function does not block the Nginx event loop even in the synchronous mode.
 
-When <code>ngx.flush(true)</code> is called immediately after <code>ngx.print</code> or <code>ngx.say</code>, it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
+When <code>ngx.flush(true)</code> is called immediately after [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]], it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
 Note that <code>ngx.flush</code> is non functional when in the HTTP 1.0 output buffering mode. See [[#HTTP 1.0 support|HTTP 1.0 support]].
 
@@ -2352,6 +2382,25 @@ yields
 If the argument value is <code>false</code>, then the effect is equivalent to the <code>nil</code> value.
 
 This method was first introduced in the <code>v0.3.1rc27</code> release.
+
+== ngx.decode_args ==
+'''syntax:''' ''table = ngx.decode_args(str, max_args?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Decodes a URI encoded query-string into a Lua table. This is the inverse function of [[#ngx.encode_args|ngx.encode_args]].
+
+The optional <code>max_args</code> argument can be used to specify the maximalnumber of arguments parsed from the <code>str</code> argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+
+This argument can be set to zero to remove the limit and to process all request arguments received:
+
+<geshi lang="lua">
+    local args = ngx.decode_args(str, 0)
+</geshi>
+
+Removing the <code>max_args</code> cap is strongly discouraged.
+
+This method was introduced in the <code>v0.5.0rc29</code>.
 
 == ngx.encode_base64 ==
 '''syntax:''' ''newstr = ngx.encode_base64(str)''
@@ -3634,10 +3683,8 @@ Please report bugs or submit patches by:
 * implement the SSL cosocket API.
 * implement the <code>ngx.re.split</code> method.
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
-* fix HTTP 1.0 support: we should by default close the current HTTP 1.0 connection right away if no <code>Content-Length</code> response header is set. the current automatic full buffering bahvior is way too expensive.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops/reloads.
-* deal with TCP 3-second delay problem under great connection harness.
 * add APIs to access cookies as key/value pairs.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 
