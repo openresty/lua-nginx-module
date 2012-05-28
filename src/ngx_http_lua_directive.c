@@ -350,7 +350,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, filter_data->key,
-            &err, llcf->enable_code_cache ? 1 : 0);
+            &err, llcf->enable_code_cache ? 1 : 0, llcf->enable_bytecode_file);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
