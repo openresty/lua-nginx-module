@@ -59,7 +59,8 @@ GET /test
 bad argument #1 to 'sleep'
 
 
-=== TEST 4: sleep 0.5 in subrequest - content
+
+=== TEST 3: sleep 0.5 in subrequest - content
 --- config
     location /test {
         content_by_lua '
@@ -87,7 +88,7 @@ lua sleep timer expired: "/sleep?"
 
 
 
-=== TEST 5: sleep a in subrequest with bad argument
+=== TEST 4: sleep a in subrequest with bad argument
 --- config
     location /test {
         content_by_lua '
@@ -105,7 +106,7 @@ bad argument #1 to 'sleep'
 
 
 
-=== TEST 7: sleep 0.5 - multi-times in content
+=== TEST 5: sleep 0.5 - multi-times in content
 --- config
     location /test {
         content_by_lua '
@@ -130,7 +131,7 @@ lua sleep timer expired: "/test?"
 
 
 
-=== TEST 8: sleep 0.5 - interleaved by ngx.say() - ended by ngx.sleep
+=== TEST 6: sleep 0.5 - interleaved by ngx.say() - ended by ngx.sleep
 --- config
     location /test {
         content_by_lua '
@@ -158,7 +159,7 @@ lua sleep timer expired: "/test?"
 
 
 
-=== TEST 9: sleep 0.5 - interleaved by ngx.say() - not ended by ngx.sleep
+=== TEST 7: sleep 0.5 - interleaved by ngx.say() - not ended by ngx.sleep
 --- config
     location /test {
         content_by_lua '
