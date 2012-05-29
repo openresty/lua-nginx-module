@@ -86,7 +86,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("set_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF|NGX_CONF_2MORE,
-      ngx_http_lua_set_by_lua,
+      ngx_http_lua_set_by_lua_file,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       ngx_http_lua_filter_set_by_lua_file },
@@ -147,9 +147,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("rewrite_by_lua_no_postpone"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_FLAG,
-      ngx_http_lua_rewrite_no_postpone,
+      ngx_conf_set_flag_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
-      0,
+      offsetof(ngx_http_lua_main_conf_t, postponed_to_rewrite_phase_end),
       NULL },
 
     { ngx_string("access_by_lua_file"),
@@ -288,10 +288,17 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
+    ngx_http_lua_main_conf_t   *lmcf;
 
     rc = ngx_http_lua_capture_filter_init(cf);
     if (rc != NGX_OK) {
         return rc;
+    }
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    if (lmcf->postponed_to_rewrite_phase_end == NGX_CONF_UNSET) {
+        lmcf->postponed_to_rewrite_phase_end = 0;
     }
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);

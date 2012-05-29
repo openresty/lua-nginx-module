@@ -582,13 +582,13 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
     return 1;
 }
 
+
 static int
 ngx_http_lua_ngx_decode_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
     u_char                      *last;
     size_t                       len = 0;
-    int                          retval;
     int                          n;
     int                          max;
 
@@ -601,13 +601,12 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
     buf = (u_char *) luaL_checklstring(L, 1, &len);
 
     if (n == 2) {
-        max = luaL_checkinteger(L, 2);
+        max = luaL_checkint(L, 2);
         lua_pop(L, 1);
 
     } else {
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
-    lua_pop(L, 1);
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -621,10 +620,9 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
 
     last = buf + len;
 
-    retval = ngx_http_lua_parse_args(r, L, buf, last, max);
-
-    return retval;
+    return ngx_http_lua_parse_args(r, L, buf, last, max);
 }
+
 
 #if (NGX_OPENSSL)
 

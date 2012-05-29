@@ -33,7 +33,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        dd("setting new ctx, ctx = %p", ctx);
+        dd("setting new ctx, ctx = %p, size: %d", ctx, (int) sizeof(*ctx));
 
         ctx->cc_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
@@ -125,7 +125,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        dd("setting new ctx: ctx = %p", ctx);
+        dd("setting new ctx: ctx = %p, size: %d", ctx, (int) sizeof(*ctx));
 
         ctx->cc_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
