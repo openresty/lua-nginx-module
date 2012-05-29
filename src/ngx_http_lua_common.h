@@ -102,7 +102,6 @@ typedef struct {
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
-    ngx_http_handler_pt     log_handler;
     ngx_http_handler_pt     header_filter_handler;
 
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
@@ -122,13 +121,6 @@ typedef struct {
                                                 file path */
 
     u_char                 *content_src_key; /* cached key for content_src */
-
-
-    /* log_by_lua inline script/script file path */
-    ngx_http_complex_value_t    log_src;
-    /* cached key for log_src */
-    u_char                      *log_src_key;
-
 
     ngx_http_complex_value_t header_filter_src;    /*  header_filter_by_lua
                                                 inline script/script

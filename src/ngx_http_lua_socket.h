@@ -93,8 +93,6 @@ typedef struct {
     ngx_str_t                            pattern;
     int                                  state;
     ngx_http_lua_dfa_edge_t            **recovering;
-
-    unsigned                             inclusive:1;
 } ngx_http_lua_socket_compiled_pattern_t;
 
 

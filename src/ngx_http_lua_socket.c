@@ -2157,43 +2157,13 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     ngx_str_t                            pat;
     ngx_int_t                            rc;
     size_t                               size;
-    unsigned                             inclusive = 0;
 
     ngx_http_lua_socket_compiled_pattern_t     *cp;
 
     n = lua_gettop(L);
-    if (n != 2 && n != 3) {
-        return luaL_error(L, "expecting 2 or 3 arguments "
+    if (n != 2) {
+        return luaL_error(L, "expecting 2 arguments "
                           "(including the object), but got %d", n);
-    }
-
-    if (n == 3) {
-        /* check out the options table */
-
-        if (lua_type(L, -1) != LUA_TTABLE) {
-            return luaL_error(L, "expecting table as the 3rd argument, "
-                              "but got %s",
-                              luaL_typename(L, -1));
-        }
-
-        lua_getfield(L, -1, "inclusive");
-
-        switch (lua_type(L, -1)) {
-            case LUA_TNIL:
-                /* do nothing */
-                break;
-
-            case LUA_TBOOLEAN:
-                if (lua_toboolean(L, -1)) {
-                    inclusive = 1;
-                }
-                break;
-
-            default:
-                return luaL_error(L, "Bad inclusive option value");
-
-        }
-        lua_pop(L, 2);
     }
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
@@ -2225,8 +2195,6 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     lua_setmetatable(L, -2);
 
     ngx_memzero(cp, size);
-
-    cp->inclusive = inclusive;
 
     rc = ngx_http_lua_socket_compile_pattern(pat.data, pat.len, cp,
                                              r->connection->log);
@@ -2523,10 +2491,6 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
                 } else {
                     cp->state = 0;
-                }
-
-                if (cp->inclusive) {
-                    u->buf_in->buf->last += state;
                 }
 
                 return NGX_OK;

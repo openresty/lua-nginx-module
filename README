@@ -668,69 +668,6 @@ Directives
     lua_code_cache "off" in "nginx.conf" to avoid repeatedly reloading
     Nginx.
 
-  log_by_lua
-    syntax: *log_by_lua <lua-script-str>*
-
-    context: *http, server, location, location if*
-
-    phase: *log_phase*
-
-    Uses Lua code specified in "<lua-script-str>" to create a lua log handler
-    This does not replace the current access logs, but runs after.
-
-    Note that similarly to header_filter_by_lua, the following API
-    functions are currently disabled within this context:
-
-    *   Output API functions (e.g., ngx.say and ngx.send_headers)
-
-    *   Control API functions (e.g., ngx.exit)
-
-    *   Subrequest API functions (e.g., ngx.location.capture and
-        ngx.location.capture_multi)
-
-    Here is an example of gathering average data for
-    $upstream_response_time :
-
-        lua_shared_dict log_dict 5M;
-
-        location / {
-
-            proxy_pass http://mybackend;
-
-            log_by_lua '
-                local upstream_time = tonumber(ngx.var.upstream_response_time)
-
-                local sum = ngx.shared.log_dict:get("upstream_time-sum")
-                sum = sum + upstream_time
-                ngx.shared.log_dict:set("upstream_time-sum", sum)
-                ngx.shared.log_dict:incr("upstream_time-nb", 1)
-             ';
-        }
-
-        location /status {
-            content_by_lua '
-                local sum = ngx.shared.log_dict:get("upstream_time-sum")
-                local nb = ngx.shared.log_dict:get("upstream_time-nb")
-
-                if nb and sum then
-                    ngx.say("average upstream response time: ", sum / nb)
-                end
-            ';
-        }
-
-
-  log_by_lua_file
-
-    syntax: *log_by_lua <lua-script-str>*
-
-    context: *http, server, location, location if*
-
-    phase: *log_phase*
-
-    Equivalent to log_by_blua, except that the file specified by
-    "<path-to-lua-script-file>" contains the lua code to be executed.
-
-
   header_filter_by_lua
     syntax: *header_filter_by_lua <lua-script-str>*
 
@@ -1423,9 +1360,9 @@ Nginx API for Lua
     This option is set to "false" by default
 
         location /other {
-            set $dog "$dog world";
-            echo "$uri dog: $dog";
-        }
+            set $dog "$dog world";                  
+            echo "$uri dog: $dog";                    
+        }                                     
 
         location /lua {
             set $dog 'hello';
@@ -1435,7 +1372,7 @@ Nginx API for Lua
 
                 ngx.print(res.body)
                 ngx.say(ngx.var.uri, ": ", ngx.var.dog)
-            ';
+            ';  
         }
 
     Accessing location "/lua" gives
@@ -1506,23 +1443,23 @@ Nginx API for Lua
     the ngx.ctx table for the subrequest.
 
         location /sub {
-            content_by_lua '
-                ngx.ctx.foo = "bar";
+            content_by_lua '                          
+                ngx.ctx.foo = "bar";                  
             ';
-        }
+        }   
         location /lua {
             content_by_lua '
-                local ctx = {}
+                local ctx = {}                        
                 res = ngx.location.capture("/sub", { ctx = ctx })
 
                 ngx.say(ctx.foo);
-                ngx.say(ngx.ctx.foo);
-            ';
+                ngx.say(ngx.ctx.foo);                 
+            ';                                        
         }
 
     Then request "GET /lua" gives
 
-        bar
+        bar                                               
         nil
 
     It is also possible to use this "ctx" option to share the same ngx.ctx
@@ -1883,7 +1820,7 @@ Nginx API for Lua
     different from arguments taking empty string values. "GET
     /test?foo=&bar=" will give something like
 
-        foo:
+        foo: 
         bar:
 
     Empty key arguments are discarded. "GET /test?=hello&=world" will yield
@@ -1978,7 +1915,7 @@ Nginx API for Lua
     different from arguments taking empty string values. "POST /test" with
     request body "foo=&bar=" will return something like
 
-        foo:
+        foo: 
         bar:
 
     Empty key arguments are discarded. "POST /test" with body
@@ -2982,7 +2919,7 @@ Nginx API for Lua
 
         j             enable PCRE JIT compilation, this requires PCRE 8.21+ which
                       must be built with the --enable-jit option.
-                      for optimum performance, this option should always be used
+                      for optimum performance, this option should always be used  
                       together with the 'o' option.
                       first introduced in ngx_lua v0.3.1rc30.
 
@@ -3637,13 +3574,6 @@ Nginx API for Lua
 
     This method returns an iterator Lua function that can be called to read
     the data stream until it sees the specified pattern or an error occurs.
-
-    An optional option table can be given as a second argument, which
-    support the options:
-    
-    *   "inclusive" specify wether the pattern itself should be returned
-        as part of the matched data.
-
 
     Here is an example for using this method to read a data stream with the
     boundary sequence "--abcedhb":
