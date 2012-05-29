@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 #log_level('warn');
 no_root_location();
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3);
 
@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 88
+ngx: 89
 --- no_error_log
 [error]
 
