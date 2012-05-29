@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.5.0rc28
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 16
+    This document describes ngx_lua v0.5.0rc29
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 28
     May 2012.
 
 Synopsis
@@ -535,8 +535,11 @@ Directives
     Here the Lua code "ngx.exit(503)" will never run. This will be the case
     if "rewrite ^ /bar last" is used as this will similarly initiate an
     internal redirection. If the "break" modifier is used instead, there
-    will be no internal redirection and the rewrite_by_lua code will be
+    will be no internal redirection and the "rewrite_by_lua" code will be
     executed.
+
+    The "rewrite_by_lua" code will always run at the end of the "rewrite"
+    request-processing phase unless rewrite_by_lua_no_postpone is turned on.
 
   rewrite_by_lua_file
     syntax: *rewrite_by_lua_file <path-to-lua-script-file>*
@@ -561,6 +564,10 @@ Directives
     reloaded each time the Lua source file is modified. The Lua code cache
     can be temporarily disabled during development by switching
     lua_code_cache "off" in "nginx.conf" to avoid reloading Nginx.
+
+    The "rewrite_by_lua_file" code will always run at the end of the
+    "rewrite" request-processing phase unless rewrite_by_lua_no_postpone is
+    turned on.
 
   access_by_lua
     syntax: *access_by_lua <lua-script-str>*
@@ -2509,6 +2516,18 @@ Nginx API for Lua
 
     Explicitly specify the end of the response output stream.
 
+  ngx.sleep
+    syntax: *ngx.sleep(seconds)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Sleeps for the specified seconds non-blockingly. One can specify time
+    resolution up to 0.001 seconds (i.e., one milliseconds).
+
+    Behind the scene, this method makes use of the Nginx timers.
+
+    This method was introduced in the "0.5.0rc30" release.
+
   ngx.escape_uri
     syntax: *newstr = ngx.escape_uri(str)*
 
@@ -4221,13 +4240,6 @@ Bugs and Patches
 
 TODO
   Short Term
-    *   implement the "ngx.sleep(time)" Lua API. (For now, use
-        ngx.location.capture with [[HttpEchoModule]]'s echo_sleep config
-        directive instead.)
-
-    *   implement the "ngx.worker.get_pid()" Lua API. (For now, use
-        "ngx.var.pid" directly.)
-
     *   implement LuaSocket UDP API
         (<http://w3.impa.br/~diego/software/luasocket/udp.html>) in our
         cosocket API.
@@ -4251,8 +4263,8 @@ TODO
         methods, to allow micro performance tuning on the user side.
 
   Longer Term
-    *   add the "lua_require" directive to load module into main thread's
-        globals.
+    *   add the "lua_require" directive to load module into the Lua main
+        thread's globals.
 
     *   add Lua code automatic time slicing support by yielding and resuming
         the Lua VM actively via Lua's debug hooks.
