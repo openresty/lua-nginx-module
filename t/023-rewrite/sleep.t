@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 36;
+plan tests => repeat_each() * 39;
 
 #no_diff();
 #no_long_string();
@@ -194,6 +194,36 @@ lua ready to sleep for 500 ms
 lua ready to sleep for 300 ms
 lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
+--- no_error_log
+[error]
+
+
+
+=== TEST 8: ngx.location.capture before and after ngx.sleep
+--- config
+    location /test {
+        rewrite_by_lua '
+            local res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+
+            ngx.sleep(0.1)
+
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.exit(200)
+        ';
+    }
+    location = /hello {
+        echo hello world;
+    }
+    location = /sub {
+        proxy_pass http://127.0.0.1:$server_port/hello;
+    }
+--- request
+GET /test
+--- response_body
+hello world
+hello world
 --- no_error_log
 [error]
 
