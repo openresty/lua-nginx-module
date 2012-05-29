@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 39;
+plan tests => repeat_each() * 38;
 
 #no_diff();
 #no_long_string();
@@ -34,7 +34,7 @@ GET /test
 --- response_body_like chop
 ^0\.(?:4[5-9]\d*|5[0-5]\d*|5)$
 --- error_log
-lua ready to sleep for 500 ms
+lua ready to sleep for
 lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 
@@ -80,7 +80,7 @@ GET /test
 --- response_body_like chop
 ^0\.(?:4[5-9]\d*|5[0-9]\d*|5)$
 --- error_log
-lua ready to sleep for 500 ms
+lua ready to sleep for
 lua sleep handler: "/sleep?"
 lua sleep timer expired: "/sleep?"
 --- no_error_log
@@ -123,7 +123,7 @@ GET /test
 --- response_body_like chop
 ^0\.(?:8[5-9]\d*|9[0-9]\d*|9)$
 --- error_log
-lua ready to sleep for 300 ms
+lua ready to sleep for
 lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 --- no_error_log
@@ -181,8 +181,7 @@ GET /test
 blah
 hiya
 --- error_log
-lua ready to sleep for 500 ms
-lua ready to sleep for 300 ms
+lua ready to sleep for
 lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 --- no_error_log
