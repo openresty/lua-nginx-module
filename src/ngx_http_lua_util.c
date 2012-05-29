@@ -1088,7 +1088,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                        "lua still waiting for a sleep timer: \"%V?%V\"",
                        &r->uri, &r->args);
 
-        ngx_handle_write_event(wev, 0);
+        if (wev->ready) {
+            ngx_handle_write_event(wev, 0);
+        }
 
         return NGX_DONE;
     }
