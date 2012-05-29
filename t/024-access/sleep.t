@@ -18,7 +18,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: sleep 0.5g
+=== TEST 1: sleep 0.5
 --- config
     location /test {
         access_by_lua '
