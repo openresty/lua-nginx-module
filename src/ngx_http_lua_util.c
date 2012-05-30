@@ -28,6 +28,7 @@
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_sleep.h"
 
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
@@ -514,7 +515,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    lua_createtable(L, 0 /* narr */, 88 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 89 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_internal_utils(cf->log, L);
 
@@ -527,6 +528,7 @@ init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_string_api(L);
     ngx_http_lua_inject_control_api(cf->log, L);
     ngx_http_lua_inject_subrequest_api(L);
+    ngx_http_lua_inject_sleep_api(L);
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
@@ -691,6 +693,12 @@ ngx_http_lua_request_cleanup(void *data)
     if (ctx->cleanup) {
         *ctx->cleanup = NULL;
         ctx->cleanup = NULL;
+    }
+
+    if (ctx->sleep.timer_set) {
+        dd("cleanup: deleting timer for ngx.sleep");
+
+        ngx_del_timer(&ctx->sleep);
     }
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -1077,6 +1085,24 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 return NGX_DONE;
             }
         }
+    }
+
+    if (ctx->sleep.timer_set) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "lua still waiting for a sleep timer: \"%V?%V\"",
+                       &r->uri, &r->args);
+
+        if (wev->ready) {
+            ngx_handle_write_event(wev, 0);
+        }
+
+        return NGX_DONE;
+    }
+
+    if (ctx->sleep.timedout) {
+        ctx->sleep.timedout = 0;
+        nret = 0;
+        goto run;
     }
 
     if (ctx->socket_busy && !ctx->socket_ready) {

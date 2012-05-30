@@ -125,6 +125,7 @@ src/uri.[ch]
 src/socket.[ch]
 src/api.[ch]
 src/logby.[ch]
+src/sleep.[ch]
 a.patch
 all
 build1[01]

@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc28](https://github.com/chaoslawful/lua-nginx-module/tags) released on 16 May 2012.
+This document describes ngx_lua [v0.5.0rc29](https://github.com/chaoslawful/lua-nginx-module/tags) released on 28 May 2012.
 
 Synopsis
 ========
@@ -503,7 +503,9 @@ If the [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](
     }
 
 
-Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewrite ^ /bar last` is used as this will similarly initiate an internal redirection. If the `break` modifier is used instead, there will be no internal redirection and the rewrite_by_lua code will be executed.
+Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewrite ^ /bar last` is used as this will similarly initiate an internal redirection. If the `break` modifier is used instead, there will be no internal redirection and the `rewrite_by_lua` code will be executed.
+
+The `rewrite_by_lua` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_no_postpone) is turned on.
 
 rewrite_by_lua_file
 -------------------
@@ -521,6 +523,8 @@ Nginx variables can be used in the `<path-to-lua-script-file>` string to provide
 When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
+
+The `rewrite_by_lua_file` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_no_postpone) is turned on.
 
 access_by_lua
 -------------
@@ -827,6 +831,19 @@ If you want to output huge response data in a streaming fashion (via the [ngx.fl
 This directive is turned `on` by default.
 
 This directive was first introduced in the `v0.5.0rc19` release.
+
+rewrite_by_lua_no_postpone
+--------------------------
+
+**syntax:** *rewrite_by_lua_no_postpone on|off*
+
+**default:** *rewrite_by_lua_no_postpone off*
+
+**context:** *http, server, location, location-if*
+
+Controls whether or not to disable postponing [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) and [rewrite_by_lua_file](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_file) directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
+
+This directive was first introduced in the `v0.5.0rc29` release.
 
 Nginx API for Lua
 =================
@@ -1683,7 +1700,7 @@ See also [ngx.req.set_uri](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_uri).
 
 ngx.req.get_uri_args
 --------------------
-**syntax:** *args = ngx.req.get_uri_args(count_limit?)*
+**syntax:** *args = ngx.req.get_uri_args(max_args?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1750,9 +1767,9 @@ Here the `args` table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
 
-However, the optional `count_limit` function argument can be used to override this limit:
+However, the optional `max_args` function argument can be used to override this limit:
 
 
     local args = ngx.req.get_uri_args(10)
@@ -1764,11 +1781,11 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_uri_args(0)
 
 
-Removing the `count_limit` cap is strongly discouraged.
+Removing the `max_args` cap is strongly discouraged.
 
 ngx.req.get_post_args
 ---------------------
-**syntax:** *ngx.req.get_post_args(count_limit?)*
+**syntax:** *ngx.req.get_post_args(max_args?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1839,7 +1856,7 @@ Empty key arguments are discarded. `POST /test` with body `=hello&=world` will y
 
 Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
 
-However, the optional `count_limit` function argument can be used to override this limit:
+However, the optional `max_args` function argument can be used to override this limit:
 
 
     local args = ngx.req.get_post_args(10)
@@ -1851,11 +1868,11 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_post_args(0)
 
 
-Removing the `count_limit` cap is strongly discouraged.
+Removing the `max_args` cap is strongly discouraged.
 
 ngx.req.get_headers
 -------------------
-**syntax:** *headers = ngx.req.get_headers(count_limit?)*
+**syntax:** *headers = ngx.req.get_headers(max_headers?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
@@ -1892,7 +1909,7 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table such as:
 
 Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks.  
 
-However, the optional `count_limit` function argument can be used to override this limit:
+However, the optional `max_headers` function argument can be used to override this limit:
 
 
     local args = ngx.req.get_headers(10)
@@ -1904,7 +1921,7 @@ This argument can be set to zero to remove the limit and to process all request 
     local args = ngx.req.get_headers(0)
 
 
-Removing the `count_limit` cap is strongly discouraged.
+Removing the `max_headers` cap is strongly discouraged.
 
 ngx.req.set_header
 ------------------
@@ -2367,6 +2384,18 @@ ngx.eof
 
 Explicitly specify the end of the response output stream.
 
+ngx.sleep
+---------
+**syntax:** *ngx.sleep(seconds)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Sleeps for the specified seconds non-blockingly. One can specify time resolution up to 0.001 seconds (i.e., one milliseconds).
+
+Behind the scene, this method makes use of the Nginx timers.
+
+This method was introduced in the `0.5.0rc30` release.
+
 ngx.escape_uri
 --------------
 **syntax:** *newstr = ngx.escape_uri(str)*
@@ -2449,11 +2478,21 @@ This method was first introduced in the `v0.3.1rc27` release.
 
 ngx.decode_args
 ---------------
-**syntax:** *table = ngx.decode_args(str)*
+**syntax:** *table = ngx.decode_args(str, max_args?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [ngx.encode_args](http://wiki.nginx.org/HttpLuaModule#ngx.encode_args).
+
+The optional `max_args` argument can be used to specify the maximalnumber of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+
+This argument can be set to zero to remove the limit and to process all request arguments received:
+
+
+    local args = ngx.decode_args(str, 0)
+
+
+Removing the `max_args` cap is strongly discouraged.
 
 This method was introduced in the `v0.5.0rc29`.
 
@@ -3788,8 +3827,6 @@ TODO
 
 Short Term
 ----------
-* implement the `ngx.sleep(time)` Lua API. (For now, use [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) with [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule)'s [echo_sleep](http://wiki.nginx.org/HttpEchoModule#echo_sleep) config directive instead.)
-* implement the `ngx.worker.get_pid()` Lua API. (For now, use `ngx.var.pid` directly.)
 * implement [LuaSocket UDP API](http://w3.impa.br/~diego/software/luasocket/udp.html) in our cosocket API.
 * implement the SSL cosocket API.
 * implement the `ngx.re.split` method.
@@ -3801,7 +3838,7 @@ Short Term
 
 Longer Term
 -----------
-* add the `lua_require` directive to load module into main thread's globals.
+* add the `lua_require` directive to load module into the Lua main thread's globals.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * make [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), and their variants use the same mechanism as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), and their variants.
 * add coroutine API back to the Lua user land.

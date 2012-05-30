@@ -37,6 +37,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
 #endif
+    lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
 
     dd("nginx Lua module main config structure initialized!");
 
