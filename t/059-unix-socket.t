@@ -8,8 +8,11 @@ repeat_each(2);
 plan tests => blocks() * repeat_each() * 2;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
+$ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 no_long_string();
+#no_shuffle();
+
 run_tests();
 
 __DATA__
@@ -79,7 +82,7 @@ failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid hos
 === TEST 3: sanity
 --- http_config
     server {
-        listen unix:/tmp/test-nginx.sock;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -92,7 +95,7 @@ failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid hos
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("unix:/tmp/test-nginx.sock")
+            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
