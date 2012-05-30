@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (9 * blocks());
+plan tests => repeat_each() * (10 * blocks());
 
 #no_diff();
 #no_long_string();
@@ -38,6 +38,7 @@ lua rewrite handler, uri "/t"
 lua access handler, uri "/t"
 lua content handler, uri "/t"
 lua header filter for user lua code, uri "/t"
+lua log handler, uri "/t"
 [error]
 
 
@@ -60,6 +61,7 @@ lua capture body filter, uri "/t"
 lua access handler, uri "/t"
 lua content handler, uri "/t"
 lua header filter for user lua code, uri "/t"
+lua log handler, uri "/t"
 [error]
 
 
@@ -82,6 +84,7 @@ lua capture header filter, uri "/t"
 lua rewrite handler, uri "/t"
 lua content handler, uri "/t"
 lua header filter for user lua code, uri "/t"
+lua log handler, uri "/t"
 [error]
 
 
@@ -103,6 +106,7 @@ lua capture header filter, uri "/t"
 lua access handler, uri "/t"
 lua rewrite handler, uri "/t"
 lua header filter for user lua code, uri "/t"
+lua log handler, uri "/t"
 [error]
 
 
@@ -120,6 +124,30 @@ hello
 --- error_log
 lua header filter for user lua code, uri "/t"
 --- no_error_log
+lua capture header filter, uri "/t"
+lua content handler, uri "/t"
+lua access handler, uri "/t"
+lua rewrite handler, uri "/t"
+lua capture body filter, uri "/t"
+lua log handler, uri "/t"
+[error]
+
+
+
+=== TEST 6: log_filter_by_lua
+--- config
+    location /t {
+        echo hello;
+        log_by_lua return;
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log
+lua log handler, uri "/t"
+--- no_error_log
+lua header filter for user lua code, uri "/t"
 lua capture header filter, uri "/t"
 lua content handler, uri "/t"
 lua access handler, uri "/t"

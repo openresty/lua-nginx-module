@@ -1,9 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-BEGIN {
-    $ENV{TEST_NGINX_SLEEP} = 0.1;
-}
-
 use lib 'lib';
 use Test::Nginx::Socket;
 
