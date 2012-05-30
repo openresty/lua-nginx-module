@@ -31,6 +31,10 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua_cpath = { 0, NULL };
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
+     *      lmcf->requires_header_filter = 0;
+     *      lmcf->requires_capture_filter = 0;
+     *      lmcf->requires_rewrite = 0;
+     *      lmcf->requires_access = 0;
      */
 
     lmcf->pool = cf->pool;

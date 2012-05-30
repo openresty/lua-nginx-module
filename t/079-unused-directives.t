@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (7 * blocks());
+plan tests => repeat_each() * (9 * blocks());
 
 #no_diff();
 #no_long_string();
@@ -32,6 +32,8 @@ GET /t
 --- response_body
 32
 --- no_error_log
+lua capture header filter, uri "/t"
+lua capture body filter, uri "/t"
 lua rewrite handler, uri "/t"
 lua access handler, uri "/t"
 lua content handler, uri "/t"
@@ -52,6 +54,8 @@ GET /t
 hello
 --- error_log
 lua rewrite handler, uri "/t"
+lua capture header filter, uri "/t"
+lua capture body filter, uri "/t"
 --- no_error_log
 lua access handler, uri "/t"
 lua content handler, uri "/t"
@@ -72,6 +76,8 @@ GET /t
 hello
 --- error_log
 lua access handler, uri "/t"
+lua capture body filter, uri "/t"
+lua capture header filter, uri "/t"
 --- no_error_log
 lua rewrite handler, uri "/t"
 lua content handler, uri "/t"
@@ -91,6 +97,8 @@ GET /t
 hello
 --- error_log
 lua content handler, uri "/t"
+lua capture body filter, uri "/t"
+lua capture header filter, uri "/t"
 --- no_error_log
 lua access handler, uri "/t"
 lua rewrite handler, uri "/t"
@@ -99,10 +107,10 @@ lua header filter for user lua code, uri "/t"
 
 
 
-=== TEST 5: header_filter_by_lua & content_by_lua used
+=== TEST 5: header_filter_by_lua
 --- config
     location /t {
-        content_by_lua 'ngx.say("hello")';
+        echo hello;
         header_filter_by_lua return;
     }
 --- request
@@ -110,10 +118,12 @@ GET /t
 --- response_body
 hello
 --- error_log
-lua content handler, uri "/t"
 lua header filter for user lua code, uri "/t"
 --- no_error_log
+lua capture header filter, uri "/t"
+lua content handler, uri "/t"
 lua access handler, uri "/t"
 lua rewrite handler, uri "/t"
+lua capture body filter, uri "/t"
 [error]
 
