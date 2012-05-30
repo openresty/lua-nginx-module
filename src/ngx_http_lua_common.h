@@ -87,6 +87,12 @@ typedef struct {
     ngx_flag_t       postponed_to_rewrite_phase_end;
     ngx_flag_t       postponed_to_access_phase_end;
 
+    unsigned         requires_header_filter:1;
+    unsigned         requires_capture_filter:1;
+    unsigned         requires_rewrite:1;
+    unsigned         requires_access:1;
+    unsigned         requires_log:1;
+
 } ngx_http_lua_main_conf_t;
 
 

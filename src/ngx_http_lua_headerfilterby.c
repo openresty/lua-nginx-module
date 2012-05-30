@@ -255,15 +255,15 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
 
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua header filter for user lua code, uri \"%V\"", &r->uri);
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (llcf->header_filter_handler == NULL) {
         dd("no header filter handler found");
         return ngx_http_next_header_filter(r);
     }
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua header filter for header_filter_by_lua , uri \"%V\"", &r->uri);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
