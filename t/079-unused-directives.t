@@ -98,7 +98,8 @@ lua header filter for user lua code, uri "/t"
 [error]
 
 
-=== TEST 4: header_filter_by_lua & content_by_lua used
+
+=== TEST 5: header_filter_by_lua & content_by_lua used
 --- config
     location /t {
         content_by_lua 'ngx.say("hello")';
