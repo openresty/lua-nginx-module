@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('debug');
+#log_level('debug');
 
 repeat_each(2);
 
