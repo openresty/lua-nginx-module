@@ -1,5 +1,12 @@
 {
    <insert_a_suppression_name_here>
+   Memcheck:Param
+   socketcall.sendmsg(msg.msg_iov[i])
+   fun:__sendmsg_nocancel
+   fun:ngx_write_channel
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Cond
    fun:lj_str_new
 }
