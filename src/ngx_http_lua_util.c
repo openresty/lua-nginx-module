@@ -30,6 +30,8 @@
 #include "ngx_http_lua_sleep.h"
 
 
+int lua_code_cache_key;
+
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx);
 static void init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L);
@@ -490,7 +492,8 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     /* {{{ register table to cache user code:
      * {([string]cache_key) = [code closure]} */
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);
+    lua_pushlightuserdata(L, &lua_code_cache_key);
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 }
 

@@ -10,6 +10,8 @@
 #define NGX_UNESCAPE_URI_COMPONENT  0
 #endif
 
+/*  int whose address we'll use as key in Lua vm registry for user code cache table */
+extern int lua_code_cache_key;
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
