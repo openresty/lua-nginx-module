@@ -6,6 +6,16 @@ fun:ngx_master_process_cycle
 fun:main
 }
 {
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   socketcall.sendmsg(msg.msg_iov[i])
+   fun:sendmsg
+   fun:ngx_write_channel
+   fun:ngx_signal_worker_processes
+   fun:ngx_master_process_cycle
+   fun:main
+}
+{
 <insert_a_suppression_name_here>
 Memcheck:Param
 socketcall.sendmsg(msg.msg_iov[i])
