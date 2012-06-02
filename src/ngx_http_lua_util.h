@@ -12,6 +12,8 @@
 
 /*  int whose address we'll use as key in Lua vm registry for user code cache table */
 extern int lua_code_cache_key;
+/*  int whose address we'll use as key request in Lua vm registry for ctx data anchoring table */
+extern int ngx_lua_req_ctx_ref;
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \

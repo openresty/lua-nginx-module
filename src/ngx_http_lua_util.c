@@ -31,6 +31,7 @@
 
 
 int lua_code_cache_key;
+int ngx_lua_req_ctx_ref;
 
 /*  coroutine anchoring table key in Lua vm registry */
 static int ngx_lua_cort_ref;
@@ -484,8 +485,9 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     /* }}} */
 
     /* create the registry entry for the Lua request ctx data table */
+    lua_pushlightuserdata(L, &ngx_lua_req_ctx_ref);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
     /* create the registry entry for the Lua socket connection pool table */
     lua_newtable(L);
@@ -717,7 +719,8 @@ ngx_http_lua_request_cleanup(void *data)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua release ngx.ctx");
 
-        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        lua_pushlightuserdata(L, &ngx_lua_req_ctx_ref);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         luaL_unref(L, -1, ctx->ctx_ref);
         ctx->ctx_ref = LUA_NOREF;
         lua_pop(L, 1);

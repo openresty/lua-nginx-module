@@ -260,9 +260,6 @@ extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 
-/*  request ctx data anchoring table key in Lua vm registry */
-#define NGX_LUA_REQ_CTX_REF "ngx_lua_req_ctx_ref"
-
 /*  regex cache table key in Lua vm registry */
 #define NGX_LUA_REGEX_CACHE "ngx_lua_regex_cache"
 
