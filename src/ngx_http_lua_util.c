@@ -33,6 +33,7 @@
 int lua_code_cache_key;
 int ngx_lua_req_ctx_ref;
 int ngx_lua_regex_cache;
+int ngx_lua_socket_pool;
 
 /*  coroutine anchoring table key in Lua vm registry */
 static int ngx_lua_cort_ref;
@@ -491,8 +492,9 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
     lua_rawset(L, LUA_REGISTRYINDEX);
 
     /* create the registry entry for the Lua socket connection pool table */
+    lua_pushlightuserdata(L, &ngx_lua_socket_pool);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
 #if (NGX_PCRE)
     /* create the registry entry for the Lua precompiled regex object cache */

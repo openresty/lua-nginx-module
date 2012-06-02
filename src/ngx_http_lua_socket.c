@@ -2845,7 +2845,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     /* luaL_checktype(L, 1, LUA_TTABLE); */
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_pushlightuserdata(L, &ngx_lua_socket_pool);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     lua_rawgeti(L, 1, SOCKET_KEY_INDEX);
     key.data = (u_char *) lua_tolstring(L, -1, &key.len);
@@ -3085,7 +3086,8 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
     pc = &u->peer;
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL); /* table */
+    lua_pushlightuserdata(L, &ngx_lua_socket_pool);
+    lua_rawget(L, LUA_REGISTRYINDEX); /* table */
     lua_pushvalue(L, key_index); /* key */
     lua_rawget(L, -2);
 
@@ -3261,7 +3263,8 @@ ngx_http_lua_socket_free_pool(ngx_log_t *log, ngx_http_lua_socket_pool_t *spool)
 
     L = spool->conf->lua;
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_pushlightuserdata(L, &ngx_lua_socket_pool);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_pushstring(L, (char *) spool->key);
     lua_pushnil(L);
     lua_rawset(L, -3);
