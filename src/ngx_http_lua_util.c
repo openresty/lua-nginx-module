@@ -32,6 +32,9 @@
 
 int lua_code_cache_key;
 
+/*  coroutine anchoring table key in Lua vm registry */
+static int ngx_lua_cort_ref;
+
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx);
 static void init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L);
@@ -195,7 +198,8 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
     top = lua_gettop(L);
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     cr = lua_newthread(L);
 
@@ -236,7 +240,8 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua deleting thread");
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     /* release reference to coroutine */
     luaL_unref(L, -1, ref);
@@ -473,8 +478,9 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
 
     /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
     /* create the registry entry for the Lua request ctx data table */
@@ -721,7 +727,8 @@ ngx_http_lua_request_cleanup(void *data)
         return;
     }
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_rawgeti(L, -1, ctx->cc_ref);
 
     if (lua_isthread(L, -1)) {
