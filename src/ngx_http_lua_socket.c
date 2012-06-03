@@ -253,7 +253,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
                           "(including the object), but seen %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -893,7 +894,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
                           "(including the object), but got %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -1409,7 +1411,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                           "but got %d", lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -1619,7 +1622,8 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2166,7 +2170,8 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
                           "(including the object), but got %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2656,7 +2661,8 @@ ngx_http_lua_req_socket(lua_State *L)
                 lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2908,7 +2914,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     /* stack: obj timeout? size? cache key */
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

@@ -34,6 +34,7 @@ int lua_code_cache_key;
 int ngx_lua_req_ctx_ref;
 int ngx_lua_regex_cache;
 int ngx_lua_socket_pool;
+int globals_symbol_request;
 
 /*  coroutine anchoring table key in Lua vm registry */
 static int ngx_lua_cort_ref;
@@ -2196,7 +2197,8 @@ ngx_http_lua_ngx_check_aborted(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

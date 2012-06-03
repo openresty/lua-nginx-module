@@ -122,7 +122,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
                 "but got %d", nargs);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -526,7 +527,8 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
                 nargs);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -841,7 +843,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
     dd("offset %d, r %p, subj %s", (int) offset, ctx->request, subj.data);
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -1086,7 +1089,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
                 nargs);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

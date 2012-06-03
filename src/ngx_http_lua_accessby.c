@@ -249,8 +249,9 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
 
     /*  save nginx request in coroutine globals table */
+    lua_pushlightuserdata(L, &globals_symbol_request);
     lua_pushlightuserdata(cc, r);
-    lua_setglobal(cc, GLOBALS_SYMBOL_REQUEST);
+    lua_rawset(cc, LUA_GLOBALSINDEX);
     /*  }}} */
 
     /*  {{{ initialize request context */

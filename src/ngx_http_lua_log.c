@@ -4,6 +4,7 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_log.h"
+#include "ngx_http_lua_util.h"
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -28,7 +29,8 @@ ngx_http_lua_ngx_log(lua_State *L)
 {
     ngx_http_request_t          *r;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -59,7 +61,8 @@ ngx_http_lua_print(lua_State *L)
 {
     ngx_http_request_t          *r;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
