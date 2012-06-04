@@ -1702,7 +1702,7 @@ ngx_http_lua_ngx_re_gmatch_cleanup(void *data)
         ctx->regex_sd = NULL;
     }
 
-    return 0;
+    return;
 }
 
 
