@@ -1324,6 +1324,7 @@ this exposed a memory leak in receiveuntil
 --- request
     GET /t
 --- response_body
+ok
 --- no_error_log
 [error]
 
