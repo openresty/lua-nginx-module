@@ -1314,7 +1314,7 @@ this exposed a memory leak in receiveuntil
                 return
             end
             local reader, err = sock:receiveuntil("------------------------------------------- abcdefghijklmnopqrstuvwxyz")
-            if not it then
+            if not reader then
                 ngx.say("failed to get reader: ", err)
                 return
             end
