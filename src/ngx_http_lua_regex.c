@@ -1366,12 +1366,17 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
             ngx_pfree(pool, cap);
-            if (!func) {
-                ngx_pfree(pool, ctpl);
-                if ((flags & NGX_LUA_RE_COMPILE_ONCE) && tpl.len != 0) {
-                    ngx_pfree(pool, tpl.data);
-                }
+            ngx_pfree(pool, ctpl);
+
+            if ((flags & NGX_LUA_RE_COMPILE_ONCE) && tpl.len != 0) {
+                ngx_pfree(pool, tpl.data);
             }
+
+            if (sd) {
+                ngx_http_lua_regex_free_study_data(pool, sd);
+            }
+
+            ngx_pfree(pool, re_comp.regex);
 
             return luaL_error(L, "bad template for substitution: \"%s\"",
                     lua_tostring(L, 3));
