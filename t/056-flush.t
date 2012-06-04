@@ -14,7 +14,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => 82;
+plan tests => repeat_each() * 41;
 
 #no_diff();
 #no_long_string();
