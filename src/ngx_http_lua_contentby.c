@@ -66,8 +66,9 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_setfenv(cc, -2);
 
     /*  save reference of code to ease forcing stopping */
-    lua_pushvalue(cc, -1);
-    lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
+    lua_pushlightuserdata(cc, &globals_symbol_runcode);
+    lua_pushvalue(cc, -2);
+    lua_rawset(cc, LUA_GLOBALSINDEX);
 
     /*  save nginx request in coroutine globals table */
     lua_pushlightuserdata(cc, &globals_symbol_request);

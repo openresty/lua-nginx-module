@@ -260,9 +260,5 @@ extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 
-/*  globals symbol to hold code chunk handling nginx request */
-#define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
-
-
 #endif /* NGX_HTTP_LUA_COMMON_H */
 
