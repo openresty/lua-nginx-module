@@ -27,6 +27,7 @@ int
 ngx_http_lua_ngx_log(lua_State *L)
 {
     ngx_http_request_t          *r;
+    const char                  *msg;
 
     lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
     r = lua_touserdata(L, -1);
@@ -34,6 +35,10 @@ ngx_http_lua_ngx_log(lua_State *L)
 
     if (r && r->connection && r->connection->log) {
         int level = luaL_checkint(L, 1);
+        if (level < NGX_LOG_STDERR || level > NGX_LOG_DEBUG) {
+            msg = lua_pushfstring(L, "bad log level: %d", level);
+            return luaL_argerror(L, 1, msg);
+        }
 
         /* remove log-level param from stack */
         lua_remove(L, 1);

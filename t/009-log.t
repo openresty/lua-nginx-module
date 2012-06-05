@@ -401,3 +401,37 @@ done
 --- error_log eval
 qr/\[error\] \S+: \S+ \[lua\] test.lua:6: bar\(\): hello, log12343.14159/
 
+
+
+=== TEST 20: ngx.log with bad levels (ngx.ERROR, -1)
+--- config
+    location /log {
+        content_by_lua '
+            ngx.log(ngx.ERROR, "hello lua")
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /log
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad log level: -1
+
+
+
+=== TEST 21: ngx.log with bad levels (9)
+--- config
+    location /log {
+        content_by_lua '
+            ngx.log(9, "hello lua")
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /log
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad log level: 9
+
