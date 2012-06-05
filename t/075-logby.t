@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 3);
 
 #no_diff();
 #no_long_string();
@@ -135,6 +135,8 @@ lua release ngx.ctx
 GET /lua
 --- response_body
 hello
+--- error_log eval
+qr{/lua200: [12]}
 --- no_error_log
-/lua200: [12]
+[error]
 
