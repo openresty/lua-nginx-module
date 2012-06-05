@@ -289,9 +289,11 @@ ngx_http_lua_clear_package_loaded(lua_State *L)
                 goto done;
             }
 
+#if 0
             if (ngx_strncmp(p, "_G", sizeof("_G") - 1) == 0) {
                 goto done;
             }
+#endif
 
             break;
 
@@ -379,5 +381,8 @@ done:
 
     /* package loaded */
     lua_pop(L, 2);
+
+    lua_newtable(L);
+    lua_setglobal(L, "_G");
 }
 
