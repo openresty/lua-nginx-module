@@ -20,8 +20,6 @@ extern int ngx_lua_regex_cache;
 extern int ngx_lua_socket_pool;
 /* int whose address we'll use as key for the nginx request pointer */
 extern int globals_symbol_request;
-/* int whose address we'll use as key for the code chunk handling nginx request */
-extern int globals_symbol_runcode;
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \

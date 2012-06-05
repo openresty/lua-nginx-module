@@ -35,7 +35,6 @@ int ngx_lua_req_ctx_ref;
 int ngx_lua_regex_cache;
 int ngx_lua_socket_pool;
 int globals_symbol_request;
-int globals_symbol_runcode;
 
 /*  coroutine anchoring table key in Lua vm registry */
 static int ngx_lua_cort_ref;
