@@ -76,6 +76,7 @@ static int ngx_http_lua_ngx_re_gsub(lua_State *L);
 static void ngx_http_lua_regex_free_study_data(ngx_pool_t *pool,
     pcre_extra *sd);
 static ngx_int_t ngx_lua_regex_compile(ngx_lua_regex_compile_t *rc);
+static void ngx_http_lua_ngx_re_gmatch_cleanup(void *data);
 
 
 #define ngx_http_lua_regex_exec(re, e, s, start, captures, size) \
@@ -514,6 +515,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     ngx_pool_t                  *pool, *old_pool;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
+    ngx_http_cleanup_t          *cln;
 
     nargs = lua_gettop(L);
 
@@ -760,10 +762,9 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     }
 
 compiled:
-    ctx = ngx_palloc(r->pool, sizeof(ngx_http_lua_regex_ctx_t));
-    if (ctx == NULL) {
-        return luaL_error(L, "out of memory");
-    }
+    lua_settop(L, 1);
+
+    ctx = lua_newuserdata(L, sizeof(ngx_http_lua_regex_ctx_t));
 
     ctx->request = r;
     ctx->regex = re_comp.regex;
@@ -773,11 +774,19 @@ compiled:
     ctx->captures_len = ovecsize;
     ctx->flags = (uint8_t) flags;
 
-    lua_settop(L, 1);
+    if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        cln->handler = ngx_http_lua_ngx_re_gmatch_cleanup;
+        cln->data = ctx;
+    }
+
+    lua_pushinteger(L, 0);
 
     /* upvalues in order: subj ctx offset */
-    lua_pushlightuserdata(L, ctx);
-    lua_pushinteger(L, 0);
     lua_pushcclosure(L, ngx_http_lua_ngx_re_gmatch_iterator, 3);
 
     return 1;
@@ -873,12 +882,11 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             if (ctx->regex_sd) {
                 ngx_http_lua_regex_free_study_data(r->pool, ctx->regex_sd);
+                ctx->regex_sd = NULL;
             }
 
             ngx_pfree(r->pool, cap);
         }
-
-        ngx_pfree(r->pool, ctx);
 
         lua_pushnil(L);
         return 1;
@@ -925,12 +933,11 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
             if (ctx->regex_sd) {
                 ngx_http_lua_regex_free_study_data(r->pool, ctx->regex_sd);
+                ctx->regex_sd = NULL;
             }
 
             ngx_pfree(r->pool, cap);
         }
-
-        ngx_pfree(r->pool, ctx);
     }
 
     lua_pushinteger(L, offset);
@@ -945,12 +952,11 @@ error:
     if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (ctx->regex_sd) {
             ngx_http_lua_regex_free_study_data(r->pool, ctx->regex_sd);
+            ctx->regex_sd = NULL;
         }
 
         ngx_pfree(r->pool, cap);
     }
-
-    ngx_pfree(r->pool, ctx);
 
     return luaL_error(L, msg);
 }
@@ -1360,12 +1366,17 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         if (ngx_http_lua_compile_complex_value(&ccv) != NGX_OK) {
             ngx_pfree(pool, cap);
-            if (!func) {
-                ngx_pfree(pool, ctpl);
-                if ((flags & NGX_LUA_RE_COMPILE_ONCE) && tpl.len != 0) {
-                    ngx_pfree(pool, tpl.data);
-                }
+            ngx_pfree(pool, ctpl);
+
+            if ((flags & NGX_LUA_RE_COMPILE_ONCE) && tpl.len != 0) {
+                ngx_pfree(pool, tpl.data);
             }
+
+            if (sd) {
+                ngx_http_lua_regex_free_study_data(pool, sd);
+            }
+
+            ngx_pfree(pool, re_comp.regex);
 
             return luaL_error(L, "bad template for substitution: \"%s\"",
                     lua_tostring(L, 3));
@@ -1668,11 +1679,13 @@ ngx_lua_regex_compile(ngx_lua_regex_compile_t *rc)
 
     rc->regex = re;
 
+#if 1
     n = pcre_fullinfo(re, NULL, PCRE_INFO_CAPTURECOUNT, &rc->captures);
     if (n < 0) {
         p = "pcre_fullinfo(\"%V\", PCRE_INFO_CAPTURECOUNT) failed: %d";
         goto failed;
     }
+#endif
 
     return NGX_OK;
 
@@ -1682,6 +1695,21 @@ failed:
                   - rc->err.data;
     return NGX_OK;
 }
+
+
+static void
+ngx_http_lua_ngx_re_gmatch_cleanup(void *data)
+{
+    ngx_http_lua_regex_ctx_t    *ctx = data;
+
+    if (ctx && ctx->regex_sd) {
+        ngx_http_lua_regex_free_study_data(ctx->request->pool, ctx->regex_sd);
+        ctx->regex_sd = NULL;
+    }
+
+    return;
+}
+
 
 #endif /* NGX_PCRE */
 

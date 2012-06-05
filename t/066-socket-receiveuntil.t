@@ -1302,3 +1302,29 @@ close: nil closed
 [error]
 
 
+
+=== TEST 19: long patterns
+this exposed a memory leak in receiveuntil
+--- config
+    location /t {
+        content_by_lua '
+            local sock, err = ngx.req.socket()
+            if not sock then
+                ngx.say("failed to get req socket: ", err)
+                return
+            end
+            local reader, err = sock:receiveuntil("------------------------------------------- abcdefghijklmnopqrstuvwxyz")
+            if not reader then
+                ngx.say("failed to get reader: ", err)
+                return
+            end
+            ngx.say("ok")
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+

@@ -2630,6 +2630,11 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
         }
     }
 
+#if 1
+    ngx_free(cp->recovering);
+    cp->recovering = NULL;
+#endif
+
     return 0;
 }
 

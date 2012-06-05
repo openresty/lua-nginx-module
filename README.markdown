@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc29](https://github.com/chaoslawful/lua-nginx-module/tags) released on 28 May 2012.
+This document describes ngx_lua [v0.5.0rc30](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 June 2012.
 
 Synopsis
 ========
@@ -170,7 +170,7 @@ Synopsis
            client_body_buffer_size 100k;
  
            access_by_lua '
-               -- check the client IP addr is in our black list
+               -- check the client IP address is in our black list
                if ngx.var.remote_addr == "132.5.72.3" then
                    ngx.exit(ngx.HTTP_FORBIDDEN)
                end
@@ -223,7 +223,7 @@ and the Lua `package.loaded` table will be cleared
 at the entry point of every request (such that Lua modules
 will not be cached either). With this in place, developers can adopt an edit-and-refresh approach.
 
-Please note however, that Lua code inlined into nginx.conf
+Please note however, that Lua code written inline within nginx.conf
 such as those specified by [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua),
 [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), and [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) will *always* be
 cached because only the Nginx config file parser can correctly parse the `nginx.conf`
@@ -332,7 +332,7 @@ This directive can be freely mixed with all directives of the [HttpRewriteModule
     set $baz "bar: $bar";  # $baz == "bar: 33"
 
 
-Since the `0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive, and you can use the dollar sign character (`$`) directly.
+Since the `0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
 
 This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
@@ -348,7 +348,7 @@ Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), exce
 
 Nginx variable interpolation is supported in the `<path-to-lua-script-file>` argument string of this directive. But special care must be taken for injection attacks.
 
-When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -384,7 +384,7 @@ Equivalent to [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -520,7 +520,7 @@ Equivalent to [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lu
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](http://wiki.nginx.org/HttpLuaModule#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
@@ -607,7 +607,7 @@ Equivalent to [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)
 
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
-When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
@@ -650,7 +650,7 @@ header_filter_by_lua_file
 
 Equivalent to [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
-When a relative path like `foo/bar.lua` is given, they will be turned into the absoluate path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 This directive was first introduced in the `v0.2.1rc20` release.
 
@@ -691,7 +691,7 @@ lua_shared_dict
 
 **phase:** *depends on usage*
 
-Declares a shared memory zone, `<name>`, to serve as storage for the shm-based Lua dictionary `ngx.shared.<name>`.
+Declares a shared memory zone, `<name>`, to serve as storage for the shm based Lua dictionary `ngx.shared.<name>`.
 
 The `<size>` argument accepts size units such as `k` and `m`:
 
@@ -809,7 +809,7 @@ lua_socket_keepalive_timeout
 
 This directive controls the default maximal idle time of the connections in the cosocket built-in connection pool. When this timeout reaches, idle connections will be closed automatically and removed from the pool. This setting can be overridden by cosocket objects' [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method.
 
-The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, ie, "second". The default setting is `60s`.
+The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, i.e., "second". The default setting is `60s`.
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
@@ -824,9 +824,9 @@ lua_http10_buffering
 
 Enables or disables the automatic response caching for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which replies on a proper `Content-Length` response header.
 
-If the Lua code explicitly sets a `Content-Length` response header before sending the headers (either explicity via [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly via the first [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) or [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) call).
+If the Lua code explicitly sets a `Content-Length` response header before sending the headers (either explicitly via [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or implicitly via the first [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) or [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) call).
 
-If you want to output huge response data in a streaming fashion (via the [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) call, for example), then you MUST turn off this directive to prevent memory footprint boost.
+To output very large response data in a streaming fashion (via the [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) call, for example), this directive MUST be turned off to minimize memory usage.
 
 This directive is turned `on` by default.
 
@@ -879,7 +879,7 @@ It is also possible to directly require the packages in external Lua modules:
 
 The ability to require these packages was introduced in the `v0.2.1rc19` release.
 
-Network I/O operations in user code should only be done through the Nginx Lua API calls as the Nginx event loop may be blocked and performance drop off dramatically otherwise. Disk operations with relatively small amount of data can be done using the standard Lua `io` library but huge file reading and writing should be avoided wherever possible as they may block the Nginx process significantly. Delegating all network and disk I/O operations to Nginx's subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.catpure) method and similar) is strongly recommended for maximum performance.
+Network I/O operations in user code should only be done through the Nginx Lua API calls as the Nginx event loop may be blocked and performance drop off dramatically otherwise. Disk operations with relatively small amount of data can be done using the standard Lua `io` library but huge file reading and writing should be avoided wherever possible as they may block the Nginx process significantly. Delegating all network and disk I/O operations to Nginx's subrequests (via the [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) method and similar) is strongly recommended for maximum performance.
 
 ngx.arg
 -------
@@ -968,7 +968,7 @@ Note that only three of these constants are utilized by the [Nginx API for Lua](
       ngx.null
 
 
-The `ngx.null` constant is a `NULL` light userdata which is usually used to represent nil values in Lua tables and etc. It is identical with the [lua-cjson](http://www.kyne.com.au/~mark/software/lua-cjson.php) library's `cjson.null` constant. This constant was first introduced in the `v0.5.0rc5` release.
+The `ngx.null` constant is a `NULL` light userdata usually used to represent nil values in Lua tables etc and is similar to the [lua-cjson](http://www.kyne.com.au/~mark/software/lua-cjson.php) library's `cjson.null` constant. This constant was first introduced in the `v0.5.0rc5` release.
 
 The `ngx.DECLINED` constant was first introduced in the `v0.5.0rc19` release.
 
@@ -1045,7 +1045,7 @@ It is equivalent to
 
 Lua `nil` arguments are accepted and result in literal `"nil"` strings while Lua booleans result in literal `"true"` or `"false"` strings. And the `ngx.null` constant will yield the `"null"` string output.
 
-There is a hard-coded length limitation on the error messages in the Nginx core. It is `2048` bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
+There is a hard coded `2048` byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree.
 
 ngx.ctx
 -------
@@ -1180,7 +1180,7 @@ lines:
     Set-Cookie: baz=blah
 
 
-Then `res.header["Set-Cookie"]` will be evaluted to the table value
+Then `res.header["Set-Cookie"]` will be evaluated to the table value
 `{"a=3", "foo=bar", "baz=blah"}`.
 
 URI query strings can be concatenated to URI itself, for instance,
@@ -1400,11 +1400,13 @@ subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
 
-There is a hard-coded upper limit on the number of concurrent subrequests every main request. In older versions of Nginx, the limit is `50`, which is then increased to `200` in recent Nginx `1.1.x` releases. You can manually edit this limit by modifying the definition of the `NGX_HTTP_MAX_SUBREQUESTS` macro in the `nginx/src/http/ngx_http_request.h` file in the Nginx source tree. When you are exceeding this limit, you will get the following error message in your `error.log` file:
+There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was `50` concurrent subrequests and in more recent versions, Nginx `1.1.x` onwards, this was increased to `200` concurrent subrequests. When this limit is exceeded, the following error message is added to the `error.log` file:
 
 
     [error] 13983#0: *1 subrequests cycle while processing "/uri"
 
+
+The limit can be manually modified if required by editing the definition of the `NGX_HTTP_MAX_SUBREQUESTS` macro in the `nginx/src/http/ngx_http_request.h` file in the Nginx source tree.
 
 Please also refer to restrictions on [capturing locations that include Echo Module directives](http://wiki.nginx.org/HttpLuaModule#Locations_With_HttpEchoModule_Directives).
 
@@ -1692,7 +1694,7 @@ Multi-value arguments are also supported:
     ngx.req.set_uri_args({ a = 3, b = {5, 6} })
 
 
-which will result in a querystring like `a=3&b=5&b=6`.
+which will result in a query string like `a=3&b=5&b=6`.
 
 This interface was first introduced in the `v0.3.1rc13` release.
 
@@ -2106,7 +2108,7 @@ In case of error, `nil` will be returned as well as a string describing the erro
 
 The socket object returned by this method is usually used to read the current request's body in a streaming fashion. Do not turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, and do not mix this call with [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) and [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body).
 
-If there is any request body data that has been preread into the Nginx core's request header buffer, the resulting cosocket object will take care of that automatically. So there will not be any data loss due to potential body data prereading.
+If there is any request body data that has been pre-read into the Nginx core's request header buffer, the resulting cosocket object will take care of that automatically. So there will not be any data loss due to potential body data pre-reading.
 
 This function was first introduced in the `v0.5.0rc1` release.
 
@@ -2168,7 +2170,7 @@ This method never returns.
 This method *must* be called before [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or explicit response body
 outputs by either [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say).
 
-It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
+It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
 
 This method is similar to the [echo_exec](http://wiki.nginx.org/HttpEchoModule#echo_exec) directive of the [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule).
 
@@ -2195,7 +2197,7 @@ which is equivalent to
     return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
 
 
-We can also use the numberical code directly as the second `status` argument:
+We can also use the numerical code directly as the second `status` argument:
 
 
     return ngx.redirect("/foo", 301)
@@ -2236,7 +2238,7 @@ URI arguments can be specified as well, for example:
     return ngx.redirect('/foo?a=3&b=4')
 
 
-It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`.
+It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`.
 
 ngx.send_headers
 ----------------
@@ -2312,7 +2314,7 @@ Lua `nil` arguments are accepted and result in literal `"nil"` string while Lua 
 
 The `log_level` argument can take constants like `ngx.ERR` and `ngx.WARN`. Check out [Nginx log level constants](http://wiki.nginx.org/HttpLuaModule#Nginx_log_level_constants) for details.
 
-There is a hard-coded length limitation on the error messages in the Nginx core. It is `2048` bytes at most, including the trailing newlines and the leading timestamps. You can manually modify this limit by modifying the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree. If the message size exceeds this limit, the Nginx core will truncate the message text automatically.
+There is a hard coded `2048` byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree.
 
 ngx.flush
 ---------
@@ -2374,7 +2376,7 @@ Number literals can be used directly as the argument, for instance,
 
 Note that while this method accepts all [HTTP status constants](http://wiki.nginx.org/HttpLuaModule#HTTP_status_constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](http://wiki.nginx.org/HttpLuaModule#core_constants).
 
-It's strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exit(...)`.
+It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exit(...)`.
 
 ngx.eof
 -------
@@ -2390,7 +2392,7 @@ ngx.sleep
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Sleeps for the specified seconds non-blockingly. One can specify time resolution up to 0.001 seconds (i.e., one milliseconds).
+Sleeps for the specified seconds without blocking. One can specify time resolution up to 0.001 seconds (i.e., one milliseconds).
 
 Behind the scene, this method makes use of the Nginx timers.
 
@@ -2446,7 +2448,7 @@ yields
 
 The table keys must be Lua strings.
 
-Multi-value query args are also supported. Just use a Lua table for the arg's value, for example:
+Multi-value query args are also supported. Just use a Lua table for the argument's value, for example:
 
 
     ngx.encode_args({baz = {32, "hello"}})
@@ -2484,7 +2486,7 @@ ngx.decode_args
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [ngx.encode_args](http://wiki.nginx.org/HttpLuaModule#ngx.encode_args).
 
-The optional `max_args` argument can be used to specify the maximalnumber of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+The optional `max_args` argument can be used to specify the maximum number of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
@@ -2565,7 +2567,7 @@ yields the output
     R/pvxzHC4NLtj7S+kXFg/NePTmk=
 
 
-This API requires the OpenSSL library enabled in the Nignx build (usually by passing the `--with-http_ssl_module` option to the `./configure` script).
+This API requires the OpenSSL library enabled in the Nginx build (usually by passing the `--with-http_ssl_module` option to the `./configure` script).
 
 This function was first introduced in the `v0.3.1rc29` release.
 
@@ -2611,7 +2613,7 @@ ngx.sha1_bin
 
 Returns the binary form of the SHA-1 digest of the `str` argument.
 
-This function requires enabling SHA-1 support in your Nginx build (usually you just need to install OpenSSL to your system while building Nginx).
+This function requires SHA-1 support in the Nginx build. (This usually just means OpenSSL should be installed while building Nginx).
 
 This function was first introduced in the `v0.5.0rc6`.
 
@@ -2631,7 +2633,7 @@ ngx.time
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns the elapsed seconds from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
+Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
 Updates of the Nginx time cache an be forced by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
 
@@ -2641,7 +2643,7 @@ ngx.now
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns a floating-point number for the elapsed time in seconds (including microseconds as the decimal part) from the epoch for the current timestamp from the nginx cached time (no syscall involved unlike Lua's date library).
+Returns a floating-point number for the elapsed time in seconds (including microseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
 Use the Nginx core [timer_resolution](http://wiki.nginx.org/CoreModule#timer_resolution) directive to adjust the accuracy or forcibly update the Nginx time cache by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
 
@@ -2663,7 +2665,7 @@ ngx.localtime
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
+Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
 
 This is the local time.
 
@@ -2673,7 +2675,7 @@ ngx.utctime
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns the current timestamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
+Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
 
 This is the UTC time.
 
@@ -2683,7 +2685,7 @@ ngx.cookie_time
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the timestamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
+Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the time stamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
 
 
     ngx.say(ngx.cookie_time(1290079655))
@@ -2696,7 +2698,7 @@ ngx.http_time
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Returns a formated string can be used as the http header time (for example, being used in `Last-Modified` header). The parameter `sec` is the timestamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
+Returns a formated string can be used as the http header time (for example, being used in `Last-Modified` header). The parameter `sec` is the time stamp in seconds (like those returned from [ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time)).
 
 
     ngx.say(ngx.http_time(1290079655))
@@ -2736,7 +2738,7 @@ Matches the `subject` string using the Perl-compatible regular expression `regex
 
 Only the first occurrence of the match is returned, or `nil` if no match is found. In case of fatal errors, like seeing bad `UTF-8` sequences in `UTF-8` mode, a Lua exception will be raised.
 
-When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized subpattern's capturing, `captures[2]` the second, and so on.
+When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized sub-pattern's capturing, `captures[2]` the second, and so on.
 
 
     local m = ngx.re.match("hello, 1234", "[0-9]+")
@@ -2749,7 +2751,7 @@ When a match is found, a Lua table `captures` is returned, where `captures[0]` h
     -- m[1] == "1"
 
 
-Unmatched subpatterns will have `nil` values in their `captures` table fields.
+Unmatched sub-patterns will have `nil` values in their `captures` table fields.
 
 
     local m = ngx.re.match("hello, world", "(world)|(hello)")
@@ -2767,7 +2769,7 @@ Specify `options` to control how the match operation will be performed. The foll
                   this requires PCRE 6.0+ or else a Lua exception will be thrown.
                   first introduced in ngx_lua v0.3.1rc30.
 
-    i             caseless mode (similar to Perl's /i modifier)
+    i             case insensitive mode (similar to Perl's /i modifier)
 
     j             enable PCRE JIT compilation, this requires PCRE 8.21+ which
                   must be built with the --enable-jit option.
@@ -2777,7 +2779,7 @@ Specify `options` to control how the match operation will be performed. The foll
 
     m             multi-line mode (similar to Perl's /m modifier)
 
-    o             compile-once mode (similar to Perl's /o modifer),
+    o             compile-once mode (similar to Perl's /o modifier),
                   to enable the worker-process-level compiled-regex cache
 
     s             single-line mode (similar to Perl's /s modifier)
@@ -2825,7 +2827,7 @@ Note that, the `options` argument is not optional when the `ctx` argument is spe
 
 This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special PCRE Sequences](http://wiki.nginx.org/HttpLuaModule#Special_PCRE_Sequences)).
 
-To confirm that PCRE JIT is indeed enabled, it's required to enable the debugging logs in your Nginx build (by passing the `--with-debug` option to your Nginx or ngx_openresty's `./configure` script) and enable the "debug" error log level in your `error_log` directive, and then you can see the following message if PCRE JIT actually works:
+To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the `--with-debug` option to Nginx or ngx_openresty's `./configure` script. Then, enable the "debug" error log level in `error_log` directive. The following message will be generated if PCRE JIT is enabled:
 
 
     pcre JIT compiling result: 1
@@ -2841,7 +2843,7 @@ ngx.re.gmatch
 
 Similar to [ngx.re.match](http://wiki.nginx.org/HttpLuaModule#ngx.re.match), but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the `<subject>` string argument with the PCRE `regex`.
 
-Here is a small exmple to demonstrate its basic usage:
+Here is a small example to demonstrate its basic usage:
 
 
     local iterator = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
@@ -3190,11 +3192,11 @@ tcpsock:connect
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Attempts to connect a TCP socket object to a remote server or to a unix domain socket file nonblockingly.
+Attempts to connect a TCP socket object to a remote server or to a unix domain socket file without blocking.
 
 Before actually resolving the host name and connecting to the remote backend, this method will always look up the connection pool for matched idle connections created by previous calls of this method (or the [ngx.socket.connect](http://wiki.nginx.org/HttpLuaModule#ngx.socket.connect) function).
 
-Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name nonblockingly and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in your `nginx.conf` file like this:
+Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name without blocking and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in the `nginx.conf` file like this:
 
 
     resolver 8.8.8.8;  # use Google's public DNS nameserver
@@ -3234,7 +3236,7 @@ Connecting to a Unix Domain Socket file is also possible:
     end
 
 
-assuming that your memcached (or something else) is listening on the unix domain socket file `/tmp/memcached.sock`.
+assuming memcached (or something else) is listening on the unix domain socket file `/tmp/memcached.sock`.
 
 Timeout for the connecting operation is controlled by the [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
 
@@ -3256,7 +3258,7 @@ tcpsock:send
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Sends data nonblockingly on the current TCP or Unix Domain Socket connection.
+Sends data without blocking on the current TCP or Unix Domain Socket connection.
 
 This method is a synchronous operation that will not return until *all* the data has been flushed into the system socket send buffer or an error occurs.
 
@@ -3339,7 +3341,7 @@ In case of error, the iterator function will return `nil` along with a string de
 
 The iterator function can be called multiple times and can be mixed safely with other cosocket method calls or other iterator function calls.
 
-The iterator function behaves differently (i.e., like a real iterator) when it is called with a `size` argument. That is, it will read that `size` of data at earch invocation and will return `nil` at the last invocation (either sees the boundary pattern or meets an error). For the last successful invocation of the iterator function, the `err` return value will be `nil` too. The iterator function will automatically reset after its last successful invocation that returns `nil` data and `nil` error. Consider the following example:
+The iterator function behaves differently (i.e., like a real iterator) when it is called with a `size` argument. That is, it will read that `size` of data on each invocation and will return `nil` at the last invocation (either sees the boundary pattern or meets an error). For the last successful invocation of the iterator function, the `err` return value will be `nil` too. The iterator function will automatically reset after its last successful invocation that returns `nil` data and `nil` error. Consider the following example:
 
 
     local reader = sock:receiveuntil("\r\n--abcedhb")
@@ -3371,7 +3373,7 @@ Then for the incoming data stream `'hello, world! -agentzh\r\n--abcedhb blah bla
     read done
 
 
-Note that, the actual data returned *might* be a little longer than the size limit specified by the `size` argument when your boundary pattern has ambiguity for streaming parsing. Near the boundary of the data stream, the data string actually returned could also be shorter than the size limit.
+Note that, the actual data returned *might* be a little longer than the size limit specified by the `size` argument when the boundary pattern has ambiguity for streaming parsing. Near the boundary of the data stream, the data string actually returned could also be shorter than the size limit.
 
 Timeout for the iterator function's reading operation is controlled by the [lua_socket_read_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_read_timeout) config directive and the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method. And the latter takes priority. For example:
 
@@ -3449,7 +3451,7 @@ Idle connections in the pool will be monitored for any exceptional events like c
 
 In case of success, this method returns `1`; otherwise, it returns `nil` and a string describing the error.
 
-This method also makes the current cosocket object enter the "closed" state, so you do not need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
+This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
@@ -3484,7 +3486,7 @@ This function is a shortcut for combining [ngx.socket.tcp()](http://wiki.nginx.o
     return sock
 
 
-There is no way to use the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method to specify connecting timeout for this method. You have to use the [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout) directive at configure time instead.
+There is no way to use the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method to specify connecting timeout for this method and the [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout) directive must be set at configure time instead.
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
@@ -3539,7 +3541,7 @@ construct a proper `Content-Length` header for the HTTP 1.0 client.
 
 If the user Lua code sets the `Content-Length` response header itself, then the automatic buffering will be disabled even if the [lua_http10_buffering](http://wiki.nginx.org/HttpLuaModule#lua_http10_buffering) directive is turned `on`.
 
-For big responses' streaming outputs, it's important to disable the [lua_http10_buffering](http://wiki.nginx.org/HttpLuaModule#lua_http10_buffering) directive, otherwise the memory usage will grow very quickly.
+For large streaming output responses, it is important to disable the [lua_http10_buffering](http://wiki.nginx.org/HttpLuaModule#lua_http10_buffering) directive to minimise memory usage.
 
 Note that, common HTTP benchmark tools like `ab` and `http_load` always issue
 HTTP 1.0 requests by default. To force `curl` to send HTTP 1.0 requests, use
@@ -3588,7 +3590,7 @@ This data sharing technique is essential for high performance Lua applications b
 Note that this data sharing is on a *per-worker* basis and not on a ''per-server' basis'. That is, when there are multiple nginx worker processes under an Nginx master, data sharing cannot cross the process boundary between these workers. 
 
 If server wide data sharing is required:
-1. Use the [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) API provied by this module.
+1. Use the [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) API provided by this module.
 1. Use only a single nginx worker and a single server. This is however not recommended when there is a multi core CPU or multiple CPUs in a single machine.
 1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The ngx_openresty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules that provide interfaces with these data storage mechanisms.  See the [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module), [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule) and [HttpPostgresModule](http://github.com/FRiCKLE/ngx_postgres/) modules for details
 
@@ -3640,7 +3642,7 @@ The [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capt
 
     location /foo {
         content_by_lua '
-            res = ngx.location.capature("/bar")
+            res = ngx.location.capture("/bar")
         ';
     }
     location /bar {
@@ -3758,9 +3760,9 @@ The possibilities are unlimited as the module allows bringing together various e
 
 Other scripting language implementations typically struggle to match this performance level.
 
-The Lua state (Lua VM instance) is shared across all the requests handled by a single nginx worker process to miminize memory use.
+The Lua state (Lua VM instance) is shared across all the requests handled by a single nginx worker process to minimize memory use.
 
-On a ThinkPad T400 2.80 GHz laptop, the HelloWorld example readily achieves 28k req/sec using `http_load -p 10`. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [Node.js](http://nodejs.org/) v0.6.1 yields 10.2k req/sec for their HelloWorld equivalents.
+On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k req/sec using `http_load -p 10`. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [Node.js](http://nodejs.org/) v0.6.1 yields 10.2k req/sec for their Hello World equivalents.
 
 This module performs best when built with [LuaJIT 2.0](http://luajit.org/luajit.html).
 
@@ -3820,7 +3822,7 @@ Bugs and Patches
 Please report bugs or submit patches by:
 
 1. Creating a ticket on the [GitHub Issue Tracker](http://github.com/chaoslawful/lua-nginx-module/issues) (Recommended)
-1. Posting to the [Nginx Mailing List](http://mailman.nginx.org/mailman/listinfo/nginx) and also adding `[ngx_lua]` to the mail subject.
+1. Posting to the [Nginx Mailing List](http://mailman.nginx.org/mailman/listinfo/nginx) and adding `[ngx_lua]` to the mail subject.
 
 TODO
 ====
@@ -3889,7 +3891,7 @@ v0.4.0
 * feature: added Lua API for the shm-based dictionary, see [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 * bugfix: fixed spots of -Werror=unused-but-set-variable warning issued by gcc 4.6.0.
 * bugfix: [ndk.set_var.DIRECTIVE](http://wiki.nginx.org/HttpLuaModule#ndk.set_var.DIRECTIVE) had a memory issue and might pass empty argument values to the directive being called. thanks dannynoonan.
-* feature: added the `ctx` option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture): you can now specify a custom Lua table to pass to the subrequest as its [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx). thanks @hugozhu.
+* feature: added the `ctx` option to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture): users can now specify a custom Lua table to pass to the subrequest as its [ngx.ctx](http://wiki.nginx.org/HttpLuaModule#ngx.ctx). thanks @hugozhu.
 * feature: added the [ngx.encode_args](http://wiki.nginx.org/HttpLuaModule#ngx.encode_args) method to encode a Lua code to a URI query string. thanks 郭颖 (0597虾).
 * feature: [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec) now supports the same Lua args table format as in ngx.encode_args. thanks 郭颖 (0597虾).
 * bugfix: `Cache-Control` header modification might introduce empty value headers when using with the standard HttpHeadersModule.
