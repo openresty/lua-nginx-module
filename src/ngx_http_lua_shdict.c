@@ -361,7 +361,8 @@ ngx_http_lua_shdict_get(lua_State *L)
     hash = ngx_crc32_short(key.data, key.len);
 
 #if (NGX_DEBUG)
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -584,7 +585,8 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     name = ctx->name;
 
 #if (NGX_DEBUG)
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 #endif

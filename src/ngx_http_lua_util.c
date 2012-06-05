@@ -30,6 +30,15 @@
 #include "ngx_http_lua_sleep.h"
 
 
+int lua_code_cache_key;
+int ngx_lua_req_ctx_ref;
+int ngx_lua_regex_cache;
+int ngx_lua_socket_pool;
+int globals_symbol_request;
+
+/*  coroutine anchoring table key in Lua vm registry */
+static int ngx_lua_cort_ref;
+
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx);
 static void init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L);
@@ -193,7 +202,8 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
     top = lua_gettop(L);
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     cr = lua_newthread(L);
 
@@ -234,7 +244,8 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua deleting thread");
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     /* release reference to coroutine */
     luaL_unref(L, -1, ref);
@@ -471,26 +482,33 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
 
     /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
     /* create the registry entry for the Lua request ctx data table */
+    lua_pushlightuserdata(L, &ngx_lua_req_ctx_ref);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
     /* create the registry entry for the Lua socket connection pool table */
+    lua_pushlightuserdata(L, &ngx_lua_socket_pool);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
+#if (NGX_PCRE)
     /* create the registry entry for the Lua precompiled regex object cache */
+    lua_pushlightuserdata(L, &ngx_lua_regex_cache);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_REGEX_CACHE);
+    lua_rawset(L, LUA_REGISTRYINDEX);
+#endif
 
     /* {{{ register table to cache user code:
      * {([string]cache_key) = [code closure]} */
+    lua_pushlightuserdata(L, &lua_code_cache_key);
     lua_newtable(L);
-    lua_setfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 }
 
@@ -708,7 +726,8 @@ ngx_http_lua_request_cleanup(void *data)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua release ngx.ctx");
 
-        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        lua_pushlightuserdata(L, &ngx_lua_req_ctx_ref);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         luaL_unref(L, -1, ctx->ctx_ref);
         ctx->ctx_ref = LUA_NOREF;
         lua_pop(L, 1);
@@ -718,7 +737,8 @@ ngx_http_lua_request_cleanup(void *data)
         return;
     }
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REF);
+    lua_pushlightuserdata(L, &ngx_lua_cort_ref);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_rawgeti(L, -1, ctx->cc_ref);
 
     if (lua_isthread(L, -1)) {
@@ -2177,7 +2197,8 @@ ngx_http_lua_ngx_check_aborted(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &globals_symbol_request);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

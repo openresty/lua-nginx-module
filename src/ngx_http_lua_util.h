@@ -10,6 +10,16 @@
 #define NGX_UNESCAPE_URI_COMPONENT  0
 #endif
 
+/* int whose address we'll use as key in Lua vm registry for user code cache table */
+extern int lua_code_cache_key;
+/* int whose address we'll use as key in Lua vm registry for ctx data anchoring table */
+extern int ngx_lua_req_ctx_ref;
+/* int whose address we'll use as key in Lua vm registry for regex cache table  */
+extern int ngx_lua_regex_cache;
+/* int whose address we'll use as key in Lua vm registry for socket connection pool table */
+extern int ngx_lua_socket_pool;
+/* int whose address we'll use as key for the nginx request pointer */
+extern int globals_symbol_request;
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
