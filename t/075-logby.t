@@ -103,3 +103,38 @@ hello
 ngx.ctx.counter: nil
 lua release ngx.ctx
 
+
+
+=== TEST 6: log_by_lua + shared dict
+--- http_config
+    lua_shared_dict foo 100k;
+--- config
+    location /lua {
+        echo hello;
+        log_by_lua '
+            local foo = ngx.shared.foo
+            local key = ngx.var.uri .. ngx.status
+            local newval, err = foo:incr(key, 1)
+            if not newval then
+                if err == "not found" then
+                    foo:add(key, 0)
+                    newval, err = foo:incr(key, 1)
+                    if not newval then
+                        ngx.log(ngx.ERR, "failed to incr ", key, ": ", err)
+                        return
+                    end
+                else
+                    ngx.log(ngx.ERR, "failed to incr ", key, ": ", err)
+                    return
+                end
+            end
+            print(key, ": ", foo:get(key))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+hello
+--- no_error_log
+/lua200: [12]
+
