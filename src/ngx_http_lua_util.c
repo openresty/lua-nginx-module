@@ -1114,6 +1114,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ctx->socket_ready = 0;
 
         u = ctx->data;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua socket calling prepare retvals handler %p",
+                       u->prepare_retvals);
+
         nret = u->prepare_retvals(r, u, ctx->cc);
         if (nret == NGX_AGAIN) {
             return NGX_DONE;

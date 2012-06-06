@@ -525,9 +525,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     dd("setting socket_ready to 1");
 
-    lctx->socket_busy = 0;
-    lctx->socket_ready = 1;
-
     waiting = u->waiting;
 
     if (ctx->state) {
@@ -547,6 +544,8 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
                                          NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
 
         if (waiting) {
+            lctx->socket_busy = 0;
+            lctx->socket_ready = 1;
             ngx_http_run_posted_requests(r->connection);
         }
 
@@ -631,7 +630,14 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     u->waiting = 0;
 
-    (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
+    if (waiting) {
+        lctx->socket_busy = 0;
+        lctx->socket_ready = 1;
+        (void) ngx_http_lua_wev_handler(r);
+
+    } else {
+        (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
+    }
 }
 
 
