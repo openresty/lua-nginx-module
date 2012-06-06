@@ -542,13 +542,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         u->prepare_retvals = ngx_http_lua_socket_error_retval_handler;
         ngx_http_lua_socket_handle_error(r, u,
                                          NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
-
-        if (waiting) {
-            lctx->socket_busy = 0;
-            lctx->socket_ready = 1;
-            ngx_http_run_posted_requests(r->connection);
-        }
-
         return;
     }
 
@@ -633,7 +626,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     if (waiting) {
         lctx->socket_busy = 0;
         lctx->socket_ready = 1;
-        (void) ngx_http_lua_wev_handler(r);
+        r->write_event_handler(r);
 
     } else {
         (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
@@ -1890,7 +1883,7 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua socket waking up the current request");
 
-        ngx_http_post_request(r, NULL);
+        r->write_event_handler(r);
     }
 }
 
@@ -1910,6 +1903,9 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_finalize(r, u);
 #endif
 
+    u->read_event_handler = ngx_http_lua_socket_dummy_handler;
+    u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+
     if (u->waiting) {
         u->waiting = 0;
 
@@ -1923,11 +1919,8 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua socket waking up the current request");
 
-        ngx_http_post_request(r, NULL);
+        r->write_event_handler(r);
     }
-
-    u->read_event_handler = ngx_http_lua_socket_dummy_handler;
-    u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 }
 
 
@@ -1995,7 +1988,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket waking up the current request");
 
-    ngx_http_post_request(r, NULL);
+    r->write_event_handler(r);
 }
 
 
