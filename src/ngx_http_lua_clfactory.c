@@ -1,7 +1,7 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
 #ifndef DDEBUG
-#define DDEBUG 1
+#define DDEBUG 0
 #endif
 #include "ddebug.h"
 
@@ -139,6 +139,9 @@
 #define    POS_MAX_STACK_SIZE      (POS_IS_VAR_ARG + sizeof(char))
 #define    POS_NUM_OF_INST         (POS_MAX_STACK_SIZE +sizeof(char))
 #define    POS_BYTECODE            (POS_NUM_OF_INST + sizeof(int))
+#define    MAX_BEGIN_CODE_SIZE                                          \
+    (POS_BYTECODE + LUA_LIE_CODE_LEN + sizeof(int) + sizeof(int))
+#define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
  * Luajit bytecode format
@@ -200,10 +203,6 @@
  * | [\x00]            | Footer
  * ---------------------
 */
-
-#define    MAX_BEGIN_CODE_SIZE                                          \
-    (POS_BYTECODE + LUA_LIE_CODE_LEN + sizeof(int) + sizeof(int))
-#define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /* bytecode for luajit */
 #define    LJ_LIF_CODE                                                  \
