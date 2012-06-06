@@ -10,6 +10,7 @@
 
 
 /*
+ * Take from chaoslawful
  * Lua bytecode header        Luajit bytecode header
  * --------------              --------------
  * |  \033Lua   | 0-3          |  \033LJ    | 0-2
@@ -60,8 +61,10 @@
 #define    LUA_BIF_CODE_LEN        (4 + 4 + 4)
 #define    LUA_BIE_CODE_LEN        (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
+#define    LUAC_VERSION            0x51
 
 /*
+ * Take from chaoslawful
  *  Lua Proto
  * ---------------------
  * | String            | Can be empty string
@@ -144,6 +147,7 @@
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
+ * Take from chaoslawful
  * Luajit bytecode format
  * ---------------------
  * | HEAD              | Luajit bytecode head
@@ -216,6 +220,8 @@
 #define    LJ_CODE_LEN              22
 #define    LJ_HEADERSIZE            5
 #define    LJ_BCDUMP_F_BE           0x01
+#define    LJ_BCDUMP_VERSION        1
+#define    LJ_SIGNATURE             "\x1b\x4c\x4a"
 
 
 typedef enum {
@@ -264,7 +270,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
     int fname_index)
 {
     int                 x = 1, size_of_int, size_of_size_t, little_endian,
-                        size_of_inst;
+                        size_of_inst, version;
     size_t              size, bytecode_len;
     const char         *filename, *emsg, *serr, *bytecode;
     ngx_file_info_t     fi;
@@ -277,6 +283,16 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         if (size != LJ_HEADERSIZE - 1) {
             serr = strerror(errno);
             emsg = "cannot read header";
+            goto error;
+        }
+
+        version = *(lf->begin_code.str + 3);
+
+        if (ngx_memcmp(lf->begin_code.str, LJ_SIGNATURE,
+                       sizeof(LJ_SIGNATURE) - 1)
+            || version != LJ_BCDUMP_VERSION)
+        {
+            emsg = "(binary): version not support";
             goto error;
         }
 
@@ -329,6 +345,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
             goto error;
         }
 
+        version = *(lf->begin_code.str + 4);
         little_endian = *(lf->begin_code.str + 6);
         size_of_int = *(lf->begin_code.str + 7);
         size_of_size_t = *(lf->begin_code.str + 8);
@@ -347,6 +364,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         if (ngx_memcmp(lf->begin_code.str, LUA_SIGNATURE,
                        sizeof(LUA_SIGNATURE) -1)
+            || version != LUAC_VERSION
             || little_endian != (int) (*(char *) &x)
             || size_of_int != sizeof(int)
             || size_of_size_t != sizeof(size_t)
