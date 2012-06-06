@@ -483,15 +483,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* still resolving */
 
-    ctx->data = u;
-    ctx->socket_busy = 1;
-
-    dd("setting socket_ready to 0");
-
-    ctx->socket_ready = 0;
-
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
+
+    ctx->data = u;
+    ctx->socket_busy = 1;
+    ctx->socket_ready = 0;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -793,13 +790,10 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     u->waiting = 1;
-
     u->prepare_retvals = ngx_http_lua_socket_tcp_connect_retval_handler;
 
-    dd("setting socket_ready to 0");
-
+    ctx->data = u;
     ctx->socket_busy = 1;
-
     ctx->socket_ready = 0;
 
     if (ctx->entered_content_phase) {
@@ -1031,12 +1025,9 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     }
 
     u->waiting = 1;
-
-    ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
-    dd("setting socket_ready to 0");
-
+    ctx->data = u;
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
 
@@ -1531,12 +1522,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     }
 
     u->waiting = 1;
-
-    ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_send_retval_handler;
 
-    dd("setting socket_ready to 0");
-
+    ctx->data = u;
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
 
@@ -2329,12 +2317,9 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     }
 
     u->waiting = 1;
-
-    ctx->data = u;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
-    dd("setting socket_ready to 0");
-
+    ctx->data = u;
     ctx->socket_busy = 1;
     ctx->socket_ready = 0;
 
