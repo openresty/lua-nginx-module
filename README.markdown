@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.0rc30](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 June 2012.
+This document describes ngx_lua [v0.5.0rc30](https://github.com/chaoslawful/lua-nginx-module/tags) released on 7 June 2012.
 
 Synopsis
 ========
@@ -3742,6 +3742,10 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
     if m then ngx.say(m[0]) else ngx.say("not matched!") end
     -- evaluates to "1234"
 
+
+Connecting Failures on Mac OS X
+-------------------------------
+* Due to the limitations in the Nginx event model, the [tcpsock:connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method may return success upon connecting failures like `Connection Refused` errors. But later manipulation of the cosocket object will (correctly) fail with the error message of the connecting operation. This issue has not yet been observied on other operating systems like Linux and FreeBSD.
 
 Typical Uses
 ============
