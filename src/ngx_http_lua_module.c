@@ -1,11 +1,17 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
+#define DDEBUG 0
+#endif
+#include "ddebug.h"
+
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_headerfilterby.h"
 
 
@@ -116,6 +122,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_content_handler_inline },
 
+    /* log_by_lua <inline script> */
+    { ngx_string("log_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_log_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_log_handler_inline },
+
     /* header_filter_by_lua <inline script> */
     { ngx_string("header_filter_by_lua"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -156,6 +171,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       ngx_http_lua_content_handler_file },
+
+    { ngx_string("log_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_log_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_log_handler_file },
 
     { ngx_string("header_filter_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -302,6 +325,17 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         *h = ngx_http_lua_access_handler;
+    }
+
+    dd("requires log: %d", (int) lmcf->requires_log);
+
+    if (lmcf->requires_log) {
+        h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_log_handler;
     }
 
     if (lmcf->requires_header_filter) {

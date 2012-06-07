@@ -281,3 +281,23 @@ n = 8
 --- no_error_log
 [error]
 
+
+
+=== TEST 13: entries under ngx. (log by lua)
+--- config
+    location = /t {
+        log_by_lua '
+            local n = 0
+            for k, v in pairs(ngx) do
+                n = n + 1
+            end
+            ngx.log(ngx.ERR, "ngx. entry count: ", n)
+        ';
+    }
+--- request
+GET /t
+--- response_body_like: 404 Not Found
+--- error_code: 404
+--- error_log
+ngx. entry count: 72
+

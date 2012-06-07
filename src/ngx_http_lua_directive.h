@@ -17,6 +17,8 @@ char * ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
 char * ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
+char * ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+        void *conf);
 char * ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf);
 char * ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);

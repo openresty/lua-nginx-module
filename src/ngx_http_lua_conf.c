@@ -35,6 +35,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->requires_capture_filter = 0;
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
+     *      lmcf->requires_log = 0;
      */
 
     lmcf->pool = cf->pool;
@@ -95,6 +96,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->content_src_key = NULL
      *      conf->content_handler = NULL;
      *
+     *      conf->log_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->log_src_key = NULL
+     *      conf->log_handler = NULL;
+     *
      *      conf->header_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->header_filter_src_key = NULL
      *      conf->header_filter_handler = NULL;
@@ -138,6 +143,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->content_src = prev->content_src;
         conf->content_handler = prev->content_handler;
         conf->content_src_key = prev->content_src_key;
+    }
+
+    if (conf->log_src.value.len == 0) {
+        conf->log_src = prev->log_src;
+        conf->log_handler = prev->log_handler;
+        conf->log_src_key = prev->log_src_key;
     }
 
     if (conf->header_filter_src.value.len == 0) {
