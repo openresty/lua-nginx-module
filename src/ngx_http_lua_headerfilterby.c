@@ -254,6 +254,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
+    ngx_http_cleanup_t          *cln;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua header filter for user lua code, uri \"%V\"", &r->uri);
@@ -281,6 +282,17 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
         ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    }
+
+    if (ctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return NGX_ERROR;
+        }
+
+        cln->handler = ngx_http_lua_request_cleanup;
+        cln->data = r;
+        ctx->cleanup = &cln->handler;
     }
 
     dd("calling header filter handler");

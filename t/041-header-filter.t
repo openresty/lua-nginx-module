@@ -7,10 +7,12 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
+log_level('debug');
+
 repeat_each(2);
 #repeat_each(10000);
 
-plan tests => blocks() * repeat_each() * 3 - repeat_each() * 1;
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 #no_diff();
 #no_long_string();
@@ -375,4 +377,38 @@ Content-Type: text/read-plain
 --- response_body
 Hi
 
+
+
+=== TEST 18: ngx.ctx available in header_filter_by_lua (already defined)
+--- config
+    location /lua {
+        content_by_lua 'ngx.ctx.counter = 3 ngx.say(ngx.ctx.counter)';
+        header_filter_by_lua 'ngx.log(ngx.ERR, "ngx.ctx.counter: ", ngx.ctx.counter)';
+    }
+--- request
+GET /lua
+--- response_body
+3
+--- error_log
+ngx.ctx.counter: 3
+lua release ngx.ctx
+
+
+
+=== TEST 19: ngx.ctx available in header_filter_by_lua (not defined yet)
+--- config
+    location /lua {
+        echo hello;
+        header_filter_by_lua '
+            ngx.log(ngx.ERR, "ngx.ctx.counter: ", ngx.ctx.counter)
+            ngx.ctx.counter = "hello world"
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+hello
+--- error_log
+ngx.ctx.counter: nil
+lua release ngx.ctx
 
