@@ -181,13 +181,13 @@
  * | [sizebc]m1        | minus 1 to omit the BC_FUNCV/BC_FUNCF header bytecode
  * ---------------------
  * | ULEB128           |
- * | [size of dbg      | Size of debug lineinfo map
+ * | [size of dbg      | Size of debug lineinfo map, available when not stripped
  * |  lineinfo]        |
  * ---------------------
- * | ULEB128           |
+ * | ULEB128           | Available when not stripped
  * | [firstline]       | The first line of this function's definition
  * ---------------------
- * | ULEB128           |
+ * | ULEB128           | Available when not stripped
  * | [numline]         | The number of lines of this function's definition
  * ---------------------
  * | [bytecode]        | Bytecode instructions of this function
@@ -292,7 +292,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
                        sizeof(LJ_SIGNATURE) - 1)
             || version != LJ_BCDUMP_VERSION)
         {
-            emsg = "(binary): version not support";
+            emsg = "bad header";
             goto error;
         }
 
@@ -561,6 +561,7 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
         }
 
         status = ngx_http_lua_clfactory_bytecode_prepare(L, &lf, fname_index);
+
         if (status != 0) {
             return status;
         }
