@@ -567,7 +567,8 @@ found
 found
 
 
-=== TEST 14: clear _G table
+
+=== TEST 17: clear _G table
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
