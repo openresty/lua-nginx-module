@@ -170,7 +170,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
 ngx_int_t
 ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
-        const u_char *cache_key, char **err, unsigned enabled)
+        const u_char *cache_key, char **err, unsigned enabled, ngx_flag_t enable_bytecode_file)
 {
     int              rc;
 
@@ -208,7 +208,7 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     }
 
     /*  load closure factory of script file to the top of lua stack, sp++ */
-    rc = ngx_http_lua_clfactory_loadfile(L, (char *) script);
+    rc = ngx_http_lua_clfactory_loadfile(L, (char *) script, enable_bytecode_file);
 
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */

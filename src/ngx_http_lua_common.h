@@ -101,6 +101,8 @@ typedef struct {
 
     ngx_flag_t              enable_code_cache; /* whether to enable
                                                   code cache */
+    ngx_flag_t              enable_bytecode_file;  /* whether to enable
+                                                  load raw bytecode file */
 
     ngx_flag_t              http10_buffering;
 
