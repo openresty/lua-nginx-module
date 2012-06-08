@@ -303,7 +303,12 @@ The code in `<lua-script-str>` can make [API calls](http://wiki.nginx.org/HttpLu
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
 
-Note that I/O operations such as [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec), [echo](http://wiki.nginx.org/HttpEchoModule#echo) and similar are not permitted within the context of this directive.
+Note that the following API functions are currently disabled within this context:
+
+* Output API functions (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
+* Control API functions (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
+* Subrequest API functions (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
+* Cosocket API functions (e.g., [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket)).
 
 In addition, note that this directive can only write out a value to a single Nginx variable at
 a time. However, a workaround is possible using the [ngx.var.VARIABLE](http://wiki.nginx.org/HttpLuaModule#ngx.var.VARIABLE) interface.
@@ -622,11 +627,14 @@ header_filter_by_lua
 
 **phase:** *output-header-filter*
 
-Uses Lua code specified in `<lua-script-str>` to define an output header filter. Note that the following API functions are currently disabled within this context:
+Uses Lua code specified in `<lua-script-str>` to define an output header filter.
+
+Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
 * Control API functions (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
 * Subrequest API functions (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
+* Cosocket API functions (e.g., [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket)).
 
 Here is an example of overriding a response header (or adding one if absent) in our Lua header filter:
 
@@ -653,6 +661,77 @@ Equivalent to [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 This directive was first introduced in the `v0.2.1rc20` release.
+
+log_by_lua
+----------
+
+**syntax:** *log_by_lua &lt;lua-script-str&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *log*
+
+Run the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs after.
+
+Note that the following API functions are currently disabled within this context:
+
+* Output API functions (e.g., [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) and [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers))
+* Control API functions (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit)) 
+* Subrequest API functions (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
+* Cosocket API functions (e.g., [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket)).
+
+Here is an example of gathering average data for [$upstream_response_time](http://wiki.nginx.org/HttpUpstreamModule#.24upstream_response_time):
+
+
+    lua_shared_dict log_dict 5M;
+
+    location / {
+        proxy_pass http://mybackend;
+
+        log_by_lua '
+            local log_dict = ngx.shared.log_dict
+            local upstream_time = tonumber(ngx.var.upstream_response_time)
+
+            local sum = log_dict:get("upstream_time-sum")
+            sum = sum + upstream_time
+            log_dict:set("upstream_time-sum", sum)
+
+            log_dict:add("upstream_time-nb", 0)
+            log_dict:incr("upstream_time-nb", 1)
+        ';
+    }
+
+    location = /status {
+        content_by_lua '
+            local log_dict = ngx.shared.log_dict
+            local sum = log_dict:get("upstream_time-sum")
+            local nb = log_dict:get("upstream_time-nb")
+
+            if nb and sum then
+                ngx.say("average upstream response time: ", sum / nb)
+            else
+                ngx.say("no data yet")
+            end
+        ';
+    }
+
+
+This directive was first introduced in the `v0.5.0rc31` release.
+
+log_by_lua_file
+---------------
+
+**syntax:** *log_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *log*
+
+Equivalent to [log_by_lua](http://wiki.nginx.org/HttpLuaModule#log_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+This directive was first introduced in the `v0.5.0rc31` release.
 
 lua_need_request_body
 ---------------------
@@ -1259,20 +1338,20 @@ This option is set to `false` by default
 
 
     location /other {
-        set $dog "$dog world";                  
-        echo "$uri dog: $dog";                    
-    }                                     
-    
+        set $dog "$dog world";
+        echo "$uri dog: $dog";
+    }
+
     location /lua {
         set $dog 'hello';
         content_by_lua '
             res = ngx.location.capture("/other",
                 { share_all_vars = true });
-                
+
             ngx.print(res.body)
             ngx.say(ngx.var.uri, ": ", ngx.var.dog)
-        ';  
-    }           
+        ';
+    }
 
 
 Accessing location `/lua` gives
@@ -1349,25 +1428,25 @@ The `ctx` option can be used to specify a custom Lua table to serve as the [ngx.
 
 
     location /sub {
-        content_by_lua '                          
-            ngx.ctx.foo = "bar";                  
+        content_by_lua '
+            ngx.ctx.foo = "bar";
         ';
-    }   
+    }
     location /lua {
         content_by_lua '
-            local ctx = {}                        
+            local ctx = {}
             res = ngx.location.capture("/sub", { ctx = ctx })
-            
+
             ngx.say(ctx.foo);
-            ngx.say(ngx.ctx.foo);                 
-        ';                                        
+            ngx.say(ngx.ctx.foo);
+        ';
     }
 
 
 Then request `GET /lua` gives
 
 
-    bar                                               
+    bar
     nil
 
 
@@ -2772,9 +2851,8 @@ Specify `options` to control how the match operation will be performed. The foll
     i             case insensitive mode (similar to Perl's /i modifier)
 
     j             enable PCRE JIT compilation, this requires PCRE 8.21+ which
-                  must be built with the --enable-jit option.
-                  for optimum performance, this option should always be used  
-                  together with the 'o' option.
+                  must be built with the --enable-jit option. for optimum performance,
+                  this option should always be used together with the 'o' option.
                   first introduced in ngx_lua v0.3.1rc30.
 
     m             multi-line mode (similar to Perl's /m modifier)

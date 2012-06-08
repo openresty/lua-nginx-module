@@ -287,7 +287,12 @@ The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API call
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
 
-Note that I/O operations such as [[#ngx.say|ngx.say]], [[#ngx.exec|ngx.exec]], [[HttpEchoModule#echo|echo]] and similar are not permitted within the context of this directive.
+Note that the following API functions are currently disabled within this context:
+
+* Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
+* Control API functions (e.g., [[#ngx.exit|ngx.exit]]) 
+* Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
+* Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 
 In addition, note that this directive can only write out a value to a single Nginx variable at
 a time. However, a workaround is possible using the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] interface.
@@ -598,11 +603,14 @@ The Lua code cache can be temporarily disabled during development by switching [
 
 '''phase:''' ''output-header-filter''
 
-Uses Lua code specified in <code><lua-script-str></code> to define an output header filter. Note that the following API functions are currently disabled within this context:
+Uses Lua code specified in <code><lua-script-str></code> to define an output header filter.
+
+Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
 * Control API functions (e.g., [[#ngx.exit|ngx.exit]]) 
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
+* Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 
 Here is an example of overriding a response header (or adding one if absent) in our Lua header filter:
 
@@ -628,6 +636,75 @@ Equivalent to [[#header_filter_by_lua|header_filter_by_lua]], except that the fi
 When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absolute path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
 
 This directive was first introduced in the <code>v0.2.1rc20</code> release.
+
+== log_by_lua ==
+
+'''syntax:''' ''log_by_lua <lua-script-str>''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''log''
+
+Run the Lua source code inlined as the <code><lua-script-str></code> at the <code>log</code> request processing phase. This does not replace the current access logs, but runs after.
+
+Note that the following API functions are currently disabled within this context:
+
+* Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
+* Control API functions (e.g., [[#ngx.exit|ngx.exit]]) 
+* Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
+* Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
+
+Here is an example of gathering average data for [[HttpUpstreamModule#$upstream_response_time|$upstream_response_time]]:
+
+<geshi lang="nginx">
+    lua_shared_dict log_dict 5M;
+
+    location / {
+        proxy_pass http://mybackend;
+
+        log_by_lua '
+            local log_dict = ngx.shared.log_dict
+            local upstream_time = tonumber(ngx.var.upstream_response_time)
+
+            local sum = log_dict:get("upstream_time-sum")
+            sum = sum + upstream_time
+            log_dict:set("upstream_time-sum", sum)
+
+            log_dict:add("upstream_time-nb", 0)
+            log_dict:incr("upstream_time-nb", 1)
+        ';
+    }
+
+    location = /status {
+        content_by_lua '
+            local log_dict = ngx.shared.log_dict
+            local sum = log_dict:get("upstream_time-sum")
+            local nb = log_dict:get("upstream_time-nb")
+
+            if nb and sum then
+                ngx.say("average upstream response time: ", sum / nb)
+            else
+                ngx.say("no data yet")
+            end
+        ';
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.5.0rc31</code> release.
+
+== log_by_lua_file ==
+
+'''syntax:''' ''log_by_lua_file <path-to-lua-script-file>''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''log''
+
+Equivalent to [[#log_by_lua|log_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absolute path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
+This directive was first introduced in the <code>v0.5.0rc31</code> release.
 
 == lua_need_request_body ==
 
@@ -1212,20 +1289,20 @@ This option is set to <code>false</code> by default
 
 <geshi lang="nginx">
     location /other {
-        set $dog "$dog world";                  
-        echo "$uri dog: $dog";                    
-    }                                     
-    
+        set $dog "$dog world";
+        echo "$uri dog: $dog";
+    }
+
     location /lua {
         set $dog 'hello';
         content_by_lua '
             res = ngx.location.capture("/other",
                 { share_all_vars = true });
-                
+
             ngx.print(res.body)
             ngx.say(ngx.var.uri, ": ", ngx.var.dog)
-        ';  
-    }           
+        ';
+    }
 </geshi>
 
 Accessing location <code>/lua</code> gives
@@ -1302,25 +1379,25 @@ The <code>ctx</code> option can be used to specify a custom Lua table to serve a
 
 <geshi lang="nginx">
     location /sub {
-        content_by_lua '                          
-            ngx.ctx.foo = "bar";                  
+        content_by_lua '
+            ngx.ctx.foo = "bar";
         ';
-    }   
+    }
     location /lua {
         content_by_lua '
-            local ctx = {}                        
+            local ctx = {}
             res = ngx.location.capture("/sub", { ctx = ctx })
-            
+
             ngx.say(ctx.foo);
-            ngx.say(ngx.ctx.foo);                 
-        ';                                        
+            ngx.say(ngx.ctx.foo);
+        ';
     }
 </geshi>
 
 Then request <code>GET /lua</code> gives
 
 <geshi lang="text">
-    bar                                               
+    bar
     nil
 </geshi>
 
@@ -2674,9 +2751,8 @@ Specify <code>options</code> to control how the match operation will be performe
     i             case insensitive mode (similar to Perl's /i modifier)
 
     j             enable PCRE JIT compilation, this requires PCRE 8.21+ which
-                  must be built with the --enable-jit option.
-                  for optimum performance, this option should always be used  
-                  together with the 'o' option.
+                  must be built with the --enable-jit option. for optimum performance,
+                  this option should always be used together with the 'o' option.
                   first introduced in ngx_lua v0.3.1rc30.
 
     m             multi-line mode (similar to Perl's /m modifier)
