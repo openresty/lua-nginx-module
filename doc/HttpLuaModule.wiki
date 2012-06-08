@@ -951,7 +951,7 @@ that writes out <code>88</code>, the sum of <code>32</code> and <code>56</code>.
 == ngx.var.VARIABLE ==
 '''syntax:''' ''ngx.var.VAR_NAME''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Read and write Nginx variable values.
 
@@ -988,7 +988,7 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
 </geshi>
 
 == Core constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 <geshi lang="lua">
   ngx.OK (0)
@@ -1009,7 +1009,7 @@ The <code>ngx.null</code> constant is a <code>NULL</code> light userdata usually
 The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0rc19</code> release.
 
 == HTTP method constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 <geshi lang="text">
   ngx.HTTP_GET
@@ -1023,7 +1023,7 @@ The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0r
 These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
 
 == HTTP status constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 <geshi lang="nginx">
   value = ngx.HTTP_OK (200)
@@ -1046,7 +1046,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.capture
 </geshi>
 
 == Nginx log level constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 <geshi lang="lua">
   ngx.STDERR
@@ -1065,7 +1065,7 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 == print ==
 '''syntax:''' ''print(...)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Writes argument values into the nginx <code>error.log</code> file with the <code>ngx.NOTICE</code> log level.
 
@@ -1080,7 +1080,7 @@ Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</c
 There is a hard coded <code>2048</code> byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree.
 
 == ngx.ctx ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 This table can be used to store per-request Lua context data and has a life time identical to the current request (as with the Nginx variables). 
 
@@ -1500,7 +1500,7 @@ of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.c
 Please also refer to restrictions on [[#Locations_With_HttpEchoModule_Directives|capturing locations that include Echo Module directives]].
 
 == ngx.status ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Read and write the current request's response status. This should be called
 before sending out the response headers.
@@ -1515,7 +1515,7 @@ before sending out the response headers.
 
 '''syntax:''' ''value = ngx.header.HEADER''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Set, add to, or clear the current request <code>HEADER</code> response header. Underscores (<code>_</code>) in the header names will be replaced by dashes (<code>-</code>) and the header names will be matched case-insensitively.
 
@@ -1728,7 +1728,7 @@ See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 == ngx.req.get_uri_args ==
 '''syntax:''' ''args = ngx.req.get_uri_args(max_args?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a Lua table holding all the current request URL query arguments.
 
@@ -1812,7 +1812,7 @@ Removing the <code>max_args</code> cap is strongly discouraged.
 == ngx.req.get_post_args ==
 '''syntax:''' ''ngx.req.get_post_args(max_args?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid Lua exception errors.
 
@@ -1898,7 +1898,7 @@ Removing the <code>max_args</code> cap is strongly discouraged.
 == ngx.req.get_headers ==
 '''syntax:''' ''headers = ngx.req.get_headers(max_headers?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a Lua table holding all the current request headers.
 
@@ -2312,7 +2312,7 @@ Just as [[#ngx.print|ngx.print]] but also emit a trailing newline.
 == ngx.log ==
 '''syntax:''' ''ngx.log(log_level, ...)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Log arguments concatenated to error.log with the given logging level.
 
@@ -2403,14 +2403,14 @@ This method was introduced in the <code>0.5.0rc30</code> release.
 == ngx.escape_uri ==
 '''syntax:''' ''newstr = ngx.escape_uri(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Escape <code>str</code> as a URI component.
 
 == ngx.unescape_uri ==
 '''syntax:''' ''newstr = ngx.unescape_uri(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Unescape <code>str</code> as an escaped URI component.
 
@@ -2429,7 +2429,7 @@ gives the output
 == ngx.encode_args ==
 '''syntax:''' ''str = ngx.encode_args(table)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Encode the Lua table to a query args string according to the URI encoded rules.
 
@@ -2480,7 +2480,7 @@ This method was first introduced in the <code>v0.3.1rc27</code> release.
 == ngx.decode_args ==
 '''syntax:''' ''table = ngx.decode_args(str, max_args?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [[#ngx.encode_args|ngx.encode_args]].
 
@@ -2499,21 +2499,21 @@ This method was introduced in the <code>v0.5.0rc29</code>.
 == ngx.encode_base64 ==
 '''syntax:''' ''newstr = ngx.encode_base64(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Encode <code>str</code> to a base64 digest.
 
 == ngx.decode_base64 ==
 '''syntax:''' ''newstr = ngx.decode_base64(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Decodes the <code>str</code> argument as a base64 digest to the raw form. Returns <code>nil</code> if <code>str</code> is not well formed.
 
 == ngx.crc32_short ==
 '''syntax:''' ''intval = ngx.crc32_short(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Calculates the CRC-32 (Cyclic Redundancy Code) digest for the <code>str</code> argument.
 
@@ -2526,7 +2526,7 @@ This API was first introduced in the <code>v0.3.1rc8</code> release.
 == ngx.crc32_long ==
 '''syntax:''' ''intval = ngx.crc32_long(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Calculates the CRC-32 (Cyclic Redundancy Code) digest for the <code>str</code> argument.
 
@@ -2539,7 +2539,7 @@ This API was first introduced in the <code>v0.3.1rc8</code> release.
 == ngx.hmac_sha1 ==
 '''syntax:''' ''digest = ngx.hmac_sha1(secret_key, str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Computes the [http://en.wikipedia.org/wiki/HMAC HMAC-SHA1] digest of the argument <code>str</code> and turns the result using the secret key <code><secret_key></code>.
 
@@ -2567,7 +2567,7 @@ This function was first introduced in the <code>v0.3.1rc29</code> release.
 == ngx.md5 ==
 '''syntax:''' ''digest = ngx.md5(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the hexadecimal representation of the MD5 digest of the <code>str</code> argument.
 
@@ -2590,7 +2590,7 @@ See [[#ngx.md5_bin|ngx.md5_bin]] if the raw binary MD5 digest is required.
 == ngx.md5_bin ==
 '''syntax:''' ''digest = ngx.md5_bin(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the binary form of the MD5 digest of the <code>str</code> argument.
 
@@ -2599,7 +2599,7 @@ See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
 == ngx.sha1_bin ==
 '''syntax:''' ''digest = ngx.sha1_bin(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
 
@@ -2610,7 +2610,7 @@ This function was first introduced in the <code>v0.5.0rc6</code>.
 == ngx.today ==
 '''syntax:''' ''str = ngx.today()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns current date (in the format <code>yyyy-mm-dd</code>) from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -2619,7 +2619,7 @@ This is the local time.
 == ngx.time ==
 '''syntax:''' ''secs = ngx.time()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -2628,7 +2628,7 @@ Updates of the Nginx time cache an be forced by calling [[#ngx.update_time|ngx.u
 == ngx.now ==
 '''syntax:''' ''secs = ngx.now()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a floating-point number for the elapsed time in seconds (including microseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -2639,7 +2639,7 @@ This API was first introduced in <code>v0.3.1rc32</code>.
 == ngx.update_time ==
 '''syntax:''' ''ngx.update_time()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Forcibly updates the Nginx current time cache. This call involves a syscall and thus has some overhead, so do not abuse it.
 
@@ -2648,7 +2648,7 @@ This API was first introduced in <code>v0.3.1rc32</code>.
 == ngx.localtime ==
 '''syntax:''' ''str = ngx.localtime()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the current time stamp (in the format <code>yyyy-mm-dd hh:mm:ss</code>) of the nginx cached time (no syscall involved unlike Lua's [http://www.lua.org/manual/5.1/manual.html#pdf-os.date os.date] function).
 
@@ -2657,7 +2657,7 @@ This is the local time.
 == ngx.utctime ==
 '''syntax:''' ''str = ngx.utctime()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns the current time stamp (in the format <code>yyyy-mm-dd hh:mm:ss</code>) of the nginx cached time (no syscall involved unlike Lua's [http://www.lua.org/manual/5.1/manual.html#pdf-os.date os.date] function).
 
@@ -2666,7 +2666,7 @@ This is the UTC time.
 == ngx.cookie_time ==
 '''syntax:''' ''str = ngx.cookie_time(sec)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a formated string can be used as the cookie expiration time. The parameter <code>sec</code> is the time stamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
 
@@ -2678,7 +2678,7 @@ Returns a formated string can be used as the cookie expiration time. The paramet
 == ngx.http_time ==
 '''syntax:''' ''str = ngx.http_time(sec)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns a formated string can be used as the http header time (for example, being used in <code>Last-Modified</code> header). The parameter <code>sec</code> is the time stamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
 
@@ -2690,7 +2690,7 @@ Returns a formated string can be used as the http header time (for example, bein
 == ngx.parse_http_time ==
 '''syntax:''' ''sec = ngx.parse_http_time(str)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Parse the http time string (as returned by [[#ngx.http_time|ngx.http_time]]) into seconds. Returns the seconds or <code>nil</code> if the input string is in bad forms.
 
@@ -2704,14 +2704,14 @@ Parse the http time string (as returned by [[#ngx.http_time|ngx.http_time]]) int
 == ngx.is_subrequest ==
 '''syntax:''' ''value = ngx.is_subrequest''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Returns <code>true</code> if the current request is an nginx subrequest, or <code>false</code> otherwise.
 
 == ngx.re.match ==
 '''syntax:''' ''captures = ngx.re.match(subject, regex, options?, ctx?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Matches the <code>subject</code> string using the Perl-compatible regular expression <code>regex</code> with the optional <code>options</code>.
 
@@ -2816,7 +2816,7 @@ This feature was introduced in the <code>v0.2.1rc11</code> release.
 == ngx.re.gmatch ==
 '''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the PCRE <code>regex</code>.
 
@@ -2850,7 +2850,7 @@ This feature was first introduced in the <code>v0.2.1rc12</code> release.
 == ngx.re.sub ==
 '''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Substitutes the first match of the Perl-compatible regular expression <code>regex</code> on the <code>subject</code> argument string with the string or function argument <code>replace</code>. The optional <code>options</code> argument has exactly the same meaning as in [[#ngx.re.match|ngx.re.match]].
 
@@ -2904,7 +2904,7 @@ This feature was first introduced in the <code>v0.2.1rc13</code> release.
 == ngx.re.gsub ==
 '''syntax:''' ''newstr, n = ngx.re.gsub(subject, regex, replace, options?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Just like [[#ngx.re.sub|ngx.re.sub]], but does global substitution.
 
@@ -2932,7 +2932,7 @@ This feature was first introduced in the <code>v0.2.1rc15</code> release.
 == ngx.shared.DICT ==
 '''syntax:''' ''dict = ngx.shared.DICT''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named <code>DICT</code> defined by the [[#lua_shared_dict|lua_shared_dict]] directive.
 
@@ -2993,7 +2993,7 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 == ngx.shared.DICT.get ==
 '''syntax:''' ''value, flags = ngx.shared.DICT:get(key)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Retrieving the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. If the key does not exist or has been expired, then <code>nil</code> will be returned.
 
@@ -3024,7 +3024,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.set ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:set(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Unconditionally sets a key-value pair into the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns three values:
 
@@ -3065,7 +3065,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.add ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:add(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if the key does ''not'' exist.
 
@@ -3078,7 +3078,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.replace ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if the key ''does'' exist.
 
@@ -3091,7 +3091,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.delete ==
 '''syntax:''' ''ngx.shared.DICT:delete(key)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Unconditionally removes the key-value pair from the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
@@ -3104,7 +3104,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.incr ==
 '''syntax:''' ''newval, err = ngx.shared.DICT:incr(key, value)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Increments the (numerical) value for <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] by the step value <code>value</code>. Returns the new resulting number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
 
@@ -3121,7 +3121,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.flush_all ==
 '''syntax:''' ''ngx.shared.DICT:flush_all()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 Flushes out all the items in the dictionary.
 
@@ -3449,7 +3449,7 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua*''
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simpl/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
 
