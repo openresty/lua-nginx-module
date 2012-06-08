@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 #no_diff();
 #no_long_string();
@@ -139,4 +139,53 @@ hello
 qr{/lua200: [12]}
 --- no_error_log
 [error]
+
+
+
+=== TEST 7: ngx.ctx used in different locations and different ctx (1)
+--- config
+    location /t {
+        echo hello;
+        log_by_lua '
+            ngx.log(ngx.ERR, "ngx.ctx.counter: ", ngx.ctx.counter)
+        ';
+    }
+
+    location /t2 {
+        content_by_lua '
+            ngx.ctx.counter = 32
+            ngx.say("hello")
+        ';
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log
+ngx.ctx.counter: nil
+lua release ngx.ctx
+
+
+
+=== TEST 8: ngx.ctx used in different locations and different ctx (2)
+--- config
+    location /t {
+        echo hello;
+        log_by_lua '
+            ngx.log(ngx.ERR, "ngx.ctx.counter: ", ngx.ctx.counter)
+        ';
+    }
+
+    location /t2 {
+        content_by_lua '
+            ngx.ctx.counter = 32
+            ngx.say(ngx.ctx.counter)
+        ';
+    }
+--- request
+GET /t2
+--- response_body
+32
+--- error_log
+lua release ngx.ctx
 

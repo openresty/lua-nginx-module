@@ -676,9 +676,10 @@ void
 ngx_http_lua_request_cleanup(void *data)
 {
     ngx_http_request_t          *r = data;
-    ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_ctx_t          *ctx;
     lua_State                   *L;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_main_conf_t    *lmcf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua request cleanup");
@@ -708,14 +709,19 @@ ngx_http_lua_request_cleanup(void *data)
     /* we cannot release the ngx.ctx table if we have log_by_lua* hooks
      * because request cleanup runs before log phase handlers */
 
-    if (ctx->ctx_ref != LUA_NOREF && !lmcf->requires_log) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua release ngx.ctx");
+    if (ctx->ctx_ref != LUA_NOREF) {
 
-        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
-        luaL_unref(L, -1, ctx->ctx_ref);
-        ctx->ctx_ref = LUA_NOREF;
-        lua_pop(L, 1);
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_handler == NULL) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                    "lua release ngx.ctx");
+
+            lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+            luaL_unref(L, -1, ctx->ctx_ref);
+            ctx->ctx_ref = LUA_NOREF;
+            lua_pop(L, 1);
+        }
     }
 
     if (ctx->cc_ref == LUA_NOREF) {
