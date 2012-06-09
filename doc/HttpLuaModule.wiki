@@ -659,34 +659,40 @@ Here is an example of gathering average data for [[HttpUpstreamModule#$upstream_
 <geshi lang="nginx">
     lua_shared_dict log_dict 5M;
 
-    location / {
-        proxy_pass http://mybackend;
+    server {
+        location / {
+            proxy_pass http://mybackend;
 
-        log_by_lua '
-            local log_dict = ngx.shared.log_dict
-            local upstream_time = tonumber(ngx.var.upstream_response_time)
+            log_by_lua '
+                local log_dict = ngx.shared.log_dict
+                local upstream_time = tonumber(ngx.var.upstream_response_time)
 
-            local sum = log_dict:get("upstream_time-sum")
-            sum = sum + upstream_time
-            log_dict:set("upstream_time-sum", sum)
+                local sum = log_dict:get("upstream_time-sum") or 0
+                sum = sum + upstream_time
+                log_dict:set("upstream_time-sum", sum)
 
-            log_dict:add("upstream_time-nb", 0)
-            log_dict:incr("upstream_time-nb", 1)
-        ';
-    }
+                local newval, err = log_dict:incr("upstream_time-nb", 1)
+                if not newval and err == "not found" then
+                    log_dict:add("upstream_time-nb", 0)
+                    log_dict:incr("upstream_time-nb", 1)
+                end
+            ';
+        }
 
-    location = /status {
-        content_by_lua '
-            local log_dict = ngx.shared.log_dict
-            local sum = log_dict:get("upstream_time-sum")
-            local nb = log_dict:get("upstream_time-nb")
-
-            if nb and sum then
-                ngx.say("average upstream response time: ", sum / nb)
-            else
-                ngx.say("no data yet")
-            end
-        ';
+        location = /status {
+            content_by_lua '
+                local log_dict = ngx.shared.log_dict
+                local sum = log_dict:get("upstream_time-sum")
+                local nb = log_dict:get("upstream_time-nb")
+    
+                if nb and sum then
+                    ngx.say("average upstream response time: ", sum / nb,
+                            " (", nb, " reqs)")
+                else
+                    ngx.say("no data yet")
+                end
+            ';
+        }
     }
 </geshi>
 
