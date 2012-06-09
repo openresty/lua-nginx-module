@@ -103,6 +103,10 @@ enum {
 };
 
 
+static char ngx_http_lua_req_socket_metatable_key;
+static char ngx_http_lua_tcp_socket_metatable_key;
+
+
 void
 ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 {
@@ -130,8 +134,10 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
         lua_setfield(L, -2, "connect");
     }
 
-    /* {{{req socket object metatable */
+    lua_setfield(L, -2, "socket");
 
+    /* {{{req socket object metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_req_socket_metatable_key);
     lua_createtable(L, 0 /* narr */, 4 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
@@ -145,12 +151,12 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
-    lua_setfield(L, -3, "_reqsock_meta");
 
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
     /* {{{tcp object metatable */
-
+    lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
     lua_createtable(L, 0 /* narr */, 10 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
@@ -182,11 +188,8 @@ ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
-    lua_setfield(L, -3, "_tcp_meta");
-
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
-
-    lua_setfield(L, -2, "socket");
 }
 
 
@@ -207,18 +210,9 @@ ngx_http_lua_socket_tcp(lua_State *L)
     }
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
-    lua_getglobal(L, "ngx");
-    lua_getfield(L, -1, "_tcp_meta");
-
-#if 0
-    dd("meta table: %s", luaL_typename(L, -1));
-    lua_getfield(L, -1, "connect");
-    dd("connect method: %s", luaL_typename(L, -1));
-    lua_pop(L, 1);
-#endif
-
-    lua_setmetatable(L, -3);
-    lua_pop(L, 1);
+    lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_setmetatable(L, -2);
 
     dd("top: %d", lua_gettop(L));
 
@@ -2686,11 +2680,9 @@ ngx_http_lua_req_socket(lua_State *L)
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */); /* the object */
 
-    lua_getglobal(L, "ngx");
-    lua_getfield(L, -1, "_reqsock_meta");
-
-    lua_setmetatable(L, -3);
-    lua_pop(L, 1);
+    lua_pushlightuserdata(L, &ngx_http_lua_req_socket_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_setmetatable(L, -2);
 
     u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_upstream_t));
     if (u == NULL) {

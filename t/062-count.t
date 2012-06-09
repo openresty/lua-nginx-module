@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 89
+ngx: 87
 --- no_error_log
 [error]
 
@@ -220,6 +220,7 @@ n = 2
 
 
 === TEST 10: entries under ngx._tcp_meta
+--- SKIP
 --- config
         location = /test {
             content_by_lua '
@@ -240,6 +241,7 @@ n = 10
 
 
 === TEST 11: entries under ngx._reqsock_meta
+--- SKIP
 --- config
         location = /test {
             content_by_lua '
