@@ -4,6 +4,7 @@
 
 #include "ngx_http_lua_common.h"
 #include "api/ngx_http_lua_api.h"
+#include "ngx_http_lua_util.h"
 
 
 lua_State *
@@ -22,7 +23,8 @@ ngx_http_lua_get_request(lua_State *L)
 {
     ngx_http_request_t *r;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

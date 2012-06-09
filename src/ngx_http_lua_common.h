@@ -268,27 +268,5 @@ extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 
-/*  user code cache table key in Lua vm registry */
-#define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"
-
-/*  coroutine anchoring table key in Lua vm registry */
-#define NGX_LUA_CORT_REF "ngx_lua_cort_ref"
-
-/*  request ctx data anchoring table key in Lua vm registry */
-#define NGX_LUA_REQ_CTX_REF "ngx_lua_req_ctx_ref"
-
-/*  regex cache table key in Lua vm registry */
-#define NGX_LUA_REGEX_CACHE "ngx_lua_regex_cache"
-
-/*  socket connection pool table key in Lua vm registry */
-#define NGX_LUA_SOCKET_POOL "ngx_lua_socket_pool"
-
-/*  globals symbol to hold nginx request pointer */
-#define GLOBALS_SYMBOL_REQUEST    "ngx._r"
-
-/*  globals symbol to hold code chunk handling nginx request */
-#define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
-
-
 #endif /* NGX_HTTP_LUA_COMMON_H */
 

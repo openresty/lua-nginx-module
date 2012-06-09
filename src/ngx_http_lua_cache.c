@@ -32,7 +32,8 @@ static ngx_int_t
 ngx_http_lua_cache_load_code(lua_State *L, const char *key)
 {
     /*  get code cache table */
-    lua_getfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY);    /*  sp++ */
+    lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);    /*  sp++ */
 
     dd("Code cache table to load: %p", lua_topointer(L, -1));
 
@@ -85,7 +86,8 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *key)
     int rc;
 
     /*  get code cache table */
-    lua_getfield(L, LUA_REGISTRYINDEX, LUA_CODE_CACHE_KEY); /* closure cache */
+    lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     dd("Code cache table to store: %p", lua_topointer(L, -1));
 

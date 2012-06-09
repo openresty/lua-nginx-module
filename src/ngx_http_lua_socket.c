@@ -253,7 +253,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
                           "(including the object), but seen %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -886,7 +887,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
                           "(including the object), but got %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -1399,7 +1401,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                           "but got %d", lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -1606,7 +1609,8 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2153,7 +2157,8 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
                           "(including the object), but got %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2640,7 +2645,8 @@ ngx_http_lua_req_socket(lua_State *L)
                 lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -2829,7 +2835,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     /* luaL_checktype(L, 1, LUA_TTABLE); */
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
 
     lua_rawgeti(L, 1, SOCKET_KEY_INDEX);
     key.data = (u_char *) lua_tolstring(L, -1, &key.len);
@@ -2891,7 +2898,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     /* stack: obj timeout? size? cache key */
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -3069,7 +3077,8 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
     pc = &u->peer;
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL); /* table */
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
+    lua_rawget(L, LUA_REGISTRYINDEX); /* table */
     lua_pushvalue(L, key_index); /* key */
     lua_rawget(L, -2);
 
@@ -3245,7 +3254,8 @@ ngx_http_lua_socket_free_pool(ngx_log_t *log, ngx_http_lua_socket_pool_t *spool)
 
     L = spool->conf->lua;
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_SOCKET_POOL);
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_pushstring(L, (char *) spool->key);
     lua_pushnil(L);
     lua_rawset(L, -3);

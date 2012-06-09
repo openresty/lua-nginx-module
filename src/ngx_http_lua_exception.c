@@ -6,6 +6,7 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_exception.h"
+#include "ngx_http_lua_util.h"
 
 
 /*  longjmp mark for restoring nginx execution after Lua VM crashing */
@@ -26,7 +27,8 @@ ngx_http_lua_atpanic(lua_State *L)
     u_char                  *s;
     ngx_http_request_t      *r;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

@@ -25,7 +25,8 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
                 lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -95,7 +96,8 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -152,7 +154,8 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

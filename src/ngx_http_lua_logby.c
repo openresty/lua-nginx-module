@@ -34,8 +34,9 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     /*  set nginx request pointer to current lua thread's globals table */
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_pushlightuserdata(L, r);
-    lua_setglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_rawset(L, LUA_GLOBALSINDEX);
 
     /**
      * we want to create empty environment for current script
@@ -139,7 +140,9 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
 
         L = lmcf->lua;
 
-        lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_REQ_CTX_REF);
+        lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
+        lua_rawget(L, LUA_REGISTRYINDEX);
+
         luaL_unref(L, -1, ctx->ctx_ref);
         ctx->ctx_ref = LUA_NOREF;
         lua_pop(L, 1);

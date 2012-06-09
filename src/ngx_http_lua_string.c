@@ -105,7 +105,8 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
     uintptr_t                escape;
     u_char                  *src, *dst;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -154,7 +155,8 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
     u_char                  *p;
     u_char                  *src, *dst;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -194,7 +196,8 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
     u_char                  *p;
     u_char                  *src, *dst;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -438,7 +441,8 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
     ngx_http_request_t      *r;
     ngx_str_t                p, src;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -484,7 +488,8 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
     ngx_http_request_t      *r;
     ngx_str_t                p, src;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -567,7 +572,8 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
                 lua_gettop(L));
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -608,7 +614,8 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

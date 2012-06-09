@@ -41,7 +41,8 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         max = NGX_HTTP_LUA_MAX_HEADERS;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -99,7 +100,8 @@ ngx_http_lua_ngx_header_get(lua_State *L)
     ngx_uint_t                   i;
     size_t                       len;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -147,7 +149,8 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     ngx_int_t                    rc;
     ngx_uint_t                   n;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -297,7 +300,8 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     ngx_int_t                    rc;
     ngx_uint_t                   n;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
