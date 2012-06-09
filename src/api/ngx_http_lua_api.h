@@ -9,7 +9,7 @@
 #include <lua.h>
 
 
-/* Publich API for other Nginx modules */
+/* Public API for other Nginx modules */
 
 lua_State * ngx_http_lua_get_global_state(ngx_conf_t *cf);
 
