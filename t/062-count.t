@@ -56,7 +56,7 @@ ngx: 87
 --- request
 GET /test
 --- response_body
-72
+69
 --- no_error_log
 [error]
 

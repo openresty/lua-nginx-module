@@ -25,6 +25,7 @@ int
 ngx_http_lua_atpanic(lua_State *L)
 {
     u_char                  *s;
+    size_t                   len;
     ngx_http_request_t      *r;
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
@@ -34,9 +35,14 @@ ngx_http_lua_atpanic(lua_State *L)
 
     /*  log Lua VM crashing reason to error log */
     if (r && r->connection && r->connection->log) {
-        s = (u_char *) lua_tostring(L, 1);
+        s = (u_char *) lua_tolstring(L, -1, &len);
+        if (s == NULL) {
+            s = (u_char *) "unknown reason";
+            len = sizeof("unknown reason") - 1;
+        }
+
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "lua atpanic: Lua VM crashed, reason: %s", s);
+                "lua atpanic: Lua VM crashed, reason: %*s", len, s);
 
     } else {
 
