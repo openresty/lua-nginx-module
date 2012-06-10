@@ -42,8 +42,8 @@ static char ngx_http_lua_coroutines_key;
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx);
-static void init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L);
-static void init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L);
+static void ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L);
+static void ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         const char *fieldname, const char *path, const char *default_path);
 static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
@@ -185,8 +185,8 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     lua_remove(L, -1); /* remove the "package" table */
 
-    init_ngx_lua_registry(cf, L);
-    init_ngx_lua_globals(cf, L);
+    ngx_http_lua_init_registry(cf, L);
+    ngx_http_lua_init_globals(cf, L);
 
     return L;
 }
@@ -476,7 +476,7 @@ send:
 
 
 static void
-init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua registry");
@@ -515,7 +515,7 @@ init_ngx_lua_registry(ngx_conf_t *cf, lua_State *L)
 
 
 static void
-init_ngx_lua_globals(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 {
     ngx_http_lua_main_conf_t    *lmcf;
 
