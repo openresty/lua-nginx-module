@@ -160,7 +160,7 @@ ngx_http_lua_inject_arg_api(lua_State *L, size_t nargs,
     lua_pushliteral(L, "arg");
     lua_newtable(L);    /*  .arg table aka {} */
 
-    lua_newtable(L);    /*  the metatable for new param table */
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
     lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
     lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
 
@@ -235,7 +235,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    lua_newtable(L);    /*  new empty environment aka {} */
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);  /* new empty environment */
 
     /*  {{{ initialize ngx.* namespace */
     lua_pushlightuserdata(L, &ngx_http_lua_setby_ngx_key);
@@ -251,7 +251,8 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     /*  }}} */
 
     /*  {{{ make new env inheriting main thread's globals table */
-    lua_newtable(L);    /*  the metatable for the new env */
+    /* the metatable for the new env */
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);
     lua_pushvalue(L, LUA_GLOBALSINDEX);
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
