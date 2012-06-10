@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 72
+n = 69
 --- no_error_log
 [error]
 

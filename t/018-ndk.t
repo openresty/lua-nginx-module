@@ -112,3 +112,22 @@ GET /read
 --- response_body
 a b
 
+
+
+=== TEST 7: header_filter_by_lua
+--- config
+    location /read {
+        set $foo '';
+        content_by_lua '
+            ngx.send_headers()
+            ngx.say(ngx.var.foo)
+        ';
+        header_filter_by_lua '
+            ngx.var.foo = ndk.set_var.set_unescape_uri("a%20b")
+        ';
+    }
+--- request
+GET /read
+--- response_body
+a b
+

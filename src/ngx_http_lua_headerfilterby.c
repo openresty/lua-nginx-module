@@ -25,6 +25,10 @@
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
 
 
+/* light user data key for the "ngx" table in the Lua VM regsitry */
+static char ngx_http_lua_headerfilterby_ngx_key;
+
+
 /**
  * Set environment table for the given code closure.
  *
@@ -39,10 +43,6 @@ static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
 static void
 ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 {
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
     /*  set nginx request pointer to current lua thread's globals table */
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_pushlightuserdata(L, r);
@@ -59,32 +59,11 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    lua_newtable(L);    /*  new empty environment aka {} */
-
-#if defined(NDK) && NDK
-    ngx_http_lua_inject_ndk_api(L);
-#endif /* defined(NDK) && NDK */
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  new empty environment aka {} */
 
     /*  {{{ initialize ngx.* namespace */
-    lua_createtable(L, 0 /* narr */, 72 /* nrec */);    /*  ngx.* */
-
-    ngx_http_lua_inject_internal_utils(r->connection->log, L);
-
-    ngx_http_lua_inject_http_consts(L);
-    ngx_http_lua_inject_core_consts(L);
-
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-#if (NGX_PCRE)
-    ngx_http_lua_inject_regex_api(L);
-#endif
-    ngx_http_lua_inject_req_api_no_io(r->connection->log, L);
-    ngx_http_lua_inject_resp_header_api(L);
-    ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_misc_api(L);
-
+    lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 
@@ -315,5 +294,34 @@ ngx_http_lua_header_filter_init()
     ngx_http_top_header_filter = ngx_http_lua_header_filter;
 
     return NGX_OK;
+}
+
+
+void
+ngx_http_lua_inject_headerfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
+{
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
+    lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
+
+    ngx_http_lua_inject_http_consts(L);
+    ngx_http_lua_inject_core_consts(L);
+
+    ngx_http_lua_inject_log_api(L);
+    ngx_http_lua_inject_time_api(L);
+    ngx_http_lua_inject_string_api(L);
+#if (NGX_PCRE)
+    ngx_http_lua_inject_regex_api(L);
+#endif
+    ngx_http_lua_inject_req_api_no_io(cf->log, L);
+    ngx_http_lua_inject_resp_header_api(L);
+    ngx_http_lua_inject_variable_api(L);
+    ngx_http_lua_inject_shdict_api(lmcf, L);
+    ngx_http_lua_inject_misc_api(L);
+
+    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 

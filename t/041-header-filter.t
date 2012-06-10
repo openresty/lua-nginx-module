@@ -412,3 +412,29 @@ hello
 ngx.ctx.counter: nil
 lua release ngx.ctx
 
+
+
+=== TEST 20: global got cleared for each single request
+--- config
+    location /lua {
+        set $foo '';
+        content_by_lua '
+            ngx.send_headers()
+            ngx.say(ngx.var.foo)
+        ';
+        header_filter_by_lua '
+            if not foo then
+                foo = 1
+            else
+                foo = foo + 1
+            end
+            ngx.var.foo = foo
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+1
+--- no_error_log
+[error]
+

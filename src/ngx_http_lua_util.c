@@ -14,7 +14,6 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_args.h"
 #include "ngx_http_lua_uri.h"
-#include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_req_body.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_output.h"
@@ -30,6 +29,8 @@
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket.h"
 #include "ngx_http_lua_sleep.h"
+#include "ngx_http_lua_setby.h"
+#include "ngx_http_lua_headerfilterby.h"
 
 
 char ngx_http_lua_code_cache_key;
@@ -518,6 +519,8 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
 static void
 ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 {
+    ngx_http_lua_main_conf_t    *lmcf;
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua globals");
 
@@ -525,6 +528,12 @@ ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
     lua_pushnil(L);
     lua_setfield(L, LUA_GLOBALSINDEX, "coroutine");
     /* }}} */
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    if (lmcf->requires_header_filter) {
+        ngx_http_lua_inject_headerfilterby_ngx_api(cf, L);
+    }
 
 #if defined(NDK) && NDK
     ngx_http_lua_inject_setby_ngx_api(cf, L);
