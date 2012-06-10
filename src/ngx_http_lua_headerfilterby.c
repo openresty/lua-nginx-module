@@ -83,12 +83,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     ngx_int_t        rc;
     u_char          *err_msg;
+    size_t           len;
+    int              old_top;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
 
-    /*  set Lua VM panic handler */
-    lua_atpanic(L, ngx_http_lua_atpanic);
+    old_top = lua_gettop(L);
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_header_filter_by_lua_env(L, r);
@@ -108,20 +109,23 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (rc != 0) {
         /*  error occured when running loaded code */
-        err_msg = (u_char *) lua_tostring(L, -1);
+        err_msg = (u_char *) lua_tolstring(L, -1, &len);
 
-        if (err_msg != NULL) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "(lua-error) %s",
-                    err_msg);
-
-            lua_settop(L, 0);    /*  clear remaining elems on stack */
+        if (err_msg == NULL) {
+            err_msg = (u_char *) "unknown reason";
+            len = sizeof("unknown reason") - 1;
         }
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "failed to run header_filter_by_lua*: %*s", len, err_msg);
+
+        lua_settop(L, old_top);    /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
     /*  clear Lua stack */
-    lua_settop(L, 0);
+    lua_settop(L, old_top);
 
     return NGX_OK;
 }

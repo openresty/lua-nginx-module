@@ -10,9 +10,8 @@ use Test::Nginx::Socket;
 log_level('debug');
 
 repeat_each(2);
-#repeat_each(10000);
 
-plan tests => repeat_each() * (blocks() * 3 + 1);
+plan tests => repeat_each() * (blocks() * 3 - 1);
 
 #no_diff();
 #no_long_string();
@@ -437,4 +436,48 @@ GET /lua
 1
 --- no_error_log
 [error]
+
+
+
+=== TEST 21: lua error (string)
+--- config
+    location /lua {
+        set $foo '';
+        content_by_lua '
+            ngx.send_headers()
+            ngx.say(ngx.var.foo)
+        ';
+        header_filter_by_lua '
+            error("Something bad")
+        ';
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to run header_filter_by_lua*: [string "header_filter_by_lua"]:2: Something bad
+--- no_error_log
+[alert]
+
+
+
+=== TEST 22: lua error (nil)
+--- config
+    location /lua {
+        set $foo '';
+        content_by_lua '
+            ngx.send_headers()
+            ngx.say(ngx.var.foo)
+        ';
+        header_filter_by_lua '
+            error(nil)
+        ';
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to run header_filter_by_lua*: unknown reason
+--- no_error_log
+[alert]
 
