@@ -363,6 +363,7 @@ false expecting exactly two arguments, but only seen 1
 --- config
     location = /test {
         content_by_lua '
+            collectgarbage("collect")
             local dogs = ngx.shared.dogs
             local res, err, forcible = dogs:set("foo", string.rep("helloworld", 10000))
             ngx.say(res, " ", err, " ", forcible)
@@ -631,6 +632,7 @@ hello
 --- config
     location = /test {
         content_by_lua '
+            collectgarbage("collect")
             local dogs = ngx.shared.dogs
             dogs:set("bah", "hello")
             local res, err, forcible = dogs:set("foo", string.rep("helloworld", 10000))
