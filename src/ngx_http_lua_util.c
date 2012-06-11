@@ -197,19 +197,24 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     cr = lua_newthread(L);
 
     if (cr) {
+        /*  {{{ inherit coroutine's globals to main thread's globals table
+         *  for print() function will try to find tostring() in current
+         *  globals table.
+         */
         /*  new globals table for coroutine */
         lua_newtable(cr);
 
-        /*  {{{ inherit coroutine's globals to main thread's globals table
-         *  for print() function will try to find tostring() in current
-         *  globals *  table. */
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
         lua_setfield(cr, -2, "__index");
         lua_setmetatable(cr, -2);
-        /*  }}} */
 
         lua_replace(cr, LUA_GLOBALSINDEX);
+        /*  }}} */
+
+        /*  overwrite _G to new globals table */
+        lua_pushvalue(cr, LUA_GLOBALSINDEX);
+        lua_setglobal(cr, "_G");
 
         *ref = luaL_ref(L, -2);
 
