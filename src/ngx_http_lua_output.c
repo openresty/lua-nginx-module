@@ -50,7 +50,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     const char                  *msg;
     ngx_buf_tag_t                tag;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -442,7 +443,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
                 "or 1", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -551,7 +553,8 @@ ngx_http_lua_ngx_eof(lua_State *L)
     ngx_http_lua_ctx_t      *ctx;
     ngx_int_t                rc;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -607,7 +610,8 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

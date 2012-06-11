@@ -125,9 +125,11 @@ src/uri.[ch]
 src/socket.[ch]
 src/api.[ch]
 src/coroutine.[ch]
+src/logby.[ch]
+src/sleep.[ch]
 a.patch
 all
-build1[01]
+build1[0-3]
 g
 buildroot/
 src/headerfilterby.[ch]
@@ -137,4 +139,5 @@ tsock
 a.c
 test.lua
 build12
+ERRORS
 

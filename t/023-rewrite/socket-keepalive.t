@@ -33,12 +33,14 @@ __DATA__
 --- config
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local test = require "test"
             local port = ngx.var.port
             test.go(port)
             test.go(port)
         ';
+
+        content_by_lua return;
     }
 --- user_files
 >>> test.lua
@@ -101,12 +103,14 @@ lua socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_M
 --- config
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local test = require "test"
             local port = ngx.var.port
             test.go(port, true)
             test.go(port, false)
         ';
+
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -174,7 +178,7 @@ received: OK
    keepalive_timeout 100ms;
    location /t {
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -216,6 +220,8 @@ received: OK
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -250,7 +256,7 @@ done
         keepalive_timeout 60s;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -292,6 +298,8 @@ done
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -324,7 +332,7 @@ done
        lua_socket_keepalive_timeout 100ms;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -366,6 +374,8 @@ done
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -402,7 +412,7 @@ qr/lua socket connection pool size: 30\b/]
        lua_socket_pool_size 1;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -444,6 +454,8 @@ qr/lua socket connection pool size: 30\b/]
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -479,7 +491,7 @@ qr/lua socket connection pool size: 1\b/]
        lua_socket_keepalive_timeout 0;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -521,6 +533,8 @@ qr/lua socket connection pool size: 1\b/]
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -554,7 +568,7 @@ qr/lua socket connection pool size: 30\b/]
         lua_socket_keepalive_timeout 60s;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -596,6 +610,8 @@ qr/lua socket connection pool size: 30\b/]
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -632,7 +648,7 @@ qr/lua socket connection pool size: 30\b/]
        lua_socket_pool_size 100;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -674,6 +690,8 @@ qr/lua socket connection pool size: 30\b/]
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -709,7 +727,7 @@ qr/lua socket connection pool size: 25\b/]
        lua_socket_keepalive_timeout 1000ms;
 
         set $port $TEST_NGINX_CLIENT_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -751,6 +769,8 @@ qr/lua socket connection pool size: 25\b/]
 
             ngx.say("done")
         ';
+
+        content_by_lua return;
     }
 
     location /foo {
@@ -794,13 +814,15 @@ qr/lua socket connection pool size: 30\b/]
 --- config
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
-        content_by_lua '
+        rewrite_by_lua '
             local test = require "test"
             local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
             local port = ngx.var.port
             test.go(path, port)
             test.go(path, port)
         ';
+
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -869,7 +891,8 @@ received response of 119 bytes
         set $port $TEST_NGINX_MEMCACHED_PORT;
         #lua_code_cache off;
         lua_need_request_body on;
-        content_by_lua_file html/t.lua;
+        rewrite_by_lua_file html/t.lua;
+        content_by_lua return;
     }
 
     location /anyurl {

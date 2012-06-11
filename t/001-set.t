@@ -4,9 +4,8 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 repeat_each(2);
-#repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 #log_level("warn");
 no_long_string();
@@ -307,6 +306,58 @@ return ngx.arg[1]+ngx.arg[2]
 GET /lua?a=5&b=2
 --- response_body
 7
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: lua error (string)
+--- config
+    location /lua {
+        set_by_lua $res 'error("Bad")';
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+failed to run set_by_lua*: [string "set_by_lua"]:1: Bad
+
+
+
+=== TEST 22: lua error (nil)
+--- config
+    location /lua {
+        set_by_lua $res 'error(nil)';
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+failed to run set_by_lua*: unknown reason
+
+
+
+=== TEST 23: globals get cleared for every single request
+--- config
+    location /lua {
+        set_by_lua $res '
+            if not foo then
+                foo = 1
+            else
+                foo = foo + 1
+            end
+            return foo
+        ';
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body
+1
 --- no_error_log
 [error]
 

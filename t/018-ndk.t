@@ -97,3 +97,37 @@ GET /luaset
 68o32c9e64o2sc9j5co30c1g
 '2011.10.13+0000'
 
+
+
+=== TEST 6: set_by_lua
+--- config
+    location /read {
+        set_by_lua $r '
+            return ndk.set_var.set_unescape_uri("a%20b")
+        ';
+        echo $r;
+    }
+--- request
+GET /read
+--- response_body
+a b
+
+
+
+=== TEST 7: header_filter_by_lua
+--- config
+    location /read {
+        set $foo '';
+        content_by_lua '
+            ngx.send_headers()
+            ngx.say(ngx.var.foo)
+        ';
+        header_filter_by_lua '
+            ngx.var.foo = ndk.set_var.set_unescape_uri("a%20b")
+        ';
+    }
+--- request
+GET /read
+--- response_body
+a b
+

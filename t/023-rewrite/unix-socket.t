@@ -20,7 +20,7 @@ __DATA__
 === TEST 1: connection refused (unix domain socket)
 --- config
     location /test {
-        content_by_lua '
+        rewrite_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("unix:/tmp/nosuchfile.sock")
             ngx.say("connect: ", ok, " ", err)
@@ -36,6 +36,8 @@ __DATA__
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
         ';
+
+        content_by_lua return;
     }
 --- request
     GET /test
@@ -61,7 +63,7 @@ close: nil closed
     }
 --- config
     location /test {
-        content_by_lua '
+        rewrite_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("/tmp/test-nginx.sock")
             if not ok then
@@ -71,6 +73,8 @@ close: nil closed
 
             ngx.say("connected: ", ok)
         ';
+
+        content_by_lua return;
     }
 --- request
     GET /test
@@ -93,7 +97,7 @@ failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid hos
     }
 --- config
     location /test {
-        content_by_lua '
+        rewrite_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
             if not ok then
@@ -129,6 +133,8 @@ failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid hos
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
         ';
+
+        content_by_lua return;
     }
 --- request
     GET /test
