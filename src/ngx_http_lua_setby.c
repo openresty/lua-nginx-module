@@ -12,7 +12,6 @@
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_regex.h"
-#include "ngx_http_lua_ndk.h"
 #include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"

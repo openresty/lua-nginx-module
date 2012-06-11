@@ -14,7 +14,6 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_headers.h"
-#include "ngx_http_lua_ndk.h"
 #include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
