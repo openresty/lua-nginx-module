@@ -46,6 +46,8 @@ __DATA__
 --- response_body
 hello
 
+
+
 === TEST 2: luajit load lua bytecode or lua load luajit bytecode
 --- config
     root html;
@@ -79,6 +81,8 @@ hello
 error
 --- error_log
 bad header
+
+
 
 === TEST 3: unknown bytecode version
 --- config
@@ -114,6 +118,8 @@ error
 --- error_log
 bad header
 
+
+
 === TEST 4: bytecode (big endian)
 --- config
     root html;
@@ -148,6 +154,8 @@ bad header
 \x1b\x4c\x4a\x01\x03\x29\x02\x00\x02\x00\x03\x00\x05\x00\x00\x00\x34\x00\x01\x00\x37\x00\x02\x01\x25\x01\x02\x00\x3e\x00\x01\x00\x47\x0a\x68\x65\x6c\x6c\x6f\x08\x73\x61\x79\x08\x6e\x67\x78\x00"
 --- response_body
 ok
+
+
 
 === TEST 5: good header but bad body
 --- config

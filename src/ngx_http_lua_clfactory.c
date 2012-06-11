@@ -280,6 +280,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
     if (lf->file_type == NGX_LUA_BT_LJ) {
         size = fread(lf->begin_code.str + 1, 1, LJ_HEADERSIZE - 1, lf->f);
+
         if (size != LJ_HEADERSIZE - 1) {
             serr = strerror(errno);
             emsg = "cannot read header";
@@ -312,6 +313,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         if (little_endian) {
             lf->end_code.ptr = LJ_LIF_CODE;
+
         } else {
             lf->end_code.ptr = LJ_BIF_CODE;
         }
@@ -339,6 +341,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
     } else {
         size = fread(lf->begin_code.str + 1, 1, LUAC_HEADERSIZE - 1, lf->f);
+
         if (size != LUAC_HEADERSIZE - 1) {
             serr = strerror(errno);
             emsg = "cannot read header";
@@ -397,14 +400,17 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
             if (size_of_inst == 4) {
                 bytecode = LUA_LIF_CODE;
                 bytecode_len = LUA_LIF_CODE_LEN;
+
             } else {
                 bytecode = LUA_LIE_CODE;
                 bytecode_len = LUA_LIE_CODE_LEN;
             }
+
         } else {
             if (size_of_inst == 4) {
                 bytecode = LUA_BIF_CODE;
                 bytecode_len = LUA_BIF_CODE_LEN;
+
             } else {
                 bytecode = LUA_BIE_CODE;
                 bytecode_len = LUA_BIE_CODE_LEN;
@@ -500,8 +506,9 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
         lua_pushfstring(L, "@%s", filename);
         lf.f = fopen(filename, "r");
 
-        if (lf.f == NULL)
+        if (lf.f == NULL) {
             return clfactory_errfile(L, "open", fname_index);
+        }
     }
 
     c = getc(lf.f);
@@ -530,8 +537,10 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
         /* check whether lib jit exists */
         luaL_findtable(L, LUA_REGISTRYINDEX, "_LOADED", 1);
         lua_getfield(L, -1, "jit");  /* get _LOADED["jit"] */
+
         if (lua_istable(L, -1)) {
             lf.file_type = NGX_LUA_BT_LJ;
+
         } else {
             lf.file_type = NGX_LUA_BT_LUA;
         }
@@ -545,7 +554,8 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
          * security violation no attempt is made to echo the chunkname either.
          */
         if (lf.file_type == NGX_LUA_BT_LJ && sharp) {
-           if (filename) {
+
+            if (filename) {
                 fclose(lf.f);  /* close file (even in case of errors) */
             }
 
@@ -634,6 +644,7 @@ clfactory_getF(lua_State *L, void *ud, size_t *size)
 
         if (lf->file_type == NGX_LUA_TEXT_FILE) {
             buf = lf->begin_code.ptr;
+
         } else {
             buf = lf->begin_code.str;
         }
@@ -642,12 +653,14 @@ clfactory_getF(lua_State *L, void *ud, size_t *size)
     }
 
     if (feof(lf->f)) {
+
         if (lf->sent_end == 0) {
             lf->sent_end = 1;
             *size = lf->end_code_len;
 
             if (lf->file_type == NGX_LUA_BT_LUA) {
                 buf = lf->end_code.str;
+
             } else {
                 buf = lf->end_code.ptr;
             }
@@ -663,6 +676,7 @@ clfactory_getF(lua_State *L, void *ud, size_t *size)
     /* skip the footer(\x00) in luajit */
     if (num > 0 && lf->file_type == NGX_LUA_BT_LJ) {
         lf->rest_len -= num;
+
         if (lf->rest_len == 0) {
             if (--num == 0 && lf->sent_end == 0) {
                 lf->sent_end = 1;
