@@ -31,6 +31,7 @@
 #include "ngx_http_lua_sleep.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_headerfilterby.h"
+#include "ngx_http_lua_logby.h"
 
 
 char ngx_http_lua_code_cache_key;
@@ -533,6 +534,10 @@ ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 
     if (lmcf->requires_header_filter) {
         ngx_http_lua_inject_headerfilterby_ngx_api(cf, L);
+    }
+
+    if (lmcf->requires_log) {
+        ngx_http_lua_inject_logby_ngx_api(cf, L);
     }
 
 #if defined(NDK) && NDK

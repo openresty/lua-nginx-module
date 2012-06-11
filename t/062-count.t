@@ -301,5 +301,5 @@ GET /t
 --- response_body_like: 404 Not Found
 --- error_code: 404
 --- error_log
-ngx. entry count: 72
+ngx. entry count: 69
 

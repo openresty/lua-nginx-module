@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
 #no_long_string();
@@ -130,4 +130,22 @@ a b
 GET /read
 --- response_body
 a b
+
+
+
+=== TEST 8: log_by_lua
+--- config
+    location /read {
+        echo ok;
+        log_by_lua '
+            local foo = ndk.set_var.set_unescape_uri("a%20b")
+            ngx.log(ngx.WARN, "foo = ", foo)
+        ';
+    }
+--- request
+GET /read
+--- response_body
+ok
+--- error_log
+foo = a b
 
