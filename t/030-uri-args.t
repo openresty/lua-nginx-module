@@ -1090,3 +1090,39 @@ GET /lua
 a = 
 b = 
 
+
+
+=== TEST 47: ngx.decode_args (max_args = 1)
+--- config
+    location /lua {
+        content_by_lua '
+            local args = "a=bar&b=foo"
+            args = ngx.decode_args(args, 1)
+            ngx.say("a = ", args.a)
+            ngx.say("b = ", args.b)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a = bar
+b = nil
+
+
+
+=== TEST 48: ngx.decode_args (max_args = -1)
+--- config
+    location /lua {
+        content_by_lua '
+            local args = "a=bar&b=foo"
+            args = ngx.decode_args(args, -1)
+            ngx.say("a = ", args.a)
+            ngx.say("b = ", args.b)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a = bar
+b = foo
+

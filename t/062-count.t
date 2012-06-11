@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 #log_level('warn');
 no_root_location();
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3);
 
@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 88
+ngx: 87
 --- no_error_log
 [error]
 
@@ -56,7 +56,7 @@ ngx: 88
 --- request
 GET /test
 --- response_body
-72
+69
 --- no_error_log
 [error]
 
@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 72
+n = 69
 --- no_error_log
 [error]
 
@@ -220,6 +220,7 @@ n = 2
 
 
 === TEST 10: entries under ngx._tcp_meta
+--- SKIP
 --- config
         location = /test {
             content_by_lua '
@@ -240,6 +241,7 @@ n = 10
 
 
 === TEST 11: entries under ngx._reqsock_meta
+--- SKIP
 --- config
         location = /test {
             content_by_lua '
@@ -280,4 +282,24 @@ GET /test
 n = 8
 --- no_error_log
 [error]
+
+
+
+=== TEST 13: entries under ngx. (log by lua)
+--- config
+    location = /t {
+        log_by_lua '
+            local n = 0
+            for k, v in pairs(ngx) do
+                n = n + 1
+            end
+            ngx.log(ngx.ERR, "ngx. entry count: ", n)
+        ';
+    }
+--- request
+GET /t
+--- response_body_like: 404 Not Found
+--- error_code: 404
+--- error_log
+ngx. entry count: 69
 

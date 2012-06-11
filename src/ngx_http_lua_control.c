@@ -108,7 +108,8 @@ ngx_http_lua_ngx_exec(lua_State *L)
                 n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -248,7 +249,8 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -317,7 +319,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

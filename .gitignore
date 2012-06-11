@@ -124,9 +124,11 @@ src/body.[ch]
 src/uri.[ch]
 src/socket.[ch]
 src/api.[ch]
+src/logby.[ch]
+src/sleep.[ch]
 a.patch
 all
-build1[01]
+build1[0-3]
 g
 buildroot/
 src/headerfilterby.[ch]
@@ -134,4 +136,4 @@ src/headerfilterby.[ch]
 analyze
 tsock
 a.c
-build12
+ERRORS

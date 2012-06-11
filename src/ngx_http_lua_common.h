@@ -84,8 +84,14 @@ typedef struct {
 
     ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
 
-    unsigned    postponed_to_rewrite_phase_end:1;
-    unsigned    postponed_to_access_phase_end:1;
+    ngx_flag_t       postponed_to_rewrite_phase_end;
+    ngx_flag_t       postponed_to_access_phase_end;
+
+    unsigned         requires_header_filter:1;
+    unsigned         requires_capture_filter:1;
+    unsigned         requires_rewrite:1;
+    unsigned         requires_access:1;
+    unsigned         requires_log:1;
 
 } ngx_http_lua_main_conf_t;
 
@@ -102,6 +108,7 @@ typedef struct {
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
+    ngx_http_handler_pt     log_handler;
     ngx_http_handler_pt     header_filter_handler;
 
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
@@ -122,9 +129,15 @@ typedef struct {
 
     u_char                 *content_src_key; /* cached key for content_src */
 
-    ngx_http_complex_value_t header_filter_src;    /*  header_filter_by_lua
-                                                inline script/script
-                                                file path */
+
+    ngx_http_complex_value_t     log_src;     /* log_by_lua inline script/script
+                                                 file path */
+
+    u_char                      *log_src_key; /* cached key for log_src */
+
+    ngx_http_complex_value_t header_filter_src;  /*  header_filter_by_lua
+                                                     inline script/script
+                                                     file path */
 
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
@@ -181,6 +194,9 @@ typedef struct {
     ngx_str_t        exec_args;
 
     ngx_int_t        exit_code;
+
+    ngx_event_t      sleep;      /* used for ngx.sleep */
+
     unsigned         exited:1;
 
     unsigned         headers_sent:1;    /*  1: response header has been sent;
@@ -250,28 +266,6 @@ typedef struct {
 extern ngx_module_t ngx_http_lua_module;
 extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
-
-
-/*  user code cache table key in Lua vm registry */
-#define LUA_CODE_CACHE_KEY "ngx_http_lua_code_cache"
-
-/*  coroutine anchoring table key in Lua vm registry */
-#define NGX_LUA_CORT_REF "ngx_lua_cort_ref"
-
-/*  request ctx data anchoring table key in Lua vm registry */
-#define NGX_LUA_REQ_CTX_REF "ngx_lua_req_ctx_ref"
-
-/*  regex cache table key in Lua vm registry */
-#define NGX_LUA_REGEX_CACHE "ngx_lua_regex_cache"
-
-/*  socket connection pool table key in Lua vm registry */
-#define NGX_LUA_SOCKET_POOL "ngx_lua_socket_pool"
-
-/*  globals symbol to hold nginx request pointer */
-#define GLOBALS_SYMBOL_REQUEST    "ngx._r"
-
-/*  globals symbol to hold code chunk handling nginx request */
-#define GLOBALS_SYMBOL_RUNCODE    "ngx._code"
 
 
 #endif /* NGX_HTTP_LUA_COMMON_H */
