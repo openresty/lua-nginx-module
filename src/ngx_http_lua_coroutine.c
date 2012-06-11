@@ -110,7 +110,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
 static int
 ngx_http_lua_coroutine_running(lua_State *L)
 {
-	// TODO
+	// TODO p2
 	return luaL_error(L, "not implemented yet");
 }
 
@@ -118,7 +118,7 @@ ngx_http_lua_coroutine_running(lua_State *L)
 static int
 ngx_http_lua_coroutine_status(lua_State *L)
 {
-	// TODO
+	// TODO p2
 	return luaL_error(L, "not implemented yet");
 }
 
@@ -126,7 +126,7 @@ ngx_http_lua_coroutine_status(lua_State *L)
 static int
 ngx_http_lua_coroutine_wrap(lua_State *L)
 {
-	// TODO
+	// TODO p1
 	return luaL_error(L, "not implemented yet");
 }
 

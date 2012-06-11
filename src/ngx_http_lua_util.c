@@ -840,6 +840,7 @@ start_run:
 
                             ctx->cc = cc = next_cc;
                         }
+                        // TODO: 更改run_thread结构，避免goto使用
                         goto start_run;
 
                     case YIELD:
@@ -869,6 +870,7 @@ start_run:
 
                             ctx->cc = cc = next_cc;
                         }
+                        // TODO: 更改run_thread结构，避免goto使用
                         goto start_run;
 
                     case NONE:
@@ -908,6 +910,7 @@ start_run:
                         nret = nrets + 1;
 
                         ctx->cc = cc = next_cc;
+                        // TODO: 更改run_thread结构，避免goto使用
                         goto start_run;
                     }
 
