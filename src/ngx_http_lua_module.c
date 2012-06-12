@@ -1,11 +1,17 @@
 /* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
+#ifndef DDEBUG
+#define DDEBUG 0
+#endif
+#include "ddebug.h"
+
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_headerfilterby.h"
 
 
@@ -15,7 +21,6 @@
 
 
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
-static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
 static char * ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 
 
@@ -117,6 +122,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_content_handler_inline },
 
+    /* log_by_lua <inline script> */
+    { ngx_string("log_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_log_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_log_handler_inline },
+
     /* header_filter_by_lua <inline script> */
     { ngx_string("header_filter_by_lua"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -134,6 +148,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_rewrite_handler_file },
 
+    { ngx_string("rewrite_by_lua_no_postpone"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, postponed_to_rewrite_phase_end),
+      NULL },
+
     { ngx_string("access_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
@@ -149,6 +171,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       ngx_http_lua_content_handler_file },
+
+    { ngx_string("log_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_log_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_log_handler_file },
 
     { ngx_string("header_filter_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -226,7 +256,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 };
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-    ngx_http_lua_pre_config,          /*  preconfiguration */
+    NULL,                             /*  preconfiguration */
     ngx_http_lua_init,                /*  postconfiguration */
 
     ngx_http_lua_create_main_conf,    /*  create main configuration */
@@ -262,15 +292,24 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
+    ngx_http_lua_main_conf_t   *lmcf;
 
-    rc = ngx_http_lua_capture_filter_init(cf);
-    if (rc != NGX_OK) {
-        return rc;
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    if (lmcf->requires_capture_filter) {
+        rc = ngx_http_lua_capture_filter_init(cf);
+        if (rc != NGX_OK) {
+            return rc;
+        }
+    }
+
+    if (lmcf->postponed_to_rewrite_phase_end == NGX_CONF_UNSET) {
+        lmcf->postponed_to_rewrite_phase_end = 0;
     }
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    if (ngx_http_lua_requires_rewrite) {
+    if (lmcf->requires_rewrite) {
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
         if (h == NULL) {
             return NGX_ERROR;
@@ -279,7 +318,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_rewrite_handler;
     }
 
-    if (ngx_http_lua_requires_access) {
+    if (lmcf->requires_access) {
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
         if (h == NULL) {
             return NGX_ERROR;
@@ -288,24 +327,23 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_access_handler;
     }
 
-    if (ngx_http_lua_requires_header_filter) {
+    dd("requires log: %d", (int) lmcf->requires_log);
+
+    if (lmcf->requires_log) {
+        h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_log_handler;
+    }
+
+    if (lmcf->requires_header_filter) {
         rc = ngx_http_lua_header_filter_init();
         if (rc != NGX_OK) {
             return rc;
         }
     }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_http_lua_pre_config(ngx_conf_t *cf)
-{
-    ngx_http_lua_requires_rewrite = 0;
-    ngx_http_lua_requires_access = 0;
-    ngx_http_lua_requires_header_filter = 0;
-    ngx_http_lua_requires_capture_filter = 0;
 
     return NGX_OK;
 }

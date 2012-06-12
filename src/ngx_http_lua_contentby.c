@@ -33,7 +33,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        dd("setting new ctx, ctx = %p", ctx);
+        dd("setting new ctx, ctx = %p, size: %d", ctx, (int) sizeof(*ctx));
 
         ctx->cc_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
@@ -65,13 +65,10 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_pushvalue(cc, LUA_GLOBALSINDEX);
     lua_setfenv(cc, -2);
 
-    /*  save reference of code to ease forcing stopping */
-    lua_pushvalue(cc, -1);
-    lua_setglobal(cc, GLOBALS_SYMBOL_RUNCODE);
-
     /*  save nginx request in coroutine globals table */
+    lua_pushlightuserdata(cc, &ngx_http_lua_request_key);
     lua_pushlightuserdata(cc, r);
-    lua_setglobal(cc, GLOBALS_SYMBOL_REQUEST);
+    lua_rawset(cc, LUA_GLOBALSINDEX);
     /*  }}} */
 
     ctx->cc = cc;
@@ -89,6 +86,8 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         ctx->cleanup = &cln->handler;
     }
     /*  }}} */
+
+    ctx->context = NGX_HTTP_LUA_CONTEXT_CONTENT;
 
     return ngx_http_lua_run_thread(L, r, ctx, 0);
 }
@@ -108,6 +107,9 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
 
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua content handler, uri \"%V\"", &r->uri);
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (llcf->content_handler == NULL) {
@@ -125,7 +127,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        dd("setting new ctx: ctx = %p", ctx);
+        dd("setting new ctx: ctx = %p, size: %d", ctx, (int) sizeof(*ctx));
 
         ctx->cc_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
