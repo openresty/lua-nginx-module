@@ -50,7 +50,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     const char                  *msg;
     ngx_buf_tag_t                tag;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -63,6 +64,10 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     if (r->header_only) {
         return 0;
@@ -442,7 +447,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
                 "or 1", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -455,6 +461,10 @@ ngx_http_lua_ngx_flush(lua_State *L)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     if (r->header_only) {
         return 0;
@@ -551,7 +561,8 @@ ngx_http_lua_ngx_eof(lua_State *L)
     ngx_http_lua_ctx_t      *ctx;
     ngx_int_t                rc;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -564,6 +575,13 @@ ngx_http_lua_ngx_eof(lua_State *L)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua send eof");
@@ -607,24 +625,30 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r) {
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-        if (ctx && ctx->headers_sent == 0) {
-            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua send headers");
-
-            ngx_http_lua_send_header_if_needed(r, ctx);
-        }
-
-        return 0;
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
     }
 
-    dd("(lua-ngx-send-headers) can't find nginx request object!");
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+    if (!ctx->headers_sent) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua send headers");
+
+        ngx_http_lua_send_header_if_needed(r, ctx);
+    }
 
     return 0;
 }

@@ -108,7 +108,8 @@ ngx_http_lua_ngx_exec(lua_State *L)
                 n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -137,6 +138,13 @@ ngx_http_lua_ngx_exec(lua_State *L)
     uri.len = len;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
         != NGX_OK)
@@ -248,7 +256,8 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -260,6 +269,10 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     if (ctx->headers_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
@@ -317,7 +330,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -329,6 +343,10 @@ ngx_http_lua_ngx_exit(lua_State *L)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 

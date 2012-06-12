@@ -11,6 +11,7 @@ our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 #$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
 
 $ENV{LUA_PATH} ||=
@@ -19,6 +20,8 @@ $ENV{LUA_PATH} ||=
 no_long_string();
 #no_diff();
 #log_level 'warn';
+
+no_shuffle();
 
 run_tests();
 
@@ -778,7 +781,7 @@ qr/lua socket connection pool size: 30\b/]
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
     server {
-        listen unix:/tmp/test-nginx.sock;
+        listen unix:$::HtmlDir/nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -793,9 +796,10 @@ qr/lua socket connection pool size: 30\b/]
         set $port $TEST_NGINX_MEMCACHED_PORT;
         content_by_lua '
             local test = require "test"
+            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
             local port = ngx.var.port
-            test.go(port)
-            test.go(port)
+            test.go(path, port)
+            test.go(path, port)
         ';
     }
 --- request
@@ -804,9 +808,9 @@ GET /t
 >>> test.lua
 module("test", package.seeall)
 
-function go(port)
+function go(path, port)
     local sock = ngx.socket.tcp()
-    local ok, err = sock:connect("unix:/tmp/test-nginx.sock")
+    local ok, err = sock:connect("unix:" .. path)
     if not ok then
         ngx.say("failed to connect: ", err)
         return
@@ -850,7 +854,7 @@ received response of 119 bytes
 "lua socket keepalive: free connection pool for "]
 --- error_log eval
 ["lua socket get keepalive peer: using connection",
-'lua socket keepalive create connection pool for key "unix:/tmp/test-nginx.sock"']
+'lua socket keepalive create connection pool for key "unix:']
 
 
 
