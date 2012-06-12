@@ -40,6 +40,7 @@ char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_request_key;
 
+
 /*  coroutine anchoring table key in Lua vm registry */
 static char ngx_http_lua_coroutines_key;
 
@@ -113,9 +114,9 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
  *         |    ...    |
  * */
 void
-ngx_http_lua_create_ng_table(lua_State *L, int narr, int nrec)
+ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
 {
-    lua_createtable(L, narr, nrec+1);
+    lua_createtable(L, narr, nrec + 1);
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "_G");
 }
@@ -233,7 +234,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
          *  globals table.
          */
         /*  new globals table for coroutine */
-        ngx_http_lua_create_ng_table(cr, 0, 0);
+        ngx_http_lua_create_new_global_table(cr, 0, 0);
 
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);

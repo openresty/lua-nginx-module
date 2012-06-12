@@ -56,7 +56,7 @@ GET /lua
 === TEST 4: inlined script with arguments
 --- config
     location /lua {
-        set_by_lua $res "return ngx.arg[1]+ngx.arg[2]" $arg_a $arg_b;
+        set_by_lua $res "return ngx.arg[1] + ngx.arg[2]" $arg_a $arg_b;
         echo $res;
     }
 --- request
@@ -282,7 +282,7 @@ $unknown
     }
 --- user_files
 >>> a.lua
-return ngx.arg[1]+ngx.arg[2]
+return ngx.arg[1] + ngx.arg[2]
 --- request
 GET /lua?a=5&b=2
 --- response_body
@@ -301,7 +301,7 @@ GET /lua?a=5&b=2
     }
 --- user_files
 >>> a.lua
-return ngx.arg[1]+ngx.arg[2]
+return ngx.arg[1] + ngx.arg[2]
 --- request
 GET /lua?a=5&b=2
 --- response_body

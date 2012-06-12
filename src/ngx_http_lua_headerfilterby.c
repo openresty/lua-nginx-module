@@ -60,7 +60,7 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    ngx_http_lua_create_ng_table(L, 0 /* narr */, 1 /* nrec */);
+    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ initialize ngx.* namespace */
     lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
