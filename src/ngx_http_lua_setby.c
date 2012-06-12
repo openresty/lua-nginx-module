@@ -19,9 +19,9 @@
 #include "ngx_http_lua_shdict.h"
 
 
-static void ngx_http_lua_inject_arg_api(lua_State *L,
+static void ngx_http_lua_inject_setby_arg_api(lua_State *L,
        size_t nargs,  ngx_http_variable_value_t *args);
-static int ngx_http_lua_param_get(lua_State *L);
+static int ngx_http_lua_setby_param_get(lua_State *L);
 static void ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r,
         size_t nargs, ngx_http_variable_value_t *args);
 
@@ -153,7 +153,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
 
 static void
-ngx_http_lua_inject_arg_api(lua_State *L, size_t nargs,
+ngx_http_lua_inject_setby_arg_api(lua_State *L, size_t nargs,
         ngx_http_variable_value_t *args)
 {
     lua_pushliteral(L, "arg");
@@ -163,7 +163,7 @@ ngx_http_lua_inject_arg_api(lua_State *L, size_t nargs,
     lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
     lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
 
-    lua_pushcclosure(L, ngx_http_lua_param_get, 2);
+    lua_pushcclosure(L, ngx_http_lua_setby_param_get, 2);
         /*  binding upvalues to __index meta-method closure */
 
     lua_setfield(L, -2, "__index");
@@ -176,7 +176,7 @@ ngx_http_lua_inject_arg_api(lua_State *L, size_t nargs,
 
 
 static int
-ngx_http_lua_param_get(lua_State *L)
+ngx_http_lua_setby_param_get(lua_State *L)
 {
     int         idx;
     int         n;
@@ -242,7 +242,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
     dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
 
-    ngx_http_lua_inject_arg_api(L, nargs, args);
+    ngx_http_lua_inject_setby_arg_api(L, nargs, args);
 
     dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
 

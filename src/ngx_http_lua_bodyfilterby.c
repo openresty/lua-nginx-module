@@ -5,7 +5,7 @@
 #endif
 #include "ddebug.h"
 
-#include "ngx_http_lua_headerfilterby.h"
+#include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_pcrefix.h"
@@ -21,11 +21,18 @@
 #include "ngx_http_lua_shdict.h"
 
 
-static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
+static void ngx_http_lua_inject_body_filter_arg_api(lua_State *L,
+       ngx_chain_t *in);
+static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
+        ngx_http_request_t *r, ngx_chain_t *in);
+static int ngx_http_lua_body_filter_param_get(lua_State *L);
+
+
+static ngx_http_output_body_filter_pt ngx_http_next_body_filter;
 
 
 /* light user data key for the "ngx" table in the Lua VM regsitry */
-static char ngx_http_lua_headerfilterby_ngx_key;
+static char ngx_http_lua_bodyfilterby_ngx_key;
 
 
 /**
@@ -40,7 +47,8 @@ static char ngx_http_lua_headerfilterby_ngx_key;
  *         |      ...     |
  * */
 static void
-ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
+ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
+        ngx_chain_t *in)
 {
     /*  set nginx request pointer to current lua thread's globals table */
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
@@ -61,8 +69,11 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
     lua_createtable(L, 0 /* narr */, 1 /* nrec */); /*  new empty environment */
 
     /*  {{{ initialize ngx.* namespace */
-    lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
+    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
+
+    ngx_http_lua_inject_body_filter_arg_api(L, in);
+
     lua_setfield(L, -2, "ngx");
     /*  }}} */
 
@@ -78,7 +89,8 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
+ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
+        ngx_chain_t *in)
 {
     ngx_int_t        rc;
     u_char          *err_msg;
@@ -91,7 +103,7 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     old_top = lua_gettop(L);
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
-    ngx_http_lua_header_filter_by_lua_env(L, r);
+    ngx_http_lua_body_filter_by_lua_env(L, r, in);
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
@@ -116,14 +128,14 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to run header_filter_by_lua*: %*s", len, err_msg);
+                      "failed to run body_filter_by_lua*: %*s", len, err_msg);
 
         lua_settop(L, old_top);    /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
-    /*  clear Lua stack */
+    /* clear Lua stack */
     lua_settop(L, old_top);
 
     return NGX_OK;
@@ -131,7 +143,7 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
+ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
@@ -147,9 +159,9 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
     L = lmcf->lua;
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, llcf->header_filter_src.value.data,
-            llcf->header_filter_src.value.len, llcf->header_filter_src_key,
-            "header_filter_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
+    rc = ngx_http_lua_cache_loadbuffer(L, llcf->body_filter_src.value.data,
+            llcf->body_filter_src.value.len, llcf->body_filter_src_key,
+            "body_filter_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -162,9 +174,9 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_lua_header_filter_by_chunk(L, r);
+    rc = ngx_http_lua_body_filter_by_chunk(L, r, in);
 
-    dd("header filter by chunk returns %d", (int) rc);
+    dd("body filter by chunk returns %d", (int) rc);
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -175,7 +187,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_header_filter_file(ngx_http_request_t *r)
+ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -188,7 +200,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     /* Eval nginx variables in code path string first */
-    if (ngx_http_complex_value(r, &llcf->header_filter_src, &eval_src)
+    if (ngx_http_complex_value(r, &llcf->body_filter_src, &eval_src)
             != NGX_OK) {
         return NGX_ERROR;
     }
@@ -205,7 +217,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path,
-            llcf->header_filter_src_key, &err, llcf->enable_code_cache ? 1 : 0);
+            llcf->body_filter_src_key, &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -221,7 +233,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
     /*  make sure we have a valid code chunk */
     assert(lua_isfunction(L, -1));
 
-    rc = ngx_http_lua_header_filter_by_chunk(L, r);
+    rc = ngx_http_lua_body_filter_by_chunk(L, r, in);
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -232,7 +244,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
 
 static ngx_int_t
-ngx_http_lua_header_filter(ngx_http_request_t *r)
+ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
@@ -240,18 +252,17 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_cleanup_t          *cln;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua header filter for user lua code, uri \"%V\"", &r->uri);
+                   "lua body filter for user lua code, uri \"%V\"", &r->uri);
+
+    if (in == NULL) {
+        return ngx_http_next_body_filter(r, in);
+    }
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    if (llcf->body_filter_handler) {
-        r->filter_need_in_memory = 1;
-        return ngx_http_next_header_filter(r);
-    }
-
-    if (llcf->header_filter_handler == NULL) {
-        dd("no header filter handler found");
-        return ngx_http_next_header_filter(r);
+    if (llcf->body_filter_handler == NULL) {
+        dd("no body filter handler found");
+        return ngx_http_next_body_filter(r, in);
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -283,36 +294,36 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
         ctx->cleanup = &cln->handler;
     }
 
-    dd("calling header filter handler");
-    rc = llcf->header_filter_handler(r);
+    dd("calling body filter handler");
+    rc = llcf->body_filter_handler(r, in);
     if (rc != NGX_OK) {
-        dd("calling header filter handler rc %d", (int)rc);
+        dd("calling body filter handler rc %d", (int)rc);
         return NGX_ERROR;
     }
 
-    return ngx_http_next_header_filter(r);
+    return ngx_http_next_body_filter(r, in);
 }
 
 
 ngx_int_t
-ngx_http_lua_header_filter_init()
+ngx_http_lua_body_filter_init()
 {
-    dd("calling header filter init");
-    ngx_http_next_header_filter = ngx_http_top_header_filter;
-    ngx_http_top_header_filter = ngx_http_lua_header_filter;
+    dd("calling body filter init");
+    ngx_http_next_body_filter = ngx_http_top_body_filter;
+    ngx_http_top_body_filter = ngx_http_lua_body_filter;
 
     return NGX_OK;
 }
 
 
 void
-ngx_http_lua_inject_headerfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_inject_bodyfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
 {
     ngx_http_lua_main_conf_t    *lmcf;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
+    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
     lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
 
     ngx_http_lua_inject_http_consts(L);
@@ -331,5 +342,99 @@ ngx_http_lua_inject_headerfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_misc_api(L);
 
     lua_rawset(L, LUA_REGISTRYINDEX);
+}
+
+
+static void
+ngx_http_lua_inject_body_filter_arg_api(lua_State *L, ngx_chain_t *in)
+{
+    lua_pushliteral(L, "arg");
+    lua_newtable(L); /*  .arg table */
+
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
+
+    lua_pushlightuserdata(L, in);
+    lua_pushcclosure(L, ngx_http_lua_body_filter_param_get, 1);
+
+    lua_setfield(L, -2, "__index");
+    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
+
+    lua_rawset(L, -3);    /*  set ngx.arg table */
+}
+
+
+static int
+ngx_http_lua_body_filter_param_get(lua_State *L)
+{
+    u_char              *data, *p;
+    size_t               size;
+    ngx_chain_t         *cl;
+    ngx_buf_t           *b;
+    int                  idx;
+    ngx_chain_t         *in;
+
+    idx = luaL_checkint(L, 2);
+
+    dd("index: %d", idx);
+
+    if (idx != 1 && idx != 2) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    in = lua_touserdata(L, lua_upvalueindex(1));
+
+    if (idx == 2) {
+        /* asking for the eof argument */
+
+        for (cl = in; cl; cl = cl->next) {
+            if (cl->buf->last_buf) {
+                lua_pushboolean(L, 1);
+                return 1;
+            }
+        }
+
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+
+    /* idx == 1 */
+
+    size = 0;
+
+    if (in->next == NULL) {
+
+        dd("seen only single buffer");
+
+        b = in->buf;
+        lua_pushlstring(L, (char *) b->pos, b->last - b->pos);
+        return 1;
+    }
+
+    dd("seen multiple buffers");
+
+    for (cl = in; cl; cl = cl->next) {
+        b = cl->buf;
+
+        size += b->last - b->pos;
+
+        if (b->last_buf) {
+            break;
+        }
+    }
+
+    data = (u_char *) lua_newuserdata(L, size);
+
+    for (p = data, cl = in; cl; cl = cl->next) {
+        b = cl->buf;
+        p = ngx_copy(p, b->pos, b->last - b->pos);
+
+        if (b->last_buf) {
+            break;
+        }
+    }
+
+    lua_pushlstring(L, (char *) data, size);
+    return 1;
 }
 
