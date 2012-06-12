@@ -10,7 +10,7 @@ log_level('debug');
 #repeat_each(120);
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -560,4 +560,23 @@ $s
 23
 24
 25
+
+
+
+=== TEST 26: unexpected globals sharing by using _G
+--- config
+    location /test {
+        content_by_lua '
+            if _G.t then
+                _G.t = _G.t + 1
+            else
+                _G.t = 0
+            end
+            ngx.print(t)
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test", "GET /test"]
+--- response_body eval
+["0", "0", "0"]
 
