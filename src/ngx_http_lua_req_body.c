@@ -487,6 +487,11 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         size = clcf->client_body_buffer_size;
     }
 
+    /* avoid allocating an unnecessary large buffer */
+    if (size > (size_t) r->headers_in.content_length_n) {
+        size = r->headers_in.content_length_n;
+    }
+
     if (r->request_body == NULL) {
 
 #if 1
