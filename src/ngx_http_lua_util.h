@@ -100,6 +100,7 @@ void ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L);
 ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     ngx_chain_t **free, size_t len, ngx_buf_tag_t tag);
 
+void ngx_http_lua_create_ng_table(lua_State *L, int narr, int nrec);
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 
