@@ -40,7 +40,9 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     /**
      * we want to create empty environment for current script
      *
-     * setmetatable({}, {__index = _G})
+	 * newt = {}
+	 * newt["_G"] = newt
+     * setmetatable(newt, {__index = _G})
      *
      * if a function or symbol is not defined in our env, __index will lookup
      * in the global env.
@@ -48,8 +50,7 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /*  new empty environment */
+    ngx_http_lua_create_ng_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ initialize ngx.* namespace */
     lua_pushlightuserdata(L, &ngx_http_lua_logby_ngx_key);

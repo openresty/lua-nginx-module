@@ -17,6 +17,7 @@
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_util.h"
 
 
 static void ngx_http_lua_inject_arg_api(lua_State *L,
@@ -226,7 +227,9 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     /**
      * we want to create empty environment for current script
      *
-     * setmetatable({}, {__index = _G})
+     * newt = {}
+     * newt["_G"] = newt
+     * setmetatable(newt, {__index = _G})
      *
      * if a function or symbol is not defined in our env, __index will lookup
      * in the global env.
@@ -234,7 +237,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);  /* new empty environment */
+    ngx_http_lua_create_ng_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ initialize ngx.* namespace */
     lua_pushlightuserdata(L, &ngx_http_lua_setby_ngx_key);
@@ -254,7 +257,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_createtable(L, 0 /* narr */, 1 /* nrec */);
     lua_pushvalue(L, LUA_GLOBALSINDEX);
     lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
+    lua_setmetatable(L, -2);    /*  setmetatable(newt, {__index = _G}) */
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */

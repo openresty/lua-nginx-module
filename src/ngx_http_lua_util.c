@@ -105,6 +105,22 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
 }
 
 
+/**
+ * Create new table and set _G field to itself.
+ *
+ * After:
+ *         | new table | <- top
+ *         |    ...    |
+ * */
+void
+ngx_http_lua_create_ng_table(lua_State *L, int narr, int nrec)
+{
+    lua_createtable(L, narr, nrec+1);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "_G");
+}
+
+
 lua_State *
 ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
@@ -217,7 +233,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
          *  globals table.
          */
         /*  new globals table for coroutine */
-        lua_newtable(cr);
+        ngx_http_lua_create_ng_table(cr, 0, 0);
 
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
@@ -226,10 +242,6 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
         lua_replace(cr, LUA_GLOBALSINDEX);
         /*  }}} */
-
-        /*  overwrite _G to new globals table */
-        lua_pushvalue(cr, LUA_GLOBALSINDEX);
-        lua_setglobal(cr, "_G");
 
         *ref = luaL_ref(L, -2);
 
@@ -2333,7 +2345,8 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 
 static int
-debug_traceback(lua_State *L, lua_State *L1) {
+debug_traceback(lua_State *L, lua_State *L1)
+{
     int         arg = 0;
     int         level = 0;
     int         firstpart = 1;  /* still before eventual `...' */
