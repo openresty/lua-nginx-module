@@ -189,3 +189,55 @@ GET /t2
 --- error_log
 lua release ngx.ctx
 
+
+
+=== TEST 9: lua error (string)
+--- config
+    location /lua {
+        log_by_lua 'error("Bad")';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+failed to run log_by_lua*: [string "log_by_lua"]:1: Bad
+
+
+
+=== TEST 10: lua error (nil)
+--- config
+    location /lua {
+        log_by_lua 'error(nil)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+failed to run log_by_lua*: unknown reason
+
+
+
+=== TEST 11: globals get cleared for every single request
+--- config
+    location /lua {
+        echo ok;
+        log_by_lua '
+            if not foo then
+                foo = 1
+            else
+                foo = foo + 1
+            end
+            ngx.log(ngx.WARN, "foo = ", foo)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+foo = 1
+

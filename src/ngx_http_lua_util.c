@@ -32,6 +32,7 @@
 #include "ngx_http_lua_sleep.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_headerfilterby.h"
+#include "ngx_http_lua_logby.h"
 
 
 char ngx_http_lua_code_cache_key;
@@ -102,6 +103,22 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
     /* fix negative index as there's new data on stack */
     tab_idx = (tab_idx < 0) ? (tab_idx - 1) : tab_idx;
     lua_setfield(L, tab_idx, fieldname);
+}
+
+
+/**
+ * Create new table and set _G field to itself.
+ *
+ * After:
+ *         | new table | <- top
+ *         |    ...    |
+ * */
+void
+ngx_http_lua_create_ng_table(lua_State *L, int narr, int nrec)
+{
+    lua_createtable(L, narr, nrec+1);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "_G");
 }
 
 
@@ -212,19 +229,20 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     cr = lua_newthread(L);
 
     if (cr) {
-        /*  new globals table for coroutine */
-        lua_newtable(cr);
-
         /*  {{{ inherit coroutine's globals to main thread's globals table
          *  for print() function will try to find tostring() in current
-         *  globals *  table. */
+         *  globals table.
+         */
+        /*  new globals table for coroutine */
+        ngx_http_lua_create_ng_table(cr, 0, 0);
+
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
         lua_setfield(cr, -2, "__index");
         lua_setmetatable(cr, -2);
-        /*  }}} */
 
         lua_replace(cr, LUA_GLOBALSINDEX);
+        /*  }}} */
 
         *ref = luaL_ref(L, -2);
 
@@ -546,6 +564,10 @@ ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 
     if (lmcf->requires_header_filter) {
         ngx_http_lua_inject_headerfilterby_ngx_api(cf, L);
+    }
+
+    if (lmcf->requires_log) {
+        ngx_http_lua_inject_logby_ngx_api(cf, L);
     }
 
 #if defined(NDK) && NDK
@@ -2444,7 +2466,8 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 
 static int
-debug_traceback(lua_State *L, lua_State *L1) {
+debug_traceback(lua_State *L, lua_State *L1)
+{
     int         arg = 0;
     int         level = 0;
     int         firstpart = 1;  /* still before eventual `...' */
