@@ -204,10 +204,31 @@ ngx_http_lua_inject_req_socket_api(lua_State *L)
 static int
 ngx_http_lua_socket_tcp(lua_State *L)
 {
+    ngx_http_request_t      *r;
+    ngx_http_lua_ctx_t      *ctx;
+
     if (lua_gettop(L) != 0) {
         return luaL_error(L, "expecting zero arguments, but got %d",
                 lua_gettop(L));
     }
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
@@ -251,6 +272,19 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
@@ -461,8 +495,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         return 2;
     }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (u->waiting == 1) {
         /* resolved and already connecting */
@@ -2644,6 +2676,15 @@ ngx_http_lua_req_socket(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
     if (r->discard_body) {
         lua_pushnil(L);
         lua_pushliteral(L, "request body discarded"); return 2;
@@ -2731,8 +2772,6 @@ ngx_http_lua_req_socket(lua_State *L)
 
     c = r->connection;
     pc->connection = c;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     ctx->data = u;
 

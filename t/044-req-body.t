@@ -6,9 +6,9 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 1);
+plan tests => repeat_each() * (blocks() * 4 + 3);
 
 #no_diff();
 no_long_string();
@@ -107,51 +107,7 @@ sub: foo
 
 
 
-=== TEST 5: read_body not allowed in set_by_lua
---- config
-    location /foo {
-        echo -n foo;
-    }
-    location = /test {
-        set_by_lua $has_read_body '
-            return ngx.req.read_body and "defined" or "undef"
-        ';
-        echo "ngx.req.read_body: $has_read_body";
-    }
---- request
-GET /test
---- response_body
-ngx.req.read_body: undef
---- no_error_log
-[error]
-
-
-
-=== TEST 6: read_body not allowed in set_by_lua
---- config
-    location /foo {
-        echo -n foo;
-    }
-    location = /test {
-        set $bool '';
-        header_filter_by_lua '
-             ngx.var.bool = (ngx.req.read_body and "defined" or "undef")
-        ';
-        content_by_lua '
-            ngx.send_headers()
-            ngx.say("ngx.req.read_body: ", ngx.var.bool)
-        ';
-    }
---- request
-GET /test
---- response_body
-ngx.req.read_body: undef
---- no_error_log
-[error]
-
-
-
-=== TEST 7: discard body
+=== TEST 5: discard body
 --- config
     location = /foo {
         content_by_lua '
@@ -179,7 +135,7 @@ hiya, world"]
 
 
 
-=== TEST 8: not discard body
+=== TEST 6: not discard body
 --- config
     location = /foo {
         content_by_lua '
@@ -208,7 +164,7 @@ qr/400 Bad Request/]
 
 
 
-=== TEST 9: read buffered body and retrieve the data
+=== TEST 7: read buffered body and retrieve the data
 --- config
     location = /test {
         content_by_lua '
@@ -226,7 +182,7 @@ hello, world
 
 
 
-=== TEST 10: read buffered body to file and call get_body_data
+=== TEST 8: read buffered body to file and call get_body_data
 --- config
     client_body_in_file_only on;
     location = /test {
@@ -245,7 +201,7 @@ nil
 
 
 
-=== TEST 11: read buffered body to file and call get_body_file
+=== TEST 9: read buffered body to file and call get_body_file
 --- config
     client_body_in_file_only on;
     location = /test {
@@ -263,7 +219,7 @@ hello, world
 
 
 
-=== TEST 12: read buffered body to memory and retrieve the file
+=== TEST 10: read buffered body to memory and retrieve the file
 --- config
     location = /test {
         content_by_lua '
@@ -281,7 +237,7 @@ nil
 
 
 
-=== TEST 13: read buffered body to memory and reset it with data in memory
+=== TEST 11: read buffered body to memory and reset it with data in memory
 --- config
     location = /test {
         content_by_lua '
@@ -304,7 +260,7 @@ hiya, dear
 
 
 
-=== TEST 14: read body to file and then override it with data in memory
+=== TEST 12: read body to file and then override it with data in memory
 --- config
     client_body_in_file_only on;
 
@@ -327,7 +283,7 @@ hello, baby
 
 
 
-=== TEST 15: do not read the current request body but replace it with our own in memory
+=== TEST 13: do not read the current request body but replace it with our own in memory
 --- config
     client_body_in_file_only on;
 
@@ -356,7 +312,7 @@ hello, baby
 
 
 
-=== TEST 16: read buffered body to file and reset it to a new file
+=== TEST 14: read buffered body to file and reset it to a new file
 --- config
     client_body_in_file_only on;
 
@@ -395,7 +351,7 @@ Will you change this world?
 
 
 
-=== TEST 17: read buffered body to file and reset it to a new file
+=== TEST 15: read buffered body to file and reset it to a new file
 --- config
     client_body_in_file_only on;
 
@@ -434,7 +390,7 @@ Will you change this world?
 
 
 
-=== TEST 18: read buffered body to file and reset it to a new file (auto-clean)
+=== TEST 16: read buffered body to file and reset it to a new file (auto-clean)
 --- config
     client_body_in_file_only on;
 
@@ -472,7 +428,7 @@ b.txt exists: yes
 
 
 
-=== TEST 19: read buffered body to memoary and reset it to a new file (auto-clean)
+=== TEST 17: read buffered body to memoary and reset it to a new file (auto-clean)
 --- config
     client_body_in_file_only off;
 
@@ -506,7 +462,7 @@ qr/500 Internal Server Error/]
 
 
 
-=== TEST 20: read buffered body to memoary and reset it to a new file (no auto-clean)
+=== TEST 18: read buffered body to memoary and reset it to a new file (no auto-clean)
 --- config
     client_body_in_file_only off;
 
@@ -542,7 +498,7 @@ Will you change this world?
 
 
 
-=== TEST 21: no request body and reset it to a new file (auto-clean)
+=== TEST 19: no request body and reset it to a new file (auto-clean)
 --- config
     client_body_in_file_only off;
 
@@ -577,7 +533,7 @@ Will you change this world?
 
 
 
-=== TEST 22: no request body and reset it to a new file (no auto-clean)
+=== TEST 20: no request body and reset it to a new file (no auto-clean)
 --- config
     client_body_in_file_only off;
 
@@ -613,7 +569,7 @@ qr/500 Internal Server Error/]
 
 
 
-=== TEST 23: read buffered body to memory and reset it with data in memory + proxy
+=== TEST 21: read buffered body to memory and reset it with data in memory + proxy
 --- config
     location = /test {
         rewrite_by_lua '
@@ -636,7 +592,7 @@ hiya, dear dear friend!
 
 
 
-=== TEST 24: discard request body and reset it to a new file (no auto-clean)
+=== TEST 22: discard request body and reset it to a new file (no auto-clean)
 --- config
     client_body_in_file_only off;
 
@@ -670,7 +626,7 @@ qr/500 Internal Server Error/]
 
 
 
-=== TEST 25: discard body and then read
+=== TEST 23: discard body and then read
 --- config
     location = /test {
         content_by_lua '
@@ -691,7 +647,7 @@ hello, world"]
 
 
 
-=== TEST 26: set empty request body in memory
+=== TEST 24: set empty request body in memory
 --- config
     location = /test {
         rewrite_by_lua '
@@ -717,7 +673,7 @@ hello, world"]
 
 
 
-=== TEST 27: set empty request body in file
+=== TEST 25: set empty request body in file
 --- config
     location = /test {
         rewrite_by_lua '
@@ -745,7 +701,7 @@ hello, world"]
 
 
 
-=== TEST 28: read and set body
+=== TEST 26: read and set body
 --- config
     location /test {
         lua_need_request_body on;
@@ -780,7 +736,7 @@ B=HELLO&A=1&A=2&C=WORLD
 
 
 
-=== TEST 29: read buffered body to memory and reset it with data in memory + proxy twice
+=== TEST 27: read buffered body to memory and reset it with data in memory + proxy twice
 --- config
     location = /test {
         rewrite_by_lua '
@@ -804,7 +760,7 @@ howdy, my dear little sister!
 
 
 
-=== TEST 30: read buffered body to memory and reset it with data in memory and then reset it to file
+=== TEST 28: read buffered body to memory and reset it with data in memory and then reset it to file
 --- config
     location = /test {
         rewrite_by_lua '
@@ -831,7 +787,7 @@ howdy, my dear little sister!
 
 
 
-=== TEST 31: read buffered body to memory and reset it with empty string + proxy twice
+=== TEST 29: read buffered body to memory and reset it with empty string + proxy twice
 --- config
     location = /test {
         rewrite_by_lua '
@@ -854,7 +810,7 @@ hello, world
 
 
 
-=== TEST 32: multi-buffer request body
+=== TEST 30: multi-buffer request body
 --- config
     location /foo {
         default_type text/css;

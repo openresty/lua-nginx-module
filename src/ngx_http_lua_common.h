@@ -69,6 +69,15 @@ typedef struct {
 #endif
 
 
+#define NGX_HTTP_LUA_CONTEXT_SET            0x01
+#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x02
+#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x04
+#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x08
+#define NGX_HTTP_LUA_CONTEXT_LOG            0x10
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x20
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
+
+
 typedef struct {
     lua_State       *lua;
 
@@ -157,6 +166,8 @@ typedef struct {
 
 typedef struct {
     void                    *data;
+
+    uint8_t                  context;
 
     lua_State               *cc;  /*  coroutine to handle request */
 

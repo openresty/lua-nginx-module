@@ -130,6 +130,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
     sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
     sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
     sr_bodies_len   = nsubreqs * sizeof(ngx_str_t);

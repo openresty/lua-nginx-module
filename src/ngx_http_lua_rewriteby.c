@@ -282,6 +282,8 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
     /*  }}} */
 
+    ctx->context = NGX_HTTP_LUA_CONTEXT_REWRITE;
+
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {

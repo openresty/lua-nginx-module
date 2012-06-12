@@ -75,6 +75,10 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "request context is null");
     }
 
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua start to read buffered request body");
 

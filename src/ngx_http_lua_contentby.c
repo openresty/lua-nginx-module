@@ -87,6 +87,8 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
     /*  }}} */
 
+    ctx->context = NGX_HTTP_LUA_CONTEXT_CONTENT;
+
     return ngx_http_lua_run_thread(L, r, ctx, 0);
 }
 
