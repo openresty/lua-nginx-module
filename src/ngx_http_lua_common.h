@@ -158,14 +158,14 @@ typedef struct {
 typedef struct {
     void                    *data;
 
-    lua_State               *cc;                /*  coroutine to handle request */
+    lua_State               *cc;  /*  coroutine to handle request */
 
-    int                      cc_ref;            /*  reference to anchor coroutine in
-                                            the lua registry */
+    int                      cc_ref;  /*  reference to anchor coroutine in
+                                          the lua registry */
 
-    int                      ctx_ref;           /*  reference to anchor
-                                                    request ctx data in lua
-                                                    registry */
+    int                      ctx_ref;  /*  reference to anchor
+                                           request ctx data in lua
+                                           registry */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
