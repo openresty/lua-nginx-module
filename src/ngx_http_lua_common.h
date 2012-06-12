@@ -156,15 +156,16 @@ typedef struct {
 
 
 typedef struct {
-    void            *data;
+    void                    *data;
 
-    lua_State       *cc;                /*  coroutine to handle request */
+    lua_State               *cc;                /*  coroutine to handle request */
 
-    int              cc_ref;            /*  reference to anchor coroutine in
+    int                      cc_ref;            /*  reference to anchor coroutine in
                                             the lua registry */
 
-    int              ctx_ref;           /*  reference to anchor request ctx
-                                            data in lua registry */
+    int                      ctx_ref;           /*  reference to anchor
+                                                    request ctx data in lua
+                                                    registry */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
@@ -179,16 +180,18 @@ typedef struct {
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */
 
-    ngx_int_t       *sr_statuses; /* all capture subrequest statuses */
+    ngx_int_t               *sr_statuses; /* all capture subrequest statuses */
 
-    ngx_http_headers_out_t  **sr_headers;
+    ngx_http_headers_out_t **sr_headers;
 
-    ngx_str_t       *sr_bodies;   /* all captured subrequest bodies */
+    ngx_str_t               *sr_bodies;   /* all captured subrequest bodies */
 
-    ngx_uint_t       index;              /* index of the current subrequest
-                                            in its parent request */
+    ngx_uint_t               index;              /* index of the current
+                                                    subrequest in its parent
+                                                    request */
 
-    unsigned         waiting;     /* number of subrequests being waited */
+    unsigned                 waiting;     /* number of subrequests being
+                                             waited */
 
     ngx_str_t        exec_uri;
     ngx_str_t        exec_args;
