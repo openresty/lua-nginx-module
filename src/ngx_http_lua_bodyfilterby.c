@@ -21,8 +21,7 @@
 #include "ngx_http_lua_shdict.h"
 
 
-static void ngx_http_lua_inject_body_filter_arg_api(lua_State *L,
-       ngx_chain_t *in);
+static void ngx_http_lua_inject_body_filter_arg_api(lua_State *L);
 static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
         ngx_http_request_t *r, ngx_chain_t *in);
 static int ngx_http_lua_body_filter_param_get(lua_State *L);
@@ -31,8 +30,12 @@ static int ngx_http_lua_body_filter_param_get(lua_State *L);
 static ngx_http_output_body_filter_pt ngx_http_next_body_filter;
 
 
-/* light user data key for the "ngx" table in the Lua VM regsitry */
+/* light user data key for the "ngx" table in the Lua VM registry */
 static char ngx_http_lua_bodyfilterby_ngx_key;
+
+/* light user data key for the ngx_chain_t *in pointer in the
+ * Lua VM registory */
+static char ngx_http_lua_bodyfilterby_chain_key;
 
 
 /**
@@ -55,6 +58,12 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
     lua_pushlightuserdata(L, r);
     lua_rawset(L, LUA_GLOBALSINDEX);
 
+    /*  {{{ initialize ngx.* namespace */
+    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_setglobal(L, "ngx");
+    /*  }}} */
+
     /**
      * we want to create empty environment for current script
      *
@@ -68,14 +77,9 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
      * */
     lua_createtable(L, 0 /* narr */, 1 /* nrec */); /*  new empty environment */
 
-    /*  {{{ initialize ngx.* namespace */
-    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    ngx_http_lua_inject_body_filter_arg_api(L, in);
-
-    lua_setfield(L, -2, "ngx");
-    /*  }}} */
+    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_chain_key);
+    lua_pushlightuserdata(L, in);
+    lua_rawset(L, LUA_GLOBALSINDEX);
 
     /*  {{{ make new env inheriting main thread's globals table */
     lua_newtable(L);    /*  the metatable for the new env */
@@ -326,6 +330,8 @@ ngx_http_lua_inject_bodyfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
     lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
     lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
 
+    ngx_http_lua_inject_body_filter_arg_api(L);
+
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
 
@@ -346,15 +352,14 @@ ngx_http_lua_inject_bodyfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
 
 
 static void
-ngx_http_lua_inject_body_filter_arg_api(lua_State *L, ngx_chain_t *in)
+ngx_http_lua_inject_body_filter_arg_api(lua_State *L)
 {
     lua_pushliteral(L, "arg");
     lua_newtable(L); /*  .arg table */
 
     lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
 
-    lua_pushlightuserdata(L, in);
-    lua_pushcclosure(L, ngx_http_lua_body_filter_param_get, 1);
+    lua_pushcfunction(L, ngx_http_lua_body_filter_param_get);
 
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  tie the metatable to param table */
@@ -382,7 +387,14 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
         return 1;
     }
 
-    in = lua_touserdata(L, lua_upvalueindex(1));
+    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_chain_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    in = lua_touserdata(L, -1);
+
+    if (in == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
 
     if (idx == 2) {
         /* asking for the eof argument */

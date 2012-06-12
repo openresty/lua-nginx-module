@@ -67,3 +67,38 @@ chunk: [], eof: true
 --- no_error_log
 [error]
 
+
+
+=== TEST 3: read chunks (user module)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+--- config
+    location /read {
+        echo -n hello world;
+        echo -n hiya globe;
+
+        body_filter_by_lua '
+            local foo = require "foo"
+            foo.go()
+        ';
+    }
+--- user_files
+>>> foo.lua
+module("foo", package.seeall)
+
+function go()
+    -- ngx.say("Hello")
+    local chunk, eof = ngx.arg[1], ngx.arg[2]
+    print("chunk: [", chunk, "], eof: ", eof)
+end
+--- request
+GET /read
+--- response_body chop
+hello worldhiya globe
+--- error_log
+chunk: [hello world], eof: false
+chunk: [hiya globe], eof: false
+chunk: [], eof: true
+--- no_error_log
+[error]
+
