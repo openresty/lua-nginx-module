@@ -469,7 +469,8 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         return luaL_error(L, "expecting 0 or 1 argument but seen %d", n);
     }
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -543,7 +544,8 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
 
     body.data = (u_char *) luaL_checklstring(L, 1, &body.len);
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -605,7 +607,8 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     luaL_checktype(L, 1, LUA_TNUMBER);
     size = lua_tointeger(L, 1);
 
-    lua_getglobal(L, GLOBALS_SYMBOL_REQUEST);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
