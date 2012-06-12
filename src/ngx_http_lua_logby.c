@@ -258,7 +258,7 @@ ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     NGX_LUA_EXCEPTION_TRY {
 
-        /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
+        /* initialize nginx context in Lua VM, code chunk at stack top sp = 1 */
         ngx_http_lua_log_by_lua_env(L, r);
 
 #if (NGX_PCRE)
