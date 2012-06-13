@@ -241,7 +241,9 @@ ok
 --- error_log
 foo = 1
 
-=== TEST 23: no ngx.print
+
+
+=== TEST 12: no ngx.print
 --- config
     location /lua {
         log_by_lua "ngx.print(32) return 1";
@@ -256,7 +258,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 24: no ngx.say
+=== TEST 13: no ngx.say
 --- config
     location /lua {
         log_by_lua "ngx.say(32) return 1";
@@ -271,7 +273,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 25: no ngx.flush
+=== TEST 14: no ngx.flush
 --- config
     location /lua {
         log_by_lua "ngx.flush()";
@@ -286,7 +288,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 26: no ngx.eof
+=== TEST 15: no ngx.eof
 --- config
     location /lua {
         log_by_lua "ngx.eof()";
@@ -301,7 +303,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 27: no ngx.send_headers
+=== TEST 16: no ngx.send_headers
 --- config
     location /lua {
         log_by_lua "ngx.send_headers()";
@@ -316,7 +318,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 28: no ngx.location.capture
+=== TEST 17: no ngx.location.capture
 --- config
     location /lua {
         log_by_lua 'ngx.location.capture("/sub")';
@@ -335,7 +337,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 29: no ngx.location.capture_multi
+=== TEST 18: no ngx.location.capture_multi
 --- config
     location /lua {
         log_by_lua 'ngx.location.capture_multi{{"/sub"}}';
@@ -354,7 +356,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 30: no ngx.exit
+=== TEST 19: no ngx.exit
 --- config
     location /lua {
         log_by_lua 'ngx.exit(0)';
@@ -369,7 +371,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 31: no ngx.redirect
+=== TEST 20: no ngx.redirect
 --- config
     location /lua {
         log_by_lua 'ngx.redirect("/blah")';
@@ -384,7 +386,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 32: no ngx.exec
+=== TEST 21: no ngx.exec
 --- config
     location /lua {
         log_by_lua 'ngx.exec("/blah")';
@@ -399,7 +401,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 33: no ngx.req.set_uri(uri, true)
+=== TEST 22: no ngx.req.set_uri(uri, true)
 --- config
     location /lua {
         log_by_lua 'ngx.req.set_uri("/blah", true)';
@@ -414,7 +416,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 34: ngx.req.set_uri(uri) exists
+=== TEST 23: ngx.req.set_uri(uri) exists
 --- config
     location /lua {
         log_by_lua 'ngx.req.set_uri("/blah") print("log_by_lua: uri: ", ngx.var.uri)';
@@ -429,7 +431,7 @@ log_by_lua: uri: /blah
 
 
 
-=== TEST 35: no ngx.req.read_body()
+=== TEST 24: no ngx.req.read_body()
 --- config
     location /lua {
         log_by_lua 'ngx.req.read_body()';
@@ -444,7 +446,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 36: no ngx.req.socket()
+=== TEST 25: no ngx.req.socket()
 --- config
     location /lua {
         log_by_lua 'return ngx.req.socket()';
@@ -459,7 +461,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 37: no ngx.socket.tcp()
+=== TEST 26: no ngx.socket.tcp()
 --- config
     location /lua {
         log_by_lua 'return ngx.socket.tcp()';
@@ -474,7 +476,7 @@ API disabled in the context of log_by_lua*
 
 
 
-=== TEST 38: no ngx.socket.connect()
+=== TEST 27: no ngx.socket.connect()
 --- config
     location /lua {
         log_by_lua 'return ngx.socket.connect("127.0.0.1", 80)';

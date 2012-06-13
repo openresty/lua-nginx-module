@@ -85,12 +85,9 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_int_t        rc;
     u_char          *err_msg;
     size_t           len;
-    int              old_top;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
-
-    old_top = lua_gettop(L);
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_header_filter_by_lua_env(L, r);
@@ -120,13 +117,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "failed to run header_filter_by_lua*: %*s", len, err_msg);
 
-        lua_settop(L, old_top);    /*  clear remaining elems on stack */
+        lua_settop(L, 0); /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
     /*  clear Lua stack */
-    lua_settop(L, old_top);
+    lua_settop(L, 0);
 
     return NGX_OK;
 }

@@ -640,6 +640,7 @@ $s
             ngx.ctx.cnt = tostring(t)
         ';
         content_by_lua '
+            ngx.send_headers()
             ngx.print(ngx.ctx.cnt or 0)
         ';
     }
