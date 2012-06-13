@@ -62,6 +62,7 @@ static int ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1);
 static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
 static int ngx_http_lua_param_get(lua_State *L);
+static int ngx_http_lua_param_set(lua_State *L);
 
 
 #ifndef LUA_PATH_SEP
@@ -2281,14 +2282,21 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
             ngx_pfree(p, b->start);
         }
 
-        b->start = ngx_palloc(p, len);
-        if (b->start == NULL) {
-            return NULL;
+        if (len) {
+            b->start = ngx_palloc(p, len);
+            if (b->start == NULL) {
+                return NULL;
+            }
+
+            b->end = b->start + len;
+
+        } else {
+            b->last = NULL;
+            b->end = NULL;
         }
 
         dd("buf start: %p", cl->buf->start);
 
-        b->end = b->start + len;
         b->pos = b->start;
         b->last = b->start;
         b->tag = tag;
@@ -2385,11 +2393,14 @@ ngx_http_lua_inject_arg_api(lua_State *L)
     lua_pushliteral(L, "arg");
     lua_newtable(L);    /*  .arg table aka {} */
 
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
+    lua_createtable(L, 0 /* narr */, 2 /* nrec */);    /*  the metatable */
 
     lua_pushcfunction(L, ngx_http_lua_param_get);
-
     lua_setfield(L, -2, "__index");
+
+    lua_pushcfunction(L, ngx_http_lua_param_set);
+    lua_setfield(L, -2, "__newindex");
+
     lua_setmetatable(L, -2);    /*  tie the metatable to param table */
 
     dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
@@ -2428,5 +2439,31 @@ ngx_http_lua_param_get(lua_State *L)
     /* ctx->context & (NGX_HTTP_LUA_CONTEXT_BODY_FILTER) */
 
     return ngx_http_lua_body_filter_param_get(L);
+}
+
+
+static int
+ngx_http_lua_param_set(lua_State *L)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_request_t          *r;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "ctx not found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_BODY_FILTER);
+
+    return ngx_http_lua_body_filter_param_set(L, r, ctx);
 }
 

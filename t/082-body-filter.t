@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 6);
+plan tests => repeat_each() * (blocks() * 3 + 9);
 
 #no_diff();
 #no_long_string();
@@ -99,6 +99,162 @@ hello worldhiya globe
 chunk: [hello world], eof: false
 chunk: [hiya globe], eof: false
 chunk: [], eof: true
+--- no_error_log
+[error]
+
+
+
+=== TEST 4: rewrite chunks (upper all)
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            ngx.arg[1] = string.upper(ngx.arg[1])
+        ';
+    }
+--- request
+GET /t
+--- response_body
+HELLO WORLD
+HIYA GLOBE
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: rewrite chunks (truncate data)
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk = ngx.arg[1]
+            if string.match(chunk, "hello") then
+                ngx.arg[1] = string.upper(chunk)
+                ngx.arg[2] = true
+                return
+            end
+
+            ngx.arg[1] = nil
+        ';
+    }
+--- request
+GET /t
+--- response_body
+HELLO WORLD
+--- no_error_log
+[error]
+
+
+
+=== TEST 6: set eof back and forth
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk = ngx.arg[1]
+            if string.match(chunk, "hello") then
+                ngx.arg[1] = string.upper(chunk)
+                ngx.arg[2] = true
+                ngx.arg[2] = false
+                ngx.arg[2] = true
+                return
+            end
+
+            ngx.arg[1] = nil
+            ngx.arg[2] = true
+            ngx.arg[2] = false
+        ';
+    }
+--- request
+GET /t
+--- response_body
+HELLO WORLD
+--- no_error_log
+[error]
+
+
+
+=== TEST 7: set eof to original
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            ngx.arg[2] = eof
+        ';
+    }
+--- request
+GET /t
+--- response_body
+hello world
+hiya globe
+--- no_error_log
+[error]
+
+
+=== TEST 6: fully buffered output
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            local buf = ngx.ctx.buf
+
+            if eof then
+                if buf then
+                    ngx.arg[1] = "[" .. buf .. chunk .. "]"
+                    return
+                end
+
+                return
+            end
+
+            if buf then
+                ngx.ctx.buf = buf .. chunk
+            else
+                ngx.ctx.buf = chunk
+            end
+
+            ngx.arg[1] = nil
+        ';
+    }
+--- request
+GET /t
+--- response_body chop
+[hello world
+hiya globe
+]
+--- no_error_log
+[error]
+
+
+
+=== TEST 7: set eof to original
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            ngx.arg[2] = eof
+        ';
+    }
+--- request
+GET /t
+--- response_body
+hello world
+hiya globe
 --- no_error_log
 [error]
 

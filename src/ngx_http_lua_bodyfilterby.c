@@ -109,7 +109,9 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
 #endif
 
     if (rc != 0) {
-        /*  error occured when running loaded code */
+        /* TODO: check for ngx.exit() exceptions */
+
+        /*  error occured */
         err_msg = (u_char *) lua_tolstring(L, -1, &len);
 
         if (err_msg == NULL) {
@@ -241,6 +243,10 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_int_t                    rc;
     uint8_t                      old_context;
     ngx_http_cleanup_t          *cln;
+    ngx_http_lua_main_conf_t    *lmcf;
+    lua_State                   *L;
+    ngx_chain_t                 *out;
+    ngx_buf_tag_t                tag;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua body filter for user lua code, uri \"%V\"", &r->uri);
@@ -298,7 +304,36 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-    return ngx_http_next_body_filter(r, in);
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    L = lmcf->lua;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    out = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (in == out) {
+        return ngx_http_next_body_filter(r, in);
+    }
+
+    /* in != out */
+    rc = ngx_http_next_body_filter(r, out);
+
+    if (rc == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+
+#if nginx_version >= 1001004
+    ngx_chain_update_chains(r->pool,
+#else
+    ngx_chain_update_chains(
+#endif
+                            &ctx->free_bufs, &ctx->busy_bufs, &out, tag);
+
+    return rc;
 }
 
 
@@ -357,6 +392,11 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
     /* idx == 1 */
 
+    if (in == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
+
     size = 0;
 
     if (in->next == NULL) {
@@ -393,5 +433,154 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
     lua_pushlstring(L, (char *) data, size);
     return 1;
+}
+
+
+int
+ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
+        ngx_http_lua_ctx_t *ctx)
+{
+    int                      type;
+    int                      idx;
+    u_char                  *data;
+    size_t                   size;
+    unsigned                 last;
+    ngx_chain_t             *cl;
+    ngx_chain_t             *in;
+    ngx_buf_tag_t            tag;
+
+    idx = luaL_checkint(L, 2);
+
+    dd("index: %d", idx);
+
+    if (idx != 1 && idx != 2) {
+        return luaL_error(L, "bad index: %d", idx);
+    }
+
+    if (idx == 2) {
+        /* overwriting the eof flag */
+        last = lua_toboolean(L, 3);
+
+        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+        lua_rawget(L, LUA_GLOBALSINDEX);
+        in = lua_touserdata(L, -1);
+
+        if (last) {
+            if (in) {
+                for (cl = in; cl; cl = cl->next) {
+                    if (cl->next == NULL) {
+                        cl->buf->last_buf = 1;
+                        break;
+                    }
+                }
+
+            } else {
+                tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+
+                cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                                      &ctx->free_bufs, 0, tag);
+                if (cl == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                cl->buf->last_buf = 1;
+
+                lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+                lua_pushlightuserdata(L, cl);
+                lua_rawset(L, LUA_GLOBALSINDEX);
+            }
+
+        } else {
+            /* last == 0 */
+
+            if (in) {
+                for (cl = in; cl; cl = cl->next) {
+                    if (cl->buf->last_buf) {
+                        cl->buf->last_buf = 0;
+                    }
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /* idx == 1, overwriting the chunk data */
+
+    type = lua_type(L, 3);
+
+    switch (type) {
+    case LUA_TSTRING:
+    case LUA_TNUMBER:
+        data = (u_char *) lua_tolstring(L, 3, &size);
+        break;
+
+    case LUA_TNIL:
+        /* discard the buffers */
+        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+        lua_pushlightuserdata(L, NULL);
+        lua_rawset(L, LUA_GLOBALSINDEX);
+        return 0;
+
+    default:
+        return luaL_error(L, "bad chunk data type: %s",
+                          lua_typename(L, type));
+    }
+
+    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    in = lua_touserdata(L, -1);
+
+    last = 0;
+    for (cl = in; cl; cl = cl->next) {
+        if (cl->buf->last_buf) {
+            last = 1;
+        }
+
+        /* mark the buf as consumed */
+        cl->buf->pos = cl->buf->last;
+    }
+
+    if (size == 0) {
+        if (last) {
+            if (in) {
+                in->buf->last_buf = 1;
+
+            } else {
+
+                tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+
+                cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                                      &ctx->free_bufs, 0, tag);
+                if (cl == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                cl->buf->last_buf = 1;
+
+                lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+                lua_pushlightuserdata(L, cl);
+                lua_rawset(L, LUA_GLOBALSINDEX);
+            }
+        }
+
+        return 0;
+    }
+
+    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
+
+    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
+                                          &ctx->free_bufs, size, tag);
+    if (cl == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    cl->buf->last = ngx_copy(cl->buf->pos, data, size);
+    cl->buf->last_buf = last;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+    lua_pushlightuserdata(L, cl);
+    lua_rawset(L, LUA_GLOBALSINDEX);
+    return 0;
 }
 
