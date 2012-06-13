@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 3 + 5);
 
 #no_diff();
 #no_long_string();
@@ -200,7 +200,29 @@ hiya globe
 [error]
 
 
-=== TEST 6: fully buffered output
+
+=== TEST 8: set eof to original
+--- config
+    location /t {
+        echo hello world;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            ngx.arg[2] = eof
+        ';
+    }
+--- request
+GET /t
+--- response_body
+hello world
+hiya globe
+--- no_error_log
+[error]
+
+
+
+=== TEST 9: fully buffered output (string scalar)
 --- config
     location /t {
         echo hello world;
@@ -239,7 +261,7 @@ hiya globe
 
 
 
-=== TEST 7: set eof to original
+=== TEST 10: fully buffered output (string table)
 --- config
     location /t {
         echo hello world;
@@ -247,14 +269,78 @@ hiya globe
 
         body_filter_by_lua '
             local chunk, eof = ngx.arg[1], ngx.arg[2]
-            ngx.arg[2] = eof
+            local buf = ngx.ctx.buf
+
+            if eof then
+                if buf then
+                    ngx.arg[1] = {"[", buf, chunk, "]"}
+                    return
+                end
+
+                return
+            end
+
+            if buf then
+                ngx.ctx.buf = {buf, chunk}
+            else
+                ngx.ctx.buf = chunk
+            end
+
+            ngx.arg[1] = nil
         ';
     }
 --- request
 GET /t
---- response_body
-hello world
+--- response_body chop
+[hello world
 hiya globe
+]
 --- no_error_log
 [error]
+
+
+
+=== TEST 11: abort via user error (string)
+--- config
+    location /t {
+        echo hello world;
+        echo_flush;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            if eof then
+                error("something bad happened!")
+            end
+        ';
+    }
+--- request
+GET /t
+--- ignore_response
+hello world
+--- error_log
+failed to run body_filter_by_lua*: [string "body_filter_by_lua"]:4: something bad happened!
+
+
+
+=== TEST 12: abort via user error (nil)
+--- config
+    location /t {
+        echo hello world;
+        echo_flush;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            if eof then
+                error(nil)
+            end
+        ';
+    }
+--- request
+GET /t
+--- ignore_response
+hello world
+--- error_log
+failed to run body_filter_by_lua*: unknown reason
 

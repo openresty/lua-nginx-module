@@ -18,7 +18,7 @@
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
-#include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_output.h"
 
 
 static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
@@ -477,8 +477,10 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             } else {
                 tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
-                cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                                      &ctx->free_bufs, 0, tag);
+                cl = ngx_http_lua_chains_get_free_buf(r->connection->log,
+                                                      r->pool, &ctx->free_bufs,
+                                                      0, tag);
+
                 if (cl == NULL) {
                     return luaL_error(L, "out of memory");
                 }
@@ -522,6 +524,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         lua_rawset(L, LUA_GLOBALSINDEX);
         return 0;
 
+    case LUA_TTABLE:
+        size = ngx_http_lua_calc_strlen_in_table(L, 3 /* index */,
+                                                 1 /* strict */);
+        data = NULL;
+        break;
+
     default:
         return luaL_error(L, "bad chunk data type: %s",
                           lua_typename(L, type));
@@ -530,6 +538,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
     in = lua_touserdata(L, -1);
+    lua_pop(L, 1);
 
     last = 0;
     for (cl = in; cl; cl = cl->next) {
@@ -550,8 +559,10 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
                 tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
-                cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                                      &ctx->free_bufs, 0, tag);
+                cl = ngx_http_lua_chains_get_free_buf(r->connection->log,
+                                                      r->pool, &ctx->free_bufs,
+                                                      0, tag);
+
                 if (cl == NULL) {
                     return luaL_error(L, "out of memory");
                 }
@@ -575,7 +586,13 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         return luaL_error(L, "out of memory");
     }
 
-    cl->buf->last = ngx_copy(cl->buf->pos, data, size);
+    if (type == LUA_TTABLE) {
+        cl->buf->last = ngx_http_lua_copy_str_in_table(L, cl->buf->last);
+
+    } else {
+        cl->buf->last = ngx_copy(cl->buf->pos, data, size);
+    }
+
     cl->buf->last_buf = last;
 
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
