@@ -7,10 +7,9 @@ use Test::Nginx::Socket;
 #master_on();
 log_level('debug');
 
-#repeat_each(120);
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 19);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -579,4 +578,98 @@ $s
 ["GET /test", "GET /test", "GET /test"]
 --- response_body eval
 ["0", "0", "0"]
+
+
+
+=== TEST 27: unexpected globals sharing by using _G (set_by_lua*)
+--- config
+    location /test {
+        set_by_lua $a '
+            if _G.t then
+                _G.t = _G.t + 1
+            else
+                _G.t = 0
+            end
+            return t
+        ';
+        echo -n $a;
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test", "GET /test"]
+--- response_body eval
+["0", "0", "0"]
+
+
+
+=== TEST 28: unexpected globals sharing by using _G (log_by_lua*)
+--- http_config
+    lua_shared_dict log_dict 100k;
+--- config
+    location /test {
+        content_by_lua '
+            local log_dict = ngx.shared.log_dict
+            ngx.print(log_dict:get("cnt") or 0)
+        ';
+
+        log_by_lua '
+            local log_dict = ngx.shared.log_dict
+            if _G.t then
+                _G.t = _G.t + 1
+            else
+                _G.t = 0
+            end
+            log_dict:set("cnt", t)
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test", "GET /test"]
+--- response_body eval
+["0", "0", "0"]
+
+
+
+=== TEST 29: unexpected globals sharing by using _G (header_filter_by_lua*)
+--- config
+    location /test {
+        header_filter_by_lua '
+            if _G.t then
+                _G.t = _G.t + 1
+            else
+                _G.t = 0
+            end
+            ngx.ctx.cnt = tostring(t)
+        ';
+        content_by_lua '
+            ngx.print(ngx.ctx.cnt or 0)
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test", "GET /test"]
+--- response_body eval
+["0", "0", "0"]
+
+
+
+=== TEST 30: unexpected globals sharing by using _G (body_filter_by_lua*)
+--- config
+    location /test {
+        body_filter_by_lua '
+            if _G.t then
+                _G.t = _G.t + 1
+            else
+                _G.t = 0
+            end
+            ngx.ctx.cnt = _G.t
+        ';
+        content_by_lua '
+            ngx.print("a")
+            ngx.say(ngx.ctx.cnt or 0)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+a0
+--- no_error_log
+[error]
 

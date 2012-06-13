@@ -17,17 +17,16 @@
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_util.h"
 
 
-static void ngx_http_lua_inject_setby_arg_api(lua_State *L,
-       size_t nargs,  ngx_http_variable_value_t *args);
-static int ngx_http_lua_setby_param_get(lua_State *L);
 static void ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r,
         size_t nargs, ngx_http_variable_value_t *args);
 
 
-/* light user data key for the "ngx" table in the Lua VM regsitry */
-static char ngx_http_lua_setby_ngx_key;
+/* chars whose addresses are used as keys in Lua VM regsitry */
+static char ngx_http_lua_setby_nargs_key;
+static char ngx_http_lua_setby_args_key;
 
 
 ngx_int_t
@@ -77,6 +76,8 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         cln->data = r;
         ctx->cleanup = &cln->handler;
     }
+
+    ctx->context = NGX_HTTP_LUA_CONTEXT_SET;
 
     dd("set Lua VM panic handler");
 
@@ -152,30 +153,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 }
 
 
-static void
-ngx_http_lua_inject_setby_arg_api(lua_State *L, size_t nargs,
-        ngx_http_variable_value_t *args)
-{
-    lua_pushliteral(L, "arg");
-    lua_newtable(L);    /*  .arg table aka {} */
-
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
-    lua_pushinteger(L, nargs);    /*  1st upvalue: argument number */
-    lua_pushlightuserdata(L, args);    /*  2nd upvalue: pointer to arguments */
-
-    lua_pushcclosure(L, ngx_http_lua_setby_param_get, 2);
-        /*  binding upvalues to __index meta-method closure */
-
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
-
-    dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
-
-    lua_rawset(L, -3);    /*  set ngx.arg table */
-}
-
-
-static int
+int
 ngx_http_lua_setby_param_get(lua_State *L)
 {
     int         idx;
@@ -186,11 +164,15 @@ ngx_http_lua_setby_param_get(lua_State *L)
     idx = luaL_checkint(L, 2);
     idx--;
 
-    /*  get number of args from closure */
-    n = luaL_checkint(L, lua_upvalueindex(1));
+    /*  get number of args from globals */
+    lua_pushlightuserdata(L, &ngx_http_lua_setby_nargs_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    n = (int) lua_tointeger(L, -1);
 
-    /*  get args from closure */
-    v = lua_touserdata(L, lua_upvalueindex(2));
+    /*  get args from globals */
+    lua_pushlightuserdata(L, &ngx_http_lua_setby_args_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    v = lua_touserdata(L, -1);
 
     if (idx < 0 || idx > n - 1) {
         lua_pushnil(L);
@@ -223,10 +205,20 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     lua_pushlightuserdata(L, r);
     lua_rawset(L, LUA_GLOBALSINDEX);
 
+    lua_pushlightuserdata(L, &ngx_http_lua_setby_nargs_key);
+    lua_pushinteger(L, nargs);
+    lua_rawset(L, LUA_GLOBALSINDEX);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_setby_args_key);
+    lua_pushlightuserdata(L, args);
+    lua_rawset(L, LUA_GLOBALSINDEX);
+
     /**
      * we want to create empty environment for current script
      *
-     * setmetatable({}, {__index = _G})
+     * newt = {}
+     * newt["_G"] = newt
+     * setmetatable(newt, {__index = _G})
      *
      * if a function or symbol is not defined in our env, __index will lookup
      * in the global env.
@@ -234,59 +226,16 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);  /* new empty environment */
-
-    /*  {{{ initialize ngx.* namespace */
-    lua_pushlightuserdata(L, &ngx_http_lua_setby_ngx_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
-
-    ngx_http_lua_inject_setby_arg_api(L, nargs, args);
-
-    dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
-
-    lua_setfield(L, -2, "ngx");
-    /*  }}} */
+    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
     /* the metatable for the new env */
     lua_createtable(L, 0 /* narr */, 1 /* nrec */);
     lua_pushvalue(L, LUA_GLOBALSINDEX);
     lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
+    lua_setmetatable(L, -2);    /*  setmetatable(newt, {__index = _G}) */
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
-}
-
-
-void
-ngx_http_lua_inject_setby_ngx_api(ngx_conf_t *cf, lua_State *L)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_setby_ngx_key);
-    lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
-
-    ngx_http_lua_inject_core_consts(L);
-    ngx_http_lua_inject_http_consts(L);
-
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_http_consts(L);
-    ngx_http_lua_inject_core_consts(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-    ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_req_api_no_io(cf->log, L);
-#if (NGX_PCRE)
-    ngx_http_lua_inject_regex_api(L);
-#endif
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_misc_api(L);
-
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 

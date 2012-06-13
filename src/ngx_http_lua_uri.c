@@ -88,30 +88,22 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     if (jump) {
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-#if defined(DDEBUG) && DDEBUG
-        if (ctx) {
-            dd("rewrite: %d, access: %d, content: %d",
-                    (int) ctx->entered_rewrite_phase,
-                    (int) ctx->entered_access_phase,
-                    (int) ctx->entered_content_phase);
-        }
-#endif
-
-        if (ctx && ctx->entered_rewrite_phase
-            && !ctx->entered_access_phase
-            && !ctx->entered_content_phase)
-        {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua set uri jump to \"%V\"", &r->uri);
-
-            r->uri_changed = 1;
-            return lua_yield(L, 0);
+        if (ctx == NULL) {
+            return luaL_error(L, "no ctx found");
         }
 
-        return luaL_error(L, "attempt to call ngx.req.set_uri to do "
-                "location jump in contexts other than rewrite_by_lua and "
-                "rewrite_by_lua_file");
+        dd("rewrite: %d, access: %d, content: %d",
+                (int) ctx->entered_rewrite_phase,
+                (int) ctx->entered_access_phase,
+                (int) ctx->entered_content_phase);
+
+        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE);
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua set uri jump to \"%V\"", &r->uri);
+
+        r->uri_changed = 1;
+        return lua_yield(L, 0);
     }
 
     r->valid_location = 0;

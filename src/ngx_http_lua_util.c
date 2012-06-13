@@ -41,6 +41,7 @@ char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_request_key;
 
+
 /*  coroutine anchoring table key in Lua vm registry */
 static char ngx_http_lua_coroutines_key;
 
@@ -59,6 +60,8 @@ static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
 static int ngx_http_lua_ngx_check_aborted(lua_State *L);
 static int debug_traceback(lua_State *L, lua_State *L1);
 static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
+static void ngx_http_lua_inject_arg_api(lua_State *L);
+static int ngx_http_lua_param_get(lua_State *L);
 
 
 #ifndef LUA_PATH_SEP
@@ -103,6 +106,22 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
     /* fix negative index as there's new data on stack */
     tab_idx = (tab_idx < 0) ? (tab_idx - 1) : tab_idx;
     lua_setfield(L, tab_idx, fieldname);
+}
+
+
+/**
+ * Create new table and set _G field to itself.
+ *
+ * After:
+ *         | new table | <- top
+ *         |    ...    |
+ * */
+void
+ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
+{
+    lua_createtable(L, narr, nrec + 1);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "_G");
 }
 
 
@@ -218,7 +237,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
          *  globals table.
          */
         /*  new globals table for coroutine */
-        lua_newtable(cr);
+        ngx_http_lua_create_new_global_table(cr, 0, 0);
 
         lua_createtable(cr, 0, 1);
         lua_pushvalue(cr, LUA_GLOBALSINDEX);
@@ -227,10 +246,6 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
         lua_replace(cr, LUA_GLOBALSINDEX);
         /*  }}} */
-
-        /*  overwrite _G to new globals table */
-        lua_pushvalue(cr, LUA_GLOBALSINDEX);
-        lua_setglobal(cr, "_G");
 
         *ref = luaL_ref(L, -2);
 
@@ -526,8 +541,6 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
 static void
 ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 {
-    ngx_http_lua_main_conf_t    *lmcf;
-
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua globals");
 
@@ -536,23 +549,7 @@ ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
     lua_setfield(L, LUA_GLOBALSINDEX, "coroutine");
     /* }}} */
 
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    if (lmcf->requires_header_filter) {
-        ngx_http_lua_inject_headerfilterby_ngx_api(cf, L);
-    }
-
-    if (lmcf->requires_body_filter) {
-        ngx_http_lua_inject_bodyfilterby_ngx_api(cf, L);
-    }
-
-    if (lmcf->requires_log) {
-        ngx_http_lua_inject_logby_ngx_api(cf, L);
-    }
-
 #if defined(NDK) && NDK
-    ngx_http_lua_inject_setby_ngx_api(cf, L);
-
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
@@ -567,9 +564,11 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 87 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 88 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_internal_utils(cf->log, L);
+
+    ngx_http_lua_inject_arg_api(L);
 
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
@@ -1689,23 +1688,6 @@ done:
 
 
 void
-ngx_http_lua_inject_req_api_no_io(ngx_log_t *log, lua_State *L)
-{
-    /* ngx.req table */
-
-    lua_createtable(L, 0 /* narr */, 9 /* nrec */);    /* .req */
-
-    ngx_http_lua_inject_req_header_api(L);
-
-    ngx_http_lua_inject_req_uri_api(log, L);
-
-    ngx_http_lua_inject_req_args_api(L);
-
-    lua_setfield(L, -2, "req");
-}
-
-
-void
 ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
@@ -2338,7 +2320,8 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 
 static int
-debug_traceback(lua_State *L, lua_State *L1) {
+debug_traceback(lua_State *L, lua_State *L1)
+{
     int         arg = 0;
     int         level = 0;
     int         firstpart = 1;  /* still before eventual `...' */
@@ -2393,5 +2376,57 @@ debug_traceback(lua_State *L, lua_State *L1) {
 
     lua_concat(L, lua_gettop(L) - arg);
     return 1;
+}
+
+
+static void
+ngx_http_lua_inject_arg_api(lua_State *L)
+{
+    lua_pushliteral(L, "arg");
+    lua_newtable(L);    /*  .arg table aka {} */
+
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
+
+    lua_pushcfunction(L, ngx_http_lua_param_get);
+
+    lua_setfield(L, -2, "__index");
+    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
+
+    dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
+
+    lua_rawset(L, -3);    /*  set ngx.arg table */
+}
+
+
+static int
+ngx_http_lua_param_get(lua_State *L)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_request_t          *r;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "ctx not found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_SET
+                               | NGX_HTTP_LUA_CONTEXT_BODY_FILTER);
+
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SET)) {
+        return ngx_http_lua_setby_param_get(L);
+    }
+
+    /* ctx->context & (NGX_HTTP_LUA_CONTEXT_BODY_FILTER) */
+
+    return ngx_http_lua_body_filter_param_get(L);
 }
 

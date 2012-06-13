@@ -21,7 +21,7 @@ ngx_int_t ngx_http_lua_body_filter_inline(ngx_http_request_t *r,
 ngx_int_t ngx_http_lua_body_filter_file(ngx_http_request_t *r,
         ngx_chain_t *in);
 
-void ngx_http_lua_inject_bodyfilterby_ngx_api(ngx_conf_t *cf, lua_State *L);
+int ngx_http_lua_body_filter_param_get(lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_BODYFILTERBY_H */

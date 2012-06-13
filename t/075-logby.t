@@ -241,3 +241,249 @@ ok
 --- error_log
 foo = 1
 
+=== TEST 23: no ngx.print
+--- config
+    location /lua {
+        log_by_lua "ngx.print(32) return 1";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 24: no ngx.say
+--- config
+    location /lua {
+        log_by_lua "ngx.say(32) return 1";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 25: no ngx.flush
+--- config
+    location /lua {
+        log_by_lua "ngx.flush()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 26: no ngx.eof
+--- config
+    location /lua {
+        log_by_lua "ngx.eof()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 27: no ngx.send_headers
+--- config
+    location /lua {
+        log_by_lua "ngx.send_headers()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 28: no ngx.location.capture
+--- config
+    location /lua {
+        log_by_lua 'ngx.location.capture("/sub")';
+        echo ok;
+    }
+
+    location /sub {
+        echo sub;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 29: no ngx.location.capture_multi
+--- config
+    location /lua {
+        log_by_lua 'ngx.location.capture_multi{{"/sub"}}';
+        echo ok;
+    }
+
+    location /sub {
+        echo sub;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 30: no ngx.exit
+--- config
+    location /lua {
+        log_by_lua 'ngx.exit(0)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 31: no ngx.redirect
+--- config
+    location /lua {
+        log_by_lua 'ngx.redirect("/blah")';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 32: no ngx.exec
+--- config
+    location /lua {
+        log_by_lua 'ngx.exec("/blah")';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 33: no ngx.req.set_uri(uri, true)
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.set_uri("/blah", true)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 34: ngx.req.set_uri(uri) exists
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.set_uri("/blah") print("log_by_lua: uri: ", ngx.var.uri)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+log_by_lua: uri: /blah
+
+
+
+=== TEST 35: no ngx.req.read_body()
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.read_body()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 36: no ngx.req.socket()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.req.socket()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 37: no ngx.socket.tcp()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.socket.tcp()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 38: no ngx.socket.connect()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.socket.connect("127.0.0.1", 80)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+

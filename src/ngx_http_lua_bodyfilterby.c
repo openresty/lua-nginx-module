@@ -21,21 +21,16 @@
 #include "ngx_http_lua_shdict.h"
 
 
-static void ngx_http_lua_inject_body_filter_arg_api(lua_State *L);
 static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
         ngx_http_request_t *r, ngx_chain_t *in);
-static int ngx_http_lua_body_filter_param_get(lua_State *L);
 
 
 static ngx_http_output_body_filter_pt ngx_http_next_body_filter;
 
 
-/* light user data key for the "ngx" table in the Lua VM registry */
-static char ngx_http_lua_bodyfilterby_ngx_key;
-
 /* light user data key for the ngx_chain_t *in pointer in the
  * Lua VM registory */
-static char ngx_http_lua_bodyfilterby_chain_key;
+static char ngx_http_lua_body_filter_chain_key;
 
 
 /**
@@ -58,11 +53,9 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
     lua_pushlightuserdata(L, r);
     lua_rawset(L, LUA_GLOBALSINDEX);
 
-    /*  {{{ initialize ngx.* namespace */
-    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_setglobal(L, "ngx");
-    /*  }}} */
+    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+    lua_pushlightuserdata(L, in);
+    lua_rawset(L, LUA_GLOBALSINDEX);
 
     /**
      * we want to create empty environment for current script
@@ -75,11 +68,7 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /*  new empty environment */
-
-    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_chain_key);
-    lua_pushlightuserdata(L, in);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
     lua_newtable(L);    /*  the metatable for the new env */
@@ -99,14 +88,11 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
     ngx_int_t        rc;
     u_char          *err_msg;
     size_t           len;
-    int              old_top;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
 
-    old_top = lua_gettop(L);
-
-    /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
+    dd("initialize nginx context in Lua VM, code chunk at stack top  sp = 1");
     ngx_http_lua_body_filter_by_lua_env(L, r, in);
 
 #if (NGX_PCRE)
@@ -114,7 +100,7 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
     old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
-    /*  protected call user code */
+    dd("protected call user code");
     rc = lua_pcall(L, 0, 1, 0);
 
 #if (NGX_PCRE)
@@ -134,13 +120,13 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "failed to run body_filter_by_lua*: %*s", len, err_msg);
 
-        lua_settop(L, old_top);    /*  clear remaining elems on stack */
+        lua_settop(L, 0);    /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
     /* clear Lua stack */
-    lua_settop(L, old_top);
+    lua_settop(L, 0);
 
     return NGX_OK;
 }
@@ -253,6 +239,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
+    uint8_t                      old_context;
     ngx_http_cleanup_t          *cln;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -298,8 +285,14 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ctx->cleanup = &cln->handler;
     }
 
+    old_context = ctx->context;
+    ctx->context = NGX_HTTP_LUA_CONTEXT_BODY_FILTER;
+
     dd("calling body filter handler");
     rc = llcf->body_filter_handler(r, in);
+
+    ctx->context = old_context;
+
     if (rc != NGX_OK) {
         dd("calling body filter handler rc %d", (int)rc);
         return NGX_ERROR;
@@ -320,55 +313,7 @@ ngx_http_lua_body_filter_init()
 }
 
 
-void
-ngx_http_lua_inject_bodyfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_ngx_key);
-    lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
-
-    ngx_http_lua_inject_body_filter_arg_api(L);
-
-    ngx_http_lua_inject_http_consts(L);
-    ngx_http_lua_inject_core_consts(L);
-
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-#if (NGX_PCRE)
-    ngx_http_lua_inject_regex_api(L);
-#endif
-    ngx_http_lua_inject_req_api_no_io(cf->log, L);
-    ngx_http_lua_inject_resp_header_api(L);
-    ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_misc_api(L);
-
-    lua_rawset(L, LUA_REGISTRYINDEX);
-}
-
-
-static void
-ngx_http_lua_inject_body_filter_arg_api(lua_State *L)
-{
-    lua_pushliteral(L, "arg");
-    lua_newtable(L); /*  .arg table */
-
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /*  the metatable */
-
-    lua_pushcfunction(L, ngx_http_lua_body_filter_param_get);
-
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
-
-    lua_rawset(L, -3);    /*  set ngx.arg table */
-}
-
-
-static int
+int
 ngx_http_lua_body_filter_param_get(lua_State *L)
 {
     u_char              *data, *p;
@@ -387,7 +332,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
         return 1;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_bodyfilterby_chain_key);
+    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
     in = lua_touserdata(L, -1);
 
