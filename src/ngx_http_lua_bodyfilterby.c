@@ -109,7 +109,6 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
 #endif
 
     if (rc != 0) {
-        /* TODO: check for ngx.exit() exceptions */
 
         /*  error occured */
         err_msg = (u_char *) lua_tolstring(L, -1, &len);
@@ -127,8 +126,17 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    /* clear Lua stack */
+    /* rc == 0 */
+
+    rc = (ngx_int_t) lua_tointeger(L, -1);
+
+    dd("got return value: %d", (int) rc);
+
     lua_settop(L, 0);
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
@@ -297,10 +305,11 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     dd("calling body filter handler");
     rc = llcf->body_filter_handler(r, in);
 
+    dd("calling body filter handler returned %d", (int) rc);
+
     ctx->context = old_context;
 
     if (rc != NGX_OK) {
-        dd("calling body filter handler rc %d", (int)rc);
         return NGX_ERROR;
     }
 

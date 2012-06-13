@@ -317,7 +317,6 @@ hiya globe
 --- request
 GET /t
 --- ignore_response
-hello world
 --- error_log
 failed to run body_filter_by_lua*: [string "body_filter_by_lua"]:4: something bad happened!
 
@@ -340,7 +339,28 @@ failed to run body_filter_by_lua*: [string "body_filter_by_lua"]:4: something ba
 --- request
 GET /t
 --- ignore_response
-hello world
 --- error_log
 failed to run body_filter_by_lua*: unknown reason
+
+
+
+=== TEST 13: abort via return NGX_ERROR
+--- config
+    location /t {
+        echo hello world;
+        echo_flush;
+        echo hiya globe;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            if eof then
+                return ngx.ERROR
+            end
+        ';
+    }
+--- request
+GET /t
+--- ignore_response
+--- no_error_log
+[error]
 
