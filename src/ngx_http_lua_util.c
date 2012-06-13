@@ -57,7 +57,7 @@ static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
 static int ngx_http_lua_ngx_check_aborted(lua_State *L);
-static int debug_traceback(lua_State *L, lua_State *L1);
+static int ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1);
 static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
 static int ngx_http_lua_param_get(lua_State *L);
@@ -930,7 +930,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             msg = "unknown reason";
         }
 
-        debug_traceback(L, cc);
+        ngx_http_lua_debug_traceback(L, cc);
         trace = lua_tostring(L, -1);
         lua_pop(L, -1);
 
@@ -2319,12 +2319,14 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 
 static int
-debug_traceback(lua_State *L, lua_State *L1)
+ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1)
 {
-    int         arg = 0;
+    int         top;
     int         level = 0;
     int         firstpart = 1;  /* still before eventual `...' */
     lua_Debug   ar;
+
+    top = lua_gettop(L);
 
     lua_pushliteral(L, "stack traceback:");
 
@@ -2369,11 +2371,9 @@ debug_traceback(lua_State *L, lua_State *L1)
                                 ar.short_src, ar.linedefined);
             }
         }
-
-        lua_concat(L, lua_gettop(L) - arg);
     }
 
-    lua_concat(L, lua_gettop(L) - arg);
+    lua_concat(L, lua_gettop(L) - top);
     return 1;
 }
 
