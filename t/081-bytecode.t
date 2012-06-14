@@ -80,7 +80,7 @@ hello
 --- response_body
 error
 --- error_log
-bad header
+failed to load Lua inlined code: bad header
 
 
 
