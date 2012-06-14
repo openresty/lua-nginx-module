@@ -79,8 +79,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 #if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
     { ngx_string("set_by_lua"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF
-                        |NGX_HTTP_LIF_CONF|NGX_CONF_2MORE,
+      NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                       |NGX_CONF_2MORE,
       ngx_http_lua_set_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
@@ -88,8 +88,8 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
     /* set_by_lua_file $res rel/or/abs/path/to/script [$arg1 [$arg2 [..]]] */
     { ngx_string("set_by_lua_file"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF
-                        |NGX_HTTP_LIF_CONF|NGX_CONF_2MORE,
+      NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                       |NGX_CONF_2MORE,
       ngx_http_lua_set_by_lua_file,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,

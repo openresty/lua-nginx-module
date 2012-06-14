@@ -300,9 +300,9 @@ Directives
   set_by_lua
     syntax: *set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]*
 
-    context: *main, server, location, server if, location if*
+    context: *server, server if, location, location if*
 
-    phase: *rewrite*
+    phase: *server-rewrite, rewrite*
 
     Executes code specified in "<lua-script-str>" with optional input
     arguments "$arg1 $arg2 ...", and returns string output to $res. The code
@@ -364,9 +364,9 @@ Directives
     syntax: *set_by_lua_file $res <path-to-lua-script-file> [$arg1 $arg2
     ...]*
 
-    context: *main, server, location, server if, location if*
+    context: *server, server if, location, location if*
 
-    phase: *rewrite*
+    phase: *server-rewrite, rewrite*
 
     Equivalent to set_by_lua, except that the file specified by
     "<path-to-lua-script-file>" contains the Lua code to be executed.

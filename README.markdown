@@ -294,9 +294,9 @@ set_by_lua
 
 **syntax:** *set_by_lua $res &lt;lua-script-str&gt; [$arg1 $arg2 ...]*
 
-**context:** *main, server, location, server if, location if*
+**context:** *server, server if, location, location if*
 
-**phase:** *rewrite*
+**phase:** *server-rewrite, rewrite*
 
 Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`. 
 The code in `<lua-script-str>` can make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
@@ -345,9 +345,9 @@ set_by_lua_file
 ---------------
 **syntax:** *set_by_lua_file $res &lt;path-to-lua-script-file&gt; [$arg1 $arg2 ...]*
 
-**context:** *main, server, location, server if, location if*
+**context:** *server, server if, location, location if*
 
-**phase:** *rewrite*
+**phase:** *server-rewrite, rewrite*
 
 Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 

@@ -278,9 +278,9 @@ Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</c
 
 '''syntax:''' ''set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]''
 
-'''context:''' ''main, server, location, server if, location if''
+'''context:''' ''server, server if, location, location if''
 
-'''phase:''' ''rewrite''
+'''phase:''' ''server-rewrite, rewrite''
 
 Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>. 
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).
@@ -328,9 +328,9 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 == set_by_lua_file ==
 '''syntax:''' ''set_by_lua_file $res <path-to-lua-script-file> [$arg1 $arg2 ...]''
 
-'''context:''' ''main, server, location, server if, location if''
+'''context:''' ''server, server if, location, location if''
 
-'''phase:''' ''rewrite''
+'''phase:''' ''server-rewrite, rewrite''
 
 Equivalent to [[#set_by_lua|set_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
 
