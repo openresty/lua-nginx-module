@@ -209,17 +209,28 @@
 */
 
 /* bytecode for luajit */
-#define    LJ_LIF_CODE                                                  \
+#define    LJ_LIF_CODE_STRIPPED                                         \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
     "\x00\x00"
-#define    LJ_BIF_CODE                                                  \
+#define    LJ_BIF_CODE_STRIPPED                                         \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
     "\x00\x00"
-#define    LJ_CODE_LEN              22
+#define    LJ_LIF_CODE                                                  \
+    "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
+    "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
+    "\x00\x00"
+#define    LJ_BIF_CODE                                                  \
+    "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
+    "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
+    "\x00\x00"
+
+#define    LJ_CODE_LEN              23
+#define    LJ_CODE_LEN_STRIPPED     22
 #define    LJ_HEADERSIZE            5
 #define    LJ_BCDUMP_F_BE           0x01
+#define    LJ_BCDUMP_F_STRIP        0x02
 #define    LJ_BCDUMP_VERSION        1
 #define    LJ_SIGNATURE             "\x1b\x4c\x4a"
 
@@ -270,7 +281,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
     int fname_index)
 {
     int                 x = 1, size_of_int, size_of_size_t, little_endian,
-                        size_of_inst, version;
+                        size_of_inst, version, stripped;
     size_t              size, bytecode_len;
     const char         *filename, *emsg, *serr, *bytecode;
     ngx_file_info_t     fi;
@@ -310,12 +321,27 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         lf->begin_code_len = LJ_HEADERSIZE;
         little_endian = !((*(lf->begin_code.str + 4)) & LJ_BCDUMP_F_BE);
+        stripped = (*(lf->begin_code.str + 4)) & LJ_BCDUMP_F_STRIP;
 
-        if (little_endian) {
-            lf->end_code.ptr = LJ_LIF_CODE;
+        if (stripped) {
+            if (little_endian) {
+                lf->end_code.ptr = LJ_LIF_CODE_STRIPPED;
+
+            } else {
+                lf->end_code.ptr = LJ_BIF_CODE_STRIPPED;
+            }
+
+            lf->end_code_len = LJ_CODE_LEN_STRIPPED;
 
         } else {
-            lf->end_code.ptr = LJ_BIF_CODE;
+            if (little_endian) {
+                lf->end_code.ptr = LJ_LIF_CODE;
+
+            } else {
+                lf->end_code.ptr = LJ_BIF_CODE;
+            }
+
+            lf->end_code_len = LJ_CODE_LEN;
         }
 
         if (ngx_fd_info(fileno(lf->f), &fi) == NGX_FILE_ERROR) {
@@ -325,7 +351,6 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         }
 
         lf->rest_len = ngx_file_size(&fi) - LJ_HEADERSIZE;
-        lf->end_code_len = LJ_CODE_LEN;
 
 #if defined(DDEBUG) && (DDEBUG)
         {
