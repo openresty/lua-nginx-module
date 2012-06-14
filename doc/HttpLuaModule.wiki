@@ -278,9 +278,9 @@ Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</c
 
 '''syntax:''' ''set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]''
 
-'''context:''' ''main, server, location, server if, location if''
+'''context:''' ''server, server if, location, location if''
 
-'''phase:''' ''rewrite''
+'''phase:''' ''server-rewrite, rewrite''
 
 Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>. 
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).
@@ -328,9 +328,9 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 == set_by_lua_file ==
 '''syntax:''' ''set_by_lua_file $res <path-to-lua-script-file> [$arg1 $arg2 ...]''
 
-'''context:''' ''main, server, location, server if, location if''
+'''context:''' ''server, server if, location, location if''
 
-'''phase:''' ''rewrite''
+'''phase:''' ''server-rewrite, rewrite''
 
 Equivalent to [[#set_by_lua|set_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code to be executed.
 
@@ -3767,6 +3767,21 @@ Build the source with this module:
  
     make -j2
     make install
+</geshi>
+
+== Installation on Ubuntu 11.10 ==
+
+To install lua 5.1 from repository run the following command:
+
+<geshi lang="bash">
+apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
+</geshi>
+
+Everything should be installed correctly, except one small tweak. Library name <code>liblua.so</code> has been changed in liblua5.1 package, it
+only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
+
+<geshi lang="bash">
+ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
 </geshi>
 
 = Bugs and Patches =

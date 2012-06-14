@@ -294,9 +294,9 @@ set_by_lua
 
 **syntax:** *set_by_lua $res &lt;lua-script-str&gt; [$arg1 $arg2 ...]*
 
-**context:** *main, server, location, server if, location if*
+**context:** *server, server if, location, location if*
 
-**phase:** *rewrite*
+**phase:** *server-rewrite, rewrite*
 
 Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`. 
 The code in `<lua-script-str>` can make [API calls](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
@@ -345,9 +345,9 @@ set_by_lua_file
 ---------------
 **syntax:** *set_by_lua_file $res &lt;path-to-lua-script-file&gt; [$arg1 $arg2 ...]*
 
-**context:** *main, server, location, server if, location if*
+**context:** *server, server if, location, location if*
 
-**phase:** *rewrite*
+**phase:** *server-rewrite, rewrite*
 
 Equivalent to [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code to be executed.
 
@@ -3902,6 +3902,22 @@ Build the source with this module:
  
     make -j2
     make install
+
+
+Installation on Ubuntu 11.10
+----------------------------
+
+To install lua 5.1 from repository run the following command:
+
+
+    apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
+
+
+Everything should be installed correctly, except one small tweak. Library name `liblua.so` has been changed in liblua5.1 package, it
+only comes with `liblua5.1.so`, which needs to be symlinked to `/usr/lib` so it could be found during the configuration process.
+
+
+    ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
 
 
 Bugs and Patches

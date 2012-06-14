@@ -80,7 +80,7 @@ hello
 --- response_body
 error
 --- error_log
-bad header
+failed to load Lua inlined code: bad byte-code header in
 
 
 
@@ -116,7 +116,7 @@ bad header
 --- response_body
 error
 --- error_log
-bad header
+bad byte-code header in
 
 
 
@@ -196,3 +196,4 @@ ok
 \x1b\x4c\x4a\x01\x02\x29\x02\x00\x02\x00\x03\x00\x05\xff\xff\xff\xff\x37\x00\x01\x00\x25\x01\x02\x00\x3e\x00\x02\x01\x47\x00\x01\x00\x0a\x68\x65\x6c\x6c\x6f\x08\x73\x61\x79\x08\x6e\x67\x78\x00"
 --- response_body
 error
+
