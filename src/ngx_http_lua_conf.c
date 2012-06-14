@@ -122,6 +122,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->pool_size = NGX_CONF_UNSET_UINT;
 
+    conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
+
     return conf;
 }
 
@@ -192,6 +194,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                               (size_t) ngx_pagesize);
 
     ngx_conf_merge_uint_value(conf->pool_size, prev->pool_size, 30);
+
+    ngx_conf_merge_value(conf->transform_underscores_in_resp_headers,
+                         prev->transform_underscores_in_resp_headers, 1);
 
     return NGX_CONF_OK;
 }

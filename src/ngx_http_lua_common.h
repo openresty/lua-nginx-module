@@ -168,6 +168,8 @@ typedef struct {
 
     ngx_uint_t                       pool_size;
 
+    ngx_flag_t                       transform_underscores_in_resp_headers;
+
 } ngx_http_lua_loc_conf_t;
 
 

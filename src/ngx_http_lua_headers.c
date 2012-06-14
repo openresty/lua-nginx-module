@@ -99,6 +99,7 @@ ngx_http_lua_ngx_header_get(lua_State *L)
     ngx_str_t                    key;
     ngx_uint_t                   i;
     size_t                       len;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -114,10 +115,14 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    /* replace "_" with "-" */
-    for (i = 0; i < len; i++) {
-        if (p[i] == '_') {
-            p[i] = '-';
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->transform_underscores_in_resp_headers) {
+        /* replace "_" with "-" */
+        for (i = 0; i < len; i++) {
+            if (p[i] == '_') {
+                p[i] = '-';
+            }
         }
     }
 
@@ -148,6 +153,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -170,10 +176,14 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    /* replace "_" with "-" */
-    for (i = 0; i < len; i++) {
-        if (p[i] == '_') {
-            p[i] = '-';
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->transform_underscores_in_resp_headers) {
+        /* replace "_" with "-" */
+        for (i = 0; i < len; i++) {
+            if (p[i] == '_') {
+                p[i] = '-';
+            }
         }
     }
 
