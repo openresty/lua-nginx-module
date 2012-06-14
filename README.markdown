@@ -930,6 +930,19 @@ Controls whether or not to disable postponing [rewrite_by_lua](http://wiki.nginx
 
 This directive was first introduced in the `v0.5.0rc29` release.
 
+lua_transform_underscores_in_response_headers
+---------------------------------------------
+
+**syntax:** *lua_transform_underscores_in_response_headers on|off*
+
+**default:** *lua_transform_underscores_in_response_headers on*
+
+**context:** *http, server, location, location-if*
+
+Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](http://wiki.nginx.org/HttpLuaModule#ngx.header.HEADER) API to hypens (`-`).
+
+This directive was first introduced in the `v0.5.0rc32` release.
+
 Nginx API for Lua
 =================
 Introduction
@@ -1575,7 +1588,11 @@ ngx.header.HEADER
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, log_by_lua**
 
-Set, add to, or clear the current request `HEADER` response header. Underscores (`_`) in the header names will be replaced by dashes (`-`) and the header names will be matched case-insensitively.
+Set, add to, or clear the current request `HEADER` response header.
+
+Underscores (`_`) in the header names will be replaced by hyphens (`-`) by default. This transformation can be turned off via the [lua_transform_underscores_in_response_headers](http://wiki.nginx.org/HttpLuaModule#lua_transform_underscores_in_response_headers) directive.
+
+The header names are matched case-insensitively.
 
 
     -- equivalent to ngx.header["Content-Type"] = 'text/plain'
