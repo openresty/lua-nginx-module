@@ -275,7 +275,8 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
     const char         *filename, *emsg, *serr, *bytecode;
     ngx_file_info_t     fi;
 
-    serr = "";
+    serr = NULL;
+
     *lf->begin_code.str = LUA_SIGNATURE[0];
 
     if (lf->file_type == NGX_LUA_BT_LJ) {
@@ -293,7 +294,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
                        sizeof(LJ_SIGNATURE) - 1)
             || version != LJ_BCDUMP_VERSION)
         {
-            emsg = "bad header";
+            emsg = "bad byte-code header";
             goto error;
         }
 
@@ -373,7 +374,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
             || size_of_size_t != sizeof(size_t)
             || (size_of_inst != 4 && size_of_inst != 8))
         {
-            emsg = "bad header";
+            emsg = "bad byte-code header";
             goto error;
         }
 
@@ -470,7 +471,14 @@ error:
     }
 
     filename = lua_tostring(L, fname_index) + 1;
-    lua_pushfstring(L, "%s of %s : %s", emsg, filename, serr);
+
+    if (serr) {
+        lua_pushfstring(L, "%s in %s: %s", emsg, filename, serr);
+
+    } else {
+        lua_pushfstring(L, "%s in %s", emsg, filename);
+    }
+
     lua_remove(L, fname_index);
 
     return LUA_ERRFILE;
@@ -560,7 +568,7 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
             }
 
             filename = lua_tostring(L, fname_index) + 1;
-            lua_pushfstring(L, "bad header of %s", filename);
+            lua_pushfstring(L, "bad byte-code header in %s", filename);
             lua_remove(L, fname_index);
 
             return LUA_ERRFILE;
@@ -588,8 +596,9 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 
     readstatus = ferror(lf.f);
 
-    if (filename)
+    if (filename) {
         fclose(lf.f);  /* close file (even in case of errors) */
+    }
 
     if (readstatus) {
         lua_settop(L, fname_index);  /* ignore results from `lua_load' */
@@ -700,10 +709,16 @@ clfactory_errfile(lua_State *L, const char *what, int fname_index)
     const char      *serr;
     const char      *filename;
 
-    serr = strerror(errno);
     filename = lua_tostring(L, fname_index) + 1;
 
-    lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
+    if (errno) {
+        serr = strerror(errno);
+        lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
+
+    } else {
+        lua_pushfstring(L, "cannot %s %s", what, filename);
+    }
+
     lua_remove(L, fname_index);
 
     return LUA_ERRFILE;
