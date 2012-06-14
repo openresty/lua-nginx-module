@@ -3904,6 +3904,22 @@ Build the source with this module:
     make install
 
 
+Installation on Ubuntu 11.10
+----------------------------
+
+To install lua 5.1 from repository run the following command:
+
+
+    apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
+
+
+Everything should be installed correctly, except one small tweak. Library name `liblua.so` has been changed in liblua5.1 package, it
+only comes with `liblua5.1.so`, which needs to be symlinked to `/usr/lib` so it could be found during the configuration process.
+
+
+    ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
+
+
 Bugs and Patches
 ================
 
