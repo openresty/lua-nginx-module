@@ -2187,13 +2187,9 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     if (n == 3) {
         /* check out the options table */
 
-        if (lua_type(L, -1) != LUA_TTABLE) {
-            return luaL_error(L, "expecting table as the 3rd argument, "
-                              "but got %s",
-                              luaL_typename(L, -1));
-        }
+        luaL_checktype(L, 3, LUA_TTABLE);
 
-        lua_getfield(L, -1, "inclusive");
+        lua_getfield(L, 3, "inclusive");
 
         switch (lua_type(L, -1)) {
             case LUA_TNIL:
@@ -2207,9 +2203,11 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
                 break;
 
             default:
-                return luaL_error(L, "Bad inclusive option value");
+                return luaL_error(L, "bad \"inclusive\" option value type: %s",
+                                  luaL_typename(L, -1));
 
         }
+
         lua_pop(L, 2);
     }
 
