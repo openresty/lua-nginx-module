@@ -286,6 +286,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
+    luaL_checktype(L, 1, LUA_TTABLE);
+
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
     host.data = ngx_palloc(r->pool, len + 1);
@@ -921,7 +923,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket calling receive() method");
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -1423,7 +1425,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     /* TODO: add support for the optional "i" and "j" arguments */
 
     if (lua_gettop(L) != 2) {
-        return luaL_error(L, "expecting two arguments (one for the object), "
+        return luaL_error(L, "expecting 2 arguments (including the object), "
                           "but got %d", lua_gettop(L));
     }
 
@@ -1432,7 +1434,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -1640,7 +1642,7 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -2191,7 +2193,7 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket calling receiveuntil() method");
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
     if (pat.len == 0) {
@@ -2819,7 +2821,7 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
                           "(including the object), but got %d", lua_gettop(L));
     }
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -2864,7 +2866,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
                           "(including the object), but got %d", n);
     }
 
-    /* luaL_checktype(L, 1, LUA_TTABLE); */
+    luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
