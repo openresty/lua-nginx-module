@@ -1189,13 +1189,13 @@ close: nil closed
                     ngx.say("read: ", line)
 
                 else
-                    ngx.say("failed to read a line: ", err, " [", part, "]")
+                    ngx.say("failed to read a chunk: ", err, " [", part, "]")
                 end
 
                 local data, err, part = sock:receive(1)
                 if not data then
-                    ngx.say("failed to read a line: ", err, " [", part, "]")
-                    return
+                    ngx.say("failed to read a byte: ", err, " [", part, "]")
+                    break
                 else
                     ngx.say("read one byte: ", data)
                 end
@@ -1216,18 +1216,20 @@ GET /t
 qq{connected: 1
 request sent: 57
 read: hell
-read: o, w
-read: orld
-read:  --
+read one byte: o
+read: , wo
+read one byte: r
+read: ld -
+read one byte: -
 read: 
-failed to read a line: nil [nil]
-failed to read a line: closed [
-]
+read one byte: 
+
+failed to read a chunk: nil [nil]
+failed to read a byte: closed []
 close: nil closed
 }
 --- no_error_log
 [error]
---- SKIP
 
 
 
