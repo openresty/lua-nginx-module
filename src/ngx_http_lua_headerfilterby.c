@@ -244,6 +244,11 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
+    if (llcf->body_filter_handler) {
+        r->filter_need_in_memory = 1;
+        return ngx_http_next_header_filter(r);
+    }
+
     if (llcf->header_filter_handler == NULL) {
         dd("no header filter handler found");
         return ngx_http_next_header_filter(r);

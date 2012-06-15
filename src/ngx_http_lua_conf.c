@@ -32,6 +32,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
      *      lmcf->requires_header_filter = 0;
+     *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
@@ -103,6 +104,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->header_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->header_filter_src_key = NULL
      *      conf->header_filter_handler = NULL;
+     *
+     *      conf->body_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->body_filter_src_key = NULL
+     *      conf->body_filter_handler = NULL;
      */
 
     conf->force_read_body   = NGX_CONF_UNSET;
@@ -157,6 +162,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->header_filter_src = prev->header_filter_src;
         conf->header_filter_handler = prev->header_filter_handler;
         conf->header_filter_src_key = prev->header_filter_src_key;
+    }
+
+    if (conf->body_filter_src.value.len == 0) {
+        conf->body_filter_src = prev->body_filter_src;
+        conf->body_filter_handler = prev->body_filter_handler;
+        conf->body_filter_src_key = prev->body_filter_src_key;
     }
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);

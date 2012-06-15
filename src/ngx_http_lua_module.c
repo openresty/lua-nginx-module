@@ -13,6 +13,7 @@
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_headerfilterby.h"
+#include "ngx_http_lua_bodyfilterby.h"
 
 
 #if !defined(nginx_version) || nginx_version < 8054
@@ -139,15 +140,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_log_handler_inline },
 
-    /* header_filter_by_lua <inline script> */
-    { ngx_string("header_filter_by_lua"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
-                        |NGX_CONF_TAKE1,
-      ngx_http_lua_header_filter_by_lua,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      ngx_http_lua_header_filter_inline },
-
     { ngx_string("rewrite_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
@@ -188,6 +180,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       ngx_http_lua_log_handler_file },
 
+    /* header_filter_by_lua <inline script> */
+    { ngx_string("header_filter_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_header_filter_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_header_filter_inline },
+
     { ngx_string("header_filter_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
@@ -195,6 +196,22 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       ngx_http_lua_header_filter_file },
+
+    { ngx_string("body_filter_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_body_filter_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_body_filter_inline },
+
+    { ngx_string("body_filter_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_body_filter_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      ngx_http_lua_body_filter_file },
 
     { ngx_string("lua_socket_keepalive_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -348,6 +365,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     if (lmcf->requires_header_filter) {
         rc = ngx_http_lua_header_filter_init();
+        if (rc != NGX_OK) {
+            return rc;
+        }
+    }
+
+    if (lmcf->requires_body_filter) {
+        rc = ngx_http_lua_body_filter_init();
         if (rc != NGX_OK) {
             return rc;
         }
