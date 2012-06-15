@@ -505,10 +505,18 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             /* last == 0 */
 
             if (in) {
-                for (cl = in; cl; cl = cl->next) {
+                for (size = 0, cl = in; cl; cl = cl->next) {
                     if (cl->buf->last_buf) {
                         cl->buf->last_buf = 0;
                     }
+
+                    size += cl->buf->last - cl->buf->pos;
+                }
+
+                if (size == 0) {
+                    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+                    lua_pushlightuserdata(L, NULL);
+                    lua_rawset(L, LUA_GLOBALSINDEX);
                 }
             }
         }
