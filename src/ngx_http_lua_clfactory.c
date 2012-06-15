@@ -46,20 +46,20 @@
  * length(Instruction) = 4 or 8
  * little endian or big endian
 */
-#define    LUA_LIF_CODE                                                 \
+#define    LUA_LITTLE_ENDIAN_4BYTES_CODE                                \
     "\x24\x00\x00\x00\x1e\x00\x00\x01\x1e\x00\x80\x00"
-#define    LUA_LIE_CODE                                                 \
+#define    LUA_LITTLE_ENDIAN_8BYTES_CODE                                \
     "\x24\x00\x00\x00\x00\x00\x00\x00\x1e\x00\x00\x01"                  \
     "\x00\x00\x00\x00\x1e\x00\x80\x00\x00\x00\x00\x00"
-#define    LUA_BIF_CODE                                                 \
+#define    LUA_BIG_ENDIAN_4BYTES_CODE                                   \
     "\x00\x00\x00\x24\x01\x00\x00\x1e\x00\x08\x00\x1e"
-#define    LUA_BIE_CODE                                                 \
+#define    LUA_BIG_ENDIAN_8BYTES_CODE                                   \
     "\x00\x00\x00\x00\x00\x00\x00\x24\x00\x00\x00\x00"                  \
     "\x01\x00\x00\x1e\x00\x00\x00\x00\x00\x08\x00\x1e"
-#define    LUA_LIF_CODE_LEN        (4 + 4 + 4)
-#define    LUA_LIE_CODE_LEN        (8 + 8 + 8)
-#define    LUA_BIF_CODE_LEN        (4 + 4 + 4)
-#define    LUA_BIE_CODE_LEN        (8 + 8 + 8)
+#define    LUA_LITTLE_ENDIAN_4BYTES_CODE_LEN        (4 + 4 + 4)
+#define    LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN        (8 + 8 + 8)
+#define    LUA_BIG_ENDIAN_4BYTES_CODE_LEN           (4 + 4 + 4)
+#define    LUA_BIG_ENDIAN_8BYTES_CODE_LEN           (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
 #define    LUAC_VERSION            0x51
 
@@ -142,8 +142,9 @@
 #define    POS_MAX_STACK_SIZE      (POS_IS_VAR_ARG + sizeof(char))
 #define    POS_NUM_OF_INST         (POS_MAX_STACK_SIZE +sizeof(char))
 #define    POS_BYTECODE            (POS_NUM_OF_INST + sizeof(int))
-#define    MAX_BEGIN_CODE_SIZE                                          \
-    (POS_BYTECODE + LUA_LIE_CODE_LEN + sizeof(int) + sizeof(int))
+#define    MAX_BEGIN_CODE_SIZE                                              \
+    (POS_BYTECODE + LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN                       \
+    + sizeof(int) + sizeof(int))
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
@@ -209,19 +210,19 @@
 */
 
 /* bytecode for luajit */
-#define    LJ_LIF_CODE_STRIPPED                                         \
+#define    LJ_LITTLE_ENDIAN_CODE_STRIPPED                               \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
     "\x00\x00"
-#define    LJ_BIF_CODE_STRIPPED                                         \
+#define    LJ_BIG_ENDIAN_CODE_STRIPPED                                  \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
     "\x00\x00"
-#define    LJ_LIF_CODE                                                  \
+#define    LJ_LITTLE_ENDIAN_CODE                                        \
     "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
     "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
     "\x00\x00"
-#define    LJ_BIF_CODE                                                  \
+#define    LJ_BIG_ENDIAN_CODE                                           \
     "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
     "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
     "\x00\x00"
@@ -326,20 +327,20 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         if (stripped) {
             if (little_endian) {
-                lf->end_code.ptr = LJ_LIF_CODE_STRIPPED;
+                lf->end_code.ptr = LJ_LITTLE_ENDIAN_CODE_STRIPPED;
 
             } else {
-                lf->end_code.ptr = LJ_BIF_CODE_STRIPPED;
+                lf->end_code.ptr = LJ_BIG_ENDIAN_CODE_STRIPPED;
             }
 
             lf->end_code_len = LJ_CODE_LEN_STRIPPED;
 
         } else {
             if (little_endian) {
-                lf->end_code.ptr = LJ_LIF_CODE;
+                lf->end_code.ptr = LJ_LITTLE_ENDIAN_CODE;
 
             } else {
-                lf->end_code.ptr = LJ_BIF_CODE;
+                lf->end_code.ptr = LJ_BIG_ENDIAN_CODE;
             }
 
             lf->end_code_len = LJ_CODE_LEN;
@@ -424,22 +425,22 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         if (little_endian) {
             if (size_of_inst == 4) {
-                bytecode = LUA_LIF_CODE;
-                bytecode_len = LUA_LIF_CODE_LEN;
+                bytecode = LUA_LITTLE_ENDIAN_4BYTES_CODE;
+                bytecode_len = LUA_LITTLE_ENDIAN_4BYTES_CODE_LEN;
 
             } else {
-                bytecode = LUA_LIE_CODE;
-                bytecode_len = LUA_LIE_CODE_LEN;
+                bytecode = LUA_LITTLE_ENDIAN_8BYTES_CODE;
+                bytecode_len = LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN;
             }
 
         } else {
             if (size_of_inst == 4) {
-                bytecode = LUA_BIF_CODE;
-                bytecode_len = LUA_BIF_CODE_LEN;
+                bytecode = LUA_BIG_ENDIAN_4BYTES_CODE;
+                bytecode_len = LUA_BIG_ENDIAN_4BYTES_CODE_LEN;
 
             } else {
-                bytecode = LUA_BIE_CODE;
-                bytecode_len = LUA_BIE_CODE_LEN;
+                bytecode = LUA_BIG_ENDIAN_8BYTES_CODE;
+                bytecode_len = LUA_BIG_ENDIAN_8BYTES_CODE_LEN;
             }
         }
 
