@@ -110,7 +110,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
             case LUA_TTABLE:
 
-                size += ngx_http_lua_calc_strlen_in_table(L, i, 0);
+                size += ngx_http_lua_calc_strlen_in_table(L, i, 0 /* strict */);
                 break;
 
             case LUA_TLIGHTUSERDATA:
