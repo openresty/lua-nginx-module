@@ -514,7 +514,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                 }
 
                 if (size == 0) {
-                    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
+                    lua_pushlightuserdata(L,
+                                          &ngx_http_lua_body_filter_chain_key);
                     lua_pushlightuserdata(L, NULL);
                     lua_rawset(L, LUA_GLOBALSINDEX);
                 }
