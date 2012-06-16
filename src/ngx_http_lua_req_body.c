@@ -492,13 +492,16 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         size = (size_t) num;
 
     } else {
+
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
         size = clcf->client_body_buffer_size;
-    }
 
-    /* avoid allocating an unnecessary large buffer */
-    if (size > (size_t) r->headers_in.content_length_n) {
-        size = r->headers_in.content_length_n;
+        size += size >> 2;
+
+        /* avoid allocating an unnecessary large buffer */
+        if (size > (size_t) r->headers_in.content_length_n) {
+            size = r->headers_in.content_length_n;
+        }
     }
 
     if (r->request_body == NULL) {
