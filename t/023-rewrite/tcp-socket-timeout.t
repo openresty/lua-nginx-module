@@ -150,6 +150,7 @@ failed to connect: timeout
 --- error_log
 lua socket connect timeout: 102
 lua socket connect timed out
+--- timeout: 5
 
 
 
