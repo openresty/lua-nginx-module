@@ -137,3 +137,4 @@ analyze
 tsock
 a.c
 ERRORS
+src/bodyfilterby.[ch]

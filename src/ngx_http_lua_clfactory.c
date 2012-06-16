@@ -46,20 +46,20 @@
  * length(Instruction) = 4 or 8
  * little endian or big endian
 */
-#define    LUA_LIF_CODE                                                 \
+#define    LUA_LITTLE_ENDIAN_4BYTES_CODE                                \
     "\x24\x00\x00\x00\x1e\x00\x00\x01\x1e\x00\x80\x00"
-#define    LUA_LIE_CODE                                                 \
+#define    LUA_LITTLE_ENDIAN_8BYTES_CODE                                \
     "\x24\x00\x00\x00\x00\x00\x00\x00\x1e\x00\x00\x01"                  \
     "\x00\x00\x00\x00\x1e\x00\x80\x00\x00\x00\x00\x00"
-#define    LUA_BIF_CODE                                                 \
+#define    LUA_BIG_ENDIAN_4BYTES_CODE                                   \
     "\x00\x00\x00\x24\x01\x00\x00\x1e\x00\x08\x00\x1e"
-#define    LUA_BIE_CODE                                                 \
+#define    LUA_BIG_ENDIAN_8BYTES_CODE                                   \
     "\x00\x00\x00\x00\x00\x00\x00\x24\x00\x00\x00\x00"                  \
     "\x01\x00\x00\x1e\x00\x00\x00\x00\x00\x08\x00\x1e"
-#define    LUA_LIF_CODE_LEN        (4 + 4 + 4)
-#define    LUA_LIE_CODE_LEN        (8 + 8 + 8)
-#define    LUA_BIF_CODE_LEN        (4 + 4 + 4)
-#define    LUA_BIE_CODE_LEN        (8 + 8 + 8)
+#define    LUA_LITTLE_ENDIAN_4BYTES_CODE_LEN        (4 + 4 + 4)
+#define    LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN        (8 + 8 + 8)
+#define    LUA_BIG_ENDIAN_4BYTES_CODE_LEN           (4 + 4 + 4)
+#define    LUA_BIG_ENDIAN_8BYTES_CODE_LEN           (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
 #define    LUAC_VERSION            0x51
 
@@ -142,8 +142,9 @@
 #define    POS_MAX_STACK_SIZE      (POS_IS_VAR_ARG + sizeof(char))
 #define    POS_NUM_OF_INST         (POS_MAX_STACK_SIZE +sizeof(char))
 #define    POS_BYTECODE            (POS_NUM_OF_INST + sizeof(int))
-#define    MAX_BEGIN_CODE_SIZE                                          \
-    (POS_BYTECODE + LUA_LIE_CODE_LEN + sizeof(int) + sizeof(int))
+#define    MAX_BEGIN_CODE_SIZE                                              \
+    (POS_BYTECODE + LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN                       \
+    + sizeof(int) + sizeof(int))
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
@@ -209,17 +210,28 @@
 */
 
 /* bytecode for luajit */
-#define    LJ_LIF_CODE                                                  \
+#define    LJ_LITTLE_ENDIAN_CODE_STRIPPED                               \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
     "\x00\x00"
-#define    LJ_BIF_CODE                                                  \
+#define    LJ_BIG_ENDIAN_CODE_STRIPPED                                  \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                  \
     "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
     "\x00\x00"
-#define    LJ_CODE_LEN              22
+#define    LJ_LITTLE_ENDIAN_CODE                                        \
+    "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
+    "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                  \
+    "\x00\x00"
+#define    LJ_BIG_ENDIAN_CODE                                           \
+    "\x15\x03\x00\x01\x00\x01\x00\x03\x00"                              \
+    "\x00\x00\x00\x31\x80\x00\x00\x30\x00\x02\x00\x48"                  \
+    "\x00\x00"
+
+#define    LJ_CODE_LEN              23
+#define    LJ_CODE_LEN_STRIPPED     22
 #define    LJ_HEADERSIZE            5
 #define    LJ_BCDUMP_F_BE           0x01
+#define    LJ_BCDUMP_F_STRIP        0x02
 #define    LJ_BCDUMP_VERSION        1
 #define    LJ_SIGNATURE             "\x1b\x4c\x4a"
 
@@ -270,12 +282,13 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
     int fname_index)
 {
     int                 x = 1, size_of_int, size_of_size_t, little_endian,
-                        size_of_inst, version;
+                        size_of_inst, version, stripped;
     size_t              size, bytecode_len;
     const char         *filename, *emsg, *serr, *bytecode;
     ngx_file_info_t     fi;
 
-    serr = "";
+    serr = NULL;
+
     *lf->begin_code.str = LUA_SIGNATURE[0];
 
     if (lf->file_type == NGX_LUA_BT_LJ) {
@@ -293,7 +306,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
                        sizeof(LJ_SIGNATURE) - 1)
             || version != LJ_BCDUMP_VERSION)
         {
-            emsg = "bad header";
+            emsg = "bad byte-code header";
             goto error;
         }
 
@@ -310,12 +323,27 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         lf->begin_code_len = LJ_HEADERSIZE;
         little_endian = !((*(lf->begin_code.str + 4)) & LJ_BCDUMP_F_BE);
+        stripped = (*(lf->begin_code.str + 4)) & LJ_BCDUMP_F_STRIP;
 
-        if (little_endian) {
-            lf->end_code.ptr = LJ_LIF_CODE;
+        if (stripped) {
+            if (little_endian) {
+                lf->end_code.ptr = LJ_LITTLE_ENDIAN_CODE_STRIPPED;
+
+            } else {
+                lf->end_code.ptr = LJ_BIG_ENDIAN_CODE_STRIPPED;
+            }
+
+            lf->end_code_len = LJ_CODE_LEN_STRIPPED;
 
         } else {
-            lf->end_code.ptr = LJ_BIF_CODE;
+            if (little_endian) {
+                lf->end_code.ptr = LJ_LITTLE_ENDIAN_CODE;
+
+            } else {
+                lf->end_code.ptr = LJ_BIG_ENDIAN_CODE;
+            }
+
+            lf->end_code_len = LJ_CODE_LEN;
         }
 
         if (ngx_fd_info(fileno(lf->f), &fi) == NGX_FILE_ERROR) {
@@ -325,7 +353,6 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         }
 
         lf->rest_len = ngx_file_size(&fi) - LJ_HEADERSIZE;
-        lf->end_code_len = LJ_CODE_LEN;
 
 #if defined(DDEBUG) && (DDEBUG)
         {
@@ -373,7 +400,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
             || size_of_size_t != sizeof(size_t)
             || (size_of_inst != 4 && size_of_inst != 8))
         {
-            emsg = "bad header";
+            emsg = "bad byte-code header";
             goto error;
         }
 
@@ -398,22 +425,22 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
         if (little_endian) {
             if (size_of_inst == 4) {
-                bytecode = LUA_LIF_CODE;
-                bytecode_len = LUA_LIF_CODE_LEN;
+                bytecode = LUA_LITTLE_ENDIAN_4BYTES_CODE;
+                bytecode_len = LUA_LITTLE_ENDIAN_4BYTES_CODE_LEN;
 
             } else {
-                bytecode = LUA_LIE_CODE;
-                bytecode_len = LUA_LIE_CODE_LEN;
+                bytecode = LUA_LITTLE_ENDIAN_8BYTES_CODE;
+                bytecode_len = LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN;
             }
 
         } else {
             if (size_of_inst == 4) {
-                bytecode = LUA_BIF_CODE;
-                bytecode_len = LUA_BIF_CODE_LEN;
+                bytecode = LUA_BIG_ENDIAN_4BYTES_CODE;
+                bytecode_len = LUA_BIG_ENDIAN_4BYTES_CODE_LEN;
 
             } else {
-                bytecode = LUA_BIE_CODE;
-                bytecode_len = LUA_BIE_CODE_LEN;
+                bytecode = LUA_BIG_ENDIAN_8BYTES_CODE;
+                bytecode_len = LUA_BIG_ENDIAN_8BYTES_CODE_LEN;
             }
         }
 
@@ -470,7 +497,14 @@ error:
     }
 
     filename = lua_tostring(L, fname_index) + 1;
-    lua_pushfstring(L, "%s of %s : %s", emsg, filename, serr);
+
+    if (serr) {
+        lua_pushfstring(L, "%s in %s: %s", emsg, filename, serr);
+
+    } else {
+        lua_pushfstring(L, "%s in %s", emsg, filename);
+    }
+
     lua_remove(L, fname_index);
 
     return LUA_ERRFILE;
@@ -560,7 +594,7 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
             }
 
             filename = lua_tostring(L, fname_index) + 1;
-            lua_pushfstring(L, "bad header of %s", filename);
+            lua_pushfstring(L, "bad byte-code header in %s", filename);
             lua_remove(L, fname_index);
 
             return LUA_ERRFILE;
@@ -588,8 +622,9 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 
     readstatus = ferror(lf.f);
 
-    if (filename)
+    if (filename) {
         fclose(lf.f);  /* close file (even in case of errors) */
+    }
 
     if (readstatus) {
         lua_settop(L, fname_index);  /* ignore results from `lua_load' */
@@ -700,10 +735,16 @@ clfactory_errfile(lua_State *L, const char *what, int fname_index)
     const char      *serr;
     const char      *filename;
 
-    serr = strerror(errno);
     filename = lua_tostring(L, fname_index) + 1;
 
-    lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
+    if (errno) {
+        serr = strerror(errno);
+        lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
+
+    } else {
+        lua_pushfstring(L, "cannot %s %s", what, filename);
+    }
+
     lua_remove(L, fname_index);
 
     return LUA_ERRFILE;

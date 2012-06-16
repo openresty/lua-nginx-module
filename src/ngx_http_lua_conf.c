@@ -32,6 +32,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
      *      lmcf->requires_header_filter = 0;
+     *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
@@ -64,7 +65,7 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
     if (lmcf->lua == NULL) {
         if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
             ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                               "Failed to initialize Lua VM");
+                               "failed to initialize Lua VM");
             return NGX_CONF_ERROR;
         }
 
@@ -103,6 +104,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->header_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->header_filter_src_key = NULL
      *      conf->header_filter_handler = NULL;
+     *
+     *      conf->body_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->body_filter_src_key = NULL
+     *      conf->body_filter_handler = NULL;
      */
 
     conf->force_read_body   = NGX_CONF_UNSET;
@@ -116,6 +121,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->send_lowat = NGX_CONF_UNSET_SIZE;
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->pool_size = NGX_CONF_UNSET_UINT;
+
+    conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -157,6 +164,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->header_filter_src_key = prev->header_filter_src_key;
     }
 
+    if (conf->body_filter_src.value.len == 0) {
+        conf->body_filter_src = prev->body_filter_src;
+        conf->body_filter_handler = prev->body_filter_handler;
+        conf->body_filter_src_key = prev->body_filter_src_key;
+    }
+
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
     ngx_conf_merge_value(conf->http10_buffering, prev->http10_buffering, 1);
@@ -181,6 +194,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                               (size_t) ngx_pagesize);
 
     ngx_conf_merge_uint_value(conf->pool_size, prev->pool_size, 30);
+
+    ngx_conf_merge_value(conf->transform_underscores_in_resp_headers,
+                         prev->transform_underscores_in_resp_headers, 1);
 
     return NGX_CONF_OK;
 }

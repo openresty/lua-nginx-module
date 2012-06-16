@@ -637,3 +637,116 @@ GET /lua?a=1&b=2
 --- no_error_log
 [error]
 
+
+
+=== TEST 39: server scope (inline)
+--- config
+    location /lua {
+        set $a "[$res]";
+        echo $a;
+    }
+    set_by_lua $res "return 1+1";
+--- request
+GET /lua
+--- response_body
+[2]
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: server if scope (inline)
+--- config
+    location /lua {
+        set $a "[$res]";
+        echo $a;
+    }
+    if ($arg_name = "jim") {
+        set_by_lua $res "return 1+1";
+    }
+--- request
+GET /lua?name=jim
+--- response_body
+[2]
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: location if scope (inline)
+--- config
+    location /lua {
+        if ($arg_name = "jim") {
+            set_by_lua $res "return 1+1";
+            set $a "[$res]";
+            echo $a;
+        }
+    }
+--- request
+GET /lua?name=jim
+--- response_body
+[2]
+--- no_error_log
+[error]
+
+
+
+=== TEST 42: server scope (file)
+--- config
+    location /lua {
+        set $a "[$res]";
+        echo $a;
+    }
+    set_by_lua_file $res html/a.lua;
+--- user_files
+>>> a.lua
+return 1+1
+--- request
+GET /lua
+--- response_body
+[2]
+--- no_error_log
+[error]
+
+
+
+=== TEST 43: server if scope (file)
+--- config
+    location /lua {
+        set $a "[$res]";
+        echo $a;
+    }
+    if ($arg_name = "jim") {
+        set_by_lua_file $res html/a.lua;
+    }
+--- request
+GET /lua?name=jim
+--- user_files
+>>> a.lua
+return 1+1
+--- response_body
+[2]
+--- no_error_log
+[error]
+
+
+
+=== TEST 44: location if scope (file)
+--- config
+    location /lua {
+        if ($arg_name = "jim") {
+            set_by_lua_file $res html/a.lua;
+            set $a "[$res]";
+            echo $a;
+        }
+    }
+--- user_files
+>>> a.lua
+return 1+1
+--- request
+GET /lua?name=jim
+--- response_body
+[2]
+--- no_error_log
+[error]
+

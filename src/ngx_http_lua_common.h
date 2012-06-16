@@ -97,6 +97,7 @@ typedef struct {
     ngx_flag_t       postponed_to_access_phase_end;
 
     unsigned         requires_header_filter:1;
+    unsigned         requires_body_filter:1;
     unsigned         requires_capture_filter:1;
     unsigned         requires_rewrite:1;
     unsigned         requires_access:1;
@@ -119,6 +120,8 @@ typedef struct {
     ngx_http_handler_pt     content_handler;
     ngx_http_handler_pt     log_handler;
     ngx_http_handler_pt     header_filter_handler;
+
+    ngx_http_output_body_filter_pt         body_filter_handler;
 
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
                                                 inline script/script
@@ -151,6 +154,10 @@ typedef struct {
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
 
+
+    ngx_http_complex_value_t         body_filter_src;
+    u_char                          *body_filter_src_key;
+
     ngx_msec_t                       keepalive_timeout;
     ngx_msec_t                       connect_timeout;
     ngx_msec_t                       send_timeout;
@@ -160,6 +167,8 @@ typedef struct {
     size_t                           buffer_size;
 
     ngx_uint_t                       pool_size;
+
+    ngx_flag_t                       transform_underscores_in_resp_headers;
 
 } ngx_http_lua_loc_conf_t;
 

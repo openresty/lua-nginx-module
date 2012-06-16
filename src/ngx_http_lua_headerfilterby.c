@@ -85,12 +85,9 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_int_t        rc;
     u_char          *err_msg;
     size_t           len;
-    int              old_top;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
-
-    old_top = lua_gettop(L);
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_header_filter_by_lua_env(L, r);
@@ -120,13 +117,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "failed to run header_filter_by_lua*: %*s", len, err_msg);
 
-        lua_settop(L, old_top);    /*  clear remaining elems on stack */
+        lua_settop(L, 0); /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
     /*  clear Lua stack */
-    lua_settop(L, old_top);
+    lua_settop(L, 0);
 
     return NGX_OK;
 }
@@ -159,7 +156,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -215,7 +212,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -246,6 +243,11 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
                    "lua header filter for user lua code, uri \"%V\"", &r->uri);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->body_filter_handler) {
+        r->filter_need_in_memory = 1;
+        return ngx_http_next_header_filter(r);
+    }
 
     if (llcf->header_filter_handler == NULL) {
         dd("no header filter handler found");
