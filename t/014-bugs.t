@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 19);
+plan tests => repeat_each() * (blocks() * 2 + 20);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -673,4 +673,22 @@ GET /test
 a0
 --- no_error_log
 [error]
+
+
+
+=== TEST 31: set content-type header with charset and default_type
+--- http_config
+--- config
+    location /lua {
+        default_type application/json;
+        charset utf-8;
+        charset_types application/json;
+        content_by_lua 'ngx.say("hi")';
+    }
+--- request
+    GET /lua
+--- response_body
+hi
+--- response_headers
+Content-Type: application/json; charset=utf-8
 
