@@ -3401,7 +3401,7 @@ It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''bef
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:receiveuntil ==
-'''syntax:''' ''iterator = tcpsock:receiveuntil(pattern)''
+'''syntax:''' ''iterator = tcpsock:receiveuntil(pattern, options?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -3474,7 +3474,21 @@ Timeout for the iterator function's reading operation is controlled by the [[#lu
 
 It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling the iterator function (note that the <code>receiveuntil</code> call is irrelevant here).
 
-This feature was first introduced in the <code>v0.5.0rc1</code> release.
+Since the <code>v0.5.1</code> release, this method also takes an optional <code>options</code> table argument to control the behavior. The following options are supported:
+
+* <code>inclusive</code>
+
+The <code>inclusive</code> takes a boolean value to control whether to include the pattern string in the returned data string. Default to <code>false</code>. For example,
+
+<geshi lang="lua">
+    local reader = tcpsock:receiveuntil("_END_", { inclusive = true })
+    local data = reader()
+    ngx.say(data)
+</geshi>
+
+Then for the input data stream <code>"hello world _END_ blah blah blah"</code>, then the example above will output <code>hello world _END_</code>, including the pattern string <code>_END_</code> itself.
+
+This method was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:close ==
 '''syntax:''' ''ok, err = tcpsock:close()''

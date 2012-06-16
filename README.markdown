@@ -3520,16 +3520,11 @@ This feature was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:receiveuntil
 --------------------
-**syntax:** *iterator = tcpsock:receiveuntil(pattern)*
+**syntax:** *iterator = tcpsock:receiveuntil(pattern, options?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 This method returns an iterator Lua function that can be called to read the data stream until it sees the specified pattern or an error occurs.
-
-An optional option table can be given as the second argument, which support the options:
-
-* `inclusive`
-    specify wether the pattern itself should be returned as part of the matched data
 
 Here is an example for using this method to read a data stream with the boundary sequence `--abcedhb`:
 
@@ -3598,7 +3593,21 @@ Timeout for the iterator function's reading operation is controlled by the [lua_
 
 It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling the iterator function (note that the `receiveuntil` call is irrelevant here).
 
-This feature was first introduced in the `v0.5.0rc1` release.
+Since the `v0.5.1` release, this method also takes an optional `options` table argument to control the behavior. The following options are supported:
+
+* `inclusive`
+
+The `inclusive` takes a boolean value to control whether to include the pattern string in the returned data string. Default to `false`. For example,
+
+
+    local reader = tcpsock:receiveuntil("_END_", { inclusive = true })
+    local data = reader()
+    ngx.say(data)
+
+
+Then for the input data stream `"hello world _END_ blah blah blah"`, then the example above will output `hello world _END_`, including the pattern string `_END_` itself.
+
+This method was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:close
 -------------
