@@ -614,7 +614,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
 
-    p = ngx_pnalloc(r->pool, len);
+    p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
     if (p == NULL) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
 
@@ -623,17 +623,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         return;
     }
 
+    sin = (struct sockaddr_in *) &p[len];
+    ngx_memzero(sin, sizeof(struct sockaddr_in));
+
     len = ngx_inet_ntop(AF_INET, &ur->addrs[i], p, NGX_INET_ADDRSTRLEN);
     len = ngx_sprintf(&p[len], ":%d", ur->port) - p;
-
-    sin = ngx_pcalloc(r->pool, sizeof(struct sockaddr_in));
-    if (sin == NULL) {
-        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
-
-        lua_pushnil(L);
-        lua_pushliteral(L, "out of memory");
-        return;
-    }
 
     sin->sin_family = AF_INET;
     sin->sin_port = htons(ur->port);
