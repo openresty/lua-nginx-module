@@ -718,7 +718,8 @@ GET /lua
 API disabled in the context of header_filter_by_lua*
 
 
-=== TEST 38: clear content-length
+
+=== TEST 39: clear content-length
 --- config
     location /lua {
         content_by_lua '
