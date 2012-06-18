@@ -3749,6 +3749,40 @@ Lua/LuaJIT bytecode support
 
 Since the `v0.5.0rc32` release, all the `*_by_lua_file` configure directives (like [content_by_lua_file](http://wiki.nginx.org/HttpLuaModule#content_by_lua_file)) support loading Lua 5.1 and LuaJIT 2.0 raw bytecode files automatically.
 
+Please note that the bytecode format used by LuaJIT 2.0 is completely different from the standard Lua 5.1 interpreter's. So if you're using LuaJIT 2.0 with this Nginx module, you need to use LuaJIT 2.0 to generate LuaJIT-compatible bytecode files, like this:
+
+
+    /path/to/luajit/bin/luajit-2.0.0-beta10 -b /path/to/your.lua /path/to/your.luac
+
+
+You can use the `-bg` option instead to include debug information in the LuaJIT bytecode file:
+
+
+    /path/to/luajit/bin/luajit-2.0.0-beta10 -bg /path/to/your.lua /path/to/your.luac
+
+
+Check out the official documentation for `luajit`'s `-b` option for more details:
+
+<http://luajit.org/running.html#opt_b>
+
+Similarly, if you're using the standard Lua 5.1 interpreter with this Nginx module, then you need to use the `luac` command-line utility to generate the Lua-compatible bytecode files, like this:
+
+
+    luac -o /path/to/your.luac /path/to/your.lua
+
+
+Unlike LuaJIT, the debug information in included in standard Lua 5.1's bytecode by default. You can strip the debug information by specifying the `-s` option, as in
+
+
+    luac -s -o /path/to/your.luac /path/to/your.lua
+
+
+If you're trying to load a standard Lua 5.1 bytecode file into an nginx linked with LuaJIT 2.0 or in the other way around, you will get an error message like below in your Nginx's `error.log` file:
+
+
+    [error] 13909\#0: *1 failed to load Lua inlined code: bad byte-code header in /path/to/test.luac
+
+
 Loading bytecode files via the Lua primitives like `require` and `dofile` should always work as expected.
 
 HTTP 1.0 support
