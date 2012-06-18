@@ -369,10 +369,6 @@ GET /t
 === TEST 14: using body_filter_by_lua and header_filter_by_lua at the same time
 --- config
     location /t {
-        echo hello world;
-        echo_flush;
-        echo hiya globe;
-
         content_by_lua '
             ngx.header.content_length = 12
             ngx.say("Hello World")
