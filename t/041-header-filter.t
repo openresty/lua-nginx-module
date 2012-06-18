@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 83;
+plan tests => repeat_each() * 86;
 
 #no_diff();
 #no_long_string();
@@ -716,4 +716,21 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of header_filter_by_lua*
+
+
+=== TEST 38: clear content-length
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.content_length = 12
+            ngx.say("hello world")
+        ';
+        header_filter_by_lua 'ngx.header.content_length = nil';
+    }
+--- request
+GET /lua
+--- response_headers
+!content-length
+--- response_body
+hello world
 
