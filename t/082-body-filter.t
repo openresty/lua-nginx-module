@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 #no_diff();
 #no_long_string();
@@ -361,6 +361,36 @@ failed to run body_filter_by_lua*: unknown reason
 --- request
 GET /t
 --- ignore_response
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: using body_filter_by_lua and header_filter_by_lua at the same time
+--- config
+    location /t {
+        echo hello world;
+        echo_flush;
+        echo hiya globe;
+
+        content_by_lua '
+            ngx.header.content_length = 12
+            ngx.say("Hello World")
+        ';
+
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            ngx.arg[1] = ngx.arg[1] .. "aaa"
+        ';
+    }
+--- request
+GET /t
+--- response_body chop
+Hello World
+aaaaaa
+--- response_headers
+!content-length
 --- no_error_log
 [error]
 
