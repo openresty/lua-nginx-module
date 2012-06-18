@@ -118,7 +118,7 @@ close: 1 nil
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -187,7 +187,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -262,7 +262,7 @@ close: nil closed
     }
 
     location /foo {
-        echo abcabcabd;
+        content_by_lua 'ngx.say("abcabcabd")';
         more_clear_headers Date;
     }
 --- request
@@ -333,7 +333,7 @@ close: nil closed
     }
 
     location /foo {
-        echo abcabcaad;
+        content_by_lua 'ngx.say("abcabcaad")';
         more_clear_headers Date;
     }
 --- request
