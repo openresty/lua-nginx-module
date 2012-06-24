@@ -1461,7 +1461,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
             break;
 
         case LUA_TTABLE:
-            len = ngx_http_lua_calc_strlen_in_table(L, 2, 1 /* strict */);
+            len = ngx_http_lua_calc_strlen_in_table(L, 2, 2, 1 /* strict */);
             break;
 
         default:
@@ -1493,7 +1493,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
             break;
 
         case LUA_TTABLE:
-            b->last = ngx_http_lua_copy_str_in_table(L, b->last);
+            b->last = ngx_http_lua_copy_str_in_table(L, -1, b->last);
             break;
 
         default:

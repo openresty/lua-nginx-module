@@ -110,7 +110,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
             case LUA_TTABLE:
 
-                size += ngx_http_lua_calc_strlen_in_table(L, i, 0 /* strict */);
+                size += ngx_http_lua_calc_strlen_in_table(L, i, i,
+                                                          0 /* strict */);
                 break;
 
             case LUA_TLIGHTUSERDATA:
@@ -187,7 +188,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                 break;
 
             case LUA_TTABLE:
-                b->last = ngx_http_lua_copy_str_in_table(L, b->last);
+                b->last = ngx_http_lua_copy_str_in_table(L, i, b->last);
                 break;
 
             case LUA_TLIGHTUSERDATA:
@@ -242,7 +243,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
 
 size_t
-ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
+ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
+    unsigned strict)
 {
     double              key;
     int                 max;
@@ -252,11 +254,24 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
     size_t              len;
     const char         *msg;
 
+    if (index < 0) {
+        index = lua_gettop(L) + index + 1;
+    }
+
+    dd("table index: %d", index);
+
     max = 0;
 
     lua_pushnil(L); /* stack: table key */
-    while (lua_next(L, -2) != 0) { /* stack: table key value */
-        if (lua_type(L, -2) == LUA_TNUMBER && (key = lua_tonumber(L, -2))) {
+    while (lua_next(L, index) != 0) { /* stack: table key value */
+        dd("key type: %s", luaL_typename(L, -2));
+
+        if (lua_type(L, -2) == LUA_TNUMBER) {
+
+            key = lua_tonumber(L, -2);
+
+            dd("key value: %d", (int) key);
+
             if (floor(key) == key && key >= 1) {
                 if (key > max) {
                     max = key;
@@ -278,7 +293,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
     size = 0;
 
     for (i = 1; i <= max; i++) {
-        lua_rawgeti(L, -1, i); /* stack: table value */
+        lua_rawgeti(L, index, i); /* stack: table value */
         type = lua_type(L, -1);
 
         switch (type) {
@@ -315,7 +330,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int arg_i, unsigned strict)
 
             case LUA_TTABLE:
 
-                size += ngx_http_lua_calc_strlen_in_table(L, arg_i, strict);
+                size += ngx_http_lua_calc_strlen_in_table(L, -1, arg_i, strict);
                 break;
 
             case LUA_TLIGHTUSERDATA:
@@ -347,7 +362,7 @@ bad_type:
 
 
 u_char *
-ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
+ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
 {
     double               key;
     int                  max;
@@ -356,10 +371,14 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
     size_t               len;
     u_char              *p;
 
+    if (index < 0) {
+        index = lua_gettop(L) + index + 1;
+    }
+
     max = 0;
 
     lua_pushnil(L); /* stack: table key */
-    while (lua_next(L, -2) != 0) { /* stack: table key value */
+    while (lua_next(L, index) != 0) { /* stack: table key value */
         key = lua_tonumber(L, -2);
         if (key > max) {
             max = key;
@@ -369,7 +388,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
     }
 
     for (i = 1; i <= max; i++) {
-        lua_rawgeti(L, -1, i); /* stack: table value */
+        lua_rawgeti(L, index, i); /* stack: table value */
         type = lua_type(L, -1);
         switch (type) {
             case LUA_TNUMBER:
@@ -402,7 +421,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, u_char *dst)
                 break;
 
             case LUA_TTABLE:
-                dst = ngx_http_lua_copy_str_in_table(L, dst);
+                dst = ngx_http_lua_copy_str_in_table(L, -1, dst);
                 break;
 
             case LUA_TLIGHTUSERDATA:

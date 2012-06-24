@@ -390,3 +390,23 @@ aaaaaa
 --- no_error_log
 [error]
 
+
+
+=== TEST 15: table arguments to ngx.arg[1] (github issue #54)
+--- config
+    location /t {
+        echo -n hello;
+
+        body_filter_by_lua '
+            if ngx.arg[1] ~= "" then
+                ngx.arg[1] = {{ngx.arg[1]}, "!", "\\n"}
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+hello!
+--- no_error_log
+[error]
+
