@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 18 June 2012.
+This document describes ngx_lua [v0.5.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 25 June 2012.
 
 Synopsis
 ========
@@ -4071,9 +4071,9 @@ Alternatively, `ngx_lua` can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.0.15.tar.gz'
-    tar -xzvf nginx-1.0.15.tar.gz
-    cd nginx-1.0.15/
+    wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
+    tar -xzvf nginx-1.2.1.tar.gz
+    cd nginx-1.2.1/
  
     # tell nginx's build system where to find lua:
     export LUA_LIB=/path/to/lua/lib

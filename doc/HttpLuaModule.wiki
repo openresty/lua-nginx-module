@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.2] released on 18 June 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.3] released on 25 June 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3932,9 +3932,9 @@ Alternatively, <code>ngx_lua</code> can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.0.15.tar.gz'
-    tar -xzvf nginx-1.0.15.tar.gz
-    cd nginx-1.0.15/
+    wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
+    tar -xzvf nginx-1.2.1.tar.gz
+    cd nginx-1.2.1/
  
     # tell nginx's build system where to find lua:
     export LUA_LIB=/path/to/lua/lib
