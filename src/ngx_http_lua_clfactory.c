@@ -466,12 +466,12 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         }
 #endif
 
-        /* set the following fields to zero:
+        /* clear the following fields to zero:
          * - lineinfo vector size
          * - number of local vars
          * - number of upvalues
          */
-        memset(lf->end_code.str, 0, sizeof(int) * 3);
+        ngx_memzero(lf->end_code.str, sizeof(int) * 3);
 
         lf->end_code_len = sizeof(int) + sizeof(int) + sizeof(int);
 
