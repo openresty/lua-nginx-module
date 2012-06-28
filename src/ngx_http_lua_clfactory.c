@@ -10,7 +10,7 @@
 
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  * Lua bytecode header        Luajit bytecode header
  * --------------              --------------
  * |  \033Lua   | 0-3          |  \033LJ    | 0-2
@@ -64,7 +64,7 @@
 #define    LUAC_VERSION            0x51
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  *  Lua Proto
  * ---------------------
  * | String            | Can be empty string
@@ -148,7 +148,7 @@
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  * Luajit bytecode format
  * ---------------------
  * | HEAD              | Luajit bytecode head
