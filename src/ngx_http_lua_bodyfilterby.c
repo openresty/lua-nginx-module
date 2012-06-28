@@ -543,7 +543,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         return 0;
 
     case LUA_TTABLE:
-        size = ngx_http_lua_calc_strlen_in_table(L, 3 /* index */,
+        size = ngx_http_lua_calc_strlen_in_table(L, 3 /* index */, 3 /* arg */,
                                                  1 /* strict */);
         data = NULL;
         break;
@@ -605,7 +605,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     }
 
     if (type == LUA_TTABLE) {
-        cl->buf->last = ngx_http_lua_copy_str_in_table(L, cl->buf->last);
+        cl->buf->last = ngx_http_lua_copy_str_in_table(L, 3, cl->buf->last);
 
     } else {
         cl->buf->last = ngx_copy(cl->buf->pos, data, size);

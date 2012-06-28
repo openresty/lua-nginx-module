@@ -87,7 +87,7 @@ failed to connect: failed to parse host name "/tmp/test-nginx.sock": invalid hos
 
         server_tokens off;
         location /foo {
-            echo foo;
+            content_by_lua 'ngx.say("foo")';
             more_clear_headers Date;
         }
     }

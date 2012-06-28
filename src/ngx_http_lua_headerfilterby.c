@@ -246,7 +246,6 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 
     if (llcf->body_filter_handler) {
         r->filter_need_in_memory = 1;
-        return ngx_http_next_header_filter(r);
     }
 
     if (llcf->header_filter_handler == NULL) {

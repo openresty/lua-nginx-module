@@ -10,7 +10,7 @@
 
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  * Lua bytecode header        Luajit bytecode header
  * --------------              --------------
  * |  \033Lua   | 0-3          |  \033LJ    | 0-2
@@ -64,7 +64,7 @@
 #define    LUAC_VERSION            0x51
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  *  Lua Proto
  * ---------------------
  * | String            | Can be empty string
@@ -148,7 +148,7 @@
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
 
 /*
- * Take from chaoslawful
+ * taken from chaoslawful:
  * Luajit bytecode format
  * ---------------------
  * | HEAD              | Luajit bytecode head
@@ -466,12 +466,12 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         }
 #endif
 
-        /* lineinfo vector size */
-        *(int *) (lf->end_code.str) = 0;
-        /* number of local vars */
-        *(int *) (lf->end_code.str + sizeof(int)) = 0;
-        /* number of upvalues */
-        *(int *) (lf->end_code.str + sizeof(int) + sizeof(int)) = 0;
+        /* clear the following fields to zero:
+         * - lineinfo vector size
+         * - number of local vars
+         * - number of upvalues
+         */
+        ngx_memzero(lf->end_code.str, sizeof(int) * 3);
 
         lf->end_code_len = sizeof(int) + sizeof(int) + sizeof(int);
 

@@ -69,7 +69,7 @@ __DATA__
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -139,7 +139,7 @@ close: nil closed
     }
 
     location /foo {
-        echo -n foo;
+        content_by_lua 'ngx.print("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -358,7 +358,7 @@ lua socket connect timed out
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -503,7 +503,7 @@ attempt to send data on a closed socket
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -571,7 +571,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -651,7 +651,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -730,7 +730,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -808,7 +808,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -880,7 +880,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -949,7 +949,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1058,7 +1058,7 @@ connect() failed (111: Connection refused)
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1413,7 +1413,7 @@ lua reuse socket upstream ctx
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1505,7 +1505,7 @@ close: 1 nil
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1574,7 +1574,7 @@ GET /t
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1646,7 +1646,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1707,7 +1707,7 @@ bad argument #1 to 'send' (bad data type nil found)
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1768,7 +1768,7 @@ bad argument #1 to 'send' (bad data type boolean found)
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
@@ -1896,7 +1896,7 @@ subrequest: 200, OK\r
     }
 
     location /foo {
-        echo "foo\r\rbar\rbaz";
+        content_by_lua 'ngx.say("foo\\r\\rbar\\rbaz")';
         more_clear_headers Date;
     }
 --- request
@@ -1964,7 +1964,7 @@ close: nil closed
     }
 
     location /foo {
-        echo foo;
+        content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
 --- request
