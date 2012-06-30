@@ -27,7 +27,7 @@
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
-#include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_sleep.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_headerfilterby.h"
@@ -588,7 +588,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_socket_api(cf->log, L);
+    ngx_http_lua_inject_socket_tcp_api(cf->log, L);
 
     ngx_http_lua_inject_misc_api(L);
 
@@ -975,7 +975,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_core_loc_conf_t    *clcf;
     ngx_chain_t                 *cl;
 
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
 
     c = r->connection;
 

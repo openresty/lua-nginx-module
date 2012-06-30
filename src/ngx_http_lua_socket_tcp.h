@@ -1,19 +1,20 @@
-#ifndef NGX_HTTP_LUA_SOCKET_H
-#define NGX_HTTP_LUA_SOCKET_H
+#ifndef NGX_HTTP_LUA_SOCKET_TCP_H
+#define NGX_HTTP_LUA_SOCKET_TCP_H
 
 
 #include "ngx_http_lua_common.h"
 
-typedef struct ngx_http_lua_socket_upstream_s  ngx_http_lua_socket_upstream_t;
+typedef struct ngx_http_lua_socket_tcp_upstream_s
+        ngx_http_lua_socket_tcp_upstream_t;
 
 
 typedef
-    int (*ngx_http_lua_socket_retval_handler)(ngx_http_request_t *r,
-        ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    int (*ngx_http_lua_socket_tcp_retval_handler)(ngx_http_request_t *r,
+        ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 
 
-typedef void (*ngx_http_lua_socket_upstream_handler_pt)(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+typedef void (*ngx_http_lua_socket_tcp_upstream_handler_pt)(
+          ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u);
 
 
 typedef struct {
@@ -29,10 +30,10 @@ typedef struct {
 } ngx_http_lua_socket_pool_t;
 
 
-struct ngx_http_lua_socket_upstream_s {
-    ngx_http_lua_socket_retval_handler          prepare_retvals;
-    ngx_http_lua_socket_upstream_handler_pt     read_event_handler;
-    ngx_http_lua_socket_upstream_handler_pt     write_event_handler;
+struct ngx_http_lua_socket_tcp_upstream_s {
+    ngx_http_lua_socket_tcp_retval_handler          prepare_retvals;
+    ngx_http_lua_socket_tcp_upstream_handler_pt     read_event_handler;
+    ngx_http_lua_socket_tcp_upstream_handler_pt     write_event_handler;
 
     ngx_http_lua_socket_pool_t      *socket_pool;
 
@@ -88,7 +89,7 @@ struct ngx_http_lua_dfa_edge_s {
 
 
 typedef struct {
-    ngx_http_lua_socket_upstream_t      *upstream;
+    ngx_http_lua_socket_tcp_upstream_t  *upstream;
 
     ngx_str_t                            pattern;
     int                                  state;
@@ -112,10 +113,10 @@ typedef struct {
 } ngx_http_lua_socket_pool_item_t;
 
 
-void ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L);
+void ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L);
 
 void ngx_http_lua_inject_req_socket_api(lua_State *L);
 
 
-#endif /* NGX_HTTP_LUA_SOCKET_H */
+#endif /* NGX_HTTP_LUA_SOCKET_TCP_H */
 
