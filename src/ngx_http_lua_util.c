@@ -58,7 +58,7 @@ static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
 static int ngx_http_lua_ngx_check_aborted(lua_State *L);
-static int ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1);
+static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc);
 static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
 static int ngx_http_lua_param_get(lua_State *L);
@@ -219,13 +219,13 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 lua_State *
 ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 {
-    int              top;
+    int              base;
     lua_State       *cr;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua creating new thread");
 
-    top = lua_gettop(L);
+    base = lua_gettop(L);
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
@@ -251,7 +251,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         *ref = luaL_ref(L, -2);
 
         if (*ref == LUA_NOREF) {
-            lua_settop(L, top);  /* restore main thread stack */
+            lua_settop(L, base);  /* restore main thread stack */
             return NULL;
         }
     }
@@ -932,7 +932,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             msg = "unknown reason";
         }
 
-        ngx_http_lua_debug_traceback(L, cc);
+        ngx_http_lua_thread_traceback(L, cc);
         trace = lua_tostring(L, -1);
         lua_pop(L, -1);
 
@@ -2328,28 +2328,28 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 
 static int
-ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1)
+ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc)
 {
-    int         top;
+    int         base;
     int         level = 0;
     int         firstpart = 1;  /* still before eventual `...' */
     lua_Debug   ar;
 
-    top = lua_gettop(L);
+    base = lua_gettop(L);
 
     lua_pushliteral(L, "stack traceback:");
 
-    while (lua_getstack(L1, level++, &ar)) {
+    while (lua_getstack(cc, level++, &ar)) {
 
         if (level > LEVELS1 && firstpart) {
             /* no more than `LEVELS2' more levels? */
-            if (!lua_getstack(L1, level + LEVELS2, &ar)) {
+            if (!lua_getstack(cc, level + LEVELS2, &ar)) {
                 level--;  /* keep going */
 
             } else {
                 lua_pushliteral(L, "\n\t...");  /* too many levels */
                 /* This only works with LuaJIT 2.x. Avoids O(n^2) behaviour. */
-                lua_getstack(L1, -10, &ar);
+                lua_getstack(cc, -10, &ar);
                 level = ar.i_ci - LEVELS2;
             }
 
@@ -2358,7 +2358,7 @@ ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1)
         }
 
         lua_pushliteral(L, "\n\t");
-        lua_getinfo(L1, "Snl", &ar);
+        lua_getinfo(cc, "Snl", &ar);
         lua_pushfstring(L, "%s:", ar.short_src);
 
         if (ar.currentline > 0) {
@@ -2382,7 +2382,7 @@ ngx_http_lua_debug_traceback(lua_State *L, lua_State *L1)
         }
     }
 
-    lua_concat(L, lua_gettop(L) - top);
+    lua_concat(L, lua_gettop(L) - base);
     return 1;
 }
 
