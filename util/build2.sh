@@ -3,7 +3,7 @@
 # this file is mostly meant to be used by the author himself.
 
 root=`pwd`
-version=${1:-1.0.5}
+version=${1:-1.2.1}
 home=~
 force=$2
 
