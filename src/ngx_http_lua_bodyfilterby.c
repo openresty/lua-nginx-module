@@ -537,8 +537,18 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
     case LUA_TNIL:
         /* discard the buffers */
-        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-        lua_pushlightuserdata(L, NULL);
+        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key); /* key */
+        lua_pushvalue(L, -1); /* key key */
+        lua_rawget(L, LUA_GLOBALSINDEX); /* key val */
+        in = lua_touserdata(L, -1);
+        lua_pop(L, 1); /* key */
+
+        for (cl = in; cl; cl = cl->next) {
+            dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
+            cl->buf->pos = cl->buf->last;
+        }
+
+        lua_pushlightuserdata(L, NULL); /* key val */
         lua_rawset(L, LUA_GLOBALSINDEX);
         return 0;
 
@@ -564,7 +574,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             last = 1;
         }
 
-        /* mark the buf as consumed */
+        dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
         cl->buf->pos = cl->buf->last;
     }
 
