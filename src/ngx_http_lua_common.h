@@ -105,6 +105,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_conf_handler_pt    init_handler;
     ngx_str_t                       init_src;
+    ngx_uint_t                      shm_zones_inited;
 
     unsigned         requires_header_filter:1;
     unsigned         requires_body_filter:1;

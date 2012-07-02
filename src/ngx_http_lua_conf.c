@@ -31,6 +31,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
+     *      lmcf->shm_zones_inited = 0;
      *      lmcf->requires_header_filter = 0;
      *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;

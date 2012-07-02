@@ -84,7 +84,11 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     dd("lmcf->lua: %p", lmcf->lua);
 
-    if (lmcf->init_handler) {
+    lmcf->shm_zones_inited++;
+
+    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
+        && lmcf->init_handler)
+    {
         if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != 0) {
             /* an error happened */
             return NGX_ERROR;

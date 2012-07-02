@@ -8,7 +8,6 @@ use Test::Nginx::Socket;
 #log_level('warn');
 
 repeat_each(2);
-#repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 3);
 
@@ -30,7 +29,7 @@ GET /lua
 --- response_body
 hello, FOO
 --- no_error_log
-error
+[error]
 
 
 
@@ -49,7 +48,7 @@ GET /lua
 --- response_body
 hello, FOO
 --- no_error_log
-error
+[error]
 
 
 
@@ -75,11 +74,11 @@ GET /lua
 --- response_body
 hello, blah
 --- no_error_log
-error
+[error]
 
 
 
-=== TEST 4: shm
+=== TEST 4: shdict (single)
 --- http_config
     lua_shared_dict dogs 1m;
     init_by_lua '
@@ -99,5 +98,33 @@ GET /lua
 --- response_body
 Jim: 6
 --- no_error_log
-error
+[error]
+
+
+
+=== TEST 5: shdict (multi)
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+    init_by_lua '
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 6)
+        dogs:get("Jim")
+        local cats = ngx.shared.cats
+        cats:set("Tom", 2)
+        dogs:get("Tom")
+    ';
+--- config
+    location /lua {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            ngx.say("Jim: ", dogs:get("Jim"))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+Jim: 6
+--- no_error_log
+[error]
 
