@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #no_diff();
 #no_long_string();
@@ -453,4 +453,32 @@ GET /t
 "[" . ("a" x 512) . ("b" x 512) . "]";
 --- no_error_log
 [error]
+
+
+
+=== TEST 17: backtrace
+--- config
+    location /t {
+        body_filter_by_lua '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+        echo ok;
+    }
+--- request
+    GET /t
+--- ignore_response
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
 
