@@ -750,3 +750,32 @@ GET /lua?name=jim
 --- no_error_log
 [error]
 
+
+
+=== TEST 45: backtrace
+--- config
+    location /t {
+        set_by_lua $a '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
+
