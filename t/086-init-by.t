@@ -128,3 +128,43 @@ Jim: 6
 --- no_error_log
 [error]
 
+
+
+=== TEST 6: print
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+    init_by_lua '
+        print("log from init_by_lua")
+    ';
+--- config
+    location /lua {
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+log from init_by_lua
+
+
+
+=== TEST 7: ngx.log
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+    init_by_lua '
+        ngx.log(ngx.NOTICE, "log from init_by_lua")
+    ';
+--- config
+    location /lua {
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+log from init_by_lua
+
