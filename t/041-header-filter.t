@@ -736,7 +736,8 @@ GET /lua
 hello world
 
 
-=== TEST 45: backtrace
+
+=== TEST 40: backtrace
 --- config
     location /t {
         header_filter_by_lua '
