@@ -85,7 +85,8 @@ static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
 static int ngx_http_lua_socket_upstream_destroy(lua_State *L);
 static int ngx_http_lua_socket_downstream_destroy(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u,
+    lua_State *L);
 static ngx_int_t ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, u_char *pos, size_t len, u_char *pat,
     int prefix, int old_state);
@@ -3400,7 +3401,8 @@ ngx_http_lua_req_socket_cleanup(void *data)
 
 static ngx_int_t
 ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u,
+    lua_State *L)
 {
     ngx_chain_t             *cl;
     ngx_chain_t            **ll;
