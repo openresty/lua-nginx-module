@@ -264,8 +264,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
-    if (n != 2 && n != 3) {
-        return luaL_error(L, "ngx.socket connect: expecting 2 or 3 arguments "
+    if (n != 2 && n != 3 && n != 4) {
+        return luaL_error(L, "ngx.socket connect: expecting 2, 3, or 4 arguments "
                           "(including the object), but seen %d", n);
     }
 
@@ -310,14 +310,39 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             return 2;
         }
 
-        lua_pushliteral(L, ":");
-        lua_insert(L, 3);
-        lua_concat(L, 3);
-
-        dd("socket key: %s", lua_tostring(L, -1));
-
     } else { /* n == 2 */
         port = 0;
+    }
+
+    if(n == 4) {
+        luaL_checktype(L, 4, LUA_TTABLE);
+
+        lua_getfield(L, 4, "pool");
+
+        switch (lua_type(L, -1)) {
+            case LUA_TNIL:
+                /* do nothing */
+                break;
+
+            case LUA_TSTRING:
+                /*stack is host, port, table, pool or host, table, pool*/
+                lua_remove(L, -2);
+                 /*stack is host, port, pool or host, pool*/
+                break;
+
+            default:
+                return luaL_error(L, "bad \"pool\" option value type: %s",
+                                  luaL_typename(L, -1));
+
+        }
+    }
+
+    if(n > 2) {
+        lua_pushliteral(L, ":");
+        lua_insert(L, n);
+        lua_concat(L, n);
+
+         dd("socket key: %s", lua_tostring(L, -1));
     }
 
     /* the key's index is 2 */
