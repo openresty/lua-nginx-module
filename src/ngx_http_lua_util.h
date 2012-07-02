@@ -29,6 +29,9 @@ extern char ngx_http_lua_socket_pool_key;
 /* char whose address we'll use as key for the nginx request pointer */
 extern char ngx_http_lua_request_key;
 
+/* char whose address we'll use as key for the nginx config logger */
+extern char ngx_http_lua_cf_log_key;
+
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
