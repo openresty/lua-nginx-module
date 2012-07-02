@@ -97,8 +97,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+    lua_pushcfunction(L, ngx_http_lua_traceback);
+    lua_insert(L, 1);  /* put it under chunk and args */
+
     /*  protected call user code */
-    rc = lua_pcall(L, 0, 1, 0);
+    rc = lua_pcall(L, 0, 1, 1);
+
+    lua_remove(L, 1);  /* remove traceback function */
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */

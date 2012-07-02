@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 86;
+plan tests => repeat_each() * 91;
 
 #no_diff();
 #no_long_string();
@@ -734,4 +734,31 @@ GET /lua
 !content-length
 --- response_body
 hello world
+
+
+=== TEST 45: backtrace
+--- config
+    location /t {
+        header_filter_by_lua '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+        echo ok;
+    }
+--- request
+    GET /t
+--- ignore_response
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
 
