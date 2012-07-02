@@ -453,6 +453,7 @@ GET /t
 "[" . ("a" x 512) . ("b" x 512) . "]";
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
