@@ -117,6 +117,8 @@ ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 void ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec);
 
+int ngx_http_lua_traceback(lua_State *L);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -488,4 +488,33 @@ GET /lua
 ok
 --- error_log
 API disabled in the context of log_by_lua*
+
+
+
+=== TEST 28: backtrace
+--- config
+    location /t {
+        echo ok;
+        log_by_lua '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
 
