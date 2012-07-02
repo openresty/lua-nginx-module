@@ -11,8 +11,6 @@
 
 
 static void ngx_http_lua_cleanup_vm(void *data);
-static char * ngx_http_lua_init_vm(ngx_conf_t *cf,
-        ngx_http_lua_main_conf_t *lmcf);
 
 
 void *
@@ -31,12 +29,15 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua_cpath = { 0, NULL };
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
+     *      lmcf->init_handler = NULL;
+     *      lmcf->init_src = { 0, NULL };
      *      lmcf->requires_header_filter = 0;
      *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
      *      lmcf->requires_log = 0;
+     *      lmcf->requires_shm = 0;
      */
 
     lmcf->pool = cf->pool;
@@ -61,16 +62,6 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         lmcf->regex_cache_max_entries = 1024;
     }
 #endif
-
-    if (lmcf->lua == NULL) {
-        if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                               "failed to initialize Lua VM");
-            return NGX_CONF_ERROR;
-        }
-
-        dd("Lua VM initialized!");
-    }
 
     return NGX_CONF_OK;
 }
@@ -215,7 +206,7 @@ ngx_http_lua_cleanup_vm(void *data)
 }
 
 
-static char *
+char *
 ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     ngx_pool_cleanup_t *cln;

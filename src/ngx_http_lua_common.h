@@ -78,7 +78,14 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
 
 
-typedef struct {
+typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+
+
+typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
+        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+
+
+struct ngx_http_lua_main_conf_s {
     lua_State       *lua;
 
     ngx_str_t        lua_path;
@@ -96,14 +103,17 @@ typedef struct {
     ngx_flag_t       postponed_to_rewrite_phase_end;
     ngx_flag_t       postponed_to_access_phase_end;
 
+    ngx_http_lua_conf_handler_pt    init_handler;
+    ngx_str_t                       init_src;
+
     unsigned         requires_header_filter:1;
     unsigned         requires_body_filter:1;
     unsigned         requires_capture_filter:1;
     unsigned         requires_rewrite:1;
     unsigned         requires_access:1;
     unsigned         requires_log:1;
-
-} ngx_http_lua_main_conf_t;
+    unsigned         requires_shm:1;
+};
 
 
 typedef struct {
