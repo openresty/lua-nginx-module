@@ -122,7 +122,6 @@ src/filter.[ch]
 src/shdict.[ch]
 src/body.[ch]
 src/uri.[ch]
-src/socket.[ch]
 src/api.[ch]
 src/logby.[ch]
 src/sleep.[ch]
@@ -138,3 +137,4 @@ tsock
 a.c
 ERRORS
 src/bodyfilterby.[ch]
+src/tcp.[ch]

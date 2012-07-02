@@ -3,7 +3,7 @@
 #endif
 #include "ddebug.h"
 
-#include "ngx_http_lua_socket.h"
+#include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
@@ -28,40 +28,40 @@ static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc,
     void *data);
 static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_cleanup(void *data);
 static void ngx_http_lua_req_socket_cleanup(void *data);
 static void ngx_http_lua_socket_finalize(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_send(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_test_connect(ngx_connection_t *c);
 static void ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, ngx_uint_t ft_type);
+    ngx_http_lua_socket_tcp_upstream_t *u, ngx_uint_t ft_type);
 static void ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static int ngx_http_lua_socket_tcp_send_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static int ngx_http_lua_socket_tcp_connect_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static void ngx_http_lua_socket_dummy_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_read(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static int ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_line(void *data, ssize_t bytes);
 static void ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx);
 static int ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static int ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_all(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_until(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
@@ -76,7 +76,7 @@ static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     lua_State *L, int key_index,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
 static void ngx_http_lua_socket_keepalive_rev_handler(ngx_event_t *ev);
@@ -85,14 +85,14 @@ static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
 static int ngx_http_lua_socket_upstream_destroy(lua_State *L);
 static int ngx_http_lua_socket_downstream_destroy(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_upstream_t *u, lua_State *L);
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, u_char *pos, size_t len, u_char *pat,
+    ngx_http_lua_socket_tcp_upstream_t *u, u_char *pos, size_t len, u_char *pat,
     int prefix, int old_state);
 static ngx_int_t ngx_http_lua_socket_add_input_buffer(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, u_char *pat, size_t prefix);
+    ngx_http_lua_socket_tcp_upstream_t *u, u_char *pat, size_t prefix);
 static ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 
 
@@ -108,7 +108,7 @@ static char ngx_http_lua_tcp_socket_metatable_key;
 
 
 void
-ngx_http_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
+ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 {
     ngx_int_t         rc;
 
@@ -260,7 +260,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_peer_connection_t       *pc;
     int                          timeout;
 
-    ngx_http_lua_socket_upstream_t          *u;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
     if (n != 2 && n != 3) {
@@ -344,7 +344,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
                        "lua reuse socket upstream ctx");
 
     } else {
-        u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_upstream_t));
+        u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_tcp_upstream_t));
         if (u == NULL) {
             return luaL_error(L, "out of memory");
         }
@@ -359,7 +359,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         lua_rawseti(L, 1, SOCKET_CTX_INDEX);
     }
 
-    ngx_memzero(u, sizeof(ngx_http_lua_socket_upstream_t));
+    ngx_memzero(u, sizeof(ngx_http_lua_socket_tcp_upstream_t));
 
     u->request = r; /* set the controlling request */
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
@@ -534,7 +534,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     ngx_http_upstream_resolved_t        *ur;
     ngx_http_lua_ctx_t                  *lctx;
     lua_State                           *L;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
     u_char                              *p;
     size_t                               len;
     struct sockaddr_in                  *sin;
@@ -659,7 +659,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 static int
 ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     ngx_http_lua_ctx_t              *ctx;
     ngx_peer_connection_t           *pc;
@@ -828,7 +828,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
 static int
 ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     u_char           errstr[NGX_MAX_ERROR_STR];
     u_char          *p;
@@ -879,7 +879,7 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
 
 static int
 ngx_http_lua_socket_tcp_connect_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     if (u->ft_type) {
         return ngx_http_lua_socket_error_retval_handler(r, u, L);
@@ -894,7 +894,7 @@ static int
 ngx_http_lua_socket_tcp_receive(lua_State *L)
 {
     ngx_http_request_t                  *r;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_int_t                            rc;
     ngx_http_lua_ctx_t                  *ctx;
     int                                  n;
@@ -1061,7 +1061,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 static ngx_int_t
 ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
 {
-    ngx_http_lua_socket_upstream_t      *u = data;
+    ngx_http_lua_socket_tcp_upstream_t      *u = data;
 
     ngx_buf_t                   *b;
 #if (NGX_DEBUG)
@@ -1102,7 +1102,7 @@ ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
 static ngx_int_t
 ngx_http_lua_socket_read_all(void *data, ssize_t bytes)
 {
-    ngx_http_lua_socket_upstream_t      *u = data;
+    ngx_http_lua_socket_tcp_upstream_t      *u = data;
 
     ngx_buf_t                   *b;
 #if (NGX_DEBUG)
@@ -1130,7 +1130,7 @@ ngx_http_lua_socket_read_all(void *data, ssize_t bytes)
 static ngx_int_t
 ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
 {
-    ngx_http_lua_socket_upstream_t      *u = data;
+    ngx_http_lua_socket_tcp_upstream_t      *u = data;
 
     ngx_buf_t                   *b;
     u_char                      *dst;
@@ -1203,7 +1203,7 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
 
 static ngx_int_t
 ngx_http_lua_socket_read(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_int_t                    rc;
     ngx_connection_t            *c;
@@ -1411,7 +1411,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_http_core_loc_conf_t            *clcf;
     ngx_chain_t                         *cl;
     ngx_http_lua_ctx_t                  *ctx;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
     int                                  type;
     const char                          *msg;
     ngx_buf_t                           *b;
@@ -1558,7 +1558,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
 static int
 ngx_http_lua_socket_tcp_send_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket send return value handler");
@@ -1574,7 +1574,7 @@ ngx_http_lua_socket_tcp_send_retval_handler(ngx_http_request_t *r,
 
 static int
 ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     int                          n;
     ngx_int_t                    rc;
@@ -1624,7 +1624,7 @@ static int
 ngx_http_lua_socket_tcp_close(lua_State *L)
 {
     ngx_http_request_t                  *r;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "ngx.socket close: expecting 1 argument "
@@ -1673,7 +1673,7 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
     int                     n;
     ngx_int_t               timeout;
 
-    ngx_http_lua_socket_upstream_t  *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
 
     n = lua_gettop(L);
 
@@ -1713,7 +1713,8 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     ngx_connection_t                *c;
     ngx_http_request_t              *r;
     ngx_http_log_ctx_t              *ctx;
-    ngx_http_lua_socket_upstream_t  *u;
+
+    ngx_http_lua_socket_tcp_upstream_t  *u;
 
     c = ev->data;
     u = c->data;
@@ -1748,7 +1749,7 @@ ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc, void *data)
 
 static void
 ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_connection_t            *c;
 
@@ -1779,7 +1780,7 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
 
 static void
 ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_connection_t            *c;
 
@@ -1804,7 +1805,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
 
 static ngx_int_t
 ngx_http_lua_socket_send(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_int_t                    rc;
     ngx_connection_t            *c;
@@ -1881,7 +1882,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 
 static void
 ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_http_lua_ctx_t          *ctx;
 
@@ -1916,7 +1917,7 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
 
 static void
 ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, ngx_uint_t ft_type)
+    ngx_http_lua_socket_tcp_upstream_t *u, ngx_uint_t ft_type)
 {
     ngx_http_lua_ctx_t          *ctx;
 
@@ -1952,7 +1953,7 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
 
 static void
 ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
@@ -2021,7 +2022,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 static void
 ngx_http_lua_socket_cleanup(void *data)
 {
-    ngx_http_lua_socket_upstream_t  *u = data;
+    ngx_http_lua_socket_tcp_upstream_t  *u = data;
 
     ngx_http_request_t  *r;
 
@@ -2036,7 +2037,7 @@ ngx_http_lua_socket_cleanup(void *data)
 
 static void
 ngx_http_lua_socket_finalize(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_http_lua_socket_pool_t          *spool;
     ngx_chain_t                         *cl;
@@ -2155,7 +2156,7 @@ ngx_http_lua_socket_test_connect(ngx_connection_t *c)
 
 static void
 ngx_http_lua_socket_dummy_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua socket dummy handler");
@@ -2258,7 +2259,7 @@ static int
 ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 {
     ngx_http_request_t                  *r;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_int_t                            rc;
     ngx_http_lua_ctx_t                  *ctx;
     lua_Integer                          bytes;
@@ -2482,7 +2483,7 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 {
     ngx_http_lua_socket_compiled_pattern_t     *cp = data;
 
-    ngx_http_lua_socket_upstream_t          *u;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
     ngx_http_request_t                      *r;
     ngx_buf_t                               *b;
     u_char                                   c;
@@ -2698,10 +2699,11 @@ ngx_http_lua_req_socket(lua_State *L)
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_connection_t                *c;
     ngx_http_request_t              *r;
-    ngx_http_lua_socket_upstream_t  *u;
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_request_body_t         *rb;
     ngx_http_cleanup_t              *cln;
+
+    ngx_http_lua_socket_tcp_upstream_t  *u;
 
     if (lua_gettop(L) != 0) {
         return luaL_error(L, "expecting zero arguments, but got %d",
@@ -2762,7 +2764,7 @@ ngx_http_lua_req_socket(lua_State *L)
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 
-    u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_upstream_t));
+    u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_tcp_upstream_t));
     if (u == NULL) {
         return luaL_error(L, "out of memory");
     }
@@ -2776,7 +2778,7 @@ ngx_http_lua_req_socket(lua_State *L)
 
     lua_rawseti(L, 1, SOCKET_CTX_INDEX);
 
-    ngx_memzero(u, sizeof(ngx_http_lua_socket_upstream_t));
+    ngx_memzero(u, sizeof(ngx_http_lua_socket_tcp_upstream_t));
 
     u->is_downstream = 1;
 
@@ -2827,8 +2829,8 @@ ngx_http_lua_req_socket(lua_State *L)
 static void
 ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 {
-    ngx_http_lua_ctx_t              *ctx;
-    ngx_http_lua_socket_upstream_t  *u;
+    ngx_http_lua_ctx_t                  *ctx;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua request socket read event handler");
@@ -2849,7 +2851,7 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 static int
 ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 {
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t    *u;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting 1 argument "
@@ -2876,7 +2878,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
     ngx_http_lua_main_conf_t            *lmcf;
     ngx_http_lua_loc_conf_t             *llcf;
-    ngx_http_lua_socket_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
     ngx_http_lua_socket_pool_t          *spool;
     size_t                               size;
@@ -3124,7 +3126,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
-    int key_index, ngx_http_lua_socket_upstream_t *u)
+    int key_index, ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_http_lua_socket_pool_item_t     *item;
     ngx_http_lua_socket_pool_t          *spool;
@@ -3334,7 +3336,7 @@ ngx_http_lua_socket_free_pool(ngx_log_t *log, ngx_http_lua_socket_pool_t *spool)
 static int
 ngx_http_lua_socket_upstream_destroy(lua_State *L)
 {
-    ngx_http_lua_socket_upstream_t          *u;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
 
     dd("upstream destroy triggered by Lua GC");
 
@@ -3354,7 +3356,7 @@ ngx_http_lua_socket_upstream_destroy(lua_State *L)
 static int
 ngx_http_lua_socket_downstream_destroy(lua_State *L)
 {
-    ngx_http_lua_socket_upstream_t          *u;
+    ngx_http_lua_socket_tcp_upstream_t     *u;
 
     dd("upstream destroy triggered by Lua GC");
 
@@ -3374,7 +3376,7 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
 static void
 ngx_http_lua_req_socket_cleanup(void *data)
 {
-    ngx_http_lua_socket_upstream_t  *u = data;
+    ngx_http_lua_socket_tcp_upstream_t  *u = data;
 
 #if (NGX_DEBUG)
     ngx_http_request_t  *r;
@@ -3398,7 +3400,7 @@ ngx_http_lua_req_socket_cleanup(void *data)
 
 static ngx_int_t
 ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_upstream_t *u, lua_State *L)
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     ngx_chain_t             *cl;
     ngx_chain_t            **ll;
@@ -3494,7 +3496,7 @@ done:
 
 static ngx_int_t
 ngx_http_lua_socket_add_input_buffer(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u)
+    ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_chain_t             *cl;
     ngx_http_lua_ctx_t      *ctx;
@@ -3521,7 +3523,7 @@ ngx_http_lua_socket_add_input_buffer(ngx_http_request_t *r,
 
 static ngx_int_t
 ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, u_char *pos, size_t len, u_char *pat,
+    ngx_http_lua_socket_tcp_upstream_t *u, u_char *pos, size_t len, u_char *pat,
     int prefix, int old_state)
 {
     u_char          *last;
@@ -3553,7 +3555,7 @@ ngx_http_lua_socket_add_pending_data(ngx_http_request_t *r,
 
 
 static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
-    ngx_http_lua_socket_upstream_t *u, u_char *pat, size_t prefix)
+    ngx_http_lua_socket_tcp_upstream_t *u, u_char *pat, size_t prefix)
 {
     ngx_chain_t             *cl, *new_cl, **ll;
     ngx_http_lua_ctx_t      *ctx;
