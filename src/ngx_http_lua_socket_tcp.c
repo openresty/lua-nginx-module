@@ -301,7 +301,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_memcpy(host.data, p, len);
     host.data[len] = '\0';
 
-    if (n == 3) {
+    if (n >= 3) {
         port = luaL_checkinteger(L, 3);
 
         if (port < 0 || port > 65536) {
@@ -320,11 +320,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         lua_getfield(L, 4, "pool");
 
         switch (lua_type(L, -1)) {
-            case LUA_TNIL:
-                /* do nothing */
-                break;
 
+            case LUA_TNIL:
             case LUA_TSTRING:
+            case LUA_TNUMBER:
                 /*stack is host, port, table, pool or host, table, pool*/
                 lua_remove(L, -2);
                  /*stack is host, port, pool or host, pool*/
@@ -338,11 +337,20 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     if(n > 2) {
-        lua_pushliteral(L, ":");
-        lua_insert(L, n);
-        lua_concat(L, n);
-
-         dd("socket key: %s", lua_tostring(L, -1));
+        luaL_Buffer b;
+        int i;
+        luaL_buffinit(L, &b);
+        for (i = 2; i <= n; i++) {
+            lua_pushvalue(L, i);
+            luaL_addvalue(&b);
+            if (i != n) {
+                luaL_addlstring(&b, ":", strlen(":"));
+            }
+        }
+        luaL_pushresult(&b);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "socket key: %s", lua_tostring(L, -1));
+        dd("socket key: %s", lua_tostring(L, -1));
     }
 
     /* the key's index is 2 */
