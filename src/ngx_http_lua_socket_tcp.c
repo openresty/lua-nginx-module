@@ -348,8 +348,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             }
         }
         luaL_pushresult(&b);
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "socket key: %s", lua_tostring(L, -1));
         dd("socket key: %s", lua_tostring(L, -1));
     }
 
