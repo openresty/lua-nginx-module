@@ -938,7 +938,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         ngx_http_lua_thread_traceback(L, cc);
         trace = lua_tostring(L, -1);
-        lua_pop(L, -1);
+        lua_pop(L, 1);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua handler aborted: %s: %s\n%s", err, msg, trace);
