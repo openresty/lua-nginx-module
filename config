@@ -175,11 +175,14 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_pcrefix.c \
                 $ngx_addon_dir/src/ngx_http_lua_headerfilterby.c \
                 $ngx_addon_dir/src/ngx_http_lua_shdict.c \
-                $ngx_addon_dir/src/ngx_http_lua_socket.c \
+                $ngx_addon_dir/src/ngx_http_lua_socket_tcp.c \
                 $ngx_addon_dir/src/ngx_http_lua_api.c \
                 $ngx_addon_dir/src/ngx_http_lua_logby.c \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.c \
 				$ngx_addon_dir/src/ngx_http_lua_coroutine.c"
+                $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
+                $ngx_addon_dir/src/ngx_http_lua_initby.c \
+                "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ddebug.h \
@@ -217,11 +220,14 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_pcrefix.h \
                 $ngx_addon_dir/src/ngx_http_lua_headerfilterby.h \
                 $ngx_addon_dir/src/ngx_http_lua_shdict.h \
-                $ngx_addon_dir/src/ngx_http_lua_socket.h \
+                $ngx_addon_dir/src/ngx_http_lua_socket_tcp.h \
                 $ngx_addon_dir/src/api/ngx_http_lua_api.h \
                 $ngx_addon_dir/src/ngx_http_lua_logby.h \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.h \
 				$ngx_addon_dir/src/ngx_http_lua_coroutine.h"
+                $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
+                $ngx_addon_dir/src/ngx_http_lua_initby.h \
+                "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
 

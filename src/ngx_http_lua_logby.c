@@ -25,10 +25,6 @@
 static ngx_int_t ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r);
 
 
-/* light user data key for the "ngx" table in the Lua VM regsitry */
-static char ngx_http_lua_logby_ngx_key;
-
-
 static void
 ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
 {
@@ -50,13 +46,7 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    ngx_http_lua_create_ng_table(L, 0 /* narr */, 1 /* nrec */);
-
-    /*  {{{ initialize ngx.* namespace */
-    lua_pushlightuserdata(L, &ngx_http_lua_logby_ngx_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_setfield(L, -2, "ngx");
-    /*  }}} */
+    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
     lua_newtable(L);    /*  the metatable for the new env */
@@ -66,36 +56,6 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
-}
-
-
-void
-ngx_http_lua_inject_logby_ngx_api(ngx_conf_t *cf, lua_State *L)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_logby_ngx_key);
-
-    lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
-
-    ngx_http_lua_inject_http_consts(L);
-    ngx_http_lua_inject_core_consts(L);
-
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-#if (NGX_PCRE)
-    ngx_http_lua_inject_regex_api(L);
-#endif
-    ngx_http_lua_inject_req_api_no_io(cf->log, L);
-    ngx_http_lua_inject_resp_header_api(L);
-    ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_misc_api(L);
-
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
@@ -135,6 +95,8 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
+
+    ctx->context = NGX_HTTP_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
     rc = llcf->log_handler(r);
@@ -189,7 +151,7 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -235,7 +197,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua file code: %s", err);
+                      "failed to load Lua file code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -259,7 +221,7 @@ ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     NGX_LUA_EXCEPTION_TRY {
 
-        /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
+        /* initialize nginx context in Lua VM, code chunk at stack top sp = 1 */
         ngx_http_lua_log_by_lua_env(L, r);
 
 #if (NGX_PCRE)
@@ -267,8 +229,13 @@ ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r)
         old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+        lua_pushcfunction(L, ngx_http_lua_traceback);
+        lua_insert(L, 1);  /* put it under chunk and args */
+
         /*  protected call user code */
-        rc = lua_pcall(L, 0, 1, 0);
+        rc = lua_pcall(L, 0, 1, 1);
+
+        lua_remove(L, 1);  /* remove traceback function */
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */

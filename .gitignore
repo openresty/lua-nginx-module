@@ -122,7 +122,6 @@ src/filter.[ch]
 src/shdict.[ch]
 src/body.[ch]
 src/uri.[ch]
-src/socket.[ch]
 src/api.[ch]
 src/coroutine.[ch]
 src/logby.[ch]
@@ -140,4 +139,8 @@ a.c
 test.lua
 build12
 ERRORS
+src/bodyfilterby.[ch]
+src/tcp.[ch]
+src/initby.[ch]
+src/socket.[ch]
 

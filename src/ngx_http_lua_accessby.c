@@ -205,7 +205,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -280,6 +280,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
         ctx->cleanup = &cln->handler;
     }
     /*  }}} */
+
+    ctx->context = NGX_HTTP_LUA_CONTEXT_ACCESS;
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 

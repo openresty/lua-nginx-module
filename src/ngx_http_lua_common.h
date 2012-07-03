@@ -69,7 +69,23 @@ typedef struct {
 #endif
 
 
-typedef struct {
+#define NGX_HTTP_LUA_CONTEXT_SET            0x01
+#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x02
+#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x04
+#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x08
+#define NGX_HTTP_LUA_CONTEXT_LOG            0x10
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x20
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
+
+
+typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+
+
+typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
+        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+
+
+struct ngx_http_lua_main_conf_s {
     lua_State       *lua;
 
     ngx_str_t        lua_path;
@@ -87,13 +103,18 @@ typedef struct {
     ngx_flag_t       postponed_to_rewrite_phase_end;
     ngx_flag_t       postponed_to_access_phase_end;
 
+    ngx_http_lua_conf_handler_pt    init_handler;
+    ngx_str_t                       init_src;
+    ngx_uint_t                      shm_zones_inited;
+
     unsigned         requires_header_filter:1;
+    unsigned         requires_body_filter:1;
     unsigned         requires_capture_filter:1;
     unsigned         requires_rewrite:1;
     unsigned         requires_access:1;
     unsigned         requires_log:1;
-
-} ngx_http_lua_main_conf_t;
+    unsigned         requires_shm:1;
+};
 
 
 typedef struct {
@@ -110,6 +131,8 @@ typedef struct {
     ngx_http_handler_pt     content_handler;
     ngx_http_handler_pt     log_handler;
     ngx_http_handler_pt     header_filter_handler;
+
+    ngx_http_output_body_filter_pt         body_filter_handler;
 
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
                                                 inline script/script
@@ -142,6 +165,10 @@ typedef struct {
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
 
+
+    ngx_http_complex_value_t         body_filter_src;
+    u_char                          *body_filter_src_key;
+
     ngx_msec_t                       keepalive_timeout;
     ngx_msec_t                       connect_timeout;
     ngx_msec_t                       send_timeout;
@@ -152,11 +179,15 @@ typedef struct {
 
     ngx_uint_t                       pool_size;
 
+    ngx_flag_t                       transform_underscores_in_resp_headers;
+
 } ngx_http_lua_loc_conf_t;
 
 
 typedef struct {
-    void            *data;
+    void                    *data;
+
+    uint8_t                  context;
 
     lua_State       *cc;                /*  coroutine to handle request. it
                                             point to the current running
@@ -168,8 +199,9 @@ typedef struct {
                                             ref to the entry coroutine of the
                                             request */
 
-    int              ctx_ref;           /*  reference to anchor request ctx
-                                            data in lua registry */
+    int                      ctx_ref;  /*  reference to anchor
+                                           request ctx data in lua
+                                           registry */
 
     enum {
         NONE = 0,
@@ -191,16 +223,18 @@ typedef struct {
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */
 
-    ngx_int_t       *sr_statuses; /* all capture subrequest statuses */
+    ngx_int_t               *sr_statuses; /* all capture subrequest statuses */
 
-    ngx_http_headers_out_t  **sr_headers;
+    ngx_http_headers_out_t **sr_headers;
 
-    ngx_str_t       *sr_bodies;   /* all captured subrequest bodies */
+    ngx_str_t               *sr_bodies;   /* all captured subrequest bodies */
 
-    ngx_uint_t       index;              /* index of the current subrequest
-                                            in its parent request */
+    ngx_uint_t               index;              /* index of the current
+                                                    subrequest in its parent
+                                                    request */
 
-    unsigned         waiting;     /* number of subrequests being waited */
+    unsigned                 waiting;     /* number of subrequests being
+                                             waited */
 
     ngx_str_t        exec_uri;
     ngx_str_t        exec_args;

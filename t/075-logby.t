@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -240,4 +240,281 @@ GET /lua
 ok
 --- error_log
 foo = 1
+
+
+
+=== TEST 12: no ngx.print
+--- config
+    location /lua {
+        log_by_lua "ngx.print(32) return 1";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 13: no ngx.say
+--- config
+    location /lua {
+        log_by_lua "ngx.say(32) return 1";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 14: no ngx.flush
+--- config
+    location /lua {
+        log_by_lua "ngx.flush()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 15: no ngx.eof
+--- config
+    location /lua {
+        log_by_lua "ngx.eof()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 16: no ngx.send_headers
+--- config
+    location /lua {
+        log_by_lua "ngx.send_headers()";
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 17: no ngx.location.capture
+--- config
+    location /lua {
+        log_by_lua 'ngx.location.capture("/sub")';
+        echo ok;
+    }
+
+    location /sub {
+        echo sub;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 18: no ngx.location.capture_multi
+--- config
+    location /lua {
+        log_by_lua 'ngx.location.capture_multi{{"/sub"}}';
+        echo ok;
+    }
+
+    location /sub {
+        echo sub;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 19: no ngx.exit
+--- config
+    location /lua {
+        log_by_lua 'ngx.exit(0)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 20: no ngx.redirect
+--- config
+    location /lua {
+        log_by_lua 'ngx.redirect("/blah")';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 21: no ngx.exec
+--- config
+    location /lua {
+        log_by_lua 'ngx.exec("/blah")';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 22: no ngx.req.set_uri(uri, true)
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.set_uri("/blah", true)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 23: ngx.req.set_uri(uri) exists
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.set_uri("/blah") print("log_by_lua: uri: ", ngx.var.uri)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+log_by_lua: uri: /blah
+
+
+
+=== TEST 24: no ngx.req.read_body()
+--- config
+    location /lua {
+        log_by_lua 'ngx.req.read_body()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 25: no ngx.req.socket()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.req.socket()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 26: no ngx.socket.tcp()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.socket.tcp()';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 27: no ngx.socket.connect()
+--- config
+    location /lua {
+        log_by_lua 'return ngx.socket.connect("127.0.0.1", 80)';
+        echo ok;
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- error_log
+API disabled in the context of log_by_lua*
+
+
+
+=== TEST 28: backtrace
+--- config
+    location /t {
+        echo ok;
+        log_by_lua '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
 

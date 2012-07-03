@@ -60,7 +60,7 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    ngx_http_lua_create_ng_table(L, 0 /* narr */, 1 /* nrec */);
+    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ initialize ngx.* namespace */
     lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
@@ -85,12 +85,9 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_int_t        rc;
     u_char          *err_msg;
     size_t           len;
-    int              old_top;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
-
-    old_top = lua_gettop(L);
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_header_filter_by_lua_env(L, r);
@@ -100,8 +97,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+    lua_pushcfunction(L, ngx_http_lua_traceback);
+    lua_insert(L, 1);  /* put it under chunk and args */
+
     /*  protected call user code */
-    rc = lua_pcall(L, 0, 1, 0);
+    rc = lua_pcall(L, 0, 1, 1);
+
+    lua_remove(L, 1);  /* remove traceback function */
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
@@ -120,13 +122,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "failed to run header_filter_by_lua*: %*s", len, err_msg);
 
-        lua_settop(L, old_top);    /*  clear remaining elems on stack */
+        lua_settop(L, 0); /*  clear remaining elems on stack */
 
         return NGX_ERROR;
     }
 
     /*  clear Lua stack */
-    lua_settop(L, old_top);
+    lua_settop(L, 0);
 
     return NGX_OK;
 }
@@ -159,7 +161,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -215,7 +217,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -240,11 +242,16 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_http_cleanup_t          *cln;
+    uint8_t                      old_context;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua header filter for user lua code, uri \"%V\"", &r->uri);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->body_filter_handler) {
+        r->filter_need_in_memory = 1;
+    }
 
     if (llcf->header_filter_handler == NULL) {
         dd("no header filter handler found");
@@ -280,8 +287,14 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
         ctx->cleanup = &cln->handler;
     }
 
+    old_context = ctx->context;
+    ctx->context = NGX_HTTP_LUA_CONTEXT_HEADER_FILTER;
+
     dd("calling header filter handler");
     rc = llcf->header_filter_handler(r);
+
+    ctx->context = old_context;
+
     if (rc != NGX_OK) {
         dd("calling header filter handler rc %d", (int)rc);
         return NGX_ERROR;
@@ -299,34 +312,5 @@ ngx_http_lua_header_filter_init()
     ngx_http_top_header_filter = ngx_http_lua_header_filter;
 
     return NGX_OK;
-}
-
-
-void
-ngx_http_lua_inject_headerfilterby_ngx_api(ngx_conf_t *cf, lua_State *L)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_headerfilterby_ngx_key);
-    lua_createtable(L, 0 /* narr */, 69 /* nrec */);    /*  ngx.* */
-
-    ngx_http_lua_inject_http_consts(L);
-    ngx_http_lua_inject_core_consts(L);
-
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-#if (NGX_PCRE)
-    ngx_http_lua_inject_regex_api(L);
-#endif
-    ngx_http_lua_inject_req_api_no_io(cf->log, L);
-    ngx_http_lua_inject_resp_header_api(L);
-    ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_misc_api(L);
-
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
