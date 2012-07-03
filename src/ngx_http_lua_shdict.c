@@ -44,6 +44,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     if (octx) {
         ctx->sh = octx->sh;
         ctx->shpool = octx->shpool;
+        ctx->log = octx->log;
 
         return NGX_OK;
     }
