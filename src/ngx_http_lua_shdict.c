@@ -44,9 +44,8 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     if (octx) {
         ctx->sh = octx->sh;
         ctx->shpool = octx->shpool;
-        ctx->log = octx->log;
 
-        return NGX_OK;
+        goto done;
     }
 
     ctx->shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
@@ -54,7 +53,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     if (shm_zone->shm.exists) {
         ctx->sh = ctx->shpool->data;
 
-        return NGX_OK;
+        goto done;
     }
 
     ctx->sh = ngx_slab_alloc(ctx->shpool, sizeof(ngx_http_lua_shdict_shctx_t));
@@ -79,6 +78,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_sprintf(ctx->shpool->log_ctx, " in lua_shared_dict zone \"%V\"%Z",
                 &shm_zone->shm.name);
 
+done:
     dd("get lmcf");
 
     lmcf = ctx->main_conf;
