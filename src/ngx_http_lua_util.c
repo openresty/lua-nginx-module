@@ -562,16 +562,6 @@ ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
             "lua initializing lua globals");
 
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
-    if (lmcf->requires_header_filter) {
-        ngx_http_lua_inject_headerfilterby_ngx_api(cf, L);
-    }
-
-    if (lmcf->requires_log) {
-        ngx_http_lua_inject_logby_ngx_api(cf, L);
-    }
-
 #if defined(NDK) && NDK
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
