@@ -162,7 +162,7 @@ ngx_http_lua_inject_coroutine_api(lua_State *L)
 
     /* inject wrap */
     top = lua_gettop(L);
-    luaL_dostring(L, NGX_HTTP_LUA_COROUTINE_WRAP);
+    (void) luaL_dostring(L, NGX_HTTP_LUA_COROUTINE_WRAP);
     lua_settop(L, top);
 }
 
