@@ -15,20 +15,37 @@
  * new coroutine in the main coroutine instead of the calling coroutine
  */
 
+
+#define     NGX_HTTP_LUA_COROUTINE_WRAP                                        \
+    "local create, resume = coroutine.create, coroutine.resume;"               \
+    "function coroutine.wrap(cl)"                                              \
+    "    local cc = create(cl);"                                               \
+    "    return function(...) return select(2, resume(cc, ...)) end "          \
+    "end"
+
+
 static int ngx_http_lua_coroutine_create(lua_State *L);
 static int ngx_http_lua_coroutine_resume(lua_State *L);
-static int ngx_http_lua_coroutine_running(lua_State *L);
-static int ngx_http_lua_coroutine_status(lua_State *L);
-static int ngx_http_lua_coroutine_wrap(lua_State *L);
 static int ngx_http_lua_coroutine_yield(lua_State *L);
+
+
+int
+ngx_http_lua_resume(lua_State *L, int nargs)
+{
+    if (lua_status(L) == 0 && lua_gettop(L) == 0) {
+        lua_pushfstring(L, "cannot resume dead coroutine");
+        return LUA_ERRRUN;
+    }
+
+    return lua_resume(L, nargs);
+}
 
 
 static int
 ngx_http_lua_coroutine_create(lua_State *L)
 {
-	lua_State 					*cr;
-	lua_State 					*ml;
-	ngx_http_request_t 			*r;
+	lua_State					*cr, *ml;
+	ngx_http_request_t			*r;
 	ngx_http_lua_main_conf_t	*lmcf;
 
 	luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
@@ -53,15 +70,6 @@ ngx_http_lua_coroutine_create(lua_State *L)
 	lua_pushvalue(L, 1);	/* copy entry function to top of L*/
 	lua_xmove(L, cr, 1);	/* move entry function from L to cr */
 
-	/* record parent-child relationship */
-	lua_getfield(ml, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
-	lua_pushthread(cr); /* key: child coroutine */
-	lua_xmove(cr, ml, 1);
-	lua_pushthread(L); /* val: parent coroutine */
-	lua_xmove(L, ml, 1);
-	lua_settable(ml, -3);
-	lua_pop(ml, 1);
-
 	return 1;	/* return new coroutine to Lua */
 }
 
@@ -69,8 +77,10 @@ ngx_http_lua_coroutine_create(lua_State *L)
 static int
 ngx_http_lua_coroutine_resume(lua_State *L)
 {
-	ngx_http_request_t *r;
-	ngx_http_lua_ctx_t *ctx;
+	lua_State					*cr, *ml;
+	ngx_http_request_t          *r;
+	ngx_http_lua_ctx_t          *ctx;
+	ngx_http_lua_main_conf_t	*lmcf;
 
 	luaL_argcheck(L, lua_isthread(L, 1), 1, "Lua coroutine expected");
 
@@ -82,6 +92,18 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
 	ctx->cc_op = RESUME;
 
+	/* record parent-child relationship */
+    cr = lua_tothread(L, 1);
+	lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+	ml = lmcf->lua;
+	lua_getfield(ml, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+	lua_pushthread(cr); /* key: child coroutine */
+	lua_xmove(cr, ml, 1);
+	lua_pushthread(L); /* val: parent coroutine */
+	lua_xmove(L, ml, 1);
+	lua_settable(ml, -3);
+	lua_pop(ml, 1);
+
 	/* yield and pass args to main L, and resume target coroutine from there
 	 */
 	return lua_yield(L, lua_gettop(L));
@@ -91,8 +113,8 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 static int
 ngx_http_lua_coroutine_yield(lua_State *L)
 {
-	ngx_http_request_t *r;
-	ngx_http_lua_ctx_t *ctx;
+	ngx_http_request_t          *r;
+	ngx_http_lua_ctx_t          *ctx;
 
 	r = ngx_http_lua_get_request(L);
 	ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -107,48 +129,40 @@ ngx_http_lua_coroutine_yield(lua_State *L)
 }
 
 
-static int
-ngx_http_lua_coroutine_running(lua_State *L)
-{
-	// TODO p2
-	return luaL_error(L, "not implemented yet");
-}
-
-
-static int
-ngx_http_lua_coroutine_status(lua_State *L)
-{
-	// TODO p2
-	return luaL_error(L, "not implemented yet");
-}
-
-
-static int
-ngx_http_lua_coroutine_wrap(lua_State *L)
-{
-	// TODO p1
-	return luaL_error(L, "not implemented yet");
-}
-
-
 void
 ngx_http_lua_inject_coroutine_api(lua_State *L)
 {
-	lua_newtable(L);	/* coroutine.* */
-	
+    int                 top;
+
+    /* new coroutine table */
+	lua_newtable(L);
+
+    /* get old coroutine table */
+    lua_getglobal(L, "coroutine");
+
+    /* set running to the old one */
+    lua_getfield(L, -1, "running");
+	lua_setfield(L, -3, "running");
+
+    /* set status to the old one */
+    lua_getfield(L, -1, "status");
+	lua_setfield(L, -3, "status");
+
+    /* pop the old coroutine */
+	lua_pop(L, 1);
+
 	lua_pushcfunction(L, ngx_http_lua_coroutine_create);
 	lua_setfield(L, -2, "create");
 	lua_pushcfunction(L, ngx_http_lua_coroutine_resume);
 	lua_setfield(L, -2, "resume");
-	lua_pushcfunction(L, ngx_http_lua_coroutine_running);
-	lua_setfield(L, -2, "running");
-	lua_pushcfunction(L, ngx_http_lua_coroutine_status);
-	lua_setfield(L, -2, "status");
-	lua_pushcfunction(L, ngx_http_lua_coroutine_wrap);
-	lua_setfield(L, -2, "wrap");
 	lua_pushcfunction(L, ngx_http_lua_coroutine_yield);
 	lua_setfield(L, -2, "yield");
 
 	lua_setglobal(L, "coroutine");
+
+    /* inject wrap */
+    top = lua_gettop(L);
+    luaL_dostring(L, NGX_HTTP_LUA_COROUTINE_WRAP);
+    lua_settop(L, top);
 }
 
