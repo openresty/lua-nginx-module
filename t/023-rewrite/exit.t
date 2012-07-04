@@ -13,7 +13,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 - 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -24,6 +24,7 @@ $ENV{LUA_CPATH} ||=
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
 no_long_string();
+#no_shuffle();
 
 run_tests();
 
@@ -65,8 +66,6 @@ GET /lua
 GET /lua
 --- error_log
 attempt to call ngx.exit after sending out the headers
---- no_error_log
-[alert]
 --- ignore_response
 
 
