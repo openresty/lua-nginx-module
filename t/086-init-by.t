@@ -13,6 +13,8 @@ plan tests => repeat_each() * (blocks() * 3);
 
 #no_diff();
 #no_long_string();
+no_shuffle();
+
 run_tests();
 
 __DATA__
@@ -167,4 +169,31 @@ GET /lua
 ok
 --- error_log
 log from init_by_lua
+
+
+
+=== TEST 8: require (with shm defined)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+    lua_shared_dict dogs 1m;
+    init_by_lua 'require "blah"';
+--- config
+    location /lua {
+        content_by_lua '
+            blah.go()
+        ';
+    }
+--- user_files
+>>> blah.lua
+module(..., package.seeall)
+
+function go()
+    ngx.say("hello, blah")
+end
+--- request
+GET /lua
+--- response_body
+hello, blah
+--- no_error_log
+[error]
 
