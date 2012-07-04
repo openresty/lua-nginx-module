@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.4] released on 28 June 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.5] released on 4 July 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -273,6 +273,83 @@ Sets the Lua C-module search path used by scripts specified by [[#set_by_lua|set
 can be used to stand for the original cpath.
 
 Since the <code>v0.5.0rc29</code> release, the special notation <code>$prefix</code> or <code>${prefix}</code> can be used in the search path string to indicate the path of the <code>server prefix</code> usually determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
+== init_by_lua ==
+
+'''syntax:''' ''init_by_lua <lua-script-str>''
+
+'''context:''' ''http''
+
+'''phase:''' ''loading-config''
+
+Runs the Lua code specified by the argument <code><lua-script-str></code> on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
+
+When Nginx receives the <code>HUP</code> signal and starts reloading the config file, the Lua VM will also be re-created and <code>init_by_lua</code> will run again on the new Lua VM.
+
+Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
+
+<geshi lang="nginx">
+    init_by_lua 'require "cjson"';
+
+    server {
+        location = /api {
+            content_by_lua '
+                ngx.say(cjson.encode({dog = 5, cat = 6}))
+            ';
+        }
+    }
+</geshi>
+
+You can also initialize the [[#lua_shared_dict|lua_shared_dict]] shm storage at this phase. Here is an example for this:
+
+<geshi lang="nginx">
+    lua_shared_dict dogs 1m;
+
+    init_by_lua '
+        local dogs = ngx.shared.dogs;
+        dogs:set("Tom", 56)
+    ';
+
+    server {
+        location = /api {
+            content_by_lua '
+                local dogs = ngx.shared.dogs;
+                ngx.say(dogs:get("Tom"))
+            ';
+        }
+    }
+</geshi>
+
+But note that, the [[#lua_shared_dict|lua_shared_dict]]'s shm storage will not be cleared through a config reload (via the <code>HUP</code> signal, for example). So if you do ''not'' want to re-initialize the shm storage in your <code>init_by_lua</code> code in this case, then you just need to set a custom flag in the shm storage and always check the flag in your <code>init_by_lua</code> code.
+
+Because the Lua code in this context runs before Nginx forks its worker processes (if any), data or code loaded here will enjoy the [http://en.wikipedia.org/wiki/Copy-on-write Copy-on-write (COW)] feature provided by many operating systems among all the worker processes, thus saving a lot of memory.
+
+Only a small set of the [[#Nginx API for Lua|Nginx API for Lua]] is supported in this context:
+
+* Logging APIs: [[#ngx.log|ngx.log]] and [[#print|print]],
+* Shared Dictionary API: [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+More Nginx APIs for Lua may be supported in this context upon future user requests.
+
+Basically you can safely use Lua libraries that do blocking I/O in this very context because blocking the master process during server start-up is completely okay. Even the Nginx core does blocking I/O (at least on resolving upstream's host names) at the configure-loading phase.
+
+You should be very careful about potential security vulnerabilities in your Lua code registered in this context because the Nginx master process is often run under the <code>root</code> account.
+
+This directive was first introduced in the <code>v0.5.5</code> release.
+
+== init_by_lua_file ==
+
+'''syntax:''' ''init_by_lua_file <path-to-lua-script-file>''
+
+'''context:''' ''http''
+
+'''phase:''' ''loading-config''
+
+Equivalent to [[#init_by_lua|init_by_lua]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code (or the Lua raw bytecode) to be executed.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absolute path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
+This directive was first introduced in the <code>v0.5.5</code> release.
 
 == set_by_lua ==
 
@@ -1119,7 +1196,7 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
 </geshi>
 
 == Core constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua*''
 
 <geshi lang="lua">
   ngx.OK (0)
@@ -1140,7 +1217,7 @@ The <code>ngx.null</code> constant is a <code>NULL</code> light userdata usually
 The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0rc19</code> release.
 
 == HTTP method constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
 <geshi lang="text">
   ngx.HTTP_GET
@@ -1154,7 +1231,7 @@ The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0r
 These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
 
 == HTTP status constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
 <geshi lang="nginx">
   value = ngx.HTTP_OK (200)
@@ -1196,7 +1273,7 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 == print ==
 '''syntax:''' ''print(...)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
 Writes argument values into the nginx <code>error.log</code> file with the <code>ngx.NOTICE</code> log level.
 
@@ -2447,7 +2524,7 @@ Just as [[#ngx.print|ngx.print]] but also emit a trailing newline.
 == ngx.log ==
 '''syntax:''' ''ngx.log(log_level, ...)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Log arguments concatenated to error.log with the given logging level.
 
@@ -3067,7 +3144,7 @@ This feature was first introduced in the <code>v0.2.1rc15</code> release.
 == ngx.shared.DICT ==
 '''syntax:''' ''dict = ngx.shared.DICT''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named <code>DICT</code> defined by the [[#lua_shared_dict|lua_shared_dict]] directive.
 
@@ -3159,7 +3236,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.set ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:set(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Unconditionally sets a key-value pair into the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns three values:
 
@@ -3200,7 +3277,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.add ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:add(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if the key does ''not'' exist.
 
@@ -3213,7 +3290,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.replace ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if the key ''does'' exist.
 
@@ -3226,7 +3303,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.delete ==
 '''syntax:''' ''ngx.shared.DICT:delete(key)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Unconditionally removes the key-value pair from the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
@@ -3239,7 +3316,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.incr ==
 '''syntax:''' ''newval, err = ngx.shared.DICT:incr(key, value)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Increments the (numerical) value for <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] by the step value <code>value</code>. Returns the new resulting number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
 
@@ -3256,7 +3333,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 == ngx.shared.DICT.flush_all ==
 '''syntax:''' ''ngx.shared.DICT:flush_all()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Flushes out all the items in the dictionary.
 
