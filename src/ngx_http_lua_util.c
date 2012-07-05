@@ -26,6 +26,7 @@
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
+#include "ngx_http_lua_req_method.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_sleep.h"
@@ -1697,7 +1698,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 16 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 18 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
@@ -1708,6 +1709,8 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_body_api(L);
 
     ngx_http_lua_inject_req_socket_api(L);
+
+    ngx_http_lua_inject_req_method_api(L);
 
     lua_setfield(L, -2, "req");
 }
