@@ -4062,14 +4062,12 @@ Please report bugs or submit patches by:
 * implement the <code>ngx.re.split</code> method.
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
-* add directives to run Lua codes when nginx stops/reloads.
+* add directives to run Lua codes when nginx stops.
 * add APIs to access cookies as key/value pairs.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 
 == Longer Term ==
-* add the <code>lua_require</code> directive to load module into the Lua main thread's globals.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* make [[#set_by_lua|set_by_lua]], [[#header_filter_by_lua|header_filter_by_lua]], and their variants use the same mechanism as [[#content_by_lua|content_by_lua]], [[#rewrite_by_lua|rewrite_by_lua]], [[#access_by_lua|access_by_lua]], and their variants.
 * add coroutine API back to the Lua user land.
 * add <code>stat</code> mode similar to [http://httpd.apache.org/docs/2.3/mod/mod_lua.html mod_lua].
 

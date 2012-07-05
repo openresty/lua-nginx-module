@@ -4207,15 +4207,13 @@ Short Term
 * implement the `ngx.re.split` method.
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_header), [ngx.header.HEADER](http://wiki.nginx.org/HttpLuaModule#ngx.header.HEADER), and etc.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
-* add directives to run Lua codes when nginx stops/reloads.
+* add directives to run Lua codes when nginx stops.
 * add APIs to access cookies as key/value pairs.
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) methods, to allow micro performance tuning on the user side.
 
 Longer Term
 -----------
-* add the `lua_require` directive to load module into the Lua main thread's globals.
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* make [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua), and their variants use the same mechanism as [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua), [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua), [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), and their variants.
 * add coroutine API back to the Lua user land.
 * add `stat` mode similar to [mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html).
 

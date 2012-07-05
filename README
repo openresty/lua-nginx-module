@@ -4702,7 +4702,7 @@ TODO
     *   add configure options for different strategies of handling the
         cosocket connection exceeding in the pools.
 
-    *   add directives to run Lua codes when nginx stops/reloads.
+    *   add directives to run Lua codes when nginx stops.
 
     *   add APIs to access cookies as key/value pairs.
 
@@ -4711,15 +4711,8 @@ TODO
         methods, to allow micro performance tuning on the user side.
 
   Longer Term
-    *   add the "lua_require" directive to load module into the Lua main
-        thread's globals.
-
     *   add Lua code automatic time slicing support by yielding and resuming
         the Lua VM actively via Lua's debug hooks.
-
-    *   make set_by_lua, header_filter_by_lua, and their variants use the
-        same mechanism as content_by_lua, rewrite_by_lua, access_by_lua, and
-        their variants.
 
     *   add coroutine API back to the Lua user land.
 
