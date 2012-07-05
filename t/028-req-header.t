@@ -523,3 +523,59 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 
+
+
+=== TEST 22: modify subrequest req headers should not affect the parent
+--- config
+    location = /main {
+        rewrite_by_lua '
+            local res = ngx.location.capture("/sub")
+            print("subrequest: ", res.status)
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+
+    location /sub {
+        content_by_lua '
+            ngx.req.set_header("foo121", 121)
+            ngx.req.set_header("foo122", 122)
+            ngx.say("ok")
+        ';
+    }
+
+    location = /echo {
+        #echo $echo_client_request_headers;
+        echo "foo121: [$http_foo121]";
+        echo "foo122: [$http_foo122]";
+    }
+--- request
+GET /main
+--- more_headers
+Foo: foo
+Bar: bar
+Foo1: foo1
+Foo2: foo2
+Foo3: foo3
+Foo4: foo4
+Foo5: foo5
+Foo6: foo6
+Foo7: foo7
+Foo8: foo8
+Foo9: foo9
+Foo10: foo10
+Foo11: foo11
+Foo12: foo12
+Foo13: foo13
+Foo14: foo14
+Foo15: foo15
+Foo16: foo16
+Foo17: foo17
+Foo18: foo18
+Foo19: foo19
+Foo20: foo20
+--- response_body
+Foo: []
+Bar: []
+--- SKIP
+
