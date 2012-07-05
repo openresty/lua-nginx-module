@@ -179,6 +179,11 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             break;
 
+        case LUA_TNIL:
+            user_args.data = NULL;
+            user_args.len = 0;
+            break;
+
         default:
             msg = lua_pushfstring(L, "string, number, or table expected, "
                     "but got %s", luaL_typename(L, 2));
