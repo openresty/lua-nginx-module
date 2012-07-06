@@ -1372,6 +1372,7 @@ ngx_http_lua_socket_read(ngx_http_request_t *r,
         }
 
         if (n == NGX_ERROR) {
+            u->socket_errno = ngx_socket_errno;
             ngx_http_lua_socket_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
@@ -1826,6 +1827,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     u->request_sent = 1;
 
     if (rc == NGX_ERROR) {
+        u->socket_errno = ngx_socket_errno;
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
