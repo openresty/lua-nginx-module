@@ -357,8 +357,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
 
-        if (rc != (ngx_int_t) r->headers_out.status)
-        {
+        if (rc != (ngx_int_t) r->headers_out.status) {
             return luaL_error(L, "attempt to set status %d via ngx.exit after "
                               "sending out the response status %d", (int) rc,
                               (int) r->headers_out.status);
