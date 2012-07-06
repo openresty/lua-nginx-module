@@ -790,13 +790,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
             return 2;
         }
 
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-        dd("setting socket_ready to 1");
-
-        ctx->socket_busy = 0;
-        ctx->socket_ready = 1;
-
         u->read_event_handler = ngx_http_lua_socket_dummy_handler;
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
