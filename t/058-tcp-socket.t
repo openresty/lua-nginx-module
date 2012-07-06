@@ -14,6 +14,7 @@ $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 #log_level 'warn';
+log_level 'debug';
 
 #no_long_string();
 #no_diff();
@@ -319,7 +320,7 @@ send: nil closed
 receive: nil closed
 close: nil closed
 --- error_log
-lua socket connect timed out
+lua tcp socket connect timed out
 
 
 
@@ -1381,7 +1382,7 @@ close: 1 nil
 --- no_error_log
 [error]
 --- error_log eval
-["lua reuse socket upstream", "lua socket reconnect without shutting down"]
+["lua reuse socket upstream", "lua tcp socket reconnect without shutting down"]
 
 
 

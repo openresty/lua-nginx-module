@@ -28,6 +28,7 @@
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket_tcp.h"
+#include "ngx_http_lua_socket_udp.h"
 #include "ngx_http_lua_sleep.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_headerfilterby.h"
@@ -593,6 +594,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_socket_tcp_api(cf->log, L);
+    ngx_http_lua_inject_socket_udp_api(cf->log, L);
 
     ngx_http_lua_inject_misc_api(L);
 
@@ -979,7 +981,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_http_core_loc_conf_t    *clcf;
     ngx_chain_t                 *cl;
 
-    ngx_http_lua_socket_tcp_upstream_t      *u;
+    ngx_http_lua_socket_tcp_upstream_t      *tcp;
+    ngx_http_lua_socket_udp_upstream_t      *udp;
 
     c = r->connection;
 
@@ -1173,6 +1176,27 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
+    if (ctx->udp_socket_busy && !ctx->udp_socket_ready) {
+        return NGX_DONE;
+    }
+
+    if (!ctx->udp_socket_busy && ctx->udp_socket_ready) {
+        ctx->udp_socket_ready = 0;
+
+        udp = ctx->data;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua dup socket calling prepare retvals handler %p",
+                       udp->prepare_retvals);
+
+        nret = udp->prepare_retvals(r, udp, ctx->cc);
+        if (nret == NGX_AGAIN) {
+            return NGX_DONE;
+        }
+
+        goto run;
+    }
+
     if (!ctx->socket_busy && ctx->socket_ready) {
 
         dd("resuming socket api");
@@ -1181,13 +1205,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         ctx->socket_ready = 0;
 
-        u = ctx->data;
+        tcp = ctx->data;
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua socket calling prepare retvals handler %p",
-                       u->prepare_retvals);
+                       "lua tcp socket calling prepare retvals handler %p",
+                       tcp->prepare_retvals);
 
-        nret = u->prepare_retvals(r, u, ctx->cc);
+        nret = tcp->prepare_retvals(r, tcp, ctx->cc);
         if (nret == NGX_AGAIN) {
             return NGX_DONE;
         }
