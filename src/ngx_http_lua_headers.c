@@ -237,7 +237,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                 rc = ngx_http_lua_set_output_header(r, key, value,
                         i == 1 /* override */);
 
-                if (rc != NGX_OK) {
+                if (rc == NGX_ERROR) {
                     return luaL_error(L,
                             "failed to set header %s (error: %d)",
                             key.data, (int) rc);
@@ -263,7 +263,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
     rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
 
-    if (rc != NGX_OK) {
+    if (rc == NGX_ERROR) {
         return luaL_error(L, "failed to set header %s (error: %d)",
                 key.data, (int) rc);
     }
@@ -374,7 +374,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
                 rc = ngx_http_lua_set_input_header(r, key, value,
                         i == 1 /* override */);
 
-                if (rc != NGX_OK) {
+                if (rc == NGX_ERROR) {
                     return luaL_error(L,
                             "failed to set header %s (error: %d)",
                             key.data, (int) rc);
@@ -406,7 +406,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
 
-    if (rc != NGX_OK) {
+    if (rc == NGX_ERROR) {
         return luaL_error(L, "failed to set header %s (error: %d)",
                 key.data, (int) rc);
     }

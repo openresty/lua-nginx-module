@@ -783,13 +783,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
             return 2;
         }
 
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-        dd("setting socket_ready to 1");
-
-        ctx->socket_busy = 0;
-        ctx->socket_ready = 1;
-
         u->read_event_handler = ngx_http_lua_socket_dummy_handler;
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
@@ -1365,6 +1358,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
         }
 
         if (n == NGX_ERROR) {
+            u->socket_errno = ngx_socket_errno;
             ngx_http_lua_socket_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
@@ -1819,6 +1813,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     u->request_sent = 1;
 
     if (rc == NGX_ERROR) {
+        u->socket_errno = ngx_socket_errno;
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }

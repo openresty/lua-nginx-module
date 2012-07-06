@@ -26,6 +26,7 @@
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
+#include "ngx_http_lua_req_method.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_socket_udp.h"
@@ -940,7 +941,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         ngx_http_lua_thread_traceback(L, cc);
         trace = lua_tostring(L, -1);
-        lua_pop(L, -1);
+        lua_pop(L, 1);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua handler aborted: %s: %s\n%s", err, msg, trace);
@@ -1721,7 +1722,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 16 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 18 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
@@ -1732,6 +1733,8 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_body_api(L);
 
     ngx_http_lua_inject_req_socket_api(L);
+
+    ngx_http_lua_inject_req_method_api(L);
 
     lua_setfield(L, -2, "req");
 }

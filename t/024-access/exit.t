@@ -64,7 +64,7 @@ GET /lua
 --- no_error_log
 [alert]
 --- error_log
-attempt to call ngx.exit after sending out the headers
+attempt to set status 404 via ngx.exit after sending out the response status 200
 
 
 

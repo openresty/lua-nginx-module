@@ -60,6 +60,10 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
     r->request_body_in_single_buf = 1;
     r->request_body_in_persistent_file = 1;
     r->request_body_in_clean_file = 1;
@@ -155,6 +159,10 @@ ngx_http_lua_ngx_req_discard_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
     rc = ngx_http_discard_request_body(r);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -185,6 +193,10 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
 
     if (r->request_body == NULL
         || r->request_body->temp_file
@@ -250,6 +262,10 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
     if (r->request_body == NULL || r->request_body->temp_file == NULL) {
         lua_pushnil(L);
         return 1;
@@ -298,6 +314,10 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
 
     if (r->request_body == NULL) {
 
@@ -510,6 +530,10 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
 
     if (r->request_body == NULL) {
 

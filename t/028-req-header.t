@@ -8,12 +8,11 @@ use Test::Nginx::Socket;
 #log_level('warn');
 
 repeat_each(2);
-#repeat_each(1);
 
-plan tests => (2 * blocks() + 4) * repeat_each();
+plan tests => (2 * blocks() + 5) * repeat_each();
 
 #no_diff();
-#no_long_string();
+no_long_string();
 
 run_tests();
 
@@ -522,4 +521,213 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+
+
+
+=== TEST 22: modify subrequest req headers should not affect the parent
+--- config
+    location = /main {
+        rewrite_by_lua '
+            local res = ngx.location.capture("/sub")
+            print("subrequest: ", res.status)
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+
+    location /sub {
+        content_by_lua '
+            ngx.req.set_header("foo121", 121)
+            ngx.req.set_header("foo122", 122)
+            ngx.say("ok")
+        ';
+    }
+
+    location = /echo {
+        #echo $echo_client_request_headers;
+        echo "foo121: [$http_foo121]";
+        echo "foo122: [$http_foo122]";
+    }
+--- request
+GET /main
+--- more_headers
+Foo: foo
+Bar: bar
+Foo1: foo1
+Foo2: foo2
+Foo3: foo3
+Foo4: foo4
+Foo5: foo5
+Foo6: foo6
+Foo7: foo7
+Foo8: foo8
+Foo9: foo9
+Foo10: foo10
+Foo11: foo11
+Foo12: foo12
+Foo13: foo13
+Foo14: foo14
+Foo15: foo15
+Foo16: foo16
+Foo17: foo17
+Foo18: foo18
+Foo19: foo19
+Foo20: foo20
+--- response_body
+Foo: []
+Bar: []
+--- SKIP
+
+
+
+=== TEST 23: clear_header should clear all the instances of the user custom header
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.req.clear_header("Foo")
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+
+    location = /echo {
+        echo "Foo: [$http_foo]";
+        echo "Test-Header: [$http_test_header]";
+    }
+--- request
+GET /t
+--- more_headers
+Foo: foo
+Foo: bah
+Test-Header: 1
+--- response_body
+Foo: []
+Test-Header: [1]
+
+
+
+=== TEST 24: clear_header should clear all the instances of the builtin header
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.req.clear_header("Content-Type")
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+
+    location = /echo {
+        echo "Content-Type: [$http_content_type]";
+        echo "Test-Header: [$http_test_header]";
+        #echo $echo_client_request_headers;
+    }
+--- request
+GET /t
+--- more_headers
+Content-Type: foo
+Content-Type: bah
+Test-Header: 1
+--- response_body
+Content-Type: []
+Test-Header: [1]
+
+
+
+=== TEST 25: Converting POST to GET - clearing headers (bug found by Matthieu Tourne, 411 error page)
+--- config
+    location /t {
+        rewrite_by_lua '
+            ngx.req.clear_header("Content-Type")
+            ngx.req.clear_header("Content-Length")
+        ';
+
+        #proxy_pass http://127.0.0.1:8888;
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location /back {
+        echo $echo_client_request_headers;
+    }
+--- request
+POST /t
+hello world
+--- more_headers
+Content-Type: application/ocsp-request
+Test-Header: 1
+--- response_body_like eval
+qr/Connection: close\r
+Test-Header: 1\r
+$/
+--- no_error_log
+[error]
+
+
+
+=== TEST 26: clear_header() does not duplicate subsequent headers (old bug)
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.req.clear_header("Foo")
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/echo;
+    }
+
+    location = /echo {
+        echo $echo_client_request_headers;
+    }
+--- request
+GET /t
+--- more_headers
+Bah: bah
+Foo: foo
+Test-Header: 1
+Foo1: foo1
+Foo2: foo2
+Foo3: foo3
+Foo4: foo4
+Foo5: foo5
+Foo6: foo6
+Foo7: foo7
+Foo8: foo8
+Foo9: foo9
+Foo10: foo10
+Foo11: foo11
+Foo12: foo12
+Foo13: foo13
+Foo14: foo14
+Foo15: foo15
+Foo16: foo16
+Foo17: foo17
+Foo18: foo18
+Foo19: foo19
+Foo20: foo20
+Foo21: foo21
+Foo22: foo22
+--- response_body_like eval
+qr/Bah: bah\r
+Test-Header: 1\r
+Foo1: foo1\r
+Foo2: foo2\r
+Foo3: foo3\r
+Foo4: foo4\r
+Foo5: foo5\r
+Foo6: foo6\r
+Foo7: foo7\r
+Foo8: foo8\r
+Foo9: foo9\r
+Foo10: foo10\r
+Foo11: foo11\r
+Foo12: foo12\r
+Foo13: foo13\r
+Foo14: foo14\r
+Foo15: foo15\r
+Foo16: foo16\r
+Foo17: foo17\r
+Foo18: foo18\r
+Foo19: foo19\r
+Foo20: foo20\r
+Foo21: foo21\r
+Foo22: foo22\r
+/
 
