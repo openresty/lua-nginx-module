@@ -558,10 +558,8 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
                    "lua udp socket connect: %i", rc);
 
     if (rc != NGX_OK) {
-        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
-        lua_pushnil(L);
-        lua_pushliteral(L, "connect peer error");
-        return 2;
+        u->socket_errno = ngx_socket_errno;
+        return ngx_http_lua_socket_error_retval_handler(r, u, L);
     }
 
     /* rc == NGX_OK */
