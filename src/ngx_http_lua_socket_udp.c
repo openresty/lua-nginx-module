@@ -52,7 +52,8 @@ enum {
 };
 
 
-static char ngx_http_lua_udp_socket_metatable_key;
+static char ngx_http_lua_socket_udp_metatable_key;
+static u_char ngx_http_lua_socket_udp_buffer[UDP_MAX_DATAGRAM_SIZE];
 
 
 void
@@ -64,7 +65,7 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "udp"); /* ngx socket */
 
     /* udp socket object metatable */
-    lua_pushlightuserdata(L, &ngx_http_lua_udp_socket_metatable_key);
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
     lua_createtable(L, 0 /* narr */, 4 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_setpeername);
@@ -118,7 +119,7 @@ ngx_http_lua_socket_udp(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
-    lua_pushlightuserdata(L, &ngx_http_lua_udp_socket_metatable_key);
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 
@@ -807,18 +808,6 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
 
     dd("udp receive: buf size: %d", (int) u->recv_buf_size);
 
-    if (u->buffer.start == NULL) {
-        u->buffer.start = ngx_alloc(UDP_MAX_DATAGRAM_SIZE,
-                                    &u->udp_connection.log);
-        if (u->buffer.start == NULL) {
-            return luaL_error(L, "out of memory");
-        }
-    }
-
-    u->buffer.pos = u->buffer.start;
-    u->buffer.last = u->buffer.pos;
-    u->buffer.end = u->buffer.start + size;
-
     rc = ngx_http_lua_socket_udp_read(r, u);
 
     if (rc == NGX_ERROR) {
@@ -864,7 +853,6 @@ static int
 ngx_http_lua_socket_udp_receive_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u, lua_State *L)
 {
-
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket receive return value handler");
 
@@ -872,9 +860,7 @@ ngx_http_lua_socket_udp_receive_retval_handler(ngx_http_request_t *r,
         return ngx_http_lua_socket_error_retval_handler(r, u, L);
     }
 
-    lua_pushlstring(L, (char *) u->buffer.pos, u->buffer.last - u->buffer.pos);
-    u->buffer.last = u->buffer.pos; /* mark as consumed */
-
+    lua_pushlstring(L, (char *) ngx_http_lua_socket_udp_buffer, u->received);
     return 1;
 }
 
@@ -932,11 +918,6 @@ ngx_http_lua_socket_udp_finalize(ngx_http_request_t *r,
         u->resolved->ctx = NULL;
     }
 
-    if (u->buffer.start) {
-        ngx_free(u->buffer.start);
-        ngx_memzero(&u->buffer, sizeof(ngx_buf_t));
-    }
-
     if (u->udp_connection.connection) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua close socket connection");
@@ -990,14 +971,14 @@ ngx_http_lua_socket_udp_read(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua udp socket read data: waiting: %d", (int) u->waiting);
 
-    n = ngx_udp_recv(u->udp_connection.connection, u->buffer.pos,
-                     u->recv_buf_size);
+    n = ngx_udp_recv(u->udp_connection.connection,
+                     ngx_http_lua_socket_udp_buffer, u->recv_buf_size);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua udp recv returned %z", n);
 
     if (n > 0) {
-        u->buffer.last += n;
+        u->received = n;
         ngx_http_lua_socket_udp_handle_success(r, u);
         return NGX_OK;
     }
@@ -1052,9 +1033,7 @@ ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     }
 #endif
 
-    if (u->buffer.start != NULL) {
-        (void) ngx_http_lua_socket_udp_read(r, u);
-    }
+    (void) ngx_http_lua_socket_udp_read(r, u);
 }
 
 

@@ -33,7 +33,7 @@ struct ngx_http_lua_socket_udp_upstream_s {
 
     ngx_uint_t                       ft_type;
     ngx_err_t                        socket_errno;
-    ngx_buf_t                        buffer; /* for receive */
+    size_t                           received; /* for receive */
     size_t                           recv_buf_size;
 
     unsigned                         waiting:1;
