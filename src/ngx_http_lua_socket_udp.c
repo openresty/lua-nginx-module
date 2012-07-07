@@ -540,6 +540,10 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     rc = ngx_udp_connect(uc);
 
+    if (rc != NGX_OK) {
+        u->socket_errno = ngx_socket_errno;
+    }
+
     if (u->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
@@ -558,7 +562,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
                    "lua udp socket connect: %i", rc);
 
     if (rc != NGX_OK) {
-        u->socket_errno = ngx_socket_errno;
         return ngx_http_lua_socket_error_retval_handler(r, u, L);
     }
 
