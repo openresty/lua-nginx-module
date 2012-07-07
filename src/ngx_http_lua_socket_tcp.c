@@ -688,6 +688,10 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     rc = ngx_event_connect_peer(pc);
 
+    if (rc == NGX_ERROR) {
+        u->socket_errno = ngx_socket_errno;
+    }
+
     if (u->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
@@ -706,10 +710,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
                    "lua tcp socket connect: %i", rc);
 
     if (rc == NGX_ERROR) {
-        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
-        lua_pushnil(L);
-        lua_pushliteral(L, "connect peer error");
-        return 2;
+        return ngx_http_lua_socket_error_retval_handler(r, u, L);
     }
 
     if (rc == NGX_BUSY) {
