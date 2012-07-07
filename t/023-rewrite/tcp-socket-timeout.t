@@ -58,8 +58,8 @@ GET /t
 --- response_body
 failed to connect: timeout
 --- error_log
-lua socket connect timeout: 100
-lua socket connect timed out
+lua tcp socket connect timeout: 100
+lua tcp socket connect timed out
 
 
 
@@ -88,8 +88,8 @@ GET /t
 --- response_body
 failed to connect: timeout
 --- error_log
-lua socket connect timeout: 150
-lua socket connect timed out
+lua tcp socket connect timeout: 150
+lua tcp socket connect timed out
 
 
 
@@ -118,8 +118,8 @@ GET /t
 --- response_body
 failed to connect: timeout
 --- error_log
-lua socket connect timeout: 102
-lua socket connect timed out
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
 
 
 
@@ -148,8 +148,8 @@ GET /t
 --- response_body
 failed to connect: timeout
 --- error_log
-lua socket connect timeout: 102
-lua socket connect timed out
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
 --- timeout: 5
 
 
@@ -179,8 +179,8 @@ GET /t
 --- response_body
 failed to connect: timeout
 --- error_log
-lua socket connect timeout: 102
-lua socket connect timed out
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
 
 
 
@@ -217,9 +217,9 @@ GET /t
 connected: 1
 failed to receive: timeout
 --- error_log
-lua socket read timeout: 100
-lua socket connect timeout: 60000
-lua socket read timed out
+lua tcp socket read timeout: 100
+lua tcp socket connect timeout: 60000
+lua tcp socket read timed out
 
 
 
@@ -258,9 +258,9 @@ GET /t
 connected: 1
 failed to receive: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket read timeout: 150
-lua socket read timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 150
+lua tcp socket read timed out
 
 
 
@@ -299,9 +299,9 @@ GET /t
 connected: 1
 failed to receive: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket read timeout: 102
-lua socket read timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 102
+lua tcp socket read timed out
 
 
 
@@ -341,9 +341,9 @@ GET /t
 connected: 1
 failed to receive: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket read timeout: 102
-lua socket read timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 102
+lua tcp socket read timed out
 
 
 
@@ -382,9 +382,9 @@ GET /t
 connected: 1
 failed to receive: timeout
 --- error_log
-lua socket read timeout: 102
-lua socket connect timeout: 60000
-lua socket read timed out
+lua tcp socket read timeout: 102
+lua tcp socket connect timeout: 60000
+lua tcp socket read timed out
 
 
 
@@ -421,9 +421,9 @@ GET /t
 connected: 1
 failed to send: timeout
 --- error_log
-lua socket send timeout: 100
-lua socket connect timeout: 60000
-lua socket write timed out
+lua tcp socket send timeout: 100
+lua tcp socket connect timeout: 60000
+lua tcp socket write timed out
 
 
 
@@ -462,9 +462,9 @@ GET /t
 connected: 1
 failed to send: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket send timeout: 150
-lua socket write timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 150
+lua tcp socket write timed out
 
 
 
@@ -503,9 +503,9 @@ GET /t
 connected: 1
 failed to send: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket send timeout: 102
-lua socket write timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 102
+lua tcp socket write timed out
 
 
 
@@ -544,9 +544,9 @@ GET /t
 connected: 1
 failed to send: timeout
 --- error_log
-lua socket connect timeout: 60000
-lua socket send timeout: 102
-lua socket write timed out
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 102
+lua tcp socket write timed out
 
 
 
@@ -585,7 +585,7 @@ GET /t
 connected: 1
 failed to send: timeout
 --- error_log
-lua socket send timeout: 102
-lua socket connect timeout: 60000
-lua socket write timed out
+lua tcp socket send timeout: 102
+lua tcp socket connect timeout: 60000
+lua tcp socket write timed out
 
