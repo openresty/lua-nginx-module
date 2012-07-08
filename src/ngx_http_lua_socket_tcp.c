@@ -330,6 +330,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     lua_pop(L, 1);
 
     if (u) {
+        if (u->waiting) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "socket busy");
+            return 2;
+        }
+
         if (u->is_downstream) {
             return luaL_error(L, "attempt to re-connect a request socket");
         }
@@ -552,8 +558,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     L = lctx->cc;
-
-    dd("setting socket_ready to 1");
 
     waiting = u->waiting;
 
@@ -926,6 +930,12 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
         return 2;
     }
 
@@ -1442,6 +1452,12 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         return 2;
     }
 
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+
     if (u->is_downstream) {
         return luaL_error(L, "attempt to write to request sockets");
     }
@@ -1644,8 +1660,16 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
         return 2;
     }
 
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+
     if (u->is_downstream) {
-        return luaL_error(L, "attempt to close a request socket");
+        lua_pushnil(L);
+        lua_pushliteral(L, "attempt to close a request socket");
+        return 2;
     }
 
     ngx_http_lua_socket_finalize(r, u);
@@ -1952,7 +1976,6 @@ static void
 ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
-    ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
 
@@ -1999,20 +2022,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
         return;
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    dd("setting socket_ready to 1");
-
-    ctx->socket_busy = 0;
-    ctx->socket_ready = 1;
-
-    u->read_event_handler = ngx_http_lua_socket_dummy_handler;
-    u->write_event_handler = ngx_http_lua_socket_dummy_handler;
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua socket waking up the current request");
-
-    r->write_event_handler(r);
+    ngx_http_lua_socket_handle_success(r, u);
 }
 
 
@@ -2287,6 +2297,12 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
         return 2;
     }
 
@@ -2925,6 +2941,12 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     if (u == NULL || c == NULL || u->ft_type || u->eof) {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
         return 2;
     }
 
