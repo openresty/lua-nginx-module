@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(10);
 
-plan tests => repeat_each() * (3 * blocks());
+plan tests => repeat_each() * (3 * blocks() + 2);
 
 our $HtmlDir = html_dir;
 
@@ -48,8 +48,8 @@ __DATA__
             ngx.say("connected")
 
             local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
-            local bytes, err = udp:send(req)
-            if not bytes then
+            local ok, err = udp:send(req)
+            if not ok then
                 ngx.say("failed to send: ", err)
                 return
             end
@@ -97,15 +97,15 @@ GET /t
             ngx.say("connected")
 
             local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
-            local bytes, err = udp:send(req)
-            if not bytes then
+            local ok, err = udp:send(req)
+            if not ok then
                 ngx.say("failed to send: ", err)
                 return
             end
 
             req = "\\0\\2\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
-            bytes, err = udp:send(req)
-            if not bytes then
+            ok, err = udp:send(req)
+            if not ok then
                 ngx.say("failed to send: ", err)
                 return
             end
@@ -166,8 +166,8 @@ GET /t
             ngx.say("connected")
 
             local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
-            local bytes, err = udp:send(req)
-            if not bytes then
+            local ok, err = udp:send(req)
+            if not ok then
                 ngx.say("failed to send: ", err)
                 return
             end
@@ -319,4 +319,72 @@ GET /main
 --- response_body_like: \b500\b
 --- error_log
 failed to receive data: socket busy
+
+
+
+=== TEST 6: connect again immediately
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.udp()
+            local port = ngx.var.port
+
+            local ok, err = sock:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            ok, err = sock:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected again: ", ok)
+
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", ok)
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+            end
+
+            -- ok, err = sock:close()
+            -- ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+connected again: 1
+request sent: 1
+received: \0\1\0\0\0\1\0\0OK\r\n
+"
+--- no_error_log
+[error]
+--- error_log eval
+["lua reuse socket upstream", "lua udp socket reconnect without shutting down"]
+--- log_level: debug
 
