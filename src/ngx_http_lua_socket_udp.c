@@ -660,7 +660,6 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     int                                  type;
     const char                          *msg;
     ngx_str_t                            query;
-    /* TODO: add support for the optional "i" and "j" arguments */
 
     if (lua_gettop(L) != 2) {
         return luaL_error(L, "expecting 2 arguments (including the object), "
