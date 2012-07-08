@@ -1863,6 +1863,34 @@ Note that `ngx.header` is not a normal Lua table and as such, it is not possible
 
 For reading *request* headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
 
+ngx.req.get_method
+------------------
+**syntax:** *method_name = ngx.req.get_method()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Retrieves the current request's request method name. Strings like `"GET"` and `"POST"` are returned instead of numerical [method constants](http://wiki.nginx.org/HttpLuaModule#HTTP_method_constants).
+
+If the current request is an Nginx subrequest, then the subrequest's method name will be returned.
+
+This method was first introduced in the `v0.5.6` release.
+
+See also [ngx.req.set_method](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_method).
+
+ngx.req.set_method
+------------------
+**syntax:** *ngx.req.set_method(method_id)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Overrides the current request's request method with the `request_id` argument. Currently only numerical [method constants](http://wiki.nginx.org/HttpLuaModule#HTTP_method_constants) are supported, like `ngx.HTTP_POST` and `ngx.HTTP_GET`.
+
+If the current request is an Nginx subrequest, then the subrequest's method will be overridden.
+
+This method was first introduced in the `v0.5.6` release.
+
+See also [ngx.req.get_method](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_method).
+
 ngx.req.set_uri
 ---------------
 **syntax:** *ngx.req.set_uri(uri, jump?)*
