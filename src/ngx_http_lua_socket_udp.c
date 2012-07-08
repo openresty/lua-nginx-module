@@ -206,6 +206,12 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     lua_pop(L, 1);
 
     if (u) {
+        if (u->waiting) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "socket busy");
+            return 2;
+        }
+
         if (u->udp_connection.connection) {
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "lua udp socket reconnect without shutting down");
@@ -684,6 +690,12 @@ ngx_http_lua_socket_udp_send(lua_State *L)
         return 2;
     }
 
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+
     type = lua_type(L, 2);
     switch (type) {
         case LUA_TNUMBER:
@@ -788,7 +800,7 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
     if (u == NULL || u->udp_connection.connection == NULL || u->ft_type) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "attempt to receive data on a closed socket: u:%p, c:%p, "
-                      "ft:%ui eof:%ud",
+                      "ft:%ui",
                       u, u ? u->udp_connection.connection : NULL,
                       u ? u->ft_type : 0);
 
@@ -797,10 +809,16 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
         return 2;
     }
 
+#if 1
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+#endif
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket read timeout: %M", u->read_timeout);
-
-    u->waiting = 0;
 
     size = (size_t) luaL_optnumber(L, 2, UDP_MAX_DATAGRAM_SIZE);
     size = ngx_min(size, UDP_MAX_DATAGRAM_SIZE);
@@ -926,6 +944,10 @@ ngx_http_lua_socket_udp_finalize(ngx_http_request_t *r,
         ngx_close_connection(u->udp_connection.connection);
         u->udp_connection.connection = NULL;
     }
+
+    if (u->waiting) {
+        u->waiting = 0;
+    }
 }
 
 
@@ -978,7 +1000,7 @@ ngx_http_lua_socket_udp_read(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua udp recv returned %z", n);
 
-    if (n > 0) {
+    if (n >= 0) {
         u->received = n;
         ngx_http_lua_socket_udp_handle_success(r, u);
         return NGX_OK;
@@ -990,6 +1012,8 @@ ngx_http_lua_socket_udp_read(ngx_http_request_t *r,
                                              NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
+
+    /* n == NGX_AGAIN */
 
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
         ngx_http_lua_socket_udp_handle_error(r, u,
