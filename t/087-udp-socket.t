@@ -357,12 +357,12 @@ failed to receive data: socket busy
             end
             ngx.say("request sent: ", ok)
 
-            local line, err, part = sock:receive()
+            local line, err = sock:receive()
             if line then
                 ngx.say("received: ", line)
 
             else
-                ngx.say("failed to receive a line: ", err, " [", part, "]")
+                ngx.say("failed to receive: ", err)
             end
 
             -- ok, err = sock:close()
@@ -386,5 +386,54 @@ received: \0\1\0\0\0\1\0\0OK\r\n
 [error]
 --- error_log eval
 ["lua reuse socket upstream", "lua udp socket reconnect without shutting down"]
+--- log_level: debug
+
+
+
+=== TEST 7: recv timeout
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.udp()
+            sock:settimeout(100) -- 100 ms
+
+            local ok, err = sock:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local line, err = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive: ", err)
+            end
+
+            -- ok, err = sock:close()
+            -- ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        echo foo;
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua udp socket read timed out
 --- log_level: debug
 
