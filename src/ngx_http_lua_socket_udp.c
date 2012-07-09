@@ -14,9 +14,6 @@
 #define UDP_MAX_DATAGRAM_SIZE 8192
 
 
-ngx_int_t ngx_udp_connect(ngx_udp_connection_t *uc);
-
-
 static int ngx_http_lua_socket_udp(lua_State *L);
 static int ngx_http_lua_socket_udp_setpeername(lua_State *L);
 static int ngx_http_lua_socket_udp_send(lua_State *L);
@@ -44,6 +41,7 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
+static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
 
 
 enum {
@@ -544,7 +542,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         return 2;
     }
 
-    rc = ngx_udp_connect(uc);
+    rc = ngx_http_lua_udp_connect(uc);
 
     if (rc != NGX_OK) {
         u->socket_errno = ngx_socket_errno;
@@ -1162,5 +1160,110 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
         r->write_event_handler(r);
     }
+}
+
+
+static ngx_int_t
+ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
+{
+    int                rc;
+    ngx_int_t          event;
+    ngx_event_t       *rev, *wev;
+    ngx_socket_t       s;
+    ngx_connection_t  *c;
+
+    s = ngx_socket(uc->sockaddr->sa_family, SOCK_DGRAM, 0);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, &uc->log, 0, "UDP socket %d", s);
+
+    if (s == -1) {
+        ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
+                      ngx_socket_n " failed");
+        return NGX_ERROR;
+    }
+
+    c = ngx_get_connection(s, &uc->log);
+
+    if (c == NULL) {
+        if (ngx_close_socket(s) == -1) {
+            ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
+                          ngx_close_socket_n "failed");
+        }
+
+        return NGX_ERROR;
+    }
+
+    if (ngx_nonblocking(s) == -1) {
+        ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
+                      ngx_nonblocking_n " failed");
+
+        ngx_free_connection(c);
+
+        if (ngx_close_socket(s) == -1) {
+            ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
+                          ngx_close_socket_n " failed");
+        }
+
+        return NGX_ERROR;
+    }
+
+    rev = c->read;
+    wev = c->write;
+
+    rev->log = &uc->log;
+    wev->log = &uc->log;
+
+    uc->connection = c;
+
+    c->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
+
+#if (NGX_THREADS)
+
+    /* TODO: lock event when call completion handler */
+
+    rev->lock = &c->lock;
+    wev->lock = &c->lock;
+    rev->own_lock = &c->lock;
+    wev->own_lock = &c->lock;
+
+#endif
+
+    ngx_log_debug3(NGX_LOG_DEBUG_EVENT, &uc->log, 0,
+                   "connect to %V, fd:%d #%d", &uc->server, s, c->number);
+
+    rc = connect(s, uc->sockaddr, uc->socklen);
+
+    /* TODO: aio, iocp */
+
+    if (rc == -1) {
+        ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
+                      "connect() failed");
+
+        return NGX_ERROR;
+    }
+
+    /* UDP sockets are always ready to write */
+    wev->ready = 1;
+
+    if (ngx_add_event) {
+
+        event = (ngx_event_flags & NGX_USE_CLEAR_EVENT) ?
+                    /* kqueue, epoll */                 NGX_CLEAR_EVENT:
+                    /* select, poll, /dev/poll */       NGX_LEVEL_EVENT;
+                    /* eventport event type has no meaning: oneshot only */
+
+        if (ngx_add_event(rev, NGX_READ_EVENT, event) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+    } else {
+        /* rtsig */
+
+        if (ngx_add_conn(c) == NGX_ERROR) {
+            return NGX_ERROR;
+        }
+    }
+
+    return NGX_OK;
 }
 
