@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 July 2012.
+This document describes ngx_lua [v0.5.6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 July 2012.
 
 Synopsis
 ========
