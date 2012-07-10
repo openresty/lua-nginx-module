@@ -3747,14 +3747,187 @@ Nginx API for Lua
 
     See also ngx.shared.DICT.
 
+  ngx.socket.udp
+    syntax: *udpsock = ngx.socket.udp()*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Creates and returns a UDP or datagram-oriented unix domain socket object
+    (also known as one type of the "cosocket" objects). The following
+    methods are supported on this object:
+
+    *   setpeername
+
+    *   send
+
+    *   receive
+
+    *   close
+
+    *   settimeout
+
+    It is intended to be compatible with the UDP API of the LuaSocket
+    (<http://w3.impa.br/~diego/software/luasocket/udp.html>) library but is
+    100% nonblocking out of the box.
+
+    This feature was first introduced in the "v0.5.7" release.
+
+    See also ngx.socket.tcp.
+
+  udpsock:setpeername
+    syntax: *ok, err = udpsock:setpeername(host, port)*
+
+    syntax: *ok, err =
+    udpsock:setpeername("unix:/path/to/unix-domain.socket")*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Attempts to connect a UDP socket object to a remote server or to a
+    datagram unix domain socket file. Because the datagram protocol is
+    actually connection-less, this method does not really establish a
+    "connection", but only just set the name of the remote peer for
+    subsequent read/write operations.
+
+    Both IP addresses and domain names can be specified as the "host"
+    argument. In case of domain names, this method will use Nginx core's
+    dynamic resolver to parse the domain name without blocking and it is
+    required to configure the resolver directive in the "nginx.conf" file
+    like this:
+
+        resolver 8.8.8.8;  # use Google's public DNS nameserver
+
+    If the nameserver returns multiple IP addresses for the host name, this
+    method will pick up one randomly.
+
+    In case of error, the method returns "nil" followed by a string
+    describing the error. In case of success, the method returns 1.
+
+    Here is an example for connecting to a UDP (memcached) server:
+
+        location /test {
+            resolver 8.8.8.8;
+
+            content_by_lua '
+                local sock = ngx.socket.udp()
+                local ok, err = sock:setpeername("my.memcached.server.domain", 11211)
+                if not ok then
+                    ngx.say("failed to connect to memcached: ", err)
+                    return
+                end
+                ngx.say("successfully connected to memcached!")
+                sock:close()
+            ';
+        }
+
+    Connecting to a datagram unix domain socket file is also possible:
+
+        local sock = ngx.socket.udp()
+        local ok, err = sock:setpeername("unix:/tmp/some-datagram-service.sock")
+        if not ok then
+            ngx.say("failed to connect to the datagram unix domain socket: ", err)
+            return
+        end
+
+    assuming the datagram service is listening on the unix domain socket
+    file "/tmp/some-datagram-service.sock".
+
+    Calling this method on an already connected socket object will cause the
+    original connection to be closed first.
+
+    This method was first introduced in the "v0.5.7" release.
+
+  udpsock:send
+    syntax: *ok, err = udpsock:send(data)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Sends data on the current UDP or datagram unix domain socket object.
+
+    In case of success, it returns 1. Otherwise, it returns "nil" and a
+    string describing the error.
+
+    The input argument "data" can either be a Lua string or a (nested) Lua
+    table holding string fragments. In case of table arguments, this method
+    will automatically copy all the string elements piece by piece to the
+    underlying Nginx socket send buffers, which is usually optimal than
+    doing string concatenation operations on the Lua land.
+
+    This feature was first introduced in the "v0.5.7" release.
+
+  udpsock:receive
+    syntax: *data, err = udpsock:receive(size?)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Receives data from the UDP or datagram unix domain socket object with an
+    optional receive buffer size argument, "size".
+
+    This method is a synchronous operation and is 100% nonblocking.
+
+    In case of success, it returns the data received; in case of error, it
+    returns "nil" with a string describing the error.
+
+    If the "size" argument is specified, then this method will use this size
+    as the receive buffer size. But when this size is greater than 8192,
+    then 8192 will be used instead.
+
+    If no argument is specified, then the maximal buffer size, 8192 is
+    assumed.
+
+    Timeout for the reading operation is controlled by the
+    lua_socket_read_timeout config directive and the settimeout method. And
+    the latter takes priority. For example:
+
+        sock:settimeout(1000)  -- one second timeout
+        local data, err = sock:receive()
+        if not data then
+            ngx.say("failed to read a packet: ", data)
+            return
+        end
+        ngx.say("successfully read a packet: ", data)
+
+    It is important here to call the settimeout method *before* calling this
+    method.
+
+    This feature was first introduced in the "v0.5.7" release.
+
+  udpsock:close
+    syntax: *ok, err = udpsock:close()*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Closes the current UDP or datagram unix domain socket. It returns the 1
+    in case of success and returns "nil" with a string describing the error
+    otherwise.
+
+    For socket objects that have not invoked this method, they (and their
+    connections) will be automatically closed when the socket object is
+    released by the Lua GC (Garbage Collector) or the current client HTTP
+    request finishes processing.
+
+    This feature was first introduced in the "v0.5.7" release.
+
+  udpsock:settimeout
+    syntax: *udpsock:settimeout(time)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Set the timeout value in milliseconds for subsequent socket operations
+    (like receive).
+
+    Settings done by this method takes priority over those config
+    directives, like lua_socket_read_timeout.
+
+    This feature was first introduced in the "v0.5.7" release.
+
   ngx.socket.tcp
     syntax: *tcpsock = ngx.socket.tcp()*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Creates and returns a TCP (or Unix Domain) socket object (also known as
-    the "cosocket" object). The following methods are supported on this
-    object:
+    Creates and returns a TCP or stream-oriented unix domain socket object
+    (also known as one type of the "cosocket" objects). The following
+    methods are supported on this object:
 
     *   connect
 
@@ -3781,6 +3954,8 @@ Nginx API for Lua
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
+    See also ngx.socket.udp.
+
   tcpsock:connect
     syntax: *ok, err = tcpsock:connect(host, port)*
 
@@ -3788,8 +3963,8 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Attempts to connect a TCP socket object to a remote server or to a unix
-    domain socket file without blocking.
+    Attempts to connect a TCP socket object to a remote server or to a
+    stream unix domain socket file without blocking.
 
     Before actually resolving the host name and connecting to the remote
     backend, this method will always look up the connection pool for matched
@@ -3870,7 +4045,7 @@ Nginx API for Lua
     In case of success, it returns the total number of bytes that have been
     sent. Otherwise, it returns "nil" and a string describing the error.
 
-    The input argument `data` can either be a Lua string or a (nested) Lua
+    The input argument "data" can either be a Lua string or a (nested) Lua
     table holding string fragments. In case of table arguments, this method
     will automatically copy all the string elements piece by piece to the
     underlying Nginx socket send buffers, which is usually optimal than
@@ -4059,19 +4234,19 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Closes the current TCP or Unix Domain socket. It returns the 1 in case
-    of success and returns "nil" with a string describing the error
+    Closes the current TCP or stream unix domain socket. It returns the 1 in
+    case of success and returns "nil" with a string describing the error
     otherwise.
 
     For socket objects that have invoked the setkeepalive method, there is
     no need to call this method on it because the socket object is already
-    closed (and the current connection is saved into the builtin connection
+    closed (and the current connection is saved into the built-in connection
     pool).
 
-    For socket objects that have not invoked setkeepalive, they (and their
-    connections) will be automatically closed when the socket object is
-    released by the Lua GC (Garbage Collector) or the current client HTTP
-    request finishes processing.
+    For socket objects that have not invoked setkeepalive nor this method,
+    they (and their connections) will be automatically closed when the
+    socket object is released by the Lua GC (Garbage Collector) or the
+    current client HTTP request finishes processing.
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
@@ -4380,6 +4555,18 @@ Data Sharing within an Nginx Worker
         (<http://github.com/FRiCKLE/ngx_postgres/>) modules for details
 
 Known Issues
+  TCP socket connect operation issues
+    The <tcpsock:connect|/"tcpsock:connect"> method may indicate "success"
+    despite connection failures such as with "Connection Refused" errors.
+
+    However, later attempts to manipulate the cosocket object will fail and
+    return the actual error status message generated by the failed
+    connecting operation.
+
+    This issue appears to be due to limitations in the Nginx event model
+    that only affect Mac OS X and *not* other operating systems like Linux
+    and FreeBSD.
+
   Lua Coroutine Yielding/Resuming
     *   As the module's predefined Nginx I/O API uses the coroutine
         yielding/resuming mechanism, user code should not call any Lua
@@ -4548,14 +4735,6 @@ Known Issues
         local m = ngx.re.match("hello, 1234", regex)
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
         -- evaluates to "1234"
-
-  Connecting Failures on Mac OS X
-    *   Due to the limitations in the Nginx event model, the
-        <tcpsock:connect|/"tcpsock:connect"> method may return success upon
-        connecting failures like "Connection Refused" errors. But later
-        manipulation of the cosocket object will (correctly) fail with the
-        error message of the connecting operation. This issue has not yet
-        been observied on other operating systems like Linux and FreeBSD.
 
 Typical Uses
     Just to name a few:
