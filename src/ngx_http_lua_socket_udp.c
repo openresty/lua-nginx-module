@@ -673,6 +673,10 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
     luaL_checktype(L, 1, LUA_TTABLE);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
@@ -680,7 +684,7 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     lua_pop(L, 1);
 
     if (u == NULL || u->udp_connection.connection == NULL || u->ft_type) {
-        ngx_log_error(NGX_LOG_ERR, &u->udp_connection.log, 0,
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "attempt to send data on a closed socket: u:%p, c:%p, "
                       "ft:%ui",
                       u, u ? u->udp_connection.connection : NULL,
