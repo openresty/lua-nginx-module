@@ -435,5 +435,4 @@ connected: 1
 failed to receive: timeout
 --- error_log
 lua udp socket read timed out
---- log_level: debug
 
