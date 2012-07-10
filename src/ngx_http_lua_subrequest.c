@@ -15,13 +15,13 @@
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
-static ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
-static ngx_str_t  ngx_http_lua_put_method = ngx_http_lua_method_name("PUT");
-static ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
-static ngx_str_t  ngx_http_lua_head_method = ngx_http_lua_method_name("HEAD");
-static ngx_str_t  ngx_http_lua_delete_method =
+ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
+ngx_str_t  ngx_http_lua_put_method = ngx_http_lua_method_name("PUT");
+ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
+ngx_str_t  ngx_http_lua_head_method = ngx_http_lua_method_name("HEAD");
+ngx_str_t  ngx_http_lua_delete_method =
         ngx_http_lua_method_name("DELETE");
-static ngx_str_t  ngx_http_lua_options_method =
+ngx_str_t  ngx_http_lua_options_method =
         ngx_http_lua_method_name("OPTIONS");
 
 

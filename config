@@ -182,6 +182,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.c \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
                 $ngx_addon_dir/src/ngx_http_lua_initby.c \
+                $ngx_addon_dir/src/ngx_http_lua_req_method.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -227,6 +228,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.h \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
                 $ngx_addon_dir/src/ngx_http_lua_initby.h \
+                $ngx_addon_dir/src/ngx_http_lua_req_method.h \
                 "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
