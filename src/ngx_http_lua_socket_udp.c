@@ -826,7 +826,8 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
 
     u->recv_buf_size = size;
 
-    dd("udp receive: buf size: %d", (int) u->recv_buf_size);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua udp socket receive buffer size: %uz", u->recv_buf_size);
 
     rc = ngx_http_lua_socket_udp_read(r, u);
 

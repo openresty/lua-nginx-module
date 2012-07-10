@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(10);
 
-plan tests => repeat_each() * (3 * blocks() + 2);
+plan tests => repeat_each() * (3 * blocks() + 4);
 
 our $HtmlDir = html_dir;
 
@@ -68,6 +68,9 @@ GET /t
 "connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
 --- no_error_log
 [error]
+--- log_level: debug
+--- error_log
+lua udp socket receive buffer size: 8192
 
 
 
@@ -436,4 +439,56 @@ connected: 1
 failed to receive: timeout
 --- error_log
 lua udp socket read timed out
+
+
+
+=== TEST 8: with an explicit receive buffer size argument
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        #set $port 1234;
+
+        content_by_lua '
+            local socket = ngx.socket
+            -- local socket = require "socket"
+
+            local udp = socket.udp()
+
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected")
+
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local ok, err = udp:send(req)
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+
+            local data, err = udp:receive(1400)
+            if not data then
+                ngx.say("failed to receive data: ", err)
+                return
+            end
+            ngx.print("received ", #data, " bytes: ", data)
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+--- no_error_log
+[error]
+--- log_level: debug
+--- error_log
+lua udp socket receive buffer size: 1400
 
