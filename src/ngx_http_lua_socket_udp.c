@@ -42,6 +42,7 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
+static int ngx_http_lua_socket_udp_close(lua_State *L);
 
 
 enum {
@@ -77,6 +78,9 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_udp_close);
+    lua_setfield(L, -2, "close"); /* ngx socket mt */
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -1265,5 +1269,49 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
     }
 
     return NGX_OK;
+}
+
+
+static int
+ngx_http_lua_socket_udp_close(lua_State *L)
+{
+    ngx_http_request_t                  *r;
+    ngx_http_lua_socket_udp_upstream_t  *u;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument "
+                          "(including the object) but seen %d", lua_gettop(L));
+    }
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (u == NULL
+        || u->udp_connection.connection == NULL
+        || u->ft_type)
+    {
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+
+    ngx_http_lua_socket_udp_finalize(r, u);
+
+    lua_pushinteger(L, 1);
+    return 1;
 }
 

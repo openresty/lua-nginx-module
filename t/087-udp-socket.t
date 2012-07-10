@@ -365,8 +365,8 @@ failed to receive data: socket busy
                 ngx.say("failed to receive: ", err)
             end
 
-            -- ok, err = sock:close()
-            -- ngx.say("close: ", ok, " ", err)
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
         ';
     }
 
@@ -381,6 +381,7 @@ GET /t
 connected again: 1
 request sent: 1
 received: \0\1\0\0\0\1\0\0OK\r\n
+close: 1 nil
 "
 --- no_error_log
 [error]

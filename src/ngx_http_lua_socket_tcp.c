@@ -1632,7 +1632,7 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     if (lua_gettop(L) != 1) {
-        return luaL_error(L, "ngx.socket close: expecting 1 argument "
+        return luaL_error(L, "expecting 1 argument "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
