@@ -331,7 +331,7 @@ send: nil closed
 receive: nil closed
 close: nil closed
 --- error_log
-lua socket connect timed out
+lua tcp socket connect timed out
 
 
 
@@ -1427,7 +1427,7 @@ close: 1 nil
 --- no_error_log
 [error]
 --- error_log eval
-["lua reuse socket upstream", "lua socket reconnect without shutting down"]
+["lua reuse socket upstream", "lua tcp socket reconnect without shutting down"]
 
 
 

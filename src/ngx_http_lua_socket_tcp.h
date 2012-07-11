@@ -4,6 +4,16 @@
 
 #include "ngx_http_lua_common.h"
 
+
+#define NGX_HTTP_LUA_SOCKET_FT_ERROR         0x0001
+#define NGX_HTTP_LUA_SOCKET_FT_TIMEOUT       0x0002
+#define NGX_HTTP_LUA_SOCKET_FT_CLOSED        0x0004
+#define NGX_HTTP_LUA_SOCKET_FT_RESOLVER      0x0008
+#define NGX_HTTP_LUA_SOCKET_FT_BUFTOOSMALL   0x0010
+#define NGX_HTTP_LUA_SOCKET_FT_NOMEM         0x0020
+#define NGX_HTTP_LUA_SOCKET_FT_PARTIALWRITE  0x0020
+
+
 typedef struct ngx_http_lua_socket_tcp_upstream_s
         ngx_http_lua_socket_tcp_upstream_t;
 

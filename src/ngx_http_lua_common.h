@@ -278,8 +278,11 @@ typedef struct {
 
     unsigned         waiting_flush:1;
 
-    unsigned         socket_busy:1;
-    unsigned         socket_ready:1;
+    unsigned         socket_busy:1;  /* for TCP */
+    unsigned         socket_ready:1; /* for TCP */
+
+    unsigned         udp_socket_busy:1;  /* for UDP */
+    unsigned         udp_socket_ready:1; /* for UDP */
 
     unsigned         aborted:1;
     unsigned         buffering:1;
