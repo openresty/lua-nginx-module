@@ -253,13 +253,16 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
     int                          timeout;
+    unsigned                     custom_pool;
+    int                          key_index;
+    const char                  *msg;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
-    if (n != 2 && n != 3) {
-        return luaL_error(L, "ngx.socket connect: expecting 2 or 3 arguments "
-                          "(including the object), but seen %d", n);
+    if (n != 2 && n != 3 && n != 4) {
+        return luaL_error(L, "ngx.socket connect: expecting 2, 3, or 4 "
+                          "arguments (including the object), but seen %d", n);
     }
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
@@ -294,6 +297,41 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_memcpy(host.data, p, len);
     host.data[len] = '\0';
 
+    key_index = 2;
+    custom_pool = 0;
+
+    if (lua_type(L, n) == LUA_TTABLE) {
+
+        /* found the last optional option table */
+
+        lua_getfield(L, n, "pool");
+
+        switch (lua_type(L, -1)) {
+        case LUA_TSTRING:
+        case LUA_TNUMBER:
+            custom_pool = 1;
+
+            lua_pushvalue(L, -1);
+            lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+
+            key_index = n + 1;
+
+            break;
+
+        case LUA_TNIL:
+            /* ignore it */
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "bad \"pool\" option type: %s",
+                                  luaL_typename(L, -1));
+            luaL_argerror(L, n, msg);
+            break;
+        }
+
+        n--;
+    }
+
     if (n == 3) {
         port = luaL_checkinteger(L, 3);
 
@@ -303,9 +341,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             return 2;
         }
 
-        lua_pushliteral(L, ":");
-        lua_insert(L, 3);
-        lua_concat(L, 3);
+        if (!custom_pool) {
+            lua_pushliteral(L, ":");
+            lua_insert(L, 3);
+            lua_concat(L, 3);
+        }
 
         dd("socket key: %s", lua_tostring(L, -1));
 
@@ -313,10 +353,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         port = 0;
     }
 
-    /* the key's index is 2 */
+    if (!custom_pool) {
+        /* the key's index is 2 */
 
-    lua_pushvalue(L, -1);
-    lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+        lua_pushvalue(L, 2);
+        lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+    }
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -390,7 +432,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     r->connection->single_connection = 0;
 
-    rc = ngx_http_lua_get_keepalive_peer(r, L, 2, u);
+    rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);

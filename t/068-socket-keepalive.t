@@ -3,9 +3,9 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 8);
+plan tests => repeat_each() * (blocks() * 5 + 14);
 
 our $HtmlDir = html_dir;
 
@@ -80,11 +80,11 @@ function go(port)
 end
 --- request
 GET /t
---- response_body_like
-^connected: 1, reused: \d+
+--- response_body
+connected: 1, reused: 0
 request sent: 11
 received: OK
-connected: 1, reused: [1-9]\d*
+connected: 1, reused: 1
 request sent: 11
 received: OK
 --- no_error_log eval
@@ -153,11 +153,11 @@ function go(port, keepalive)
         sock:close()
     end
 end
---- response_body_like
-^connected: 1, reused: \d+
+--- response_body
+connected: 1, reused: 0
 request sent: 11
 received: OK
-connected: 1, reused: [1-9]\d*
+connected: 1, reused: 1
 request sent: 11
 received: OK
 --- no_error_log
@@ -844,11 +844,11 @@ function go(path, port)
         ngx.say("failed to set reusable: ", err)
     end
 end
---- response_body_like
-^connected: 1, reused: \d+
+--- response_body
+connected: 1, reused: 0
 request sent: 61
 received response of 119 bytes
-connected: 1, reused: [1-9]\d*
+connected: 1, reused: 1
 request sent: 61
 received response of 119 bytes
 --- no_error_log eval
@@ -963,4 +963,217 @@ Not found, dear...
 --- error_code: 404
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: custom pools (different pool for the same host:port) - tcp
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port, "A")
+            test.go(port, "B")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port, pool)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("127.0.0.1", port, {pool = pool})
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+connected: 1, reused: 0
+--- no_error_log eval
+["[error]",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket get keepalive peer: using connection"
+]
+--- error_log
+lua tcp socket keepalive create connection pool for key "A"
+lua tcp socket keepalive create connection pool for key "B"
+
+
+
+=== TEST 15: custom pools (same pool for different host:port) - tcp
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go($TEST_NGINX_MEMCACHED_PORT, "foo")
+            test.go($TEST_NGINX_CLIENT_PORT, "foo")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port, pool)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("127.0.0.1", port, {pool = pool})
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+connected: 1, reused: 1
+--- no_error_log eval
+["[error]",
+"lua tcp socket keepalive: free connection pool for ",
+]
+--- error_log
+lua tcp socket keepalive create connection pool for key "foo"
+lua tcp socket get keepalive peer: using connection
+
+
+
+=== TEST 16: custom pools (different pool for the same host:port) - unix
+--- http_config eval
+"
+    lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    server {
+        listen unix:$::HtmlDir/nginx.sock;
+        default_type 'text/plain';
+
+        server_tokens off;
+        location /foo {
+            echo foo;
+            more_clear_headers Date;
+        }
+    }
+"
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
+            test.go(path, "A")
+            test.go(path, "B")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(path, pool)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("unix:" .. path, {pool = pool})
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+connected: 1, reused: 0
+--- no_error_log eval
+["[error]",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket get keepalive peer: using connection"
+]
+--- error_log
+lua tcp socket keepalive create connection pool for key "A"
+lua tcp socket keepalive create connection pool for key "B"
+
+
+=== TEST 16: custom pools (same pool for the same host:port) - unix
+--- http_config eval
+"
+    lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    server {
+        listen unix:$::HtmlDir/nginx.sock;
+        default_type 'text/plain';
+
+        server_tokens off;
+        location /foo {
+            echo foo;
+            more_clear_headers Date;
+        }
+    }
+"
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
+            test.go(path, "A")
+            test.go(path, "A")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(path, pool)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("unix:" .. path, {pool = pool})
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+connected: 1, reused: 1
+--- no_error_log eval
+["[error]",
+"lua tcp socket keepalive: free connection pool for ",
+]
+--- error_log
+lua tcp socket keepalive create connection pool for key "A"
+lua tcp socket get keepalive peer: using connection
 
