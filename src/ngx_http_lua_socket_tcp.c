@@ -307,8 +307,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         lua_getfield(L, n, "pool");
 
         switch (lua_type(L, -1)) {
-        case LUA_TSTRING:
         case LUA_TNUMBER:
+            lua_tostring(L, -1);
+
+        case LUA_TSTRING:
             custom_pool = 1;
 
             lua_pushvalue(L, -1);
@@ -316,10 +318,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
             key_index = n + 1;
 
-            break;
-
-        case LUA_TNIL:
-            /* ignore it */
             break;
 
         default:
