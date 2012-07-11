@@ -4,7 +4,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * blocks() * 2;
+plan tests => repeat_each() * blocks() * 2 + 10;
 
 run_tests();
 
@@ -371,4 +371,43 @@ GET /lua
 --- error_code: 500
 --- error_log
 entry coroutine can not yield
+
+
+
+=== TEST 10: thread traceback (multi-thread)
+--- config
+    location /lua {
+        content_by_lua '
+            local f = function(cr) coroutine.resume(cr) end
+            -- emit a error
+            local g = function() unknown.unknown = 1 end
+            local l1 = coroutine.create(f)
+            local l2 = coroutine.create(g)
+            coroutine.resume(l1, l2)
+            ngx.say("hello")
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+hello
+--- error_log eval
+["stack traceback:", "coroutine 0:", "coroutine 1:", "coroutine 2:"]
+
+
+
+=== TEST 11: thread traceback (only the entry thread)
+--- config
+    location /lua {
+        content_by_lua '
+            -- emit a error
+            unknown.unknown = 1
+            ngx.say("hello")
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 500
+--- error_log eval
+["stack traceback:", "coroutine 0:"]
 

@@ -1069,6 +1069,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 msg = "unknown reason";
             }
 
+            ngx_http_lua_thread_traceback(L, cc);
+            trace = lua_tostring(L, -1);
+            lua_pop(L, 1);
+
             /* check if the dead coroutine has a parent coroutine*/
             lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
             lua_pushthread(cc);
@@ -1089,20 +1093,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 ctx->cc = cc = next_cc;
 
-                ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0,
-                        "lua coroutine: %s: %s", err, msg);
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                        "lua coroutine: %s: %s\n%s", err, msg, trace);
 
                 continue;
             }
 
-            lua_pop(L, 2);
-
-            ngx_http_lua_thread_traceback(L, cc);
-            trace = lua_tostring(L, -1);
-            lua_pop(L, 1);
-
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                     "lua handler aborted: %s: %s\n%s", err, msg, trace);
+
+            lua_pop(L, 2);
 
             ngx_http_lua_del_thread(r, L, cc_ref);
             ctx->cc_ref = LUA_NOREF;
@@ -2499,58 +2499,81 @@ static int
 ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc)
 {
     int         base;
-    int         level = 0;
+    int         level = 0, count = 0;
     int         firstpart = 1;  /* still before eventual `...' */
     lua_Debug   ar;
 
+    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
     base = lua_gettop(L);
 
     lua_pushliteral(L, "stack traceback:");
 
-    while (lua_getstack(cc, level++, &ar)) {
+    while (cc) {
 
-        if (level > LEVELS1 && firstpart) {
-            /* no more than `LEVELS2' more levels? */
-            if (!lua_getstack(cc, level + LEVELS2, &ar)) {
-                level--;  /* keep going */
+        lua_pushfstring(L, "\ncoroutine %d:", count++);
 
-            } else {
-                lua_pushliteral(L, "\n\t...");  /* too many levels */
-                /* This only works with LuaJIT 2.x. Avoids O(n^2) behaviour. */
-                lua_getstack(cc, -10, &ar);
-                level = ar.i_ci - LEVELS2;
+        while (lua_getstack(cc, level++, &ar)) {
+
+            if (level > LEVELS1 && firstpart) {
+                /* no more than `LEVELS2' more levels? */
+                if (!lua_getstack(cc, level + LEVELS2, &ar)) {
+                    level--;  /* keep going */
+
+                } else {
+                    lua_pushliteral(L, "\n\t...");  /* too many levels */
+                    /*
+                     * This only works with LuaJIT 2.x.
+                     * Avoids O(n^2) behaviour.
+                     */
+                    lua_getstack(cc, -10, &ar);
+                    level = ar.i_ci - LEVELS2;
+                }
+
+                firstpart = 0;
+                continue;
             }
 
-            firstpart = 0;
-            continue;
-        }
+            lua_pushliteral(L, "\n\t");
+            lua_getinfo(cc, "Snl", &ar);
+            lua_pushfstring(L, "%s:", ar.short_src);
 
-        lua_pushliteral(L, "\n\t");
-        lua_getinfo(cc, "Snl", &ar);
-        lua_pushfstring(L, "%s:", ar.short_src);
+            if (ar.currentline > 0) {
+                lua_pushfstring(L, "%d:", ar.currentline);
+            }
 
-        if (ar.currentline > 0) {
-            lua_pushfstring(L, "%d:", ar.currentline);
-        }
-
-        if (*ar.namewhat != '\0') {  /* is there a name? */
-            lua_pushfstring(L, " in function " LUA_QS, ar.name);
-
-        } else {
-            if (*ar.what == 'm') {  /* main? */
-                lua_pushfstring(L, " in main chunk");
-
-            } else if (*ar.what == 'C' || *ar.what == 't') {
-                lua_pushliteral(L, " ?");  /* C function or tail call */
+            if (*ar.namewhat != '\0') {  /* is there a name? */
+                lua_pushfstring(L, " in function " LUA_QS, ar.name);
 
             } else {
-                lua_pushfstring(L, " in function <%s:%d>",
-                                ar.short_src, ar.linedefined);
+                if (*ar.what == 'm') {  /* main? */
+                    lua_pushfstring(L, " in main chunk");
+
+                } else if (*ar.what == 'C' || *ar.what == 't') {
+                    lua_pushliteral(L, " ?");  /* C function or tail call */
+
+                } else {
+                    lua_pushfstring(L, " in function <%s:%d>",
+                                    ar.short_src, ar.linedefined);
+                }
             }
         }
+
+        lua_concat(L, lua_gettop(L) - base);
+
+        level = 0;
+        firstpart = 1;
+
+        /* check if cc has a parent coroutine*/
+        lua_pushthread(cc);
+        lua_xmove(cc, L, 1);
+        lua_gettable(L, -3);
+
+        cc = lua_tothread(L, -1);
+        lua_pop(L, 1);
     }
 
-    lua_concat(L, lua_gettop(L) - base);
+    lua_remove(L, -2);
+
     return 1;
 }
 
