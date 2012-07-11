@@ -3643,9 +3643,9 @@ See also [ngx.socket.udp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.udp).
 
 tcpsock:connect
 ---------------
-**syntax:** *ok, err = tcpsock:connect(host, port)*
+**syntax:** *ok, err = tcpsock:connect(host, port, options_table?)*
 
-**syntax:** *ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket")*
+**syntax:** *ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket", options_table?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -3707,7 +3707,14 @@ It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModul
 
 Calling this method on an already connected socket object will cause the original connection to be closed first.
 
-This feature was first introduced in the `v0.5.0rc1` release.
+An optional Lua table can be specified as the last argument to this method to specify various connect options:
+
+* `pool`
+	specify a custom name for the connection pool being used. If omitted, then the connection pool name will be automatically generated from the string template `"<host>:<port>"` or `"<unix-socket-path>"`.
+
+The support for the options table argument was first introduced in the `v0.5.7` release.
+
+This method was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:send
 ------------

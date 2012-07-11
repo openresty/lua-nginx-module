@@ -3517,9 +3517,9 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 See also [[#ngx.socket.udp|ngx.socket.udp]].
 
 == tcpsock:connect ==
-'''syntax:''' ''ok, err = tcpsock:connect(host, port)''
+'''syntax:''' ''ok, err = tcpsock:connect(host, port, options_table?)''
 
-'''syntax:''' ''ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket")''
+'''syntax:''' ''ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket", options_table?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -3581,7 +3581,14 @@ It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''bef
 
 Calling this method on an already connected socket object will cause the original connection to be closed first.
 
-This feature was first introduced in the <code>v0.5.0rc1</code> release.
+An optional Lua table can be specified as the last argument to this method to specify various connect options:
+
+* <code>pool</code>
+: specify a custom name for the connection pool being used. If omitted, then the connection pool name will be automatically generated from the string template <code>"<host>:<port>"</code> or <code>"<unix-socket-path>"</code>.
+
+The support for the options table argument was first introduced in the <code>v0.5.7</code> release.
+
+This method was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:send ==
 '''syntax:''' ''bytes, err = tcpsock:send(data)''
