@@ -253,12 +253,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
     int                          timeout;
+    const char *                 pool;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
-    if (n != 2 && n != 3) {
-        return luaL_error(L, "ngx.socket connect: expecting 2 or 3 arguments "
+    if (n != 2 && n != 3 && n != 4) {
+        return luaL_error(L, "ngx.socket connect: expecting 2, 3, or 4 arguments "
                           "(including the object), but seen %d", n);
     }
 
@@ -294,24 +295,68 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_memcpy(host.data, p, len);
     host.data[len] = '\0';
 
-    if (n == 3) {
-        port = luaL_checkinteger(L, 3);
+    if (n >= 3) {
+        switch (lua_type(L, 3)) {
+           case LUA_TNIL:
+               /* no port passed in */
+               port = 0;
+               break;
 
-        if (port < 0 || port > 65536) {
-            lua_pushnil(L);
-            lua_pushfstring(L, "bad port number: %d", port);
-            return 2;
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                port = lua_tonumber(L, 3);
+                if (port < 0 || port > 65536) {
+                    lua_pushnil(L);
+                    lua_pushfstring(L, "bad port number: %d", port);
+                    return 2;
+                }
+                break;
+
+            default:
+               lua_pushnil(L);
+               lua_pushfstring(L, "bad port option. Expected number, got %s", luaL_typename(L, 3));
+               return 2;
         }
-
-        lua_pushliteral(L, ":");
-        lua_insert(L, 3);
-        lua_concat(L, 3);
-
-        dd("socket key: %s", lua_tostring(L, -1));
 
     } else { /* n == 2 */
         port = 0;
     }
+
+    pool = NULL;
+    if(n == 4) {
+        luaL_checktype(L, 4, LUA_TTABLE);
+
+        lua_getfield(L, 4, "pool");
+
+        switch (lua_type(L, -1)) {
+
+            case LUA_TNIL:
+                /* remove table and nil from stack */
+                lua_pop(L, 2);
+                break;
+
+            case LUA_TSTRING:
+                /* clean up the stack */
+                lua_replace(L, 2);
+                lua_pop(L, n - 2);
+                pool = lua_tostring(L, -1);
+                break;
+
+            default:
+                return luaL_error(L, "bad \"pool\" option value type: %s",
+                                  luaL_typename(L, -1));
+
+        }
+    }
+
+    if(!pool && n == 3) {
+        lua_pushliteral(L, ":");
+        lua_insert(L, 3);
+        lua_concat(L, 3);
+    }
+
+    /* key is on top of stack. it may be host, host:port, or a pool name*/
+    dd("socket key: %s", lua_tostring(L, -1));
 
     /* the key's index is 2 */
 
