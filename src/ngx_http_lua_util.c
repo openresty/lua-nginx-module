@@ -2560,7 +2560,6 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc)
 
         lua_concat(L, lua_gettop(L) - base);
 
-        /* level 0 is yield() in parent coroutine, so skip it */
         level = 0;
         firstpart = 1;
 
