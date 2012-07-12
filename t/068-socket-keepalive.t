@@ -1121,7 +1121,7 @@ lua tcp socket keepalive create connection pool for key "B"
 
 
 
-=== TEST 17: custom pools (same pool for the same host:port) - unix
+=== TEST 17: custom pools (same pool for the same path) - unix
 --- http_config eval
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
@@ -1130,10 +1130,6 @@ lua tcp socket keepalive create connection pool for key "B"
         default_type 'text/plain';
 
         server_tokens off;
-        location /foo {
-            echo foo;
-            more_clear_headers Date;
-        }
     }
 "
 --- config
