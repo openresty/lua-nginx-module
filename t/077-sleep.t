@@ -106,22 +106,22 @@ bad argument #1 to 'sleep'
 
 
 
-=== TEST 5: sleep 0.5 - multi-times in content
+=== TEST 5: sleep 0.33 - multi-times in content
 --- config
     location /test {
         content_by_lua '
             ngx.update_time()
             local start = ngx.now()
-            ngx.sleep(0.3)
-            ngx.sleep(0.3)
-            ngx.sleep(0.3)
+            ngx.sleep(0.33)
+            ngx.sleep(0.33)
+            ngx.sleep(0.33)
             ngx.say(ngx.now() - start)
         ';
     }
 --- request
 GET /test
 --- response_body_like chop
-^0\.(?:8[5-9]\d*|9[0-9]\d*|9)$
+^(?:0\.9\d*|1\.[0-2]\d*|1)$
 --- error_log
 lua ready to sleep for
 lua sleep handler: "/test?"
