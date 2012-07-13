@@ -1053,7 +1053,7 @@ ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
             return NGX_ERROR;
         }
 
-        // copy header's name
+        /* copy header's name */
 
         h->key.data = ngx_pnalloc(r->pool, var->key.len);
 
@@ -1064,7 +1064,7 @@ ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
         ngx_memcpy(h->key.data, var->key.data, var->key.len);
         h->key.len = var->key.len;
 
-        // copy header's value
+        /* copy header's value */
 
         h->value.data = ngx_pnalloc(r->pool, var->value.len);
 
@@ -1075,7 +1075,7 @@ ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
         ngx_memcpy(h->value.data, var->value.data, var->value.len);
         h->value.len = var->value.len;
 
-        // set lowcase_key value
+        /* set lowcase_key value */
 
         h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
         if (h->lowcase_key == NULL) {
