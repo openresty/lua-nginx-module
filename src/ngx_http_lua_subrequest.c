@@ -34,7 +34,7 @@ static ngx_int_t ngx_http_lua_sub_request_set_extra_headers(
 static ngx_int_t ngx_http_lua_sub_request_copy_parent_headers(
         ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r,
-        off_t content_len, ngx_array_t *extra_headers)
+        off_t content_len, ngx_array_t *extra_headers);
 
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
     ngx_uint_t method, ngx_array_t *extra_headers, ngx_http_request_body_t *body,
@@ -1189,6 +1189,11 @@ ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
 
             if (header_index >= headers_part->nelts) {
                 if (headers_part->next == NULL) {
+                    h = ngx_list_push(&r->headers_in.headers);
+                    if (h == NULL) {
+                        return NGX_ERROR;
+                    }
+                    *h = pr_header[pr_header_index];
                     break;
                 }
                 headers_part = headers_part->next;
@@ -1206,16 +1211,6 @@ ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
 
         }
 
-        if (headers_part->next != NULL) {
-            continue;
-        }
-
-        h = ngx_list_push(&r->headers_in.headers);
-        if (h == NULL) {
-            return NGX_ERROR;
-        }
-
-        *h = pr_header[pr_header_index];
     }
 
     return NGX_OK;
