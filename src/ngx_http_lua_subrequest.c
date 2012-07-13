@@ -1222,6 +1222,7 @@ ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
 
 }
 
+
 static ngx_int_t
 ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r, off_t content_len,
         ngx_array_t *extra_headers)
