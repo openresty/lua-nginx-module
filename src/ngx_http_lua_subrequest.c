@@ -27,26 +27,29 @@ ngx_str_t  ngx_http_lua_options_method =
 static ngx_str_t  ngx_http_lua_content_length_header_key =
         ngx_string("Content-Length");
 
+static ngx_int_t ngx_http_lua_is_content_length_string(ngx_str_t *str);
 static ngx_int_t ngx_http_lua_sub_request_set_content_length_header(
         ngx_http_request_t *r, off_t len);
 static ngx_int_t ngx_http_lua_sub_request_set_extra_headers(
         ngx_http_request_t *r, ngx_array_t *extra_headers);
 static ngx_int_t ngx_http_lua_sub_request_copy_parent_headers(
         ngx_http_request_t *r);
+
 static ngx_int_t ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r,
-        off_t content_len, ngx_array_t *extra_headers);
+       ngx_uint_t method, off_t content_length, ngx_array_t *extra_headers);
 
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
-    ngx_uint_t method, ngx_array_t *extra_headers, ngx_http_request_body_t *body,
-    unsigned vars_action, ngx_array_t *extra_vars);
+        ngx_uint_t method, ngx_array_t *extra_headers,
+        ngx_http_request_body_t *body, unsigned vars_action,
+        ngx_array_t *extra_vars);
 static int ngx_http_lua_ngx_location_capture(lua_State *L);
 static int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
 static void ngx_http_lua_process_vars_option(ngx_http_request_t *r,
-    lua_State *L, int table, ngx_array_t **varsp);
+        lua_State *L, int table, ngx_array_t **varsp);
 static void ngx_http_lua_process_extra_headers_option(ngx_http_request_t *r,
-    lua_State *L, ngx_array_t **varsp);
+        lua_State *L, ngx_array_t **varsp);
 static ngx_int_t ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *r,
-    ngx_array_t *extra_vars);
+        ngx_array_t *extra_vars);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -183,8 +186,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         if (lua_type(L, -1) != LUA_TTABLE) {
             return luaL_error(L, "the query argument %d is not a table, "
-                    "but a %s",
-                    index, lua_typename(L, lua_type(L, -1)));
+                    "but a %s", index, lua_typename(L, lua_type(L, -1)));
         }
 
         nargs = lua_objlen(L, -1);
@@ -362,8 +364,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             if (type != LUA_TNIL) {
                 if (type != LUA_TTABLE) {
-                    return luaL_error(L, "Bad extra_headers option value type %s, "
-                            "expected a Lua table", lua_typename(L, type));
+                    return luaL_error(L, "Bad extra_headers option value type "
+                            "%s, expected a Lua table", lua_typename(L, type));
                 }
                 ngx_http_lua_process_extra_headers_option(r, L, &extra_headers);
             }
@@ -567,38 +569,14 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
     ngx_array_t *extra_headers, ngx_http_request_body_t *body,
     unsigned vars_action, ngx_array_t *extra_vars)
 {
+
+    off_t                        content_len;
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
     ngx_http_core_main_conf_t   *cmcf;
     size_t                       size;
 
     r = sr->parent;
-
-    sr->header_in = r->header_in;
-
-    if (body) {
-        sr->request_body = body;
-
-        rc = ngx_http_lua_sub_request_set_headers(sr,
-                body->buf ? ngx_buf_size(body->buf) : 0, extra_headers);
-
-        if (rc != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-    } else if (method != NGX_HTTP_PUT && method != NGX_HTTP_POST
-               && r->headers_in.content_length_n > 0)
-    {
-        rc = ngx_http_lua_sub_request_set_headers(sr, 0, extra_headers);
-        if (rc != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-#if 1
-        sr->request_body = NULL;
-#endif
-    }
-
     sr->method = method;
 
     switch (method) {
@@ -631,6 +609,26 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
                     "unsupported HTTP method: %u", (unsigned) method);
 
             return NGX_ERROR;
+    }
+
+    sr->header_in = r->header_in;
+
+    if (method == NGX_HTTP_GET || r->headers_in.content_length_n <= 0) {
+        sr->request_body = NULL;
+        sr->headers_in.content_length_n = 0;
+    }
+
+    if (body) {
+        sr->request_body = body;
+        content_len = body->buf ? ngx_buf_size(body->buf) : 0;
+        sr->headers_in.content_length_n = content_len;
+    }
+
+    rc = ngx_http_lua_sub_request_set_headers(sr, method,
+            sr->headers_in.content_length_n, extra_headers);
+
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
     }
 
     /* XXX work-around a bug in ngx_http_subrequest */
@@ -774,59 +772,6 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
     }
 
     return NGX_OK;
-}
-
-
-static void
-ngx_http_lua_process_extra_headers_option(ngx_http_request_t *r, lua_State *L,
-        ngx_array_t **headersp)
-{
-
-    ngx_array_t         *headers;
-    ngx_keyval_t        *header;
-    int                 table = lua_gettop(L);
-
-    headers = *headersp;
-
-    if (headers == NULL) {
-
-        headers = ngx_array_create(r->pool, 4, sizeof(ngx_keyval_t));
-        if (headers == NULL) {
-            luaL_error(L, "out of memory");
-            return;
-        }
-
-        *headersp = headers;
-    }
-
-    lua_pushnil(L);
-
-    while (lua_next(L, table) != 0) {
-
-        if (lua_type(L, -2) != LUA_TSTRING) {
-            luaL_error(L, "attempt to use a non-string key in the "
-                    "\"headers\" option table");
-            return;
-        }
-
-        if (!lua_isstring(L, -1)) {
-            luaL_error(L, "attempt to use bad variable value type %s",
-                       luaL_typename(L, -1));
-        }
-
-        header = ngx_array_push(headers);
-        if (header == NULL) {
-            luaL_error(L, "out of memory");
-            return;
-        }
-
-        header->key.data = (u_char *) lua_tolstring(L, -2, &header->key.len);
-        header->value.data = (u_char *) lua_tolstring(L, -1, &header->value.len);
-
-        lua_pop(L, 1);
-
-    }
-
 }
 
 
@@ -1026,6 +971,123 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
 
 static ngx_int_t
+ngx_http_lua_sub_request_set_content_length_header(ngx_http_request_t *r, off_t len)
+{
+
+    ngx_table_elt_t                 *h;
+    u_char                          *p;
+
+    h = ngx_list_push(&r->headers_in.headers);
+
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->key = ngx_http_lua_content_length_header_key;
+    h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
+    if (h->lowcase_key == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
+
+    r->headers_in.content_length = h;
+
+    p = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->value.data = p;
+
+    h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
+
+    h->hash = ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+            ngx_hash('c', 'o'), 'n'), 't'), 'e'), 'n'), 't'), '-'), 'l'), 'e'),
+            'n'), 'g'), 't'), 'h');
+
+#if 0
+    dd("content length hash: %lu == %lu", (unsigned long) h->hash,
+            ngx_hash_key_lc((u_char *) "Content-Length",
+            sizeof("Content-Length") - 1));
+#endif
+
+    dd("r content length: %.*s",
+            (int)r->headers_in.content_length->value.len,
+            r->headers_in.content_length->value.data);
+
+    return NGX_OK;
+
+}
+
+
+static void
+ngx_http_lua_process_extra_headers_option(ngx_http_request_t *r, lua_State *L,
+        ngx_array_t **headersp)
+{
+
+    ngx_array_t         *headers;
+    ngx_keyval_t        *header;
+    int                 table = lua_gettop(L);
+
+    headers = *headersp;
+
+    if (headers == NULL) {
+
+        headers = ngx_array_create(r->pool, 4, sizeof(ngx_keyval_t));
+        if (headers == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+
+        *headersp = headers;
+    }
+
+    lua_pushnil(L);
+
+    while (lua_next(L, table) != 0) {
+
+        if (lua_type(L, -2) != LUA_TSTRING) {
+            luaL_error(L, "attempt to use a non-string key in the "
+                    "\"extra_headers\" option table");
+            return;
+        }
+
+        if (!lua_isstring(L, -1)) {
+            luaL_error(L, "attempt to use a non-string variable "
+                    "value in the \"extra_headers\" option table");
+        }
+
+        header = ngx_array_push(headers);
+        if (header == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+
+        header->key.data = (u_char *) lua_tolstring(L, -2, &header->key.len);
+        header->value.data = (u_char *) lua_tolstring(L, -1, &header->value.len);
+
+        lua_pop(L, 1);
+
+    }
+
+}
+
+
+static ngx_int_t
+ngx_http_lua_is_content_length_string(ngx_str_t *str)
+{
+
+    return (ngx_http_lua_content_length_header_key.len == str->len &&
+            ngx_strncasecmp(ngx_http_lua_content_length_header_key.data,
+                            str->data,
+                            ngx_http_lua_content_length_header_key.len) == 0);
+
+}
+
+
+static ngx_int_t
 ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
         ngx_array_t *extra_headers)
 {
@@ -1039,11 +1101,7 @@ ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
     for (header_index = 0; header_index < extra_headers->nelts;
          header_index++, var++) {
 
-        if (ngx_http_lua_content_length_header_key.len == var->key.len &&
-            ngx_strncasecmp(ngx_http_lua_content_length_header_key.data,
-                            var->key.data,
-                            ngx_http_lua_content_length_header_key.len) == 0)
-        {
+        if(ngx_http_lua_is_content_length_string(&var->key)) {
             continue;
         }
 
@@ -1094,69 +1152,13 @@ ngx_http_lua_sub_request_set_extra_headers(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_sub_request_set_content_length_header(ngx_http_request_t *r,
-        off_t len)
-{
-
-    ngx_table_elt_t                 *h;
-    u_char                          *p;
-
-    r->headers_in.content_length_n = len;
-
-    h = ngx_list_push(&r->headers_in.headers);
-
-    if (h == NULL) {
-        return NGX_ERROR;
-    }
-
-    h->key = ngx_http_lua_content_length_header_key;
-    h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
-    if (h->lowcase_key == NULL) {
-        return NGX_ERROR;
-    }
-
-    ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
-
-    r->headers_in.content_length = h;
-
-    p = ngx_palloc(r->pool, NGX_OFF_T_LEN);
-    if (p == NULL) {
-        return NGX_ERROR;
-    }
-
-    h->value.data = p;
-
-    h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
-
-    h->hash = ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-            ngx_hash('c', 'o'), 'n'), 't'), 'e'), 'n'), 't'), '-'), 'l'), 'e'),
-            'n'), 'g'), 't'), 'h');
-
-#if 0
-    dd("content length hash: %lu == %lu", (unsigned long) h->hash,
-            ngx_hash_key_lc((u_char *) "Content-Length",
-            sizeof("Content-Length") - 1));
-#endif
-
-    dd("r content length: %.*s",
-            (int)r->headers_in.content_length->value.len,
-            r->headers_in.content_length->value.data);
-
-    return NGX_OK;
-
-}
-
-
-static ngx_int_t
 ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
 {
 
     ngx_table_elt_t                 *h, *header, *pr_header;
     ngx_list_part_t                 *headers_part, *pr_headers_part;
     ngx_http_request_t              *pr;
-    ngx_uint_t                       header_index, pr_header_index,
-                                     pr_header_len;
+    ngx_uint_t                       header_index, pr_header_index;
 
     pr = r->parent;
 
@@ -1167,49 +1169,53 @@ ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
     /* forward the parent request's all other request headers */
 
     pr_headers_part = &pr->headers_in.headers.part;
-    pr_header = pr_headers_part->elts;
 
-    for (pr_header_index = 0; /* void */; pr_header_index++) {
+    while (pr_headers_part) {
 
-        if (pr_header_index >= pr_headers_part->nelts) {
-            if (pr_headers_part->next == NULL) {
-                break;
+        for (pr_header_index = 0, pr_header = pr_headers_part->elts;
+             pr_header_index < pr_headers_part->nelts;
+             pr_header_index++, pr_header++) {
+
+            if(ngx_http_lua_is_content_length_string(&pr_header->key)) {
+                continue;
             }
-            pr_headers_part = pr_headers_part->next;
-            pr_header = pr_headers_part->elts;
-            pr_header_index = 0;
-        }
 
-        pr_header_len = pr_header[pr_header_index].key.len;
+            headers_part = &r->headers_in.headers.part;
 
-        headers_part = &r->headers_in.headers.part;
-        header = headers_part->elts;
+            while (headers_part) {
 
-        for (header_index = 0; /* void */; header_index++) {
+                for (header_index = 0, header = headers_part->elts;
+                     header_index < headers_part->nelts;
+                     header_index++, header++) {
 
-            if (header_index >= headers_part->nelts) {
-                if (headers_part->next == NULL) {
-                    h = ngx_list_push(&r->headers_in.headers);
-                    if (h == NULL) {
-                        return NGX_ERROR;
+                    if (pr_header->key.len == header->key.len &&
+                        ngx_strncasecmp(pr_header->key.data,
+                                        header->key.data,
+                                        pr_header->key.len) == 0) {
+                        break;
                     }
-                    *h = pr_header[pr_header_index];
+
+                }
+
+                if (header_index != headers_part->nelts) {
                     break;
                 }
+
                 headers_part = headers_part->next;
-                header = headers_part->elts;
-                header_index = 0;
+
             }
 
-            if (pr_header_len == header[header_index].key.len &&
-                ngx_strncasecmp(pr_header[pr_header_index].key.data,
-                                header[header_index].key.data,
-                                pr_header_len) == 0)
-            {
-                break;
+            if (!headers_part) {
+                h = ngx_list_push(&r->headers_in.headers);
+                if (h == NULL) {
+                    return NGX_ERROR;
+                }
+                *h = *pr_header;
             }
 
         }
+
+        pr_headers_part = pr_headers_part->next;
 
     }
 
@@ -1219,8 +1225,8 @@ ngx_http_lua_sub_request_copy_parent_headers(ngx_http_request_t *r)
 
 
 static ngx_int_t
-ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r, off_t content_len,
-        ngx_array_t *extra_headers)
+ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r,
+       ngx_uint_t method, off_t content_length, ngx_array_t *extra_headers)
 {
 
     ngx_uint_t                       rc;
@@ -1230,12 +1236,15 @@ ngx_http_lua_sub_request_set_headers(ngx_http_request_t *r, off_t content_len,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_sub_request_set_content_length_header(r, content_len);
+    if (content_length || method == NGX_HTTP_POST) {
 
-    if (rc != NGX_OK) {
-        return rc;
+        rc = ngx_http_lua_sub_request_set_content_length_header(r, content_length);
+
+        if (rc != NGX_OK) {
+            return rc;
+        }
+
     }
-
 
     if (extra_headers) {
 
