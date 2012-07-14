@@ -56,9 +56,9 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
+#if (NGX_PCRE)
     ngx_http_lua_main_conf_t *lmcf = conf;
 
-#if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
         lmcf->regex_cache_max_entries = 1024;
     }
