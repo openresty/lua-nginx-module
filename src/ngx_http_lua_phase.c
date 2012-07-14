@@ -24,7 +24,7 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
 
     /* If we have no request object, assume we are called from the "init" phase. */
     if (r == NULL) {
-        lua_pushlstring(L, (char *) "init", sizeof("init"));
+        lua_pushlstring(L, (char *) "init", sizeof("init") - 1);
         return 1;
     }
 
@@ -35,25 +35,25 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
 
     switch (ctx->context) {
         case NGX_HTTP_LUA_CONTEXT_SET: 
-            lua_pushlstring(L, (char *) "set", sizeof("set"));
+            lua_pushlstring(L, (char *) "set", sizeof("set") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_REWRITE:
-            lua_pushlstring(L, (char *) "rewrite", sizeof("rewrite"));
+            lua_pushlstring(L, (char *) "rewrite", sizeof("rewrite") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_ACCESS:
-            lua_pushlstring(L, (char *) "access", sizeof("access"));
+            lua_pushlstring(L, (char *) "access", sizeof("access") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_CONTENT:
-            lua_pushlstring(L, (char *) "content", sizeof("content"));
+            lua_pushlstring(L, (char *) "content", sizeof("content") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_LOG:
-            lua_pushlstring(L, (char *) "log", sizeof("log"));
+            lua_pushlstring(L, (char *) "log", sizeof("log") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_HEADER_FILTER:
-            lua_pushlstring(L, (char *) "header_filter", sizeof("header_filter"));
+            lua_pushlstring(L, (char *) "header_filter", sizeof("header_filter") - 1);
             break;
         case NGX_HTTP_LUA_CONTEXT_BODY_FILTER:
-            lua_pushlstring(L, (char *) "body_filter", sizeof("body_filter"));
+            lua_pushlstring(L, (char *) "body_filter", sizeof("body_filter") - 1);
             break;
         
         default:
