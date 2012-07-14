@@ -115,3 +115,16 @@ Phase: header_filter
 GET /lua
 --- response_body chop
 body_filter
+
+=== TEST 8: get_phase in log_by_lua
+--- config
+    location /lua {
+        echo "OK";
+        log_by_lua '
+            ngx.log(ngx.ERR, ngx.get_phase())
+        ';
+    }
+--- request
+GET /lua
+--- error_log
+log
