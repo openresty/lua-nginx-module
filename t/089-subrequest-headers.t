@@ -242,3 +242,175 @@ attempt to use a non-string variable value in the "extra_headers" option table
 
 
 
+=== TEST 10: overwrite request_method variable for sub-request
+--- config
+    location /sub {
+        echo "[$request_method]";
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+POST /main
+--- response_body
+[GET]
+
+
+
+=== TEST 11: release content_length variable for GET sub-request
+--- config
+    location /sub {
+        echo "[$content_length]";
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+POST /main
+hello, world
+--- response_body
+[]
+
+
+
+=== TEST 12: overwrite content type header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$content_type]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["Content-Type"] = "application/x-www-form-urlencoded"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_POST,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+[application/x-www-form-urlencoded]
+
+
+
+=== TEST 13: set http_referer header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$http_referer]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["Referer"] = "http://google.com/"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+[http://google.com/]
+
+
+
+=== TEST 14: set host header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$http_host]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["Host"] = "google.com"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+[google.com]
+
+
+
+=== TEST 15: overwrite parent user_agent header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$http_user_agent]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["User-Agent"] = "Googlebot-Video/1.0"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+[Googlebot-Video/1.0]
+
+
+
+=== TEST 16: set http_cookie header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$http_cookie]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["Cookie"] = "name1=value1; name2=value2"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+[name1=value1; name2=value2]
+
+
+=== TEST 17: overwrite parent cookie header and variable for sub-request
+--- config
+    location /sub {
+        echo "[$http_cookie]";
+    }
+    location /main {
+        content_by_lua '
+            local extra_headers = {}
+            extra_headers["Cookie"] = "name3=value3; name4=value4"
+            local res = ngx.location.capture("/sub",
+              { method = ngx.HTTP_GET,
+                extra_headers = extra_headers })
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /main
+--- more_headers
+Cookie: name1=value1; name2=value2
+--- response_body
+[name3=value3; name4=value4]
+
+
+

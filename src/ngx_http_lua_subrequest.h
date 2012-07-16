@@ -5,6 +5,20 @@
 #include "ngx_http_lua_common.h"
 
 
+typedef struct ngx_http_lua_special_request_header_s
+        ngx_http_lua_special_request_header_t;
+
+typedef ngx_int_t (*ngx_http_lua_process_header_pt) (ngx_http_request_t *r,
+        ngx_table_elt_t *header, uintptr_t data);
+
+
+struct ngx_http_lua_special_request_header_s {
+    ngx_str_t                         name;
+    uintptr_t                         data;
+    ngx_http_lua_process_header_pt    set_handler;
+};
+
+
 void ngx_http_lua_inject_subrequest_api(lua_State *L);
 void ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx);
