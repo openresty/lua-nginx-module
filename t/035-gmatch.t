@@ -405,3 +405,24 @@ done
 --- response_body
 hello
 
+
+
+=== TEST 18: gmatch matched but no iterate and early forced GC
+--- config
+    location /re {
+        content_by_lua '
+            local a = {}
+            for i = 1, 3 do
+                it = ngx.re.gmatch("hello, world", "[a-z]+")
+                it()
+                collectgarbage()
+                table.insert(a, {"hello", "world"})
+            end
+            ngx.say("done")
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+done
+
