@@ -5,9 +5,11 @@
 #endif
 #include "ddebug.h"
 
+
 #include <nginx.h>
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_probe.h"
 
 
 static void ngx_http_lua_cleanup_vm(void *data);
@@ -32,6 +34,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
      *      lmcf->shm_zones_inited = 0;
+     *      lmcf->preload_hooks = NULL;
      *      lmcf->requires_header_filter = 0;
      *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
@@ -210,7 +213,10 @@ ngx_http_lua_cleanup_vm(void *data)
 char *
 ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
-    ngx_pool_cleanup_t *cln;
+    ngx_pool_cleanup_t              *cln;
+    ngx_http_lua_preload_hook_t     *hook;
+    lua_State                       *L;
+    ngx_uint_t                       i;
 
     /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
@@ -227,6 +233,28 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
     cln->data = lmcf->lua;
+
+    if (lmcf->preload_hooks) {
+
+        /* register the 3rd-party module's preload hooks */
+
+        L = lmcf->lua;
+
+        lua_getglobal(L, "package");
+        lua_getfield(L, -1, "preload");
+
+        hook = lmcf->preload_hooks->elts;
+
+        for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
+
+            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
+
+            lua_pushcfunction(L, hook[i].loader);
+            lua_setfield(L, -2, hook[i].package);
+        }
+
+        lua_pop(L, 2);
+    }
 
     return NGX_CONF_OK;
 }
