@@ -247,6 +247,9 @@ if [ $ngx_found = yes ]; then
     CORE_LIBS="-Wl,-E $CORE_LIBS"
 fi
 
+NGX_DTRACE_PROVIDERS="$NGX_DTRACE_PROVIDERS $ngx_addon_dir/dtrace/ngx_lua_provider.d"
+NGX_TAPSET_SRCS="$NGX_TAPSET_SRCS $ngx_addon_dir/tapset/ngx_lua.stp"
+
 USE_MD5=YES
 USE_SHA1=YES
 
