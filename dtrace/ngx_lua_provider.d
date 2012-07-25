@@ -6,9 +6,9 @@ provider nginx_lua {
 };
 
 
-#pragma D attributes Evolving/Evolving/Common      provider nginx provider
-#pragma D attributes Private/Private/Unknown       provider nginx module
-#pragma D attributes Private/Private/Unknown       provider nginx function
-#pragma D attributes Private/Private/Common        provider nginx name
-#pragma D attributes Evolving/Evolving/Common      provider nginx args
+#pragma D attributes Evolving/Evolving/Common      provider nginx_lua provider
+#pragma D attributes Private/Private/Unknown       provider nginx_lua module
+#pragma D attributes Private/Private/Unknown       provider nginx_lua function
+#pragma D attributes Private/Private/Common        provider nginx_lua name
+#pragma D attributes Evolving/Evolving/Common      provider nginx_lua args
 
