@@ -66,7 +66,7 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         break;
 
     default:
-        luaL_error(L, "unknown phase: %d", ctx->context);
+        return luaL_error(L, "unknown phase: %d", (int) ctx->context);
     }
 
     return 1;
