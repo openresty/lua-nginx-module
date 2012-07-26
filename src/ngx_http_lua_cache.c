@@ -283,11 +283,11 @@ ngx_http_lua_clear_package_loaded(lua_State *L)
 
         switch (len) {
         case 2:
-            if (ngx_strncmp(p, "os", sizeof("os") - 1) == 0) {
+            if (p[0] == 'o' && p[1] == 's') {
                 goto done;
             }
 
-            if (ngx_strncmp(p, "io", sizeof("io") - 1) == 0) {
+            if (p[0] == 'i' && p[1] == 'o') {
                 goto done;
             }
 
