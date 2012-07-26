@@ -143,3 +143,5 @@ src/socket.[ch]
 src/udp.[ch]
 src/method.[ch]
 tre
+src/phase.[ch]
+src/probe.h
