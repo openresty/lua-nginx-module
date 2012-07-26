@@ -35,6 +35,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_logby.h"
+#include "ngx_http_lua_phase.h"
 
 
 char ngx_http_lua_code_cache_key;
@@ -587,9 +588,12 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_control_api(cf->log, L);
     ngx_http_lua_inject_subrequest_api(L);
     ngx_http_lua_inject_sleep_api(L);
+    ngx_http_lua_inject_phase_api(L);
+
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
+
     ngx_http_lua_inject_req_api(cf->log, L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
