@@ -10,7 +10,7 @@ workers(1);
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 10);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -454,6 +454,8 @@ fo%3d=%3d%3e
 GET /lua
 --- response_body_like chop
 ^(?:fo%3d=%3d%3e\&%3d=%3a|%3d=%3a\&fo%3d=%3d%3e)$
+--- no_error_log
+[error]
 
 
 
@@ -1042,6 +1044,28 @@ GET /lua
 --- response_body chop
 OPTIONS
 hello world
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: encode args table with a multi-value arg.
+--- config
+    location /t {
+        content_by_lua '
+            local args = ngx.req.get_uri_args()
+            local res = ngx.location.capture("/sub", { args = args })
+            ngx.print(res.body)
+        ';
+    }
+
+    location /sub {
+        echo $query_string;
+    }
+--- request
+GET /t?r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fjquery.min.js&r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fdojo%2F1.7.2%2Fdojo%2Fdojo.js.uncompressed.js
+--- response_body
+r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fjquery%2f1.7.2%2fjquery.min.js&r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fdojo%2f1.7.2%2fdojo%2fdojo.js.uncompressed.js
 --- no_error_log
 [error]
 
