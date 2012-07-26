@@ -4378,6 +4378,38 @@ Nginx API for Lua
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
+  ngx.get_phase
+    syntax: *str = ngx.get_phase()*
+
+    context: *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*,
+    content_by_lua*, header_filter_by_lua*, body_filter_by_lua*,
+    log_by_lua**
+
+    Retrieves the current running phase name. Possible return values are
+
+    *   "init" for the context of init_by_lua or init_by_lua_file. =item *
+
+        "set" for the context of set_by_lua or set_by_lua_file. =item *
+
+        "rewrite" for the context of rewrite_by_lua or rewrite_by_lua_file.
+        =item *
+
+        "access" for the context of access_by_lua or access_by_lua_file.
+        =item *
+
+        "content" for the context of content_by_lua or content_by_lua_file.
+        =item *
+
+        "header_filter" for the context of header_filter_by_lua or
+        header_filter_by_lua_file. =item *
+
+        "body_filter" for the context of body_filter_by_lua or
+        body_filter_by_lua_file. =item *
+
+        "log" for the context of log_by_lua or log_by_lua_file.
+
+    This API was first introduced in the "v0.5.10" release.
+
   ndk.set_var.DIRECTIVE
     syntax: *res = ndk.set_var.DIRECTIVE_NAME*
 

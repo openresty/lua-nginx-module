@@ -3968,6 +3968,33 @@ There is no way to use the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcps
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
+ngx.get_phase
+-------------
+**syntax:** *str = ngx.get_phase()*
+
+**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Retrieves the current running phase name. Possible return values are
+
+* `init`
+	for the context of [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua) or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init_by_lua_file).
+* `set`
+	for the context of [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua) or [set_by_lua_file](http://wiki.nginx.org/HttpLuaModule#set_by_lua_file).
+* `rewrite`
+	for the context of [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) or [rewrite_by_lua_file](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua_file).
+* `access`
+	for the context of [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua) or [access_by_lua_file](http://wiki.nginx.org/HttpLuaModule#access_by_lua_file).
+* `content`
+	for the context of [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) or [content_by_lua_file](http://wiki.nginx.org/HttpLuaModule#content_by_lua_file).
+* `header_filter`
+	for the context of [header_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua) or [header_filter_by_lua_file](http://wiki.nginx.org/HttpLuaModule#header_filter_by_lua_file).
+* `body_filter`
+	for the context of [body_filter_by_lua](http://wiki.nginx.org/HttpLuaModule#body_filter_by_lua) or [body_filter_by_lua_file](http://wiki.nginx.org/HttpLuaModule#body_filter_by_lua_file).
+* `log`
+	for the context of [log_by_lua](http://wiki.nginx.org/HttpLuaModule#log_by_lua) or [log_by_lua_file](http://wiki.nginx.org/HttpLuaModule#log_by_lua_file).
+
+This API was first introduced in the `v0.5.10` release.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*

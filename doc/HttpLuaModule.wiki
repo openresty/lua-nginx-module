@@ -3833,6 +3833,32 @@ There is no way to use the [[#tcpsock:settimeout|settimeout]] method to specify 
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
+== ngx.get_phase ==
+'''syntax:''' ''str = ngx.get_phase()''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Retrieves the current running phase name. Possible return values are
+
+* <code>init</code>
+: for the context of [[#init_by_lua|init_by_lua]] or [[#init_by_lua_file|init_by_lua_file]].
+* <code>set</code>
+: for the context of [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]].
+* <code>rewrite</code>
+: for the context of [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]].
+* <code>access</code>
+: for the context of [[#access_by_lua|access_by_lua]] or [[#access_by_lua_file|access_by_lua_file]].
+* <code>content</code>
+: for the context of [[#content_by_lua|content_by_lua]] or [[#content_by_lua_file|content_by_lua_file]].
+* <code>header_filter</code>
+: for the context of [[#header_filter_by_lua|header_filter_by_lua]] or [[#header_filter_by_lua_file|header_filter_by_lua_file]].
+* <code>body_filter</code>
+: for the context of [[#body_filter_by_lua|body_filter_by_lua]] or [[#body_filter_by_lua_file|body_filter_by_lua_file]].
+* <code>log</code>
+: for the context of [[#log_by_lua|log_by_lua]] or [[#log_by_lua_file|log_by_lua_file]].
+
+This API was first introduced in the <code>v0.5.10</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
