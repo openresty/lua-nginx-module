@@ -179,6 +179,11 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             break;
 
+        case LUA_TNIL:
+            user_args.data = NULL;
+            user_args.len = 0;
+            break;
+
         default:
             msg = lua_pushfstring(L, "string, number, or table expected, "
                     "but got %s", luaL_typename(L, 2));
@@ -351,8 +356,14 @@ ngx_http_lua_ngx_exit(lua_State *L)
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
-        return luaL_error(L, "attempt to call ngx.exit after sending "
-                "out the headers");
+
+        if (rc != (ngx_int_t) r->headers_out.status) {
+            return luaL_error(L, "attempt to set status %d via ngx.exit after "
+                              "sending out the response status %d", (int) rc,
+                              (int) r->headers_out.status);
+        }
+
+        rc = NGX_HTTP_OK;
     }
 
     ctx->exit_code = rc;

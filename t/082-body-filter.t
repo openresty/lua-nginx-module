@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #no_diff();
 #no_long_string();
@@ -409,4 +409,77 @@ GET /t
 hello!
 --- no_error_log
 [error]
+
+
+
+=== TEST 16: fully buffered output (string scalar, buffering to disk by ngx_proxy)
+--- config
+    location /t {
+        proxy_pass http://127.0.0.1:$server_port/stub;
+        proxy_buffers 2 256;
+        proxy_busy_buffers_size 256;
+        proxy_buffer_size 256;
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            local buf = ngx.ctx.buf
+
+            if eof then
+                if buf then
+                    ngx.arg[1] = "[" .. buf .. chunk .. "]"
+                    return
+                end
+
+                return
+            end
+
+            if buf then
+                ngx.ctx.buf = buf .. chunk
+            else
+                ngx.ctx.buf = chunk
+            end
+
+            ngx.arg[1] = nil
+        ';
+    }
+
+    location = /stub {
+        echo_duplicate 512 "a";
+        echo_duplicate 512 "b";
+    }
+--- request
+GET /t
+--- response_body eval
+"[" . ("a" x 512) . ("b" x 512) . "]";
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 17: backtrace
+--- config
+    location /t {
+        body_filter_by_lua '
+            function foo()
+                bar()
+            end
+
+            function bar()
+                error("something bad happened")
+            end
+
+            foo()
+        ';
+        echo ok;
+    }
+--- request
+    GET /t
+--- ignore_response
+--- error_log
+something bad happened
+stack traceback:
+in function 'error'
+in function 'bar'
+in function 'foo'
 

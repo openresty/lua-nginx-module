@@ -5,14 +5,14 @@
 #endif
 #include "ddebug.h"
 
+
 #include <nginx.h>
 #include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_probe.h"
 
 
 static void ngx_http_lua_cleanup_vm(void *data);
-static char * ngx_http_lua_init_vm(ngx_conf_t *cf,
-        ngx_http_lua_main_conf_t *lmcf);
 
 
 void *
@@ -31,12 +31,17 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua_cpath = { 0, NULL };
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
+     *      lmcf->init_handler = NULL;
+     *      lmcf->init_src = { 0, NULL };
+     *      lmcf->shm_zones_inited = 0;
+     *      lmcf->preload_hooks = NULL;
      *      lmcf->requires_header_filter = 0;
      *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
      *      lmcf->requires_log = 0;
+     *      lmcf->requires_shm = 0;
      */
 
     lmcf->pool = cf->pool;
@@ -54,23 +59,13 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
+#if (NGX_PCRE)
     ngx_http_lua_main_conf_t *lmcf = conf;
 
-#if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
         lmcf->regex_cache_max_entries = 1024;
     }
 #endif
-
-    if (lmcf->lua == NULL) {
-        if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                               "failed to initialize Lua VM");
-            return NGX_CONF_ERROR;
-        }
-
-        dd("Lua VM initialized!");
-    }
 
     return NGX_CONF_OK;
 }
@@ -215,10 +210,13 @@ ngx_http_lua_cleanup_vm(void *data)
 }
 
 
-static char *
+char *
 ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
-    ngx_pool_cleanup_t *cln;
+    ngx_pool_cleanup_t              *cln;
+    ngx_http_lua_preload_hook_t     *hook;
+    lua_State                       *L;
+    ngx_uint_t                       i;
 
     /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
@@ -235,6 +233,28 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
     cln->data = lmcf->lua;
+
+    if (lmcf->preload_hooks) {
+
+        /* register the 3rd-party module's preload hooks */
+
+        L = lmcf->lua;
+
+        lua_getglobal(L, "package");
+        lua_getfield(L, -1, "preload");
+
+        hook = lmcf->preload_hooks->elts;
+
+        for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
+
+            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
+
+            lua_pushcfunction(L, hook[i].loader);
+            lua_setfield(L, -2, hook[i].package);
+        }
+
+        lua_pop(L, 2);
+    }
 
     return NGX_CONF_OK;
 }

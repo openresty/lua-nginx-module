@@ -78,7 +78,20 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
 
 
+typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+
+
+typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
+        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+
+
 typedef struct {
+    const char          *package;
+    lua_CFunction        loader;
+} ngx_http_lua_preload_hook_t;
+
+
+struct ngx_http_lua_main_conf_s {
     lua_State       *lua;
 
     ngx_str_t        lua_path;
@@ -93,8 +106,14 @@ typedef struct {
 
     ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
 
+    ngx_array_t     *preload_hooks; /* of ngx_http_lua_preload_hook_t */
+
     ngx_flag_t       postponed_to_rewrite_phase_end;
     ngx_flag_t       postponed_to_access_phase_end;
+
+    ngx_http_lua_conf_handler_pt    init_handler;
+    ngx_str_t                       init_src;
+    ngx_uint_t                      shm_zones_inited;
 
     unsigned         requires_header_filter:1;
     unsigned         requires_body_filter:1;
@@ -102,8 +121,8 @@ typedef struct {
     unsigned         requires_rewrite:1;
     unsigned         requires_access:1;
     unsigned         requires_log:1;
-
-} ngx_http_lua_main_conf_t;
+    unsigned         requires_shm:1;
+};
 
 
 typedef struct {
@@ -255,8 +274,11 @@ typedef struct {
 
     unsigned         waiting_flush:1;
 
-    unsigned         socket_busy:1;
-    unsigned         socket_ready:1;
+    unsigned         socket_busy:1;  /* for TCP */
+    unsigned         socket_ready:1; /* for TCP */
+
+    unsigned         udp_socket_busy:1;  /* for UDP */
+    unsigned         udp_socket_ready:1; /* for UDP */
 
     unsigned         aborted:1;
     unsigned         buffering:1;

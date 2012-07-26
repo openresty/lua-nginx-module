@@ -89,10 +89,10 @@ request sent: 11
 received: OK
 --- no_error_log eval
 ["[error]",
-"lua socket keepalive: free connection pool for "]
+"lua tcp socket keepalive: free connection pool for "]
 --- error_log eval
-qq{lua socket get keepalive peer: using connection
-lua socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
+qq{lua tcp socket get keepalive peer: using connection
+lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
 }
 
 
@@ -165,8 +165,8 @@ received: OK
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket get keepalive peer: using connection",
-"lua socket keepalive: free connection pool for "]
+["lua tcp socket get keepalive peer: using connection",
+"lua tcp socket keepalive: free connection pool for "]
 
 
 
@@ -241,8 +241,8 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive close handler",
-"lua socket keepalive: free connection pool for "]
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for "]
 --- timeout: 3
 
 
@@ -318,8 +318,8 @@ received response of 156 bytes
 done
 --- no_error_log eval
 ["[error]",
-"lua socket keepalive close handler: fd:",
-"lua socket keepalive: free connection pool for "]
+"lua tcp socket keepalive close handler: fd:",
+"lua tcp socket keepalive: free connection pool for "]
 --- timeout: 4
 
 
@@ -395,10 +395,10 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive close handler",
-"lua socket keepalive: free connection pool for ",
-"lua socket keepalive timeout: 100 ms",
-qr/lua socket connection pool size: 30\b/]
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 100 ms",
+qr/lua tcp socket connection pool size: 30\b/]
 --- timeout: 4
 
 
@@ -475,10 +475,10 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive close handler",
-"lua socket keepalive: free connection pool for ",
-"lua socket keepalive timeout: 100 ms",
-qr/lua socket connection pool size: 1\b/]
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 100 ms",
+qr/lua tcp socket connection pool size: 1\b/]
 --- timeout: 4
 
 
@@ -554,8 +554,8 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive timeout: unlimited",
-qr/lua socket connection pool size: 30\b/]
+["lua tcp socket keepalive timeout: unlimited",
+qr/lua tcp socket connection pool size: 30\b/]
 --- timeout: 4
 
 
@@ -631,10 +631,10 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive close handler",
-"lua socket keepalive: free connection pool for ",
-"lua socket keepalive timeout: 123 ms",
-qr/lua socket connection pool size: 30\b/]
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 123 ms",
+qr/lua tcp socket connection pool size: 30\b/]
 --- timeout: 4
 
 
@@ -711,10 +711,10 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive close handler",
-"lua socket keepalive: free connection pool for ",
-"lua socket keepalive timeout: 101 ms",
-qr/lua socket connection pool size: 25\b/]
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 101 ms",
+qr/lua tcp socket connection pool size: 25\b/]
 --- timeout: 4
 
 
@@ -790,8 +790,8 @@ done
 --- no_error_log
 [error]
 --- error_log eval
-["lua socket keepalive timeout: unlimited",
-qr/lua socket connection pool size: 30\b/]
+["lua tcp socket keepalive timeout: unlimited",
+qr/lua tcp socket connection pool size: 30\b/]
 --- timeout: 4
 
 
@@ -873,10 +873,10 @@ request sent: 61
 received response of 119 bytes
 --- no_error_log eval
 ["[error]",
-"lua socket keepalive: free connection pool for "]
+"lua tcp socket keepalive: free connection pool for "]
 --- error_log eval
-["lua socket get keepalive peer: using connection",
-'lua socket keepalive create connection pool for key "unix:']
+["lua tcp socket get keepalive peer: using connection",
+'lua tcp socket keepalive create connection pool for key "unix:']
 
 
 
@@ -921,7 +921,7 @@ ngx.say("ok")
 --- response_body
 ok
 --- error_log
-lua socket get keepalive peer: using connection
+lua tcp socket get keepalive peer: using connection
 --- no_error_log
 [error]
 [alert]

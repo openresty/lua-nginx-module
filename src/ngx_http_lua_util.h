@@ -29,6 +29,9 @@ extern char ngx_http_lua_socket_pool_key;
 /* char whose address we'll use as key for the nginx request pointer */
 extern char ngx_http_lua_request_key;
 
+/* char whose address we'll use as key for the nginx config logger */
+extern char ngx_http_lua_cf_log_key;
+
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
@@ -116,6 +119,8 @@ ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     ngx_chain_t **free, size_t len, ngx_buf_tag_t tag);
 
 void ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec);
+
+int ngx_http_lua_traceback(lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_UTIL_H */

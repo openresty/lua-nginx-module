@@ -63,7 +63,7 @@ GET /lua
 --- request
 GET /lua
 --- error_log
-attempt to call ngx.exit after sending out the headers
+attempt to set status 404 via ngx.exit after sending out the response status 200
 --- no_error_log
 alert
 --- ignore_response
@@ -493,4 +493,44 @@ GET /lua
 --- response_body_like: 501 Method Not Implemented
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: throw 403 after sending out headers with 200
+--- config
+    location /lua {
+        rewrite_by_lua '
+            ngx.send_headers()
+            ngx.say("Hello World")
+            ngx.exit(403)
+        ';
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+attempt to set status 403 via ngx.exit after sending out the response status 200
+--- no_error_log
+[alert]
+
+
+
+=== TEST 15: throw 403 after sending out headers with 403
+--- config
+    location /lua {
+        rewrite_by_lua '
+            ngx.status = 403
+            ngx.send_headers()
+            ngx.say("Hello World")
+            ngx.exit(403)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+[alert]
 

@@ -100,8 +100,13 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
     old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
 
+    lua_pushcfunction(L, ngx_http_lua_traceback);
+    lua_insert(L, 1);  /* put it under chunk and args */
+
     dd("protected call user code");
-    rc = lua_pcall(L, 0, 1, 0);
+    rc = lua_pcall(L, 0, 1, 1);
+
+    lua_remove(L, 1);  /* remove traceback function */
 
 #if (NGX_PCRE)
     /* XXX: work-around to nginx regex subsystem */
@@ -225,7 +230,7 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -537,8 +542,18 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
     case LUA_TNIL:
         /* discard the buffers */
-        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-        lua_pushlightuserdata(L, NULL);
+        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key); /* key */
+        lua_pushvalue(L, -1); /* key key */
+        lua_rawget(L, LUA_GLOBALSINDEX); /* key val */
+        in = lua_touserdata(L, -1);
+        lua_pop(L, 1); /* key */
+
+        for (cl = in; cl; cl = cl->next) {
+            dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
+            cl->buf->pos = cl->buf->last;
+        }
+
+        lua_pushlightuserdata(L, NULL); /* key val */
         lua_rawset(L, LUA_GLOBALSINDEX);
         return 0;
 
@@ -564,7 +579,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             last = 1;
         }
 
-        /* mark the buf as consumed */
+        dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
         cl->buf->pos = cl->buf->last;
     }
 

@@ -56,6 +56,7 @@ typedef struct {
 
 
 typedef struct {
+    ngx_http_cleanup_pt     *cleanup;
     ngx_http_request_t      *request;
     pcre                    *regex;
     pcre_extra              *regex_sd;
@@ -78,6 +79,7 @@ static void ngx_http_lua_regex_free_study_data(ngx_pool_t *pool,
     pcre_extra *sd);
 static ngx_int_t ngx_lua_regex_compile(ngx_lua_regex_compile_t *rc);
 static void ngx_http_lua_ngx_re_gmatch_cleanup(void *data);
+static int ngx_http_lua_ngx_re_gmatch_gc(lua_State *L);
 
 
 #define ngx_http_lua_regex_exec(re, e, s, start, captures, size) \
@@ -771,6 +773,11 @@ compiled:
 
     ctx = lua_newuserdata(L, sizeof(ngx_http_lua_regex_ctx_t));
 
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch_gc);
+    lua_setfield(L, -2, "__gc");
+    lua_setmetatable(L, -2);
+
     ctx->request = r;
     ctx->regex = re_comp.regex;
     ctx->regex_sd = sd;
@@ -787,6 +794,7 @@ compiled:
 
         cln->handler = ngx_http_lua_ngx_re_gmatch_cleanup;
         cln->data = ctx;
+        ctx->cleanup = &cln->handler;
     }
 
     lua_pushinteger(L, 0);
@@ -1710,12 +1718,38 @@ ngx_http_lua_ngx_re_gmatch_cleanup(void *data)
 {
     ngx_http_lua_regex_ctx_t    *ctx = data;
 
-    if (ctx && ctx->regex_sd) {
-        ngx_http_lua_regex_free_study_data(ctx->request->pool, ctx->regex_sd);
-        ctx->regex_sd = NULL;
+    if (ctx) {
+        if (ctx->regex_sd) {
+            dd("free study data");
+            ngx_http_lua_regex_free_study_data(ctx->request->pool,
+                                               ctx->regex_sd);
+            ctx->regex_sd = NULL;
+        }
+
+        if (ctx->cleanup) {
+            *ctx->cleanup = NULL;
+            ctx->cleanup = NULL;
+        }
+
+        ctx->request = NULL;
     }
 
     return;
+}
+
+
+static int
+ngx_http_lua_ngx_re_gmatch_gc(lua_State *L)
+{
+    ngx_http_lua_regex_ctx_t    *ctx;
+
+    ctx = lua_touserdata(L, 1);
+
+    if (ctx && ctx->cleanup) {
+        ngx_http_lua_ngx_re_gmatch_cleanup(ctx);
+    }
+
+    return 0;
 }
 
 
