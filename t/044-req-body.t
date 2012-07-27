@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 3);
+plan tests => repeat_each() * (blocks() * 4 + 1);
 
 #no_diff();
 no_long_string();
@@ -835,4 +835,242 @@ world
 srcache_store: request body len: 55
 --- no_error_log
 [error]
+
+
+
+=== TEST 31: init & append & finish (just in buffer)
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.init_body(4)
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+        ';
+    }
+--- request
+    GET /t
+--- stap2
+F(ngx_http_lua_write_request_body) {
+    b = ngx_chain_buf($body)
+    println("buf: ", b,
+        ", in-mem: ", ngx_buf_in_memory(b),
+        ", size: ", ngx_buf_size(b),
+        ", data: ", ngx_buf_data(b))
+}
+--- response_body
+content length: 4
+body: hell
+--- no_error_log
+[error]
+
+
+
+=== TEST 32: init & append & finish (exceeding the buffer size)
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.init_body(4)
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.append_body("o")
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+            local file = ngx.req.get_body_file()
+            if not file then
+                ngx.say("body file: ", file)
+                return
+            end
+
+            local f, err = io.open(file, "r")
+            if not f then
+                ngx.say("failed to open file: ", err)
+                return
+            end
+
+            local data = f:read("*a")
+            f:close()
+            ngx.say("body file: ", data)
+        ';
+    }
+--- request
+    GET /t
+--- stap2
+F(ngx_http_lua_write_request_body) {
+    b = ngx_chain_buf($body)
+    println("buf: ", b,
+        ", in-mem: ", ngx_buf_in_memory(b),
+        ", size: ", ngx_buf_size(b),
+        ", data: ", ngx_buf_data(b))
+}
+F(ngx_open_tempfile) {
+    println("open temp file ", user_string($name), ", persist: ", $persistent)
+}
+F(ngx_pool_delete_file) {
+    println("delete ", ngx_pool_cleanup_file_name($data))
+}
+--- response_body
+content length: 5
+body: nil
+body file: hello
+--- no_error_log
+[error]
+--- error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 33: init & append & finish (use default buffer size)
+--- config
+    location /t {
+        client_body_buffer_size 4;
+        content_by_lua '
+            ngx.req.init_body()
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+content length: 4
+body: hell
+--- no_error_log
+[error]
+--- no_error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 34: init & append & finish (exceeding the buffer size, proxy)
+--- config
+    location /t {
+        rewrite_by_lua '
+            ngx.req.init_body(4)
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.append_body("o\\n")
+            ngx.req.finish_body()
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location = /back {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /t
+i do like the sky
+--- response_body
+hello
+--- no_error_log
+[error]
+--- error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 35: init & append & finish (just in buffer, proxy)
+--- config
+    location /t {
+        rewrite_by_lua '
+            ngx.req.init_body(4)
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.finish_body()
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location = /back {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /t
+i do like the sky
+--- response_body chop
+hell
+--- no_error_log
+[error]
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 36: init & append & finish (exceeding buffer size, discard on-disk buffer)
+--- config
+    client_header_buffer_size 100;
+    location /t {
+        client_body_buffer_size 4;
+
+        content_by_lua '
+            ngx.req.read_body()
+
+            -- ngx.say("original body: ", ngx.req.get_body_data())
+            -- ngx.say("original body file: ", ngx.req.get_body_file())
+
+            ngx.req.init_body(4)
+            ngx.req.append_body("h")
+            ngx.req.append_body("ell")
+            ngx.req.append_body("o")
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+            local file = ngx.req.get_body_file()
+            if not file then
+                ngx.say("body file: ", file)
+                return
+            end
+
+            local f, err = io.open(file, "r")
+            if not f then
+                ngx.say("failed to open file: ", err)
+                return
+            end
+
+            local data = f:read("*a")
+            f:close()
+            ngx.say("body file: ", data)
+        ';
+    }
+--- request eval
+"POST /t
+" . ("howdyworld" x 15)
+--- stap2
+F(ngx_http_read_client_request_body) { T() }
+M(http-read-body-abort) { println("read body aborted: ", user_string($arg2)) }
+M(http-read-req-header-done) { println("req header: ", ngx_table_elt_key($arg2), ": ", ngx_table_elt_value($arg2)) }
+--- response_body
+content length: 5
+body: nil
+body file: hello
+--- no_error_log
+[error]
+--- error_log
+a client request body is buffered to a temporary file
 
