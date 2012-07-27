@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 1);
+plan tests => repeat_each() * (blocks() * 4 + 3);
 
 #no_diff();
 no_long_string();
@@ -981,6 +981,20 @@ a client request body is buffered to a temporary file
 --- request
 POST /t
 i do like the sky
+
+--- stap
+global valid = 0
+
+F(ngx_http_handler) { valid = 1  }
+
+probe syscall.unlink {
+    if (valid && pid() == target()) {
+        println(name, "(", argstr, ")")
+    }
+}
+
+--- stap_out_like chop
+^unlink\(".*?client_body_temp/\d+"\)$
 --- response_body
 hello
 --- no_error_log
@@ -1061,10 +1075,49 @@ a client request body is buffered to a temporary file
 --- request eval
 "POST /t
 " . ("howdyworld" x 15)
---- stap2
+--- stap
+/*
 F(ngx_http_read_client_request_body) { T() }
 M(http-read-body-abort) { println("read body aborted: ", user_string($arg2)) }
 M(http-read-req-header-done) { println("req header: ", ngx_table_elt_key($arg2), ": ", ngx_table_elt_value($arg2)) }
+#probe syscall.open { if (isinstr(argstr, "temp")) { println(name, ": ", argstr) } }
+
+probe syscall.unlink {
+    println(name, ": ", argstr, " :", target(), " == ", pid(), ": ", execname())
+    system(sprintf("ps aux|grep %d|grep -v grep > /dev/stderr", target()))
+    system(sprintf("ps aux|grep %d|grep -v grep  > /dev/stderr", pid()))
+}
+*/
+
+global valid = 0
+
+F(ngx_http_handler) { valid = 1  }
+#F(ngx_http_free_request) { valid = 0 }
+
+probe syscall.unlink {
+    if (valid && pid() == target()) {
+        println(name, "(", argstr, ")")
+        #print_ubacktrace()
+    }
+}
+
+/*
+probe syscall.close, syscall.open, syscall.unlink {
+    if (valid && pid() == target()) {
+        print(name, "(", argstr, ")")
+        #print_ubacktrace()
+    }
+}
+
+probe syscall.close.return, syscall.open.return, syscall.unlink.return {
+    if (valid && pid() == target()) {
+        println(" = ", retstr)
+    }
+}
+*/
+--- stap_out_like chop
+^unlink\(".*?client_body_temp/\d+"\)
+unlink\(".*?client_body_temp/\d+"\)$
 --- response_body
 content length: 5
 body: nil
