@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 3);
+plan tests => repeat_each() * (blocks() * 4 + 2);
 
 #no_diff();
 no_long_string();
@@ -1125,5 +1125,160 @@ body file: hello
 --- no_error_log
 [error]
 --- error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 37: ngx.req.socket + init & append & finish (requests)
+--- config
+    location = /t {
+        client_body_buffer_size 1;
+        lua_socket_buffer_size 1;
+        content_by_lua '
+            local sock,err = ngx.req.socket()
+            if not sock then
+                ngx.say("failed to get req socket: ", err)
+                return
+            end
+
+            ngx.req.init_body(100)
+
+            while true do
+                local data, err = sock:receive(1)
+                if not data then
+                    if err == "closed" then
+                        break
+                    else
+                        ngx.say("failed to read body: ", err)
+                        return
+                    end
+                end
+                ngx.req.append_body(data)
+            end
+
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+        ';
+    }
+--- request
+POST /t
+hello, my dear friend!
+--- response_body
+content length: 22
+body: hello, my dear friend!
+--- no_error_log
+[error]
+--- no_error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 38: ngx.req.socket + init & append & finish (pipelined requests, small buffer size)
+--- config
+    location = /t {
+        client_body_buffer_size 1;
+        lua_socket_buffer_size 1;
+        content_by_lua '
+            local sock,err = ngx.req.socket()
+            if not sock then
+                ngx.say("failed to get req socket: ", err)
+                return
+            end
+
+            ngx.req.init_body(100)
+
+            while true do
+                local data, err = sock:receive(1)
+                if not data then
+                    if err == "closed" then
+                        break
+                    else
+                        ngx.say("failed to read body: ", err)
+                        return
+                    end
+                end
+                ngx.req.append_body(data)
+            end
+
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+        ';
+    }
+--- pipelined_requests eval
+["POST /t
+hello, my dear friend!",
+"POST /t
+blah blah blah"]
+--- response_bodys
+["content length: 22
+body: hello, my dear friend!
+","content length: 14
+body: blah blah blah"]
+--- no_error_log
+[error]
+--- no_error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 39: ngx.req.socket + init & append & finish (pipelined requests, big buffer size)
+--- config
+    location = /t {
+        client_body_buffer_size 100;
+        lua_socket_buffer_size 100;
+        content_by_lua '
+            local sock,err = ngx.req.socket()
+            if not sock then
+                ngx.say("failed to get req socket: ", err)
+                return
+            end
+
+            ngx.req.init_body(100)
+
+            while true do
+                local data, err = sock:receive(100)
+                if not data then
+                    if err == "closed" then
+                        break
+                    else
+                        ngx.say("failed to read body: ", err)
+                        return
+                    end
+                end
+                ngx.req.append_body(data)
+            end
+
+            ngx.req.finish_body()
+
+            ngx.say("content length: ", ngx.var.http_content_length)
+
+            local data = ngx.req.get_body_data()
+            ngx.say("body: ", data)
+
+        ';
+    }
+--- pipelined_requests eval
+["POST /t
+hello, my dear friend!",
+"POST /t
+blah blah blah"]
+--- response_bodys
+["content length: 22
+body: hello, my dear friend!
+","content length: 14
+body: blah blah blah"]
+--- no_error_log
+[error]
+--- no_error_log
 a client request body is buffered to a temporary file
 

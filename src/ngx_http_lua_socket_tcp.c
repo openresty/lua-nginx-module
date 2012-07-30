@@ -8,6 +8,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_probe.h"
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -1347,13 +1348,18 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "http client request body preread %uz", preread);
 
-                if ((off_t) preread >= r->headers_in.content_length_n) {
-                    preread = r->headers_in.content_length_n;
+                if ((off_t) preread >= r->request_body->rest) {
+                    preread = r->request_body->rest;
                 }
 
                 if (size > preread) {
                     size = preread;
                 }
+
+                ngx_http_lua_probe_req_socket_consume_preread(r,
+                                                              (char *)
+                                                              r->header_in->pos,
+                                                              size);
 
                 b->last = ngx_copy(b->last, r->header_in->pos, size);
 

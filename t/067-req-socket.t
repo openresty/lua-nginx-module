@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 our $HtmlDir = html_dir;
 
@@ -15,6 +15,7 @@ $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 no_long_string();
 #no_diff();
 #log_level 'warn';
+no_shuffle();
 
 run_tests();
 
@@ -518,6 +519,58 @@ Expect: 100-Continue
 --- error_code: 100
 --- response_body_like chomp
 \breceived: hello\b.*?\breceived:  worl\b
+--- no_error_log
+[error]
+
+
+
+=== TEST 8: pipelined requests, big buffer, small steps
+--- config
+    location /t {
+        lua_socket_buffer_size 5;
+        content_by_lua '
+            local sock, err = ngx.req.socket()
+            if sock then
+                ngx.say("got the request socket")
+            else
+                ngx.say("failed to get the request socket: ", err)
+            end
+
+            for i = 1, 6 do
+                local data, err, part = sock:receive(2)
+                if data then
+                    ngx.say("received: ", data)
+                else
+                    ngx.say("failed to receive: ", err, " [", part, "]")
+                end
+            end
+        ';
+    }
+--- stap2
+M(http-lua-req-socket-consume-preread) {
+    println("preread: ", user_string_n($arg2, $arg3))
+}
+
+--- pipelined_requests eval
+["POST /t
+hello world","POST /t
+hiya globe"]
+--- response_body eval
+["got the request socket
+received: he
+received: ll
+received: o 
+received: wo
+received: rl
+failed to receive: closed [d]
+","got the request socket
+received: hi
+received: ya
+received:  g
+received: lo
+received: be
+failed to receive: closed []
+"]
 --- no_error_log
 [error]
 
