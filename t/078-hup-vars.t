@@ -1,11 +1,18 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+our $SkipReason;
+
 BEGIN {
-    $ENV{TEST_NGINX_USE_HUP} = 1;
+    if ($ENV{TEST_NGINX_CHECK_LEAK}) {
+        $SkipReason = "unavailable for the hup tests";
+
+    } else {
+        $ENV{TEST_NGINX_USE_HUP} = 1;
+    }
 }
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use Test::Nginx::Socket $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);
 #master_on();
