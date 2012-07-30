@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 2);
+plan tests => repeat_each() * (blocks() * 4 + 5);
 
 #no_diff();
 no_long_string();
@@ -1219,11 +1219,12 @@ a client request body is buffered to a temporary file
 hello, my dear friend!",
 "POST /t
 blah blah blah"]
---- response_bodys
+--- response_body eval
 ["content length: 22
 body: hello, my dear friend!
 ","content length: 14
-body: blah blah blah"]
+body: blah blah blah
+"]
 --- no_error_log
 [error]
 --- no_error_log
@@ -1246,9 +1247,10 @@ a client request body is buffered to a temporary file
             ngx.req.init_body(100)
 
             while true do
-                local data, err = sock:receive(100)
+                local data, err, partial = sock:receive(100)
                 if not data then
                     if err == "closed" then
+                        ngx.req.append_body(partial)
                         break
                     else
                         ngx.say("failed to read body: ", err)
@@ -1272,11 +1274,41 @@ a client request body is buffered to a temporary file
 hello, my dear friend!",
 "POST /t
 blah blah blah"]
---- response_bodys
+--- response_body eval
 ["content length: 22
 body: hello, my dear friend!
 ","content length: 14
-body: blah blah blah"]
+body: blah blah blah
+"]
+--- no_error_log
+[error]
+--- no_error_log
+a client request body is buffered to a temporary file
+
+
+
+=== TEST 40: calling ngx.req.socket after ngx.req.init_body
+--- config
+    location = /t {
+        client_body_buffer_size 100;
+        lua_socket_buffer_size 100;
+        content_by_lua '
+            ngx.req.init_body()
+
+            local sock, err = ngx.req.socket()
+            if not sock then
+                ngx.say("failed to get req socket: ", err)
+                return
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+POST /t
+hello, my dear friend!
+--- response_body
+failed to get req socket: request body already read
 --- no_error_log
 [error]
 --- no_error_log
