@@ -1308,7 +1308,7 @@ a client request body is buffered to a temporary file
 POST /t
 hello, my dear friend!
 --- response_body
-failed to get req socket: request body already read
+failed to get req socket: request body already exists
 --- no_error_log
 [error]
 --- no_error_log

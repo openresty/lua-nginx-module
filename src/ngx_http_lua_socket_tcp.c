@@ -2777,14 +2777,15 @@ ngx_http_lua_req_socket(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    if (r->discard_body) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "request body discarded"); return 2;
-    }
-
     if (r->request_body) {
         lua_pushnil(L);
-        lua_pushliteral(L, "request body already read");
+        lua_pushliteral(L, "request body already exists");
+        return 2;
+    }
+
+    if (r->discard_body) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "request body discarded");
         return 2;
     }
 
