@@ -2418,7 +2418,7 @@ If the `buffer_size` argument is specified, then its value will be used for the 
 
 When the data can no longer be hold in the memory buffer for the request body, then the data will automatically be flushed onto a temporary file just like the standard request body reader in the Nginx core.
 
-It is important to always call the [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body) after all the data has been appended onto the current request body.
+It is important to always call the [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body) after all the data has been appended onto the current request body. Also, when this function is used together with [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket), it is required to call [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) *before* this function, or you will get the "request body already read" error message.
 
 The usage of this function is often like this:
 
@@ -2432,7 +2432,7 @@ The usage of this function is often like this:
 
 This function can be used with [ngx.req.append_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.append_body), [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body), and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua)* or [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
 
-This function was first introduced in the `v0.5.10` release.
+This function was first introduced in the `v0.5.11` release.
 
 ngx.req.append_body
 -------------------
@@ -2446,19 +2446,11 @@ When the data can no longer be hold in the memory buffer for the request body, t
 
 It is important to always call the [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body) after all the data has been appended onto the current request body.
 
-The usage of this function is often like this:
-
-
-    ngx.req.init_body(128 * 1024)  -- buffer is 128 KB
-    for chunk in next_data_chunk() do
-        ngx.req.append_body(chunk)  -- each chunk can be 4KB
-    end
-    ngx.req.finish_body()
-
-
 This function can be used with [ngx.req.init_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.init_body), [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body), and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua)* or [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
 
-This function was first introduced in the `v0.5.10` release.
+This function was first introduced in the `v0.5.11` release.
+
+See also [ngx.req.init_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.init_body).
 
 ngx.req.finish_body
 -------------------
@@ -2468,19 +2460,11 @@ ngx.req.finish_body
 
 Completes the construction process of the new request body created by the [ngx.req.init_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.init_body) and [ngx.req.append_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.append_body) calls.
 
-The usage of this function is often like this:
-
-
-    ngx.req.init_body(128 * 1024)  -- buffer is 128KB
-    for chunk in next_data_chunk() do
-        ngx.req.append_body(chunk)  -- each chunk can be 4KB
-    end
-    ngx.req.finish_body()
-
-
 This function can be used with [ngx.req.init_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.init_body), [ngx.req.append_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.append_body), and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua)* or [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
 
-This function was first introduced in the `v0.5.10` release.
+This function was first introduced in the `v0.5.11` release.
+
+See also [ngx.req.init_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.init_body).
 
 ngx.req.socket
 --------------
