@@ -2600,7 +2600,7 @@ Nginx API for Lua
     data has been appended onto the current request body. Also, when this
     function is used together with ngx.req.socket, it is required to call
     ngx.req.socket *before* this function, or you will get the "request body
-    already read" error message.
+    already exists" error message.
 
     The usage of this function is often like this:
 

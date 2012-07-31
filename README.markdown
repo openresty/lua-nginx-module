@@ -2418,7 +2418,7 @@ If the `buffer_size` argument is specified, then its value will be used for the 
 
 When the data can no longer be hold in the memory buffer for the request body, then the data will automatically be flushed onto a temporary file just like the standard request body reader in the Nginx core.
 
-It is important to always call the [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body) after all the data has been appended onto the current request body. Also, when this function is used together with [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket), it is required to call [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) *before* this function, or you will get the "request body already read" error message.
+It is important to always call the [ngx.req.finish_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.finish_body) after all the data has been appended onto the current request body. Also, when this function is used together with [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket), it is required to call [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) *before* this function, or you will get the "request body already exists" error message.
 
 The usage of this function is often like this:
 
