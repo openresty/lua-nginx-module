@@ -13,7 +13,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -539,4 +539,27 @@ morning
 --- response_body
 This is our own content
 --- error_code: 410
+
+
+
+=== TEST 17: encode args table with a multi-value arg.
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.exit(204)
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/blah;
+    }
+
+    location = /blah {
+        echo blah;
+    }
+--- request
+GET /t
+--- more_headers2
+--- response_body
+--- error_code: 204
+--- no_error_log
+[error]
 

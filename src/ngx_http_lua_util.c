@@ -1835,6 +1835,12 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
             "lua thread aborting request with status %d",
             ctx->exit_code);
 
+#if 1
+    if (!ctx->headers_sent && ctx->exit_code >= NGX_HTTP_OK) {
+        r->headers_out.status = ctx->exit_code;
+    }
+#endif
+
     ngx_http_lua_del_thread(r, L, cc_ref);
     ctx->cc_ref = LUA_NOREF;
 
