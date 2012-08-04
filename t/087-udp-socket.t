@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(10);
+repeat_each(2);
 
 plan tests => repeat_each() * (3 * blocks() + 4);
 
@@ -491,4 +491,49 @@ GET /t
 --- log_level: debug
 --- error_log
 lua udp socket receive buffer size: 1400
+
+
+
+=== TEST 9: read timeout and resend
+--- config
+    location = /t {
+        content_by_lua '
+            local udp = ngx.socket.udp()
+            udp:settimeout(30)
+            local ok, err = udp:setpeername("127.0.0.1", 19232)
+            if not ok then
+                ngx.say("failed to setpeername: ", err)
+                return
+            end
+            local ok, err = udp:send("blah")
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+            for i = 1, 2 do
+                local data, err = udp:receive()
+                if err == "timeout" then
+                    -- continue
+                else
+                    if not data then
+                        ngx.say("failed to receive: ", err)
+                        return
+                    end
+                    ngx.say("received: ", data)
+                    return
+                end
+            end
+
+            ngx.say("timed out")
+        ';
+    }
+--- udp_listen: 19232
+--- udp_reply: hello world
+--- udp_reply_delay: 45ms
+--- request
+GET /t
+--- response_body
+received: hello world
+--- error_log
+lua udp socket read timed out
 
