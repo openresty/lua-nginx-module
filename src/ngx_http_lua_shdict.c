@@ -22,7 +22,7 @@ static int ngx_http_lua_shdict_replace(lua_State *L);
 static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
-
+static int ngx_http_lua_shdict_flush_expired(lua_State *L);
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
