@@ -303,6 +303,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
         lua_setfield(L, -2, "flush_all");
 
+        lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
+        lua_setfield(L, -2, "flush_expired");
+
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
 
@@ -530,6 +533,73 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return 0;
+}
+
+static int
+ngx_http_lua_shdict_flush_expired(lua_State *L)
+{
+    ngx_queue_t                 *q, *next;
+    ngx_http_lua_shdict_node_t  *sd;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_shm_zone_t              *zone;
+    ngx_time_t                  *tp;
+    int                          freed = 0;
+    int                          attempt = 0;
+    ngx_rbtree_node_t           *node;
+
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+
+    zone = lua_touserdata(L, 1);
+    if (zone == NULL) {
+        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+    }
+
+    if (LUA_TNUMBER == lua_type(L, 2)) {
+        attempt = lua_tonumber(L, 2);
+    }
+
+    if (ngx_queue_empty(&ctx->sh->queue)) {
+        lua_pushnumber(L, freed);
+        return 1;
+    }
+
+    ctx = zone->data;
+
+    tp = ngx_timeofday();
+
+    now = (uint64_t) tp->sec * 1000 + tp->msec;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    q = ngx_queue_head(&ctx->sh->queue);
+
+    while(q != ngx_queue_sentinel(&ctx->sh->queue)) {
+        next = ngx_queue_next(q);
+
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+
+        if (0 != sd->expires && sd->expires <= now) {
+            ngx_queue_remove(q);
+            node = (ngx_rbtree_node_t *)
+                ((u_char *) sd - offsetof(ngx_rbtree_node_t, color));
+
+            ngx_rbtree_delete(&ctx->sh->rbtree, node);
+
+            ngx_slab_free_locked(ctx->shpool, node);
+
+            freed++;
+            if (attempt && freed == attempt) {
+                break;
+            }
+        }
+
+        q = next;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    lua_pushnumber(L, freed);
+    return 1;
 }
 
 
