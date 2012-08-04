@@ -26,7 +26,7 @@ __DATA__
         content_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("8.8.8.8", 80) 
-            ngx.say(error)
+            ngx.say(err)
         ';
     }
 --- request
@@ -46,7 +46,7 @@ timeout
         content_by_lua '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("8.8.8.8", 80) 
-            ngx.say(error)
+            ngx.say(err)
         ';
     }
 --- request
