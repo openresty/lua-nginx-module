@@ -546,6 +546,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     int                          freed = 0;
     int                          attempt = 0;
     ngx_rbtree_node_t           *node;
+    uint64_t                     now;
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
 
@@ -558,12 +559,13 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
         attempt = lua_tonumber(L, 2);
     }
 
+    ctx = zone->data;
+
+
     if (ngx_queue_empty(&ctx->sh->queue)) {
         lua_pushnumber(L, freed);
         return 1;
     }
-
-    ctx = zone->data;
 
     tp = ngx_timeofday();
 
