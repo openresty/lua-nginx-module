@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.5.11](https://github.com/chaoslawful/lua-nginx-module/tags) released on 30 July 2012.
+This document describes ngx_lua [v0.5.12](https://github.com/chaoslawful/lua-nginx-module/tags) released on 4 August 2012.
 
 Synopsis
 ========
@@ -820,6 +820,8 @@ Note that the following API functions are currently disabled within this context
 * Control API functions (e.g., [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit) and [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec))
 * Subrequest API functions (e.g., [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi))
 * Cosocket API functions (e.g., [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket)).
+
+Nginx output filters may be called multiple times for a single request because response body may be delivered in chunks. Thus, the Lua code specified by in this directive may also run multiple times in the lifetime of a single HTTP request.
 
 This directive was first introduced in the `v0.5.0rc32` release.
 
@@ -1686,7 +1688,7 @@ There is a hard-coded upper limit on the number of concurrent subrequests possib
 
 The limit can be manually modified if required by editing the definition of the `NGX_HTTP_MAX_SUBREQUESTS` macro in the `nginx/src/http/ngx_http_request.h` file in the Nginx source tree.
 
-Please also refer to restrictions on [capturing locations that include Echo Module directives](http://wiki.nginx.org/HttpLuaModule#Locations_With_HttpEchoModule_Directives).
+Please also refer to restrictions on capturing locations configured by [subrequest directives of other modules](http://wiki.nginx.org/HttpLuaModule#Locations_Configured_by_Subrequest_Directives_of_Other_Modules).
 
 ngx.location.capture_multi
 --------------------------
@@ -1746,7 +1748,7 @@ of this function. Logically speaking, the [ngx.location.capture](http://wiki.ngi
         end
 
 
-Please also refer to restrictions on [capturing locations that include Echo Module directives](http://wiki.nginx.org/HttpLuaModule#Locations_With_HttpEchoModule_Directives).
+Please also refer to restrictions on capturing locations configured by [subrequest directives of other modules](http://wiki.nginx.org/HttpLuaModule#Locations_Configured_by_Subrequest_Directives_of_Other_Modules).
 
 ngx.status
 ----------
@@ -1768,7 +1770,7 @@ ngx.header.HEADER
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
 
-Set, add to, or clear the current request `HEADER` response header.
+Set, add to, or clear the current request's `HEADER` response header that is to be sent.
 
 Underscores (`_`) in the header names will be replaced by hyphens (`-`) by default. This transformation can be turned off via the [lua_transform_underscores_in_response_headers](http://wiki.nginx.org/HttpLuaModule#lua_transform_underscores_in_response_headers) directive.
 
@@ -4322,13 +4324,13 @@ Alternatively, the regex pattern can be presented as a long-bracketed Lua string
 Here, `[[\\d+]]` is stripped down to `[[\d+]]` by the Nginx config file parser and this is processed correctly.
 
 Note that a longer from of the long bracket, `[=[...]=]`, may be required if the regex pattern contains `[...]` sequences. 
-The `[=[...]=]` form may be used as the default form if desired and it may help with readability if a space is inserted between the long brackets and the regex patterns.
+The `[=[...]=]` form may be used as the default form if desired.
 
 
     # nginx.conf
     location /test {
         content_by_lua '
-            local regex = [=[ [0-9]+ ]=]
+            local regex = [=[[0-9]+]=]
             local m = ngx.re.match("hello, 1234", regex)
             if m then ngx.say(m[0]) else ngx.say("not matched!") end
         ';
@@ -4378,8 +4380,6 @@ The Lua state (Lua VM instance) is shared across all the requests handled by a s
 
 On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k req/sec using `http_load -p 10`. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [Node.js](http://nodejs.org/) v0.6.1 yields 10.2k req/sec for their Hello World equivalents.
 
-This module performs best when built with [LuaJIT 2.0](http://luajit.org/luajit.html).
-
 Nginx Compatibility
 ===================
 The module is compatible with the following versions of Nginx:
@@ -4402,7 +4402,7 @@ The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, `
 
 Alternatively, `ngx_lua` can be manually compiled into Nginx:
 
-1. Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). Lua can be obtained free from the [the LuaJIT download page](http://luajit.org/download.html) or [the standard Lua homepage](http://www.lua.org/).  Some distribution package managers also distribute Lua and LuaJIT.
+1. Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuajIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuajIT and/or Lua.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
 1. Download the latest version of `ngx_lua` [HERE](http://github.com/chaoslawful/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](http://wiki.nginx.org/HttpLuaModule#Nginx_Compatibility))
@@ -4413,14 +4413,14 @@ Build the source with this module:
     wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
     tar -xzvf nginx-1.2.1.tar.gz
     cd nginx-1.2.1/
+
+    # tell nginx's build system where to find LuaJIT:
+    export LUAJIT_LIB=/path/to/luajit/lib
+    export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
  
-    # tell nginx's build system where to find lua:
-    export LUA_LIB=/path/to/lua/lib
-    export LUA_INC=/path/to/lua/include
- 
-    # or tell where to find LuaJIT when if using JIT instead
-    # export LUAJIT_LIB=/path/to/luajit/lib
-    # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+    # or tell where to find Lua if using Lua instead:
+    #export LUA_LIB=/path/to/lua/lib
+    #export LUA_INC=/path/to/lua/include
  
     # Here we assume Nginx is to be installed under /opt/nginx/.
     ./configure --prefix=/opt/nginx \
@@ -4434,20 +4434,34 @@ Build the source with this module:
 Installation on Ubuntu 11.10
 ----------------------------
 
-To install lua 5.1 from repository run the following command:
+Note that it is recommended to use LuaJIT 2.0 instead of the standard Lua 5.1 interpreter where possible. 
+
+If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
 
 
     apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
 
 
-Everything should be installed correctly, except one small tweak. Library name `liblua.so` has been changed in liblua5.1 package, it
-only comes with `liblua5.1.so`, which needs to be symlinked to `/usr/lib` so it could be found during the configuration process.
+Everything should be installed correctly, except for one small tweak. 
+
+Library name `liblua.so` has been changed in liblua5.1 package, it only comes with `liblua5.1.so`, which needs to be symlinked to `/usr/lib` so it could be found during the configuration process.
 
 
     ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
 
 
-It is recommended, however, to use LuaJIT 2.0 instead of the standard Lua 5.1 interpreter with this module wherever possible.
+Community
+=========
+
+English Mailing List
+--------------------
+
+The [openresty-en](https://groups.google.com/group/openresty-en) mailing list is for English speakers.
+
+Chinese Mailing List
+--------------------
+
+The [openresty](https://groups.google.com/group/openresty) mailing list is for Chinese speakers.
 
 Bugs and Patches
 ================
@@ -4536,7 +4550,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2012, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2012, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2012, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
 
 All rights reserved.
 
