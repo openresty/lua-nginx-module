@@ -189,6 +189,8 @@ typedef struct {
 
     ngx_flag_t                       transform_underscores_in_resp_headers;
 
+    ngx_flag_t                       log_socket_errors;
+
 } ngx_http_lua_loc_conf_t;
 
 
