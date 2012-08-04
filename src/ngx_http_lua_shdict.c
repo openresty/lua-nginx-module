@@ -547,6 +547,14 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     int                          attempt = 0;
     ngx_rbtree_node_t           *node;
     uint64_t                     now;
+    int                          n;
+
+     n = lua_gettop(L);
+
+    if (n != 1 && n !=2 ) {
+        return luaL_error(L, "expecting 1 or 2 argument(s), "
+                "but saw %d", n);
+    }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
 
@@ -555,8 +563,8 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
 
-    if (LUA_TNUMBER == lua_type(L, 2)) {
-        attempt = lua_tonumber(L, 2);
+    if (2 == n) {
+        attempt = luaL_checknumber(L, 2);
     }
 
     ctx = zone->data;
