@@ -118,6 +118,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->pool_size = NGX_CONF_UNSET_UINT;
 
     conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
+    conf->log_socket_errors = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -192,6 +193,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->transform_underscores_in_resp_headers,
                          prev->transform_underscores_in_resp_headers, 1);
+
+    ngx_conf_merge_value(conf->log_socket_errors,
+                         prev->log_socket_errors, 1);
 
     return NGX_CONF_OK;
 }
