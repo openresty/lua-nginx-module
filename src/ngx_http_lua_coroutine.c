@@ -3,9 +3,9 @@
 #endif
 #include "ddebug.h"
 
-#include "nginx.h"
+
 #include "ngx_http_lua_coroutine.h"
-#include "ngx_http_lua_api.h"
+#include "ngx_http_lua_util.h"
 
 
 /*
@@ -41,9 +41,17 @@ ngx_http_lua_coroutine_create(lua_State *L)
     ngx_http_lua_main_conf_t      *lmcf;
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
-            "Lua function expected");
+                 "Lua function expected");
 
-    r = ngx_http_lua_get_request(L);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     ml = lmcf->lua;
 
@@ -76,7 +84,15 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
     luaL_argcheck(L, lua_isthread(L, 1), 1, "Lua coroutine expected");
 
-    r = ngx_http_lua_get_request(L);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
@@ -108,7 +124,15 @@ ngx_http_lua_coroutine_yield(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    r = ngx_http_lua_get_request(L);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
