@@ -876,7 +876,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #endif
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                    "lua resume returned %d", rv);
+                           "lua resume returned %d", rv);
 
             switch (rv) {
             case LUA_YIELD:
@@ -884,11 +884,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 /*  FIXME: add io cmd dispatcher here */
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                        "lua thread yielded");
+                               "lua thread yielded");
 
                 if (r->uri_changed) {
-                    return ngx_http_lua_handle_rewrite_jump(L, r, ctx,
-                            cc_ref);
+                    return ngx_http_lua_handle_rewrite_jump(L, r, ctx, cc_ref);
                 }
 
                 if (ctx->exited) {
@@ -910,7 +909,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 switch(ctx->cc_op) {
                 case RESUME:
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
-                            r->connection->log, 0, "lua coroutine: resume");
+                                   r->connection->log, 0, "lua coroutine: resume");
 
                     /*
                      * the target coroutine lies at the base of the
@@ -1022,14 +1021,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     ++nrets;
                     ctx->cc = cc = next_cc;
 
-                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log,
-                            0, "lua coroutine: lua thread ended normally");
+                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                   "lua coroutine: lua thread ended normally");
 
                     continue;
                 }
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                        "lua entry thread ended normally");
+                               "lua entry thread ended normally");
 
                 /* the entry thread was dead, delete it */
                 ngx_http_lua_del_thread(r, L, cc_ref);
@@ -1100,13 +1099,13 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ctx->cc = cc = next_cc;
 
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                        "lua coroutine: %s: %s\n%s", err, msg, trace);
+                              "lua coroutine: %s: %s\n%s", err, msg, trace);
 
                 continue;
             }
 
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "lua handler aborted: %s: %s\n%s", err, msg, trace);
+                          "lua handler aborted: %s: %s\n%s", err, msg, trace);
 
             lua_pop(L, 2);
 
