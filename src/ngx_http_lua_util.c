@@ -36,6 +36,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_logby.h"
+#include "ngx_http_lua_phase.h"
 
 
 char ngx_http_lua_code_cache_key;
@@ -332,7 +333,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 {
     ngx_int_t            rc;
 
-    if (!ctx->headers_sent ) {
+    if (!ctx->headers_sent) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
@@ -579,7 +580,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 88 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 89 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_internal_utils(cf->log, L);
 
@@ -595,9 +596,12 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_control_api(cf->log, L);
     ngx_http_lua_inject_subrequest_api(L);
     ngx_http_lua_inject_sleep_api(L);
+    ngx_http_lua_inject_phase_api(L);
+
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
+
     ngx_http_lua_inject_req_api(cf->log, L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
@@ -1886,7 +1890,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 18 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 21 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
@@ -1995,15 +1999,21 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
             "lua thread aborting request with status %d",
             ctx->exit_code);
 
+#if 1
+    if (!ctx->headers_sent && ctx->exit_code >= NGX_HTTP_OK) {
+        r->headers_out.status = ctx->exit_code;
+    }
+#endif
+
     ngx_http_lua_del_thread(r, L, cc_ref);
     ctx->cc_ref = LUA_NOREF;
 
     ngx_http_lua_request_cleanup(r);
 
-    if ((ctx->exit_code == NGX_OK &&
-                ctx->entered_content_phase) ||
-                (ctx->exit_code >= NGX_HTTP_OK &&
-                ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
+    if ((ctx->exit_code == NGX_OK
+         && ctx->entered_content_phase)
+        || (ctx->exit_code >= NGX_HTTP_OK
+            && ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
     {
         rc = ngx_http_lua_send_chain_link(r, ctx,
                 NULL /* indicate last_buf */);
@@ -2028,6 +2038,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     u_char              *value;
     size_t               value_len;
     size_t               len = 0;
+    size_t               key_escape = 0;
     uintptr_t            total_escape = 0;
     int                  n;
     int                  i;
@@ -2047,8 +2058,10 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
         }
 
         key = (u_char *) lua_tolstring(L, -2, &key_len);
-        total_escape += 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
-                NGX_ESCAPE_URI);
+
+        key_escape = 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
+                                                 NGX_ESCAPE_URI);
+        total_escape += key_escape;
 
         switch (lua_type(L, -1)) {
         case LUA_TNUMBER:
@@ -2073,9 +2086,9 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
         case LUA_TTABLE:
 
+            i = 0;
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-
                 value = (u_char *) lua_tolstring(L, -1, &value_len);
 
                 if (value == NULL) {
@@ -2085,8 +2098,14 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 }
 
                 total_escape += 2 * ngx_http_lua_escape_uri(NULL, value,
-                        value_len, NGX_ESCAPE_URI);
+                                                            value_len,
+                                                            NGX_ESCAPE_URI);
+
                 len += key_len + value_len + (sizeof("=") - 1);
+
+                if (i++ > 0) {
+                    total_escape += key_escape;
+                }
 
                 n++;
 
@@ -2190,7 +2209,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
                 if (total_escape) {
                     p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                            NGX_ESCAPE_URI);
+                                                           NGX_ESCAPE_URI);
 
                 } else {
                     dd("shortcut: no escape required");
@@ -2204,7 +2223,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
                 if (total_escape) {
                     p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                            NGX_ESCAPE_URI);
+                                                           NGX_ESCAPE_URI);
 
                 } else {
                     p = ngx_copy(p, value, value_len);

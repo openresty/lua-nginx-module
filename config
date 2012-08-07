@@ -184,6 +184,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_initby.c \
                 $ngx_addon_dir/src/ngx_http_lua_socket_udp.c \
                 $ngx_addon_dir/src/ngx_http_lua_req_method.c \
+                $ngx_addon_dir/src/ngx_http_lua_phase.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -231,6 +232,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_initby.h \
                 $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
                 $ngx_addon_dir/src/ngx_http_lua_req_method.h \
+                $ngx_addon_dir/src/ngx_http_lua_phase.h \
                 "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
@@ -248,6 +250,9 @@ ngx_feature_test='printf("hello");'
 if [ $ngx_found = yes ]; then
     CORE_LIBS="-Wl,-E $CORE_LIBS"
 fi
+
+NGX_DTRACE_PROVIDERS="$NGX_DTRACE_PROVIDERS $ngx_addon_dir/dtrace/ngx_lua_provider.d"
+NGX_TAPSET_SRCS="$NGX_TAPSET_SRCS $ngx_addon_dir/tapset/ngx_lua.stp"
 
 USE_MD5=YES
 USE_SHA1=YES

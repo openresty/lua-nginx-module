@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.6] released on 9 July 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.5.12] released on 4 August 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -792,6 +792,8 @@ Note that the following API functions are currently disabled within this context
 * Control API functions (e.g., [[#ngx.exit|ngx.exit]] and [[#ngx.exec|ngx.exec]])
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 * Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
+
+Nginx output filters may be called multiple times for a single request because response body may be delivered in chunks. Thus, the Lua code specified by in this directive may also run multiple times in the lifetime of a single HTTP request.
 
 This directive was first introduced in the <code>v0.5.0rc32</code> release.
 
@@ -1632,7 +1634,7 @@ There is a hard-coded upper limit on the number of concurrent subrequests possib
 
 The limit can be manually modified if required by editing the definition of the <code>NGX_HTTP_MAX_SUBREQUESTS</code> macro in the <code>nginx/src/http/ngx_http_request.h</code> file in the Nginx source tree.
 
-Please also refer to restrictions on [[#Locations_With_HttpEchoModule_Directives|capturing locations that include Echo Module directives]].
+Please also refer to restrictions on capturing locations configured by [[#Locations_Configured_by_Subrequest_Directives_of_Other_Modules|subrequest directives of other modules]].
 
 == ngx.location.capture_multi ==
 '''syntax:''' ''res1, res2, ... = ngx.location.capture_multi({ {uri, options?}, {uri, options?}, ... })''
@@ -1691,7 +1693,7 @@ of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.c
         end
 </geshi>
 
-Please also refer to restrictions on [[#Locations_With_HttpEchoModule_Directives|capturing locations that include Echo Module directives]].
+Please also refer to restrictions on capturing locations configured by [[#Locations_Configured_by_Subrequest_Directives_of_Other_Modules|subrequest directives of other modules]].
 
 == ngx.status ==
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
@@ -1711,7 +1713,7 @@ before sending out the response headers.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
-Set, add to, or clear the current request <code>HEADER</code> response header.
+Set, add to, or clear the current request's <code>HEADER</code> response header that is to be sent.
 
 Underscores (<code>_</code>) in the header names will be replaced by hyphens (<code>-</code>) by default. This transformation can be turned off via the [[#lua_transform_underscores_in_response_headers|lua_transform_underscores_in_response_headers]] directive.
 
@@ -2334,6 +2336,63 @@ This patch has already been applied to [http://openresty.org/ ngx_openresty] 1.0
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
 See also [[#ngx.req.set_body_data|ngx.req.set_body_data]].
+
+== ngx.req.init_body ==
+'''syntax:''' ''ngx.req.init_body(buffer_size?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
+
+Creates a new blank request body for the current request and inializes the buffer for later request body data writing via the [[#ngx.req.append_body|ngx.req.append_body]] and [[#ngx.req.finish_body|ngx.req.finish_body]] APIs.
+
+If the <code>buffer_size</code> argument is specified, then its value will be used for the size of the memory buffer for body writing with [[#ngx.req.append_body|ngx.req.append_body]]. If the argument is omitted, then the value specified by the standard [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] directive will be used instead.
+
+When the data can no longer be hold in the memory buffer for the request body, then the data will automatically be flushed onto a temporary file just like the standard request body reader in the Nginx core.
+
+It is important to always call the [[#ngx.req.finish_body|ngx.req.finish_body]] after all the data has been appended onto the current request body. Also, when this function is used together with [[#ngx.req.socket|ngx.req.socket]], it is required to call [[#ngx.req.socket|ngx.req.socket]] ''before'' this function, or you will get the "request body already exists" error message.
+
+The usage of this function is often like this:
+
+<geshi lang="lua">
+    ngx.req.init_body(128 * 1024)  -- buffer is 128KB
+    for chunk in next_data_chunk() do
+        ngx.req.append_body(chunk) -- each chunk can be 4KB
+    end
+    ngx.req.finish_body()
+</geshi>
+
+This function can be used with [[#ngx.req.append_body|ngx.req.append_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+
+This function was first introduced in the <code>v0.5.11</code> release.
+
+== ngx.req.append_body ==
+'''syntax:''' ''ngx.req.append_body(data_chunk)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
+
+Append new data chunk specified by the <code>data_chunk</code> argument onto the existing request body created by the [[#ngx.req.init_body|ngx.req.init_body]] call.
+
+When the data can no longer be hold in the memory buffer for the request body, then the data will automatically be flushed onto a temporary file just like the standard request body reader in the Nginx core.
+
+It is important to always call the [[#ngx.req.finish_body|ngx.req.finish_body]] after all the data has been appended onto the current request body.
+
+This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+
+This function was first introduced in the <code>v0.5.11</code> release.
+
+See also [[#ngx.req.init_body|ngx.req.init_body]].
+
+== ngx.req.finish_body ==
+'''syntax:''' ''ngx.req.finish_body()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
+
+Completes the construction process of the new request body created by the [[#ngx.req.init_body|ngx.req.init_body]] and [[#ngx.req.append_body|ngx.req.append_body]] calls.
+
+This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.append_body|ngx.req.append_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+
+This function was first introduced in the <code>v0.5.11</code> release.
+
+See also [[#ngx.req.init_body|ngx.req.init_body]].
 
 == ngx.req.socket ==
 '''syntax:''' ''tcpsock, err = ngx.req.socket()''
@@ -3517,9 +3576,9 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 See also [[#ngx.socket.udp|ngx.socket.udp]].
 
 == tcpsock:connect ==
-'''syntax:''' ''ok, err = tcpsock:connect(host, port)''
+'''syntax:''' ''ok, err = tcpsock:connect(host, port, options_table?)''
 
-'''syntax:''' ''ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket")''
+'''syntax:''' ''ok, err = tcpsock:connect("unix:/path/to/unix-domain.socket", options_table?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -3581,7 +3640,14 @@ It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''bef
 
 Calling this method on an already connected socket object will cause the original connection to be closed first.
 
-This feature was first introduced in the <code>v0.5.0rc1</code> release.
+An optional Lua table can be specified as the last argument to this method to specify various connect options:
+
+* <code>pool</code>
+: specify a custom name for the connection pool being used. If omitted, then the connection pool name will be automatically generated from the string template <code>"<host>:<port>"</code> or <code>"<unix-socket-path>"</code>.
+
+The support for the options table argument was first introduced in the <code>v0.5.7</code> release.
+
+This method was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:send ==
 '''syntax:''' ''bytes, err = tcpsock:send(data)''
@@ -3826,6 +3892,32 @@ There is no way to use the [[#tcpsock:settimeout|settimeout]] method to specify 
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
+== ngx.get_phase ==
+'''syntax:''' ''str = ngx.get_phase()''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Retrieves the current running phase name. Possible return values are
+
+* <code>init</code>
+: for the context of [[#init_by_lua|init_by_lua]] or [[#init_by_lua_file|init_by_lua_file]].
+* <code>set</code>
+: for the context of [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]].
+* <code>rewrite</code>
+: for the context of [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]].
+* <code>access</code>
+: for the context of [[#access_by_lua|access_by_lua]] or [[#access_by_lua_file|access_by_lua_file]].
+* <code>content</code>
+: for the context of [[#content_by_lua|content_by_lua]] or [[#content_by_lua_file|content_by_lua_file]].
+* <code>header_filter</code>
+: for the context of [[#header_filter_by_lua|header_filter_by_lua]] or [[#header_filter_by_lua_file|header_filter_by_lua_file]].
+* <code>body_filter</code>
+: for the context of [[#body_filter_by_lua|body_filter_by_lua]] or [[#body_filter_by_lua_file|body_filter_by_lua_file]].
+* <code>log</code>
+: for the context of [[#log_by_lua|log_by_lua]] or [[#log_by_lua_file|log_by_lua_file]].
+
+This API was first introduced in the <code>v0.5.10</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
@@ -3972,9 +4064,9 @@ If server wide data sharing is required:
 == TCP socket connect operation issues ==
 The [[#tcpsock:connect|tcpsock:connect]] method may indicate <code>success</code> despite connection failures such as with <code>Connection Refused</code> errors. 
 
-However, later attempts to manipulate the cosocket object will fail and return the actual error status message generated by the failed connecting operation. 
+However, later attempts to manipulate the cosocket object will fail and return the actual error status message generated by the failed connect operation. 
 
-This issue appears to be due to limitations in the Nginx event model that only affect Mac OS X and ''not'' other operating systems like Linux and FreeBSD.
+This issue is due to limitations in the Nginx event model and only appears to affect Mac OS X.
 
 == Lua Coroutine Yielding/Resuming ==
 * As the module's predefined Nginx I/O API uses the coroutine yielding/resuming mechanism, user code should not call any Lua modules that use the Lua coroutine mechanism in order to prevent conflicts with the module's predefined Nginx API methods such as [[#ngx.location.capture|ngx.location.capture]] (Actually, coroutine modules have been masked off in [[#content_by_lua|content_by_lua]] directives and others). This limitation is significant and work is ongoing on an alternative coroutine implementation that can fit into the Nginx event model to address this. When this is done, it will be possible to use the Lua coroutine mechanism freely as it is in standard Lua implementations.
@@ -4083,13 +4175,13 @@ Alternatively, the regex pattern can be presented as a long-bracketed Lua string
 Here, <code>&#91;[\\d+]]</code> is stripped down to <code>&#91;[\d+]]</code> by the Nginx config file parser and this is processed correctly.
 
 Note that a longer from of the long bracket, <code>[=[...]=]</code>, may be required if the regex pattern contains <code>&#91;...]</code> sequences. 
-The <code>[=[...]=]</code> form may be used as the default form if desired and it may help with readability if a space is inserted between the long brackets and the regex patterns.
+The <code>[=[...]=]</code> form may be used as the default form if desired.
 
 <geshi lang="nginx">
     # nginx.conf
     location /test {
         content_by_lua '
-            local regex = [=[ [0-9]+ ]=]
+            local regex = [=[[0-9]+]=]
             local m = ngx.re.match("hello, 1234", regex)
             if m then ngx.say(m[0]) else ngx.say("not matched!") end
         ';
@@ -4138,8 +4230,6 @@ The Lua state (Lua VM instance) is shared across all the requests handled by a s
 
 On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k req/sec using <code>http_load -p 10</code>. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [http://nodejs.org/ Node.js] v0.6.1 yields 10.2k req/sec for their Hello World equivalents.
 
-This module performs best when built with [http://luajit.org/luajit.html LuaJIT 2.0].
-
 = Nginx Compatibility =
 The module is compatible with the following versions of Nginx:
 
@@ -4159,7 +4249,7 @@ The [http://openresty.org ngx_openresty bundle] can be used to install Nginx, <c
 
 Alternatively, <code>ngx_lua</code> can be manually compiled into Nginx:
 
-# Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). Lua can be obtained free from the [http://luajit.org/download.html the LuaJIT download page] or [http://www.lua.org/ the standard Lua homepage].  Some distribution package managers also distribute Lua and LuaJIT.
+# Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuajIT can be downloaded from the [http://luajit.org/download.html the LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuajIT and/or Lua.
 # Download the latest version of the ngx_devel_kit (NDK) module [http://github.com/simpl/ngx_devel_kit/tags HERE].
 # Download the latest version of <code>ngx_lua</code> [http://github.com/chaoslawful/lua-nginx-module/tags HERE].
 # Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
@@ -4170,14 +4260,14 @@ Build the source with this module:
     wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
     tar -xzvf nginx-1.2.1.tar.gz
     cd nginx-1.2.1/
+
+    # tell nginx's build system where to find LuaJIT:
+    export LUAJIT_LIB=/path/to/luajit/lib
+    export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
  
-    # tell nginx's build system where to find lua:
-    export LUA_LIB=/path/to/lua/lib
-    export LUA_INC=/path/to/lua/include
- 
-    # or tell where to find LuaJIT when if using JIT instead
-    # export LUAJIT_LIB=/path/to/luajit/lib
-    # export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+    # or tell where to find Lua if using Lua instead:
+    #export LUA_LIB=/path/to/lua/lib
+    #export LUA_INC=/path/to/lua/include
  
     # Here we assume Nginx is to be installed under /opt/nginx/.
     ./configure --prefix=/opt/nginx \
@@ -4190,20 +4280,31 @@ Build the source with this module:
 
 == Installation on Ubuntu 11.10 ==
 
-To install lua 5.1 from repository run the following command:
+Note that it is recommended to use LuaJIT 2.0 instead of the standard Lua 5.1 interpreter where possible. 
+
+If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
 
 <geshi lang="bash">
 apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
 </geshi>
 
-Everything should be installed correctly, except one small tweak. Library name <code>liblua.so</code> has been changed in liblua5.1 package, it
-only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
+Everything should be installed correctly, except for one small tweak. 
+
+Library name <code>liblua.so</code> has been changed in liblua5.1 package, it only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
 
 <geshi lang="bash">
 ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
 </geshi>
 
-It is recommended, however, to use LuaJIT 2.0 instead of the standard Lua 5.1 interpreter with this module wherever possible.
+= Community =
+
+== English Mailing List ==
+
+The [https://groups.google.com/group/openresty-en openresty-en] mailing list is for English speakers.
+
+== Chinese Mailing List ==
+
+The [https://groups.google.com/group/openresty openresty] mailing list is for Chinese speakers.
 
 = Bugs and Patches =
 
@@ -4285,7 +4386,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2012, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2012, by Zhang "agentzh" Yichun (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2012, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
 
 All rights reserved.
 

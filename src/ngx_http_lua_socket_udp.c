@@ -683,16 +683,18 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (u == NULL || u->udp_connection.connection == NULL || u->ft_type) {
+    if (u == NULL || u->udp_connection.connection == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "attempt to send data on a closed socket: u:%p, c:%p, "
-                      "ft:%ui",
-                      u, u ? u->udp_connection.connection : NULL,
-                      u ? u->ft_type : 0);
+                      "attempt to send data on a closed socket: u:%p, c:%p",
+                      u, u ? u->udp_connection.connection : NULL);
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
+    }
+
+    if (u->ft_type) {
+        u->ft_type = 0;
     }
 
     if (u->waiting) {
@@ -802,16 +804,18 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (u == NULL || u->udp_connection.connection == NULL || u->ft_type) {
+    if (u == NULL || u->udp_connection.connection == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "attempt to receive data on a closed socket: u:%p, c:%p, "
-                      "ft:%ui",
-                      u, u ? u->udp_connection.connection : NULL,
-                      u ? u->ft_type : 0);
+                      "attempt to receive data on a closed socket: u:%p, c:%p",
+                      u, u ? u->udp_connection.connection : NULL);
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
+    }
+
+    if (u->ft_type) {
+        u->ft_type = 0;
     }
 
 #if 1
@@ -1021,11 +1025,13 @@ ngx_http_lua_socket_udp_read(ngx_http_request_t *r,
 
     /* n == NGX_AGAIN */
 
+#if 1
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
         ngx_http_lua_socket_udp_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
+#endif
 
     if (rev->active) {
         ngx_add_timer(rev, u->read_timeout);
@@ -1050,6 +1056,8 @@ ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
                    "lua udp socket read handler");
 
     if (c->read->timedout) {
+        c->read->timedout = 0;
+
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua udp socket read timed out");
 
@@ -1299,10 +1307,7 @@ ngx_http_lua_socket_udp_close(lua_State *L)
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (u == NULL
-        || u->udp_connection.connection == NULL
-        || u->ft_type)
-    {
+    if (u == NULL || u->udp_connection.connection == NULL) {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;

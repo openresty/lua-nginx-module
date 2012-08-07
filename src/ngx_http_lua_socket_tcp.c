@@ -8,6 +8,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_probe.h"
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -253,13 +254,16 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
     int                          timeout;
+    unsigned                     custom_pool;
+    int                          key_index;
+    const char                  *msg;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
-    if (n != 2 && n != 3) {
-        return luaL_error(L, "ngx.socket connect: expecting 2 or 3 arguments "
-                          "(including the object), but seen %d", n);
+    if (n != 2 && n != 3 && n != 4) {
+        return luaL_error(L, "ngx.socket connect: expecting 2, 3, or 4 "
+                          "arguments (including the object), but seen %d", n);
     }
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
@@ -294,6 +298,39 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_memcpy(host.data, p, len);
     host.data[len] = '\0';
 
+    key_index = 2;
+    custom_pool = 0;
+
+    if (lua_type(L, n) == LUA_TTABLE) {
+
+        /* found the last optional option table */
+
+        lua_getfield(L, n, "pool");
+
+        switch (lua_type(L, -1)) {
+        case LUA_TNUMBER:
+            lua_tostring(L, -1);
+
+        case LUA_TSTRING:
+            custom_pool = 1;
+
+            lua_pushvalue(L, -1);
+            lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+
+            key_index = n + 1;
+
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "bad \"pool\" option type: %s",
+                                  luaL_typename(L, -1));
+            luaL_argerror(L, n, msg);
+            break;
+        }
+
+        n--;
+    }
+
     if (n == 3) {
         port = luaL_checkinteger(L, 3);
 
@@ -303,9 +340,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             return 2;
         }
 
-        lua_pushliteral(L, ":");
-        lua_insert(L, 3);
-        lua_concat(L, 3);
+        if (!custom_pool) {
+            lua_pushliteral(L, ":");
+            lua_insert(L, 3);
+            lua_concat(L, 3);
+        }
 
         dd("socket key: %s", lua_tostring(L, -1));
 
@@ -313,10 +352,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         port = 0;
     }
 
-    /* the key's index is 2 */
+    if (!custom_pool) {
+        /* the key's index is 2 */
 
-    lua_pushvalue(L, -1);
-    lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+        lua_pushvalue(L, 2);
+        lua_rawseti(L, 1, SOCKET_KEY_INDEX);
+    }
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -390,7 +431,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     r->connection->single_connection = 0;
 
-    rc = ngx_http_lua_get_keepalive_peer(r, L, 2, u);
+    rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);
@@ -1307,13 +1348,18 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "http client request body preread %uz", preread);
 
-                if ((off_t) preread >= r->headers_in.content_length_n) {
-                    preread = r->headers_in.content_length_n;
+                if ((off_t) preread >= r->request_body->rest) {
+                    preread = r->request_body->rest;
                 }
 
                 if (size > preread) {
                     size = preread;
                 }
+
+                ngx_http_lua_probe_req_socket_consume_preread(r,
+                                                              (char *)
+                                                              r->header_in->pos,
+                                                              size);
 
                 b->last = ngx_copy(b->last, r->header_in->pos, size);
 
@@ -2731,14 +2777,15 @@ ngx_http_lua_req_socket(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    if (r->discard_body) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "request body discarded"); return 2;
-    }
-
     if (r->request_body) {
         lua_pushnil(L);
-        lua_pushliteral(L, "request body already read");
+        lua_pushliteral(L, "request body already exists");
+        return 2;
+    }
+
+    if (r->discard_body) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "request body discarded");
         return 2;
     }
 

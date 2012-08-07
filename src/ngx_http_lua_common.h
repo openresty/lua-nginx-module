@@ -85,6 +85,12 @@ typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
         ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 
 
+typedef struct {
+    const char          *package;
+    lua_CFunction        loader;
+} ngx_http_lua_preload_hook_t;
+
+
 struct ngx_http_lua_main_conf_s {
     lua_State       *lua;
 
@@ -99,6 +105,8 @@ struct ngx_http_lua_main_conf_s {
 #endif
 
     ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
+
+    ngx_array_t     *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
     ngx_flag_t       postponed_to_rewrite_phase_end;
     ngx_flag_t       postponed_to_access_phase_end;

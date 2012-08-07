@@ -5,10 +5,10 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-#log_level('warn');
+log_level('warn');
 
 #repeat_each(120);
-repeat_each(1);
+repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 

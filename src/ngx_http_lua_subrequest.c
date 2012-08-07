@@ -155,9 +155,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
     ctx->nsubreqs = nsubreqs;
 
-    n = lua_gettop(L);
-    dd("top before loop: %d", n);
-
     ctx->done = 0;
     ctx->waiting = 0;
 
@@ -418,9 +415,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         }
 
         /* stack: queries query uri ctx? */
-
-        n = lua_gettop(L);
-        dd("top size so far: %d", n);
 
         p = (u_char *) luaL_checklstring(L, 3, &len);
 

@@ -74,7 +74,6 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
     void                            *input_filter_ctx;
 
-    ssize_t                          recv_bytes;
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
