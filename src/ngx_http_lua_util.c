@@ -836,8 +836,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     unsigned                 pcre_pool_resumed = 0;
 #endif
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run thread");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread, top:%d", lua_gettop(L));
 
     /* set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
