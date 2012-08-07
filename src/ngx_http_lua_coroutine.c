@@ -16,14 +16,6 @@
  */
 
 
-#define     NGX_HTTP_LUA_COROUTINE_WRAP                                      \
-    "local create, resume = coroutine.create, coroutine.resume\n"            \
-    "function coroutine.wrap(cl)"                                            \
-    " local cc = create(cl)"                                                 \
-    " return function(...) return select(2, resume(cc, ...)) end\n"          \
-    "end"
-
-
 static int ngx_http_lua_coroutine_create(lua_State *L);
 static int ngx_http_lua_coroutine_resume(lua_State *L);
 static int ngx_http_lua_coroutine_yield(lua_State *L);
@@ -130,9 +122,9 @@ ngx_http_lua_coroutine_yield(lua_State *L)
 
 
 void
-ngx_http_lua_inject_coroutine_api(lua_State *L)
+ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
 {
-    int                 top;
+    int         rc;
 
     /* new coroutine table */
     lua_newtable(L);
@@ -161,8 +153,32 @@ ngx_http_lua_inject_coroutine_api(lua_State *L)
     lua_setglobal(L, "coroutine");
 
     /* inject wrap */
-    top = lua_gettop(L);
-    (void) luaL_dostring(L, NGX_HTTP_LUA_COROUTINE_WRAP);
-    lua_settop(L, top);
+    {
+        const char buf[] =
+            "local create, resume = coroutine.create, coroutine.resume\n"
+            "coroutine.wrap = function(cl)\n"
+               "local cc = create(cl)\n"
+               "return function(...) return select(2, resume(cc, ...)) end\n"
+            "end";
+
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "coroutine.wrap");
+    }
+
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to load Lua code for coroutine.wrap(): %i: %s",
+                      rc, lua_tostring(L, -1));
+
+        lua_pop(L, 1);
+        return;
+    }
+
+    rc = lua_pcall(L, 0, 0, 0);
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to run the Lua code for coroutine.wrap(): %i: %s",
+                      rc, lua_tostring(L, -1));
+        lua_pop(L, 1);
+    }
 }
 

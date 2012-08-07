@@ -7,7 +7,7 @@
 #include "ngx_http_lua_common.h"
 
 
-void ngx_http_lua_inject_coroutine_api(lua_State *L);
+void ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L);
 int ngx_http_lua_resume(lua_State *L, int nargs);
 
 

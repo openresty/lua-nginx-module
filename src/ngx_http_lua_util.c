@@ -619,7 +619,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lua_setglobal(L, "ngx");
 
-    ngx_http_lua_inject_coroutine_api(L);
+    ngx_http_lua_inject_coroutine_api(cf->log, L);
 }
 
 
@@ -2392,7 +2392,7 @@ failed:
 void
 ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L)
 {
-    ngx_int_t         rc;
+    int         rc;
 
     lua_pushcfunction(L, ngx_http_lua_ngx_check_aborted);
     lua_setfield(L, -2, "_check_aborted"); /* deprecated */
@@ -2409,10 +2409,12 @@ ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L)
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua pcall");
     }
 
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx_lua pcall(): %i",
-                      rc);
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to load Lua code for pcall(): %d: %s",
+                      rc, lua_tostring(L, -1));
+
+        lua_pop(L, 1);
 
     } else {
         lua_setglobal(L, "pcall");
@@ -2430,10 +2432,12 @@ ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L)
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua xpcall");
     }
 
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx_lua xpcall(): %i",
-                      rc);
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to load Lua code for xpcall(): %d: %s",
+                      rc, lua_tostring(L, -1));
+
+        lua_pop(L, 1);
 
     } else {
         lua_setglobal(L, "xpcall");
