@@ -7,6 +7,8 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 + 2);
 
+$ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+
 run_tests();
 
 __DATA__
@@ -91,7 +93,7 @@ cc3: 2
 
 === TEST 3: basic coroutine and cosocket
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
     location /lua {
         content_by_lua '
             function worker(url)
@@ -289,7 +291,7 @@ GET /lua
 
 === TEST 7: coroutine wrap and cosocket
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
     location /lua {
         content_by_lua '
             function worker(url)
