@@ -77,8 +77,8 @@ static int ngx_http_lua_param_set(lua_State *L);
 
 
 enum {
-    LEVELS1	= 12,       /* size of the first part of the stack */
-    LEVELS2	= 10        /* size of the second part of the stack */
+    LEVELS1 = 12,       /* size of the first part of the stack */
+    LEVELS2 = 10        /* size of the second part of the stack */
 };
 
 
@@ -908,83 +908,83 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                      * lua_yield()
                      */
                     switch(ctx->cc_op) {
-                        case RESUME:
-                            ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
-                                    r->connection->log, 0, "lua coroutine: resume");
+                    case RESUME:
+                        ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
+                                r->connection->log, 0, "lua coroutine: resume");
 
-                            /*
-                             * the target coroutine lies at the base of the
-                             * parent's stack
-                             */
-                            ctx->cc_op = NONE;
+                        /*
+                         * the target coroutine lies at the base of the
+                         * parent's stack
+                         */
+                        ctx->cc_op = NONE;
 
-                            nrets = lua_gettop(cc) - 1;
-                            next_cc = lua_tothread(cc, 1);
+                        nrets = lua_gettop(cc) - 1;
+                        next_cc = lua_tothread(cc, 1);
 
-                            /* move any args to the target coroutine */
-                            if (nrets) {
-                                lua_xmove(cc, next_cc, nrets);
-                            }
+                        /* move any args to the target coroutine */
+                        if (nrets) {
+                            lua_xmove(cc, next_cc, nrets);
+                        }
 
-                            ctx->cc = cc = next_cc;
+                        ctx->cc = cc = next_cc;
 
-                            continue;
+                        continue;
 
-                        case YIELD:
-                            ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
-                                    r->connection->log, 0, "lua coroutine: yield");
+                    case YIELD:
+                        ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
+                                r->connection->log, 0, "lua coroutine: yield");
 
-                            /*
-                             * here we need to find the parent coroutine of the
-                             * yield coroutine in the weak table(in registry)
-                             */
-                            ctx->cc_op = NONE;
+                        /*
+                         * here we need to find the parent coroutine of the
+                         * yield coroutine in the weak table(in registry)
+                         */
+                        ctx->cc_op = NONE;
 
-                            nrets = lua_gettop(cc);
+                        nrets = lua_gettop(cc);
 
-                            /* find parent coroutine in weak ref table */
-                            lua_getfield(L, LUA_REGISTRYINDEX,
-                                    NGX_LUA_CORT_REL);
-                            lua_pushthread(cc);
-                            lua_xmove(cc, L, 1);
-                            lua_gettable(L, -2);
+                        /* find parent coroutine in weak ref table */
+                        lua_getfield(L, LUA_REGISTRYINDEX,
+                                NGX_LUA_CORT_REL);
+                        lua_pushthread(cc);
+                        lua_xmove(cc, L, 1);
+                        lua_gettable(L, -2);
 
-                            /* entry coroutine can not yield */
-                            if (!lua_isthread(L, -1)) {
-                                ngx_http_lua_del_thread(r, L, cc_ref);
-                                ctx->cc_ref = LUA_NOREF;
+                        /* entry coroutine can not yield */
+                        if (!lua_isthread(L, -1)) {
+                            ngx_http_lua_del_thread(r, L, cc_ref);
+                            ctx->cc_ref = LUA_NOREF;
 
-                                ngx_http_lua_request_cleanup(r);
+                            ngx_http_lua_request_cleanup(r);
 
-                                ngx_log_error(NGX_LOG_ERR, r->connection->log,
-                                        0, "lua handler aborted: entry "
-                                        "coroutine can not yield");
+                            ngx_log_error(NGX_LOG_ERR, r->connection->log,
+                                    0, "lua handler aborted: entry "
+                                    "coroutine can not yield");
 
-                                return ctx->headers_sent ? NGX_ERROR :
-                                    NGX_HTTP_INTERNAL_SERVER_ERROR;
-                            }
+                            return ctx->headers_sent ? NGX_ERROR :
+                                NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        }
 
-                            next_cc = lua_tothread(L, -1);
-                            lua_pop(L, 2);
+                        next_cc = lua_tothread(L, -1);
+                        lua_pop(L, 2);
 
-                            /*
-                             * prepare return values for coroutine.resume
-                             * (true plus any retvals)
-                             */
-                            lua_pushboolean(next_cc, 1);
+                        /*
+                         * prepare return values for coroutine.resume
+                         * (true plus any retvals)
+                         */
+                        lua_pushboolean(next_cc, 1);
 
-                            if (nrets) {
-                                lua_xmove(cc, next_cc, nrets);
-                            }
+                        if (nrets) {
+                            lua_xmove(cc, next_cc, nrets);
+                        }
 
-                            ++nrets;
-                            ctx->cc = cc = next_cc;
+                        ++nrets;
+                        ctx->cc = cc = next_cc;
 
-                            continue;
+                        continue;
 
-                        case NONE:
-                        default:
-                            break;
+                    case NONE:
+                    default:
+                        break;
                     }
 
                     lua_settop(cc, 0);
