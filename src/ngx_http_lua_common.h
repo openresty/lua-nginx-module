@@ -325,9 +325,5 @@ extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 
-/*  weak table to record coroutine relationships */
-#define NGX_LUA_CORT_REL "ngx_http_lua_cort_rel"
-
-
 #endif /* NGX_HTTP_LUA_COMMON_H */
 

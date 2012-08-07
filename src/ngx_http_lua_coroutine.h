@@ -7,6 +7,11 @@
 #include "ngx_http_lua_common.h"
 
 
+#define ngx_http_lua_get_coroutine_parents(L)                                \
+    lua_pushlightuserdata(L, &ngx_http_lua_coroutine_parents_key);          \
+    lua_rawget(L, LUA_REGISTRYINDEX);
+
+
 void ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L);
 int ngx_http_lua_resume(lua_State *L, int nargs);
 

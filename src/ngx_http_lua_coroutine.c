@@ -101,15 +101,19 @@ ngx_http_lua_coroutine_resume(lua_State *L)
     ctx->cc_op = RESUME;
 
     /* record parent-child relationship */
+
     cr = lua_tothread(L, 1);
+
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     ml = lmcf->lua;
-    lua_getfield(ml, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+
+    ngx_http_lua_get_coroutine_parents(ml);
+
     lua_pushthread(cr); /* key: child coroutine */
     lua_xmove(cr, ml, 1);
     lua_pushthread(L); /* val: parent coroutine */
     lua_xmove(L, ml, 1);
-    lua_settable(ml, -3);
+    lua_rawset(ml, -3);
     lua_pop(ml, 1);
 
     /* yield and pass args to main L, and resume target coroutine from there

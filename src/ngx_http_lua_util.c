@@ -44,6 +44,7 @@ char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_request_key;
+char ngx_http_lua_coroutine_parents_key;
 
 
 /*  coroutine anchoring table key in Lua vm registry */
@@ -104,7 +105,7 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
     tmp_path = luaL_gsub(L, tmp_path, AUX_MARK, default_path);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, cf->log, 0,
-            "lua setting lua package.%s to \"%s\"", fieldname, tmp_path);
+                   "lua setting lua package.%s to \"%s\"", fieldname, tmp_path);
 
     lua_remove(L, -2);
 
@@ -541,16 +542,21 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
-    /* {{{ create weak table to record coroutine relationship:
+    /* {{{ create weak table to record coroutine parent relationship:
      * { [(thread)child] = (thread)parent } */
+
+    lua_pushlightuserdata(L, &ngx_http_lua_coroutine_parents_key);
     lua_newtable(L);
+
     /* create metatable */
-    lua_newtable(L);
+    lua_createtable(L, 0, 1 /* nrec */);
     lua_pushstring(L, "kv");
     lua_setfield(L, -2, "__mode");
+
     /* setup metatable to make key/val weak-ref table */
     lua_setmetatable(L, -2);
-    lua_setfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+
+    lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
     lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
@@ -943,10 +949,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     nrets = lua_gettop(cc);
 
                     /* find parent coroutine in weak ref table */
-                    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+                    ngx_http_lua_get_coroutine_parents(L);
                     lua_pushthread(cc);
                     lua_xmove(cc, L, 1);
-                    lua_gettable(L, -2);
+                    lua_rawget(L, -2);
 
                     /* entry coroutine can not yield */
                     if (!lua_isthread(L, -1)) {
@@ -1002,10 +1008,11 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 /* check if the dead coroutine has a parent coroutine */
                 nrets = lua_gettop(cc);
-                lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+
+                ngx_http_lua_get_coroutine_parents(L);
                 lua_pushthread(cc);
                 lua_xmove(cc, L, 1);
-                lua_gettable(L, -2);
+                lua_rawget(L, -2);
 
                 /* resume the parent coroutine */
                 if (lua_isthread(L, -1)) {
@@ -1085,10 +1092,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             lua_pop(L, 1);
 
             /* check if the dead coroutine has a parent coroutine*/
-            lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+            ngx_http_lua_get_coroutine_parents(L);
             lua_pushthread(cc);
             lua_xmove(cc, L, 1);
-            lua_gettable(L, -2);
+            lua_rawget(L, -2);
 
             if (lua_isthread(L, -1)) {
                 next_cc = lua_tothread(L, -1);
@@ -2557,7 +2564,8 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc)
     int         firstpart = 1;  /* still before eventual `...' */
     lua_Debug   ar;
 
-    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
+    ngx_http_lua_get_coroutine_parents(L);
+
     base = lua_gettop(L);
 
     lua_pushliteral(L, "stack traceback:");
@@ -2620,7 +2628,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc)
         /* check if cc has a parent coroutine*/
         lua_pushthread(cc);
         lua_xmove(cc, L, 1);
-        lua_gettable(L, -3);
+        lua_rawget(L, -3);
 
         cc = lua_tothread(L, -1);
         lua_pop(L, 1);
