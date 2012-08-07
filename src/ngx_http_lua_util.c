@@ -926,13 +926,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         lua_xmove(cc, next_cc, nrets);
                     }
 
-                    ctx->cc = cc = next_cc;
+                    cc = next_cc;
+                    ctx->cc = cc;
 
                     continue;
 
                 case YIELD:
-                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP,
-                            r->connection->log, 0, "lua coroutine: yield");
+                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                   "lua coroutine: yield");
 
                     /*
                      * here we need to find the parent coroutine of the
@@ -943,8 +944,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     nrets = lua_gettop(cc);
 
                     /* find parent coroutine in weak ref table */
-                    lua_getfield(L, LUA_REGISTRYINDEX,
-                            NGX_LUA_CORT_REL);
+                    lua_getfield(L, LUA_REGISTRYINDEX, NGX_LUA_CORT_REL);
                     lua_pushthread(cc);
                     lua_xmove(cc, L, 1);
                     lua_gettable(L, -2);
@@ -956,12 +956,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                         ngx_http_lua_request_cleanup(r);
 
-                        ngx_log_error(NGX_LOG_ERR, r->connection->log,
-                                0, "lua handler aborted: entry "
-                                "coroutine can not yield");
+                        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                                      "lua handler aborted: entry coroutine "
+                                      "can not yield");
 
                         return ctx->headers_sent ? NGX_ERROR :
-                            NGX_HTTP_INTERNAL_SERVER_ERROR;
+                                        NGX_HTTP_INTERNAL_SERVER_ERROR;
                     }
 
                     next_cc = lua_tothread(L, -1);
@@ -977,8 +977,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         lua_xmove(cc, next_cc, nrets);
                     }
 
-                    ++nrets;
-                    ctx->cc = cc = next_cc;
+                    nrets++;
+                    cc = next_cc;
+                    ctx->cc = cc;
 
                     continue;
 
@@ -1036,11 +1037,9 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 if (ctx->entered_content_phase) {
                     rc = ngx_http_lua_send_chain_link(r, ctx,
-                            NULL /* indicate last_buf */);
+                                                      NULL /* last_buf */);
 
-                    if (rc == NGX_ERROR
-                            || rc >= NGX_HTTP_SPECIAL_RESPONSE)
-                    {
+                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                         return rc;
                     }
                 }
@@ -1119,7 +1118,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
             return ctx->headers_sent ? NGX_ERROR :
-                NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
     } NGX_LUA_EXCEPTION_CATCH {
