@@ -1,10 +1,11 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+
 use lib 'lib';
 use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * blocks() * 2 + 10;
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 run_tests();
 
@@ -41,6 +42,8 @@ Hello, 1
 ***
 Hello, 2
 ***
+--- no_error_log
+[error]
 
 
 
@@ -81,6 +84,8 @@ cc3: 1
 cc1: 2
 cc2: 2
 cc3: 2
+--- no_error_log
+[error]
 
 
 
@@ -133,6 +138,8 @@ successfully connected to: www.taobao.com
 successfully connected to: www.baidu.com
 successfully connected to: www.qq.com
 *** All Done ***
+--- error_log
+lua coroutine: runtime error: cannot resume dead coroutine
 
 
 
@@ -175,6 +182,8 @@ GET /lua
 3
 5
 7
+--- no_error_log
+[error]
 
 
 
@@ -219,6 +228,8 @@ GET /lua
 3
 5
 7
+--- no_error_log
+[error]
 
 
 
@@ -271,6 +282,8 @@ GET /lua
 377
 610
 987
+--- no_error_log
+[error]
 
 
 
@@ -318,6 +331,8 @@ successfully connected to: www.taobao.com
 successfully connected to: www.baidu.com
 successfully connected to: www.qq.com
 *** All Done ***
+--- no_error_log
+[error]
 
 
 
@@ -355,6 +370,8 @@ running
 suspended
 suspended
 dead
+--- no_error_log
+[error]
 
 
 
