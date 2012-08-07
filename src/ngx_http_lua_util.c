@@ -950,6 +950,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     /* entry coroutine can not yield */
                     if (!lua_isthread(L, -1)) {
+                        lua_settop(L, 0);
+
                         ngx_http_lua_del_thread(r, L, cc_ref);
                         ctx->cc_ref = LUA_NOREF;
 
@@ -983,6 +985,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     continue;
 
                 case NONE:
+                    break;
+
                 default:
                     break;
                 }
@@ -1018,7 +1022,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         lua_xmove(cc, next_cc, nrets);
                     }
 
-                    ++nrets;
+                    nrets++;
                     ctx->cc = cc = next_cc;
 
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1026,6 +1030,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     continue;
                 }
+
+                lua_settop(L, 0);
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "lua entry thread ended normally");
