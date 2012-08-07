@@ -728,7 +728,7 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
     ngx_http_lua_ctx_t  *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua post read for rewrite/access phases");
+                   "lua post read for rewrite/access phases");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -813,8 +813,8 @@ ngx_http_lua_request_cleanup(void *data)
 
     } else {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua internal error: not a thread object for the current "
-                "coroutine");
+                       "lua internal error: not a thread object for the "
+                       "current coroutine");
 
         luaL_unref(L, -2, ctx->cc_ref);
     }
