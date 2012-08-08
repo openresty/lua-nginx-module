@@ -9,6 +9,7 @@ plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
+no_long_string();
 run_tests();
 
 __DATA__
@@ -110,9 +111,9 @@ cc3: 2
             end
 
             local urls = {
-                "www.taobao.com",
-                "www.baidu.com",
-                "www.qq.com"
+                "agentzh.org",
+                "agentzh.com",
+                "openresty.org"
             }
 
             local ccs = {}
@@ -136,9 +137,9 @@ cc3: 2
 --- request
 GET /lua
 --- response_body
-successfully connected to: www.taobao.com
-successfully connected to: www.baidu.com
-successfully connected to: www.qq.com
+successfully connected to: agentzh.org
+successfully connected to: agentzh.com
+successfully connected to: openresty.org
 *** All Done ***
 --- error_log
 lua coroutine: runtime error: cannot resume dead coroutine
@@ -483,4 +484,63 @@ main true 10 end
 main false cannot resume dead coroutine
 --- error_log
 lua coroutine: runtime error: cannot resume dead coroutine
+
+
+
+=== TEST 13: nested coroutines
+--- config
+    location /lua {
+        content_by_lua '
+            local create = coroutine.create
+            local resume = coroutine.resume
+            local yield = coroutine.yield
+            function f()
+                ngx.say("f begin")
+                yield()
+                local c2 = create(g)
+                ngx.say("1: resuming c2")
+                resume(c2)
+                ngx.say("2: resuming c2")
+                resume(c2)
+                yield()
+                ngx.say("3: resuming c2")
+                resume(c2)
+                ngx.say("f done")
+            end
+
+            function g()
+                ngx.say("g begin")
+                yield()
+                ngx.say("g going")
+                yield()
+                ngx.say("g done")
+            end
+
+            local c1 = coroutine.create(f)
+            ngx.say("1: resuming c1")
+            resume(c1)
+            ngx.say("2: resuming c1")
+            resume(c1)
+            ngx.say("3: resuming c1")
+            resume(c1)
+            ngx.say("main done")
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+1: resuming c1
+f begin
+2: resuming c1
+1: resuming c2
+g begin
+2: resuming c2
+g going
+3: resuming c1
+3: resuming c2
+g done
+f done
+main done
+--- no_error_log
+[error]
 
