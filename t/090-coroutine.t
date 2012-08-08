@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -429,4 +429,56 @@ GET /lua
 --- error_code: 500
 --- error_log eval
 ["stack traceback:", "coroutine 0:"]
+
+
+
+=== TEST 12: bug: resume dead coroutine with args
+--- config
+    location /lua {
+        content_by_lua '
+            function print(...)
+                local args = {...}
+                local is_first = true
+                for i,v in ipairs(args) do
+                    if is_first then
+                        is_first = false
+                    else
+                        ngx.print(" ")
+                    end
+                    ngx.print(v)
+                end
+                ngx.print("\\\n")
+            end
+
+            function foo (a)
+                print("foo", a)
+                return coroutine.yield(2*a)
+            end
+
+            co = coroutine.create(function (a,b)
+                    print("co-body", a, b)
+                    local r = foo(a+1)
+                    print("co-body", r)
+                    local r, s = coroutine.yield(a+b, a-b)
+                    print("co-body", r, s)
+                    return b, "end"
+                end)
+
+            print("main", coroutine.resume(co, 1, 10))
+            print("main", coroutine.resume(co, "r"))
+            print("main", coroutine.resume(co, "x", "y"))
+            print("main", coroutine.resume(co, "x", "y"))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+co-body 1 10
+foo 2
+main true 4
+co-body r
+main true 11 -9
+co-body x y
+main true 10 end
+main false cannot resume dead coroutine
 

@@ -24,7 +24,7 @@ static int ngx_http_lua_coroutine_yield(lua_State *L);
 int
 ngx_http_lua_resume(lua_State *L, int nargs)
 {
-    if (lua_status(L) == 0 && lua_gettop(L) == 0) {
+    if (lua_status(L) == 0 && lua_gettop(L) - nargs == 0) {
         lua_pushfstring(L, "cannot resume dead coroutine");
         return LUA_ERRRUN;
     }
