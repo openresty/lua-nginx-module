@@ -93,6 +93,10 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     zone->data = ctx;
 
     zp = ngx_array_push(lmcf->shm_zones);
+    if (zp == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
     *zp = zone;
 
     lmcf->requires_shm = 1;
