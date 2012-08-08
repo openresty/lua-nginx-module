@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 1);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -481,4 +481,6 @@ main true 11 -9
 co-body x y
 main true 10 end
 main false cannot resume dead coroutine
+--- error_log
+lua coroutine: runtime error: cannot resume dead coroutine
 
