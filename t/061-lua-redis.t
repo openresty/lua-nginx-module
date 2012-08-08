@@ -65,9 +65,9 @@ qq{
 
             local cjson = require "cjson"
 
-            local r1 = Redis.connect("127.0.0.1", 6379)
+            local r1 = Redis.connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
 
-            local r2 = Redis.connect("127.0.0.1", 6379)
+            local r2 = Redis.connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
 
             local loop = r2:pubsub({ subscribe = "foo" })
             local msg, abort = loop()
