@@ -6,6 +6,7 @@
 
 #include "ngx_http_lua_coroutine.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_probe.h"
 
 
 /*
@@ -58,6 +59,8 @@ ngx_http_lua_coroutine_create(lua_State *L)
     /* create new coroutine on main thread, so it always yield to main thread
      */
     cr = lua_newthread(ml);
+
+    ngx_http_lua_probe_user_coroutine_create(r, L, cr);
 
     /* make new coroutine share globals of the parent coroutine.
      * NOTE: globals don't have to be separated! */

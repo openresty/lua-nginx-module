@@ -5,9 +5,40 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+
+our $StapScript = <<'_EOC_';
+global ids, cur = 0
+
+function gen_id(k) {
+    if (ids[k]) return ids[k]
+    ids[k] = ++cur
+    return cur
+}
+
+F(ngx_http_handler) {
+    delete ids
+    cur = 0
+}
+
+F(ngx_http_lua_resume) {
+    printf("resume %x\n", gen_id($L))
+}
+
+F(ngx_http_lua_coroutine_yield) {
+    printf("yield %x\n", gen_id($L))
+}
+
+M(http-lua-user-coroutine-create) {
+    printf("create %x -> %x\n", gen_id($arg2), gen_id($arg3))
+}
+
+F(ngx_http_lua_ngx_exec) { println("exec") }
+
+F(ngx_http_lua_ngx_exit) { println("exit") }
+_EOC_
 
 no_long_string();
 run_tests();
@@ -487,7 +518,7 @@ lua coroutine: runtime error: cannot resume dead coroutine
 
 
 
-=== TEST 13: nested coroutines
+=== TEST 13: deeply nested coroutines
 --- config
     location /lua {
         content_by_lua '
@@ -541,6 +572,131 @@ g going
 g done
 f done
 main done
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: using ngx.exit in user coroutines
+--- config
+    location /lua {
+        content_by_lua '
+            local create = coroutine.create
+            local resume = coroutine.resume
+            local yield = coroutine.yield
+
+            local code = 400
+
+            function f()
+                local c2 = create(g)
+                yield()
+                code = code + 1
+                resume(c2)
+                yield()
+                resume(c2)
+            end
+
+            function g()
+                code = code + 1
+                yield()
+                code = code + 1
+                ngx.exit(code)
+            end
+
+            local c1 = coroutine.create(f)
+            resume(c1)
+            resume(c1)
+            resume(c1)
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua
+--- stap eval: $::StapScript
+--- stap_out
+resume 1
+create 1 -> 2
+resume 2
+create 2 -> 3
+yield 2
+resume 1
+resume 2
+resume 3
+yield 3
+resume 2
+yield 2
+resume 1
+resume 2
+resume 3
+exit
+
+--- response_body_like: 403 Forbidden
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: using ngx.exec in user coroutines
+--- config
+    location /lua {
+        content_by_lua '
+            local create = coroutine.create
+            local resume = coroutine.resume
+            local yield = coroutine.yield
+
+            local code = 0
+
+            function f()
+                local c2 = create(g)
+                yield()
+                code = code + 1
+                resume(c2)
+                yield()
+                resume(c2)
+            end
+
+            function g()
+                code = code + 1
+                yield()
+                code = code + 1
+                ngx.exec("/n/" .. code)
+            end
+
+            local c1 = coroutine.create(f)
+            resume(c1)
+            resume(c1)
+            resume(c1)
+            ngx.say("done")
+        ';
+    }
+
+    location ~ '^/n/(\d+)' {
+        echo "num: $1";
+    }
+
+--- stap eval: $::StapScript
+--- stap_out
+resume 1
+create 1 -> 2
+resume 2
+create 2 -> 3
+yield 2
+resume 1
+resume 2
+resume 3
+yield 3
+resume 2
+yield 2
+resume 1
+resume 2
+resume 3
+exec
+
+--- request
+GET /lua
+--- response_body
+num: 3
 --- no_error_log
 [error]
 
