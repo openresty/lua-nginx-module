@@ -101,7 +101,7 @@ ngx_http_lua_coroutine_resume(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ctx->cc_op = RESUME;
+    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_RESUME;
 
     /* record parent-child relationship */
 
@@ -147,7 +147,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ctx->cc_op = YIELD;
+    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
     /* yield and pass retvals to main L, and resume parent coroutine there */
     return lua_yield(L, lua_gettop(L));

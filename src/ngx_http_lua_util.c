@@ -913,7 +913,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                  * lua_yield()
                  */
                 switch(ctx->cc_op) {
-                case RESUME:
+                case NGX_HTTP_LUA_USER_CORO_RESUME:
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua coroutine: resume");
 
@@ -921,7 +921,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                      * the target coroutine lies at the base of the
                      * parent's stack
                      */
-                    ctx->cc_op = NONE;
+                    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_NOP;
 
                     nrets = lua_gettop(cc) - 1;
                     next_cc = lua_tothread(cc, 1);
@@ -936,7 +936,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     continue;
 
-                case YIELD:
+                case NGX_HTTP_LUA_USER_CORO_YIELD:
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua coroutine: yield");
 
@@ -944,7 +944,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                      * here we need to find the parent coroutine of the
                      * yield coroutine in the weak table(in registry)
                      */
-                    ctx->cc_op = NONE;
+                    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_NOP;
 
                     nrets = lua_gettop(cc);
 
@@ -990,10 +990,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     continue;
 
-                case NONE:
-                    break;
-
                 default:
+                    /* NGX_HTTP_LUA_USER_CORO_NOP */
                     break;
                 }
 

@@ -192,6 +192,13 @@ typedef struct {
 } ngx_http_lua_loc_conf_t;
 
 
+typedef enum {
+    NGX_HTTP_LUA_USER_CORO_NOP      = 0,
+    NGX_HTTP_LUA_USER_CORO_RESUME   = 1,
+    NGX_HTTP_LUA_USER_CORO_YIELD    = 2
+} ngx_http_lua_user_coro_op_t;
+
+
 typedef struct {
     void                    *data;
 
@@ -210,13 +217,6 @@ typedef struct {
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
                                            registry */
-
-    enum {
-        NONE = 0,
-        RESUME = 1,
-        YIELD = 2
-    }                cc_op;             /*  coroutine API operation */
-
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
@@ -250,6 +250,8 @@ typedef struct {
     ngx_int_t        exit_code;
 
     ngx_event_t      sleep;      /* used for ngx.sleep */
+
+    ngx_http_lua_user_coro_op_t   cc_op:2; /*  coroutine API operation */
 
     unsigned         exited:1;
 
