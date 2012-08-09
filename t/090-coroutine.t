@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -551,7 +551,7 @@ lua coroutine: runtime error: cannot resume dead coroutine
                 ngx.say("g done")
             end
 
-            local c1 = coroutine.create(f)
+            local c1 = create(f)
             ngx.say("1: resuming c1")
             resume(c1)
             ngx.say("2: resuming c1")
@@ -607,7 +607,7 @@ main done
                 ngx.exit(code)
             end
 
-            local c1 = coroutine.create(f)
+            local c1 = create(f)
             resume(c1)
             resume(c1)
             resume(c1)
@@ -663,7 +663,7 @@ exit
                 ngx.exec("/n/" .. code)
             end
 
-            local c1 = coroutine.create(f)
+            local c1 = create(f)
             resume(c1)
             resume(c1)
             resume(c1)
@@ -695,4 +695,25 @@ GET /lua
 num: 3
 --- no_error_log
 [error]
+
+
+
+=== TEST 16: coroutine.create in header_filter_by_lua
+--- config
+    location /lua {
+        echo hello;
+        header_filter_by_lua '
+            function f()
+                yield()
+            end
+
+            local c1 = coroutine.create(f)
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+API disabled in the context of header_filter_by_lua*
 

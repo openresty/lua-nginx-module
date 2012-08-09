@@ -40,6 +40,7 @@ ngx_http_lua_coroutine_create(lua_State *L)
     lua_State                     *cr, *ml;
     ngx_http_request_t            *r;
     ngx_http_lua_main_conf_t      *lmcf;
+    ngx_http_lua_ctx_t            *ctx;
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
                  "Lua function expected");
@@ -52,6 +53,15 @@ ngx_http_lua_coroutine_create(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     ml = lmcf->lua;
@@ -101,6 +111,10 @@ ngx_http_lua_coroutine_resume(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
     ctx->cc_op = NGX_HTTP_LUA_USER_CORO_RESUME;
 
     /* record parent-child relationship */
@@ -146,6 +160,10 @@ ngx_http_lua_coroutine_yield(lua_State *L)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     ctx->cc_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
