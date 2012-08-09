@@ -10,7 +10,7 @@ plan tests => repeat_each() * (blocks() * 3 + 4);
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 our $StapScript = <<'_EOC_';
-global ids, cur = 0
+global ids, cur
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -23,8 +23,10 @@ F(ngx_http_handler) {
     cur = 0
 }
 
-F(ngx_http_lua_resume) {
-    printf("resume %x\n", gen_id($L))
+M(http-lua-user-coroutine-resume) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("resume %x in %x\n", c, p)
 }
 
 F(ngx_http_lua_coroutine_yield) {
@@ -32,7 +34,9 @@ F(ngx_http_lua_coroutine_yield) {
 }
 
 M(http-lua-user-coroutine-create) {
-    printf("create %x -> %x\n", gen_id($arg2), gen_id($arg3))
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("create %x in %x\n", c, p)
 }
 
 F(ngx_http_lua_ngx_exec) { println("exec") }
@@ -614,20 +618,16 @@ main done
 GET /lua
 --- stap eval: $::StapScript
 --- stap_out
-resume 1
-create 1 -> 2
-resume 2
-create 2 -> 3
+create 2 in 1
+resume 2 in 1
+create 3 in 2
 yield 2
-resume 1
-resume 2
-resume 3
+resume 2 in 1
+resume 3 in 2
 yield 3
-resume 2
 yield 2
-resume 1
-resume 2
-resume 3
+resume 2 in 1
+resume 3 in 2
 exit
 
 --- response_body_like: 403 Forbidden
@@ -677,20 +677,16 @@ exit
 
 --- stap eval: $::StapScript
 --- stap_out
-resume 1
-create 1 -> 2
-resume 2
-create 2 -> 3
+create 2 in 1
+resume 2 in 1
+create 3 in 2
 yield 2
-resume 1
-resume 2
-resume 3
+resume 2 in 1
+resume 3 in 2
 yield 3
-resume 2
 yield 2
-resume 1
-resume 2
-resume 3
+resume 2 in 1
+resume 3 in 2
 exec
 
 --- request
