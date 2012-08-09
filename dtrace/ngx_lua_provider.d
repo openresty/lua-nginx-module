@@ -8,6 +8,8 @@ provider nginx_lua {
                                                    char *data, size_t len);
     probe http__lua__user__coroutine__create(ngx_http_request_t *r,
                                              lua_State *parent, lua_State *child);
+    probe http__lua__user__coroutine__resume(ngx_http_request_t *r,
+                                             lua_State *parent, lua_State *child);
 };
 
 

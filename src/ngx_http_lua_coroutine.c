@@ -107,6 +107,8 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
     cr = lua_tothread(L, 1);
 
+    ngx_http_lua_probe_user_coroutine_resume(r, L, cr);
+
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     ml = lmcf->lua;
 
