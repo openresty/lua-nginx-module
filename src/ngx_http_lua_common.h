@@ -200,16 +200,17 @@ typedef enum {
 
 
 typedef struct {
-    void                    *data;
+    void                    *data;      /* user state for cosockets */
 
-    uint8_t                  context;
+    uint8_t                  context;   /* the current running directive context
+                                           (or running phase) for the current
+                                           Lua chunk */
 
-    lua_State       *cc;                /*  coroutine to handle request. it
-                                            point to the current running
-                                            coroutine (not necessarily the
+    lua_State               *cc;        /*  current running Lua coroutine (or thread state),
+                                            not necessarily to be the
                                             request's entry coroutine */
 
-    int              cc_ref;            /*  reference to anchor coroutine in
+    int                      cc_ref;    /*  reference to anchor coroutine in
                                             the lua registry. it always
                                             ref to the entry coroutine of the
                                             request */
