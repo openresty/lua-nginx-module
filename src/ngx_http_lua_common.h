@@ -206,7 +206,7 @@ typedef struct {
                                            (or running phase) for the current
                                            Lua chunk */
 
-    lua_State               *cc;        /*  current running Lua coroutine (or thread state),
+    lua_State               *cc;        /*  the current running Lua coroutine,
                                             not necessarily to be the
                                             request's entry coroutine */
 
