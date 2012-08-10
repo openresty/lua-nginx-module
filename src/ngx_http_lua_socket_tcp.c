@@ -9,6 +9,7 @@
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_probe.h"
+#include "ngx_http_lua_socket_log.h"
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -956,7 +957,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u = lua_touserdata(L, -1);
 
     if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+         ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
                       "attempt to receive data on a closed socket: u:%p, c:%p, "
                       "ft:%ui eof:%ud",
                       u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
@@ -1480,7 +1481,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     lua_pop(L, 1);
 
     if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+         ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
                       "attempt to send data on a closed socket: u:%p, c:%p, "
                       "ft:%ui eof:%ud",
                       u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
@@ -1818,7 +1819,7 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
                    "lua tcp socket read handler");
 
     if (c->read->timedout) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
                       "lua tcp socket read timed out");
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
@@ -1849,7 +1850,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
                    "lua tcp socket send handler");
 
     if (c->write->timedout) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+         ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
                       "lua tcp socket write timed out");
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
@@ -2023,7 +2024,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 
     if (c->write->timedout) {
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+         ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
                       "lua tcp socket connect timed out");
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
