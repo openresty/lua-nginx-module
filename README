@@ -1203,6 +1203,21 @@ Directives
 
     This directive was first introduced in the "v0.5.0rc1" release.
 
+  lua_socket_log_errors
+    syntax: *lua_socket_log_errors on|off*
+
+    default: *lua_socket_log_errors on*
+
+    context: *http, server, location*
+
+    This directive can be used to toggle the automatic error logging when a
+    failure occurs for the TCP or UDP cosockets. If you are already doing
+    proper error handling and logging in your Lua code, then it is
+    recommended to turn this directive off to prevent data flushing in your
+    nginx error log files (which is usually rather expensive).
+
+    This directive was first introduced in the "v0.5.13" release.
+
   lua_http10_buffering
     syntax: *lua_http10_buffering on|off*
 
@@ -4745,8 +4760,7 @@ Known Issues
     require('xxx')
 
     It is recommended to always place the following piece of code at the end
-    of Lua modules that use the ngx.location.capture or
-    ngx.location.capture_multi directives to prevent casual use of
+    of Lua modules that use the I/O operations to prevent casual use of
     module-level global variables that are shared among *all* requests:
 
         getmetatable(foo.bar).__newindex = function (table, key, val)
@@ -5018,13 +5032,18 @@ Bugs and Patches
 
 TODO
   Short Term
-    *   implement LuaSocket UDP API
-        (<http://w3.impa.br/~diego/software/luasocket/udp.html>) in our
-        cosocket API.
+    *   review and apply Brian Akin's patch for the new directive
+        "lua_socket_log_errors".
+
+    *   review and apply Brian Akin's patch for the new
+        "shdict:flush_expired()" API.
 
     *   implement the SSL cosocket API.
 
-    *   implement the "ngx.re.split" method.
+    *   review and apply Jader H. Silva's patch for "ngx.re.split()".
+
+    *   review and apply vadim-pavlov's patch for ngx.location.capture's
+        "extra_headers" option
 
     *   use "ngx_hash_t" to optimize the built-in header look-up process for
         ngx.req.set_header, ngx.header.HEADER, and etc.
@@ -5039,6 +5058,8 @@ TODO
     *   add "ignore_resp_headers", "ignore_resp_body", and "ignore_resp"
         options to ngx.location.capture and ngx.location.capture_multi
         methods, to allow micro performance tuning on the user side.
+
+    *   implement new directive "lua_ignore_client_abort".
 
   Longer Term
     *   add Lua code automatic time slicing support by yielding and resuming
