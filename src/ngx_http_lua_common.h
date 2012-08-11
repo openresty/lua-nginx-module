@@ -210,6 +210,9 @@ typedef struct {
                                             not necessarily to be the
                                             request's entry coroutine */
 
+    lua_State               *entry;     /*  the entry Lua coroutine */
+
+
     int                      cc_ref;    /*  reference to anchor coroutine in
                                             the lua registry. it always
                                             ref to the entry coroutine of the

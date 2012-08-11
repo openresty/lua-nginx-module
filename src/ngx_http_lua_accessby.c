@@ -263,6 +263,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->entered_access_phase = 1;
 
+    ctx->entry = cc;
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
 

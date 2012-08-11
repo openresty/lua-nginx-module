@@ -70,6 +70,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_rawset(cc, LUA_GLOBALSINDEX);
     /*  }}} */
 
+    ctx->entry = cc;
     ctx->cc = cc;
     ctx->cc_ref = cc_ref;
 

@@ -913,6 +913,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                  * lua_yield()
                  */
                 switch(ctx->cc_op) {
+                case NGX_HTTP_LUA_USER_CORO_NOP:
+                    dd("hit! it is the API yield");
+
+                    lua_settop(cc, 0);
+                    return NGX_AGAIN;
+
                 case NGX_HTTP_LUA_USER_CORO_RESUME:
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua coroutine: resume");
@@ -934,28 +940,19 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     cc = next_cc;
                     ctx->cc = cc;
 
-                    continue;
+                    break;
 
-                case NGX_HTTP_LUA_USER_CORO_YIELD:
+                default:
+                    /* NGX_HTTP_LUA_USER_CORO_YIELD */
+
                     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                    "lua coroutine: yield");
 
-                    /*
-                     * here we need to find the parent coroutine of the
-                     * yield coroutine in the weak table(in registry)
-                     */
                     ctx->cc_op = NGX_HTTP_LUA_USER_CORO_NOP;
 
-                    nrets = lua_gettop(cc);
+                    if (cc == ctx->entry) {
+                        /* entry coroutine can not yield */
 
-                    /* find parent coroutine in weak ref table */
-                    ngx_http_lua_get_coroutine_parents(L);
-                    lua_pushthread(cc);
-                    lua_xmove(cc, L, 1);
-                    lua_rawget(L, -2);
-
-                    /* entry coroutine can not yield */
-                    if (!lua_isthread(L, -1)) {
                         lua_settop(L, 0);
 
                         ngx_http_lua_del_thread(r, L, cc_ref);
@@ -970,6 +967,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         return ctx->headers_sent ? NGX_ERROR :
                                         NGX_HTTP_INTERNAL_SERVER_ERROR;
                     }
+
+                    /* being a user coroutine that has a parent */
+
+                    nrets = lua_gettop(cc);
+
+                    /* find parent coroutine in weak ref table */
+                    ngx_http_lua_get_coroutine_parents(L);
+                    lua_pushthread(cc);
+                    lua_xmove(cc, L, 1);
+                    lua_rawget(L, -2);
 
                     next_cc = lua_tothread(L, -1);
                     lua_pop(L, 2);
@@ -988,23 +995,45 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     cc = next_cc;
                     ctx->cc = cc;
 
-                    continue;
-
-                default:
-                    /* NGX_HTTP_LUA_USER_CORO_NOP */
                     break;
                 }
 
-                lua_settop(cc, 0);
-
-                return NGX_AGAIN;
+                /* try resuming on the new coroutine again */
+                continue;
 
             case 0:
 #if 0
                 ngx_http_lua_dump_postponed(r);
 #endif
 
-                /* check if the dead coroutine has a parent coroutine */
+                if (cc == ctx->entry) {
+                    dd("hit! it is the entry");
+
+                    lua_settop(L, 0);
+
+                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                   "lua entry thread ended normally");
+
+                    /* the entry thread was dead, delete it */
+                    ngx_http_lua_del_thread(r, L, cc_ref);
+                    ctx->cc_ref = LUA_NOREF;
+
+                    if (ctx->entered_content_phase) {
+                        rc = ngx_http_lua_send_chain_link(r, ctx,
+                                                          NULL /* last_buf */);
+
+                        if (rc == NGX_ERROR
+                            || rc >= NGX_HTTP_SPECIAL_RESPONSE)
+                        {
+                            return rc;
+                        }
+                    }
+
+                    return NGX_OK;
+                }
+
+                /* being a user coroutine that has a parent */
+
                 nrets = lua_gettop(cc);
 
                 ngx_http_lua_get_coroutine_parents(L);
@@ -1012,49 +1041,27 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 lua_xmove(cc, L, 1);
                 lua_rawget(L, -2);
 
-                /* resume the parent coroutine */
-                if (lua_isthread(L, -1)) {
-                    next_cc = lua_tothread(L, -1);
-                    lua_pop(L, 2);
+                next_cc = lua_tothread(L, -1);
+                lua_pop(L, 2);
 
-                    /*
-                     * ended successful, coroutine.resume returns true plus
-                     * any return values
-                     */
-                    lua_pushboolean(next_cc, 1);
+                /*
+                 * ended successful, coroutine.resume returns true plus
+                 * any return values
+                 */
+                lua_pushboolean(next_cc, 1);
 
-                    if (nrets) {
-                        lua_xmove(cc, next_cc, nrets);
-                    }
-
-                    nrets++;
-                    ctx->cc = cc = next_cc;
-
-                    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                                   "lua coroutine: lua thread ended normally");
-
-                    continue;
+                if (nrets) {
+                    lua_xmove(cc, next_cc, nrets);
                 }
 
-                lua_settop(L, 0);
+                nrets++;
+                cc = next_cc;
+                ctx->cc = cc;
 
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                               "lua entry thread ended normally");
+                               "lua coroutine: lua user thread ended normally");
 
-                /* the entry thread was dead, delete it */
-                ngx_http_lua_del_thread(r, L, cc_ref);
-                ctx->cc_ref = LUA_NOREF;
-
-                if (ctx->entered_content_phase) {
-                    rc = ngx_http_lua_send_chain_link(r, ctx,
-                                                      NULL /* last_buf */);
-
-                    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-                        return rc;
-                    }
-                }
-
-                return NGX_OK;
+                continue;
 
             case LUA_ERRRUN:
                 err = "runtime error";
@@ -1089,46 +1096,50 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             trace = lua_tostring(L, -1);
             lua_pop(L, 1);
 
-            /* check if the dead coroutine has a parent coroutine*/
+            if (cc == ctx->entry) {
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                              "lua handler aborted: %s: %s\n%s", err, msg,
+                              trace);
+
+                lua_settop(L, 0);
+
+                ngx_http_lua_del_thread(r, L, cc_ref);
+                ctx->cc_ref = LUA_NOREF;
+
+                ngx_http_lua_request_cleanup(r);
+
+                dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+
+                return ctx->headers_sent ? NGX_ERROR :
+                            NGX_HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            /* being a user coroutine that has a parent */
+
             ngx_http_lua_get_coroutine_parents(L);
             lua_pushthread(cc);
             lua_xmove(cc, L, 1);
             lua_rawget(L, -2);
 
-            if (lua_isthread(L, -1)) {
-                next_cc = lua_tothread(L, -1);
-                lua_pop(L, 2);
-
-                /*
-                 * ended with error, coroutine.resume returns false plus
-                 * err msg
-                 */
-                lua_pushboolean(next_cc, 0);
-                lua_xmove(cc, next_cc, 1);
-                nrets = 2;
-
-                ctx->cc = cc = next_cc;
-
-                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                              "lua coroutine: %s: %s\n%s", err, msg, trace);
-
-                continue;
-            }
-
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "lua handler aborted: %s: %s\n%s", err, msg, trace);
-
+            next_cc = lua_tothread(L, -1);
             lua_pop(L, 2);
 
-            ngx_http_lua_del_thread(r, L, cc_ref);
-            ctx->cc_ref = LUA_NOREF;
+            /*
+             * ended with error, coroutine.resume returns false plus
+             * err msg
+             */
+            lua_pushboolean(next_cc, 0);
+            lua_xmove(cc, next_cc, 1);
+            nrets = 2;
 
-            ngx_http_lua_request_cleanup(r);
+            cc = next_cc;
+            ctx->cc = cc;
 
-            dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "lua coroutine: %s: %s\n%s", err, msg, trace);
 
-            return ctx->headers_sent ? NGX_ERROR :
-                        NGX_HTTP_INTERNAL_SERVER_ERROR;
+            /* try resuming on the new coroutine again */
+            continue;
         }
 
     } NGX_LUA_EXCEPTION_CATCH {
