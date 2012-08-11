@@ -9,6 +9,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_output.h"
+#include "ngx_http_lua_socket.h"
 
 
 #define UDP_MAX_DATAGRAM_SIZE 8192
@@ -41,7 +42,8 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
-static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
+static ngx_int_t ngx_http_lua_udp_connect(ngx_http_request_t *r,
+    ngx_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 
 
@@ -546,7 +548,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         return 2;
     }
 
-    rc = ngx_http_lua_udp_connect(uc);
+    rc = ngx_http_lua_udp_connect(r, uc);
 
     if (rc != NGX_OK) {
         u->socket_errno = ngx_socket_errno;
@@ -684,9 +686,9 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     lua_pop(L, 1);
 
     if (u == NULL || u->udp_connection.connection == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "attempt to send data on a closed socket: u:%p, c:%p",
-                      u, u ? u->udp_connection.connection : NULL);
+        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "attempt to send "
+                                      "data on a closed socket: u:%p, c:%p", u,
+                                      u ? u->udp_connection.connection : NULL);
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
@@ -805,9 +807,10 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
     lua_pop(L, 1);
 
     if (u == NULL || u->udp_connection.connection == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "attempt to receive data on a closed socket: u:%p, c:%p",
-                      u, u ? u->udp_connection.connection : NULL);
+        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
+                                      "attempt to receive data on a closed "
+                                      "socket: u:%p, c:%p", u,
+                                      u ? u->udp_connection.connection : NULL);
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
@@ -1058,8 +1061,8 @@ ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     if (c->read->timedout) {
         c->read->timedout = 0;
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "lua udp socket read timed out");
+        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0,
+                                      "lua udp socket read timed out");
 
         ngx_http_lua_socket_udp_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
@@ -1181,7 +1184,7 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
+ngx_http_lua_udp_connect(ngx_http_request_t *r, ngx_udp_connection_t *uc)
 {
     int                rc;
     ngx_int_t          event;
@@ -1194,8 +1197,8 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, &uc->log, 0, "UDP socket %d", s);
 
     if (s == -1) {
-        ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
-                      ngx_socket_n " failed");
+        ngx_http_lua_socket_log_error(NGX_LOG_ALERT, r, ngx_socket_errno,
+                                      ngx_socket_n " failed");
         return NGX_ERROR;
     }
 
@@ -1203,22 +1206,22 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
 
     if (c == NULL) {
         if (ngx_close_socket(s) == -1) {
-            ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
-                          ngx_close_socket_n "failed");
+            ngx_http_lua_socket_log_error(NGX_LOG_ALERT, r, ngx_socket_errno,
+                                          ngx_close_socket_n "failed");
         }
 
         return NGX_ERROR;
     }
 
     if (ngx_nonblocking(s) == -1) {
-        ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
-                      ngx_nonblocking_n " failed");
+        ngx_http_lua_socket_log_error(NGX_LOG_ALERT, r, ngx_socket_errno,
+                                      ngx_nonblocking_n " failed");
 
         ngx_free_connection(c);
 
         if (ngx_close_socket(s) == -1) {
-            ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
-                          ngx_close_socket_n " failed");
+            ngx_http_lua_socket_log_error(NGX_LOG_ALERT, r, ngx_socket_errno,
+                                          ngx_close_socket_n " failed");
         }
 
         return NGX_ERROR;
@@ -1253,8 +1256,8 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
     /* TODO: aio, iocp */
 
     if (rc == -1) {
-        ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
-                      "connect() failed");
+        ngx_http_lua_socket_log_error(NGX_LOG_CRIT, r, ngx_socket_errno,
+                                      "connect() failed");
 
         return NGX_ERROR;
     }

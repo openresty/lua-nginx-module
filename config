@@ -231,6 +231,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
                 $ngx_addon_dir/src/ngx_http_lua_req_method.h \
                 $ngx_addon_dir/src/ngx_http_lua_phase.h \
+                $ngx_addon_dir/src/ngx_http_lua_socket.h \
                 "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
