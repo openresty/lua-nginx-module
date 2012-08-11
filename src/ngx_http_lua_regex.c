@@ -773,11 +773,6 @@ compiled:
 
     ctx = lua_newuserdata(L, sizeof(ngx_http_lua_regex_ctx_t));
 
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch_gc);
-    lua_setfield(L, -2, "__gc");
-    lua_setmetatable(L, -2);
-
     ctx->request = r;
     ctx->regex = re_comp.regex;
     ctx->regex_sd = sd;
@@ -787,6 +782,11 @@ compiled:
     ctx->flags = (uint8_t) flags;
 
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
+        lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+        lua_pushcfunction(L, ngx_http_lua_ngx_re_gmatch_gc);
+        lua_setfield(L, -2, "__gc");
+        lua_setmetatable(L, -2);
+
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
             return luaL_error(L, "out of memory");
@@ -795,6 +795,9 @@ compiled:
         cln->handler = ngx_http_lua_ngx_re_gmatch_cleanup;
         cln->data = ctx;
         ctx->cleanup = &cln->handler;
+
+    } else {
+        ctx->cleanup = NULL;
     }
 
     lua_pushinteger(L, 0);
@@ -1720,9 +1723,7 @@ ngx_http_lua_ngx_re_gmatch_cleanup(void *data)
 
     if (ctx) {
         if (ctx->regex_sd) {
-            dd("free study data");
-            ngx_http_lua_regex_free_study_data(ctx->request->pool,
-                                               ctx->regex_sd);
+            ngx_http_lua_regex_free_study_data(ctx->request->pool, ctx->regex_sd);
             ctx->regex_sd = NULL;
         }
 

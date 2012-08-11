@@ -7,7 +7,7 @@ use Test::Nginx::Socket;
 #workers(2);
 #log_level('warn');
 
-repeat_each(2);
+repeat_each(5);
 
 plan tests => repeat_each() * (blocks() * 2 + 1);
 
@@ -311,6 +311,10 @@ baz
     }
 --- request
     GET /re
+--- stap2
+F(ngx_http_lua_ngx_re_gmatch_iterator) { println("iterator") }
+F(ngx_http_lua_ngx_re_gmatch_gc) { println("gc") }
+F(ngx_http_lua_ngx_re_gmatch_cleanup) { println("cleanup") }
 --- response_body
 hello
 okay
