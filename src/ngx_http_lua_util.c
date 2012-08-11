@@ -839,7 +839,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     ngx_int_t                rc;
 #if (NGX_PCRE)
     ngx_pool_t              *old_pool = NULL;
-    unsigned                 pcre_pool_resumed = 0;
+    unsigned                 pcre_pool_resumed = 1;
 #endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
