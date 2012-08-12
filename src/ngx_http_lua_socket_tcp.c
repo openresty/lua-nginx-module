@@ -9,7 +9,6 @@
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_probe.h"
-#include "ngx_http_lua_socket.h"
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -936,6 +935,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     lua_Integer                          bytes;
     char                                *p;
     int                                  typ;
+    ngx_http_lua_loc_conf_t             *llcf;
 
     n = lua_gettop(L);
     if (n != 1 && n != 2) {
@@ -957,11 +957,16 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u = lua_touserdata(L, -1);
 
     if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
-        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "attempt to receive "
-                                      "data on a closed socket: u:%p, c:%p, "
-                                      "ft:%ui eof:%ud", u,
-                                      u ? u->peer.connection : NULL,
-                                      u ? u->ft_type : 0, u ? u->eof : 0);
+
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "attempt to receive data on a closed socket: u:%p, "
+                          "c:%p, ft:%ui eof:%ud",
+                          u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
+                          u ? u->eof : 0);
+        }
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
@@ -1461,6 +1466,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     int                                  type;
     const char                          *msg;
     ngx_buf_t                           *b;
+    ngx_http_lua_loc_conf_t             *llcf;
 
     /* TODO: add support for the optional "i" and "j" arguments */
 
@@ -1481,11 +1487,15 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     lua_pop(L, 1);
 
     if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
-        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "attempt to send "
-                                      "data on a closed socket: u:%p, c:%p, "
-                                      "ft:%ui eof:%ud", u,
-                                      u ? u->peer.connection : NULL,
-                                      u ? u->ft_type : 0, u ? u->eof : 0);
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "attempt to send data on a closed socket: u:%p, "
+                          "c:%p, ft:%ui eof:%ud",
+                          u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
+                          u ? u->eof : 0);
+        }
 
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
@@ -1812,6 +1822,7 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_connection_t            *c;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
 
@@ -1819,8 +1830,12 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
                    "lua tcp socket read handler");
 
     if (c->read->timedout) {
-        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "lua tcp socket "
-                                      "read timed out");
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "lua tcp socket read timed out");
+        }
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
         return;
@@ -1843,6 +1858,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_connection_t            *c;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
 
@@ -1850,8 +1866,12 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
                    "lua tcp socket send handler");
 
     if (c->write->timedout) {
-        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "lua tcp socket "
-                                      "write timed out");
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "lua tcp socket write timed out");
+        }
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
         return;
@@ -2019,13 +2039,18 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 {
     ngx_int_t                    rc;
     ngx_connection_t            *c;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
 
     if (c->write->timedout) {
 
-        ngx_http_lua_socket_log_error(NGX_LOG_ERR, r, 0, "lua tcp socket "
-                                      "connect timed out");
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "lua tcp socket connect timed out");
+        }
 
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
         return;
