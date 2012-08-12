@@ -1723,7 +1723,8 @@ ngx_http_lua_ngx_re_gmatch_cleanup(void *data)
 
     if (ctx) {
         if (ctx->regex_sd) {
-            ngx_http_lua_regex_free_study_data(ctx->request->pool, ctx->regex_sd);
+            ngx_http_lua_regex_free_study_data(ctx->request->pool,
+                                               ctx->regex_sd);
             ctx->regex_sd = NULL;
         }
 
