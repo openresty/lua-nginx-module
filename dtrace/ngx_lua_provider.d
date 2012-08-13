@@ -1,5 +1,4 @@
 typedef struct { int dummy; } lua_State;
-typedef struct { int dummy; } ngx_http_request_t;
 
 
 provider nginx_lua {
