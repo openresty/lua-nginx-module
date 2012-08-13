@@ -1,5 +1,5 @@
 provider nginx_lua {
-    probe http__lua__register__preload__package(/* lua_State */ void *L, char *pkg);
+    probe http__lua__register__preload__package(void *L, const char *pkg);
     probe http__lua__req__socket__consume__preread(ngx_http_request_t *r, char *size, size_t len);
 };
 
