@@ -250,7 +250,9 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
         for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
 
-            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
+            ngx_http_lua_probe_register_preload_package(L,
+                                                        (char *)
+                                                        hook[i].package);
 
             lua_pushcfunction(L, hook[i].loader);
             lua_setfield(L, -2, hook[i].package);
