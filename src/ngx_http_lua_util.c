@@ -905,10 +905,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     return ngx_http_lua_handle_exec(L, r, ctx, cc_ref);
                 }
 
-#if 0
-                ngx_http_lua_dump_postponed(r);
-#endif
-
                 /*
                  * check if coroutine.resume or coroutine.yield called
                  * lua_yield()
@@ -1007,9 +1003,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 continue;
 
             case 0:
-#if 0
-                ngx_http_lua_dump_postponed(r);
-#endif
 
                 if (cc == ctx->entry) {
                     dd("hit! it is the entry");
@@ -1246,9 +1239,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             ngx_cached_err_log_time.data,
             r == c->data,
             r->postponed);
-#if 0
-    ngx_http_lua_dump_postponed(r);
-#endif
 
     dd("ctx = %p", ctx);
     dd("request done: %d", (int) r->done);
@@ -1279,10 +1269,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     if (ctx->waiting && !ctx->done) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua waiting for pending subrequests");
-
-#if 0
-        ngx_http_lua_dump_postponed(r);
-#endif
 
         if (r == c->data && r->postponed) {
             if (r->postponed->request) {
@@ -1540,55 +1526,6 @@ ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
     ngx_md5_final(md5_buf, &md5);
 
     return ngx_hex_dump(dest, md5_buf, sizeof(md5_buf));
-}
-
-
-void
-ngx_http_lua_dump_postponed(ngx_http_request_t *r)
-{
-    ngx_http_postponed_request_t    *pr;
-    ngx_uint_t                       i;
-    ngx_str_t                        out;
-    size_t                           len;
-    ngx_chain_t                     *cl;
-    u_char                          *p;
-    ngx_str_t                        nil_str;
-
-    ngx_str_set(&nil_str, "(nil)");
-
-    for (i = 0, pr = r->postponed; pr; pr = pr->next, i++) {
-        out.data = NULL;
-        out.len = 0;
-
-        len = 0;
-        for (cl = pr->out; cl; cl = cl->next) {
-            len += ngx_buf_size(cl->buf);
-        }
-
-        if (len) {
-            p = ngx_palloc(r->pool, len);
-            if (p == NULL) {
-                return;
-            }
-
-            out.data = p;
-
-            for (cl = pr->out; cl; cl = cl->next) {
-                p = ngx_copy(p, cl->buf->pos, ngx_buf_size(cl->buf));
-            }
-
-            out.len = len;
-        }
-
-        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                "postponed request for %V: "
-                "c:%d, "
-                "a:%d, i:%d, r:%V, out:%V",
-                &r->uri,
-                r->main->count,
-                r == r->connection->data, i,
-                pr->request ? &pr->request->uri : &nil_str, &out);
-    }
 }
 
 

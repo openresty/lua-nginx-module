@@ -813,10 +813,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     ctx->run_post_subrequest = 1;
 
-#if 0
-    ngx_http_lua_dump_postponed(r);
-#endif
-
     pr = r->parent;
 
     pr_ctx = ngx_http_get_module_ctx(pr, ngx_http_lua_module);
