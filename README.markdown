@@ -4070,6 +4070,72 @@ Retrieves the current running phase name. Possible return values are
 
 This API was first introduced in the `v0.5.10` release.
 
+coroutine.create
+----------------
+**syntax:** *co = coroutine.create(f)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Creates a user Lua coroutines with a Lua function, and returns a coroutine object.
+
+Just behaves like the standard Lua [coroutine.create](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.create) API, but works in the context of the Lua coroutines created automatically by this Nginx module.
+
+This API was first introduced in the `v0.6.0` release.
+
+coroutine.resume
+----------------
+**syntax:** *ok, ... = coroutine.resume(co, ...)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Resumes the executation of a user Lua coroutine object previously yielded or just created.
+
+Just behaves like the standard Lua [coroutine.resume](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume) API, but works in the context of the Lua coroutines created automatically by this Nginx module.
+
+This API was first introduced in the `v0.6.0` release.
+
+coroutine.yield
+---------------
+**syntax:** *... = coroutine.yield(co, ...)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Yields the executation of the current user Lua coroutine.
+
+Just behaves like the standard Lua [coroutine.yield](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.yield) API, but works in the context of the Lua coroutines created automatically by this Nginx module.
+
+This API was first introduced in the `v0.6.0` release.
+
+coroutine.wrap
+--------------
+**syntax:** *co = coroutine.wrap(f)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Just behaves like the standard Lua [coroutine.wrap](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.wrap) API, but works in the context of the Lua coroutines created automatically by this Nginx module.
+
+This API was first introduced in the `v0.6.0` release.
+
+coroutine.running
+-----------------
+**syntax:** *co = coroutine.running()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Identical to the standard Lua [coroutine.running](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.running) API.
+
+This API was first enabled in the `v0.6.0` release.
+
+coroutine.status
+----------------
+**syntax:** *status = coroutine.status(co)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status) API.
+
+This API was first enabled in the `v0.6.0` release.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
@@ -4397,11 +4463,12 @@ Nginx Compatibility
 ===================
 The module is compatible with the following versions of Nginx:
 
-*   1.2.x (last tested: 1.2.1)
-*   1.1.x (last tested: 1.1.5)
-*   1.0.x (last tested: 1.0.15)
-*   0.9.x (last tested: 0.9.4)
-*   0.8.x >= 0.8.54 (last tested: 0.8.54)
+* 1.3.x (last tested: 1.3.4)
+* 1.2.x (last tested: 1.2.1)
+* 1.1.x (last tested: 1.1.5)
+* 1.0.x (last tested: 1.0.15)
+* 0.9.x (last tested: 0.9.4)
+* 0.8.x >= 0.8.54 (last tested: 0.8.54)
 
 Code Repository
 ===============
@@ -4482,7 +4549,7 @@ Bugs and Patches
 Please report bugs or submit patches by:
 
 1. Creating a ticket on the [GitHub Issue Tracker](http://github.com/chaoslawful/lua-nginx-module/issues) (Recommended)
-1. Posting to the [Nginx Mailing List](http://mailman.nginx.org/mailman/listinfo/nginx) and adding `[ngx_lua]` to the mail subject.
+1. Posting to the [OpenResty community](http://wiki.nginx.org/HttpLuaModule#Community).
 
 TODO
 ====
@@ -4503,8 +4570,8 @@ Short Term
 
 Longer Term
 -----------
+* add lightweight thread API (i.e., the `ngx.thread` API) as demonstrated in [this sample code](http://agentzh.org/misc/nginx/lua-thread2.lua).
 * add Lua code automatic time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* add coroutine API back to the Lua user land.
 * add `stat` mode similar to [mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html).
 
 Changes
