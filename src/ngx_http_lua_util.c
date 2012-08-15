@@ -980,6 +980,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     lua_rawget(L, -2);
 
                     next_cc = lua_tothread(L, -1);
+                    if (next_cc == NULL) {
+                        goto no_parent;
+                    }
+
                     lua_pop(L, 2);
 
                     /*
@@ -1043,6 +1047,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 lua_rawget(L, -2);
 
                 next_cc = lua_tothread(L, -1);
+                if (next_cc == NULL) {
+                    goto no_parent;
+                }
+
                 lua_pop(L, 2);
 
                 /*
@@ -1123,6 +1131,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             lua_rawget(L, -2);
 
             next_cc = lua_tothread(L, -1);
+            if (next_cc == NULL) {
+                goto no_parent;
+            }
+
             lua_pop(L, 2);
 
             /*
@@ -1156,6 +1168,20 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     }
 
     return NGX_ERROR;
+
+no_parent:
+    lua_settop(L, 0);
+
+    ngx_http_lua_del_thread(r, L, ctx->cc_ref);
+    ctx->cc_ref = LUA_NOREF;
+
+    ngx_http_lua_request_cleanup(r);
+
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
+                  "user coroutine has no parent");
+
+    return ctx->headers_sent ? NGX_ERROR :
+                    NGX_HTTP_INTERNAL_SERVER_ERROR;
 }
 
 
