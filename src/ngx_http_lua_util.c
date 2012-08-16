@@ -948,21 +948,11 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     ctx->cc_op = NGX_HTTP_LUA_USER_CORO_NOP;
 
                     if (cc == ctx->entry) {
-                        /* entry coroutine can not yield */
-
-                        lua_settop(L, 0);
-
-                        ngx_http_lua_del_thread(r, L, cc_ref);
-                        ctx->cc_ref = LUA_NOREF;
-
-                        ngx_http_lua_request_cleanup(r);
-
-                        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                                      "lua handler aborted: entry coroutine "
-                                      "can not yield");
-
-                        return ctx->headers_sent ? NGX_ERROR :
-                                        NGX_HTTP_INTERNAL_SERVER_ERROR;
+                        /* entry coroutine yielded will be resumed
+                         * immediately */
+                        lua_settop(cc, 0);  /* discard the return values */
+                        nrets = 0;
+                        continue;
                     }
 
                     /* being a user coroutine that has a parent */

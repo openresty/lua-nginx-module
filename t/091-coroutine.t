@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 3);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -413,19 +413,23 @@ dead
 
 
 
-=== TEST 9: entry coroutine call yield
+=== TEST 9: entry coroutine yielded will be resumed immediately
 --- config
     location /lua {
         content_by_lua '
-            coroutine.yield()
-            ngx.say("hello")
+            ngx.say("[", {coroutine.yield()}, "]")
+            ngx.say("[", {coroutine.yield(1, "a")}, "]")
+            ngx.say("done")
         ';
     }
 --- request
 GET /lua
---- error_code: 500
---- error_log
-entry coroutine can not yield
+--- response_body
+[]
+[]
+done
+--- no_error_log
+[error]
 
 
 
