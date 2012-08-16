@@ -344,9 +344,9 @@ GET /lua
             end
 
             local urls = {
-                "www.taobao.com",
-                "www.baidu.com",
-                "www.qq.com"
+                "agentzh.org",
+                "agentzh.com",
+                "openresty.org"
             }
 
             local cfs = {}
@@ -365,9 +365,9 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-successfully connected to: www.taobao.com
-successfully connected to: www.baidu.com
-successfully connected to: www.qq.com
+successfully connected to: agentzh.org
+successfully connected to: agentzh.com
+successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
 [error]
