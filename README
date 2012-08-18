@@ -4589,6 +4589,10 @@ Nginx API for Lua
     Identical to the standard Lua coroutine.status
     (<http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status>) API.
 
+    Note that due to the current implementation, this function will
+    incorrectly return "suspended" for "normal" coroutines. This issue will
+    be addressed in the near future.
+
     This API was first enabled in the "v0.6.0" release.
 
   ndk.set_var.DIRECTIVE
@@ -4713,11 +4717,6 @@ HTTP 1.0 support
     requests, use the -0 option.
 
 Data Sharing within an Nginx Worker
-    NOTE: This mechanism behaves differently when code cache is turned off
-    and should be considered a DIRTY TRICK. Note that backward compatibility
-    is NOT guaranteed and that there may be other undesirable consequences.
-    A new data sharing mechanism will be designed later.
-
     To globally share data among all the requests handled by the same nginx
     worker process, encapsulate the shared data into a Lua module, use the
     Lua "require" builtin to import the module, and then manipulate the
@@ -5005,7 +5004,7 @@ Nginx Compatibility
 
     *   1.3.x (last tested: 1.3.4)
 
-    *   1.2.x (last tested: 1.2.1)
+    *   1.2.x (last tested: 1.2.3)
 
     *   1.1.x (last tested: 1.1.5)
 
@@ -5046,9 +5045,9 @@ Installation
 
     Build the source with this module:
 
-        wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
-        tar -xzvf nginx-1.2.1.tar.gz
-        cd nginx-1.2.1/
+        wget 'http://nginx.org/download/nginx-1.2.3.tar.gz'
+        tar -xzvf nginx-1.2.3.tar.gz
+        cd nginx-1.2.3/
 
         # tell nginx's build system where to find LuaJIT:
         export LUAJIT_LIB=/path/to/luajit/lib
@@ -5093,13 +5092,12 @@ Community
     is for Chinese speakers.
 
 Bugs and Patches
-    Please report bugs or submit patches by:
+    Please submit bug reports, wishlists, or patches by
 
-    1.  Creating a ticket on the GitHub Issue Tracker
-        (<http://github.com/chaoslawful/lua-nginx-module/issues>)
-        (Recommended)
+    1.  creating a ticket on the GitHub Issue Tracker
+        (<http://github.com/chaoslawful/lua-nginx-module/issues>),
 
-    2.  Posting to the OpenResty community.
+    2.  or posting to the OpenResty community.
 
 TODO
   Short Term

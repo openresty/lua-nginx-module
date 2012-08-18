@@ -4134,6 +4134,8 @@ coroutine.status
 
 Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status) API.
 
+Note that due to the current implementation, this function will incorrectly return `"suspended"` for `"normal"` coroutines. This issue will be addressed in the near future.
+
 This API was first enabled in the `v0.6.0` release.
 
 ndk.set_var.DIRECTIVE
@@ -4236,8 +4238,6 @@ the `-0` option.
 
 Data Sharing within an Nginx Worker
 ===================================
-
-**NOTE: This mechanism behaves differently when code cache is turned off and should be considered a DIRTY TRICK. Note that backward compatibility is NOT guaranteed and that there may be other undesirable consequences. A new data sharing mechanism will be designed later.**
 
 To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua `require` builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module. Note however that Lua global variables WILL NOT persist between requests because of the one-coroutine-per-request isolation design.
 
@@ -4464,7 +4464,7 @@ Nginx Compatibility
 The module is compatible with the following versions of Nginx:
 
 * 1.3.x (last tested: 1.3.4)
-* 1.2.x (last tested: 1.2.1)
+* 1.2.x (last tested: 1.2.3)
 * 1.1.x (last tested: 1.1.5)
 * 1.0.x (last tested: 1.0.15)
 * 0.9.x (last tested: 0.9.4)
@@ -4490,9 +4490,9 @@ Alternatively, `ngx_lua` can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.2.1.tar.gz'
-    tar -xzvf nginx-1.2.1.tar.gz
-    cd nginx-1.2.1/
+    wget 'http://nginx.org/download/nginx-1.2.3.tar.gz'
+    tar -xzvf nginx-1.2.3.tar.gz
+    cd nginx-1.2.3/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib
@@ -4546,10 +4546,10 @@ The [openresty](https://groups.google.com/group/openresty) mailing list is for C
 Bugs and Patches
 ================
 
-Please report bugs or submit patches by:
+Please submit bug reports, wishlists, or patches by
 
-1. Creating a ticket on the [GitHub Issue Tracker](http://github.com/chaoslawful/lua-nginx-module/issues) (Recommended)
-1. Posting to the [OpenResty community](http://wiki.nginx.org/HttpLuaModule#Community).
+1. creating a ticket on the [GitHub Issue Tracker](http://github.com/chaoslawful/lua-nginx-module/issues),
+1. or posting to the [OpenResty community](http://wiki.nginx.org/HttpLuaModule#Community).
 
 TODO
 ====
