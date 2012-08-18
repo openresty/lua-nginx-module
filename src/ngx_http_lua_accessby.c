@@ -87,7 +87,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
         dd("setting new ctx: ctx = %p", ctx);
 
-        ctx->cc_ref = LUA_NOREF;
+        ctx->entry_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
@@ -220,16 +220,16 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
-    int                  cc_ref;
+    int                  co_ref;
     ngx_int_t            rc;
-    lua_State           *cc;
+    lua_State           *co;
     ngx_http_lua_ctx_t  *ctx;
     ngx_http_cleanup_t  *cln;
 
     /*  {{{ new coroutine to handle request */
-    cc = ngx_http_lua_new_thread(r, L, &cc_ref);
+    co = ngx_http_lua_new_thread(r, L, &co_ref);
 
-    if (cc == NULL) {
+    if (co == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua: failed to create new coroutine "
                       "to handle request");
@@ -238,16 +238,16 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     /*  move code closure to new coroutine */
-    lua_xmove(L, cc, 1);
+    lua_xmove(L, co, 1);
 
     /*  set closure's env table to new coroutine's globals table */
-    lua_pushvalue(cc, LUA_GLOBALSINDEX);
-    lua_setfenv(cc, -2);
+    lua_pushvalue(co, LUA_GLOBALSINDEX);
+    lua_setfenv(co, -2);
 
     /*  save nginx request in coroutine globals table */
-    lua_pushlightuserdata(cc, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(cc, r);
-    lua_rawset(cc, LUA_GLOBALSINDEX);
+    lua_pushlightuserdata(co, &ngx_http_lua_request_key);
+    lua_pushlightuserdata(co, r);
+    lua_rawset(co, LUA_GLOBALSINDEX);
     /*  }}} */
 
     /*  {{{ initialize request context */
@@ -263,9 +263,9 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->entered_access_phase = 1;
 
-    ctx->entry = cc;
-    ctx->cc = cc;
-    ctx->cc_ref = cc_ref;
+    ctx->entry_co = co;
+    ctx->cur_co = co;
+    ctx->entry_ref = co_ref;
 
     /*  }}} */
 

@@ -150,7 +150,7 @@ ngx_http_lua_coroutine_resume(lua_State *L)
     lua_rawset(mt, -3);
     lua_pop(mt, 1);
 
-    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_RESUME;
+    ctx->co_op = NGX_HTTP_LUA_USER_CORO_RESUME;
 
     /* yield and pass args to main thread, and resume target coroutine from
      * there */
@@ -182,7 +182,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_YIELD;
+    ctx->co_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
     /* yield and pass retvals to main thread,
      * and resume parent coroutine there */
@@ -230,9 +230,9 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     {
         const char buf[] =
             "local create, resume = coroutine.create, coroutine.resume\n"
-            "coroutine.wrap = function(cl)\n"
-               "local cc = create(cl)\n"
-               "return function(...) return select(2, resume(cc, ...)) end\n"
+            "coroutine.wrap = function(f)\n"
+               "local co = create(f)\n"
+               "return function(...) return select(2, resume(co, ...)) end\n"
             "end";
 
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "coroutine.wrap");

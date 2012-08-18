@@ -57,7 +57,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
         dd("setting new ctx: ctx = %p", ctx);
 
-        ctx->cc_ref = LUA_NOREF;
+        ctx->entry_ref = LUA_NOREF;
         ctx->ctx_ref = LUA_NOREF;
 
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
