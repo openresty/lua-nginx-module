@@ -148,3 +148,6 @@ src/method.[ch]
 tre
 src/phase.[ch]
 src/probe.h
+*.plist
+lua
+Makefile

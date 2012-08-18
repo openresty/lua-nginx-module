@@ -22,25 +22,19 @@ static int ngx_http_lua_coroutine_resume(lua_State *L);
 static int ngx_http_lua_coroutine_yield(lua_State *L);
 
 
-int
-ngx_http_lua_resume(lua_State *L, int nargs)
-{
-    if (lua_status(L) == 0 && lua_gettop(L) - nargs == 0) {
-        lua_pushfstring(L, "cannot resume dead coroutine");
-        return LUA_ERRRUN;
-    }
-
-    return lua_resume(L, nargs);
-}
+static char ngx_http_lua_orig_co_status_key;
 
 
 static int
 ngx_http_lua_coroutine_create(lua_State *L)
 {
-    lua_State                     *cr, *ml;
+    lua_State                     *mt;  /* the main thread */
+    lua_State                     *co;  /* new coroutine to be created */
     ngx_http_request_t            *r;
     ngx_http_lua_main_conf_t      *lmcf;
     ngx_http_lua_ctx_t            *ctx;
+
+    /* L is the current thread */
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
                  "Lua function expected");
@@ -64,24 +58,25 @@ ngx_http_lua_coroutine_create(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    ml = lmcf->lua;
+    mt = lmcf->lua;
 
-    /* create new coroutine on main thread, so it always yield to main thread
+    /* create new coroutine on root Lua state, so it always yields
+     * to main Lua thread
      */
-    cr = lua_newthread(ml);
+    co = lua_newthread(mt);
 
-    ngx_http_lua_probe_user_coroutine_create(r, L, cr);
+    ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
     /* make new coroutine share globals of the parent coroutine.
      * NOTE: globals don't have to be separated! */
     lua_pushvalue(L, LUA_GLOBALSINDEX);
-    lua_xmove(L, cr, 1);
-    lua_replace(cr, LUA_GLOBALSINDEX);
+    lua_xmove(L, co, 1);
+    lua_replace(co, LUA_GLOBALSINDEX);
 
-    lua_xmove(ml, L, 1);    /* move coroutine from main L to L */
+    lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
 
     lua_pushvalue(L, 1);    /* copy entry function to top of L*/
-    lua_xmove(L, cr, 1);    /* move entry function from L to cr */
+    lua_xmove(L, co, 1);    /* move entry function from L to co */
 
     return 1;    /* return new coroutine to Lua */
 }
@@ -90,12 +85,15 @@ ngx_http_lua_coroutine_create(lua_State *L)
 static int
 ngx_http_lua_coroutine_resume(lua_State *L)
 {
-    lua_State                   *cr, *ml;
+    ngx_str_t                    status = ngx_null_string;
+    lua_State                   *co, *mt;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    luaL_argcheck(L, lua_isthread(L, 1), 1, "Lua coroutine expected");
+    co = lua_tothread(L, 1);
+
+    luaL_argcheck(L, co, 1, "coroutine expected");
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -115,28 +113,47 @@ ngx_http_lua_coroutine_resume(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_RESUME;
+    lua_pushlightuserdata(L, &ngx_http_lua_orig_co_status_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_pushvalue(L, 1);
+    lua_call(L, 1, 1);
+
+    status.data = (u_char *) lua_tolstring(L, -1, &status.len);
+
+    dd("co status: %s", status.data);
+
+    /* TODO we should reject resuming logically "normal" coroutines here
+     * as well */
+
+    if (status.len != sizeof("suspended") - 1) {
+        lua_pushboolean(L, 0);
+        lua_pushfstring(L, "cannot resume %s coroutine",
+                        status.data ? (char *) status.data : "unknown");
+        return 2;
+    }
+
+    lua_pop(L, 1); /* remove the status string */
+
+    ngx_http_lua_probe_user_coroutine_resume(r, L, co);
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    mt = lmcf->lua;
 
     /* record parent-child relationship */
 
-    cr = lua_tothread(L, 1);
+    ngx_http_lua_get_coroutine_parents(mt);
 
-    ngx_http_lua_probe_user_coroutine_resume(r, L, cr);
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    ml = lmcf->lua;
-
-    ngx_http_lua_get_coroutine_parents(ml);
-
-    lua_pushthread(cr); /* key: child coroutine */
-    lua_xmove(cr, ml, 1);
+    lua_pushthread(co); /* key: child coroutine */
+    lua_xmove(co, mt, 1);
     lua_pushthread(L); /* val: parent coroutine */
-    lua_xmove(L, ml, 1);
-    lua_rawset(ml, -3);
-    lua_pop(ml, 1);
+    lua_xmove(L, mt, 1);
+    lua_rawset(mt, -3);
+    lua_pop(mt, 1);
 
-    /* yield and pass args to main L, and resume target coroutine from there
-     */
+    ctx->cc_op = NGX_HTTP_LUA_USER_CORO_RESUME;
+
+    /* yield and pass args to main thread, and resume target coroutine from
+     * there */
     return lua_yield(L, lua_gettop(L));
 }
 
@@ -167,7 +184,8 @@ ngx_http_lua_coroutine_yield(lua_State *L)
 
     ctx->cc_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
-    /* yield and pass retvals to main L, and resume parent coroutine there */
+    /* yield and pass retvals to main thread,
+     * and resume parent coroutine there */
     return lua_yield(L, lua_gettop(L));
 }
 
@@ -190,6 +208,11 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     /* set status to the old one */
     lua_getfield(L, -1, "status");
     lua_setfield(L, -3, "status");
+
+    /* save coroutine.status to registry */
+    lua_pushlightuserdata(L, &ngx_http_lua_orig_co_status_key);
+    lua_getfield(L, -2, "status");
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
     /* pop the old coroutine */
     lua_pop(L, 1);

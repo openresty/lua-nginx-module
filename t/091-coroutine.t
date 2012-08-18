@@ -176,8 +176,8 @@ successfully connected to: agentzh.org
 successfully connected to: agentzh.com
 successfully connected to: openresty.org
 *** All Done ***
---- error_log
-lua coroutine: runtime error: cannot resume dead coroutine
+--- no_error_log
+[error]
 
 
 
@@ -521,8 +521,8 @@ main true 11 -9
 co-body x y
 main true 10 end
 main false cannot resume dead coroutine
---- error_log
-lua coroutine: runtime error: cannot resume dead coroutine
+--- no_error_log
+[error]
 
 
 
@@ -720,4 +720,127 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of header_filter_by_lua*
+
+
+
+=== TEST 17: resume coroutines from within another one that is not its parent
+--- config
+    location /t {
+        content_by_lua '
+            local print = ngx.say
+
+            local c1, c2
+
+            function f()
+                print("f 1")
+                print(coroutine.resume(c2))
+                print("f 2")
+            end
+
+            function g()
+                print("g 1")
+                -- print(coroutine.resume(c1))
+                print("g 2")
+            end
+
+            c1 = coroutine.create(f)
+            c2 = coroutine.create(g)
+
+            coroutine.resume(c1)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+f 1
+g 1
+g 2
+true
+f 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: infinite recursive calls of coroutine.resume
+--- config
+    location /t {
+        content_by_lua '
+            -- local print = ngx.say
+
+            local c1, c2
+
+            function f()
+                print("f 1")
+                print(coroutine.resume(c2))
+                print("f 2")
+            end
+
+            function g()
+                print("g 1")
+                print(coroutine.resume(c1))
+                print("g 2")
+            end
+
+            c1 = coroutine.create(f)
+            c2 = coroutine.create(g)
+
+            coroutine.resume(c1)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+f 1
+g 1
+g 2
+true
+f 2
+--- no_error_log
+[error]
+--- SKIP
+
+
+
+=== TEST 19: resume running (entry) coroutines
+--- config
+    location /t {
+        content_by_lua '
+            ngx.say(coroutine.status(coroutine.running()))
+            ngx.say(coroutine.resume(coroutine.running()))
+        ';
+    }
+--- request
+GET /t
+--- response_body
+running
+falsecannot resume running coroutine
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: resume running (user) coroutines
+--- config
+    location /t {
+        content_by_lua '
+            local co
+            function f()
+                ngx.say("f: ", coroutine.status(co))
+                ngx.say("f: ", coroutine.resume(co))
+            end
+            co = coroutine.create(f)
+            ngx.say("chunk: ", coroutine.status(co))
+            ngx.say("chunk: ", coroutine.resume(co))
+        ';
+    }
+--- request
+GET /t
+--- response_body
+chunk: suspended
+f: running
+f: falsecannot resume running coroutine
+chunk: true
+--- no_error_log
+[error]
 

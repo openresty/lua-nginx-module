@@ -225,7 +225,7 @@ lua_State *
 ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 {
     int              base;
-    lua_State       *cr;
+    lua_State       *co;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua creating new thread");
@@ -235,22 +235,22 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
 
-    cr = lua_newthread(L);
+    co = lua_newthread(L);
 
-    if (cr) {
+    if (co) {
         /*  {{{ inherit coroutine's globals to main thread's globals table
          *  for print() function will try to find tostring() in current
          *  globals table.
          */
         /*  new globals table for coroutine */
-        ngx_http_lua_create_new_global_table(cr, 0, 0);
+        ngx_http_lua_create_new_global_table(co, 0, 0);
 
-        lua_createtable(cr, 0, 1);
-        lua_pushvalue(cr, LUA_GLOBALSINDEX);
-        lua_setfield(cr, -2, "__index");
-        lua_setmetatable(cr, -2);
+        lua_createtable(co, 0, 1);
+        lua_pushvalue(co, LUA_GLOBALSINDEX);
+        lua_setfield(co, -2, "__index");
+        lua_setmetatable(co, -2);
 
-        lua_replace(cr, LUA_GLOBALSINDEX);
+        lua_replace(co, LUA_GLOBALSINDEX);
         /*  }}} */
 
         *ref = luaL_ref(L, -2);
@@ -265,7 +265,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
      *  in registry */
     lua_pop(L, 1);
 
-    return cr;
+    return co;
 }
 
 
@@ -867,7 +867,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #endif
 
             /*  run code */
-            rv = ngx_http_lua_resume(cc, nrets);
+            rv = lua_resume(cc, nrets);
 
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
