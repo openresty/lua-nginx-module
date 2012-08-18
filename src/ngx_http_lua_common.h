@@ -215,10 +215,11 @@ typedef struct {
     lua_State               *entry_co;  /*  the entry Lua coroutine */
 
 
-    int                      entry_ref; /*  reference to anchor the entry coroutine in
-                                            the lua registry, preventing the
-                                            entry coroutine from beging
-                                            collected by the Lua GC */
+    int                      entry_ref; /*  reference to anchor the entry
+                                            coroutine in the lua registry,
+                                            preventing the entry coroutine
+                                            from beging collected by the
+                                            Lua GC */
 
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
