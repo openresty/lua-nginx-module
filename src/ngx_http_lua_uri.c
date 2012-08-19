@@ -13,29 +13,8 @@ static int ngx_http_lua_ngx_req_set_uri(lua_State *L);
 void
 ngx_http_lua_inject_req_uri_api(ngx_log_t *log, lua_State *L)
 {
-#if 1
-    ngx_int_t         rc;
-#endif
-
     lua_pushcfunction(L, ngx_http_lua_ngx_req_set_uri);
-    lua_setfield(L, -2, "_set_uri");
-
-#if 1
-    {
-        const char    buf[] = "ngx.req._set_uri(...) ngx._check_aborted()";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.req.set_uri");
-    }
-
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx.req.set_uri(): %i",
-                      rc);
-
-    } else {
-        lua_setfield(L, -2, "set_uri");
-    }
-#endif
+    lua_setfield(L, -2, "set_uri");
 }
 
 

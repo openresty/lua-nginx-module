@@ -441,7 +441,7 @@ foo: /bar?hello
 --- request
     GET /foo?world
 --- response_body
-err: [string "ngx.req.set_uri"]:1: attempt to use zero-length uri
+err: attempt to use zero-length uri
 foo: /foo?world
 
 
@@ -524,7 +524,7 @@ hello
 --- request
     GET /foo?world
 --- response_body
-err: [string "ngx.req.set_uri"]:1: API disabled in the context of access_by_lua*
+err: API disabled in the context of access_by_lua*
 
 
 
@@ -563,7 +563,7 @@ uri: /bar
 --- request
     GET /foo?world
 --- response_body
-err: [string "ngx.req.set_uri"]:1: API disabled in the context of content_by_lua*
+err: API disabled in the context of content_by_lua*
 
 
 
@@ -603,7 +603,7 @@ uri: /bar
 --- request
     GET /foo?world
 --- response_body
-err: [string "ngx.req.set_uri"]:1: API disabled in the context of set_by_lua*
+err: API disabled in the context of set_by_lua*
 
 
 

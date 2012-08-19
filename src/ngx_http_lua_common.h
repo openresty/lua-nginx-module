@@ -24,11 +24,6 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
-#define NGX_HTTP_LUA_CHECK_ABORTED(L, ctx) \
-        if (ctx && ctx->aborted) { \
-            return luaL_error(L, "coroutine aborted"); \
-        }
-
 /* Nginx HTTP Lua Inline tag prefix */
 
 #define NGX_HTTP_LUA_INLINE_TAG "nhli_"
@@ -300,7 +295,6 @@ typedef struct {
     unsigned         udp_socket_busy:1;  /* for UDP */
     unsigned         udp_socket_ready:1; /* for UDP */
 
-    unsigned         aborted:1;
     unsigned         buffering:1;
 
 } ngx_http_lua_ctx_t;

@@ -15,51 +15,15 @@ static int ngx_http_lua_ngx_exit(lua_State *L);
 void
 ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
 {
-    ngx_int_t         rc;
-
     /* ngx.redirect */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
-    lua_setfield(L, -2, "_redirect");
-
-#if 1
-    {
-        const char    buf[] = "ngx._redirect(...) ngx._check_aborted()";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.redirect");
-    }
-
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx.redirect(): %i",
-                      rc);
-
-    } else {
-        lua_setfield(L, -2, "redirect");
-    }
-#endif
+    lua_setfield(L, -2, "redirect");
 
     /* ngx.exec */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exec);
-    lua_setfield(L, -2, "_exec");
-
-#if 1
-    {
-        const char    buf[] = "ngx._exec(...) ngx._check_aborted()";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.exec");
-    }
-
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx.exec(): %i",
-                      rc);
-
-    } else {
-        lua_setfield(L, -2, "exec");
-    }
-#endif
+    lua_setfield(L, -2, "exec");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
     lua_setfield(L, -2, "throw_error"); /* deprecated */
@@ -67,24 +31,7 @@ ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
     /* ngx.exit */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
-    lua_setfield(L, -2, "_exit");
-
-#if 1
-    {
-        const char    buf[] = "ngx._exit(...) ngx._check_aborted()";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.exit");
-    }
-
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_CRIT, log, 0,
-                      "failed to load Lua code for ngx.exit(): %i",
-                      rc);
-
-    } else {
-        lua_setfield(L, -2, "exit");
-    }
-#endif
+    lua_setfield(L, -2, "exit");
 }
 
 

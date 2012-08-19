@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 89
+ngx: 83
 --- no_error_log
 [error]
 
@@ -56,7 +56,7 @@ ngx: 89
 --- request
 GET /test
 --- response_body
-89
+83
 --- no_error_log
 [error]
 
@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 89
+n = 83
 --- no_error_log
 [error]
 
@@ -124,7 +124,7 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 21
+n = 20
 --- no_error_log
 [error]
 
@@ -146,7 +146,7 @@ n = 21
 --- request
 GET /test
 --- response_body
-n = 21
+n = 20
 --- no_error_log
 [error]
 
@@ -173,7 +173,7 @@ n = 21
 --- request
 GET /test
 --- response_body
-n = 21
+n = 20
 --- no_error_log
 [error]
 
@@ -301,5 +301,5 @@ GET /t
 --- response_body_like: 404 Not Found
 --- error_code: 404
 --- error_log
-ngx. entry count: 89
+ngx. entry count: 83
 

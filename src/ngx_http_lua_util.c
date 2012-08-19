@@ -62,7 +62,6 @@ static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int cc_ref);
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int cc_ref);
-static int ngx_http_lua_ngx_check_aborted(lua_State *L);
 static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *cc);
 static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
@@ -586,9 +585,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 89 /* nrec */);    /* ngx.* */
-
-    ngx_http_lua_inject_internal_utils(cf->log, L);
+    lua_createtable(L, 0 /* narr */, 83 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -722,8 +719,6 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->sr_statuses = NULL;
     ctx->sr_headers = NULL;
     ctx->sr_bodies = NULL;
-
-    ctx->aborted = 0;
 }
 
 
@@ -1874,7 +1869,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 21 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 20 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
 
@@ -2366,88 +2361,6 @@ failed:
     of->err = ngx_errno;
 
     return NGX_ERROR;
-}
-
-
-void
-ngx_http_lua_inject_internal_utils(ngx_log_t *log, lua_State *L)
-{
-    int         rc;
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_check_aborted);
-    lua_setfield(L, -2, "_check_aborted"); /* deprecated */
-
-    /* override the default pcall */
-
-    lua_getglobal(L, "pcall");
-    lua_setfield(L, -2, "_pcall");
-
-    {
-        const char    buf[] = "local ret = {ngx._pcall(...)} "
-                              "ngx._check_aborted() return unpack(ret)";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua pcall");
-    }
-
-    if (rc != 0) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to load Lua code for pcall(): %d: %s",
-                      rc, lua_tostring(L, -1));
-
-        lua_pop(L, 1);
-
-    } else {
-        lua_setglobal(L, "pcall");
-    }
-
-    /* override the default xpcall */
-
-    lua_getglobal(L, "xpcall");
-    lua_setfield(L, -2, "_xpcall");
-
-    {
-        const char    buf[] = "local ret = {ngx._xpcall(...)} "
-                              "ngx._check_aborted() return unpack(ret)";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx_lua xpcall");
-    }
-
-    if (rc != 0) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to load Lua code for xpcall(): %d: %s",
-                      rc, lua_tostring(L, -1));
-
-        lua_pop(L, 1);
-
-    } else {
-        lua_setglobal(L, "xpcall");
-    }
-}
-
-
-static int
-ngx_http_lua_ngx_check_aborted(lua_State *L)
-{
-    ngx_http_request_t          *r;
-    ngx_http_lua_ctx_t          *ctx;
-
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return 0;
-    }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        return 0;
-    }
-
-    NGX_HTTP_LUA_CHECK_ABORTED(L, ctx);
-
-    return 0;
 }
 
 
