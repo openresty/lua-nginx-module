@@ -286,7 +286,6 @@ typedef struct {
 
     /* whether it has run post_subrequest */
     unsigned         run_post_subrequest:1;
-    unsigned         req_header_cached:1;
 
     unsigned         waiting_flush:1;
 
