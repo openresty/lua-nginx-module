@@ -591,7 +591,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    L = lctx->cc;
+    L = lctx->cur_co;
 
     waiting = u->waiting;
 

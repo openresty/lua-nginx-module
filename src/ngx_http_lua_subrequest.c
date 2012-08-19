@@ -474,7 +474,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
          *      sr_ctx->free = NULL
          */
 
-        sr_ctx->cc_ref = LUA_NOREF;
+        sr_ctx->entry_ref = LUA_NOREF;
         sr_ctx->ctx_ref = LUA_NOREF;
 
         sr_ctx->capture = 1;
@@ -1034,7 +1034,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx)
 {
     ngx_uint_t                   index;
-    lua_State                   *cc;
+    lua_State                   *co;
     ngx_str_t                   *body_str;
     ngx_table_elt_t             *header;
     ngx_list_part_t             *part;
@@ -1053,21 +1053,21 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                 (int) ctx->waiting,
                 (int) r->uri.len, r->uri.data);
 
-        cc = ctx->cc;
+        co = ctx->cur_co;
 
         /*  {{{ construct ret value */
-        lua_newtable(cc);
+        lua_newtable(co);
 
         /*  copy captured status */
-        lua_pushinteger(cc, ctx->sr_statuses[index]);
-        lua_setfield(cc, -2, "status");
+        lua_pushinteger(co, ctx->sr_statuses[index]);
+        lua_setfield(co, -2, "status");
 
         /*  copy captured body */
 
         body_str = &ctx->sr_bodies[index];
 
-        lua_pushlstring(cc, (char *) body_str->data, body_str->len);
-        lua_setfield(cc, -2, "body");
+        lua_pushlstring(co, (char *) body_str->data, body_str->len);
+        lua_setfield(co, -2, "body");
 
         if (body_str->data) {
             dd("free body buffer ASAP");
@@ -1076,7 +1076,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
         /* copy captured headers */
 
-        lua_newtable(cc); /* res.header */
+        lua_newtable(co); /* res.header */
 
         sr_headers = ctx->sr_headers[index];
 
@@ -1111,77 +1111,77 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             dd("pushing sr header %.*s", (int) header[i].key.len,
                     header[i].key.data);
 
-            lua_pushlstring(cc, (char *) header[i].key.data,
+            lua_pushlstring(co, (char *) header[i].key.data,
                     header[i].key.len); /* header key */
-            lua_pushvalue(cc, -1); /* stack: table key key */
+            lua_pushvalue(co, -1); /* stack: table key key */
 
             /* check if header already exists */
-            lua_rawget(cc, -3); /* stack: table key value */
+            lua_rawget(co, -3); /* stack: table key value */
 
-            if (lua_isnil(cc, -1)) {
-                lua_pop(cc, 1); /* stack: table key */
+            if (lua_isnil(co, -1)) {
+                lua_pop(co, 1); /* stack: table key */
 
-                lua_pushlstring(cc, (char *) header[i].value.data,
+                lua_pushlstring(co, (char *) header[i].value.data,
                         header[i].value.len); /* stack: table key value */
 
-                lua_rawset(cc, -3); /* stack: table */
+                lua_rawset(co, -3); /* stack: table */
 
             } else {
 
-                if (!lua_istable(cc, -1)) { /* already inserted one value */
-                    lua_createtable(cc, 4, 0);
+                if (!lua_istable(co, -1)) { /* already inserted one value */
+                    lua_createtable(co, 4, 0);
                         /* stack: table key value table */
 
-                    lua_insert(cc, -2); /* stack: table key table value */
-                    lua_rawseti(cc, -2, 1); /* stack: table key table */
+                    lua_insert(co, -2); /* stack: table key table value */
+                    lua_rawseti(co, -2, 1); /* stack: table key table */
 
-                    lua_pushlstring(cc, (char *) header[i].value.data,
+                    lua_pushlstring(co, (char *) header[i].value.data,
                             header[i].value.len);
                         /* stack: table key table value */
 
-                    lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1);
+                    lua_rawseti(co, -2, lua_objlen(co, -2) + 1);
                         /* stack: table key table */
 
-                    lua_rawset(cc, -3); /* stack: table */
+                    lua_rawset(co, -3); /* stack: table */
 
                 } else {
-                    lua_pushlstring(cc, (char *) header[i].value.data,
+                    lua_pushlstring(co, (char *) header[i].value.data,
                             header[i].value.len);
                         /* stack: table key table value */
 
-                    lua_rawseti(cc, -2, lua_objlen(cc, -2) + 1);
+                    lua_rawseti(co, -2, lua_objlen(co, -2) + 1);
                         /* stack: table key table */
 
-                    lua_pop(cc, 2); /* stack: table */
+                    lua_pop(co, 2); /* stack: table */
                 }
             }
         }
 
         if (sr_headers->content_type.len) {
-            lua_pushliteral(cc, "Content-Type"); /* header key */
-            lua_pushlstring(cc, (char *) sr_headers->content_type.data,
+            lua_pushliteral(co, "Content-Type"); /* header key */
+            lua_pushlstring(co, (char *) sr_headers->content_type.data,
                     sr_headers->content_type.len); /* head key value */
-            lua_rawset(cc, -3); /* head */
+            lua_rawset(co, -3); /* head */
         }
 
         if (sr_headers->content_length == NULL
             && sr_headers->content_length_n >= 0)
         {
-            lua_pushliteral(cc, "Content-Length"); /* header key */
+            lua_pushliteral(co, "Content-Length"); /* header key */
 
-            lua_pushnumber(cc, sr_headers->content_length_n);
+            lua_pushnumber(co, sr_headers->content_length_n);
                 /* head key value */
 
-            lua_rawset(cc, -3); /* head */
+            lua_rawset(co, -3); /* head */
         }
 
         /* to work-around an issue in ngx_http_static_module
          * (github issue #41) */
         if (sr_headers->location && sr_headers->location->value.len) {
-            lua_pushliteral(cc, "Location"); /* header key */
-            lua_pushlstring(cc, (char *) sr_headers->location->value.data,
+            lua_pushliteral(co, "Location"); /* header key */
+            lua_pushlstring(co, (char *) sr_headers->location->value.data,
                     sr_headers->location->value.len); /* head key value */
-            lua_rawset(cc, -3); /* head */
+            lua_rawset(co, -3); /* head */
         }
 
         if (sr_headers->last_modified_time != -1) {
@@ -1200,12 +1200,12 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         {
             (void) ngx_http_time(buf, sr_headers->last_modified_time);
 
-            lua_pushliteral(cc, "Last-Modified"); /* header key */
-            lua_pushlstring(cc, (char *) buf, sizeof(buf)); /* head key value */
-            lua_rawset(cc, -3); /* head */
+            lua_pushliteral(co, "Last-Modified"); /* header key */
+            lua_pushlstring(co, (char *) buf, sizeof(buf)); /* head key value */
+            lua_rawset(co, -3); /* head */
         }
 
-        lua_setfield(cc, -2, "header");
+        lua_setfield(co, -2, "header");
 
         /*  }}} */
     }

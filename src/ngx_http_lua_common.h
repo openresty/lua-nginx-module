@@ -203,17 +203,18 @@ typedef struct {
                                            (or running phase) for the current
                                            Lua chunk */
 
-    lua_State               *cc;        /*  the current running Lua coroutine,
+    lua_State               *cur_co;    /*  the current running Lua coroutine,
                                             not necessarily to be the
                                             request's entry coroutine */
 
-    lua_State               *entry;     /*  the entry Lua coroutine */
+    lua_State               *entry_co;  /*  the entry Lua coroutine */
 
 
-    int                      cc_ref;    /*  reference to anchor coroutine in
-                                            the lua registry. it always
-                                            ref to the entry coroutine of the
-                                            request */
+    int                      entry_ref; /*  reference to anchor the entry
+                                            coroutine in the lua registry,
+                                            preventing the entry coroutine
+                                            from beging collected by the
+                                            Lua GC */
 
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
@@ -252,7 +253,7 @@ typedef struct {
 
     ngx_event_t      sleep;      /* used for ngx.sleep */
 
-    ngx_http_lua_user_coro_op_t   cc_op:2; /*  coroutine API operation */
+    ngx_http_lua_user_coro_op_t   co_op:2; /*  coroutine API operation */
 
     unsigned         exited:1;
 
