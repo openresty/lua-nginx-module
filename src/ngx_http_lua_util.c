@@ -1338,6 +1338,13 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
                 return NGX_DONE;
             }
+
+        } else {
+#if 1
+            if (wev->timer_set) {
+                ngx_del_timer(wev);
+            }
+#endif
         }
     }
 
