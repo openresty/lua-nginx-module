@@ -1,9 +1,9 @@
 provider nginx_lua {
     /* lua_State *L */
-    probe http__lua__register__preload__package(void *L, char *pkg);
+    probe http__lua__register__preload__package(void *L, u_char *pkg);
 
     probe http__lua__req__socket__consume__preread(ngx_http_request_t *r,
-            char *data, size_t len);
+            u_char *data, size_t len);
 
     /* lua_State *parent, lua_State *child */
     probe http__lua__user__coroutine__create(ngx_http_request_t *r,
@@ -15,15 +15,15 @@ provider nginx_lua {
 
     /* ngx_http_lua_socket_tcp_upstream_t *u */
     probe http__lua__socket__tcp__send__start(ngx_http_request_t *r,
-            void *u, char *data, size_t len);
+            void *u, u_char *data, size_t len);
 
     /* ngx_http_lua_socket_tcp_upstream_t *u */
     probe http__lua__socket__tcp__receive__done(ngx_http_request_t *r,
-            void *u, char *data, size_t len);
+            void *u, u_char *data, size_t len);
 
     /* ngx_http_lua_socket_tcp_upstream_t *u */
     probe http__lua__socket__tcp__setkeepalive__buf__unread(
-            ngx_http_request_t *r, void *u, char *data, size_t len);
+            ngx_http_request_t *r, void *u, u_char *data, size_t len);
 };
 
 

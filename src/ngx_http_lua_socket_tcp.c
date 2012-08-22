@@ -1366,7 +1366,6 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                 }
 
                 ngx_http_lua_probe_req_socket_consume_preread(r,
-                                                              (char *)
                                                               r->header_in->pos,
                                                               size);
 
@@ -3516,7 +3515,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
 
     if (!u->bufs_in) {
         lua_pushliteral(L, "");
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, "", 0);
+        ngx_http_lua_probe_socket_tcp_receive_done(r, u, (u_char *) "", 0);
         return NGX_OK;
     }
 
@@ -3542,7 +3541,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     if (size == 0) {
         lua_pushliteral(L, "");
 
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, "", 0);
+        ngx_http_lua_probe_socket_tcp_receive_done(r, u, (u_char *) "", 0);
 
         goto done;
     }

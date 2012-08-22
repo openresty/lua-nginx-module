@@ -81,7 +81,7 @@ typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
 
 
 typedef struct {
-    const char          *package;
+    u_char              *package;
     lua_CFunction        loader;
 } ngx_http_lua_preload_hook_t;
 
