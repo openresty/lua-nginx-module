@@ -794,8 +794,11 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* init or reinit the ngx_output_chain() and ngx_chain_writer() contexts */
 
+#if 0
     u->writer.out = NULL;
     u->writer.last = &u->writer.out;
+#endif
+
     u->writer.connection = c;
     u->writer.limit = 0;
     u->request_sent = 0;
@@ -1569,6 +1572,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     u->ft_type = 0;
 
     /* mimic ngx_http_upstream_init_request here */
+
+#if 1
+    u->writer.out = NULL;
+    u->writer.last = &u->writer.out;
+#endif
 
     if (u->output.pool == NULL) {
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
@@ -3286,8 +3294,11 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
         u->reused = item->reused + 1;
 
+#if 0
         u->writer.out = NULL;
         u->writer.last = &u->writer.out;
+#endif
+
         u->writer.connection = c;
         u->writer.limit = 0;
         u->request_sent = 0;

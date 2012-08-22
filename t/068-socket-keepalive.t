@@ -5,14 +5,14 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 9);
+plan tests => repeat_each() * (blocks() * 5 + 7);
 
 our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
-#$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
+$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
 
 $ENV{LUA_PATH} ||=
     '/usr/local/openresty-debug/lualib/?.lua;/usr/local/openresty/lualib/?.lua;;';
@@ -1343,4 +1343,119 @@ GET /t
 --- error_code: 500
 --- error_log
 bad argument #3 to 'connect' (bad "pool" option type: boolean)
+
+
+
+=== TEST 22: bug in send(): clear the chain writer ctx
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        set $port $TEST_NGINX_REDIS_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("127.0.0.1", port)
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    local bytes, err = sock:send({})
+    if err then
+        ngx.say("failed to send empty request: ", err)
+        return
+    end
+
+    local req = "*2\r\n$3\r\nget\r\n$3\r\ndog\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+
+    local ok, err = sock:setkeepalive()
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+
+    ngx.say("done")
+end
+--- request
+GET /t
+--- stap2
+global active
+M(http-lua-socket-tcp-send-start) {
+    active = 1
+    printf("send [%s] %d\n", text_str(user_string_n($arg3, $arg4)), $arg4)
+}
+M(http-lua-socket-tcp-receive-done) {
+    printf("receive [%s]\n", text_str(user_string_n($arg3, $arg4)))
+}
+F(ngx_output_chain) {
+    #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
+    #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
+    printf("output chain: %s\n", ngx_chain_dump($in))
+}
+F(ngx_linux_sendfile_chain) {
+    printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
+}
+F(ngx_chain_writer) {
+    printf("chain writer ctx out: %p\n", $data)
+    printf("nginx chain writer: %s\n", ngx_chain_dump($in))
+}
+F(ngx_http_lua_socket_tcp_setkeepalive) {
+    delete active
+}
+M(http-lua-socket-tcp-setkeepalive-buf-unread) {
+    printf("setkeepalive unread: [%s]\n", text_str(user_string_n($arg3, $arg4)))
+}
+probe syscall.recvfrom {
+    if (active && pid() == target()) {
+        printf("recvfrom(%s)", argstr)
+    }
+}
+probe syscall.recvfrom.return {
+    if (active && pid() == target()) {
+        printf(" = %s, data [%s]\n", retstr, text_str(user_string_n($ubuf, $size)))
+    }
+}
+probe syscall.writev {
+    if (active && pid() == target()) {
+        printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
+        /*
+        for (i = 0; i < $vlen; i++) {
+            printf(" %p [%s]", $vec[i]->iov_base, text_str(user_string_n($vec[i]->iov_base, $vec[i]->iov_len)))
+        }
+        */
+    }
+}
+probe syscall.writev.return {
+    if (active && pid() == target()) {
+        printf(" = %s\n", retstr)
+    }
+}
+--- response_body
+received: $-1
+done
+--- no_error_log
+[error]
 
