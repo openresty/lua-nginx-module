@@ -1588,6 +1588,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     u->waiting = 0;
 #endif
 
+    ngx_http_lua_probe_socket_tcp_send_start(r, u, b->pos, len);
+
     rc = ngx_http_lua_socket_send(r, u);
 
     dd("socket send returned %d", (int) rc);
@@ -3017,9 +3019,17 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         return 2;
     }
 
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
     b = &u->buffer;
 
     if (b->start && ngx_buf_size(b)) {
+        ngx_http_lua_probe_socket_tcp_setkeepalive_buf_unread(r, u, b->pos,
+                                                              b->last - b->pos);
+
         lua_pushnil(L);
         lua_pushliteral(L, "unread data in buffer");
         return 2;
@@ -3053,11 +3063,6 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     lua_pop(L, 1);
 
     /* stack: obj timeout? size? cache key */
-
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -3500,6 +3505,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
 
     if (!u->bufs_in) {
         lua_pushliteral(L, "");
+        ngx_http_lua_probe_socket_tcp_receive_done(r, u, "", 0);
         return NGX_OK;
     }
 
@@ -3525,15 +3531,20 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     if (size == 0) {
         lua_pushliteral(L, "");
 
+        ngx_http_lua_probe_socket_tcp_receive_done(r, u, "", 0);
+
         goto done;
     }
 
     if (nbufs == 1) {
         b = u->buf_in->buf;
-        lua_pushlstring(L, (char *) b->pos, b->last - b->pos);
 
-        dd("copying input data chunk from %p: \"%.*s\"", u->buf_in,
-            (int) (b->last - b->pos), b->pos);
+        lua_pushlstring(L, (char *) b->pos, size);
+
+        dd("copying input data chunk from %p: \"%.*s\"", u->buf_in, (int) size,
+                b->pos);
+
+        ngx_http_lua_probe_socket_tcp_receive_done(r, u, b->pos, size);
 
         goto done;
     }
@@ -3557,6 +3568,8 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     }
 
     lua_pushlstring(L, (char *) p, size);
+
+    ngx_http_lua_probe_socket_tcp_receive_done(r, u, p, size);
 
     ngx_pfree(r->pool, p);
 
