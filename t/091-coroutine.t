@@ -371,6 +371,7 @@ successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
