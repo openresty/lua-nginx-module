@@ -1079,3 +1079,56 @@ GET /t
 nil nil
 nil nil
 
+
+
+=== TEST 45: flush_expires
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", "x", 1)
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 100)
+
+            ngx.sleep(2)
+
+            local num = dogs:flush_expired()
+            ngx.say(num)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+1
+
+
+
+=== TEST 46: flush_expires with number
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+
+            for i=1,100 do
+                dogs:set(tostring(i), "x", 1)
+            end
+
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 100)
+
+            ngx.sleep(2)
+
+            local num = dogs:flush_expired(42)
+            ngx.say(num)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+42
+
+
