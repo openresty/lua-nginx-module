@@ -22,6 +22,7 @@ static int ngx_http_lua_shdict_replace(lua_State *L);
 static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
+static int ngx_http_lua_shdict_flush_expired(lua_State *L);
 
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
@@ -280,7 +281,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 8 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 9 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
@@ -302,6 +303,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
         lua_setfield(L, -2, "flush_all");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
+        lua_setfield(L, -2, "flush_expired");
 
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
@@ -530,6 +534,86 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return 0;
+}
+
+
+static int
+ngx_http_lua_shdict_flush_expired(lua_State *L)
+{
+    ngx_queue_t                 *q, *prev;
+    ngx_http_lua_shdict_node_t  *sd;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_shm_zone_t              *zone;
+    ngx_time_t                  *tp;
+    int                          freed = 0;
+    int                          attempts = 0;
+    ngx_rbtree_node_t           *node;
+    uint64_t                     now;
+    int                          n;
+
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting 1 or 2 argument(s), "
+                "but saw %d", n);
+    }
+
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+
+    zone = lua_touserdata(L, 1);
+    if (zone == NULL) {
+        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+    }
+
+    if (n == 2) {
+        attempts = luaL_checknumber(L, 2);
+    }
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    if (ngx_queue_empty(&ctx->sh->queue)) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        lua_pushnumber(L, 0);
+        return 1;
+    }
+
+    tp = ngx_timeofday();
+
+    now = (uint64_t) tp->sec * 1000 + tp->msec;
+
+    q = ngx_queue_last(&ctx->sh->queue);
+
+    while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
+        prev = ngx_queue_prev(q);
+
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+
+        if (sd->expires != 0 && sd->expires <= now) {
+            ngx_queue_remove(q);
+
+            node = (ngx_rbtree_node_t *)
+                ((u_char *) sd - offsetof(ngx_rbtree_node_t, color));
+
+            ngx_rbtree_delete(&ctx->sh->rbtree, node);
+
+            ngx_slab_free_locked(ctx->shpool, node);
+
+            freed++;
+
+            if (attempts && freed == attempts) {
+                break;
+            }
+        }
+
+        q = prev;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    lua_pushnumber(L, freed);
+    return 1;
 }
 
 

@@ -279,7 +279,7 @@ n = 4
 --- request
 GET /test
 --- response_body
-n = 8
+n = 9
 --- no_error_log
 [error]
 
