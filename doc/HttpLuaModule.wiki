@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.6.2] released on 22 August 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.6.3] released on 25 August 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3240,6 +3240,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.delete|delete]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
+* [[#ngx.shared.DICT.flush_expired|flush_expired]]
 
 Here is an example:
 
@@ -3422,7 +3423,18 @@ Flushes out all the items in the dictionary.
 
 This feature was first introduced in the <code>v0.5.0rc17</code> release.
 
-See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+See also [[#ngx.shared.DICT.flush_expired|ngx.shared.DICT.flush_expired]] and [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.flush_expired ==
+'''syntax:''' ''flushed = ngx.shared.DICT:flush_expired(max_count?)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Flushes out the expired items in the dictionary, up to the maximal number specified by the optional <code>max_count</code> argument. When the <code>max_count</code> argument is given <code>0</code> or not given at all, then it means unlimited. Returns the number of items that have actually been flushed.
+
+This feature was first introduced in the <code>v0.6.3</code> release.
+
+See also [[#ngx.shared.DICT.flush_all|ngx.shared.DICT.flush_all]] and [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.socket.udp ==
 '''syntax:''' ''udpsock = ngx.socket.udp()''
@@ -4482,6 +4494,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/agentzh/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket.
 * [http://github.com/agentzh/lua-resty-mysql lua-resty-mysql] library based on ngx_lua cosocket.
 * [http://github.com/agentzh/lua-resty-upload lua-resty-upload] library based on ngx_lua cosocket.
+* [http://github.com/agentzh/lua-resty-dns lua-resty-dns] library based on ngx_lua cosocket.
 * [http://github.com/agentzh/lua-resty-string lua-resty-string] library based on [http://luajit.org/ext_ffi.html LuaJIT FFI].
 * [http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs Routing requests to different MySQL queries based on URI arguments]
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
