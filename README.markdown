@@ -4105,8 +4105,6 @@ Resumes the executation of a user Lua coroutine object previously yielded or jus
 
 Just behaves like the standard Lua [coroutine.resume](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume) API, but works in the context of the Lua coroutines created automatically by this Nginx module.
 
-Due to the limitation in the current implementation, there is no protection against resuming a user coroutine in the `normal` state. This issue will be addressed in the near future.
-
 This API was first introduced in the `v0.6.0` release.
 
 coroutine.yield
@@ -4148,8 +4146,6 @@ coroutine.status
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status) API.
-
-Note that due to the current implementation, this function will incorrectly return `"suspended"` for `"normal"` coroutines. This issue will be addressed in the near future.
 
 This API was first enabled in the `v0.6.0` release.
 
