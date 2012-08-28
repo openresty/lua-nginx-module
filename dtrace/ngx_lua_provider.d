@@ -6,6 +6,10 @@ provider nginx_lua {
                                              void *parent, void *child);
     probe http__lua__user__coroutine__resume(ngx_http_request_t *r,
                                              void *parent, void *child);
+    probe http__lua__user__coroutine__yield(ngx_http_request_t *r,
+                                            void *parent, void *child);
+    probe http__lua__entry__coroutine__yield(ngx_http_request_t *r,
+                                             void *L);
 };
 
 

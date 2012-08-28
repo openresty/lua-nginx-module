@@ -589,4 +589,13 @@ fun:ngx_http_lua_ngx_echo
    fun:ngx_palloc_block
    fun:ngx_palloc
 }
-
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   sendmsg(msg.msg_iov[0])
+   fun:__sendmsg_nocancel
+   fun:ngx_write_channel
+   fun:ngx_signal_worker_processes
+   fun:ngx_master_process_cycle
+   fun:main
+}

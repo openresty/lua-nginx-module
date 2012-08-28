@@ -22,6 +22,7 @@ our $LuaCpath = $ENV{LUA_CPATH} ||
     '/usr/local/openresty-debug/lualib/?.so;/usr/local/openresty/lualib/?.so;;';
 
 no_long_string();
+
 run_tests();
 
 __DATA__
@@ -72,12 +73,15 @@ qq{
             local loop = r2:pubsub({ subscribe = "foo" })
             local msg, abort = loop()
             ngx.say("msg type: ", type(msg))
+            ngx.say("abort: ", type(abort))
+
             if msg then
                 ngx.say("msg: ", cjson.encode(msg))
             end
+
             for i = 1, 3 do
                 r1:publish("foo", "test " .. i)
-                local msg, abort = loop()
+                msg, abort = loop()
                 if msg then
                     ngx.say("msg: ", cjson.encode(msg))
                 end
@@ -90,10 +94,86 @@ qq{
             ngx.say("msg type: ", type(msg))
         ';
     }
+--- stap2
+global ids, cur
+
+function gen_id(k) {
+    if (ids[k]) return ids[k]
+    ids[k] = ++cur
+    return cur
+}
+
+F(ngx_http_handler) {
+    delete ids
+    cur = 0
+}
+
+/*
+probe process("/usr/local/openresty-debug/luajit/lib/libluajit-5.1.so.2").function("lua_yield") {
+    id = gen_id($L)
+    printf("raw lua yield %d\n", id)
+    #print_ubacktrace()
+}
+
+probe process("/usr/local/openresty-debug/luajit/lib/libluajit-5.1.so.2").function("lua_resume") {
+    id = gen_id($L)
+    printf("raw lua resume %d\n", id)
+}
+*/
+
+/*
+F(ngx_http_lua_run_thread) {
+    id = gen_id($ctx->cur_co)
+    printf("run thread %d\n", id)
+}
+*/
+
+M(http-lua-user-coroutine-resume) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("resume %x in %x\n", c, p)
+}
+
+M(http-lua-entry-coroutine-yield) {
+    println("entry coroutine yield")
+}
+
+F(ngx_http_lua_coroutine_yield) {
+    printf("yield %x\n", gen_id($L))
+}
+
+/*
+F(ngx_http_lua_coroutine_resume) {
+    printf("resume %x\n", gen_id($L))
+}
+*/
+
+M(http-lua-user-coroutine-yield) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("yield %x in %x\n", c, p)
+}
+
+F(ngx_http_lua_atpanic) {
+    printf("lua atpanic(%d):", gen_id($L))
+    print_ubacktrace();
+}
+
+M(http-lua-user-coroutine-create) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("create %x in %x\n", c, p)
+}
+
+F(ngx_http_lua_ngx_exec) { println("exec") }
+
+F(ngx_http_lua_ngx_exit) { println("exit") }
+
 --- request
     GET /test
 --- response_body
 msg type: table
+abort: function
 msg: {"payload":1,"channel":"foo","kind":"subscribe"}
 msg: {"payload":"test 1","channel":"foo","kind":"message"}
 abort: function

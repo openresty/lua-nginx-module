@@ -16,6 +16,8 @@ $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 #no_diff();
 #no_long_string();
+#no_shuffle();
+
 run_tests();
 
 __DATA__
@@ -808,7 +810,7 @@ bar
 --- http_config
     upstream memc {
         server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
-        keepalive 100 single;
+        keepalive 100;
     }
 --- config
     location /memc {

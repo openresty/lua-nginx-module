@@ -72,6 +72,8 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->entry_co = co;
     ctx->cur_co = co;
+    ctx->cur_co_ctx = &ctx->entry_co_ctx;
+    ctx->cur_co_ctx->co = co;
     ctx->entry_ref = co_ref;
 
     /*  {{{ register request cleanup hooks */

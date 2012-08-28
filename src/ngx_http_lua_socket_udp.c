@@ -149,6 +149,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_udp_connection_t        *uc;
     int                          timeout;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     ngx_http_lua_socket_udp_upstream_t      *u;
 
@@ -371,9 +372,11 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
 
-    ctx->data = u;
-    ctx->udp_socket_busy = 1;
-    ctx->udp_socket_ready = 0;
+    coctx = ctx->cur_co_ctx;
+
+    coctx->data = u;
+    coctx->udp_socket_busy = 1;
+    coctx->udp_socket_ready = 0;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -389,6 +392,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     ngx_http_request_t                  *r;
     ngx_http_upstream_resolved_t        *ur;
     ngx_http_lua_ctx_t                  *lctx;
+    ngx_http_lua_co_ctx_t               *coctx;
     lua_State                           *L;
     ngx_http_lua_socket_udp_upstream_t  *u;
     u_char                              *p;
@@ -503,8 +507,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     u->waiting = 0;
 
     if (waiting) {
-        lctx->udp_socket_busy = 0;
-        lctx->udp_socket_ready = 1;
+        coctx = lctx->cur_co_ctx;
+
+        coctx->udp_socket_busy = 0;
+        coctx->udp_socket_ready = 1;
+
         r->write_event_handler(r);
 
     } else {
@@ -518,6 +525,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u, lua_State *L)
 {
     ngx_http_lua_ctx_t              *ctx;
+    ngx_http_lua_co_ctx_t           *coctx;
     ngx_udp_connection_t            *uc;
     ngx_connection_t                *c;
     ngx_http_cleanup_t              *cln;
@@ -590,7 +598,9 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    ctx->data = u;
+    coctx = ctx->cur_co_ctx;
+
+    coctx->data = u;
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
 
@@ -786,6 +796,7 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
     ngx_http_lua_socket_udp_upstream_t  *u;
     ngx_int_t                            rc;
     ngx_http_lua_ctx_t                  *ctx;
+    ngx_http_lua_co_ctx_t               *coctx;
     size_t                               size;
     int                                  nargs;
     ngx_http_lua_loc_conf_t             *llcf;
@@ -880,9 +891,11 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_udp_receive_retval_handler;
 
-    ctx->data = u;
-    ctx->udp_socket_busy = 1;
-    ctx->udp_socket_ready = 0;
+    coctx = ctx->cur_co_ctx;
+
+    coctx->data = u;
+    coctx->udp_socket_busy = 1;
+    coctx->udp_socket_ready = 0;
 
     return lua_yield(L, 0);
 }
@@ -1096,6 +1109,7 @@ ngx_http_lua_socket_udp_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u, ngx_uint_t ft_type)
 {
     ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket handle error");
@@ -1115,8 +1129,10 @@ ngx_http_lua_socket_udp_handle_error(ngx_http_request_t *r,
 
         dd("setting socket_ready to 1");
 
-        ctx->udp_socket_busy = 0;
-        ctx->udp_socket_ready = 1;
+        coctx = ctx->cur_co_ctx;
+
+        coctx->udp_socket_busy = 0;
+        coctx->udp_socket_ready = 1;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua udp socket waking up the current request");
@@ -1174,6 +1190,7 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u)
 {
     ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
 
@@ -1184,8 +1201,10 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
         dd("setting socket_ready to 1");
 
-        ctx->udp_socket_busy = 0;
-        ctx->udp_socket_ready = 1;
+        coctx = ctx->cur_co_ctx;
+
+        coctx->udp_socket_busy = 0;
+        coctx->udp_socket_ready = 1;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua udp socket waking up the current request");

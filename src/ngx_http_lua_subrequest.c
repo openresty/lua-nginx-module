@@ -103,6 +103,9 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
     unsigned                         custom_ctx;
+    ngx_http_lua_co_ctx_t           *coctx;
+
+    ngx_http_lua_post_subrequest_data_t      *psr_data;
 
     n = lua_gettop(L);
     if (n != 1) {
@@ -134,6 +137,11 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
+    coctx = ctx->cur_co_ctx;
+    if (coctx == NULL) {
+        return luaL_error(L, "no co ctx found");
+    }
+
     sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
     sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
     sr_bodies_len   = nsubreqs * sizeof(ngx_str_t);
@@ -145,23 +153,23 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    ctx->sr_statuses = (void *) p;
+    coctx->sr_statuses = (void *) p;
     p += sr_statuses_len;
 
-    ctx->sr_headers = (void *) p;
+    coctx->sr_headers = (void *) p;
     p += sr_headers_len;
 
-    ctx->sr_bodies = (void *) p;
+    coctx->sr_bodies = (void *) p;
 
-    ctx->nsubreqs = nsubreqs;
+    coctx->nsubreqs = nsubreqs;
 
-    ctx->done = 0;
-    ctx->waiting = 0;
+    coctx->done = 0;
+    coctx->waiting = 0;
 
     extra_vars = NULL;
 
     for (index = 0; index < nsubreqs; index++) {
-        ctx->waiting++;
+        coctx->waiting++;
 
         lua_rawgeti(L, 1, index + 1);
         if (lua_isnil(L, -1)) {
@@ -459,17 +467,26 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             args.len = len;
         }
 
-        psr = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
-        if (psr == NULL) {
-            return luaL_error(L, "memory allocation error");
-        }
-
-        sr_ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
-        if (sr_ctx == NULL) {
+        p = ngx_pnalloc(r->pool, sizeof(ngx_http_post_subrequest_t)
+                        + sizeof(ngx_http_lua_ctx_t)
+                        + sizeof(ngx_http_lua_post_subrequest_data_t));
+        if (p == NULL) {
             return luaL_error(L, "out of memory");
         }
 
-        /* set by ngx_pcalloc:
+        psr = (ngx_http_post_subrequest_t *) p;
+
+        p += sizeof(ngx_http_post_subrequest_t);
+
+        sr_ctx = (ngx_http_lua_ctx_t *) p;
+
+        p += sizeof(ngx_http_lua_ctx_t);
+
+        psr_data = (ngx_http_lua_post_subrequest_data_t *) p;
+
+        ngx_memzero(sr_ctx, sizeof(ngx_http_lua_ctx_t));
+
+        /* set by ngx_memzero:
          *      sr_ctx->run_post_subrequest = 0
          *      sr_ctx->free = NULL
          */
@@ -481,8 +498,11 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         sr_ctx->index = index;
 
+        psr_data->ctx = sr_ctx;
+        psr_data->pr_co_ctx = coctx;
+
         psr->handler = ngx_http_lua_post_subrequest;
-        psr->data = sr_ctx;
+        psr->data = psr_data;
 
         rc = ngx_http_subrequest(r, &uri, &args, &sr, psr, 0);
 
@@ -797,19 +817,23 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
     ngx_http_request_t            *pr;
     ngx_http_lua_ctx_t            *pr_ctx;
-    ngx_http_lua_ctx_t            *ctx = data;
+    ngx_http_lua_ctx_t            *ctx; /* subrequest ctx */
+    ngx_http_lua_co_ctx_t         *pr_coctx;
     size_t                         len;
     ngx_str_t                     *body_str;
     u_char                        *p;
     ngx_chain_t                   *cl;
 
+    ngx_http_lua_post_subrequest_data_t         *psr_data = data;
+
+    ctx = psr_data->ctx;
+
     if (ctx->run_post_subrequest) {
         return rc;
     }
 
-    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run post subrequest handler: rc:%d, waiting:%d, done:%d",
-            rc, ctx->waiting, ctx->done);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run post subrequest handler: rc:%d", rc);
 
     ctx->run_post_subrequest = 1;
 
@@ -820,10 +844,12 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         return NGX_ERROR;
     }
 
-    pr_ctx->waiting--;
+    pr_coctx = psr_data->pr_co_ctx;
 
-    if (pr_ctx->waiting == 0) {
-        pr_ctx->done = 1;
+    pr_coctx->waiting--;
+
+    if (pr_coctx->waiting == 0) {
+        pr_coctx->done = 1;
     }
 
     if (pr_ctx->entered_content_phase) {
@@ -839,30 +865,28 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     /*  capture subrequest response status */
     if (rc == NGX_ERROR) {
-        pr_ctx->sr_statuses[ctx->index] = NGX_HTTP_INTERNAL_SERVER_ERROR;
+        pr_coctx->sr_statuses[ctx->index] = NGX_HTTP_INTERNAL_SERVER_ERROR;
 
     } else if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        dd("HERE");
-        pr_ctx->sr_statuses[ctx->index] = rc;
+        pr_coctx->sr_statuses[ctx->index] = rc;
 
     } else {
-        dd("THERE");
-        pr_ctx->sr_statuses[ctx->index] = r->headers_out.status;
+        pr_coctx->sr_statuses[ctx->index] = r->headers_out.status;
     }
 
-    if (pr_ctx->sr_statuses[ctx->index] == 0) {
-        pr_ctx->sr_statuses[ctx->index] = NGX_HTTP_OK;
+    if (pr_coctx->sr_statuses[ctx->index] == 0) {
+        pr_coctx->sr_statuses[ctx->index] = NGX_HTTP_OK;
     }
 
-    dd("pr_ctx status: %d", (int) pr_ctx->sr_statuses[ctx->index]);
+    dd("pr_coctx status: %d", (int) pr_coctx->sr_statuses[ctx->index]);
 
     /* copy subrequest response headers */
 
-    pr_ctx->sr_headers[ctx->index] = &r->headers_out;
+    pr_coctx->sr_headers[ctx->index] = &r->headers_out;
 
     /* copy subrequest response body */
 
-    body_str = &pr_ctx->sr_bodies[ctx->index];
+    body_str = &pr_coctx->sr_bodies[ctx->index];
 
     len = 0;
     for (cl = ctx->body; cl; cl = cl->next) {
@@ -886,8 +910,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         /* copy from and then free the data buffers */
 
         for (cl = ctx->body; cl; cl = cl->next) {
-            p = ngx_copy(p, cl->buf->pos,
-                    cl->buf->last - cl->buf->pos);
+            p = ngx_copy(p, cl->buf->pos, cl->buf->last - cl->buf->pos);
 
             cl->buf->last = cl->buf->pos;
 
@@ -914,9 +937,10 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     /* work-around issues in nginx's event module */
 
-    if (r != r->connection->data && r->postponed &&
-            (r->main->posted_requests == NULL ||
-            r->main->posted_requests->request != pr))
+    if (r != r->connection->data
+        && r->postponed
+        && (r->main->posted_requests == NULL
+            || r->main->posted_requests->request != pr))
     {
 #if defined(nginx_version) && nginx_version >= 8012
         ngx_http_post_request(pr, NULL);
@@ -1033,38 +1057,40 @@ void
 ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx)
 {
+    ngx_uint_t                   i;
     ngx_uint_t                   index;
     lua_State                   *co;
     ngx_str_t                   *body_str;
     ngx_table_elt_t             *header;
     ngx_list_part_t             *part;
     ngx_http_headers_out_t      *sr_headers;
-    ngx_uint_t                   i;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     u_char                  buf[sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1];
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua handle subrequest responses");
+                   "lua handle subrequest responses");
 
-    for (index = 0; index < ctx->nsubreqs; index++) {
+    co = ctx->cur_co;
+    coctx = ctx->cur_co_ctx;
+
+    for (index = 0; index < coctx->nsubreqs; index++) {
         dd("summary: reqs %d, subquery %d, waiting %d, req %.*s",
-                (int) ctx->nsubreqs,
+                (int) coctx->nsubreqs,
                 (int) index,
-                (int) ctx->waiting,
+                (int) coctx->waiting,
                 (int) r->uri.len, r->uri.data);
-
-        co = ctx->cur_co;
 
         /*  {{{ construct ret value */
         lua_newtable(co);
 
         /*  copy captured status */
-        lua_pushinteger(co, ctx->sr_statuses[index]);
+        lua_pushinteger(co, coctx->sr_statuses[index]);
         lua_setfield(co, -2, "status");
 
         /*  copy captured body */
 
-        body_str = &ctx->sr_bodies[index];
+        body_str = &coctx->sr_bodies[index];
 
         lua_pushlstring(co, (char *) body_str->data, body_str->len);
         lua_setfield(co, -2, "body");
@@ -1078,7 +1104,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
         lua_newtable(co); /* res.header */
 
-        sr_headers = ctx->sr_headers[index];
+        sr_headers = coctx->sr_headers[index];
 
         dd("saving subrequest response headers");
 

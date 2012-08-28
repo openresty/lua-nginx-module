@@ -29,12 +29,20 @@
 #define ngx_http_lua_probe_user_coroutine_resume(r, parent, child)           \
     NGINX_LUA_HTTP_LUA_USER_COROUTINE_RESUME(r, parent, child)
 
+#define ngx_http_lua_probe_user_coroutine_yield(r, parent, child)            \
+    NGINX_LUA_HTTP_LUA_USER_COROUTINE_YIELD(r, parent, child)
+
+#define ngx_http_lua_probe_entry_coroutine_yield(r, L)                       \
+    NGINX_LUA_HTTP_LUA_ENTRY_COROUTINE_YIELD(r, L)
+
 #else /* !(NGX_DTRACE) */
 
 #define ngx_http_lua_probe_register_preload_package(L, pkg)
 #define ngx_http_lua_probe_req_socket_consume_preread(r, data, len)
 #define ngx_http_lua_probe_user_coroutine_create(r, parent, child)
 #define ngx_http_lua_probe_user_coroutine_resume(r, parent, child)
+#define ngx_http_lua_probe_user_coroutine_yield(r, parent, child)
+#define ngx_http_lua_probe_entry_coroutine_yield(r, L)
 
 #endif
 

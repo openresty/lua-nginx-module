@@ -120,6 +120,12 @@ void ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec);
 
 int ngx_http_lua_traceback(lua_State *L);
 
+ngx_http_lua_co_ctx_t * ngx_http_lua_get_co_ctx(lua_State *L,
+    ngx_http_lua_ctx_t *ctx);
+
+ngx_http_lua_co_ctx_t * ngx_http_lua_create_co_ctx(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
+
 
 #endif /* NGX_HTTP_LUA_UTIL_H */
 

@@ -19,6 +19,9 @@ our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
+#no_shuffle();
+no_long_string();
+
 run_tests();
 
 __DATA__

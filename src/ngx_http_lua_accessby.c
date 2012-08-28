@@ -140,8 +140,6 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t   *llcf;
     ngx_http_lua_main_conf_t  *lmcf;
 
-    dd("HERE");
-
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
@@ -265,6 +263,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->entry_co = co;
     ctx->cur_co = co;
+    ctx->cur_co_ctx = &ctx->entry_co_ctx;
+    ctx->cur_co_ctx->co = co;
     ctx->entry_ref = co_ref;
 
     /*  }}} */

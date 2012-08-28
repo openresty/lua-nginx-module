@@ -10,6 +10,7 @@
 
 static int ngx_http_lua_ngx_sleep(lua_State *L);
 static void ngx_http_lua_sleep_handler(ngx_event_t *ev);
+static void ngx_http_lua_co_cleanup(void *data);
 
 
 static int
@@ -19,6 +20,8 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     ngx_int_t                    delay; /* in msec */
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx;
+    ngx_http_cleanup_t          *cln;
 
     n = lua_gettop(L);
     if (n != 1) {
@@ -47,14 +50,30 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ctx->sleep.handler = ngx_http_lua_sleep_handler;
-    ctx->sleep.data = r;
-    ctx->sleep.log = r->connection->log;
+    coctx = ctx->cur_co_ctx;
+    if (coctx == NULL) {
+        return luaL_error(L, "no co ctx found");
+    }
+
+    coctx->sleep.handler = ngx_http_lua_sleep_handler;
+    coctx->sleep.data = r;
+    coctx->sleep.log = r->connection->log;
 
     dd("adding timer with delay %lu ms, r:%.*s", (unsigned long) delay,
             (int) r->uri.len, r->uri.data);
 
-    ngx_add_timer(&ctx->sleep, (ngx_msec_t) delay);
+    ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
+
+    if (coctx->cleanup == NULL) {
+        cln = ngx_http_cleanup_add(r, 0);
+        if (cln == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+        cln->handler = ngx_http_lua_co_cleanup;
+        cln->data = coctx;
+        coctx->cleanup = &cln->handler;
+    }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua ready to sleep for %d ms", delay);
@@ -75,6 +94,7 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_log_ctx_t      *log_ctx;
+    ngx_http_lua_co_ctx_t   *coctx;
 
     r = ev->data;
     c = r->connection;
@@ -91,7 +111,9 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua sleep handler: \"%V?%V\"", &r->uri, &r->args);
 
-    if (!ctx->sleep.timedout) {
+    coctx = ctx->cur_co_ctx;
+
+    if (!coctx->sleep.timedout) {
         dd("reach lua sleep event handler without timeout!");
         return;
     }
@@ -99,9 +121,9 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua sleep timer expired: \"%V?%V\"", &r->uri, &r->args);
 
-    if (ctx->sleep.timer_set) {
+    if (coctx->sleep.timer_set) {
         dd("deleting timer for lua_sleep");
-        ngx_del_timer(&ctx->sleep);
+        ngx_del_timer(&coctx->sleep);
     }
 
     if (ctx->entered_content_phase) {
@@ -120,5 +142,23 @@ ngx_http_lua_inject_sleep_api(lua_State *L)
 {
     lua_pushcfunction(L, ngx_http_lua_ngx_sleep);
     lua_setfield(L, -2, "sleep");
+}
+
+
+static void
+ngx_http_lua_co_cleanup(void *data)
+{
+    ngx_http_lua_co_ctx_t          *coctx = data;
+
+    if (coctx->cleanup) {
+        *coctx->cleanup = NULL;
+        coctx->cleanup = NULL;
+    }
+
+    if (coctx->sleep.timer_set) {
+        dd("cleanup: deleting timer for ngx.sleep");
+
+        ngx_del_timer(&coctx->sleep);
+    }
 }
 

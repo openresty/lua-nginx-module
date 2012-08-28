@@ -23,14 +23,43 @@ F(ngx_http_handler) {
     cur = 0
 }
 
+/*
+F(ngx_http_lua_run_thread) {
+    id = gen_id($ctx->cur_co)
+    printf("run thread %d\n", id)
+}
+
+probe process("/usr/local/openresty-debug/luajit/lib/libluajit-5.1.so.2").function("lua_resume") {
+    id = gen_id($L)
+    printf("lua resume %d\n", id)
+}
+*/
+
 M(http-lua-user-coroutine-resume) {
     p = gen_id($arg2)
     c = gen_id($arg3)
     printf("resume %x in %x\n", c, p)
 }
 
+M(http-lua-entry-coroutine-yield) {
+    println("entry coroutine yield")
+}
+
+/*
 F(ngx_http_lua_coroutine_yield) {
     printf("yield %x\n", gen_id($L))
+}
+*/
+
+M(http-lua-user-coroutine-yield) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("yield %x in %x\n", c, p)
+}
+
+F(ngx_http_lua_atpanic) {
+    printf("lua atpanic(%d):", gen_id($L))
+    print_ubacktrace();
 }
 
 M(http-lua-user-coroutine-create) {
@@ -44,6 +73,7 @@ F(ngx_http_lua_ngx_exec) { println("exec") }
 F(ngx_http_lua_ngx_exit) { println("exit") }
 _EOC_
 
+no_shuffle();
 no_long_string();
 run_tests();
 
@@ -57,7 +87,7 @@ __DATA__
 
             function f()
                 local cnt = 0
-                while true do
+                for i = 1, 20 do
                     ngx.say("Hello, ", cnt)
                     cy()
                     cnt = cnt + 1
@@ -73,6 +103,7 @@ __DATA__
     }
 --- request
 GET /lua
+--- stap2 eval: $::StapScript
 --- response_body
 Hello, 0
 ***
@@ -384,30 +415,30 @@ successfully connected to: openresty.org
             function f(self)
                 local cnt = 0
                 if rn() ~= self then ngx.say("error"); return end
-                ngx.say(st(self)) --running
+                ngx.say("running: ", st(self)) --running
                 cy()
-                -- Status normal is not support now. Actually user coroutines have no 
-                -- sub-coroutine, the main thread holds all of the coroutines.
-                local c = cc(function(father) ngx.say(st(father)) end) -- normal
+                local c = cc(function(father)
+                    ngx.say("normal: ", st(father))
+                end) -- normal
                 cr(c, self)
             end
 
             local c = cc(f)
-            ngx.say(st(c)) --suspended
+            ngx.say("suspended: ", st(c)) -- suspended
             cr(c, c)
-            ngx.say(st(c)) --suspended
+            ngx.say("suspended: ", st(c)) -- suspended
             cr(c, c)
-            ngx.say(st(c)) --dead
+            ngx.say("dead: ", st(c)) -- dead
         ';
     }
 --- request
 GET /lua
 --- response_body
-suspended
-running
-suspended
-suspended
-dead
+suspended: suspended
+running: running
+suspended: suspended
+normal: normal
+dead: dead
 --- no_error_log
 [error]
 
@@ -625,11 +656,11 @@ GET /lua
 create 2 in 1
 resume 2 in 1
 create 3 in 2
-yield 2
+yield 2 in 1
 resume 2 in 1
 resume 3 in 2
-yield 3
-yield 2
+yield 3 in 2
+yield 2 in 1
 resume 2 in 1
 resume 3 in 2
 exit
@@ -684,11 +715,11 @@ exit
 create 2 in 1
 resume 2 in 1
 create 3 in 2
-yield 2
+yield 2 in 1
 resume 2 in 1
 resume 3 in 2
-yield 3
-yield 2
+yield 3 in 2
+yield 2 in 1
 resume 2 in 1
 resume 3 in 2
 exec
@@ -766,7 +797,7 @@ f 2
 --- config
     location /t {
         content_by_lua '
-            -- local print = ngx.say
+            local print = ngx.say
 
             local c1, c2
 
@@ -790,15 +821,16 @@ f 2
     }
 --- request
 GET /t
+--- stap2 eval: $::StapScript
 --- response_body
 f 1
 g 1
+falsecannot resume normal coroutine
 g 2
 true
 f 2
 --- no_error_log
 [error]
---- SKIP
 
 
 

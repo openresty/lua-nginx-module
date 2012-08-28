@@ -61,8 +61,9 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 {
     ngx_http_request_t          *r;
     int                          n;
-    ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     n = lua_gettop(L);
 
@@ -91,12 +92,17 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        return luaL_error(L, "request context is null");
+        return luaL_error(L, "no ctx found");
     }
 
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+    coctx = ctx->cur_co_ctx;
+    if (coctx == NULL) {
+        return luaL_error(L, "no co ctx found");
+    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua start to read buffered request body");
@@ -113,6 +119,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
         ctx->waiting_more_body = 1;
         ctx->req_read_body_done = 0;
+        ctx->req_body_reader_co_ctx = coctx;
 
         return lua_yield(L, 0);
     }

@@ -38,9 +38,11 @@ ngx_http_lua_capture_filter_init(ngx_conf_t *cf)
 static ngx_int_t
 ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 {
-    ngx_http_post_subrequest_t      *ps;
+    ngx_http_post_subrequest_t      *psr;
     ngx_http_lua_ctx_t              *old_ctx;
     ngx_http_lua_ctx_t              *ctx;
+
+    ngx_http_lua_post_subrequest_data_t      *psr_data;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua capture header filter, uri \"%V\"", &r->uri);
@@ -50,14 +52,19 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
     dd("old ctx: %p", ctx);
 
     if (ctx == NULL || ! ctx->capture) {
-        ps = r->post_subrequest;
-        if (ps != NULL && ps->handler == ngx_http_lua_post_subrequest &&
-                ps->data != NULL)
+
+        psr = r->post_subrequest;
+
+        if (psr != NULL
+            && psr->handler == ngx_http_lua_post_subrequest
+            && psr->data != NULL)
         {
             /* the lua ctx has been cleared by ngx_http_internal_redirect,
              * resume it from the post_subrequest data
              */
-            old_ctx = ps->data;
+            psr_data = psr->data;
+
+            old_ctx = psr_data->ctx;
 
             if (ctx == NULL) {
                 ctx = old_ctx;
@@ -70,7 +77,7 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 
                 ctx->capture = old_ctx->capture;
                 ctx->index = old_ctx->index;
-                ps->data = ctx;
+                psr_data->ctx = ctx;
             }
         }
     }

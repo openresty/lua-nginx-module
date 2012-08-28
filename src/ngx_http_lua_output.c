@@ -459,6 +459,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
     unsigned                     wait = 0;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
+    ngx_http_lua_co_ctx_t       *coctx;
 
     n = lua_gettop(L);
     if (n > 1) {
@@ -484,6 +485,11 @@ ngx_http_lua_ngx_flush(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+    coctx = ctx->cur_co_ctx;
+    if (coctx == NULL) {
+        return luaL_error(L, "no co ctx found");
+    }
 
     if (r->header_only) {
         return 0;
@@ -537,7 +543,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
                 "lua flush requires waiting: buffered 0x%uxd",
                 (int) r->connection->buffered);
 
-        ctx->waiting_flush = 1;
+        coctx->waiting_flush = 1;
 
         if (ctx->entered_content_phase) {
             /* mimic ngx_http_set_write_handler */

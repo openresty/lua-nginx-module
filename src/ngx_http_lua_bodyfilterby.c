@@ -156,8 +156,6 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_loc_conf_t     *llcf;
     char                        *err;
 
-    dd("HERE");
-
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
