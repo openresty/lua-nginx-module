@@ -71,7 +71,7 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
         return NGX_ERROR;
     }
 
-    hook->package = package;
+    hook->package = (u_char *) package;
     hook->loader = func;
 
     return NGX_OK;

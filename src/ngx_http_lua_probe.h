@@ -35,6 +35,15 @@
 #define ngx_http_lua_probe_entry_coroutine_yield(r, L)                       \
     NGINX_LUA_HTTP_LUA_ENTRY_COROUTINE_YIELD(r, L)
 
+#define ngx_http_lua_probe_socket_tcp_send_start(r, u, data, len)            \
+    NGINX_LUA_HTTP_LUA_SOCKET_TCP_SEND_START(r, u, data, len)
+
+#define ngx_http_lua_probe_socket_tcp_receive_done(r, u, data, len)          \
+    NGINX_LUA_HTTP_LUA_SOCKET_TCP_RECEIVE_DONE(r, u, data, len)
+
+#define ngx_http_lua_probe_socket_tcp_setkeepalive_buf_unread(r, u, data, len)\
+    NGINX_LUA_HTTP_LUA_SOCKET_TCP_SETKEEPALIVE_BUF_UNREAD(r, u, data, len)
+
 #else /* !(NGX_DTRACE) */
 
 #define ngx_http_lua_probe_register_preload_package(L, pkg)
@@ -43,6 +52,9 @@
 #define ngx_http_lua_probe_user_coroutine_resume(r, parent, child)
 #define ngx_http_lua_probe_user_coroutine_yield(r, parent, child)
 #define ngx_http_lua_probe_entry_coroutine_yield(r, L)
+#define ngx_http_lua_probe_socket_tcp_send_start(r, u, data, len)
+#define ngx_http_lua_probe_socket_tcp_receive_done(r, u, data, len)
+#define ngx_http_lua_probe_socket_tcp_setkeepalive_buf_unread(r, u, data, len)
 
 #endif
 
