@@ -877,3 +877,28 @@ chunk: true
 --- no_error_log
 [error]
 
+
+
+=== TEST 21: user coroutine end with errors, and the parent coroutine gets the right status
+--- config
+    location /t {
+        content_by_lua '
+            local co
+            function f()
+                error("bad")
+            end
+            co = coroutine.create(f)
+            ngx.say("child: resume: ", coroutine.resume(co))
+            ngx.say("child: status: ", coroutine.status(co))
+            ngx.say("parent: status: ", coroutine.status(coroutine.running()))
+        ';
+    }
+--- request
+GET /t
+--- response_body
+child: resume: false[string "content_by_lua"]:4: bad
+child: status: dead
+parent: status: running
+--- error_log
+lua coroutine: runtime error: [string "content_by_lua"]:4: bad
+

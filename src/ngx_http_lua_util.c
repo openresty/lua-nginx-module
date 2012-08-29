@@ -1092,6 +1092,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
             next_co = next_coctx->co;
 
+            next_coctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
+
             /*
              * ended with error, coroutine.resume returns false plus
              * err msg
