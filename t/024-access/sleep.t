@@ -62,7 +62,7 @@ bad argument #1 to 'sleep'
 
 
 
-=== TEST 3: sleep 0.5 in subrequestg
+=== TEST 3: sleep 0.5 in subrequest
 --- config
     location /test {
         access_by_lua '
