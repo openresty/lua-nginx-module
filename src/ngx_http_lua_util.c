@@ -706,8 +706,6 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ngx_str_null(&ctx->exec_args);
 
     ctx->co_op = 0;
-
-    ngx_memzero(&ctx->entry_co_ctx, sizeof(ngx_http_lua_co_ctx_t));
 }
 
 
