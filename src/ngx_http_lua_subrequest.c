@@ -7,6 +7,9 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_ctx.h"
 #include "ngx_http_lua_contentby.h"
+#if defined(NGX_DTRACE) && NGX_DTRACE
+#include "ngx_http_probe.h"
+#endif
 
 
 #define NGX_HTTP_LUA_SHARE_ALL_VARS     0x01
@@ -40,6 +43,9 @@ static void ngx_http_lua_process_vars_option(ngx_http_request_t *r,
     lua_State *L, int table, ngx_array_t **varsp);
 static ngx_int_t ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *r,
     ngx_array_t *extra_vars);
+static ngx_int_t ngx_http_lua_subrequest(ngx_http_request_t *r,
+    ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **psr,
+    ngx_http_post_subrequest_t *ps, ngx_uint_t flags);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -504,7 +510,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         psr->handler = ngx_http_lua_post_subrequest;
         psr->data = psr_data;
 
-        rc = ngx_http_subrequest(r, &uri, &args, &sr, psr, 0);
+        rc = ngx_http_lua_subrequest(r, &uri, &args, &sr, psr, 0);
 
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to issue subrequest: %d", (int) rc);
@@ -937,16 +943,8 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     /* work-around issues in nginx's event module */
 
-    if (r != r->connection->data
-        && r->postponed
-        && (r->main->posted_requests == NULL
-            || r->main->posted_requests->request != pr))
-    {
-#if defined(nginx_version) && nginx_version >= 8012
-        ngx_http_post_request(pr, NULL);
-#else
-        ngx_http_post_request(pr);
-#endif
+    if (r != r->connection->data) {
+        r->connection->data = r;
     }
 
     return rc;
@@ -1250,5 +1248,149 @@ ngx_http_lua_inject_subrequest_api(lua_State *L)
     lua_setfield(L, -2, "capture_multi");
 
     lua_setfield(L, -2, "location");
+}
+
+
+static ngx_int_t
+ngx_http_lua_subrequest(ngx_http_request_t *r,
+    ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **psr,
+    ngx_http_post_subrequest_t *ps, ngx_uint_t flags)
+{
+    ngx_time_t                    *tp;
+    ngx_connection_t              *c;
+    ngx_http_request_t            *sr;
+    ngx_http_core_srv_conf_t      *cscf;
+#if 0
+    ngx_http_postponed_request_t  *pr, *p;
+#endif
+
+    r->main->subrequests--;
+
+    if (r->main->subrequests == 0) {
+#if defined(NGX_DTRACE) && NGX_DTRACE
+        ngx_http_probe_subrequest_cycle(r, uri, args);
+#endif
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "subrequests cycle while processing \"%V\"", uri);
+        r->main->subrequests = 1;
+        return NGX_ERROR;
+    }
+
+    sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));
+    if (sr == NULL) {
+        return NGX_ERROR;
+    }
+
+    sr->signature = NGX_HTTP_MODULE;
+
+    c = r->connection;
+    sr->connection = c;
+
+    sr->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
+    if (sr->ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (ngx_list_init(&sr->headers_out.headers, r->pool, 20,
+                      sizeof(ngx_table_elt_t))
+        != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+
+    cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+    sr->main_conf = cscf->ctx->main_conf;
+    sr->srv_conf = cscf->ctx->srv_conf;
+    sr->loc_conf = cscf->ctx->loc_conf;
+
+    sr->pool = r->pool;
+
+    sr->headers_in = r->headers_in;
+
+    ngx_http_clear_content_length(sr);
+    ngx_http_clear_accept_ranges(sr);
+    ngx_http_clear_last_modified(sr);
+
+    sr->request_body = r->request_body;
+
+    sr->content_length_n = -1;
+
+    sr->method = NGX_HTTP_GET;
+    sr->http_version = r->http_version;
+
+    sr->request_line = r->request_line;
+    sr->uri = *uri;
+
+    if (args) {
+        sr->args = *args;
+    }
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http subrequest \"%V?%V\"", uri, &sr->args);
+
+    sr->subrequest_in_memory = (flags & NGX_HTTP_SUBREQUEST_IN_MEMORY) != 0;
+    sr->waited = (flags & NGX_HTTP_SUBREQUEST_WAITED) != 0;
+
+    sr->unparsed_uri = r->unparsed_uri;
+    sr->method_name = ngx_http_core_get_method;
+    sr->http_protocol = r->http_protocol;
+
+    ngx_http_set_exten(sr);
+
+    sr->main = r->main;
+    sr->parent = r;
+    sr->post_subrequest = ps;
+    sr->read_event_handler = ngx_http_request_empty_handler;
+    sr->write_event_handler = ngx_http_handler;
+
+    if (c->data == r && r->postponed == NULL) {
+        c->data = sr;
+    }
+
+    sr->variables = r->variables;
+
+    sr->log_handler = r->log_handler;
+
+#if 0
+    pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));
+    if (pr == NULL) {
+        return NGX_ERROR;
+    }
+
+    pr->request = sr;
+    pr->out = NULL;
+    pr->next = NULL;
+
+    if (r->postponed) {
+        for (p = r->postponed; p->next; p = p->next) { /* void */ }
+        p->next = pr;
+
+    } else {
+        r->postponed = pr;
+    }
+#endif
+
+    sr->internal = 1;
+
+    sr->discard_body = r->discard_body;
+    sr->expect_tested = 1;
+    sr->main_filter_need_in_memory = r->main_filter_need_in_memory;
+
+    sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
+
+    tp = ngx_timeofday();
+    sr->start_sec = tp->sec;
+    sr->start_msec = tp->msec;
+
+    r->main->count++;
+
+    *psr = sr;
+
+#if defined(NGX_DTRACE) && NGX_DTRACE
+    ngx_http_probe_subrequest_start(sr);
+#endif
+
+    return ngx_http_post_request(sr, NULL);
 }
 

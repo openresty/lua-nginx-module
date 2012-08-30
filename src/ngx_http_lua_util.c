@@ -1236,29 +1236,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "lua waiting for pending subrequests");
 
-        if (r == c->data && r->postponed) {
-            if (r->postponed->request) {
-                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                        "lua activating the next postponed request %V?%V",
-                        &r->postponed->request->uri,
-                        &r->postponed->request->args);
-
-                c->data = r->postponed->request;
-
-#if defined(nginx_version) && nginx_version >= 8012
-                ngx_http_post_request(r->postponed->request, NULL);
-#else
-                ngx_http_post_request(r->postponed->request);
-#endif
-
-            } else {
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                        "lua flushing postponed output");
-
-                ngx_http_lua_flush_postponed_outputs(r);
-            }
-        }
-
         return NGX_DONE;
     }
 
@@ -1444,9 +1421,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
             "useless lua write event handler");
 
+#if 0
     if (ctx->entered_content_phase) {
         ngx_http_finalize_request(r, NGX_DONE);
     }
+#endif
 
     return NGX_OK;
 
