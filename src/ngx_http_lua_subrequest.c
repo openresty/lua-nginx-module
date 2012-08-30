@@ -1314,7 +1314,9 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->request_body = r->request_body;
 
+#ifdef HAVE_ALLOW_REQUEST_BODY_UPDATING_PATCH
     sr->content_length_n = -1;
+#endif
 
     sr->method = NGX_HTTP_GET;
     sr->http_version = r->http_version;
