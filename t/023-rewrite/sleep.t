@@ -33,7 +33,7 @@ __DATA__
 --- request
 GET /test
 --- response_body_like chop
-^0\.(?:4[5-9]\d*|5[0-5]\d*|5)$
+^0\.(?:4[5-9]\d*|5[0-9]\d*|5)$
 --- error_log
 lua ready to sleep for
 lua sleep handler: "/test?"
