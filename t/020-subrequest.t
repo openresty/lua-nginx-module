@@ -3,14 +3,14 @@ use lib 'lib';
 use Test::Nginx::Socket;
 
 #master_on();
-workers(1);
+#workers(1);
 #worker_connections(1014);
 #log_level('warn');
 #master_process_enabled(1);
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 10);
+plan tests => repeat_each() * (blocks() * 2 + 11);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -1114,4 +1114,48 @@ GET /main
 --- response_body
 status: 500
 body: 
+
+
+
+=== TEST 43: subrequests with an output body filter returning NGX_ERROR
+--- config
+    location /sub {
+        echo hello world;
+        body_filter_by_lua '
+            return ngx.ERROR
+        ';
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+        ';
+    }
+--- request
+GET /main
+--- stap2
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+--- response_body
+--- error_code
+--- no_error_log
+[error]
 

@@ -947,6 +947,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         r->connection->data = r;
     }
 
+    dd("returning OK");
     return NGX_OK;
 }
 
