@@ -151,3 +151,4 @@ src/probe.h
 *.plist
 lua
 Makefile
+tsubreq
