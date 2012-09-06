@@ -835,7 +835,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ctx = psr_data->ctx;
 
     if (ctx->run_post_subrequest) {
-        return rc;
+        return NGX_OK;
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -947,7 +947,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         r->connection->data = r;
     }
 
-    return rc;
+    return NGX_OK;
 }
 
 

@@ -1071,3 +1071,47 @@ r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fjquery%2f1.7.2%2fj
 --- no_error_log
 [error]
 
+
+
+=== TEST 41: subrequests finalized with NGX_ERROR
+--- config
+    location /sub {
+        content_by_lua '
+            ngx.exit(ngx.ERROR)
+        ';
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+status: 500
+body: 
+
+
+
+=== TEST 42: subrequests finalized with 500
+--- config
+    location /sub {
+        return 500;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+        ';
+    }
+--- request
+GET /main
+--- response_body
+status: 500
+body: 
+
