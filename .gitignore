@@ -152,3 +152,4 @@ src/probe.h
 lua
 Makefile
 tsubreq
+addr2line
