@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 10);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -1225,6 +1225,7 @@ F(ngx_http_finalize_request) {
 
 === TEST 44: subrequests truncated in its response body due to premature connection close (nonbuffered)
 --- config
+    server_tokens off;
     location /memc {
         internal;
 
@@ -1243,6 +1244,7 @@ F(ngx_http_finalize_request) {
 --- request
 GET /main
 --- tcp_listen: 19112
+--- tcp_query_len: 9
 --- tcp_reply eval
 "VALUE foo 0 1024\r\nhello world"
 
@@ -1341,6 +1343,8 @@ upstream timed out
 
 === TEST 46: subrequests truncated in its response body due to premature connection close (buffered)
 --- config
+    server_tokens off;
+
     location /proxy {
         internal;
 
@@ -1359,6 +1363,7 @@ upstream timed out
 --- request
 GET /main
 --- tcp_listen: 19113
+--- tcp_query_len: 65
 --- tcp_reply eval
 "HTTP/1.0 200 OK\r\nContent-Length: 1024\r\n\r\nhello world"
 
@@ -1455,6 +1460,7 @@ upstream timed out
 
 === TEST 48: subrequests truncated in its response body due to premature connection close (buffered, no content-length)
 --- config
+    server_tokens off;
     location /proxy {
         internal;
 
@@ -1473,6 +1479,7 @@ upstream timed out
 --- request
 GET /main
 --- tcp_listen: 19113
+--- tcp_query_len: 65
 --- tcp_reply eval
 "HTTP/1.0 200 OK\r\n\r\nhello world"
 
@@ -1569,6 +1576,8 @@ upstream timed out
 
 === TEST 50: subrequests truncated in its response body due to premature connection close (nonbuffered, no content-length)
 --- config
+    server_tokens off;
+
     location /proxy {
         internal;
 
@@ -1587,6 +1596,7 @@ upstream timed out
 --- request
 GET /main
 --- tcp_listen: 19113
+--- tcp_query_len: 65
 --- tcp_reply eval
 "HTTP/1.0 200 OK\r\n\r\nhello world"
 
