@@ -880,6 +880,10 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         pr_coctx->sr_statuses[ctx->index] = r->headers_out.status;
     }
 
+    if (r->headers_out.status >= NGX_HTTP_SPECIAL_RESPONSE) {
+        pr_coctx->sr_statuses[ctx->index] = r->headers_out.status;
+    }
+
     if (pr_coctx->sr_statuses[ctx->index] == 0) {
         pr_coctx->sr_statuses[ctx->index] = NGX_HTTP_OK;
     }

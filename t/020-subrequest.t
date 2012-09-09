@@ -10,12 +10,12 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 11);
+plan tests => repeat_each() * (blocks() * 2 + 15);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 #no_diff();
-#no_long_string();
+no_long_string();
 #no_shuffle();
 
 run_tests();
@@ -1158,4 +1158,120 @@ F(ngx_http_finalize_request) {
 --- error_code
 --- no_error_log
 [error]
+
+
+
+=== TEST 44: subrequests truncated in its response body due to premature connection close
+--- config
+    location /memc {
+        internal;
+
+        set $memc_key 'foo';
+        #set $memc_exptime 300;
+        memc_pass 127.0.0.1:19112; #$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/memc")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19112
+--- tcp_reply eval
+"VALUE foo 0 1024\r\nhello world"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=1 rc=502
+post subreq: rc=0, status=502
+
+--- response_body
+status: 502
+body: hello world
+--- no_error_log
+[error]
+
+
+
+=== TEST 45: subrequests truncated in its response body due to upstream read timeout
+--- config
+    memc_read_timeout 100ms;
+    location /memc {
+        internal;
+
+        set $memc_key 'foo';
+        #set $memc_exptime 300;
+        memc_pass 127.0.0.1:19112; #$TEST_NGINX_MEMCACHED_PORT;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/memc")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19112
+--- tcp_no_close
+--- tcp_reply eval
+"VALUE foo 0 1024\r\nhello world"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+conn err: 110: upstream timed out
+upstream fin req: error=0 eof=0 rc=504
+post subreq: rc=0, status=504
+
+--- response_body
+status: 504
+body: hello world
+
+--- error_log
+upstream timed out
 
