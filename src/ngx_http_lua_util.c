@@ -701,6 +701,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ctx->exit_code = 0;
     ctx->exited = 0;
+    ctx->resume_handler = ngx_http_lua_wev_handler;
 
     ngx_str_null(&ctx->exec_uri);
     ngx_str_null(&ctx->exec_args);
@@ -1160,7 +1161,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     c = r->connection;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-            "lua run write event handler");
+                   "lua run write event handler");
 
     wev = c->write;
 
@@ -1306,24 +1307,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    if (coctx->sleep.timer_set) {
-        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua still waiting for a sleep timer: \"%V?%V\"",
-                       &r->uri, &r->args);
-
-        if (wev->ready) {
-            ngx_handle_write_event(wev, 0);
-        }
-
-        return NGX_DONE;
-    }
-
-    if (coctx->sleep.timedout) {
-        coctx->sleep.timedout = 0;
-        nret = 0;
-        goto run;
-    }
-
     if (coctx->socket_busy && !coctx->socket_ready) {
         return NGX_DONE;
     }
@@ -1419,7 +1402,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-            "useless lua write event handler");
+                   "useless lua write event handler");
 
 #if 0
     if (ctx->entered_content_phase) {

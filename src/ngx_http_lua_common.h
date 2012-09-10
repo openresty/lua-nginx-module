@@ -251,6 +251,8 @@ typedef struct ngx_http_lua_ctx_s {
                                            (or running phase) for the current
                                            Lua chunk */
 
+    ngx_http_handler_pt      resume_handler;
+
     lua_State               *cur_co;    /*  the current running Lua coroutine,
                                             not necessarily to be the
                                             request's entry coroutine */

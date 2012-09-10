@@ -278,17 +278,10 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     dd("ctx = %p", ctx);
 
     if (ctx == NULL) {
-        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+        ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            return NGX_ERROR;
         }
-
-        dd("setting new ctx: ctx = %p", ctx);
-
-        ctx->entry_ref = LUA_NOREF;
-        ctx->ctx_ref = LUA_NOREF;
-
-        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
     if (ctx->cleanup == NULL) {

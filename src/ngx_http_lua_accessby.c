@@ -80,17 +80,10 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
     dd("ctx = %p", ctx);
 
     if (ctx == NULL) {
-        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+        ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
-
-        dd("setting new ctx: ctx = %p", ctx);
-
-        ctx->entry_ref = LUA_NOREF;
-        ctx->ctx_ref = LUA_NOREF;
-
-        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
     dd("entered? %d", (int) ctx->entered_access_phase);
@@ -102,7 +95,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
     if (ctx->entered_access_phase) {
         dd("calling wev handler");
-        rc = ngx_http_lua_wev_handler(r);
+        rc = ctx->resume_handler(r);
         dd("wev handler returns %d", (int) rc);
 
         return rc;

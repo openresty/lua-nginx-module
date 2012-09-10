@@ -154,7 +154,7 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
         ctx->waiting_more_body = 0;
 
         if (ctx->entered_content_phase) {
-            ngx_http_lua_wev_handler(r);
+            (void) ctx->resume_handler(r);
 
         } else {
             ngx_http_core_run_phases(r);

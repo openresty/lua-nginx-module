@@ -127,5 +127,24 @@ ngx_http_lua_co_ctx_t * ngx_http_lua_create_co_ctx(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
 
+static ngx_inline ngx_http_lua_ctx_t *
+ngx_http_lua_create_ctx(ngx_http_request_t *r)
+{
+    ngx_http_lua_ctx_t      *ctx;
+
+    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+    if (ctx == NULL) {
+        return NULL;
+    }
+
+    ctx->entry_ref = LUA_NOREF;
+    ctx->ctx_ref = LUA_NOREF;
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    return ctx;
+}
+
+
 #endif /* NGX_HTTP_LUA_UTIL_H */
 
