@@ -81,11 +81,6 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua ready to sleep for %d ms", delay);
 
-    if (ctx->entered_content_phase) {
-        dd("set write event handler");
-        r->write_event_handler = ngx_http_lua_content_wev_handler;
-    }
-
     return lua_yield(L, 0);
 }
 

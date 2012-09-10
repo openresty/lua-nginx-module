@@ -519,7 +519,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
         rc = ngx_http_lua_adjust_subrequest(sr, method, body, vars_action,
-                extra_vars);
+                                            extra_vars);
 
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to adjust the subrequest: %d",
