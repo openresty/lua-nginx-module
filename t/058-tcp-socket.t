@@ -297,7 +297,7 @@ connect() failed (111: Connection refused)
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("taobao.com", 16787)
+            local ok, err = sock:connect("google.com", 16787)
             ngx.say("connect: ", ok, " ", err)
 
             local bytes

@@ -359,7 +359,7 @@ done
             ngx.req.set_uri_args("hello")
             ngx.req.set_uri("/bar", true);
         ';
-        proxy_pass http://www.taobao.com:5678;
+        proxy_pass http://google.com:5678;
     }
 --- request
     GET /foo?world
@@ -498,7 +498,7 @@ HTTP/1.0 ca%20t=%25
             ngx.req.set_uri("/bar", true);
             ngx.exit(503)
         ';
-        proxy_pass http://www.taobao.com:5678;
+        proxy_pass http://google.com:5678;
     }
 --- request
     GET /foo?world

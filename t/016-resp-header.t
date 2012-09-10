@@ -74,13 +74,13 @@ Hel
     location /read {
         content_by_lua '
             ngx.status = 302;
-            ngx.header["Location"] = "http://www.taobao.com/foo";
+            ngx.header["Location"] = "http://google.com/foo";
         ';
     }
 --- request
 GET /read
 --- response_headers
-Location: http://www.taobao.com/foo
+Location: http://google.com/foo
 --- response_body
 --- error_code: 302
 
