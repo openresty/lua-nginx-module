@@ -1332,9 +1332,9 @@ conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
 post subreq: rc=0, status=504
 
---- response_body
-status: 504
-body: hello world
+--- response_body_like chop
+^status: 504
+body: 
 
 --- error_log
 upstream timed out
