@@ -1348,7 +1348,7 @@ upstream timed out
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering on;
         proxy_pass http://127.0.0.1:19113;
     }
@@ -1581,7 +1581,7 @@ upstream timed out
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering off;
         proxy_pass http://127.0.0.1:19113;
     }
@@ -1638,7 +1638,7 @@ body: hello world
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        proxy_read_timeout 500ms;
         proxy_buffering off;
         proxy_pass http://127.0.0.1:19113;
     }
