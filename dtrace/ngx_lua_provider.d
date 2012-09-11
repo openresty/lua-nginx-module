@@ -1,4 +1,6 @@
 provider nginx_lua {
+    probe http__lua__info(char *s);
+
     /* lua_State *L */
     probe http__lua__register__preload__package(void *L, u_char *pkg);
 

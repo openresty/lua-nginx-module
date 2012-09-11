@@ -17,6 +17,9 @@
 
 #include <ngx_dtrace_provider.h>
 
+#define ngx_http_lua_probe_info(s)                                           \
+    NGINX_LUA_HTTP_LUA_INFO(s)
+
 #define ngx_http_lua_probe_register_preload_package(L, pkg)                  \
     NGINX_LUA_HTTP_LUA_REGISTER_PRELOAD_PACKAGE(L, pkg)
 
@@ -46,6 +49,7 @@
 
 #else /* !(NGX_DTRACE) */
 
+#define ngx_http_lua_probe_info(s)
 #define ngx_http_lua_probe_register_preload_package(L, pkg)
 #define ngx_http_lua_probe_req_socket_consume_preread(r, data, len)
 #define ngx_http_lua_probe_user_coroutine_create(r, parent, child)

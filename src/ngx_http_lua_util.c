@@ -1231,15 +1231,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    dd("waiting: %d, done: %d", (int) coctx->waiting, coctx->done);
-
-    if (coctx->waiting && !coctx->done) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua waiting for pending subrequests");
-
-        return NGX_DONE;
-    }
-
     dd("req read body done: %d", (int) ctx->req_read_body_done);
 
     if (c->buffered) {
@@ -1329,6 +1320,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             return NGX_DONE;
         }
 
+        /* ngx_http_lua_probe_info("udp cosocket hit"); */
+
         goto run;
     }
 
@@ -1351,12 +1344,16 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             return NGX_DONE;
         }
 
+        /* ngx_http_lua_probe_info("tcp cosocket hit"); */
+
         goto run;
 
     } else if (coctx->waiting_flush) {
 
         coctx->waiting_flush = 0;
         nret = 0;
+
+        /* ngx_http_lua_probe_info("waiting flush hit"); */
 
         goto run;
 
@@ -1371,32 +1368,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua read req body done, resuming lua thread");
 
-        goto run;
-
-    } else if (coctx->done) {
-
-        coctx->done = 0;
-
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                "lua run subrequests done, resuming lua thread");
-
-        dd("nsubreqs: %d", (int) coctx->nsubreqs);
-
-        ngx_http_lua_handle_subreq_responses(r, ctx);
-
-        dd("free sr_statues/headers/bodies memory ASAP");
-
-#if 1
-        ngx_pfree(r->pool, coctx->sr_statuses);
-
-        coctx->sr_statuses = NULL;
-        coctx->sr_headers = NULL;
-        coctx->sr_bodies = NULL;
-#endif
-
-        nret = coctx->nsubreqs;
-
-        dd("location capture nret: %d", (int) nret);
+        /* ngx_http_lua_probe_info("req read body hit"); */
 
         goto run;
     }
@@ -1410,7 +1382,11 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 #endif
 
-    return NGX_OK;
+    if (ctx->entered_content_phase) {
+        return NGX_OK;
+    }
+
+    return NGX_DONE;
 
 run:
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -1420,7 +1396,7 @@ run:
     rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-            "lua run thread returned %d", rc);
+                   "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
         return NGX_DONE;

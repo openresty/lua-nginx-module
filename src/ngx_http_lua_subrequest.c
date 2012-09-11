@@ -46,6 +46,10 @@ static ngx_int_t ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_subrequest(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **psr,
     ngx_http_post_subrequest_t *ps, ngx_uint_t flags);
+static ngx_int_t ngx_http_lua_subrequest_resume(ngx_http_request_t *r);
+static void ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
+static void ngx_http_lua_cancel_subreq(ngx_http_request_t *r);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -169,7 +173,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
     coctx->nsubreqs = nsubreqs;
 
-    coctx->done = 0;
     coctx->waiting = 0;
 
     extra_vars = NULL;
@@ -522,8 +525,9 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                                             extra_vars);
 
         if (rc != NGX_OK) {
+            ngx_http_lua_cancel_subreq(sr);
             return luaL_error(L, "failed to adjust the subrequest: %d",
-                    (int) rc);
+                              (int) rc);
         }
 
         dd("queries query uri opts ctx? %d", lua_gettop(L));
@@ -830,7 +834,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     u_char                        *p;
     ngx_chain_t                   *cl;
 
-    ngx_http_lua_post_subrequest_data_t         *psr_data = data;
+    ngx_http_lua_post_subrequest_data_t    *psr_data = data;
 
     ctx = psr_data->ctx;
 
@@ -851,16 +855,19 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     pr_coctx = psr_data->pr_co_ctx;
-
     pr_coctx->waiting--;
 
     if (pr_coctx->waiting == 0) {
-        pr_coctx->done = 1;
+        dd("all subrequests are done");
+
+        pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
+        pr_ctx->cur_co_ctx = pr_coctx;
+        pr_ctx->cur_co = pr_coctx->co;
     }
 
     if (pr_ctx->entered_content_phase) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua restoring write event handler");
+                       "lua restoring write event handler");
 
         pr->write_event_handler = ngx_http_lua_content_wev_handler;
     }
@@ -1059,9 +1066,9 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 }
 
 
-void
+static void
 ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx)
+    ngx_http_lua_ctx_t *ctx)
 {
     ngx_uint_t                   i;
     ngx_uint_t                   index;
@@ -1402,5 +1409,85 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 #endif
 
     return ngx_http_post_request(sr, NULL);
+}
+
+
+static ngx_int_t
+ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
+{
+    ngx_int_t                    rc;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run subrequests done, resuming lua thread");
+
+    coctx = ctx->cur_co_ctx;
+
+    dd("nsubreqs: %d", (int) coctx->nsubreqs);
+
+    ngx_http_lua_handle_subreq_responses(r, ctx);
+
+    dd("free sr_statues/headers/bodies memory ASAP");
+
+#if 1
+    ngx_pfree(r->pool, coctx->sr_statuses);
+
+    coctx->sr_statuses = NULL;
+    coctx->sr_headers = NULL;
+    coctx->sr_bodies = NULL;
+#endif
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, coctx->nsubreqs);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return NGX_DONE;
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    r->write_event_handler = ngx_http_core_run_phases;
+
+    return rc;
+}
+
+
+static void
+ngx_http_lua_cancel_subreq(ngx_http_request_t *r)
+{
+    ngx_http_posted_request_t   *pr;
+    ngx_http_posted_request_t  **p;
+
+#if 1
+    r->main->count--;
+    r->main->subrequests++;
+#endif
+
+    p = &r->main->posted_requests;
+    for (pr = r->main->posted_requests; pr->next; pr = pr->next) {
+        p = &pr->next;
+    }
+
+    *p = NULL;
+
+    r->connection->data = r->parent;
 }
 

@@ -91,7 +91,14 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 void
 ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
 {
-    (void) ngx_http_lua_wev_handler(r);
+    ngx_http_lua_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    (void) ctx->resume_handler(r);
 }
 
 
