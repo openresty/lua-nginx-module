@@ -77,6 +77,8 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
+    ngx_http_lua_co_ctx_t           *co_ctx;
+
     ngx_uint_t                       reused;
 
     unsigned                         request_sent:1;

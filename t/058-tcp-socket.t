@@ -71,6 +71,7 @@ __DATA__
         content_by_lua 'ngx.say("foo")';
         more_clear_headers Date;
     }
+
 --- request
 GET /t
 --- response_body
@@ -243,6 +244,7 @@ attempt to send data on a closed socket:
             end
         ';
     }
+
 --- request
 GET /t
 --- response_body

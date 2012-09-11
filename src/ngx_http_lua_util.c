@@ -1155,7 +1155,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_chain_t                 *cl;
     ngx_http_lua_co_ctx_t       *coctx;
 
-    ngx_http_lua_socket_tcp_upstream_t      *tcp;
     ngx_http_lua_socket_udp_upstream_t      *udp;
 
     c = r->connection;
@@ -1298,10 +1297,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    if (coctx->socket_busy && !coctx->socket_ready) {
-        return NGX_DONE;
-    }
-
     if (coctx->udp_socket_busy && !coctx->udp_socket_ready) {
         return NGX_DONE;
     }
@@ -1325,30 +1320,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         goto run;
     }
 
-    if (!coctx->socket_busy && coctx->socket_ready) {
-
-        dd("resuming socket api");
-
-        dd("setting socket_ready to 0");
-
-        coctx->socket_ready = 0;
-
-        tcp = coctx->data;
-
-        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua tcp socket calling prepare retvals handler %p, "
-                       "u:%p", tcp->prepare_retvals, tcp);
-
-        nret = tcp->prepare_retvals(r, tcp, ctx->cur_co);
-        if (nret == NGX_AGAIN) {
-            return NGX_DONE;
-        }
-
-        ngx_http_lua_probe_info("tcp cosocket hit");
-
-        goto run;
-
-    } else if (coctx->waiting_flush) {
+    if (coctx->waiting_flush) {
 
         coctx->waiting_flush = 0;
         nret = 0;
@@ -1356,8 +1328,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ngx_http_lua_probe_info("waiting flush hit");
 
         goto run;
+    }
 
-    } else if (ctx->req_read_body_done) {
+    if (ctx->req_read_body_done) {
 
         dd("turned off req read body done");
 
