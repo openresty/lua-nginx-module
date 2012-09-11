@@ -565,7 +565,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     dd("setting data to %p", u);
 
     coctx->data = u;
-    coctx->socket_busy = 1;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -588,7 +587,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     struct sockaddr_in                  *sin;
     ngx_uint_t                           i;
     unsigned                             waiting;
-    ngx_http_lua_co_ctx_t               *coctx;
 
     u = ctx->data;
     r = u->request;
@@ -700,12 +698,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     u->waiting = 0;
 
     if (waiting) {
-
-        coctx = u->co_ctx;
-        coctx->socket_busy = 0;
-
         lctx->resume_handler = ngx_http_lua_socket_tcp_resume;
-
         r->write_event_handler(r);
 
     } else {
@@ -877,7 +870,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     dd("setting data to %p", u);
 
     coctx->data = u;
-    coctx->socket_busy = 1;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -1130,7 +1122,6 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     dd("setting data to %p, coctx:%p", u, coctx);
 
     coctx->data = u;
-    coctx->socket_busy = 1;
 
     return lua_yield(L, 0);
 }
@@ -1656,7 +1647,6 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     coctx = ctx->cur_co_ctx;
 
     coctx->data = u;
-    coctx->socket_busy = 1;
 
     return lua_yield(L, 0);
 }
@@ -2011,7 +2001,6 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_co_ctx_t       *coctx;
 
 #if 1
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
@@ -2026,9 +2015,6 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
 
     if (u->waiting) {
         u->waiting = 0;
-
-        coctx = u->co_ctx;
-        coctx->socket_busy = 0;
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
         if (ctx == NULL) {
@@ -2050,7 +2036,6 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, ngx_uint_t ft_type)
 {
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_co_ctx_t       *coctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket handle error");
@@ -2066,12 +2051,6 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
 
     if (u->waiting) {
         u->waiting = 0;
-
-        coctx = u->co_ctx;
-
-        dd("setting socket_ready to 1");
-
-        coctx->socket_busy = 0;
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
         if (ctx == NULL) {
@@ -2517,7 +2496,6 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     dd("setting data to %p", u);
 
     coctx->data = u;
-    coctx->socket_busy = 1;
 
     return lua_yield(L, 0);
 }

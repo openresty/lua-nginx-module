@@ -233,8 +233,6 @@ struct ngx_http_lua_co_ctx_s {
 
     unsigned                 waiting_flush:1; /* for ngx.flush() */
 
-    unsigned                 socket_busy:1;  /* for TCP */
-
     unsigned                 udp_socket_busy:1;  /* for UDP */
     unsigned                 udp_socket_ready:1; /* for UDP */
 
