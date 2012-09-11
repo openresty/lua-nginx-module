@@ -1320,7 +1320,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             return NGX_DONE;
         }
 
-        /* ngx_http_lua_probe_info("udp cosocket hit"); */
+        ngx_http_lua_probe_info("udp cosocket hit");
 
         goto run;
     }
@@ -1344,7 +1344,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             return NGX_DONE;
         }
 
-        /* ngx_http_lua_probe_info("tcp cosocket hit"); */
+        ngx_http_lua_probe_info("tcp cosocket hit");
 
         goto run;
 
@@ -1353,7 +1353,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         coctx->waiting_flush = 0;
         nret = 0;
 
-        /* ngx_http_lua_probe_info("waiting flush hit"); */
+        ngx_http_lua_probe_info("waiting flush hit");
 
         goto run;
 
@@ -1368,7 +1368,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                 "lua read req body done, resuming lua thread");
 
-        /* ngx_http_lua_probe_info("req read body hit"); */
+        ngx_http_lua_probe_info("req read body hit");
 
         goto run;
     }
