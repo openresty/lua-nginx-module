@@ -36,7 +36,9 @@ struct ngx_http_lua_socket_udp_upstream_s {
     size_t                           received; /* for receive */
     size_t                           recv_buf_size;
 
-    unsigned                         waiting:1;
+    ngx_http_lua_co_ctx_t           *co_ctx;
+
+    unsigned                         waiting; /* :1 */
 };
 
 

@@ -232,10 +232,6 @@ struct ngx_http_lua_co_ctx_s {
     ngx_event_t              sleep;      /* used for ngx.sleep */
 
     unsigned                 waiting_flush:1; /* for ngx.flush() */
-
-    unsigned                 udp_socket_busy:1;  /* for UDP */
-    unsigned                 udp_socket_ready:1; /* for UDP */
-
 };
 
 
