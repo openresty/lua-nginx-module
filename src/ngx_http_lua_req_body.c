@@ -21,7 +21,8 @@ static int ngx_http_lua_ngx_req_init_body(lua_State *L);
 static int ngx_http_lua_ngx_req_append_body(lua_State *L);
 static int ngx_http_lua_ngx_req_body_finish(lua_State *L);
 static ngx_int_t ngx_http_lua_write_request_body(ngx_http_request_t *r,
-        ngx_chain_t *body);
+    ngx_chain_t *body);
+static ngx_int_t ngx_http_lua_read_body_resume(ngx_http_request_t *r);
 
 
 void
@@ -118,15 +119,12 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
                 "lua read buffered request body requires I/O interruptions");
 
         ctx->waiting_more_body = 1;
-        ctx->req_read_body_done = 0;
         ctx->req_body_reader_co_ctx = coctx;
 
         return lua_yield(L, 0);
     }
 
     /* rc == NGX_OK */
-
-    ctx->req_read_body_done = 0;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua has read buffered request body in a single run");
@@ -138,13 +136,13 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 static void
 ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 {
-    ngx_http_lua_ctx_t  *ctx;
+    ngx_http_lua_ctx_t      *ctx;
+    ngx_http_lua_co_ctx_t   *coctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua req body post read");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    ctx->req_read_body_done = 1;
 
 #if defined(nginx_version) && nginx_version >= 8011
     r->main->count--;
@@ -153,10 +151,15 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
 
+        coctx = ctx->req_body_reader_co_ctx;
+        ctx->cur_co_ctx = coctx;
+        ctx->cur_co = coctx->co;
+
         if (ctx->entered_content_phase) {
-            (void) ctx->resume_handler(r);
+            (void) ngx_http_lua_read_body_resume(r);
 
         } else {
+            ctx->resume_handler = ngx_http_lua_read_body_resume;
             ngx_http_core_run_phases(r);
         }
     }
@@ -621,9 +624,10 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r->request_body == NULL || r->request_body->buf == NULL
-        || r->request_body->bufs == NULL) {
-
+    if (r->request_body == NULL
+        || r->request_body->buf == NULL
+        || r->request_body->bufs == NULL)
+    {
         return luaL_error(L, "request_body not initalized");
     }
 
@@ -1068,5 +1072,41 @@ ngx_http_lua_write_request_body(ngx_http_request_t *r, ngx_chain_t *body)
     rb->temp_file->offset += n;
 
     return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_read_body_resume(ngx_http_request_t *r)
+{
+    ngx_int_t                    rc;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return NGX_DONE;
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
 }
 

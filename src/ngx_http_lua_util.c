@@ -1220,14 +1220,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_OK;
     }
 
-    if (ctx->waiting_more_body && !ctx->req_read_body_done) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua write event handler waiting for more request "
-                       "body data");
-
-        return NGX_DONE;
-    }
-
     dd("req read body done: %d", (int) ctx->req_read_body_done);
 
     if (c->buffered) {
@@ -1301,22 +1293,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         nret = 0;
 
         ngx_http_lua_probe_info("waiting flush hit");
-
-        goto run;
-    }
-
-    if (ctx->req_read_body_done) {
-
-        dd("turned off req read body done");
-
-        ctx->req_read_body_done = 0;
-
-        nret = 0;
-
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                "lua read req body done, resuming lua thread");
-
-        ngx_http_lua_probe_info("req read body hit");
 
         goto run;
     }

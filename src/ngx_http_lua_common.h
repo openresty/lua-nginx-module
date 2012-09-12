@@ -296,9 +296,6 @@ typedef struct ngx_http_lua_ctx_s {
                                                        post_subrequest
                                                        (for subrequests only) */
 
-    unsigned                 req_read_body_done:1;  /* used by
-                                                       ngx.req.read_body */
-
     unsigned                 waiting_more_body:1;   /* 1: waiting for more
                                                        request body data;
                                                        0: no need to wait */
