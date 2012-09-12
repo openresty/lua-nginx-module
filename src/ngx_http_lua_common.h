@@ -226,8 +226,8 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_str_t               *sr_bodies;   /* all captured subrequest bodies */
 
-    unsigned                 waiting;     /* number of subrequests being
-                                             waited */
+    unsigned                 pending_subreqs; /* number of subrequests being
+                                                 waited */
 
     ngx_event_t              sleep;      /* used for ngx.sleep */
 

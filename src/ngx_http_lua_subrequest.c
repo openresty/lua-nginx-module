@@ -173,12 +173,12 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
     coctx->nsubreqs = nsubreqs;
 
-    coctx->waiting = 0;
+    coctx->pending_subreqs = 0;
 
     extra_vars = NULL;
 
     for (index = 0; index < nsubreqs; index++) {
-        coctx->waiting++;
+        coctx->pending_subreqs++;
 
         lua_rawgeti(L, 1, index + 1);
         if (lua_isnil(L, -1)) {
@@ -855,9 +855,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     pr_coctx = psr_data->pr_co_ctx;
-    pr_coctx->waiting--;
+    pr_coctx->pending_subreqs--;
 
-    if (pr_coctx->waiting == 0) {
+    if (pr_coctx->pending_subreqs == 0) {
         dd("all subrequests are done");
 
         pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
@@ -1088,10 +1088,10 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     coctx = ctx->cur_co_ctx;
 
     for (index = 0; index < coctx->nsubreqs; index++) {
-        dd("summary: reqs %d, subquery %d, waiting %d, req %.*s",
+        dd("summary: reqs %d, subquery %d, pending %d, req %.*s",
                 (int) coctx->nsubreqs,
                 (int) index,
-                (int) coctx->waiting,
+                (int) coctx->pending_subreqs,
                 (int) r->uri.len, r->uri.data);
 
         /*  {{{ construct ret value */
