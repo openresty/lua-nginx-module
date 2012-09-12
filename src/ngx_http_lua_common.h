@@ -255,6 +255,10 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_array_t             *user_co_ctx; /* coroutine contexts for user
                                              coroutines */
 
+    ngx_http_lua_co_ctx_t   *req_socket_co_ctx; /* coroutine context for the
+                                                   coroutine using the
+                                                   ngx.req.socket() API */
+
     ngx_http_lua_co_ctx_t    entry_co_ctx; /* coroutine context for the
                                               entry coroutine */
 
