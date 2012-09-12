@@ -835,7 +835,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         for ( ;; ) {
 
-            dd("calling lua_resume: vm %p, nret %d", ctx->cur_co_ctx->co, (int) nret);
+            dd("calling lua_resume: vm %p, nret %d", ctx->cur_co_ctx->co,
+               (int) nret);
 
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
@@ -928,7 +929,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                          * immediately */
 
                         ngx_http_lua_probe_entry_coroutine_yield(r,
-                                                                 ctx->cur_co_ctx->co);
+                                                         ctx->cur_co_ctx->co);
 
                         lua_settop(ctx->cur_co_ctx->co, 0);
                         nrets = 0;
@@ -1060,7 +1061,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 msg = "unknown reason";
             }
 
-            ngx_http_lua_thread_traceback(L, ctx->cur_co_ctx->co, ctx->cur_co_ctx);
+            ngx_http_lua_thread_traceback(L, ctx->cur_co_ctx->co,
+                                          ctx->cur_co_ctx);
             trace = lua_tostring(L, -1);
             lua_pop(L, 1);
 
@@ -1279,7 +1281,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
             ctx->flushing_coros--;
             ctx->cur_co_ctx = coctx;
-            ctx->cur_co_ctx->co = coctx->co;
 
             rc = ngx_http_lua_flush_resume_helper(r, ctx);
             if (rc == NGX_ERROR || rc >= NGX_OK) {
