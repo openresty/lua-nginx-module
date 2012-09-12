@@ -1359,6 +1359,9 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
     ngx_http_lua_socket_udp_upstream_t      *u;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
 
     ctx->resume_handler = ngx_http_lua_wev_handler;
 

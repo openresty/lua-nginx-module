@@ -231,7 +231,9 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;      /* used for ngx.sleep */
 
-    unsigned                 waiting_flush:1; /* for ngx.flush() */
+    unsigned                 flushing;  /* :1 indicates whether the current
+                                           coroutine is waiting for
+                                           ngx.flush(true) */
 };
 
 
@@ -247,7 +249,6 @@ typedef struct ngx_http_lua_ctx_s {
                                             request's entry coroutine */
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
-
 
     lua_State               *entry_co;  /*  the entry Lua coroutine */
 
@@ -267,6 +268,9 @@ typedef struct ngx_http_lua_ctx_s {
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
                                            registry */
+
+    unsigned                 flushing_coros; /* number of coroutines waiting on
+                                                ngx.flush(true) */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;

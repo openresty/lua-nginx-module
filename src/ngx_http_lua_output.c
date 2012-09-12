@@ -543,7 +543,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
                 "lua flush requires waiting: buffered 0x%uxd",
                 (int) r->connection->buffered);
 
-        coctx->waiting_flush = 1;
+        coctx->flushing = 1;
+        ctx->flushing_coros++;
 
         if (ctx->entered_content_phase) {
             /* mimic ngx_http_set_write_handler */
@@ -676,5 +677,36 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
     }
 
     return 0;
+}
+
+
+ngx_int_t
+ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+{
+    ngx_int_t                    rc;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return NGX_DONE;
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
 }
 

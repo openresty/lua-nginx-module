@@ -1147,13 +1147,12 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_main_conf_t    *lmcf;
-    int                          nret = 0;
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
     ngx_chain_t                 *cl;
     ngx_http_lua_co_ctx_t       *coctx;
+    ngx_uint_t                   i;
 
     c = r->connection;
 
@@ -1164,10 +1163,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        goto error;
+        return NGX_ERROR;
     }
-
-    coctx = ctx->cur_co_ctx;
 
     clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
 
@@ -1270,7 +1267,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 return NGX_ERROR;
             }
 
-            if (coctx->waiting_flush) {
+            if (ctx->flushing_coros) {
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                         "lua flush still waiting: buffered 0x%uxd",
                         c->buffered);
@@ -1287,66 +1284,77 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    if (coctx->waiting_flush) {
+    if (ctx->flushing_coros) {
 
-        coctx->waiting_flush = 0;
-        nret = 0;
+        coctx = &ctx->entry_co_ctx;
 
-        ngx_http_lua_probe_info("waiting flush hit");
+        if (coctx->flushing) {
+            coctx->flushing = 0;
 
-        goto run;
+            ctx->flushing_coros--;
+            ctx->cur_co_ctx = coctx;
+            ctx->cur_co = coctx->co;
+
+            rc = ngx_http_lua_flush_resume_helper(r, ctx);
+            if (rc == NGX_ERROR || rc >= NGX_OK) {
+                return rc;
+            }
+
+            /* rc == NGX_DONE */
+        }
+
+        if (ctx->flushing_coros) {
+
+            if (ctx->user_co_ctx == NULL) {
+                return NGX_ERROR;
+            }
+
+            coctx = ctx->user_co_ctx->elts;
+
+            i = 0;
+            do {
+                for ( ;; ) {
+                    if (i >= ctx->user_co_ctx->nelts) {
+                        return NGX_ERROR;
+                    }
+
+                    if (coctx[i].flushing) {
+                        coctx[i].flushing = 0;
+                        ctx->cur_co_ctx = &coctx[i];
+                        ctx->cur_co = coctx[i].co;
+                        break;
+                    }
+
+                    i++;
+                }
+
+                rc = ngx_http_lua_flush_resume_helper(r, ctx);
+                if (rc == NGX_ERROR || rc >= NGX_OK) {
+                    return rc;
+                }
+
+                /* rc == NGX_DONE */
+
+            } while (--ctx->flushing_coros);
+        }
+
+        if (ctx->flushing_coros) {
+            return NGX_ERROR;
+        }
+
+        return NGX_DONE;
     }
+
+    /* ctx->flushing_coros == 0 */
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "useless lua write event handler");
-
-#if 0
-    if (ctx->entered_content_phase) {
-        ngx_http_finalize_request(r, NGX_DONE);
-    }
-#endif
 
     if (ctx->entered_content_phase) {
         return NGX_OK;
     }
 
     return NGX_DONE;
-
-run:
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    dd("about to run thread for %.*s...", (int) r->uri.len, r->uri.data);
-
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "lua run thread returned %d", rc);
-
-    if (rc == NGX_AGAIN) {
-        return NGX_DONE;
-    }
-
-    if (rc == NGX_DONE) {
-        ngx_http_finalize_request(r, rc);
-        return NGX_DONE;
-    }
-
-    dd("entered content phase: %d", (int) ctx->entered_content_phase);
-
-    if (ctx->entered_content_phase) {
-        ngx_http_finalize_request(r, rc);
-        return NGX_DONE;
-    }
-
-    return rc;
-
-error:
-    if (ctx && ctx->entered_content_phase) {
-        ngx_http_finalize_request(r,
-                ctx->headers_sent ? NGX_ERROR: NGX_HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    return NGX_ERROR;
 }
 
 
