@@ -1194,17 +1194,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-    dd("wev handler %.*s %.*s a:%d, postponed:%p",
-            (int) r->uri.len, r->uri.data,
-            (int) ngx_cached_err_log_time.len,
-            ngx_cached_err_log_time.data,
-            r == c->data,
-            r->postponed);
-
-    dd("ctx = %p", ctx);
-    dd("request done: %d", (int) r->done);
-    dd("cleanup done: %p", ctx->cleanup);
-
+#if 0
     if (ctx->cleanup == NULL) {
         /* already done */
         dd("cleanup is null: %.*s", (int) r->uri.len, r->uri.data);
@@ -1216,8 +1206,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         return NGX_OK;
     }
-
-    dd("req read body done: %d", (int) ctx->req_read_body_done);
+#endif
 
     if (c->buffered) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
