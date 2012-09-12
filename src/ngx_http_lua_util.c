@@ -1193,19 +1193,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         }
     }
 
-#if 0
-    if (ctx->cleanup == NULL) {
-        /* already done */
-        dd("cleanup is null: %.*s", (int) r->uri.len, r->uri.data);
-
-        if (ctx->entered_content_phase) {
-            ngx_http_finalize_request(r,
-                    ngx_http_lua_flush_postponed_outputs(r));
-        }
-
-        return NGX_OK;
+    if (!wev->ready) {
+        goto useless;
     }
-#endif
 
     if (c->buffered) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -1333,6 +1323,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     /* ctx->flushing_coros == 0 */
 
+useless:
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "useless lua write event handler");
 
