@@ -153,7 +153,6 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
         coctx = ctx->req_body_reader_co_ctx;
         ctx->cur_co_ctx = coctx;
-        ctx->cur_co = coctx->co;
 
         if (ctx->entered_content_phase) {
             (void) ngx_http_lua_read_body_resume(r);

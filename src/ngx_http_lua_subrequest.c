@@ -862,7 +862,6 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
         pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
         pr_ctx->cur_co_ctx = pr_coctx;
-        pr_ctx->cur_co = pr_coctx->co;
     }
 
     if (pr_ctx->entered_content_phase) {
@@ -1084,8 +1083,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua handle subrequest responses");
 
-    co = ctx->cur_co;
     coctx = ctx->cur_co_ctx;
+    co = coctx->co;
 
     for (index = 0; index < coctx->nsubreqs; index++) {
         dd("summary: reqs %d, subquery %d, pending %d, req %.*s",

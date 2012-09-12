@@ -125,7 +125,6 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
     }
 
     ctx->cur_co_ctx = coctx;
-    ctx->cur_co = coctx->co;
 
     if (ctx->entered_content_phase) {
         (void) ngx_http_lua_sleep_resume(r);

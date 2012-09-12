@@ -408,7 +408,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    L = lctx->cur_co;
+    L = lctx->cur_co_ctx->co;
 
     dd("setting socket_ready to 1");
 
@@ -1378,7 +1378,7 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
                    "lua udp socket calling prepare retvals handler %p, "
                    "u:%p", u->prepare_retvals, u);
 
-    nret = u->prepare_retvals(r, u, ctx->cur_co);
+    nret = u->prepare_retvals(r, u, ctx->cur_co_ctx->co);
     if (nret == NGX_AGAIN) {
         return NGX_DONE;
     }

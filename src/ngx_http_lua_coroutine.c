@@ -152,7 +152,6 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
     ctx->co_op = NGX_HTTP_LUA_USER_CORO_RESUME;
     ctx->cur_co_ctx = coctx;
-    ctx->cur_co = co;
 
     /* yield and pass args to main thread, and resume target coroutine from
      * there */

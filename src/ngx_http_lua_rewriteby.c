@@ -258,7 +258,6 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     ctx->entered_rewrite_phase = 1;
 
     ctx->entry_co = co;
-    ctx->cur_co = co;
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
     ctx->cur_co_ctx->co = co;
     ctx->entry_ref = co_ref;

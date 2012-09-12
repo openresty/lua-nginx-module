@@ -603,7 +603,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     dd("ctx->cur_co_ctx = %p", lctx->cur_co_ctx);
     dd("u->co_ctx = %p", u->co_ctx);
 
-    L = lctx->cur_co;
+    L = lctx->cur_co_ctx->co;
 
     waiting = u->waiting;
 
@@ -3847,7 +3847,7 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
                    "lua tcp socket calling prepare retvals handler %p, "
                    "u:%p", u->prepare_retvals, u);
 
-    nret = u->prepare_retvals(r, u, ctx->cur_co);
+    nret = u->prepare_retvals(r, u, ctx->cur_co_ctx->co);
     if (nret == NGX_AGAIN) {
         return NGX_DONE;
     }

@@ -244,10 +244,6 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_http_handler_pt      resume_handler;
 
-    lua_State               *cur_co;    /*  the current running Lua coroutine,
-                                            not necessarily to be the
-                                            request's entry coroutine */
-
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
 
     lua_State               *entry_co;  /*  the entry Lua coroutine */
