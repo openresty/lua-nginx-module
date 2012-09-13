@@ -1346,7 +1346,24 @@ bad argument #3 to 'connect' (bad "pool" option type: boolean)
 
 
 
-=== TEST 22: bug in send(): clear the chain writer ctx
+=== TEST 22: clear the redis store
+--- config
+    location /t {
+        redis2_query flushall;
+        redis2_pass 127.0.0.1:$TEST_NGINX_REDIS_PORT;
+    }
+--- request
+    GET /t
+--- response_body eval
+"+OK\r\n"
+--- no_error_log
+[error]
+[alert]
+[warn]
+
+
+
+=== TEST 23: bug in send(): clear the chain writer ctx
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
