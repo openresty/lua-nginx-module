@@ -967,6 +967,13 @@ close: nil closed
     }
 --- request
     GET /test
+
+--- stap2
+M(http-lua-info) {
+    printf("tcp resume: %p\n", $coctx)
+    print_ubacktrace()
+}
+
 --- response_body
 failed to connect: connection refused
 --- error_log
@@ -1167,6 +1174,12 @@ function go(port)
         ngx.say("failed to receive a line: ", err, " [", part, "]")
     end
 end
+
+--- stap2
+M(http-lua-info) {
+    printf("tcp resume\n")
+    print_ubacktrace()
+}
 --- request
 GET /t
 --- response_body_like eval

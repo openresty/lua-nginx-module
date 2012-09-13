@@ -9,6 +9,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_output.h"
+#include "ngx_http_lua_probe.h"
 
 
 #define UDP_MAX_DATAGRAM_SIZE 8192
@@ -339,6 +340,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     rctx->data = u;
     rctx->timeout = clcf->resolver_timeout;
 
+    u->co_ctx = ctx->cur_co_ctx;
     u->resolved->ctx = rctx;
 
     saved_top = lua_gettop(L);
@@ -370,7 +372,6 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     /* still resolving */
 
-    u->co_ctx = ctx->cur_co_ctx;
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
 
@@ -407,7 +408,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
                    "lua udp socket resolve handler");
 
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (lctx == NULL) {
+        return;
+    }
 
+    lctx->cur_co_ctx = u->co_ctx;
     L = lctx->cur_co_ctx->co;
 
     dd("setting socket_ready to 1");
@@ -1122,6 +1127,7 @@ ngx_http_lua_socket_udp_handle_error(ngx_http_request_t *r,
         }
 
         ctx->resume_handler = ngx_http_lua_socket_udp_resume;
+        ctx->cur_co_ctx = u->co_ctx;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua udp socket waking up the current request");
@@ -1191,6 +1197,7 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
         }
 
         ctx->resume_handler = ngx_http_lua_socket_udp_resume;
+        ctx->cur_co_ctx = u->co_ctx;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua udp socket waking up the current request");
@@ -1368,9 +1375,13 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua run subrequests done, resuming lua thread");
+                   "lua udp operation done, resuming lua thread");
 
     coctx = ctx->cur_co_ctx;
+
+#if 0
+    ngx_http_lua_probe_info("udp resume");
+#endif
 
     u = coctx->data;
 

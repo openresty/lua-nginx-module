@@ -896,6 +896,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     dd("hit! it is the API yield");
 
                     lua_settop(ctx->cur_co_ctx->co, 0);
+                    ctx->cur_co_ctx = NULL;
+
                     return NGX_AGAIN;
 
                 case NGX_HTTP_LUA_USER_CORO_RESUME:

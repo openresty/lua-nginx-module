@@ -528,6 +528,9 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     rctx->timeout = clcf->resolver_timeout;
 
     u->resolved->ctx = rctx;
+    u->co_ctx = ctx->cur_co_ctx;
+
+    coctx->data = u;
 
     saved_top = lua_gettop(L);
 
@@ -558,13 +561,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* still resolving */
 
-    u->co_ctx = ctx->cur_co_ctx;
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
 
     dd("setting data to %p", u);
-
-    coctx->data = u;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -600,9 +600,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         return;
     }
 
-    dd("ctx->cur_co_ctx = %p", lctx->cur_co_ctx);
-    dd("u->co_ctx = %p", u->co_ctx);
-
+    lctx->cur_co_ctx = u->co_ctx;
     L = lctx->cur_co_ctx->co;
 
     waiting = u->waiting;
@@ -2024,6 +2022,7 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
         }
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
+        ctx->cur_co_ctx = u->co_ctx;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -2060,6 +2059,7 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
         }
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
+        ctx->cur_co_ctx = u->co_ctx;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -3837,9 +3837,15 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua run subrequests done, resuming lua thread");
+                   "lua tcp operation done, resuming lua thread");
 
     coctx = ctx->cur_co_ctx;
+
+#if 0
+    ngx_http_lua_probe_info("tcp resume");
+#endif
+
+    dd("coctx: %p", coctx);
 
     u = coctx->data;
 
