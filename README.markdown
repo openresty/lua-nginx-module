@@ -193,13 +193,30 @@ Synopsis
 Description
 ===========
 
-This module embeds Lua, via the standard Lua interpreter or LuaJIT, into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
+This module embeds Lua, via the standard Lua interpreter or [LuaJIT 2.0](http://luajit.org/luajit.html), into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
 Unlike [Apache's mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html) and [Lighttpd's mod_magnet](http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet), Lua code executed using this module can be *100% non-blocking* on network traffic as long as the [Nginx API for Lua](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) provided by this module is used to handle
-requests to upstream services such as mysql, postgresql, memcached, redis, or upstream http web services. (See [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi), [ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp), [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule), [ngx_postgres](http://github.com/FRiCKLE/ngx_postgres/), [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module) and [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) modules for details).
+requests to upstream services such as MySQL, PostgreSQL, Memcached, Redis, or upstream HTTP web services.
 
-The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines. 
-Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint even when under heavy loads.
+At least the following Lua libraries and Nginx modules can be used with this ngx_lua module:
+
+* [lua-resty-memcached](https://github.com/agentzh/lua-resty-memcached)
+* [lua-resty-mysql](https://github.com/agentzh/lua-resty-mysql)
+* [lua-resty-redis](https://github.com/agentzh/lua-resty-redis)
+* [lua-resty-dns](https://github.com/agentzh/lua-resty-dns)
+* [lua-resty-upload](https://github.com/agentzh/lua-resty-upload)
+* [ngx_memc](http://wiki.nginx.org/HttpMemcModule)
+* [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
+* [ngx_redis2](http://wiki.nginx.org/HttpRedis2Module)
+* [ngx_redis](http://wiki.nginx.org/HttpRedisModule)
+* [ngx_proxy](http://wiki.nginx.org/HttpProxyModule)
+* [ngx_fastcgi](http://wiki.nginx.org/HttpFastcgiModule)
+
+Almost all the Nginx modules can be used with this ngx_lua module by means of [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) or [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) but it is recommended to use those `lua-resty-*` libraries instead of creating subrequests to access the Nginx upstream modules because the former is usually much more flexible and memory-efficient.
+
+The Lua interpreter or LuaJIT instance is shared across all the requests in a single nginx worker process but request contexts are segregated using lightweight Lua coroutines.
+
+Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint in Lua even when under heavy loads.
 
 Directives
 ==========
@@ -4287,10 +4304,10 @@ This data sharing technique is essential for high performance Lua applications b
 
 Note that this data sharing is on a *per-worker* basis and not on a ''per-server' basis'. That is, when there are multiple nginx worker processes under an Nginx master, data sharing cannot cross the process boundary between these workers. 
 
-If server wide data sharing is required:
+If server-wide data sharing is required, then use one or more of the following approaches:
 1. Use the [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT) API provided by this module.
-1. Use only a single nginx worker and a single server. This is however not recommended when there is a multi core CPU or multiple CPUs in a single machine.
-1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The ngx_openresty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules that provide interfaces with these data storage mechanisms.  See the [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule), [HttpRedis2Module](http://wiki.nginx.org/HttpRedis2Module), [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule) and [HttpPostgresModule](http://github.com/FRiCKLE/ngx_postgres/) modules for details
+1. Use only a single nginx worker and a single server (this is however not recommended when there is a multi core CPU or multiple CPUs in a single machine).
+1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The ngx_openresty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules and Lua libraries that provide interfaces with these data storage mechanisms.
 
 Known Issues
 ============
