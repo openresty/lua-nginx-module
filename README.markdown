@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.6.4](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 September 2012.
+This document describes ngx_lua [v0.6.5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 15 September 2012.
 
 Synopsis
 ========
@@ -2786,7 +2786,26 @@ ngx.eof
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Explicitly specify the end of the response output stream.
+Explicitly specify the end of the response output stream. In the case of HTTP 1.1 chunked encoded output, it will just trigger the Nginx core to send out the "last chunk".
+
+When you disable the HTTP 1.1 keep-alive feature for your downstream connections, you can rely on descent HTTP clients to close the connection actively for you when you call this method. This trick can be used do back-ground jobs without letting the HTTP clients to wait on the connection, as in the following example:
+
+
+    location = /async {
+        keepalive_timeout 0;
+        content_by_lua '
+            ngx.say("got the task!")
+            ngx.eof()  -- descent HTTP client will close the connection at this point
+            -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
+        ';
+    }
+
+
+But if you create subrequests to access other locations configured by Nginx upstream modules, then you should configure those upstream modules to ignore client connection abortions if they are not by default. For example, by default the standard [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) will terminate both the subrequest and the main request as soon as the client closes the connection, so it is important to turn on the [proxy_ignore_client_abort](http://wiki.nginx.org/HttpProxyModule#proxy_ignore_client_abort) directive in your location block configured by [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule):
+
+
+    proxy_ignore_client_abort on;
+
 
 ngx.sleep
 ---------
