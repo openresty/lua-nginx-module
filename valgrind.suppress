@@ -2,6 +2,13 @@
 <insert_a_suppression_name_here>
 Memcheck:Param
 sendmsg(msg.msg_iov[0])
+fun:sendmsg
+fun:ngx_write_channel
+}
+{
+<insert_a_suppression_name_here>
+Memcheck:Param
+sendmsg(msg.msg_iov[0])
 fun:__sendmsg_nocancel
 fun:ngx_write_channel
 fun:ngx_pass_open_channel
