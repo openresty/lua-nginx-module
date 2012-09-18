@@ -68,9 +68,6 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_uint_t                       ft_type;
     ngx_err_t                        socket_errno;
 
-    ngx_output_chain_ctx_t           output;
-    ngx_chain_writer_ctx_t           writer;
-
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
     void                            *input_filter_ctx;
 
@@ -80,8 +77,6 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *co_ctx;
 
     ngx_uint_t                       reused;
-
-    unsigned                         request_sent:1;
 
     unsigned                         waiting:1;
     unsigned                         eof:1;

@@ -396,6 +396,20 @@ lua tcp socket read timed out
     }
 --- request
 GET /t
+--- stap2
+global active = 0
+F(ngx_http_lua_socket_send) {
+    active = 1
+    println(probefunc())
+}
+probe syscall.send,
+    syscall.sendto,
+    syscall.writev
+{
+    if (active && pid() == target()) {
+        println(probefunc())
+    }
+}
 --- response_body
 connected: 1
 failed to send: timeout
