@@ -2274,7 +2274,8 @@ ngx.req.set_header
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*
 
 Set the current request's request header named `header_name` to value `header_value`, overriding any existing ones.
-None of the current request's subrequests will be affected.
+
+By default, all the subrequests subsequently initiated by [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) will automatically inherit the new header.
 
 Here is an example of setting the `Content-Length` header:
 

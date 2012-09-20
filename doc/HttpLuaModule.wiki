@@ -2208,7 +2208,8 @@ Removing the <code>max_headers</code> cap is strongly discouraged.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua''
 
 Set the current request's request header named <code>header_name</code> to value <code>header_value</code>, overriding any existing ones.
-None of the current request's subrequests will be affected.
+
+By default, all the subrequests subsequently initiated by [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] will automatically inherit the new header.
 
 Here is an example of setting the <code>Content-Length</code> header:
 
