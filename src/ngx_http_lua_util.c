@@ -102,10 +102,17 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
 
     dd("tmp_path path: %s", tmp_path);
 
-    tmp_path = luaL_gsub(L, tmp_path, AUX_MARK, default_path);
+#if (NGX_DEBUG)
+    tmp_path =
+#else
+    (void)
+#endif
+        luaL_gsub(L, tmp_path, AUX_MARK, default_path);
 
+#if (NGX_DEBUG)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, cf->log, 0,
                    "lua setting lua package.%s to \"%s\"", fieldname, tmp_path);
+#endif
 
     lua_remove(L, -2);
 
