@@ -813,6 +813,15 @@ ngx_http_lua_request_cleanup(void *data)
 }
 
 
+/*
+ * description:
+ *  run a Lua coroutine specified by ctx->cur_co_ctx->co
+ * return value:
+ *  NGX_AGAIN:      I/O interruption: r->main->count intact
+ *  NGX_DONE:       I/O interruption: r->main->count already incremented by 1
+ *  NGX_ERROR:      error
+ *  >= 200          HTTP status code
+ */
 ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int nret)
@@ -1829,9 +1838,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         rc = ngx_http_lua_send_chain_link(r, ctx,
                 NULL /* indicate last_buf */);
 
-        if (rc == NGX_ERROR ||
-                rc >= NGX_HTTP_SPECIAL_RESPONSE)
-        {
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
     }
