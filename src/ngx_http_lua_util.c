@@ -85,7 +85,7 @@ enum {
 
 static void
 ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
-        const char *fieldname, const char *path, const char *default_path)
+    const char *fieldname, const char *path, const char *default_path)
 {
     const char          *tmp_path;
     const char          *prefix;
@@ -332,7 +332,7 @@ ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 
 ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx)
+    ngx_http_lua_ctx_t *ctx)
 {
     ngx_int_t            rc;
 
@@ -364,7 +364,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-        ngx_chain_t *in)
+    ngx_chain_t *in)
 {
     ngx_int_t                     rc;
     ngx_chain_t                  *cl;
@@ -471,7 +471,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
 static ngx_int_t
 ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx)
+    ngx_http_lua_ctx_t *ctx)
 {
     size_t               size;
     ngx_chain_t         *cl;
@@ -626,7 +626,7 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
 ngx_int_t
 ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-        ngx_chain_t **chain, ngx_chain_t *in)
+    ngx_chain_t **chain, ngx_chain_t *in)
 {
     ngx_chain_t     *cl, **ll;
     size_t           len;
@@ -680,7 +680,7 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
 void
 ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
-        ngx_http_lua_ctx_t *ctx)
+    ngx_http_lua_ctx_t *ctx)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua reset ctx");
@@ -819,7 +819,7 @@ ngx_http_lua_request_cleanup(void *data)
  */
 ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int nret)
+    ngx_http_lua_ctx_t *ctx, int nret)
 {
     ngx_http_lua_co_ctx_t   *next_coctx;
     int                      rv, nrets;
@@ -1569,7 +1569,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
 /* XXX we also decode '+' to ' ' */
 void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
-        ngx_uint_t type)
+    ngx_uint_t type)
 {
     u_char  *d, *s, ch, c, decoded;
     enum {
@@ -1727,7 +1727,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int entry_ref)
+    ngx_http_lua_ctx_t *ctx, int entry_ref)
 {
     ngx_int_t               rc;
 
@@ -1806,7 +1806,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 
 static ngx_int_t
 ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int entry_ref)
+    ngx_http_lua_ctx_t *ctx, int entry_ref)
 {
     ngx_int_t           rc;
 
@@ -1844,7 +1844,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 
 void
 ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
-        int table, ngx_str_t *args)
+    int table, ngx_str_t *args)
 {
     u_char              *key;
     size_t               key_len;
@@ -2072,7 +2072,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
 static ngx_int_t
 ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int entry_ref)
+    ngx_http_lua_ctx_t *ctx, int entry_ref)
 {
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua thread aborting request with URI rewrite jump: "
@@ -2090,7 +2090,7 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
 /* XXX ngx_open_and_stat_file is static in the core. sigh. */
 ngx_int_t
 ngx_http_lua_open_and_stat_file(u_char *name, ngx_open_file_info_t *of,
-        ngx_log_t *log)
+    ngx_log_t *log)
 {
     ngx_fd_t         fd;
     ngx_file_info_t  fi;
@@ -2278,7 +2278,7 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
 
 static int
 ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
-        ngx_http_lua_co_ctx_t *coctx)
+    ngx_http_lua_co_ctx_t *coctx)
 {
     int         base;
     int         level = 0, count = 0;
