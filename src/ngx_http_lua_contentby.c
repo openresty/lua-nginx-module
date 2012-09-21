@@ -19,6 +19,7 @@ ngx_int_t
 ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     int                      co_ref;
+    ngx_int_t                rc;
     lua_State               *co;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
@@ -82,7 +83,24 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->context = NGX_HTTP_LUA_CONTEXT_CONTENT;
 
-    return ngx_http_lua_run_thread(L, r, ctx, 0);
+    rc = ngx_http_lua_run_thread(L, r, ctx, 0);
+
+    if (rc == NGX_ERROR || rc >= NGX_OK) {
+        return rc;
+    }
+
+    if (rc == NGX_DONE) {
+        return NGX_DONE;
+    }
+
+    if (rc == NGX_AGAIN) {
+#if defined(nginx_version) && nginx_version >= 8011
+        r->main->count++;
+#endif
+        return NGX_DONE;
+    }
+
+    return NGX_OK;
 }
 
 
@@ -236,24 +254,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     /*  make sure we have a valid code chunk */
     assert(lua_isfunction(L, -1));
 
-    rc = ngx_http_lua_content_by_chunk(L, r);
-
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
-    }
-
-    if (rc == NGX_DONE) {
-        return NGX_DONE;
-    }
-
-    if (rc == NGX_AGAIN) {
-#if defined(nginx_version) && nginx_version >= 8011
-        r->main->count++;
-#endif
-        return NGX_DONE;
-    }
-
-    return NGX_OK;
+    return ngx_http_lua_content_by_chunk(L, r);
 }
 
 
@@ -287,23 +288,6 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_lua_content_by_chunk(L, r);
-
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
-    }
-
-    if (rc == NGX_DONE) {
-        return NGX_DONE;
-    }
-
-    if (rc == NGX_AGAIN) {
-#if defined(nginx_version) && nginx_version >= 8011
-        r->main->count++;
-#endif
-        return NGX_DONE;
-    }
-
-    return NGX_OK;
+    return ngx_http_lua_content_by_chunk(L, r);
 }
 

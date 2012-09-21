@@ -98,7 +98,11 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         rc = ctx->resume_handler(r);
         dd("wev handler returns %d", (int) rc);
 
-        return rc;
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+            return rc;
+        }
+
+        return NGX_DECLINED;
     }
 
     if (llcf->force_read_body && !ctx->read_body_done) {
@@ -279,7 +283,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     dd("returned %d", (int) rc);
 
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc >= NGX_OK) {
         return rc;
     }
 
@@ -290,14 +294,6 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (rc == NGX_DONE) {
         ngx_http_finalize_request(r, NGX_DONE);
         return NGX_DONE;
-    }
-
-    if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
-    }
-
-    if (rc == NGX_OK) {
-        return NGX_OK;
     }
 
     return NGX_DECLINED;

@@ -280,7 +280,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
@@ -291,10 +291,6 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (rc == NGX_DONE) {
         ngx_http_finalize_request(r, NGX_DONE);
         return NGX_DONE;
-    }
-
-    if (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE) {
-        return rc;
     }
 
     return NGX_DECLINED;
