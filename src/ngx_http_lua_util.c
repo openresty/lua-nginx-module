@@ -291,13 +291,6 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref)
 }
 
 
-ngx_int_t
-ngx_http_lua_has_inline_var(ngx_str_t *s)
-{
-    return (ngx_http_script_variables_count(s) != 0);
-}
-
-
 u_char *
 ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 {

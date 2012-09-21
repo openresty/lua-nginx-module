@@ -65,8 +65,6 @@ lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
 
 void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *l, int ref);
 
-ngx_int_t ngx_http_lua_has_inline_var(ngx_str_t *s);
-
 u_char * ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len);
 
 ngx_int_t ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
