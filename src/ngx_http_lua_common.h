@@ -213,8 +213,6 @@ struct ngx_http_lua_co_ctx_s {
     lua_State               *co;
     ngx_http_lua_co_ctx_t   *parent_co_ctx;
 
-    ngx_http_lua_co_status_t co_status;
-
     ngx_http_cleanup_pt     *cleanup;
 
     unsigned                 nsubreqs;  /* number of subrequests of the
@@ -231,9 +229,10 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;      /* used for ngx.sleep */
 
-    unsigned                 flushing;  /* :1 indicates whether the current
-                                           coroutine is waiting for
-                                           ngx.flush(true) */
+    unsigned                 flushing:1;  /* indicates whether the current
+                                             coroutine is waiting for
+                                             ngx.flush(true) */
+    ngx_http_lua_co_status_t co_status:2;
 };
 
 
@@ -245,8 +244,6 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_http_handler_pt      resume_handler;
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
-
-    lua_State               *entry_co;  /*  the entry Lua coroutine */
 
     /* FIXME: we should use rbtree here to prevent O(n) lookup overhead */
     ngx_array_t             *user_co_ctx; /* coroutine contexts for user

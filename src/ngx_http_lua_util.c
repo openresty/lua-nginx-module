@@ -933,7 +933,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                                    "lua coroutine: yield");
 
                     ctx->co_op = NGX_HTTP_LUA_USER_CORO_NOP;
-                    if (ctx->cur_co_ctx->co == ctx->entry_co) {
+                    if (ctx->cur_co_ctx->co == ctx->entry_co_ctx.co) {
                         /* entry coroutine yielded will be resumed
                          * immediately */
 
@@ -976,7 +976,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
-                if (ctx->cur_co_ctx->co == ctx->entry_co) {
+                if (ctx->cur_co_ctx->co == ctx->entry_co_ctx.co) {
                     dd("hit! it is the entry");
 
                     lua_settop(L, 0); /* discard return values */
@@ -1075,7 +1075,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             trace = lua_tostring(L, -1);
             lua_pop(L, 1);
 
-            if (ctx->cur_co_ctx->co == ctx->entry_co) {
+            if (ctx->cur_co_ctx->co == ctx->entry_co_ctx.co) {
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                               "lua handler aborted: %s: %s\n%s", err, msg,
                               trace);
@@ -2468,7 +2468,7 @@ ngx_http_lua_get_co_ctx(lua_State *L, ngx_http_lua_ctx_t *ctx)
     ngx_uint_t                   i;
     ngx_http_lua_co_ctx_t       *coctx;
 
-    if (L == ctx->entry_co) {
+    if (L == ctx->entry_co_ctx.co) {
         return &ctx->entry_co_ctx;
     }
 
