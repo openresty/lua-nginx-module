@@ -502,9 +502,9 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         sr_ctx->entry_ref = LUA_NOREF;
         sr_ctx->ctx_ref = LUA_NOREF;
+        sr_ctx->resume_handler = ngx_http_lua_wev_handler;
 
         sr_ctx->capture = 1;
-
         sr_ctx->index = index;
 
         psr_data->ctx = sr_ctx;
