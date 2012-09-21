@@ -1196,7 +1196,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             ngx_add_timer(wev, clcf->send_timeout);
 
             if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
-                ngx_http_finalize_request(r, NGX_ERROR);
+                if (ctx->entered_content_phase) {
+                    ngx_http_finalize_request(r, NGX_ERROR);
+                }
                 return NGX_ERROR;
             }
         }
@@ -1216,7 +1218,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         if (rc == NGX_ERROR || rc > NGX_OK) {
             if (ctx->entered_content_phase) {
                 ngx_http_finalize_request(r, rc);
-                return NGX_DONE;
             }
 
             return rc;
@@ -1248,7 +1249,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
                 if (ctx->entered_content_phase) {
                     ngx_http_finalize_request(r, NGX_ERROR);
-                    return NGX_DONE;
                 }
 
                 return NGX_ERROR;
