@@ -51,15 +51,15 @@ char ngx_http_lua_request_key;
 static char ngx_http_lua_coroutines_key;
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx);
+    ngx_http_lua_ctx_t *ctx);
 static void ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L);
 static void ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
-        const char *fieldname, const char *path, const char *default_path);
+    const char *fieldname, const char *path, const char *default_path);
 static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int entry_ref);
+    ngx_http_lua_ctx_t *ctx, int entry_ref);
 static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, int entry_ref);
+    ngx_http_lua_ctx_t *ctx, int entry_ref);
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int entry_ref);
 static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
@@ -162,14 +162,15 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     if (!lua_istable(L, -1)) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                "the \"package\" table does not exist");
+                           "the \"package\" table does not exist");
         return NULL;
     }
 
 #ifdef LUA_DEFAULT_PATH
 #   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, cf->log, 0,
-            "lua prepending default package.path with %s", LUA_DEFAULT_PATH);
+                   "lua prepending default package.path with %s",
+                   LUA_DEFAULT_PATH);
 
     lua_pushliteral(L, LUA_DEFAULT_PATH ";"); /* package default */
     lua_getfield(L, -2, "path"); /* package default old */
@@ -181,7 +182,8 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 #ifdef LUA_DEFAULT_CPATH
 #   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, cf->log, 0,
-            "lua prepending default package.cpath with %s", LUA_DEFAULT_CPATH);
+                   "lua prepending default package.cpath with %s",
+                   LUA_DEFAULT_CPATH);
 
     lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
     lua_getfield(L, -2, "cpath"); /* package default old */
@@ -235,7 +237,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     lua_State       *co;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua creating new thread");
+                   "lua creating new thread");
 
     base = lua_gettop(L);
 
@@ -280,7 +282,7 @@ void
 ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L, int ref)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua deleting thread");
+                   "lua deleting thread");
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
@@ -438,7 +440,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         ctx->eof = 1;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua sending last buf of the response body");
+                       "lua sending last buf of the response body");
 
         rc = ngx_http_send_special(r, NGX_HTTP_LAST);
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -452,7 +454,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     if (ctx->buffering) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua buffering output bufs for the HTTP 1.0 request");
+                       "lua buffering output bufs for the HTTP 1.0 request");
 
         for (cl = ctx->out, ll = &ctx->out; cl; cl = cl->next) {
             ll = &cl->next;
@@ -480,7 +482,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua sending HTTP 1.0 response headers");
+                   "lua sending HTTP 1.0 response headers");
 
     if (r->header_only) {
         goto send;
@@ -509,7 +511,7 @@ static void
 ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
-            "lua initializing lua registry");
+                   "lua initializing lua registry");
 
     /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
@@ -552,7 +554,7 @@ static void
 ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
-            "lua initializing lua globals");
+                   "lua initializing lua globals");
 
 #if defined(NDK) && NDK
     ngx_http_lua_inject_ndk_api(L);
@@ -681,7 +683,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_ctx_t *ctx)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua reset ctx");
+                   "lua reset ctx");
 
     if (ctx->entry_ref != LUA_NOREF) {
         ngx_http_lua_del_thread(r, L, ctx->entry_ref);
@@ -771,7 +773,7 @@ ngx_http_lua_request_cleanup(void *data)
 
         if (llcf->log_handler == NULL) {
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                    "lua release ngx.ctx");
+                           "lua release ngx.ctx");
 
             lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
             lua_rawget(L, LUA_REGISTRYINDEX);
@@ -1212,8 +1214,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (c->buffered) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                "lua wev handler flushing output: buffered 0x%uxd",
-                c->buffered);
+                       "lua wev handler flushing output: buffered 0x%uxd",
+                       c->buffered);
 
         rc = ngx_http_output_filter(r, NULL);
 
@@ -1258,8 +1260,8 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
             if (ctx->flushing_coros) {
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                        "lua flush still waiting: buffered 0x%uxd",
-                        c->buffered);
+                               "lua flush still waiting: buffered 0x%uxd",
+                               c->buffered);
 
                 return NGX_DONE;
             }
@@ -1730,8 +1732,8 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     ngx_int_t               rc;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua thread initiated internal redirect to %V",
-            &ctx->exec_uri);
+                   "lua thread initiated internal redirect to %V",
+                   &ctx->exec_uri);
 
     ngx_http_lua_del_thread(r, L, entry_ref);
     ctx->entry_ref = LUA_NOREF;
@@ -1741,9 +1743,9 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     if (ctx->exec_uri.data[0] == '@') {
         if (ctx->exec_args.len > 0) {
             ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                    "query strings %V ignored when exec'ing "
-                    "named location %V",
-                    &ctx->exec_args, &ctx->exec_uri);
+                          "query strings %V ignored when exec'ing "
+                          "named location %V",
+                          &ctx->exec_args, &ctx->exec_uri);
         }
 
         r->write_event_handler = ngx_http_request_empty_handler;
@@ -1809,8 +1811,8 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     ngx_int_t           rc;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua thread aborting request with status %d",
-            ctx->exit_code);
+                   "lua thread aborting request with status %d",
+                   ctx->exit_code);
 
 #if 1
     if (!ctx->headers_sent && ctx->exit_code >= NGX_HTTP_OK) {
@@ -1864,7 +1866,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
     while (lua_next(L, table) != 0) {
         if (lua_type(L, -2) != LUA_TSTRING) {
             luaL_error(L, "attempt to use a non-string key in the "
-                    "\"args\" option table");
+                       "\"args\" option table");
             return;
         }
 
@@ -1904,7 +1906,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
                 if (value == NULL) {
                     luaL_error(L, "attempt to use %s as query arg value",
-                            luaL_typename(L, -1));
+                               luaL_typename(L, -1));
                     return;
                 }
 
@@ -1927,7 +1929,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
         default:
             luaL_error(L, "attempt to use %s as query arg value",
-                    luaL_typename(L, -1));
+                       luaL_typename(L, -1));
             return;
         }
 
@@ -2073,8 +2075,8 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, int entry_ref)
 {
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua thread aborting request with URI rewrite jump: \"%V?%V\"",
-            &r->uri, &r->args);
+                   "lua thread aborting request with URI rewrite jump: "
+                   "\"%V?%V\"", &r->uri, &r->args);
 
     ngx_http_lua_del_thread(r, L, entry_ref);
     ctx->entry_ref = LUA_NOREF;
@@ -2211,8 +2213,8 @@ ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         b = cl->buf;
         if ((size_t) (b->end - b->start) >= len) {
             ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
-                    "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
-                    (off_t) (b->end - b->start), len, cl, b->start);
+                           "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
+                           (off_t) (b->end - b->start), len, cl, b->start);
 
             b->pos = b->start;
             b->last = b->start;
