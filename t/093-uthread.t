@@ -783,3 +783,97 @@ hello in g()
 --- no_error_log
 [error]
 
+
+
+=== TEST 16: coroutine status of a running user thread
+--- config
+    location /lua {
+        content_by_lua '
+            local co
+            function f()
+                co = coroutine.running()
+                ngx.sleep(0.1)
+            end
+
+            ngx.thread.create(f)
+            ngx.say("status: ", coroutine.status(co))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+status: running
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: coroutine status of a dead user thread
+--- config
+    location /lua {
+        content_by_lua '
+            local co
+            function f()
+                co = coroutine.running()
+            end
+
+            ngx.thread.create(f)
+            ngx.say("status: ", coroutine.status(co))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 2
+delete thread 1
+
+--- response_body
+status: dead
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: coroutine status of a "normal" user thread
+--- config
+    location /lua {
+        content_by_lua '
+            local co
+            function f()
+                co = coroutine.running()
+                local co2 = coroutine.create(g)
+                coroutine.resume(co2)
+            end
+
+            function g()
+                ngx.sleep(0.1)
+            end
+
+            ngx.thread.create(f)
+            ngx.say("status: ", coroutine.status(co))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+status: normal
+--- no_error_log
+[error]
+
