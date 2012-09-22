@@ -11,6 +11,7 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 our $GCScript = <<'_EOC_';
 global ids, cur
+global in_req = 0
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -19,8 +20,15 @@ function gen_id(k) {
 }
 
 F(ngx_http_init_request) {
-    delete ids
-    cur = 0
+    in_req++
+    if (in_req == 1) {
+        delete ids
+        cur = 0
+    }
+}
+
+F(ngx_http_free_request) {
+    in_req--
 }
 
 M(http-lua-user-thread-create) {
@@ -39,6 +47,7 @@ _EOC_
 our $StapScript = <<'_EOC_';
 global ids, cur
 global timers
+global in_req = 0
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -47,8 +56,15 @@ function gen_id(k) {
 }
 
 F(ngx_http_init_request) {
-    delete ids
-    cur = 0
+    in_req++
+    if (in_req == 1) {
+        delete ids
+        cur = 0
+    }
+}
+
+F(ngx_http_free_request) {
+    in_req--
 }
 
 F(ngx_http_lua_co_cleanup) {
@@ -145,7 +161,7 @@ F(ngx_http_lua_ngx_exec) { println("exec") }
 F(ngx_http_lua_ngx_exit) { println("exit") }
 _EOC_
 
-no_shuffle();
+#no_shuffle();
 no_long_string();
 run_tests();
 
@@ -466,4 +482,221 @@ delete thread 1
 --- error_code: 500
 --- error_log
 lua thread aborted: runtime error: [string "content_by_lua"]:3: attempt to call field 'blah' (a nil value)
+
+
+
+=== TEST 10: simple user threads doing a single subrequest (entry quits early)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before capture")
+                res = ngx.location.capture("/proxy")
+                ngx.say("after capture: ", res.body)
+            end
+
+            ngx.say("before thread create")
+            ngx.thread.create(f)
+            ngx.say("after thread create")
+        ';
+    }
+
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location /foo {
+        echo_sleep 0.1;
+        echo -n hello world;
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+before thread create
+before capture
+after thread create
+after capture: hello world
+--- no_error_log
+[error]
+
+
+
+=== TEST 11: simple user threads doing a single subrequest (entry also does a subrequest and quits early)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before capture")
+                local res = ngx.location.capture("/proxy?foo")
+                ngx.say("after capture: ", res.body)
+            end
+
+            ngx.say("before thread create")
+            ngx.thread.create(f)
+            ngx.say("after thread create")
+            local res = ngx.location.capture("/proxy?bar")
+            ngx.say("capture: ", res.body)
+        ';
+    }
+
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/$args;
+    }
+
+    location /foo {
+        echo_sleep 0.1;
+        echo -n hello foo;
+    }
+
+    location /bar {
+        echo -n hello bar;
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+before thread create
+before capture
+after thread create
+capture: hello bar
+after capture: hello foo
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: simple user threads doing a single subrequest (entry also does a subrequest and quits late)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before capture")
+                local res = ngx.location.capture("/proxy?foo")
+                ngx.say("after capture: ", res.body)
+            end
+
+            ngx.say("before thread create")
+            ngx.thread.create(f)
+            ngx.say("after thread create")
+            local res = ngx.location.capture("/proxy?bar")
+            ngx.say("capture: ", res.body)
+        ';
+    }
+
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/$args;
+    }
+
+    location /foo {
+        echo_sleep 0.1;
+        echo -n hello foo;
+    }
+
+    location /bar {
+        echo_sleep 0.2;
+        echo -n hello bar;
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+delete thread 2
+delete thread 1
+
+--- response_body
+before thread create
+before capture
+after thread create
+after capture: hello foo
+capture: hello bar
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: two simple user threads doing single subrequests (entry also does a subrequest and quits between)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("f: before capture")
+                local res = ngx.location.capture("/proxy?foo")
+                ngx.say("f: after capture: ", res.body)
+            end
+
+            function g()
+                ngx.say("g: before capture")
+                local res = ngx.location.capture("/proxy?bah")
+                ngx.say("g: after capture: ", res.body)
+            end
+
+            ngx.say("before thread 1 create")
+            ngx.thread.create(f)
+            ngx.say("after thread 1 create")
+
+            ngx.say("before thread 2 create")
+            ngx.thread.create(g)
+            ngx.say("after thread 2 create")
+
+            local res = ngx.location.capture("/proxy?bar")
+            ngx.say("capture: ", res.body)
+        ';
+    }
+
+    location /proxy {
+        proxy_pass http://127.0.0.1:$server_port/$args;
+    }
+
+    location /foo {
+        echo_sleep 0.1;
+        echo -n hello foo;
+    }
+
+    location /bar {
+        echo_sleep 0.2;
+        echo -n hello bar;
+    }
+
+    location /bah {
+        echo_sleep 0.3;
+        echo -n hello bah;
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+create user thread 3 in 1
+delete thread 2
+delete thread 1
+delete thread 3
+
+--- response_body
+before thread 1 create
+f: before capture
+after thread 1 create
+before thread 2 create
+g: before capture
+after thread 2 create
+f: after capture: hello foo
+capture: hello bar
+g: after capture: hello bah
+--- no_error_log
+[error]
 
