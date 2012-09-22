@@ -42,6 +42,12 @@ M(http-lua-thread-delete) {
     printf("delete thread %x\n", t)
 }
 
+M(http-lua-user-coroutine-create) {
+    p = gen_id($arg2)
+    c = gen_id($arg3)
+    printf("create %x in %x\n", c, p)
+}
+
 _EOC_
 
 our $StapScript = <<'_EOC_';
@@ -185,6 +191,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -224,8 +231,10 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
+create 3 in 1
 create user thread 3 in 1
 delete thread 3
 delete thread 1
@@ -262,6 +271,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -306,7 +316,9 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
+create 3 in 1
 create user thread 3 in 1
 delete thread 1
 delete thread 3
@@ -347,6 +359,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -379,6 +392,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -414,6 +428,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -446,6 +461,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -474,6 +490,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -514,6 +531,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -563,6 +581,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -614,6 +633,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -681,7 +701,9 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
+create 3 in 1
 create user thread 3 in 1
 delete thread 2
 delete thread 1
@@ -726,7 +748,9 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
+create 3 in 2
 create user thread 3 in 2
 delete thread 3
 delete thread 1
@@ -768,7 +792,9 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
+create 3 in 2
 create user thread 3 in 2
 delete thread 1
 delete thread 2
@@ -804,6 +830,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 1
 delete thread 2
@@ -833,6 +860,7 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
 delete thread 2
 delete thread 1
@@ -868,12 +896,56 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+create 2 in 1
 create user thread 2 in 1
+create 3 in 2
 delete thread 1
 delete thread 2
 
 --- response_body
 status: normal
+--- no_error_log
+[error]
+
+
+
+=== TEST 19: creating user threads in a user coroutine
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before g")
+                ngx.thread.create(g)
+                ngx.say("after g")
+            end
+
+            function g()
+                ngx.say("hello in g()")
+            end
+
+            ngx.say("before f")
+            local co = coroutine.create(f)
+            coroutine.resume(co)
+            ngx.say("after f")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create 3 in 2
+create user thread 3 in 2
+delete thread 3
+delete thread 1
+
+--- response_body
+before f
+before g
+hello in g()
+after g
+after f
 --- no_error_log
 [error]
 
