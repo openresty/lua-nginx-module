@@ -38,8 +38,12 @@ provider nginx_lua {
     probe http__lua__user__thread__create(ngx_http_request_t *r,
             void *creator, void *newthread);
 
+    /* lua_State *thread, ngx_http_lua_ctx_t *ctx */
+    probe http__lua__thread__delete(ngx_http_request_t *r, void *thread, void *ctx);
+
     /* lua_State *thread */
-    probe http__lua__thread__delete(ngx_http_request_t *r, void *thread);
+    probe http__lua__run__posted__thread(ngx_http_request_t *r, void *thread,
+            int status);
 };
 
 

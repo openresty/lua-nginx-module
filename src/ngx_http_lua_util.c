@@ -290,7 +290,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
 
-    ngx_http_lua_probe_thread_delete(r, coctx->co);
+    ngx_http_lua_probe_thread_delete(r, coctx->co, ctx);
 
     luaL_unref(L, -1, coctx->co_ref);
     coctx->co_ref = LUA_NOREF;
@@ -324,7 +324,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
             ref = cc[i].co_ref;
 
             if (ref != LUA_NOREF) {
-                ngx_http_lua_probe_thread_delete(r, cc[i].co);
+                ngx_http_lua_probe_thread_delete(r, cc[i].co, ctx);
 
                 luaL_unref(L, -1, ref);
                 cc[i].co_ref = LUA_NOREF;
@@ -349,7 +349,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
             inited = 1;
         }
 
-        ngx_http_lua_probe_thread_delete(r, entry_coctx->co);
+        ngx_http_lua_probe_thread_delete(r, entry_coctx->co, ctx);
 
         luaL_unref(L, -1, entry_coctx->co_ref);
         entry_coctx->co_ref = LUA_NOREF;
@@ -996,12 +996,22 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     ctx->co_op = NGX_HTTP_LUA_USER_CORO_NOP;
 
-                    if (ctx->cur_co_ctx->co_ref != LUA_NOREF) {
-                        /* threads yielded will be resumed immediately */
-
+                    if (ngx_http_lua_is_thread(ctx)) {
                         ngx_http_lua_probe_thread_yield(r, ctx->cur_co_ctx->co);
 
                         lua_settop(ctx->cur_co_ctx->co, 0);
+
+                        ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
+
+                        if (ctx->posted_threads) {
+                            ngx_http_lua_post_thread(r, ctx, ctx->cur_co_ctx);
+                            ctx->cur_co_ctx = NULL;
+                            return NGX_AGAIN;
+                        }
+
+                        /* no pending threads, so resume the thread
+                         * immediately */
+
                         nrets = 0;
                         continue;
                     }
@@ -2610,6 +2620,9 @@ ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
         }
 
         ctx->posted_threads = pt->next;
+
+        ngx_http_lua_probe_run_posted_thread(r, pt->co_ctx->co,
+                                             (int) pt->co_ctx->co_status);
 
         if (pt->co_ctx->co_status != NGX_HTTP_LUA_CO_RUNNING) {
             continue;

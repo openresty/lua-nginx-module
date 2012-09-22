@@ -305,6 +305,9 @@ ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
 
         ctx->posted_threads = pt->next;
 
+        ngx_http_lua_probe_run_posted_thread(r, pt->co_ctx->co,
+                                             (int) pt->co_ctx->co_status);
+
         if (pt->co_ctx->co_status != NGX_HTTP_LUA_CO_RUNNING) {
             continue;
         }

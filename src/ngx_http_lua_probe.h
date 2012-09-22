@@ -50,8 +50,11 @@
 #define ngx_http_lua_probe_user_thread_create(r, creator, newthread)         \
     NGINX_LUA_HTTP_LUA_USER_THREAD_CREATE(r, creator, newthread)
 
-#define ngx_http_lua_probe_thread_delete(r, thread)                          \
-    NGINX_LUA_HTTP_LUA_THREAD_DELETE(r, thread)
+#define ngx_http_lua_probe_thread_delete(r, thread, ctx)                     \
+    NGINX_LUA_HTTP_LUA_THREAD_DELETE(r, thread, ctx)
+
+#define ngx_http_lua_probe_run_posted_thread(r, thread, status)              \
+    NGINX_LUA_HTTP_LUA_RUN_POSTED_THREAD(r, thread, status)
 
 #else /* !(NGX_DTRACE) */
 
@@ -66,7 +69,8 @@
 #define ngx_http_lua_probe_socket_tcp_receive_done(r, u, data, len)
 #define ngx_http_lua_probe_socket_tcp_setkeepalive_buf_unread(r, u, data, len)
 #define ngx_http_lua_probe_user_thread_create(r, creator, newthread)
-#define ngx_http_lua_probe_thread_delete(r, thread)
+#define ngx_http_lua_probe_thread_delete(r, thread, ctx)
+#define ngx_http_lua_probe_run_posted_thread(r, thread, status)
 
 #endif
 

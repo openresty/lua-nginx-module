@@ -54,6 +54,7 @@ our $StapScript = <<'_EOC_';
 global ids, cur
 global timers
 global in_req = 0
+global co_status
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -66,11 +67,20 @@ F(ngx_http_init_request) {
     if (in_req == 1) {
         delete ids
         cur = 0
+        co_status[0] = "running"
+        co_status[1] = "suspended"
+        co_status[2] = "normal"
+        co_status[3] = "dead"
     }
 }
 
 F(ngx_http_free_request) {
     in_req--
+}
+
+F(ngx_http_lua_post_thread) {
+    id = gen_id($coctx->co)
+    printf("post thread %d\n", id)
 }
 
 F(ngx_http_lua_co_cleanup) {
@@ -118,7 +128,14 @@ M(http-lua-user-thread-create) {
 
 M(http-lua-thread-delete) {
     t = gen_id($arg2)
-    printf("delete thread %x\n", t)
+    uthreads = @cast($arg3, "ngx_http_lua_ctx_t")->uthreads
+    printf("delete thread %x (uthreads %d)\n", t, uthreads)
+    #print_ubacktrace()
+}
+
+M(http-lua-run-posted-thread) {
+    t = gen_id($arg2)
+    printf("run posted thread %d (status %s)\n", t, co_status[$arg3])
 }
 
 M(http-lua-user-coroutine-resume) {
@@ -128,7 +145,8 @@ M(http-lua-user-coroutine-resume) {
 }
 
 M(http-lua-thread-yield) {
-    println("thread yield")
+    t = gen_id($arg2)
+    printf("thread %d yield\n", t)
 }
 
 /*
@@ -946,6 +964,112 @@ before g
 hello in g()
 after g
 after f
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: manual time slicing between a user thread and the entry thread
+--- config
+    location /lua {
+        content_by_lua '
+            local yield = coroutine.yield
+
+            function f()
+                local self = coroutine.running()
+                ngx.say("f 1")
+                yield(self)
+                ngx.say("f 2")
+                yield(self)
+                ngx.say("f 3")
+            end
+
+            local self = coroutine.running()
+            ngx.say("0")
+            yield(self)
+            ngx.say("1")
+            ngx.thread.create(f)
+            ngx.say("2")
+            yield(self)
+            ngx.say("3")
+            yield(self)
+            ngx.say("4")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+delete thread 2
+delete thread 1
+
+--- response_body
+0
+1
+f 1
+2
+f 2
+3
+f 3
+4
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: manual time slicing between two user threads
+--- config
+    location /lua {
+        content_by_lua '
+            local yield = coroutine.yield
+
+            function f()
+                local self = coroutine.running()
+                ngx.say("f 1")
+                yield(self)
+                ngx.say("f 2")
+                yield(self)
+                ngx.say("f 3")
+            end
+
+            function g()
+                local self = coroutine.running()
+                ngx.say("g 1")
+                yield(self)
+                ngx.say("g 2")
+                yield(self)
+                ngx.say("g 3")
+            end
+
+            ngx.thread.create(f)
+            ngx.thread.create(g)
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+create 3 in 1
+create user thread 3 in 1
+delete thread 1
+delete thread 2
+delete thread 3
+
+--- response_body
+f 1
+g 1
+f 2
+done
+g 2
+f 3
+g 3
 --- no_error_log
 [error]
 
