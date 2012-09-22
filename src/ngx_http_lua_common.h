@@ -192,7 +192,8 @@ typedef struct {
 typedef enum {
     NGX_HTTP_LUA_USER_CORO_NOP      = 0,
     NGX_HTTP_LUA_USER_CORO_RESUME   = 1,
-    NGX_HTTP_LUA_USER_CORO_YIELD    = 2
+    NGX_HTTP_LUA_USER_CORO_YIELD    = 2,
+    NGX_HTTP_LUA_USER_THREAD_RESUME = 3
 } ngx_http_lua_user_coro_op_t;
 
 
@@ -200,11 +201,18 @@ typedef enum {
     NGX_HTTP_LUA_CO_RUNNING   = 0, /* coroutine running */
     NGX_HTTP_LUA_CO_SUSPENDED = 1, /* coroutine suspended */
     NGX_HTTP_LUA_CO_NORMAL    = 2, /* coroutine normal */
-    NGX_HTTP_LUA_CO_DEAD      = 3, /* coroutine dead */
+    NGX_HTTP_LUA_CO_DEAD      = 3  /* coroutine dead */
 } ngx_http_lua_co_status_t;
 
 
-typedef struct ngx_http_lua_co_ctx_s ngx_http_lua_co_ctx_t;
+typedef struct ngx_http_lua_co_ctx_s  ngx_http_lua_co_ctx_t;
+
+typedef struct ngx_http_lua_posted_thread_s  ngx_http_lua_posted_thread_t;
+
+struct ngx_http_lua_posted_thread_s {
+    ngx_http_lua_co_ctx_t               *co_ctx;
+    ngx_http_lua_posted_thread_t        *next;
+};
 
 
 struct ngx_http_lua_co_ctx_s {
@@ -227,12 +235,20 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 pending_subreqs; /* number of subrequests being
                                                  waited */
 
-    ngx_event_t              sleep;      /* used for ngx.sleep */
+    ngx_event_t              sleep;  /* used for ngx.sleep */
 
-    unsigned                 flushing:1;  /* indicates whether the current
-                                             coroutine is waiting for
-                                             ngx.flush(true) */
-    ngx_http_lua_co_status_t co_status:2;
+    int                      co_ref; /*  reference to anchor the thread
+                                         coroutines (entry coroutine and user
+                                         threads) in the Lua registry,
+                                         preventing the thread coroutine
+                                         from beging collected by the
+                                         Lua GC */
+
+    ngx_http_lua_co_status_t co_status:2;  /* the current coroutine's status */
+
+    unsigned                 flushing:1; /* indicates whether the current
+                                            coroutine is waiting for
+                                            ngx.flush(true) */
 };
 
 
@@ -252,18 +268,14 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_http_lua_co_ctx_t    entry_co_ctx; /* coroutine context for the
                                               entry coroutine */
 
-    int                      entry_ref; /*  reference to anchor the entry
-                                            coroutine in the lua registry,
-                                            preventing the entry coroutine
-                                            from beging collected by the
-                                            Lua GC */
-
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
                                            registry */
 
     unsigned                 flushing_coros; /* number of coroutines waiting on
                                                 ngx.flush(true) */
+
+    unsigned                 uthreads; /* number of active user threads */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
@@ -288,6 +300,8 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
                                                     request */
+
+    ngx_http_lua_posted_thread_t   *posted_threads;
 
     unsigned                 run_post_subrequest:1; /* whether it has run
                                                        post_subrequest

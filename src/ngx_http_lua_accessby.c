@@ -218,6 +218,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     int                  co_ref;
     ngx_int_t            rc;
     lua_State           *co;
+    ngx_connection_t    *c;
     ngx_http_lua_ctx_t  *ctx;
     ngx_http_cleanup_t  *cln;
 
@@ -260,7 +261,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
     ctx->cur_co_ctx->co = co;
-    ctx->entry_ref = co_ref;
+    ctx->cur_co_ctx->co_ref = co_ref;
 
     /*  }}} */
 
@@ -279,6 +280,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->context = NGX_HTTP_LUA_CONTEXT_ACCESS;
 
+    c = r->connection;
+
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     dd("returned %d", (int) rc);
@@ -288,12 +291,12 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     if (rc == NGX_AGAIN) {
-        return NGX_DONE;
+        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_finalize_request(r, NGX_DONE);
-        return NGX_DONE;
+        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
     }
 
     return NGX_DECLINED;

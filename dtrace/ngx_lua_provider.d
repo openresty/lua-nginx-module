@@ -20,8 +20,7 @@ provider nginx_lua {
                                             void *parent, void *child);
 
     /* lua_State *L */
-    probe http__lua__entry__coroutine__yield(ngx_http_request_t *r,
-                                             void *L);
+    probe http__lua__thread__yield(ngx_http_request_t *r, void *L);
 
     /* ngx_http_lua_socket_tcp_upstream_t *u */
     probe http__lua__socket__tcp__send__start(ngx_http_request_t *r,
@@ -34,6 +33,13 @@ provider nginx_lua {
     /* ngx_http_lua_socket_tcp_upstream_t *u */
     probe http__lua__socket__tcp__setkeepalive__buf__unread(
             ngx_http_request_t *r, void *u, u_char *data, size_t len);
+
+    /* lua_State *creator, lua_State *newthread */
+    probe http__lua__user__thread__create(ngx_http_request_t *r,
+            void *creator, void *newthread);
+
+    /* lua_State *thread */
+    probe http__lua__thread__delete(ngx_http_request_t *r, void *thread);
 };
 
 

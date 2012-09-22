@@ -5,14 +5,17 @@
 #endif
 #include "ddebug.h"
 
-#include <nginx.h>
+
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_cache.h"
+#include "ngx_http_lua_probe.h"
 
 
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_content_run_posted_threads(lua_State *L,
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int n);
 
 
 ngx_int_t
@@ -66,7 +69,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
     ctx->cur_co_ctx->co = co;
-    ctx->entry_ref = co_ref;
+    ctx->cur_co_ctx->co_ref = co_ref;
 
     /*  {{{ register request cleanup hooks */
     if (ctx->cleanup == NULL) {
@@ -89,15 +92,12 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         return rc;
     }
 
-    if (rc == NGX_DONE) {
-        return NGX_DONE;
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_content_run_posted_threads(L, r, ctx, 0);
     }
 
-    if (rc == NGX_AGAIN) {
-#if defined(nginx_version) && nginx_version >= 8011
-        r->main->count++;
-#endif
-        return NGX_DONE;
+    if (rc == NGX_DONE) {
+        return ngx_http_lua_content_run_posted_threads(L, r, ctx, 1);
     }
 
     return NGX_OK;
@@ -202,9 +202,7 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
         ngx_http_finalize_request(r, ngx_http_lua_content_handler(r));
 
     } else {
-#if defined(nginx_version) && nginx_version >= 8011
         r->main->count--;
-#endif
     }
 }
 
@@ -289,5 +287,71 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     }
 
     return ngx_http_lua_content_by_chunk(L, r);
+}
+
+
+static ngx_int_t
+ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx, int n)
+{
+    ngx_int_t                        rc;
+    ngx_http_lua_posted_thread_t    *pt;
+
+    for ( ;; ) {
+        pt = ctx->posted_threads;
+        if (pt == NULL) {
+            goto done;
+        }
+
+        ctx->posted_threads = pt->next;
+
+        if (pt->co_ctx->co_status != NGX_HTTP_LUA_CO_RUNNING) {
+            continue;
+        }
+
+        ctx->cur_co_ctx = pt->co_ctx;
+
+        rc = ngx_http_lua_run_thread(L, r, ctx, 0);
+
+        if (rc == NGX_AGAIN) {
+            continue;
+        }
+
+        if (rc == NGX_DONE) {
+            n++;
+            continue;
+        }
+
+        if (rc == NGX_OK) {
+            while (n > 0) {
+                ngx_http_finalize_request(r, NGX_DONE);
+                n--;
+            }
+
+            return NGX_OK;
+        }
+
+        /* rc == NGX_ERROR || rc > NGX_OK */
+
+        return rc;
+    }
+
+done:
+    if (n == 1) {
+        return NGX_DONE;
+    }
+
+    if (n == 0) {
+        r->main->count++;
+        return NGX_DONE;
+    }
+
+    /* n > 1 */
+
+    do {
+        ngx_http_finalize_request(r, NGX_DONE);
+    } while (--n > 1);
+
+    return NGX_DONE;
 }
 

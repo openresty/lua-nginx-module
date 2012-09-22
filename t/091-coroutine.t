@@ -41,8 +41,8 @@ M(http-lua-user-coroutine-resume) {
     printf("resume %x in %x\n", c, p)
 }
 
-M(http-lua-entry-coroutine-yield) {
-    println("entry coroutine yield")
+M(http-lua-thread-yield) {
+    println("thread yield")
 }
 
 /*

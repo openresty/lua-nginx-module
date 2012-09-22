@@ -641,7 +641,7 @@ regex: (?:>[\w\s]*</?\w{2,}>)
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log chop
-lua handler aborted: runtime error: [string "content_by_lua"]:2: bad argument #2 to 'match' (failed to compile regex "([0-9]+": pcre_compile() failed: missing ) in "([0-9]+")
+lua thread aborted: runtime error: [string "content_by_lua"]:2: bad argument #2 to 'match' (failed to compile regex "([0-9]+": pcre_compile() failed: missing ) in "([0-9]+")
 
 
 

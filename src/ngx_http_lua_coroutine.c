@@ -27,8 +27,17 @@ static const char * ngx_http_lua_co_status_names[] =
     {"running", "suspended", "normal", "dead"};
 
 
+
 static int
 ngx_http_lua_coroutine_create(lua_State *L)
+{
+    return ngx_http_lua_coroutine_create_helper(L, NULL, NULL, NULL);
+}
+
+
+int
+ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t **pr,
+    ngx_http_lua_ctx_t **pctx, ngx_http_lua_co_ctx_t **pcoctx)
 {
     lua_State                     *mt;  /* the main thread */
     lua_State                     *co;  /* new coroutine to be created */
@@ -86,6 +95,18 @@ ngx_http_lua_coroutine_create(lua_State *L)
 
     lua_pushvalue(L, 1);    /* copy entry function to top of L*/
     lua_xmove(L, co, 1);    /* move entry function from L to co */
+
+    if (pcoctx) {
+        *pcoctx = coctx;
+    }
+
+    if (pctx) {
+        *pctx = ctx;
+    }
+
+    if (pr) {
+        *pr = r;
+    }
 
     return 1;    /* return new coroutine to Lua */
 }
@@ -184,11 +205,11 @@ ngx_http_lua_coroutine_yield(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    ctx->co_op = NGX_HTTP_LUA_USER_CORO_YIELD;
-
     coctx = ctx->cur_co_ctx;
 
     coctx->co_status = NGX_HTTP_LUA_CO_SUSPENDED;
+
+    ctx->co_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
     if (coctx->parent_co_ctx) {
         dd("set coroutine to running");

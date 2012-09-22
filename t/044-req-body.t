@@ -564,7 +564,7 @@ qr/500 Internal Server Error/]
 --- error_code eval
 [200, 500]
 --- error_log eval
-[qr{\[error\].*? lua handler aborted: runtime error: \[string "rewrite_by_lua"\]:3: stat\(\) "[^"]+/a\.txt" failed}
+[qr{\[error\].*? lua thread aborted: runtime error: \[string "rewrite_by_lua"\]:3: stat\(\) "[^"]+/a\.txt" failed}
 ]
 
 

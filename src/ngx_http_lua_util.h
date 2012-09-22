@@ -35,6 +35,10 @@ extern char ngx_http_lua_cf_log_key;
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 
+/*  coroutine anchoring table key in Lua VM registry */
+extern char ngx_http_lua_coroutines_key;
+
+
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
     (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
@@ -50,6 +54,7 @@ extern char ngx_http_lua_coroutine_parents_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_HEADER_FILTER ? "header_filter_by_lua*"   \
      : "(unknown)")
 
+
 #define ngx_http_lua_check_context(L, ctx, flags)                            \
     if (!((ctx)->context & (flags))) {                                       \
         return luaL_error(L, "API disabled in the context of %s",            \
@@ -62,8 +67,6 @@ lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
 
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
-
-void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *l, int ref);
 
 u_char * ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len);
 
@@ -124,20 +127,31 @@ ngx_http_lua_co_ctx_t * ngx_http_lua_get_co_ctx(lua_State *L,
 ngx_http_lua_co_ctx_t * ngx_http_lua_create_co_ctx(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
+ngx_int_t ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx);
+
+ngx_int_t ngx_http_lua_post_thread(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
+
+
+#define ngx_http_lua_init_ctx(ctx)                                          \
+    ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));                           \
+    ctx->ctx_ref = LUA_NOREF;                                               \
+    ctx->entry_co_ctx.co_ref = LUA_NOREF;                                   \
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
 
 static ngx_inline ngx_http_lua_ctx_t *
 ngx_http_lua_create_ctx(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t      *ctx;
 
-    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_ctx_t));
+    ctx = ngx_palloc(r->pool, sizeof(ngx_http_lua_ctx_t));
     if (ctx == NULL) {
         return NULL;
     }
 
-    ctx->entry_ref = LUA_NOREF;
-    ctx->ctx_ref = LUA_NOREF;
-    ctx->resume_handler = ngx_http_lua_wev_handler;
+    ngx_http_lua_init_ctx(ctx);
 
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     return ctx;
