@@ -700,3 +700,86 @@ g: after capture: hello bah
 --- no_error_log
 [error]
 
+
+
+=== TEST 14: nested user threads
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before g")
+                ngx.thread.create(g)
+                ngx.say("after g")
+            end
+
+            function g()
+                ngx.say("hello in g()")
+            end
+
+            ngx.say("before f")
+            ngx.thread.create(f)
+            ngx.say("after f")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+create user thread 3 in 2
+delete thread 3
+delete thread 1
+delete thread 2
+
+--- response_body
+before f
+before g
+hello in g()
+after f
+after g
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: nested user threads (with I/O)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("before g")
+                ngx.thread.create(g)
+                ngx.say("after g")
+            end
+
+            function g()
+                ngx.sleep(0.1)
+                ngx.say("hello in g()")
+            end
+
+            ngx.say("before f")
+            ngx.thread.create(f)
+            ngx.say("after f")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create user thread 2 in 1
+create user thread 3 in 2
+delete thread 1
+delete thread 2
+delete thread 3
+
+--- response_body
+before f
+before g
+after f
+after g
+hello in g()
+--- no_error_log
+[error]
+
