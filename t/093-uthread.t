@@ -5,9 +5,10 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
 
 our $GCScript = <<'_EOC_';
 global ids, cur
@@ -1150,6 +1151,101 @@ delete thread 1)$
 --- response_body
 hello from f
 hello from g
+--- no_error_log
+[error]
+
+
+
+=== TEST 24: user threads + ngx.socket.tcp
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+                local bytes, err = sock:send("flush_all\\r\\n")
+                if not bytes then
+                    ngx.say("failed to send query: ", err)
+                    return
+                end
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+before
+after
+received: OK
+--- no_error_log
+[error]
+
+
+
+=== TEST 25: user threads + ngx.socket.udp
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                local sock = ngx.socket.udp()
+                local ok, err = sock:setpeername("127.0.0.1", 12345)
+                local bytes, err = sock:send("blah")
+                if not bytes then
+                    ngx.say("failed to send query: ", err)
+                    return
+                end
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- udp_listen: 12345
+--- udp_query: blah
+--- udp_reply: hello udp
+--- response_body
+before
+after
+received: hello udp
 --- no_error_log
 [error]
 
