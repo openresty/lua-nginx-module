@@ -903,3 +903,23 @@ parent: status: running
 --- error_log
 lua coroutine: runtime error: [string "content_by_lua"]:4: bad
 
+
+
+=== TEST 22: entry coroutine is yielded by hand and still gets the right status
+--- config
+    location /t {
+        content_by_lua '
+            local co = coroutine.running()
+            ngx.say("status: ", coroutine.status(co))
+            coroutine.yield(co)
+            ngx.say("status: ", coroutine.status(co))
+        ';
+    }
+--- request
+GET /t
+--- response_body
+status: running
+status: running
+--- no_error_log
+[error]
+

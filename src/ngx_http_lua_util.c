@@ -987,9 +987,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                                    "lua coroutine: yield");
 
                     ctx->co_op = NGX_HTTP_LUA_USER_CORO_NOP;
+
                     if (ctx->cur_co_ctx->co == ctx->entry_co_ctx.co) {
                         /* entry coroutine yielded will be resumed
                          * immediately */
+
+                        ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
 
                         ngx_http_lua_probe_entry_coroutine_yield(r,
                                                          ctx->cur_co_ctx->co);
