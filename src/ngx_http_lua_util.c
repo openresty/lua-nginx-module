@@ -71,6 +71,10 @@ static void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 static void ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
+static ngx_int_t ngx_http_lua_output_filter(ngx_http_request_t *r,
+    ngx_chain_t *in);
+static ngx_int_t ngx_http_lua_send_special(ngx_http_request_t *r,
+    ngx_uint_t flags);
 
 
 #ifndef LUA_PATH_SEP
@@ -486,7 +490,8 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
             }
 
             if (ctx->out) {
-                rc = ngx_http_output_filter(r, ctx->out);
+
+                rc = ngx_http_lua_output_filter(r, ctx->out);
 
                 if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                     return rc;
@@ -511,7 +516,8 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua sending last buf of the response body");
 
-        rc = ngx_http_send_special(r, NGX_HTTP_LAST);
+        rc = ngx_http_lua_send_special(r, NGX_HTTP_LAST);
+
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
@@ -532,6 +538,50 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         *ll = in;
 
         return NGX_OK;
+    }
+
+    return ngx_http_lua_output_filter(r, in);
+}
+
+
+static ngx_int_t
+ngx_http_lua_send_special(ngx_http_request_t *r, ngx_uint_t flags)
+{
+    ngx_int_t            rc;
+    ngx_http_request_t  *ar; /* active request */
+
+    ar = r->connection->data;
+
+    if (ar != r) {
+
+        /* bypass ngx_http_postpone_filter_module */
+
+        r->connection->data = r;
+        rc = ngx_http_send_special(r, flags);
+        r->connection->data = ar;
+        return rc;
+    }
+
+    return ngx_http_send_special(r, flags);
+}
+
+
+static ngx_int_t
+ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
+{
+    ngx_int_t            rc;
+    ngx_http_request_t  *ar; /* active request */
+
+    ar = r->connection->data;
+
+    if (ar != r) {
+
+        /* bypass ngx_http_postpone_filter_module */
+
+        r->connection->data = r;
+        rc = ngx_http_output_filter(r, in);
+        r->connection->data = ar;
+        return rc;
     }
 
     return ngx_http_output_filter(r, in);
@@ -1306,7 +1356,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                        "lua wev handler flushing output: buffered 0x%uxd",
                        c->buffered);
 
-        rc = ngx_http_output_filter(r, NULL);
+        rc = ngx_http_lua_output_filter(r, NULL);
 
         if (rc == NGX_ERROR || rc > NGX_OK) {
             if (ctx->entered_content_phase) {
@@ -1448,20 +1498,6 @@ ngx_http_lua_digest_hex(u_char *dest, const u_char *buf, int buf_len)
     ngx_md5_final(md5_buf, &md5);
 
     return ngx_hex_dump(dest, md5_buf, sizeof(md5_buf));
-}
-
-
-ngx_int_t
-ngx_http_lua_flush_postponed_outputs(ngx_http_request_t *r)
-{
-    if (r == r->connection->data && r->postponed) {
-        /* notify the downstream postpone filter to flush the postponed
-         * outputs of the current request */
-        return ngx_http_lua_next_body_filter(r, NULL);
-    }
-
-    /* do nothing */
-    return NGX_OK;
 }
 
 

@@ -1272,9 +1272,6 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     ngx_connection_t              *c;
     ngx_http_request_t            *sr;
     ngx_http_core_srv_conf_t      *cscf;
-#if 0
-    ngx_http_postponed_request_t  *pr, *p;
-#endif
 
     r->main->subrequests--;
 
@@ -1358,32 +1355,9 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     sr->read_event_handler = ngx_http_request_empty_handler;
     sr->write_event_handler = ngx_http_handler;
 
-    if (c->data == r && r->postponed == NULL) {
-        c->data = sr;
-    }
-
     sr->variables = r->variables;
 
     sr->log_handler = r->log_handler;
-
-#if 0
-    pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));
-    if (pr == NULL) {
-        return NGX_ERROR;
-    }
-
-    pr->request = sr;
-    pr->out = NULL;
-    pr->next = NULL;
-
-    if (r->postponed) {
-        for (p = r->postponed; p->next; p = p->next) { /* void */ }
-        p->next = pr;
-
-    } else {
-        r->postponed = pr;
-    }
-#endif
 
     sr->internal = 1;
 
