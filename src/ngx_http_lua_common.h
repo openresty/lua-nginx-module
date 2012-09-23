@@ -249,6 +249,9 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 flushing:1; /* indicates whether the current
                                             coroutine is waiting for
                                             ngx.flush(true) */
+
+    unsigned                 is_uthread:1; /* whether the current coroutine is
+                                              a user thread */
 };
 
 

@@ -43,6 +43,7 @@ ngx_http_lua_uthread_create(lua_State *L)
     coctx->co_ref = luaL_ref(L, -2);
     lua_pop(L, 1);
 
+    coctx->is_uthread = 1;
     ctx->uthreads++;
 
     coctx->co_status = NGX_HTTP_LUA_CO_RUNNING;

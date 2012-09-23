@@ -6,7 +6,7 @@
 
 
 #define ngx_http_lua_is_thread(ctx)                                   \
-    ((ctx)->cur_co_ctx->co_ref != LUA_NOREF)
+    ((ctx)->cur_co_ctx->is_uthread || (ctx)->cur_co_ctx == &(ctx)->entry_co_ctx)
 
 
 #define ngx_http_lua_is_entry_thread(ctx)                                   \
