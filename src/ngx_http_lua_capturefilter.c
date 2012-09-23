@@ -149,6 +149,6 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ngx_http_lua_discard_bufs(r->pool, in);
 
-    return ngx_http_lua_flush_postponed_outputs(r);
+    return NGX_OK;
 }
 

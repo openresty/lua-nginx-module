@@ -93,8 +93,6 @@ ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
     int buf_len);
 
-ngx_int_t ngx_http_lua_flush_postponed_outputs(ngx_http_request_t *r);
-
 void ngx_http_lua_set_multi_value_table(lua_State *L, int index);
 
 void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
