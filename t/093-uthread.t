@@ -1249,3 +1249,90 @@ received: hello udp
 --- no_error_log
 [error]
 
+
+
+=== TEST 26: simple user thread with ngx.req.read_body()
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.req.read_body()
+                local body = ngx.req.get_body_data()
+                ngx.say("body: ", body)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+        ';
+    }
+--- request
+POST /lua
+hello world
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out_like chop
+^(?:create 2 in 1
+create user thread 2 in 1
+delete thread 2
+delete thread 1|create 2 in 1
+create user thread 2 in 1
+delete thread 1
+delete thread 2)$
+
+--- response_body_like chop
+^(?:before
+body: hello world
+after|before
+after
+body: hello world)$
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 27: simple user thread with ngx.req.socket()
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                local sock = ngx.req.socket()
+                local body, err = sock:receive(11)
+                if not body then
+                    ngx.say("failed to read body: ", err)
+                    return
+                end
+
+                ngx.say("body: ", body)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+        ';
+    }
+--- request
+POST /lua
+hello world
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out_like chop
+^(?:create 2 in 1
+create user thread 2 in 1
+delete thread 2
+delete thread 1|create 2 in 1
+create user thread 2 in 1
+delete thread 1
+delete thread 2)$
+
+--- response_body_like chop
+^(?:before
+body: hello world
+after|before
+after
+body: hello world)$
+
+--- no_error_log
+[error]
+
