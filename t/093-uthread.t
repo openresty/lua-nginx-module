@@ -1073,3 +1073,83 @@ g 3
 --- no_error_log
 [error]
 
+
+
+=== TEST 22: entry thread and a user thread flushing at the same time
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                coroutine.yield(coroutine.running)
+                ngx.flush(true)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+            ngx.flush(true)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+delete thread 1
+delete thread 2
+
+--- response_body
+before
+hello in thread
+after
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: two user threads flushing at the same time
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("hello from f")
+                ngx.flush(true)
+            end
+
+            function g()
+                ngx.say("hello from g")
+                ngx.flush(true)
+            end
+
+            ngx.thread.create(f)
+            ngx.thread.create(g)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out_like
+^(?:create 2 in 1
+create user thread 2 in 1
+create 3 in 1
+create user thread 3 in 1
+delete thread 1
+delete thread 2
+delete thread 3|create 2 in 1
+create user thread 2 in 1
+delete thread 2
+create 3 in 1
+create user thread 3 in 1
+delete thread 3
+delete thread 1)$
+
+--- response_body
+hello from f
+hello from g
+--- no_error_log
+[error]
+
