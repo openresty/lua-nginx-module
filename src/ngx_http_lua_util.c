@@ -1094,27 +1094,22 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 continue;
 
             case LUA_ERRRUN:
-                ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
                 err = "runtime error";
                 break;
 
             case LUA_ERRSYNTAX:
-                ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
                 err = "syntax error";
                 break;
 
             case LUA_ERRMEM:
-                ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
                 err = "memory allocation error";
                 break;
 
             case LUA_ERRERR:
-                ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
                 err = "error handler error";
                 break;
 
             default:
-                ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
                 err = "unknown error";
                 break;
             }
@@ -1126,6 +1121,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             } else {
                 msg = "unknown reason";
             }
+
+            ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
             ngx_http_lua_thread_traceback(L, ctx->cur_co_ctx->co,
                                           ctx->cur_co_ctx);
