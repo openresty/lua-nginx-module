@@ -91,7 +91,7 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
-static void ngx_http_lua_tcp_connect_cleanup(void *data);
+static void ngx_http_lua_tcp_socket_cleanup(void *data);
 
 
 enum {
@@ -859,7 +859,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* rc == NGX_AGAIN */
 
-    coctx->cleanup = ngx_http_lua_tcp_connect_cleanup;
+    coctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
 
     ngx_add_timer(c->write, u->connect_timeout);
 
@@ -890,6 +890,8 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket error retval handler");
+
+    u->co_ctx->cleanup = NULL;
 
     ngx_http_lua_socket_tcp_finalize(r, u);
 
@@ -1110,6 +1112,8 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
+
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -2004,6 +2008,8 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 #endif
 
+    u->co_ctx->cleanup = NULL;
+
 #if 0
     if (u->eof) {
         ngx_http_lua_socket_tcp_finalize(r, u);
@@ -2044,6 +2050,8 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_finalize(r, u);
 #endif
 
+    u->co_ctx->cleanup = NULL;
+
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
@@ -2073,8 +2081,6 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_loc_conf_t     *llcf;
-
-    u->co_ctx->cleanup = NULL;
 
     c = u->peer.connection;
 
@@ -3896,13 +3902,17 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
 
 
 static void
-ngx_http_lua_tcp_connect_cleanup(void *data)
+ngx_http_lua_tcp_socket_cleanup(void *data)
 {
     ngx_http_lua_socket_tcp_upstream_t      *u;
     ngx_http_lua_co_ctx_t                   *coctx = data;
 
     u = coctx->data;
     if (u == NULL) {
+        return;
+    }
+
+    if (u->request == NULL) {
         return;
     }
 
