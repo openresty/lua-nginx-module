@@ -46,6 +46,7 @@ static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_udp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_udp_resolve_cleanup(void *data);
+static void ngx_http_lua_udp_socket_cleanup(void *data);
 
 
 enum {
@@ -891,6 +892,8 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_udp_socket_cleanup;
+
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
     }
@@ -1126,6 +1129,8 @@ ngx_http_lua_socket_udp_handle_error(ngx_http_request_t *r,
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
 
+    u->co_ctx->cleanup = NULL;
+
     if (u->waiting) {
         u->waiting = 0;
 
@@ -1195,6 +1200,8 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_ctx_t          *ctx;
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
+
+    u->co_ctx->cleanup = NULL;
 
     if (u->waiting) {
         u->waiting = 0;
@@ -1446,5 +1453,24 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
     }
 
     ngx_resolve_name_done(rctx);
+}
+
+
+static void
+ngx_http_lua_udp_socket_cleanup(void *data)
+{
+    ngx_http_lua_socket_udp_upstream_t      *u;
+    ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    u = coctx->data;
+    if (u == NULL) {
+        return;
+    }
+
+    if (u->request == NULL) {
+        return;
+    }
+
+    ngx_http_lua_socket_udp_finalize(u->request, u);
 }
 

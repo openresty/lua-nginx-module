@@ -769,3 +769,96 @@ after
 --- no_error_log
 [error]
 
+
+
+=== TEST 10: exit in user thread (entry thread is still pending on udpsock:receive)
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(0)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+            local sock = ngx.socket.udp()
+
+            local ok, err = sock:setpeername("8.8.8.8", 12345)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            sock:settimeout(12000)
+
+            local data, err = sock:receive()
+            if not data then
+                ngx.say("failed to receive: ", err)
+                return
+            end
+
+            ngx.say("end")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+M(timer-add) {
+    if ($arg2 == 12000 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 12000 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 12000 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+
+F(ngx_http_lua_udp_socket_cleanup) {
+    println("lua udp socket cleanup")
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+add timer 100
+add timer 12000
+expire timer 100
+lua udp socket cleanup
+delete timer 12000
+delete thread 2
+delete thread 1
+free request
+
+--- response_body
+before
+hello in thread
+after
+--- no_error_log
+[error]
+
