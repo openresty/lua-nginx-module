@@ -904,6 +904,7 @@ ngx_http_lua_request_cleanup(void *data)
         }
     }
 
+    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_del_all_threads(r, L, ctx);
 }
 
@@ -1214,7 +1215,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 lua_settop(L, 0);
 
-                ngx_http_lua_del_all_threads(r, L, ctx);
                 ngx_http_lua_request_cleanup(r);
 
                 dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
@@ -1268,7 +1268,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 no_parent:
     lua_settop(L, 0);
 
-    ngx_http_lua_del_all_threads(r, L, ctx);
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
     ngx_http_lua_request_cleanup(r);
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
@@ -1858,7 +1858,6 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
                    &ctx->exec_uri);
 
     ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     if (ctx->exec_uri.data[0] == '@') {
@@ -1942,7 +1941,6 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 #endif
 
     ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     if ((ctx->exit_code == NGX_OK
@@ -2198,7 +2196,6 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
                    "\"%V?%V\"", &r->uri, &r->args);
 
     ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     return NGX_OK;
@@ -2730,15 +2727,17 @@ ngx_http_lua_finalize_coroutines(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
         }
     }
 
-    cc = ctx->user_co_ctx->elts;
+    if (ctx->user_co_ctx) {
+        cc = ctx->user_co_ctx->elts;
 
-    for (i = 0; i < ctx->user_co_ctx->nelts; i++) {
-        coctx = &cc[i];
-        if (coctx->cleanup) {
-            coctx->cleanup(coctx);
-            coctx->cleanup = NULL;
-            coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-            /* TODO we could also free the user thread here */
+        for (i = 0; i < ctx->user_co_ctx->nelts; i++) {
+            coctx = &cc[i];
+            if (coctx->cleanup) {
+                coctx->cleanup(coctx);
+                coctx->cleanup = NULL;
+                coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+                /* TODO we could also free the user thread here */
+            }
         }
     }
 
