@@ -109,20 +109,7 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
     log_ctx->current_request = r;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "lua sleep handler: \"%V?%V\"", &r->uri, &r->args);
-
-    if (!coctx->sleep.timedout) {
-        dd("reach lua sleep event handler without timeout!");
-        return;
-    }
-
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua sleep timer expired: \"%V?%V\"", &r->uri, &r->args);
-
-    if (coctx->sleep.timer_set) {
-        dd("deleting timer for lua_sleep");
-        ngx_del_timer(&coctx->sleep);
-    }
 
     ctx->cur_co_ctx = coctx;
 
