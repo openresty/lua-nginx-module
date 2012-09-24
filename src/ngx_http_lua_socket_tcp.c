@@ -891,7 +891,9 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket error retval handler");
 
-    u->co_ctx->cleanup = NULL;
+    if (u->co_ctx) {
+        u->co_ctx->cleanup = NULL;
+    }
 
     ngx_http_lua_socket_tcp_finalize(r, u);
 
@@ -2008,7 +2010,9 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 #endif
 
-    u->co_ctx->cleanup = NULL;
+    if (u->co_ctx) {
+        u->co_ctx->cleanup = NULL;
+    }
 
 #if 0
     if (u->eof) {
@@ -2050,7 +2054,9 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_finalize(r, u);
 #endif
 
-    u->co_ctx->cleanup = NULL;
+    if (u->co_ctx) {
+        u->co_ctx->cleanup = NULL;
+    }
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;

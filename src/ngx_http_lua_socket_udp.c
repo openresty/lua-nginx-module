@@ -1129,7 +1129,9 @@ ngx_http_lua_socket_udp_handle_error(ngx_http_request_t *r,
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    u->co_ctx->cleanup = NULL;
+    if (u->co_ctx) {
+        u->co_ctx->cleanup = NULL;
+    }
 
     if (u->waiting) {
         u->waiting = 0;
@@ -1201,7 +1203,9 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    u->co_ctx->cleanup = NULL;
+    if (u->co_ctx) {
+        u->co_ctx->cleanup = NULL;
+    }
 
     if (u->waiting) {
         u->waiting = 0;
