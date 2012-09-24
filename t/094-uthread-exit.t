@@ -20,7 +20,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 5: exit in user thread (entry thread is still pending to run)
+=== TEST 1: exit in user thread (entry thread is still pending to run)
 --- config
     location /lua {
         content_by_lua '
@@ -82,7 +82,7 @@ hello in thread
 
 
 
-=== TEST 6: exit in user thread (entry thread is still pending on ngx.sleep)
+=== TEST 2: exit in user thread (entry thread is still pending on ngx.sleep)
 --- config
     location /lua {
         content_by_lua '
@@ -165,7 +165,7 @@ after
 
 
 
-=== TEST 7: exit in a user thread (another user thread is still pending on ngx.sleep)
+=== TEST 3: exit in a user thread (another user thread is still pending on ngx.sleep)
 --- config
     location /lua {
         content_by_lua '
@@ -253,7 +253,7 @@ f
 
 
 
-=== TEST 8: exit in user thread (entry already quits)
+=== TEST 4: exit in user thread (entry already quits)
 --- config
     location /lua {
         content_by_lua '
@@ -282,6 +282,101 @@ delete thread 2
 before
 after
 exiting the user thread
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.tcp)
+--- config
+    location /lua {
+        resolver www.google.com;
+        resolver_timeout 12s;
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(0)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("www.google.com", 80)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+            ngx.say("end")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+F(ngx_resolve_name) {
+    printf("resolving %s\n", user_string_n($ctx->name->data, $ctx->name->len))
+}
+
+M(timer-add) {
+    if ($arg2 == 12000 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 12000 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+    /*
+    if (tm == 12000) {
+        print_ubacktrace()
+    }
+    */
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 12000 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+
+F(ngx_http_lua_tcp_resolve_cleanup) {
+    println("lua tcp resolve cleanup")
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+add timer 100
+resolving www.google.com
+add timer 12000
+expire timer 100
+lua tcp resolve cleanup
+delete timer 12000
+delete thread 2
+delete thread 1
+free request
+
+--- response_body
+before
+hello in thread
+after
 --- no_error_log
 [error]
 

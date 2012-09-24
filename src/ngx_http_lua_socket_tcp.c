@@ -90,6 +90,7 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, u_char *pat, size_t prefix);
 static ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
+static void ngx_http_lua_tcp_resolve_cleanup(void *data);
 
 
 enum {
@@ -534,6 +535,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     saved_top = lua_gettop(L);
 
+    coctx->cleanup = ngx_http_lua_tcp_resolve_cleanup;
+
     if (ngx_resolve_name(rctx) != NGX_OK) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket fail to run resolver immediately");
@@ -601,6 +604,9 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     }
 
     lctx->cur_co_ctx = u->co_ctx;
+
+    u->co_ctx->cleanup = NULL;
+
     L = lctx->cur_co_ctx->co;
 
     waiting = u->waiting;
@@ -3860,3 +3866,24 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
     return rc;
 }
 
+
+static void
+ngx_http_lua_tcp_resolve_cleanup(void *data)
+{
+    ngx_resolver_ctx_t                      *rctx;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
+    ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    u = coctx->data;
+    if (u == NULL) {
+        return;
+    }
+
+    rctx = u->resolved->ctx;
+    if (rctx == NULL) {
+        return;
+    }
+
+    ngx_resolve_name_done(rctx);
+}
+#
