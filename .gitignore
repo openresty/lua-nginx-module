@@ -153,4 +153,5 @@ src/uthread.[ch]
 lua
 Makefile
 tsubreq
+tthread
 addr2line
