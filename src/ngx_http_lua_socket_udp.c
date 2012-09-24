@@ -45,6 +45,7 @@ static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_udp_resume(ngx_http_request_t *r);
+static void ngx_http_lua_udp_resolve_cleanup(void *data);
 
 
 enum {
@@ -345,6 +346,9 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     saved_top = lua_gettop(L);
 
+    coctx = ctx->cur_co_ctx;
+    coctx->cleanup = ngx_http_lua_udp_resolve_cleanup;
+
     if (ngx_resolve_name(rctx) != NGX_OK) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua udp socket fail to run resolver immediately");
@@ -375,7 +379,6 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_resolve_retval_handler;
 
-    coctx = ctx->cur_co_ctx;
     coctx->data = u;
 
     if (ctx->entered_content_phase) {
@@ -413,6 +416,9 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     }
 
     lctx->cur_co_ctx = u->co_ctx;
+
+    u->co_ctx->cleanup = NULL;
+
     L = lctx->cur_co_ctx->co;
 
     dd("setting socket_ready to 1");
@@ -1419,5 +1425,26 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
     }
 
     return rc;
+}
+
+
+static void
+ngx_http_lua_udp_resolve_cleanup(void *data)
+{
+    ngx_resolver_ctx_t                      *rctx;
+    ngx_http_lua_socket_udp_upstream_t      *u;
+    ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    u = coctx->data;
+    if (u == NULL) {
+        return;
+    }
+
+    rctx = u->resolved->ctx;
+    if (rctx == NULL) {
+        return;
+    }
+
+    ngx_resolve_name_done(rctx);
 }
 
