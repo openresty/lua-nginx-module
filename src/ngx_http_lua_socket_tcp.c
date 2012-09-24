@@ -91,6 +91,7 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
+static void ngx_http_lua_tcp_connect_cleanup(void *data);
 
 
 enum {
@@ -857,6 +858,8 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     /* rc == NGX_AGAIN */
+
+    coctx->cleanup = ngx_http_lua_tcp_connect_cleanup;
 
     ngx_add_timer(c->write, u->connect_timeout);
 
@@ -2070,6 +2073,8 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_loc_conf_t     *llcf;
+
+    u->co_ctx->cleanup = NULL;
 
     c = u->peer.connection;
 
@@ -3887,5 +3892,20 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
     }
 
     ngx_resolve_name_done(rctx);
+}
+
+
+static void
+ngx_http_lua_tcp_connect_cleanup(void *data)
+{
+    ngx_http_lua_socket_tcp_upstream_t      *u;
+    ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    u = coctx->data;
+    if (u == NULL) {
+        return;
+    }
+
+    ngx_http_lua_socket_tcp_finalize(u->request, u);
 }
 
