@@ -651,6 +651,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 #endif
 
     if (ur->naddrs == 0) {
+        ngx_resolve_name_done(ctx);
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
 
         lua_pushnil(L);
@@ -671,6 +672,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
     if (p == NULL) {
+        ngx_resolve_name_done(ctx);
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
 
         lua_pushnil(L);
