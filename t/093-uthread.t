@@ -2,6 +2,10 @@
 
 use lib 'lib';
 use Test::Nginx::Socket;
+use t::StapThread;
+
+our $GCScript = $t::StapThread::GCScript;
+our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
@@ -9,182 +13,6 @@ plan tests => repeat_each() * (blocks() * 4 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
-
-our $GCScript = <<'_EOC_';
-global ids, cur
-global in_req = 0
-
-function gen_id(k) {
-    if (ids[k]) return ids[k]
-    ids[k] = ++cur
-    return cur
-}
-
-F(ngx_http_init_request) {
-    in_req++
-    if (in_req == 1) {
-        delete ids
-        cur = 0
-    }
-}
-
-F(ngx_http_free_request) {
-    in_req--
-}
-
-M(http-lua-user-thread-create) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("create user thread %x in %x\n", c, p)
-}
-
-M(http-lua-thread-delete) {
-    t = gen_id($arg2)
-    printf("delete thread %x\n", t)
-}
-
-M(http-lua-user-coroutine-create) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("create %x in %x\n", c, p)
-}
-
-_EOC_
-
-our $StapScript = <<'_EOC_';
-global ids, cur
-global timers
-global in_req = 0
-global co_status
-
-function gen_id(k) {
-    if (ids[k]) return ids[k]
-    ids[k] = ++cur
-    return cur
-}
-
-F(ngx_http_init_request) {
-    in_req++
-    if (in_req == 1) {
-        delete ids
-        cur = 0
-        co_status[0] = "running"
-        co_status[1] = "suspended"
-        co_status[2] = "normal"
-        co_status[3] = "dead"
-    }
-}
-
-F(ngx_http_free_request) {
-    in_req--
-}
-
-F(ngx_http_lua_post_thread) {
-    id = gen_id($coctx->co)
-    printf("post thread %d\n", id)
-}
-
-F(ngx_http_lua_co_cleanup) {
-    id = gen_id(@cast($data, "ngx_http_lua_co_ctx_t")->co)
-    printf("co cleanup called for thread %d\n", id)
-}
-
-M(timer-add) {
-    timers[$arg1] = $arg2
-    printf("add timer %d\n", $arg2)
-}
-
-M(timer-del) {
-    printf("delete timer %d\n", timers[$arg1])
-}
-
-M(timer-expire) {
-    printf("expire timer %d\n", timers[$arg1])
-}
-
-F(ngx_http_lua_sleep_handler) {
-    printf("sleep handler called\n")
-}
-
-F(ngx_http_lua_run_thread) {
-    id = gen_id($ctx->cur_co_ctx->co)
-    printf("run thread %d\n", id)
-    #if (id == 1) {
-        #print_ubacktrace()
-    #}
-}
-
-/*
-probe process("/usr/local/openresty-debug/luajit/lib/libluajit-5.1.so.2").function("lua_resume") {
-    id = gen_id($L)
-    printf("lua resume %d\n", id)
-}
-*/
-
-M(http-lua-user-thread-create) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("create uthread %x in %x\n", c, p)
-}
-
-M(http-lua-thread-delete) {
-    t = gen_id($arg2)
-    uthreads = @cast($arg3, "ngx_http_lua_ctx_t")->uthreads
-    printf("delete thread %x (uthreads %d)\n", t, uthreads)
-    #print_ubacktrace()
-}
-
-M(http-lua-run-posted-thread) {
-    t = gen_id($arg2)
-    printf("run posted thread %d (status %s)\n", t, co_status[$arg3])
-}
-
-M(http-lua-user-coroutine-resume) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("resume %x in %x\n", c, p)
-}
-
-M(http-lua-thread-yield) {
-    t = gen_id($arg2)
-    printf("thread %d yield\n", t)
-}
-
-/*
-F(ngx_http_lua_coroutine_yield) {
-    printf("yield %x\n", gen_id($L))
-}
-*/
-
-M(http-lua-user-coroutine-yield) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("yield %x in %x\n", c, p)
-}
-
-F(ngx_http_lua_atpanic) {
-    printf("lua atpanic(%d):", gen_id($L))
-    print_ubacktrace();
-}
-
-F(ngx_http_lua_run_posted_threads) {
-    printf("run posted threads\n")
-}
-
-F(ngx_http_finalize_request) {
-    printf("finalize request: rc:%d c:%d\n", $rc, $r->main->count);
-}
-
-M(http-lua-user-coroutine-create) {
-    p = gen_id($arg2)
-    c = gen_id($arg3)
-    printf("create %x in %x\n", c, p)
-}
-
-F(ngx_http_lua_ngx_exec) { println("exec") }
-
-F(ngx_http_lua_ngx_exit) { println("exit") }
-_EOC_
 
 #no_shuffle();
 no_long_string();
@@ -357,142 +185,7 @@ delete thread 2
 
 
 
-=== TEST 5: exit in user thread (entry still pending)
---- config
-    location /lua {
-        content_by_lua '
-            function f()
-                ngx.say("hello in thread")
-                ngx.exit(0)
-            end
-
-            ngx.say("before")
-            ngx.thread.create(f)
-            ngx.say("after")
-            ngx.sleep(1)
-            ngx.say("end")
-        ';
-    }
---- request
-GET /lua
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-create user thread 2 in 1
-delete thread 2
-delete thread 1
-
---- response_body
-before
-hello in thread
---- no_error_log
-[error]
-
-
-
-=== TEST 6: exit in user thread (entry already quits)
---- config
-    location /lua {
-        content_by_lua '
-            function f()
-                ngx.sleep(0.1)
-                ngx.say("exiting the user thread")
-                ngx.exit(0)
-            end
-
-            ngx.say("before")
-            ngx.thread.create(f)
-            ngx.say("after")
-        ';
-    }
---- request
-GET /lua
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-create user thread 2 in 1
-delete thread 1
-delete thread 2
-
---- response_body
-before
-after
-exiting the user thread
---- no_error_log
-[error]
-
-
-
-=== TEST 7: exec in user thread (entry still pending)
---- config
-    location /lua {
-        content_by_lua '
-            function f()
-                ngx.exec("/foo")
-            end
-
-            ngx.thread.create(f)
-            ngx.sleep(1)
-            ngx.say("hello")
-        ';
-    }
-
-    location /foo {
-        echo i am foo;
-    }
---- request
-GET /lua
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-create user thread 2 in 1
-delete thread 2
-delete thread 1
-
---- response_body
-i am foo
---- no_error_log
-[error]
-
-
-
-=== TEST 8: exec in user thread (entry already quits)
---- config
-    location /lua {
-        content_by_lua '
-            function f()
-                ngx.sleep(0.1)
-                ngx.exec("/foo")
-            end
-
-            ngx.thread.create(f)
-        ';
-    }
-
-    location /foo {
-        echo i am foo;
-    }
---- request
-GET /lua
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-create user thread 2 in 1
-delete thread 1
-delete thread 2
-
---- response_body
-i am foo
---- no_error_log
-[error]
-
-
-
-=== TEST 9: error in user thread
+=== TEST 5: error in user thread
 --- config
     location /lua {
         content_by_lua '
@@ -521,7 +214,7 @@ lua thread aborted: runtime error: [string "content_by_lua"]:3: attempt to call 
 
 
 
-=== TEST 10: simple user threads doing a single subrequest (entry quits early)
+=== TEST 6: simple user threads doing a single subrequest (entry quits early)
 --- config
     location /lua {
         content_by_lua '
@@ -565,7 +258,7 @@ after capture: hello world
 
 
 
-=== TEST 11: simple user threads doing a single subrequest (entry also does a subrequest and quits early)
+=== TEST 7: simple user threads doing a single subrequest (entry also does a subrequest and quits early)
 --- config
     location /lua {
         content_by_lua '
@@ -616,7 +309,7 @@ after capture: hello foo
 
 
 
-=== TEST 12: simple user threads doing a single subrequest (entry also does a subrequest and quits late)
+=== TEST 8: simple user threads doing a single subrequest (entry also does a subrequest and quits late)
 --- config
     location /lua {
         content_by_lua '
@@ -668,7 +361,7 @@ capture: hello bar
 
 
 
-=== TEST 13: two simple user threads doing single subrequests (entry also does a subrequest and quits between)
+=== TEST 9: two simple user threads doing single subrequests (entry also does a subrequest and quits between)
 --- config
     location /lua {
         content_by_lua '
@@ -743,7 +436,7 @@ g: after capture: hello bah
 
 
 
-=== TEST 14: nested user threads
+=== TEST 10: nested user threads
 --- config
     location /lua {
         content_by_lua '
@@ -786,7 +479,7 @@ after g
 
 
 
-=== TEST 15: nested user threads (with I/O)
+=== TEST 11: nested user threads (with I/O)
 --- config
     location /lua {
         content_by_lua '
@@ -830,7 +523,7 @@ hello in g()
 
 
 
-=== TEST 16: coroutine status of a running user thread
+=== TEST 12: coroutine status of a running user thread
 --- config
     location /lua {
         content_by_lua '
@@ -861,7 +554,7 @@ status: running
 
 
 
-=== TEST 17: coroutine status of a dead user thread
+=== TEST 13: coroutine status of a dead user thread
 --- config
     location /lua {
         content_by_lua '
@@ -891,7 +584,7 @@ status: dead
 
 
 
-=== TEST 18: coroutine status of a "normal" user thread
+=== TEST 14: coroutine status of a "normal" user thread
 --- config
     location /lua {
         content_by_lua '
@@ -928,7 +621,7 @@ status: normal
 
 
 
-=== TEST 19: creating user threads in a user coroutine
+=== TEST 15: creating user threads in a user coroutine
 --- config
     location /lua {
         content_by_lua '
@@ -970,7 +663,7 @@ after f
 
 
 
-=== TEST 20: manual time slicing between a user thread and the entry thread
+=== TEST 16: manual time slicing between a user thread and the entry thread
 --- config
     location /lua {
         content_by_lua '
@@ -1021,7 +714,7 @@ f 3
 
 
 
-=== TEST 21: manual time slicing between two user threads
+=== TEST 17: manual time slicing between two user threads
 --- config
     location /lua {
         content_by_lua '
@@ -1076,7 +769,7 @@ g 3
 
 
 
-=== TEST 22: entry thread and a user thread flushing at the same time
+=== TEST 18: entry thread and a user thread flushing at the same time
 --- config
     location /lua {
         content_by_lua '
@@ -1111,7 +804,7 @@ after
 
 
 
-=== TEST 23: two user threads flushing at the same time
+=== TEST 19: two user threads flushing at the same time
 --- config
     location /lua {
         content_by_lua '
@@ -1156,13 +849,17 @@ hello from g
 
 
 
-=== TEST 24: user threads + ngx.socket.tcp
+=== TEST 20: user threads + ngx.socket.tcp
 --- config
     location /lua {
         content_by_lua '
             function f()
                 local sock = ngx.socket.tcp()
                 local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
                 local bytes, err = sock:send("flush_all\\r\\n")
                 if not bytes then
                     ngx.say("failed to send query: ", err)
@@ -1202,7 +899,7 @@ received: OK
 
 
 
-=== TEST 25: user threads + ngx.socket.udp
+=== TEST 21: user threads + ngx.socket.udp
 --- config
     location /lua {
         content_by_lua '
@@ -1251,7 +948,7 @@ received: hello udp
 
 
 
-=== TEST 26: simple user thread with ngx.req.read_body()
+=== TEST 22: simple user thread with ngx.req.read_body()
 --- config
     location /lua {
         content_by_lua '
@@ -1292,7 +989,7 @@ body: hello world)$
 
 
 
-=== TEST 27: simple user thread with ngx.req.socket()
+=== TEST 23: simple user thread with ngx.req.socket()
 --- config
     location /lua {
         content_by_lua '

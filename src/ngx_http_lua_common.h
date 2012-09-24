@@ -221,7 +221,7 @@ struct ngx_http_lua_co_ctx_s {
     lua_State               *co;
     ngx_http_lua_co_ctx_t   *parent_co_ctx;
 
-    ngx_http_cleanup_pt     *cleanup;
+    ngx_http_cleanup_pt      cleanup;
 
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */

@@ -75,6 +75,8 @@ static ngx_int_t ngx_http_lua_output_filter(ngx_http_request_t *r,
     ngx_chain_t *in);
 static ngx_int_t ngx_http_lua_send_special(ngx_http_request_t *r,
     ngx_uint_t flags);
+static void ngx_http_lua_finalize_coroutines(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
 
 
 #ifndef LUA_PATH_SEP
@@ -901,8 +903,6 @@ ngx_http_lua_request_cleanup(void *data)
             lua_pop(L, 1);
         }
     }
-
-    /* threads not cleaned up yet */
 
     ngx_http_lua_del_all_threads(r, L, ctx);
 }
@@ -1860,7 +1860,8 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
                    "lua thread initiated internal redirect to %V",
                    &ctx->exec_uri);
 
-    ngx_http_lua_del_all_threads(r, L, ctx);
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     if (ctx->exec_uri.data[0] == '@') {
@@ -1943,7 +1944,8 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     }
 #endif
 
-    ngx_http_lua_del_all_threads(r, L, ctx);
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     if ((ctx->exit_code == NGX_OK
@@ -2198,8 +2200,8 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
                    "lua thread aborting request with URI rewrite jump: "
                    "\"%V?%V\"", &r->uri, &r->args);
 
-    ngx_http_lua_del_all_threads(r, L, ctx);
-
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+    ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_request_cleanup(r);
 
     return NGX_OK;
@@ -2710,5 +2712,42 @@ ngx_http_lua_post_thread(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     *p = pt;
 
     return NGX_OK;
+}
+
+
+static void
+ngx_http_lua_finalize_coroutines(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+{
+    ngx_http_lua_co_ctx_t           *cc, *coctx;
+    ngx_uint_t                       i;
+
+    if (ctx->uthreads == 0) {
+        if (ngx_http_lua_is_entry_thread(ctx)) {
+            return;
+        }
+
+        /* the current thread is not the entry thread */
+
+        if (ctx->entry_co_ctx.co_status == NGX_HTTP_LUA_CO_DEAD) {
+            return;
+        }
+    }
+
+    cc = ctx->user_co_ctx->elts;
+
+    for (i = 0; i < ctx->user_co_ctx->nelts; i++) {
+        coctx = &cc[i];
+        if (coctx->cleanup) {
+            coctx->cleanup(coctx);
+            coctx->cleanup = NULL;
+            coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+            /* TODO we could also free the user thread here */
+        }
+    }
+
+    coctx = &ctx->entry_co_ctx;
+    if (coctx->cleanup) {
+        coctx->cleanup(coctx);
+    }
 }
 
