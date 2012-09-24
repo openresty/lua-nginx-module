@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 38;
+plan tests => repeat_each() * 34;
 
 #no_diff();
 #no_long_string();
@@ -35,7 +35,7 @@ GET /test
 ^0\.(?:4[5-9]\d*|5[0-5]\d*|5)$
 --- error_log
 lua ready to sleep for
-lua sleep handler: "/test?"
+lua sleep timer expired: "/test?"
 lua sleep timer expired: "/test?"
 
 
@@ -81,7 +81,6 @@ GET /test
 ^0\.(?:4[5-9]\d*|5[0-9]\d*|5)$
 --- error_log
 lua ready to sleep for
-lua sleep handler: "/sleep?"
 lua sleep timer expired: "/sleep?"
 --- no_error_log
 [error]
@@ -124,7 +123,6 @@ GET /test
 ^(?:0\.9\d*|1\.[0-2]\d*|1)$
 --- error_log
 lua ready to sleep for
-lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 --- no_error_log
 [error]
@@ -152,7 +150,6 @@ GET /test
 blah
 --- error_log
 lua ready to sleep
-lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 --- no_error_log
 [error]
@@ -182,7 +179,6 @@ blah
 hiya
 --- error_log
 lua ready to sleep for
-lua sleep handler: "/test?"
 lua sleep timer expired: "/test?"
 --- no_error_log
 [error]
