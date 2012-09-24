@@ -2490,6 +2490,8 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
+
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
     }
