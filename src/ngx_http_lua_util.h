@@ -132,6 +132,13 @@ ngx_int_t ngx_http_lua_post_thread(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 
 
+#define ngx_http_lua_check_if_abortable(L, ctx)                             \
+    if ((ctx)->no_abort) {                                                  \
+        ctx->fatal = 1;                                                     \
+        return luaL_error(L, "attempt to abort with pending subrequests");  \
+    }
+
+
 #define ngx_http_lua_init_ctx(ctx)                                          \
     ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));                           \
     ctx->ctx_ref = LUA_NOREF;                                               \

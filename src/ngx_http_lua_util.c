@@ -1219,6 +1219,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
+                if (ctx->fatal) {
+                    return NGX_ERROR;
+                }
+
                 return ctx->headers_sent ? NGX_ERROR :
                             NGX_HTTP_INTERNAL_SERVER_ERROR;
             }

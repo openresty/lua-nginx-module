@@ -343,6 +343,10 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         buffering:1; /* HTTP 1.0 response body buffering flag */
 
+    unsigned         no_abort:1; /* prohibit "world abortion" via ngx.exit()
+                                    and etc */
+
+    unsigned         fatal:1;  /* error is fatal */
 } ngx_http_lua_ctx_t;
 
 

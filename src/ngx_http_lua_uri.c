@@ -81,7 +81,10 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua set uri jump to \"%V\"", &r->uri);
 
+        ngx_http_lua_check_if_abortable(L, ctx);
+
         r->uri_changed = 1;
+
         return lua_yield(L, 0);
     }
 
