@@ -23,6 +23,7 @@ static int ngx_http_lua_ngx_req_body_finish(lua_State *L);
 static ngx_int_t ngx_http_lua_write_request_body(ngx_http_request_t *r,
     ngx_chain_t *body);
 static ngx_int_t ngx_http_lua_read_body_resume(ngx_http_request_t *r);
+static void ngx_http_lua_req_body_cleanup(void *data);
 
 
 void
@@ -123,6 +124,9 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         ctx->waiting_more_body = 1;
         ctx->req_body_reader_co_ctx = coctx;
 
+        coctx->cleanup = ngx_http_lua_req_body_cleanup;
+        coctx->data = r;
+
         return lua_yield(L, 0);
     }
 
@@ -151,6 +155,8 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
         coctx = ctx->req_body_reader_co_ctx;
         ctx->cur_co_ctx = coctx;
+
+        coctx->cleanup = NULL;
 
         if (ctx->entered_content_phase) {
             (void) ngx_http_lua_read_body_resume(r);
@@ -1108,5 +1114,24 @@ ngx_http_lua_read_body_resume(ngx_http_request_t *r)
     }
 
     return rc;
+}
+
+
+static void
+ngx_http_lua_req_body_cleanup(void *data)
+{
+    ngx_http_request_t                  *r;
+    ngx_http_lua_co_ctx_t               *coctx = data;
+
+    r = coctx->data;
+    if (r == NULL) {
+        return;
+    }
+
+    r->read_event_handler = ngx_http_block_reading;
+
+    if (r->connection->read->timer_set) {
+        ngx_del_timer(r->connection->read);
+    }
 }
 
