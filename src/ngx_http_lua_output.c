@@ -564,6 +564,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
         }
 
         if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+            if (wev->timer_set) {
+                ngx_del_timer(wev);
+            }
             return luaL_error(L, "connection broken");
         }
 
