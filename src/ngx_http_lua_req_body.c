@@ -1121,6 +1121,7 @@ static void
 ngx_http_lua_req_body_cleanup(void *data)
 {
     ngx_http_request_t                  *r;
+    ngx_http_lua_ctx_t                  *ctx;
     ngx_http_lua_co_ctx_t               *coctx = data;
 
     r = coctx->data;
@@ -1133,5 +1134,13 @@ ngx_http_lua_req_body_cleanup(void *data)
     if (r->connection->read->timer_set) {
         ngx_del_timer(r->connection->read);
     }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->waiting_more_body = 0;
+    r->keepalive = 0;
 }
 

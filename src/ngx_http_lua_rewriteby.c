@@ -91,10 +91,6 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
     dd("entered? %d", (int) ctx->entered_rewrite_phase);
 
-    if (ctx->waiting_more_body) {
-        return NGX_DONE;
-    }
-
     if (ctx->entered_rewrite_phase) {
         dd("rewriteby: calling wev handler");
         rc = ctx->resume_handler(r);
@@ -107,12 +103,16 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         return rc;
     }
 
+    if (ctx->waiting_more_body) {
+        return NGX_DONE;
+    }
+
     if (llcf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;
         r->request_body_in_clean_file = 1;
 
-        rc = ngx_http_read_client_request_body(r, 
+        rc = ngx_http_read_client_request_body(r,
                 ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -288,12 +288,24 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+
+        if (rc == NGX_OK) {
+            return NGX_DECLINED;
+        }
+
+        return rc;
     }
 
     if (rc == NGX_DONE) {
         ngx_http_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+
+        if (rc == NGX_OK) {
+            return NGX_DECLINED;
+        }
+
+        return rc;
     }
 
     return NGX_DECLINED;

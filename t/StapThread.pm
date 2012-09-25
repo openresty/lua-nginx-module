@@ -163,6 +163,7 @@ F(ngx_http_lua_run_posted_threads) {
 
 F(ngx_http_finalize_request) {
     printf("finalize request: rc:%d c:%d\n", $rc, $r->main->count);
+    #print_ubacktrace()
 }
 
 M(http-lua-user-coroutine-create) {
@@ -174,6 +175,26 @@ M(http-lua-user-coroutine-create) {
 F(ngx_http_lua_ngx_exec) { println("exec") }
 
 F(ngx_http_lua_ngx_exit) { println("exit") }
+
+F(ngx_http_lua_req_body_cleanup) {
+    println("lua req body cleanup")
+}
+
+F(ngx_http_read_client_request_body) {
+    println("read client request body")
+}
+
+F(ngx_http_lua_finalize_coroutines) {
+    println("finalize coroutines")
+}
+
+F(ngx_http_lua_ngx_exit) {
+    println("ngx.exit() called")
+}
+
+F(ngx_http_lua_sleep_resume) {
+    println("lua sleep resume")
+}
 _EOC_
 
 1;
