@@ -28,7 +28,7 @@ __DATA__
                 ngx.exec("/foo")
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.sleep(1)
             ngx.say("hello")
         ';
@@ -64,7 +64,7 @@ i am foo
                 ngx.exec("/foo")
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
         ';
         content_by_lua return;
     }
@@ -98,7 +98,7 @@ i am foo
                 ngx.exec("/foo")
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.sleep(1)
         ';
         content_by_lua return;
@@ -184,8 +184,8 @@ hello foo
                 ngx.sleep(1)
             end
 
-            ngx.thread.create(f)
-            ngx.thread.create(g)
+            ngx.thread.spawn(f)
+            ngx.thread.spawn(g)
         ';
         content_by_lua return;
     }
@@ -270,7 +270,7 @@ hello foo
                 ngx.exec("/foo")
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
 
             ngx.location.capture("/sleep")
             ngx.say("end")

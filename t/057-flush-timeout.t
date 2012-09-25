@@ -128,7 +128,7 @@ del timer 1234
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
 
             ngx.say("hello, world!")

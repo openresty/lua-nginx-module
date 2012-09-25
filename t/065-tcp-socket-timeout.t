@@ -591,7 +591,7 @@ lua tcp socket write timed out
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
 

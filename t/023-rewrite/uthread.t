@@ -29,7 +29,7 @@ __DATA__
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -78,11 +78,11 @@ after
             end
 
             ngx.say("before 1")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after 1")
 
             ngx.say("before 2")
-            ngx.thread.create(g)
+            ngx.thread.spawn(g)
             ngx.say("after 2")
         ';
         content_by_lua return;
@@ -124,7 +124,7 @@ after 2
             end
 
             ngx.say("before thread create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after thread create")
         ';
         content_by_lua return;
@@ -167,11 +167,11 @@ after sleep
             end
 
             ngx.say("1: before thread create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("1: after thread create")
 
             ngx.say("2: before thread create")
-            ngx.thread.create(g)
+            ngx.thread.spawn(g)
             ngx.say("2: after thread create")
         ';
         content_by_lua return;
@@ -212,7 +212,7 @@ delete thread 4
                 ngx.blah()
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -245,7 +245,7 @@ lua thread aborted: runtime error: [string "rewrite_by_lua"]:3: attempt to call 
             end
 
             ngx.say("before thread create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after thread create")
         ';
         content_by_lua return;
@@ -291,7 +291,7 @@ after capture: hello world
             end
 
             ngx.say("before thread create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after thread create")
             local res = ngx.location.capture("/proxy?bar")
             ngx.say("capture: ", res.body)
@@ -344,7 +344,7 @@ after capture: hello foo
             end
 
             ngx.say("before thread create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after thread create")
             local res = ngx.location.capture("/proxy?bar")
             ngx.say("capture: ", res.body)
@@ -404,11 +404,11 @@ capture: hello bar
             end
 
             ngx.say("before thread 1 create")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after thread 1 create")
 
             ngx.say("before thread 2 create")
-            ngx.thread.create(g)
+            ngx.thread.spawn(g)
             ngx.say("after thread 2 create")
 
             local res = ngx.location.capture("/proxy?bar")
@@ -470,7 +470,7 @@ g: after capture: hello bah
         rewrite_by_lua '
             function f()
                 ngx.say("before g")
-                ngx.thread.create(g)
+                ngx.thread.spawn(g)
                 ngx.say("after g")
             end
 
@@ -479,7 +479,7 @@ g: after capture: hello bah
             end
 
             ngx.say("before f")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after f")
         ';
         content_by_lua return;
@@ -515,7 +515,7 @@ after g
         rewrite_by_lua '
             function f()
                 ngx.say("before g")
-                ngx.thread.create(g)
+                ngx.thread.spawn(g)
                 ngx.say("after g")
             end
 
@@ -525,7 +525,7 @@ after g
             end
 
             ngx.say("before f")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after f")
         ';
         content_by_lua return;
@@ -565,7 +565,7 @@ hello in g()
                 ngx.sleep(0.1)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
         content_by_lua return;
@@ -597,7 +597,7 @@ status: running
                 co = coroutine.running()
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
         content_by_lua return;
@@ -635,7 +635,7 @@ status: dead
                 ngx.sleep(0.1)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
         content_by_lua return;
@@ -665,7 +665,7 @@ status: normal
         rewrite_by_lua '
             function f()
                 ngx.say("before g")
-                ngx.thread.create(g)
+                ngx.thread.spawn(g)
                 ngx.say("after g")
             end
 
@@ -722,7 +722,7 @@ after f
             ngx.say("0")
             yield(self)
             ngx.say("1")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("2")
             yield(self)
             ngx.say("3")
@@ -780,8 +780,8 @@ f 3
                 ngx.say("g 3")
             end
 
-            ngx.thread.create(f)
-            ngx.thread.create(g)
+            ngx.thread.spawn(f)
+            ngx.thread.spawn(g)
             ngx.say("done")
         ';
         content_by_lua return;
@@ -824,7 +824,7 @@ g 3
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             ngx.flush(true)
         ';
@@ -864,8 +864,8 @@ after
                 ngx.flush(true)
             end
 
-            ngx.thread.create(f)
-            ngx.thread.create(g)
+            ngx.thread.spawn(f)
+            ngx.thread.spawn(g)
         ';
         content_by_lua return;
     }
@@ -924,7 +924,7 @@ hello from g
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -972,7 +972,7 @@ received: OK
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -1011,7 +1011,7 @@ received: hello udp
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -1059,7 +1059,7 @@ body: hello world)$
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;

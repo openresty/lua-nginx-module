@@ -28,7 +28,7 @@ __DATA__
                 ngx.req.set_uri("/foo", true)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.sleep(1)
             ngx.say("hello")
         ';
@@ -63,7 +63,7 @@ i am foo
                 ngx.req.set_uri("/foo", true)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
         ';
     }
 
@@ -96,7 +96,7 @@ i am foo
                 ngx.req.set_uri("/foo", true)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.sleep(1)
         ';
     }
@@ -181,8 +181,8 @@ hello foo
                 ngx.sleep(1)
             end
 
-            ngx.thread.create(f)
-            ngx.thread.create(g)
+            ngx.thread.spawn(f)
+            ngx.thread.spawn(g)
         ';
     }
 
@@ -266,7 +266,7 @@ hello foo
                 ngx.req.set_uri("/foo", true)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
 
             ngx.location.capture("/sleep")
             ngx.say("end")

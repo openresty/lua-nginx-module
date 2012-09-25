@@ -31,7 +31,7 @@ __DATA__
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             ngx.sleep(1)
             ngx.say("end")
@@ -96,7 +96,7 @@ hello in thread
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             ngx.sleep(1)
             ngx.say("end")
@@ -185,8 +185,8 @@ after
                 ngx.say("g")
             end
 
-            ngx.thread.create(f)
-            ngx.thread.create(g)
+            ngx.thread.spawn(f)
+            ngx.thread.spawn(g)
             ngx.say("end")
         ';
         content_by_lua return;
@@ -271,7 +271,7 @@ f
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
         ';
         content_by_lua return;
@@ -309,7 +309,7 @@ exiting the user thread
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("www.google.com", 80)
@@ -406,7 +406,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.udp()
             local ok, err = sock:setpeername("www.google.com", 80)
@@ -501,7 +501,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
             sock:settimeout(12000)
@@ -592,7 +592,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
 
@@ -693,7 +693,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
 
@@ -800,7 +800,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.udp()
 
@@ -895,7 +895,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.req.socket()
 
@@ -985,7 +985,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
 
             ngx.req.read_body()
@@ -1070,7 +1070,7 @@ after
             end
 
             ngx.say("before")
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.say("after")
 
             ngx.location.capture("/sleep")
@@ -1151,7 +1151,7 @@ attempt to abort with pending subrequests
                 ngx.exit(0)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
 
             ngx.location.capture("/sleep")
             ngx.say("end")
@@ -1235,7 +1235,7 @@ attempt to abort with pending subrequests
                 ngx.exit(0)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
 
             ngx.location.capture_multi{
                 {"/echo"},

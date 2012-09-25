@@ -20,7 +20,7 @@ ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
     lua_newtable(L);
 
     lua_pushcfunction(L, ngx_http_lua_uthread_create);
-    lua_setfield(L, -2, "create");
+    lua_setfield(L, -2, "spawn");
 
     lua_setfield(L, -2, "thread");
 }

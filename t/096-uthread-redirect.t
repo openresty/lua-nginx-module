@@ -31,7 +31,7 @@ __DATA__
                 ngx.redirect(301)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
 
             ngx.location.capture_multi{
                 {"/echo"},
@@ -120,7 +120,7 @@ attempt to abort with pending subrequests
                 ngx.redirect(301)
             end
 
-            ngx.thread.create(f)
+            ngx.thread.spawn(f)
             ngx.sleep(1)
             ngx.say("end")
         ';
