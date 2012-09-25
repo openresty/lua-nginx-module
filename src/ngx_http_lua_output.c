@@ -554,7 +554,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
         wev = r->connection->write;
 
         if (wev->ready && wev->delayed) {
-            return lua_yield(L, 0);
+            return 0;
         }
 
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
