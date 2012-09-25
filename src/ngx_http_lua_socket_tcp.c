@@ -2171,6 +2171,11 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
     if (u->is_downstream) {
         r->read_event_handler = ngx_http_block_reading;
+
+        if (r->connection->read->timer_set) {
+            ngx_del_timer(r->connection->read);
+        }
+
         u->peer.connection = NULL;
         return;
     }
