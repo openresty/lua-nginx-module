@@ -77,11 +77,6 @@ F(ngx_http_lua_post_thread) {
     printf("post thread %d\n", id)
 }
 
-F(ngx_http_lua_co_cleanup) {
-    id = gen_id(@cast($data, "ngx_http_lua_co_ctx_t")->co)
-    printf("co cleanup called for thread %d\n", id)
-}
-
 M(timer-add) {
     timers[$arg1] = $arg2
     printf("add timer %d\n", $arg2)
