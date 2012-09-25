@@ -18,6 +18,10 @@ BEGIN {
 
 use lib 'lib';
 use Test::Nginx::Socket;
+use t::StapThread;
+
+our $GCScript = $t::StapThread::GCScript;
+our $StapScript = $t::StapThread::StapScript;
 
 #worker_connections(1014);
 #master_on();
@@ -26,7 +30,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 1 + 1);
+plan tests => repeat_each() * (blocks() * 1 + 2);
 
 #no_diff();
 no_long_string();
@@ -109,4 +113,100 @@ del timer 1234
 --- no_error_log
 [error]
 --- timeout: 3
+
+
+
+=== TEST 3: exit in user thread (entry thread is still pending on ngx.flush)
+--- config
+    send_timeout 200ms;
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(0)
+            end
+
+            ngx.say("before")
+            ngx.thread.create(f)
+            ngx.say("after")
+
+            ngx.say("hello, world!")
+            ngx.flush(true)
+
+            ngx.say("end")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+M(timer-add) {
+    if ($arg2 == 200 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+
+F(ngx_http_lua_tcp_socket_cleanup) {
+    println("lua tcp socket cleanup")
+}
+
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize request: c:%d, a:%d, cb:%d, rb:%d\n", $r->main->count,
+        $r == $r->connection->data, $r->connection->buffered, $r->buffered)
+}
+
+F(ngx_http_set_write_handler) {
+    println("set write handler")
+}
+*/
+
+F(ngx_http_lua_flush_cleanup) {
+    println("lua flush cleanup")
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+create user thread 2 in 1
+add timer 100
+add timer 200
+expire timer 100
+lua flush cleanup
+delete timer 200
+delete thread 2
+delete thread 1
+add timer 200
+expire timer 200
+free request
+
+--- ignore_response
+--- no_error_log
+[error]
 

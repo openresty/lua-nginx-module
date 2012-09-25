@@ -15,6 +15,7 @@ static int ngx_http_lua_ngx_flush(lua_State *L);
 static int ngx_http_lua_ngx_eof(lua_State *L);
 static int ngx_http_lua_ngx_send_headers(lua_State *L);
 static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
+static void ngx_http_lua_flush_cleanup(void *data);
 
 
 static int
@@ -570,6 +571,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
             return luaL_error(L, "connection broken");
         }
 
+        coctx->cleanup = ngx_http_lua_flush_cleanup;
+        coctx->data = r;
+
         return lua_yield(L, 0);
     }
 
@@ -694,6 +698,8 @@ ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     c = r->connection;
 
+    ctx->cur_co_ctx->cleanup = NULL;
+
     rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -716,5 +722,35 @@ ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
     }
 
     return rc;
+}
+
+
+static void
+ngx_http_lua_flush_cleanup(void *data)
+{
+    ngx_http_request_t                      *r;
+    ngx_event_t                             *wev;
+    ngx_http_lua_ctx_t                      *ctx;
+    ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    coctx->flushing = 0;
+
+    r = coctx->data;
+    if (r == NULL) {
+        return;
+    }
+
+    wev = r->connection->write;
+
+    if (wev && wev->timer_set) {
+        ngx_del_timer(wev);
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->flushing_coros--;
 }
 
