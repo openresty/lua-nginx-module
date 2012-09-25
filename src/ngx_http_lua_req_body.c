@@ -110,6 +110,8 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_req_body_post_read);
 
+    r->main->count--;
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to read request body");
     }
@@ -143,10 +145,6 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
             "lua req body post read");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-#if defined(nginx_version) && nginx_version >= 8011
-    r->main->count--;
-#endif
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
