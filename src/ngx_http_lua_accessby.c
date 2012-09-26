@@ -88,11 +88,6 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
     dd("entered? %d", (int) ctx->entered_access_phase);
 
-    if (ctx->waiting_more_body) {
-        dd("WAITING MORE BODY");
-        return NGX_DONE;
-    }
-
     if (ctx->entered_access_phase) {
         dd("calling wev handler");
         rc = ctx->resume_handler(r);
@@ -103,6 +98,11 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         }
 
         return NGX_DECLINED;
+    }
+
+    if (ctx->waiting_more_body) {
+        dd("WAITING MORE BODY");
+        return NGX_DONE;
     }
 
     if (llcf->force_read_body && !ctx->read_body_done) {
@@ -291,12 +291,25 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+            return rc;
+        }
+
+        return NGX_DECLINED;
     }
 
     if (rc == NGX_DONE) {
         ngx_http_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, L, r, ctx);
+
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+            return rc;
+        }
+
+        return NGX_DECLINED;
     }
 
     return NGX_DECLINED;
