@@ -656,7 +656,8 @@ ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
 
     ls.s = buff;
     ls.size = size;
-    ls.sent_begin = ls.sent_end = 0;
+    ls.sent_begin = 0;
+    ls.sent_end = 0;
 
     return lua_load(L, clfactory_getS, &ls, name);
 }
@@ -758,9 +759,7 @@ clfactory_errfile(lua_State *L, const char *what, int fname_index)
 static const char *
 clfactory_getS(lua_State *L, void *ud, size_t *size)
 {
-    clfactory_buffer_ctx_t      *ls;
-
-    ls = (clfactory_buffer_ctx_t *) ud;
+    clfactory_buffer_ctx_t      *ls = ud;
 
     if (ls->sent_begin == 0) {
         ls->sent_begin = 1;
