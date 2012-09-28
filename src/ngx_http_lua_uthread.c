@@ -10,7 +10,7 @@
 #include "ngx_http_lua_probe.h"
 
 
-static int ngx_http_lua_uthread_create(lua_State *L);
+static int ngx_http_lua_uthread_spawn(lua_State *L);
 
 
 void
@@ -19,7 +19,7 @@ ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
     /* new thread table */
     lua_newtable(L);
 
-    lua_pushcfunction(L, ngx_http_lua_uthread_create);
+    lua_pushcfunction(L, ngx_http_lua_uthread_spawn);
     lua_setfield(L, -2, "spawn");
 
     lua_setfield(L, -2, "thread");
@@ -27,7 +27,7 @@ ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
 
 
 static int
-ngx_http_lua_uthread_create(lua_State *L)
+ngx_http_lua_uthread_spawn(lua_State *L)
 {
     ngx_http_request_t           *r;
     ngx_http_lua_ctx_t           *ctx;
