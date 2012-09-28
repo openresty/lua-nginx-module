@@ -486,3 +486,27 @@ sr failed: 500
 --- error_log
 attempt to use ngx.re.gmatch iterator in a request that did not create it
 
+
+
+=== TEST 20: gmatch (empty matched string)
+--- config
+    location /re {
+        content_by_lua '
+            for m in ngx.re.gmatch("hello", "a|") do
+                if m then
+                    ngx.say("matched: [", m[0], "]")
+                else
+                    ngx.say("not matched: ", m)
+                end
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+matched: []
+matched: []
+matched: []
+matched: []
+matched: []
+
