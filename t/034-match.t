@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
 no_long_string();
@@ -701,4 +701,28 @@ done
     GET /re
 --- response_body
 done
+
+
+
+=== TEST 34: non-empty subject, empty pattern
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = {}
+            local m = ngx.re.match("hello, 1234", "", "", ctx)
+            if m then
+                ngx.say("pos: ", ctx.pos)
+                ngx.say("m: ", m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+pos: 0
+m: 
+--- no_error_log
+[error]
 

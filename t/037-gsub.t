@@ -9,7 +9,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 no_long_string();
@@ -178,4 +178,80 @@ hello, world
 --- response_body
 {foohbarhbaz}
 2
+
+
+
+=== TEST 10: gsub with a patch matching an empty substring (string template)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("hello", "a|", "b")
+            ngx.say("s: ", s)
+            ngx.say("n: ", n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+s: bhbeblblbob
+n: 6
+--- no_error_log
+[error]
+
+
+
+=== TEST 11: gsub with a patch matching an empty substring (string template, empty subj)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("", "a|", "b")
+            ngx.say("s: ", s)
+            ngx.say("n: ", n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+s: b
+n: 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: gsub with a patch matching an empty substring (func)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("hello", "a|", function () return "b" end)
+            ngx.say("s: ", s)
+            ngx.say("n: ", n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+s: bhbeblblbob
+n: 6
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: gsub with a patch matching an empty substring (func, empty subj)
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("", "a|", function () return "b" end)
+            ngx.say("s: ", s)
+            ngx.say("n: ", n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+s: b
+n: 1
+--- no_error_log
+[error]
 
