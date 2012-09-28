@@ -948,7 +948,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         offset++;
     }
 
-    if (offset >= (ssize_t) subj.len) {
+    if (offset > (ssize_t) subj.len) {
         offset = -1;
 
         if (!(ctx->flags & NGX_LUA_RE_COMPILE_ONCE)) {
