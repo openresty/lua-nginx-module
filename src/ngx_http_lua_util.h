@@ -137,7 +137,6 @@ void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
-        ctx->fatal = 1;                                                     \
         return luaL_error(L, "attempt to abort with pending subrequests");  \
     }
 

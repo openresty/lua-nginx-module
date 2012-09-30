@@ -1339,7 +1339,8 @@ user_co_done:
 
                 dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
-                if (ctx->fatal) {
+                if (ctx->no_abort) {
+                    ctx->no_abort = 0;
                     return NGX_ERROR;
                 }
 
