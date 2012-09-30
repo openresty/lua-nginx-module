@@ -1035,7 +1035,6 @@ res: done
 
 
 === TEST 17: wait on uthreads on the reversed order of their termination, but exit the world early
---- ONLY
 --- config
     location /lua {
         content_by_lua '
