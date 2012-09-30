@@ -654,10 +654,11 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp socket cleanup
 delete timer 12000
 delete thread 2

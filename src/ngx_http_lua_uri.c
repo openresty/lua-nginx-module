@@ -40,8 +40,29 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     lua_pop(L, 1);
 
     if (n == 2) {
+
         luaL_checktype(L, 2, LUA_TBOOLEAN);
         jump = lua_toboolean(L, 2);
+
+        if (jump) {
+
+            ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+            if (ctx == NULL) {
+                return luaL_error(L, "no ctx found");
+            }
+
+            dd("rewrite: %d, access: %d, content: %d",
+                    (int) ctx->entered_rewrite_phase,
+                    (int) ctx->entered_access_phase,
+                    (int) ctx->entered_content_phase);
+
+            ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua set uri jump to \"%V\"", &r->uri);
+
+            ngx_http_lua_check_if_abortable(L, ctx);
+        }
     }
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
@@ -65,24 +86,6 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     ngx_http_set_exten(r);
 
     if (jump) {
-
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if (ctx == NULL) {
-            return luaL_error(L, "no ctx found");
-        }
-
-        dd("rewrite: %d, access: %d, content: %d",
-                (int) ctx->entered_rewrite_phase,
-                (int) ctx->entered_access_phase,
-                (int) ctx->entered_content_phase);
-
-        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE);
-
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua set uri jump to \"%V\"", &r->uri);
-
-        ngx_http_lua_check_if_abortable(L, ctx);
-
         r->uri_changed = 1;
 
         return lua_yield(L, 0);

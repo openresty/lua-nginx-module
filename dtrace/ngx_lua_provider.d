@@ -35,7 +35,7 @@ provider nginx_lua {
             ngx_http_request_t *r, void *u, u_char *data, size_t len);
 
     /* lua_State *creator, lua_State *newthread */
-    probe http__lua__user__thread__create(ngx_http_request_t *r,
+    probe http__lua__user__thread__spawn(ngx_http_request_t *r,
             void *creator, void *newthread);
 
     /* lua_State *thread, ngx_http_lua_ctx_t *ctx */
@@ -44,6 +44,9 @@ provider nginx_lua {
     /* lua_State *thread */
     probe http__lua__run__posted__thread(ngx_http_request_t *r, void *thread,
             int status);
+
+    probe http__lua__coroutine__done(ngx_http_request_t *r, void *co,
+            int success);
 };
 
 

@@ -7,7 +7,7 @@ use t::StapThread;
 our $GCScript = $t::StapThread::GCScript;
 our $StapScript = $t::StapThread::StapScript;
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 4);
 
@@ -72,9 +72,11 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 
 --- response_body
@@ -150,14 +152,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 1000
 expire timer 100
+terminate 2: ok
 lua sleep cleanup
 delete timer 1000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -238,17 +242,20 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
 add timer 1000
+terminate 1: ok
 delete thread 1
 expire timer 100
+terminate 2: ok
 lua sleep cleanup
 delete timer 1000
 delete thread 2
 delete thread 3
+terminate 4: ok
 delete thread 4
 free request
 
@@ -282,9 +289,12 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
+terminate 3: ok
 delete thread 3
 
 --- response_body
@@ -372,15 +382,17 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 resolving www.google.com
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp resolve cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -469,15 +481,17 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 resolving www.google.com
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua udp resolve cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -561,14 +575,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp socket cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -662,14 +678,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp socket cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -769,14 +787,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp socket cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -864,14 +884,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua udp socket cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -953,14 +975,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua tcp socket cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -1038,14 +1062,16 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 12000
 expire timer 100
+terminate 2: ok
 lua req body cleanup
 delete timer 12000
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 free request
 
@@ -1123,21 +1149,26 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 200
 expire timer 100
+terminate 2: fail
+expire timer 200
+terminate 1: ok
 delete thread 2
 delete thread 1
-delete timer 200
+terminate 3: ok
+delete thread 3
 free request
 
---- ignore_response
+--- response_body
+before
+hello in thread
+after
+end
 --- error_log
 attempt to abort with pending subrequests
---- no_error_log
-[alert]
-[warn]
 
 
 
@@ -1207,21 +1238,24 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 200
 expire timer 100
+terminate 2: fail
+expire timer 200
+post subreq /sleep
+terminate 1: ok
 delete thread 2
 delete thread 1
-delete timer 200
+terminate 3: ok
+delete thread 3
 free request
 
---- ignore_response
+--- response_body
+end
 --- error_log
 attempt to abort with pending subrequests
---- no_error_log
-[alert]
-[warn]
 
 
 
@@ -1297,20 +1331,23 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 post subreq /echo
 add timer 200
 expire timer 100
+terminate 2: fail
+expire timer 200
+post subreq /sleep
+terminate 1: ok
 delete thread 2
 delete thread 1
-delete timer 200
+terminate 3: ok
+delete thread 3
 free request
 
---- ignore_response
+--- response_body
+end
 --- error_log
 attempt to abort with pending subrequests
---- no_error_log
-[alert]
-[warn]
 

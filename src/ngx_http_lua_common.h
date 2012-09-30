@@ -201,7 +201,8 @@ typedef enum {
     NGX_HTTP_LUA_CO_RUNNING   = 0, /* coroutine running */
     NGX_HTTP_LUA_CO_SUSPENDED = 1, /* coroutine suspended */
     NGX_HTTP_LUA_CO_NORMAL    = 2, /* coroutine normal */
-    NGX_HTTP_LUA_CO_DEAD      = 3  /* coroutine dead */
+    NGX_HTTP_LUA_CO_DEAD      = 3, /* coroutine dead */
+    NGX_HTTP_LUA_CO_ZOMBIE    = 4, /* coroutine zombie */
 } ngx_http_lua_co_status_t;
 
 
@@ -220,6 +221,8 @@ struct ngx_http_lua_co_ctx_s {
 
     lua_State               *co;
     ngx_http_lua_co_ctx_t   *parent_co_ctx;
+
+    ngx_http_lua_posted_thread_t    *zombie_child_threads;
 
     ngx_http_cleanup_pt      cleanup;
 
@@ -244,7 +247,10 @@ struct ngx_http_lua_co_ctx_s {
                                          from beging collected by the
                                          Lua GC */
 
-    ngx_http_lua_co_status_t co_status:2;  /* the current coroutine's status */
+    unsigned                 waited_by_parent:1;  /* whether being waited by
+                                                     a parent coroutine */
+
+    ngx_http_lua_co_status_t co_status:3;  /* the current coroutine's status */
 
     unsigned                 flushing:1; /* indicates whether the current
                                             coroutine is waiting for
@@ -252,6 +258,10 @@ struct ngx_http_lua_co_ctx_s {
 
     unsigned                 is_uthread:1; /* whether the current coroutine is
                                               a user thread */
+
+    unsigned                 thread_spawn_yielded:1; /* yielded from
+                                                        the ngx.thread.spawn()
+                                                        call */
 };
 
 

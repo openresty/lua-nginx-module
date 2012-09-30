@@ -39,7 +39,9 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1
 
@@ -79,10 +81,13 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
-delete thread 2
+spawn user thread 2 in 1
+terminate 2: ok
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 3: ok
+terminate 1: ok
+delete thread 2
 delete thread 3
 delete thread 1
 
@@ -119,8 +124,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -164,11 +171,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 1: ok
 delete thread 1
+terminate 3: ok
 delete thread 3
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -203,14 +213,16 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: fail
+terminate 1: ok
 delete thread 2
 delete thread 1
 
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body
+after
 --- error_log
-lua thread aborted: runtime error: [string "content_by_lua"]:3: attempt to call field 'blah' (a nil value)
+lua user thread aborted: runtime error: [string "content_by_lua"]:3: attempt to call field 'blah' (a nil value)
 
 
 
@@ -244,8 +256,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -294,8 +308,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -346,7 +362,9 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1
 
@@ -414,11 +432,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1
+terminate 3: ok
 delete thread 3
 
 --- response_body
@@ -461,11 +482,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 2
-create user thread 3 in 2
-delete thread 3
+spawn user thread 3 in 2
+terminate 3: ok
+terminate 1: ok
 delete thread 1
+terminate 2: ok
+delete thread 3
 delete thread 2
 
 --- response_body
@@ -505,11 +529,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 2
-create user thread 3 in 2
+spawn user thread 3 in 2
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
+terminate 3: ok
 delete thread 3
 
 --- response_body
@@ -543,8 +570,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -573,12 +602,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1
 
 --- response_body
-status: dead
+status: zombie
 --- no_error_log
 [error]
 
@@ -609,9 +640,12 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 2
+terminate 1: ok
 delete thread 1
+terminate 3: ok
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -648,8 +682,11 @@ GET /lua
 --- stap_out
 create 2 in 1
 create 3 in 2
-create user thread 3 in 2
+spawn user thread 3 in 2
+terminate 3: ok
+terminate 2: ok
 delete thread 3
+terminate 1: ok
 delete thread 1
 
 --- response_body
@@ -696,7 +733,9 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1
 
@@ -749,11 +788,14 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
+terminate 3: ok
 delete thread 3
 
 --- response_body
@@ -791,8 +833,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -828,16 +872,22 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out_like
 ^(?:create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
+terminate 3: ok
 delete thread 3|create 2 in 1
-create user thread 2 in 1
-delete thread 2
+spawn user thread 2 in 1
+terminate 2: ok
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
+terminate 3: ok
+terminate 1: ok
+delete thread 2
 delete thread 3
 delete thread 1)$
 
@@ -886,8 +936,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -932,8 +984,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- udp_listen: 12345
@@ -970,11 +1024,15 @@ hello world
 --- stap eval: $::GCScript
 --- stap_out_like chop
 ^(?:create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1|create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2)$
 
 --- response_body_like chop
@@ -1016,11 +1074,15 @@ hello world
 --- stap eval: $::GCScript
 --- stap_out_like chop
 ^(?:create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
 delete thread 2
 delete thread 1|create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2)$
 
 --- response_body_like chop

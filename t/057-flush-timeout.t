@@ -194,10 +194,11 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 200
 expire timer 100
+terminate 2: ok
 lua flush cleanup
 delete timer 200
 delete thread 2

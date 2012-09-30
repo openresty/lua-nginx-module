@@ -23,8 +23,9 @@ static int ngx_http_lua_coroutine_yield(lua_State *L);
 static int ngx_http_lua_coroutine_status(lua_State *L);
 
 
-static const char * ngx_http_lua_co_status_names[] =
-    {"running", "suspended", "normal", "dead"};
+static const char *
+    ngx_http_lua_co_status_names[] =
+        {"running", "suspended", "normal", "dead", "zombie"};
 
 
 
@@ -211,7 +212,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
 
     ctx->co_op = NGX_HTTP_LUA_USER_CORO_YIELD;
 
-    if (coctx->parent_co_ctx) {
+    if (!coctx->is_uthread && coctx->parent_co_ctx) {
         dd("set coroutine to running");
         coctx->parent_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
 

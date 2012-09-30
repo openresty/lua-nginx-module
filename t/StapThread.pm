@@ -25,10 +25,10 @@ F(ngx_http_free_request) {
     in_req--
 }
 
-M(http-lua-user-thread-create) {
+M(http-lua-user-thread-spawn) {
     p = gen_id($arg2)
     c = gen_id($arg3)
-    printf("create user thread %x in %x\n", c, p)
+    printf("spawn user thread %x in %x\n", c, p)
 }
 
 M(http-lua-thread-delete) {
@@ -40,6 +40,12 @@ M(http-lua-user-coroutine-create) {
     p = gen_id($arg2)
     c = gen_id($arg3)
     printf("create %x in %x\n", c, p)
+}
+
+M(http-lua-coroutine-done) {
+    t = gen_id($arg2)
+    printf("terminate %d: %s\n", t, $arg3 ? "ok" : "fail")
+    #print_ubacktrace()
 }
 
 _EOC_
@@ -104,17 +110,15 @@ F(ngx_http_lua_run_thread) {
     #}
 }
 
-/*
 probe process("/usr/local/openresty-debug/luajit/lib/libluajit-5.1.so.2").function("lua_resume") {
     id = gen_id($L)
     printf("lua resume %d\n", id)
 }
-*/
 
-M(http-lua-user-thread-create) {
+M(http-lua-user-thread-spawn) {
     p = gen_id($arg2)
     c = gen_id($arg3)
-    printf("create uthread %x in %x\n", c, p)
+    printf("spawn uthread %x in %x\n", c, p)
 }
 
 M(http-lua-thread-delete) {
@@ -194,6 +198,16 @@ F(ngx_http_lua_ngx_exit) {
 
 F(ngx_http_lua_sleep_resume) {
     println("lua sleep resume")
+}
+
+M(http-lua-coroutine-done) {
+    t = gen_id($arg2)
+    printf("terminate coro %d: %s\n", t, $arg3 ? "ok" : "fail")
+}
+
+M(http-lua-info) {
+    msg = user_string($arg1)
+    printf("lua info: %s\n", msg)
 }
 _EOC_
 

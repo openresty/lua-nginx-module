@@ -131,6 +131,9 @@ ngx_int_t ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
 ngx_int_t ngx_http_lua_post_thread(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 
+void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \

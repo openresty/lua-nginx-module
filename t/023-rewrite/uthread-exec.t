@@ -44,7 +44,8 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
 delete thread 2
 delete thread 1
 
@@ -78,8 +79,10 @@ GET /lua
 --- stap eval: $::GCScript
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
 delete thread 1
+terminate 2: ok
 delete thread 2
 
 --- response_body
@@ -154,10 +157,11 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 1000
 expire timer 100
+terminate 2: ok
 lua sleep cleanup
 delete timer 1000
 delete thread 2
@@ -240,13 +244,15 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 create 3 in 1
-create user thread 3 in 1
+spawn user thread 3 in 1
 add timer 1000
+terminate 1: ok
 delete thread 1
 expire timer 100
+terminate 2: ok
 lua sleep cleanup
 delete timer 1000
 delete thread 2
@@ -325,19 +331,21 @@ _EOC_
 
 --- stap_out
 create 2 in 1
-create user thread 2 in 1
+spawn user thread 2 in 1
 add timer 100
 add timer 200
 expire timer 100
+terminate 2: fail
+expire timer 200
+terminate 1: ok
 delete thread 2
 delete thread 1
-delete timer 200
+terminate 3: ok
+delete thread 3
 free request
 
---- ignore_response
+--- response_body
+end
 --- error_log
 attempt to abort with pending subrequests
---- no_error_log
-[alert]
-[warn]
 
