@@ -963,3 +963,142 @@ g: hello
 --- error_log
 lua user thread aborted: runtime error: [string "content_by_lua"]:8: f done
 
+
+
+=== TEST 16: wait on uthreads on the exact order of their termination, but exit the world early
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.sleep(0.1)
+                ngx.say("f: hello")
+                return "done"
+            end
+
+            function g()
+                ngx.sleep(0.2)
+                ngx.say("g: hello")
+                return "done"
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                ngx.say("failed to spawn thread: ", err)
+                return
+            end
+
+            ngx.say("f thread created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                ngx.say("failed to spawn thread: ", err)
+                return
+            end
+
+            ngx.say("g thread created: ", coroutine.status(tg))
+
+            ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                ngx.say("failed to wait: ", res)
+                return
+            end
+
+            ngx.say("res: ", res)
+
+            ngx.exit(200)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+terminate 2: ok
+delete thread 2
+terminate 1: ok
+delete thread 3
+delete thread 1
+
+--- response_body
+f thread created: running
+g thread created: running
+f: hello
+res: done
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: wait on uthreads on the reversed order of their termination, but exit the world early
+--- ONLY
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.sleep(0.2)
+                ngx.say("f: hello")
+                return "done"
+            end
+
+            function g()
+                ngx.sleep(0.1)
+                ngx.say("g: hello")
+                return "done"
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                ngx.say("failed to spawn thread f: ", err)
+                return
+            end
+
+            ngx.say("f thread created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                ngx.say("failed to spawn thread g: ", err)
+                return
+            end
+
+            ngx.say("g thread created: ", coroutine.status(tg))
+
+            ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                ngx.say("failed to wait: ", res)
+                return
+            end
+
+            ngx.say("res: ", res)
+
+            ngx.exit(200)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+terminate 3: ok
+delete thread 3
+terminate 1: ok
+delete thread 2
+delete thread 1
+
+--- response_body
+f thread created: running
+g thread created: running
+g: hello
+res: done
+
+--- no_error_log
+[error]
+
