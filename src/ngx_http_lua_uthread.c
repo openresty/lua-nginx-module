@@ -71,15 +71,11 @@ ngx_http_lua_uthread_spawn(lua_State *L)
 static int
 ngx_http_lua_uthread_wait(lua_State *L)
 {
-    int                          n;
+    int                          i, nargs, nrets;
     lua_State                   *sub_co;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_co_ctx_t       *coctx, *sub_coctx;
-
-    sub_co = lua_tothread(L, 1);
-
-    luaL_argcheck(L, sub_co, 1, "coroutine expected");
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -101,48 +97,56 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
     coctx = ctx->cur_co_ctx;
 
-    sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
-    if (sub_coctx == NULL) {
-        return luaL_error(L, "no co ctx found for the ngx.thread "
-                          "instance given");
-    }
+    nargs = lua_gettop(L);
 
-    if (sub_coctx->parent_co_ctx != coctx) {
-        return luaL_error(L, "only parent coroutine can wait on the "
-                          "ngx.thread instance");
-    }
+    for (i = 1; i <= nargs; i++) {
+        sub_co = lua_tothread(L, i);
 
-    switch (sub_coctx->co_status) {
-    case NGX_HTTP_LUA_CO_DEAD:
-        return luaL_error(L, "the ngx.thread instance already dead");
+        luaL_argcheck(L, sub_co, i, "lua thread expected");
 
-    case NGX_HTTP_LUA_CO_ZOMBIE:
-
-        ngx_http_lua_probe_info("found zombie child");
-
-        n = lua_gettop(sub_coctx->co);
-
-        dd("child retval count: %d, %s: %s", n,
-                luaL_typename(sub_coctx->co, -1),
-                lua_tostring(sub_coctx->co, -1));
-
-        if (n) {
-            lua_xmove(sub_coctx->co, L, n);
+        sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
+        if (sub_coctx == NULL) {
+            return luaL_error(L, "no co ctx found for the ngx.thread "
+                              "instance given");
         }
 
+        if (sub_coctx->parent_co_ctx != coctx) {
+            return luaL_error(L, "only parent coroutine can wait on the "
+                              "ngx.thread instance");
+        }
+
+        switch (sub_coctx->co_status) {
+        case NGX_HTTP_LUA_CO_DEAD:
+            return luaL_error(L, "the ngx.thread instance already dead");
+
+        case NGX_HTTP_LUA_CO_ZOMBIE:
+
+            ngx_http_lua_probe_info("found zombie child");
+
+            nrets = lua_gettop(sub_coctx->co);
+
+            dd("child retval count: %d, %s: %s", n,
+                    luaL_typename(sub_coctx->co, -1),
+                    lua_tostring(sub_coctx->co, -1));
+
+            if (nrets) {
+                lua_xmove(sub_coctx->co, L, nrets);
+            }
+
 #if 1
-        ngx_http_lua_del_thread(r, L, ctx, sub_coctx);
-        ctx->uthreads--;
+            ngx_http_lua_del_thread(r, L, ctx, sub_coctx);
+            ctx->uthreads--;
 #endif
 
-        return n;
+            return nrets;
 
-    default:
-        /* still alive */
-        break;
+        default:
+            /* still alive */
+            break;
+        }
+
+        sub_coctx->waited_by_parent = 1;
     }
-
-    sub_coctx->waited_by_parent = 1;
 
     return lua_yield(L, 0);
 }

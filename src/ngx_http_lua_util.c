@@ -1151,16 +1151,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                     lua_settop(L, 0);
 
-                    if (ctx->cur_co_ctx->waited_by_parent) {
-                        ngx_http_lua_probe_info("parent already waiting");
-                        ctx->cur_co_ctx->waited_by_parent = 0;
-                        success = 1;
-                        goto user_co_done;
-                    }
-
                     parent_coctx = ctx->cur_co_ctx->parent_co_ctx;
 
                     if (ngx_http_lua_coroutine_alive(parent_coctx)) {
+                        if (ctx->cur_co_ctx->waited_by_parent) {
+                            ngx_http_lua_probe_info("parent already waiting");
+                            ctx->cur_co_ctx->waited_by_parent = 0;
+                            success = 1;
+                            goto user_co_done;
+                        }
+
                         ngx_http_lua_probe_info("parent still alive");
 
                         if (ngx_http_lua_post_zombie_thread(r, parent_coctx,
@@ -1284,15 +1284,15 @@ user_co_done:
 
                 lua_settop(L, 0);
 
-                if (ctx->cur_co_ctx->waited_by_parent) {
-                    ctx->cur_co_ctx->waited_by_parent = 0;
-                    success = 0;
-                    goto user_co_done;
-                }
-
                 parent_coctx = ctx->cur_co_ctx->parent_co_ctx;
 
                 if (ngx_http_lua_coroutine_alive(parent_coctx)) {
+                    if (ctx->cur_co_ctx->waited_by_parent) {
+                        ctx->cur_co_ctx->waited_by_parent = 0;
+                        success = 0;
+                        goto user_co_done;
+                    }
+
                     if (ngx_http_lua_post_zombie_thread(r, parent_coctx,
                                                         ctx->cur_co_ctx)
                         != NGX_OK)

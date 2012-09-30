@@ -584,3 +584,382 @@ done
 --- no_error_log
 [error]
 
+
+
+=== TEST 11: waiting on two simple user threads without I/O
+--- config
+    location /lua {
+        content_by_lua '
+            -- local out = function (...) ngx.log(ngx.ERR, ...) end
+            local out = ngx.say
+
+            function f()
+                out("f: hello")
+                return "f done"
+            end
+
+            function g()
+                out("g: hello")
+                return "g done"
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                out("failed to spawn thread f: ", err)
+                return
+            end
+
+            out("thread f created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                out("failed to spawn thread g: ", err)
+                return
+            end
+
+            out("thread g created: ", coroutine.status(tg))
+
+            local ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                out("failed to wait thread: ", res)
+                return
+            end
+
+            out("res: ", res)
+
+            out("f status: ", coroutine.status(tf))
+            out("g status: ", coroutine.status(tg))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+create 3 in 1
+spawn user thread 3 in 1
+terminate 3: ok
+delete thread 2
+terminate 1: ok
+delete thread 3
+delete thread 1
+
+--- response_body
+f: hello
+thread f created: zombie
+g: hello
+thread g created: zombie
+res: f done
+f status: dead
+g status: zombie
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: waiting on two simple user threads with I/O
+--- config
+    location /lua {
+        content_by_lua '
+            -- local out = function (...) ngx.log(ngx.ERR, ...) end
+            local out = ngx.say
+
+            function f()
+                ngx.sleep(0.1)
+                out("f: hello")
+                return "f done"
+            end
+
+            function g()
+                ngx.sleep(0.2)
+                out("g: hello")
+                return "g done"
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                out("failed to spawn thread f: ", err)
+                return
+            end
+
+            out("thread f created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                out("failed to spawn thread g: ", err)
+                return
+            end
+
+            out("thread g created: ", coroutine.status(tg))
+
+            local ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                out("failed to wait thread: ", res)
+                return
+            end
+
+            out("res: ", res)
+
+            out("f status: ", coroutine.status(tf))
+            out("g status: ", coroutine.status(tg))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+terminate 2: ok
+delete thread 2
+terminate 1: ok
+delete thread 1
+terminate 3: ok
+delete thread 3
+
+--- response_body
+thread f created: running
+thread g created: running
+f: hello
+res: f done
+f status: dead
+g status: running
+g: hello
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: waiting on two simple user threads with I/O (uthreads completed in reversed order)
+--- config
+    location /lua {
+        content_by_lua '
+            -- local out = function (...) ngx.log(ngx.ERR, ...) end
+            local out = ngx.say
+
+            function f()
+                ngx.sleep(0.2)
+                out("f: hello")
+                return "f done"
+            end
+
+            function g()
+                ngx.sleep(0.1)
+                out("g: hello")
+                return "g done"
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                out("failed to spawn thread f: ", err)
+                return
+            end
+
+            out("thread f created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                out("failed to spawn thread g: ", err)
+                return
+            end
+
+            out("thread g created: ", coroutine.status(tg))
+
+            local ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                out("failed to wait thread: ", res)
+                return
+            end
+
+            out("res: ", res)
+
+            out("f status: ", coroutine.status(tf))
+            out("g status: ", coroutine.status(tg))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+terminate 3: ok
+delete thread 3
+terminate 1: ok
+delete thread 1
+terminate 2: ok
+delete thread 2
+
+--- response_body
+thread f created: running
+thread g created: running
+g: hello
+res: g done
+f status: running
+g status: dead
+f: hello
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: waiting on two simple user threads without I/O, both aborted by errors
+--- config
+    location /lua {
+        content_by_lua '
+            -- local out = function (...) ngx.log(ngx.ERR, ...) end
+            local out = ngx.say
+
+            function f()
+                out("f: hello")
+                error("f done")
+            end
+
+            function g()
+                out("g: hello")
+                error("g done")
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                out("failed to spawn thread f: ", err)
+                return
+            end
+
+            out("thread f created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                out("failed to spawn thread g: ", err)
+                return
+            end
+
+            out("thread g created: ", coroutine.status(tg))
+
+            local ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                out("failed to wait thread: ", res)
+            else
+                out("res: ", res)
+            end
+
+            out("f status: ", coroutine.status(tf))
+            out("g status: ", coroutine.status(tg))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 2: fail
+create 3 in 1
+spawn user thread 3 in 1
+terminate 3: fail
+delete thread 2
+terminate 1: ok
+delete thread 3
+delete thread 1
+
+--- response_body
+f: hello
+thread f created: zombie
+g: hello
+thread g created: zombie
+failed to wait thread: f done
+f status: dead
+g status: zombie
+
+--- error_log
+lua user thread aborted: runtime error: [string "content_by_lua"]:7: f done
+
+
+
+=== TEST 15: waiting on two simple user threads with I/O, both aborted by errors
+--- config
+    location /lua {
+        content_by_lua '
+            -- local out = function (...) ngx.log(ngx.ERR, ...) end
+            local out = ngx.say
+
+            function f()
+                ngx.sleep(0.1)
+                out("f: hello")
+                error("f done")
+            end
+
+            function g()
+                ngx.sleep(0.2)
+                out("g: hello")
+                error("g done")
+            end
+
+            local tf, err = ngx.thread.spawn(f)
+            if not tf then
+                out("failed to spawn thread f: ", err)
+                return
+            end
+
+            out("thread f created: ", coroutine.status(tf))
+
+            local tg, err = ngx.thread.spawn(g)
+            if not tg then
+                out("failed to spawn thread g: ", err)
+                return
+            end
+
+            out("thread g created: ", coroutine.status(tg))
+
+            local ok, res = ngx.thread.wait(tf, tg)
+            if not ok then
+                out("failed to wait thread: ", res)
+            else
+                out("res: ", res)
+            end
+
+            out("f status: ", coroutine.status(tf))
+            out("g status: ", coroutine.status(tg))
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+terminate 2: fail
+delete thread 2
+terminate 1: ok
+delete thread 1
+terminate 3: fail
+delete thread 3
+
+--- response_body
+thread f created: running
+thread g created: running
+f: hello
+failed to wait thread: f done
+f status: dead
+g status: running
+g: hello
+
+--- error_log
+lua user thread aborted: runtime error: [string "content_by_lua"]:8: f done
+

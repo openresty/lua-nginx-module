@@ -209,6 +209,11 @@ M(http-lua-info) {
     msg = user_string($arg1)
     printf("lua info: %s\n", msg)
 }
+
+F(ngx_http_lua_uthread_wait) {
+    t = gen_id($L)
+    printf("lua thread %d waiting\n", t)
+}
 _EOC_
 
 1;
