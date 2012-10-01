@@ -1095,3 +1095,37 @@ body: hello world)$
 --- no_error_log
 [error]
 
+
+
+=== TEST 24: simple user thread with args
+--- config
+    location /lua {
+        content_by_lua '
+            function f(a, b)
+                ngx.say("hello ", a, " and ", b)
+            end
+
+            ngx.say("before")
+            ngx.thread.spawn(f, "foo", 3.14)
+            ngx.say("after")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
+delete thread 2
+delete thread 1
+
+--- response_body
+before
+hello foo and 3.14
+after
+--- no_error_log
+[error]
+

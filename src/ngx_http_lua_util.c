@@ -1035,7 +1035,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                                    "lua user thread resume");
 
                     ctx->co_op = NGX_HTTP_LUA_USER_CORO_NOP;
-                    nrets = 0;
+                    nrets = lua_gettop(ctx->cur_co_ctx->co) - 1;
+                    dd("nrets = %d", nrets);
 
                     break;
 

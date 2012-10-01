@@ -33,9 +33,12 @@ ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
 static int
 ngx_http_lua_uthread_spawn(lua_State *L)
 {
+    int                           n;
     ngx_http_request_t           *r;
     ngx_http_lua_ctx_t           *ctx;
     ngx_http_lua_co_ctx_t        *coctx = NULL;
+
+    n = lua_gettop(L);
 
     ngx_http_lua_coroutine_create_helper(L, &r, &ctx, &coctx);
 
@@ -46,6 +49,11 @@ ngx_http_lua_uthread_spawn(lua_State *L)
     lua_pushvalue(L, -3);
     coctx->co_ref = luaL_ref(L, -2);
     lua_pop(L, 1);
+
+    if (n > 1) {
+        lua_replace(L, 1);
+        lua_xmove(L, coctx->co, n - 1);
+    }
 
     coctx->is_uthread = 1;
     ctx->uthreads++;
