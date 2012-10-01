@@ -12,6 +12,12 @@
 #include "ngx_http_lua_probe.h"
 
 
+#if 1
+#undef ngx_http_lua_probe_info
+#define ngx_http_lua_probe_info(msg)
+#endif
+
+
 #define UDP_MAX_DATAGRAM_SIZE 8192
 
 

@@ -10,6 +10,12 @@
 #include "ngx_http_lua_probe.h"
 
 
+#if 1
+#undef ngx_http_lua_probe_info
+#define ngx_http_lua_probe_info(msg)
+#endif
+
+
 static int ngx_http_lua_uthread_spawn(lua_State *L);
 static int ngx_http_lua_uthread_wait(lua_State *L);
 

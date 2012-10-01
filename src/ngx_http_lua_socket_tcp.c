@@ -11,6 +11,12 @@
 #include "ngx_http_lua_probe.h"
 
 
+#if 1
+#undef ngx_http_lua_probe_info
+#define ngx_http_lua_probe_info(msg)
+#endif
+
+
 static int ngx_http_lua_socket_tcp(lua_State *L);
 static int ngx_http_lua_socket_tcp_connect(lua_State *L);
 static int ngx_http_lua_socket_tcp_receive(lua_State *L);

@@ -41,10 +41,8 @@
 #include "ngx_http_lua_uthread.h"
 
 
-#if 0
-#ifdef ngx_http_lua_probe_info
+#if 1
 #undef ngx_http_lua_probe_info
-#endif
 #define ngx_http_lua_probe_info(msg)
 #endif
 
