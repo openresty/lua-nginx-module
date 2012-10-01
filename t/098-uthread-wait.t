@@ -1041,13 +1041,13 @@ res: done
             function f()
                 ngx.sleep(0.2)
                 ngx.say("f: hello")
-                return "done"
+                return "f done"
             end
 
             function g()
                 ngx.sleep(0.1)
                 ngx.say("g: hello")
-                return "done"
+                return "g done"
             end
 
             local tf, err = ngx.thread.spawn(f)
@@ -1096,7 +1096,7 @@ delete thread 1
 f thread created: running
 g thread created: running
 g: hello
-res: done
+res: g done
 
 --- no_error_log
 [error]
