@@ -110,15 +110,17 @@ ngx_http_lua_uthread_wait(lua_State *L)
                               "instance given");
         }
 
+        if (!sub_coctx->is_uthread) {
+            return luaL_error(L, "attempt to wait on a coroutine that is "
+                              "not a user thread");
+        }
+
         if (sub_coctx->parent_co_ctx != coctx) {
-            return luaL_error(L, "only parent coroutine can wait on the "
-                              "ngx.thread instance");
+            return luaL_error(L, "only the parent coroutine can wait on the "
+                              "thread");
         }
 
         switch (sub_coctx->co_status) {
-        case NGX_HTTP_LUA_CO_DEAD:
-            return luaL_error(L, "the ngx.thread instance already dead");
-
         case NGX_HTTP_LUA_CO_ZOMBIE:
 
             ngx_http_lua_probe_info("found zombie child");

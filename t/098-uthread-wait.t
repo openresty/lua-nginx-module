@@ -1101,3 +1101,88 @@ res: done
 --- no_error_log
 [error]
 
+
+
+=== TEST 18: entry coroutine waiting on a thread not created by itself
+--- config
+    location /lua {
+        content_by_lua '
+            local t
+
+            function f()
+                ngx.sleep(0.1)
+                return "done"
+            end
+
+            function g()
+                t = ngx.thread.spawn(f)
+            end
+
+            local co = coroutine.create(g)
+            coroutine.resume(co)
+
+            local ok, res = ngx.thread.wait(t)
+            if not ok then
+                ngx.say("failed to run thread: ", res)
+                return
+            end
+
+            ngx.say(res)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create 3 in 2
+spawn user thread 3 in 2
+terminate 2: ok
+terminate 1: fail
+delete thread 3
+delete thread 1
+
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+only the parent coroutine can wait on the thread
+
+
+
+=== TEST 19: entry coroutine waiting on a user coroutine
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.sleep(0.1)
+                coroutine.yield()
+                return "done"
+            end
+
+            local co = coroutine.create(f)
+            coroutine.resume(co)
+
+            local ok, res = ngx.thread.wait(co)
+            if not ok then
+                ngx.say("failed to run thread: ", res)
+                return
+            end
+
+            ngx.say(res)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+terminate 1: fail
+delete thread 1
+
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+lua entry thread aborted: runtime error: [string "content_by_lua"]:11: attempt to wait on a coroutine that is not a user thread
+
