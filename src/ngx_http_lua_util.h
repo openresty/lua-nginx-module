@@ -35,6 +35,9 @@ extern char ngx_http_lua_cf_log_key;
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 
+extern char ngx_http_lua_req_get_headers_metatable_key;
+
+
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \
     (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text

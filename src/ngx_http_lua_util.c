@@ -45,6 +45,7 @@ char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_request_key;
+char ngx_http_lua_req_get_headers_metatable_key;
 
 
 /*  coroutine anchoring table key in Lua vm registry */
@@ -1745,7 +1746,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 
     lua_createtable(L, 0 /* narr */, 20 /* nrec */);    /* .req */
 
-    ngx_http_lua_inject_req_header_api(L);
+    ngx_http_lua_inject_req_header_api(log, L);
 
     ngx_http_lua_inject_req_uri_api(log, L);
 

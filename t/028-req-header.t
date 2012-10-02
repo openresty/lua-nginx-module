@@ -746,11 +746,28 @@ Foo22: foo22\r
 --- request
 GET /t
 --- more_headers
-Foo: bar
+My-Foo: bar
 Bar: baz
 --- response_body
 host: localhost
 bar: baz
-foo: bar
+my-foo: bar
 connection: Close
+
+
+
+=== TEST 28: __index metamethod
+--- config
+    location /t {
+        content_by_lua '
+            local h = ngx.req.get_headers(nil, true)
+            ngx.say("My-Foo-Header: ", h.my_foo_header)
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+My-Foo-Header: Hello World
+--- response_body
+My-Foo-Header: Hello World
 
