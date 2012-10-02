@@ -2216,7 +2216,7 @@ Removing the `max_args` cap is strongly discouraged.
 
 ngx.req.get_headers
 -------------------
-**syntax:** *headers = ngx.req.get_headers(max_headers?)*
+**syntax:** *headers = ngx.req.get_headers(max_headers?, raw?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
 
@@ -2266,6 +2266,18 @@ This argument can be set to zero to remove the limit and to process all request 
 
 
 Removing the `max_headers` cap is strongly discouraged.
+
+Since the `0.6.9` release, all the header names in the Lua table returned are converted to the pure lower-case form by default, unless the `raw` argument is set to `true` (default to `false`).
+
+Also, by default, an `__index` metamethod is added automatically to the resulting Lua table that will normalize the keys to the pure lower-case form with all underscores converted to dashes in case of a lookup miss. For example, if a request header `My-Foo-Header` is present, then the following invocations will all pick up the value of this header correctly:
+
+
+    ngx.say(headers.my_foo_header)
+    ngx.say(headers["My-Foo-Header"])
+    ngx.say(headers["my-foo-header"])
+
+
+The `__index` metamethod will not be added when the `raw` argument is set to `true`.
 
 ngx.req.set_header
 ------------------
