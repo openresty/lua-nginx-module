@@ -25,17 +25,23 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     ngx_uint_t                    i;
     int                           n;
     int                           max;
+    int                           lowcase = 0;
     int                           count = 0;
 
     n = lua_gettop(L);
 
-    if (n != 0 && n != 1) {
-        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
-    }
+    if (n >= 1) {
+        if (lua_isnil(L, 1)) {
+            max = NGX_HTTP_LUA_MAX_HEADERS;
 
-    if (n == 1) {
-        max = luaL_checkinteger(L, 1);
-        lua_pop(L, 1);
+        } else {
+            max = luaL_checkinteger(L, 1);
+            lua_pop(L, 1);
+        }
+
+        if (n >= 2) {
+            lowcase = lua_toboolean(L, 2);
+        }
 
     } else {
         max = NGX_HTTP_LUA_MAX_HEADERS;
@@ -67,8 +73,15 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
             i = 0;
         }
 
-        lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
-            /* stack: table key */
+        if (lowcase) {
+            lua_pushlstring(L, (char *) header[i].lowcase_key,
+                            header[i].key.len);
+
+        } else {
+            lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
+        }
+
+        /* stack: table key */
 
         lua_pushlstring(L, (char *) header[i].value.data,
                 header[i].value.len); /* stack: table key value */

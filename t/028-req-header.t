@@ -731,3 +731,26 @@ Foo21: foo21\r
 Foo22: foo22\r
 /
 
+
+
+=== TEST 27: iterating through headers (lowercase)
+--- config
+    location /t {
+        content_by_lua '
+            local h = {}
+            for k, v in pairs(ngx.req.get_headers(nil, true)) do
+                ngx.say(k, ": ", v)
+            end
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bar: baz
+--- response_body
+host: localhost
+bar: baz
+foo: bar
+connection: Close
+
