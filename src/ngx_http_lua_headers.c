@@ -25,7 +25,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     ngx_uint_t                    i;
     int                           n;
     int                           max;
-    int                           lowcase = 0;
+    int                           raw = 0;
     int                           count = 0;
 
     n = lua_gettop(L);
@@ -40,7 +40,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         }
 
         if (n >= 2) {
-            lowcase = lua_toboolean(L, 2);
+            raw = lua_toboolean(L, 2);
         }
 
     } else {
@@ -58,7 +58,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 
     lua_createtable(L, 0, 4);
 
-    if (lowcase) {
+    if (!raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_req_get_headers_metatable_key);
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
@@ -68,6 +68,8 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
     header = part->elts;
 
     for (i = 0; /* void */; i++) {
+
+        dd("stack top: %d", lua_gettop(L));
 
         if (i >= part->nelts) {
             if (part->next == NULL) {
@@ -79,12 +81,12 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
             i = 0;
         }
 
-        if (lowcase) {
-            lua_pushlstring(L, (char *) header[i].lowcase_key,
-                            header[i].key.len);
+        if (raw) {
+            lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
 
         } else {
-            lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
+            lua_pushlstring(L, (char *) header[i].lowcase_key,
+                            header[i].key.len);
         }
 
         /* stack: table key */
@@ -372,7 +374,8 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
         } else {
             for (i = 1; i <= n; i++) {
-                dd("header value table index %d", (int) i);
+                dd("header value table index %d, top: %d", (int) i,
+                   lua_gettop(L));
 
                 lua_rawgeti(L, 2, i);
                 p = (u_char *) luaL_checklstring(L, -1, &len);
@@ -470,8 +473,8 @@ ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
     {
         const char buf[] =
             "local tb, key = ...\n"
-            "key = string.gsub(string.lower(key), '_', '-')\n"
-            "return tb[key]";
+            "local new_key = string.gsub(string.lower(key), '_', '-')\n"
+            "if new_key ~= key then return tb[new_key] else return nil end";
 
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1,
                              "ngx.req.get_headers __index");
