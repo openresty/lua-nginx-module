@@ -1040,7 +1040,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
 
 ngx_int_t
-ngx_http_lua_shared_dict_lookup(ngx_shm_zone_t *zone, u_char *key_data,
+ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
     size_t key_len, ngx_http_lua_value_t *value)
 {
     u_char                      *data;
@@ -1049,6 +1049,10 @@ ngx_http_lua_shared_dict_lookup(ngx_shm_zone_t *zone, u_char *key_data,
     ngx_int_t                    rc;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
+
+    if (zone == NULL) {
+        return NGX_ERROR;
+    }
 
     hash = ngx_crc32_short(key_data, key_len);
 
@@ -1069,6 +1073,8 @@ ngx_http_lua_shared_dict_lookup(ngx_shm_zone_t *zone, u_char *key_data,
     /* rc == NGX_OK */
 
     value->type = sd->value_type;
+
+    dd("type: %d", (int) value->type);
 
     data = sd->data + sd->key_len;
     len = (size_t) sd->value_len;
@@ -1095,9 +1101,9 @@ ngx_http_lua_shared_dict_lookup(ngx_shm_zone_t *zone, u_char *key_data,
     case LUA_TNUMBER:
 
         if (len != sizeof(lua_Number)) {
-            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua number value "
-                          "size found for key %*s: %lu", key_len, key_data,
-                          (unsigned long) len);
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua number "
+                          "value size found for key %*s: %lu", key_len,
+                          key_data, (unsigned long) len);
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
@@ -1109,23 +1115,27 @@ ngx_http_lua_shared_dict_lookup(ngx_shm_zone_t *zone, u_char *key_data,
     case LUA_TBOOLEAN:
 
         if (len != sizeof(u_char)) {
-            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua boolean value "
-                          "size found for key %*s: %lu", key_len, key_data,
-                          (unsigned long) len);
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua boolean "
+                          "value size found for key %*s: %lu", key_len,
+                          key_data, (unsigned long) len);
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
 
+        value->value.b = *data;
+        break;
+
     default:
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua value type "
-                      "found for key %*s: %d", key_data, key_len,
+                      "found for key %*s: %d", key_len, key_data,
                       (int) value->type);
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         return NGX_ERROR;
     }
 
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
     return NGX_OK;
 }
 
@@ -1153,6 +1163,9 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
         }
 
         name = &zone[i].shm.name;
+
+        dd("name: [%.*s] %d", (int) name->len, name->data, (int) name->len);
+        dd("name2: [%.*s] %d", (int) name_len, name_data, (int) name_len);
 
         if (name->len == name_len
             && ngx_strncmp(name->data, name_data, name_len) == 0)
