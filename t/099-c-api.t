@@ -207,6 +207,9 @@ bar: rc=0, type=1, val=0
                 intptr_t ngx_http_lua_shared_dict_get(void *zone, char *kdata, size_t klen, ngx_http_lua_value_t *val);
             ]]
 
+            local dogs = ngx.shared.dogs
+            dogs:flush_all()
+
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs")
