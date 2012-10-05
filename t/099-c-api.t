@@ -6,7 +6,7 @@ use Test::Nginx::Socket;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(2);
+repeat_each(3);
 
 plan tests => repeat_each() * (blocks() * 3);
 
@@ -32,11 +32,11 @@ __DATA__
             ]]
 
             local buf = ffi.new("char[?]", 4)
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local zone = ffi.C.ngx_http_lua_find_zone(buf, 3)
             ngx.say("foo zone: ", tonumber(ffi.cast("long", zone)) ~= 0 and "defined" or "undef")
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
             ngx.say("dogs zone: ", tonumber(ffi.cast("long", zone)) ~= 0 and "defined" or "undef")
         ';
@@ -86,18 +86,18 @@ dogs zone: defined
 
             local buf = ffi.new("char[?]", 4)
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("foo: rc=", tonumber(rc),
                 ", type=", val[0].type,
                 ", val=", tonumber(val[0].value.n))
 
-            ffi.copy(buf, "bar")
+            ffi.copy(buf, "bar", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("bar: rc=", tonumber(rc),
                 ", type=", val[0].type,
@@ -149,19 +149,19 @@ bar: rc=0, type=3, val=3.14159
 
             local buf = ffi.new("char[?]", 4)
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("foo: rc=", tonumber(rc),
                 ", type=", tonumber(val[0].type),
                 ", val=", tonumber(val[0].value.b))
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
-            ffi.copy(buf, "bar")
+            ffi.copy(buf, "bar", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("bar: rc=", tonumber(rc),
                 ", type=", tonumber(val[0].type),
@@ -212,17 +212,17 @@ bar: rc=0, type=1, val=0
 
             local buf = ffi.new("char[?]", 4)
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("foo: rc=", tonumber(rc))
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
-            ffi.copy(buf, "bar")
+            ffi.copy(buf, "bar", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("bar: rc=", tonumber(rc))
         ';
@@ -272,7 +272,7 @@ bar: rc=-5
 
             local buf = ffi.new("char[?]", 4)
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local s = ffi.new("char[?]", 20)
@@ -281,7 +281,7 @@ bar: rc=-5
             val[0].value.s.len = 20
             val[0].value.s.data = s
 
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("foo: rc=", tonumber(rc),
                 ", type=", tonumber(val[0].type),
@@ -292,7 +292,7 @@ bar: rc=-5
             val[0].value.s.len = 20
             val[0].value.s.data = s
 
-            ffi.copy(buf, "bar")
+            ffi.copy(buf, "bar", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("bar: rc=", tonumber(rc),
                 ", type=", tonumber(val[0].type),
@@ -344,12 +344,12 @@ bar: rc=0, type=4, val=, len=0
 
             local buf = ffi.new("char[?]", 4)
 
-            ffi.copy(buf, "dogs")
+            ffi.copy(buf, "dogs", 4)
             zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
-            ffi.copy(buf, "foo")
+            ffi.copy(buf, "foo", 3)
             local rc = ffi.C.ngx_http_lua_shared_dict_get(zone, buf, 3, val)
             ngx.say("foo: rc=", tonumber(rc))
         ';
