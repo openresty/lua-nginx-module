@@ -35,8 +35,11 @@ extern char ngx_http_lua_cf_log_key;
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 
-/*  coroutine anchoring table key in Lua VM registry */
+/* coroutine anchoring table key in Lua VM registry */
 extern char ngx_http_lua_coroutines_key;
+
+/* key to the metatable for ngx.req.get_headers() */
+extern char ngx_http_lua_req_get_headers_metatable_key;
 
 
 #ifndef ngx_str_set

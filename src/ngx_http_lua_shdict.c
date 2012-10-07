@@ -7,6 +7,7 @@
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_conf.h"
+#include "ngx_http_lua_api.h"
 
 
 static int ngx_http_lua_shdict_set(lua_State *L);
@@ -395,8 +396,7 @@ ngx_http_lua_shdict_get(lua_State *L)
     ngx_http_lua_shdict_expire(ctx, 1);
 #endif
 
-    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
-            &sd);
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len, &sd);
 
     dd("shdict lookup returns %d", (int) rc);
 
@@ -747,8 +747,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     ngx_http_lua_shdict_expire(ctx, 1);
 #endif
 
-    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
-            &sd);
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len, &sd);
 
     dd("shdict lookup returned %d", (int) rc);
 
@@ -997,8 +996,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_http_lua_shdict_expire(ctx, 1);
 #endif
 
-    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len,
-            &sd);
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len, &sd);
 
     dd("shdict lookup returned %d", (int) rc);
 
@@ -1038,5 +1036,144 @@ ngx_http_lua_shdict_incr(lua_State *L)
     lua_pushnumber(L, num);
     lua_pushnil(L);
     return 2;
+}
+
+
+ngx_int_t
+ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
+    size_t key_len, ngx_http_lua_value_t *value)
+{
+    u_char                      *data;
+    size_t                       len;
+    uint32_t                     hash;
+    ngx_int_t                    rc;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_http_lua_shdict_node_t  *sd;
+
+    if (zone == NULL) {
+        return NGX_ERROR;
+    }
+
+    hash = ngx_crc32_short(key_data, key_len);
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key_data, key_len, &sd);
+
+    dd("shdict lookup returned %d", (int) rc);
+
+    if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        return rc;
+    }
+
+    /* rc == NGX_OK */
+
+    value->type = sd->value_type;
+
+    dd("type: %d", (int) value->type);
+
+    data = sd->data + sd->key_len;
+    len = (size_t) sd->value_len;
+
+    switch (value->type) {
+    case LUA_TSTRING:
+
+        if (value->value.s.data == NULL || value->value.s.len == 0) {
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "no string buffer "
+                          "initialized");
+            return NGX_ERROR;
+        }
+
+        if (len > value->value.s.len) {
+            len = value->value.s.len;
+
+        } else {
+            value->value.s.len = len;
+        }
+
+        ngx_memcpy(value->value.s.data, data, len);
+        break;
+
+    case LUA_TNUMBER:
+
+        if (len != sizeof(lua_Number)) {
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua number "
+                          "value size found for key %*s: %lu", key_len,
+                          key_data, (unsigned long) len);
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(&value->value.b, data, len);
+        break;
+
+    case LUA_TBOOLEAN:
+
+        if (len != sizeof(u_char)) {
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua boolean "
+                          "value size found for key %*s: %lu", key_len,
+                          key_data, (unsigned long) len);
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+            return NGX_ERROR;
+        }
+
+        value->value.b = *data;
+        break;
+
+    default:
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua value type "
+                      "found for key %*s: %d", key_len, key_data,
+                      (int) value->type);
+
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        return NGX_ERROR;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+    return NGX_OK;
+}
+
+
+ngx_shm_zone_t *
+ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
+{
+    ngx_str_t                       *name;
+    ngx_uint_t                       i;
+    ngx_shm_zone_t                  *zone;
+    volatile ngx_list_part_t        *part;
+
+    part = &ngx_cycle->shared_memory.part;
+    zone = part->elts;
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+            part = part->next;
+            zone = part->elts;
+            i = 0;
+        }
+
+        name = &zone[i].shm.name;
+
+        dd("name: [%.*s] %d", (int) name->len, name->data, (int) name->len);
+        dd("name2: [%.*s] %d", (int) name_len, name_data, (int) name_len);
+
+        if (name->len == name_len
+            && ngx_strncmp(name->data, name_data, name_len) == 0)
+        {
+            return zone;
+        }
+    }
+
+    return NULL;
 }
 

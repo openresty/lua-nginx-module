@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.6.8] released on 28 September 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.6.10] released on 5 October 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2151,7 +2151,7 @@ This argument can be set to zero to remove the limit and to process all request 
 Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_headers ==
-'''syntax:''' ''headers = ngx.req.get_headers(max_headers?)''
+'''syntax:''' ''headers = ngx.req.get_headers(max_headers?, raw?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
@@ -2201,6 +2201,18 @@ This argument can be set to zero to remove the limit and to process all request 
 </geshi>
 
 Removing the <code>max_headers</code> cap is strongly discouraged.
+
+Since the <code>0.6.9</code> release, all the header names in the Lua table returned are converted to the pure lower-case form by default, unless the <code>raw</code> argument is set to <code>true</code> (default to <code>false</code>).
+
+Also, by default, an <code>__index</code> metamethod is added automatically to the resulting Lua table that will normalize the keys to the pure lower-case form with all underscores converted to dashes in case of a lookup miss. For example, if a request header <code>My-Foo-Header</code> is present, then the following invocations will all pick up the value of this header correctly:
+
+<geshi lang="lua">
+    ngx.say(headers.my_foo_header)
+    ngx.say(headers["My-Foo-Header"])
+    ngx.say(headers["my-foo-header"])
+</geshi>
+
+The <code>__index</code> metamethod will not be added when the <code>raw</code> argument is set to <code>true</code>.
 
 == ngx.req.set_header ==
 '''syntax:''' ''ngx.req.set_header(header_name, header_value)''

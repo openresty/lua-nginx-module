@@ -2639,7 +2639,9 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
     u_char                                  *pat;
     size_t                                   pat_len;
     int                                      i;
-    int                                      state, old_state;
+    int                                      state;
+    int                                      old_state = 0; /* just to make old
+                                                               gcc happy */
     ngx_http_lua_dfa_edge_t                 *edge;
     unsigned                                 matched;
     ngx_int_t                                rc;

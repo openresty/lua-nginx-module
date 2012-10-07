@@ -42,7 +42,7 @@ Bar: baz
     location /req-header {
         content_by_lua '
             local h = {}
-            for k, v in pairs(ngx.req.get_headers()) do
+            for k, v in pairs(ngx.req.get_headers(nil, true)) do
                 h[k] = v
             end
             ngx.say("Foo: ", h["Foo"] or "nil")
@@ -301,6 +301,7 @@ GET /bar
     }
 --- more_headers
 Foo: foo
+
 --- request
     GET /foo
 --- response_body
@@ -412,11 +413,11 @@ $s
 my @k;
 my $i = 1;
 while ($i <= 98) {
-    push @k, "X-$i";
+    push @k, "x-$i";
     $i++;
 }
-push @k, "Connection: Close\n";
-push @k, "Host: localhost\n";
+push @k, "connection: Close\n";
+push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
     if ($k =~ /\d+/) {
@@ -460,11 +461,11 @@ $s
 my @k;
 my $i = 1;
 while ($i <= 100) {
-    push @k, "X-$i";
+    push @k, "x-$i";
     $i++;
 }
-push @k, "Connection: Close\n";
-push @k, "Host: localhost\n";
+push @k, "connection: Close\n";
+push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
     if ($k =~ /\d+/) {
@@ -508,11 +509,11 @@ $s
 my @k;
 my $i = 1;
 while ($i <= 105) {
-    push @k, "X-$i";
+    push @k, "x-$i";
     $i++;
 }
-push @k, "Connection: Close\n";
-push @k, "Host: localhost\n";
+push @k, "connection: Close\n";
+push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
     if ($k =~ /\d+/) {
@@ -730,4 +731,61 @@ Foo20: foo20\r
 Foo21: foo21\r
 Foo22: foo22\r
 /
+
+
+
+=== TEST 27: iterating through headers (raw form)
+--- config
+    location /t {
+        content_by_lua '
+            local h = {}
+            for k, v in pairs(ngx.req.get_headers(nil, true)) do
+                ngx.say(k, ": ", v)
+            end
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+My-Foo: bar
+Bar: baz
+--- response_body
+Host: localhost
+Bar: baz
+My-Foo: bar
+Connection: Close
+
+
+
+=== TEST 28: __index metamethod not working for "raw" mode
+--- config
+    location /t {
+        content_by_lua '
+            local h = ngx.req.get_headers(nil, true)
+            ngx.say("My-Foo-Header: ", h.my_foo_header)
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+My-Foo-Header: Hello World
+--- response_body
+My-Foo-Header: nil
+
+
+
+=== TEST 29: __index metamethod not working for the default mode
+--- config
+    location /t {
+        content_by_lua '
+            local h = ngx.req.get_headers()
+            ngx.say("My-Foo-Header: ", h.my_foo_header)
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+My-Foo-Header: Hello World
+--- response_body
+My-Foo-Header: Hello World
 
