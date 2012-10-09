@@ -939,21 +939,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     ngx_int_t                rc;
 #if (NGX_PCRE)
     ngx_pool_t              *old_pool = NULL;
-    unsigned                 pcre_pool_resumed = 1;
 #endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread, top:%d", lua_gettop(L));
-
-    if (ctx->cur_co_ctx->thread_spawn_yielded) {
-        ngx_http_lua_probe_info("thread spawn yielded");
-
-        ctx->cur_co_ctx->thread_spawn_yielded = 0;
-        nrets = 1;
-
-    } else {
-        nrets = nret;
-    }
 
     /* set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
@@ -961,6 +950,16 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     dd("ctx = %p", ctx);
 
     NGX_LUA_EXCEPTION_TRY {
+
+        if (ctx->cur_co_ctx->thread_spawn_yielded) {
+            ngx_http_lua_probe_info("thread spawn yielded");
+
+            ctx->cur_co_ctx->thread_spawn_yielded = 0;
+            nrets = 1;
+
+        } else {
+            nrets = nret;
+        }
 
         for ( ;; ) {
 
@@ -970,7 +969,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
             old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
-            pcre_pool_resumed = 0;
 #endif
 
             /*  run code */
@@ -982,7 +980,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
             ngx_http_lua_pcre_malloc_done(old_pool);
-            pcre_pool_resumed = 1;
 #endif
 
 #if 0
@@ -1379,15 +1376,7 @@ user_co_done:
         }
 
     } NGX_LUA_EXCEPTION_CATCH {
-
         dd("nginx execution restored");
-
-#if (NGX_PCRE)
-        if (!pcre_pool_resumed) {
-            ngx_http_lua_pcre_malloc_done(old_pool);
-        }
-#endif
-
     }
 
     return NGX_ERROR;
