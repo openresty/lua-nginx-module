@@ -1260,6 +1260,15 @@ Setting `ngx.var.Foo` to a `nil` value will unset the `$Foo` Nginx variable.
     ngx.var.args = nil
 
 
+**WARNING** When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
+
+
+    local val = ngx.var.some_var
+    --- use the val repeatedly later
+
+
+to prevent (temporary) memory leaking within the current request's lifetime.
+
 Core constants
 --------------
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua**
@@ -2791,7 +2800,7 @@ Number literals can be used directly as the argument, for instance,
 
 Note that while this method accepts all [HTTP status constants](http://wiki.nginx.org/HttpLuaModule#HTTP_status_constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](http://wiki.nginx.org/HttpLuaModule#core_constants).
 
-It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exit(...)`.
+It is recommended, though not necessary, to combine the `return` statement with this call, i.e., `return ngx.exit(...)`, to give a visual hint to others reading the code.
 
 ngx.eof
 -------

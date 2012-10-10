@@ -1212,6 +1212,15 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
     ngx.var.args = nil
 </geshi>
 
+'''WARNING''' When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
+
+<geshi lang="lua">
+    local val = ngx.var.some_var
+    --- use the val repeatedly later
+</geshi>
+
+to prevent (temporary) memory leaking within the current request's lifetime.
+
 == Core constants ==
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua*''
 
@@ -2705,7 +2714,7 @@ Number literals can be used directly as the argument, for instance,
 
 Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
 
-It is strongly recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>.
+It is recommended, though not necessary, to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>, to give a visual hint to others reading the code.
 
 == ngx.eof ==
 '''syntax:''' ''ngx.eof()''
