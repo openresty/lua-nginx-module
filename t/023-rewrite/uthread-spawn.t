@@ -1054,8 +1054,8 @@ received: OK
 GET /lua
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
-create 2 in 1
+--- stap_out_like chop
+^(?:create 2 in 1
 spawn user thread 2 in 1
 terminate 1: ok
 delete thread 1
@@ -1063,14 +1063,26 @@ terminate 2: ok
 delete thread 2
 terminate 3: ok
 delete thread 3
+|create 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+terminate 1: ok
+delete thread 2
+delete thread 1
+terminate 3: ok
+delete thread 3)$
 
 --- udp_listen: 12345
 --- udp_query: blah
 --- udp_reply: hello udp
---- response_body
-before
+--- response_body_like chop
+^(?:before
 after
 received: hello udp
+|before
+received: hello udp
+after)$
+
 --- no_error_log
 [error]
 
