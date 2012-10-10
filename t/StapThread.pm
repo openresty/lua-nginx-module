@@ -203,12 +203,23 @@ F(ngx_http_lua_sleep_resume) {
 M(http-lua-coroutine-done) {
     t = gen_id($arg2)
     printf("terminate coro %d: %s\n", t, $arg3 ? "ok" : "fail")
+    //print_ubacktrace()
 }
 
+F(ngx_http_lua_ngx_echo) {
+    println("ngx.print or ngx.say")
+}
+
+F(ngx_http_lua_del_all_threads) {
+    println("del all threads")
+}
+
+/*
 M(http-lua-info) {
     msg = user_string($arg1)
     printf("lua info: %s\n", msg)
 }
+*/
 
 F(ngx_http_lua_uthread_wait) {
     t = gen_id($L)
