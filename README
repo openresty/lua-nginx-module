@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.6.10
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 5
+    This document describes ngx_lua v0.7.0
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 10
     October 2012.
 
 Synopsis
@@ -4700,6 +4700,278 @@ Nginx API for Lua
 
     This API was first enabled in the "v0.6.0" release.
 
+  ngx.thread.spawn
+    syntax: *co = ngx.thread.spawn(func, arg1, arg2, ...)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Spawns a new user "light thread" with the Lua function "func" as well as
+    those optional arguments "arg1", "arg2", and etc. Returns a Lua thread
+    (or Lua coroutine) object represents this "light thread".
+
+    "Light threads" are just a special kind of Lua coroutines that are
+    scheduled automatically by the "ngx_lua" module.
+
+    Before "ngx.thread.spawn" returns, the "func" will be called with those
+    optional arguments until it returns, aborts with an error, or gets
+    yielded automatically due to I/O operations via the Nginx API for Lua
+    (like <tcpsock:receive|/"tcpsock:receive">).
+
+    After "ngx.thread.spawn" returns, the newly-created "light thread" will
+    keep running asynchronously usually at various I/O events.
+
+    All the Lua code chunks running by rewrite_by_lua, access_by_lua, and
+    content_by_lua are in a boilerplate "light thread" created automatically
+    by "ngx_lua". Such boilerplate "light thread" are also called "entry
+    threads".
+
+    By default, the corresponding Nginx handler (e.g., rewrite_by_lua
+    handler) will not terminate until
+
+    1.  both the "entry thread" and all the user "light threads" terminates,
+
+    2.  a "light thread" (either the "entry thread" or a user "light thread"
+        aborts by calling ngx.exit, ngx.exec, ngx.redirect, or
+        ngx.req.set_uri(uri, true), or
+
+    3.  the "entry thread" terminates with a Lua error.
+
+    When the user "light thread" terminates with a Lua error, however, it
+    will not abort other running "light threads" like the "entry thread"
+    does.
+
+    Due to the limitation in the Nginx subrequest model, it is not allowed
+    to abort a running Nginx subrequest in general. So it is also prohibited
+    to abort a running "light thread" that is pending on one ore more Nginx
+    subrequests. You must call ngx.thread.wait to wait for those "light
+    thread" to terminate before quitting the "world".
+
+    The "light threads" are not scheduled in a pre-emptive way. In other
+    words, no automatic time-slicing is performed. A "light thread" will
+    keep running exclusively on the CPU until
+
+    1.  a (nonblocking) I/O operation cannot be completed in a single run,
+
+    2.  it calls coroutine.yield to actively give up execution, or
+
+    3.  it is aborted by a Lua error or an invocation of ngx.exit, ngx.exec,
+        ngx.redirect, or ngx.req.set_uri(uri, true).
+
+    For the first two cases, the "light thread" will usually be resumed
+    later by the "ngx_lua" scheduler unless a "stop-the-world" event
+    happens.
+
+    User "light threads" can create "light threads" themselves and normal
+    user coroutiens created by coroutine.create can also create "light
+    threads". The coroutine (be it a normal Lua coroutine or a "light
+    thread") that directly spawns the "light thread" is called the "parent
+    coroutine" for the "light thread" newly spawned.
+
+    The "parent coroutine" can call ngx.thread.wait to wait on the
+    termination of its child "light thread".
+
+    You can call coroutine.status() and coroutine.yield() on the "light
+    thread" coroutines.
+
+    The status of the "light thread" coroutine can be "zombie" if
+
+    1.  the current "light thread" already terminates (either successfully
+        or with an error),
+
+    2.  its parent coroutine is still alive, and
+
+    3.  its parent coroutine is not waiting on it with ngx.thread.wait.
+
+    The following example demonstrates the use of coroutine.yield() in the
+    "light thread" coroutines to do manual time-slicing:
+
+        local yield = coroutine.yield
+
+        function f()
+            local self = coroutine.running()
+            ngx.say("f 1")
+            yield(self)
+            ngx.say("f 2")
+            yield(self)
+            ngx.say("f 3")
+        end
+
+        local self = coroutine.running()
+        ngx.say("0")
+        yield(self)
+
+        ngx.say("1")
+        ngx.thread.spawn(f)
+
+        ngx.say("2")
+        yield(self)
+
+        ngx.say("3")
+        yield(self)
+
+        ngx.say("4")
+
+    Then it will generate the output
+
+        0
+        1
+        f 1
+        2
+        f 2
+        3
+        f 3
+        4
+
+    "Light threads" are mostly useful for doing concurrent upstream requests
+    in a single Nginx request handler, kinda like a generalized version of
+    ngx.location.capture_multi that can work with all the Nginx API for Lua.
+    The following example demonstrates parallel requests to MySQL,
+    Memcached, and upstream HTTP services in a single Lua handler, and
+    outputting the results in the order that they actually return (very much
+    like the Facebook BigPipe model):
+
+        -- query mysql, memcached, and a remote http service at the same time,
+        -- output the results in the order that they
+        -- actually return the results.
+
+        local mysql = require "resty.mysql"
+        local memcached = require "resty.memcached"
+
+        local function query_mysql()
+            local db = mysql:new()
+            db:connect{
+                        host = "127.0.0.1",
+                        port = 3306,
+                        database = "test",
+                        user = "monty",
+                        password = "mypass"
+                      }
+            local res, err, errno, sqlstate =
+                    db:query("select * from cats order by id asc")
+            db:set_keepalive(0, 100)
+            ngx.say("mysql done: ", cjson.encode(res))
+        end
+
+        local function query_memcached()
+            local memc = memcached:new()
+            memc:connect("127.0.0.1", 11211)
+            local res, err = memc:get("some_key")
+            ngx.say("memcached done: ", res)
+        end
+
+        local function query_http()
+            local res = ngx.location.capture("/my-http-proxy")
+            ngx.say("http done: ", res.body)
+        end
+
+        ngx.thread.spawn(query_mysql)      -- create thread 1
+        ngx.thread.spawn(query_memcached)  -- create thread 2
+        ngx.thread.spawn(query_http)       -- create thread 3
+
+    This API was first enabled in the "v0.7.0" release.
+
+  ngx.thread.wait
+    syntax: *ok, res1, res2, ... = ngx.thread.wait(thread1, thread2, ...)*
+
+    context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+    Waits on one or more child "light threads" and returns the results of
+    the first "light thread" that terminates (either successfully or with an
+    error).
+
+    The arguments "thread1", "thread2", and etc are the Lua thread objects
+    returned by earlier calls of ngx.thread.spawn.
+
+    The return values have exactly the same meaning as coroutine.resume,
+    that is, the first value returned is a boolean value indicating whether
+    the "light thread" terminates successfully or not, and subsequent values
+    returned are the return values of the user Lua function that was used to
+    spawn the "light thread" (in case of success) or the error object (in
+    case of failure).
+
+    Only the direct "parent coroutine" can wait on its child "light thread",
+    otherwise a Lua exception will be raised.
+
+    The following example demonstrates the use of "ngx.thread.wait" and
+    ngx.location.capture to emulate ngx.location.capture_multi:
+
+        local capture = ngx.location.capture
+        local spawn = ngx.thread.spawn
+        local wait = ngx.thread.wait
+        local say = ngx.say
+
+        local function fetch(uri)
+            return capture(uri)
+        end
+
+        local threads = {
+            spawn(fetch, "/foo"),
+            spawn(fetch, "/bar"),
+            spawn(fetch, "/baz")
+        }
+
+        for i = 1, #threads do
+            local ok, res = wait(threads[i])
+            if not ok then
+                say(i, ": failed to run: ", res)
+            else
+                say(i, ": status: ", res.status)
+                say(i, ": body: ", res.body)
+            end
+        end
+
+    Here it essentially implements the "wait all" model.
+
+    And below is an example demonstrating the "wait any" model:
+
+        function f()
+            ngx.sleep(0.2)
+            ngx.say("f: hello")
+            return "f done"
+        end
+
+        function g()
+            ngx.sleep(0.1)
+            ngx.say("g: hello")
+            return "g done"
+        end
+
+        local tf, err = ngx.thread.spawn(f)
+        if not tf then
+            ngx.say("failed to spawn thread f: ", err)
+            return
+        end
+
+        ngx.say("f thread created: ", coroutine.status(tf))
+
+        local tg, err = ngx.thread.spawn(g)
+        if not tg then
+            ngx.say("failed to spawn thread g: ", err)
+            return
+        end
+
+        ngx.say("g thread created: ", coroutine.status(tg))
+
+        ok, res = ngx.thread.wait(tf, tg)
+        if not ok then
+            ngx.say("failed to wait: ", res)
+            return
+        end
+
+        ngx.say("res: ", res)
+
+        -- stop the "world", aborting other running threads
+        ngx.exit(ngx.OK)
+
+    And it will generate the following output:
+
+        f thread created: running
+        g thread created: running
+        g: hello
+        res: g done
+
+    This API was first enabled in the "v0.7.0" release.
+
   ndk.set_var.DIRECTIVE
     syntax: *res = ndk.set_var.DIRECTIVE_NAME*
 
@@ -4943,8 +5215,7 @@ Known Issues
     module-level global variables that are shared among *all* requests:
 
         getmetatable(foo.bar).__newindex = function (table, key, val)
-            error('Attempt to write to undeclared variable "' .. key .. '": '
-                    .. debug.traceback())
+            error('Attempt to write to undeclared variable "' .. key .. '"')
         end
 
     Assuming the current Lua module is named "foo.bar", this will guarantee
