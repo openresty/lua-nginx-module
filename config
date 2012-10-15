@@ -20,7 +20,7 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
 
     if [ $ngx_found = no ]; then
         cat << END
-        $0: error: ngx_http_lua_module requires the Lua or LuaJIT library and LUAJIT_LIB is defined as $LUAJIT_LIB and LUAJIT_INC $LUAJIT_INC, but we cannot find LuaJIT there.
+        $0: error: ngx_http_lua_module requires the Lua or LuaJIT library and LUAJIT_LIB is defined as $LUAJIT_LIB and LUAJIT_INC (path for lua.h) $LUAJIT_INC, but we cannot find LuaJIT there.
 END
         exit 1
     fi
@@ -56,7 +56,7 @@ else
 
         if [ $ngx_found = no ]; then
             cat << END
-            $0: error: ngx_http_lua_module requires the Lua or LuaJIT library and LUA_LIB is defined as $LUA_LIB and LUA_INC is $LUA_INC, but we cannot find standard Lua there.
+            $0: error: ngx_http_lua_module requires the Lua or LuaJIT library and LUA_LIB is defined as $LUA_LIB and LUA_INC (path for lua.h) is $LUA_INC, but we cannot find standard Lua there.
 END
             exit 1
         fi
@@ -125,6 +125,21 @@ END
             fi
             . auto/feature
         fi
+
+        if [ $ngx_found = no ]; then
+            # Gentoo with LuaJIT-2.0
+            ngx_feature="LuaJIT library in /usr/"
+            ngx_feature_path="/usr/include/luajit-2.0"
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1"
+            else
+                ngx_feature_libs="-L/usr/lib -lm -lluajit-5.1"
+            fi
+            . auto/feature
+        fi
+     fi
+ fi
+
     fi
 fi
 
