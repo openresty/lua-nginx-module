@@ -662,7 +662,7 @@ ngx_http_lua_shdict_keys(lua_State *L)
 
     if (ngx_queue_empty(&ctx->sh->queue)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
-        lua_pushnumber(L, 0);
+        lua_createtable(L, 0, 0);
         return 1;
     }
 
