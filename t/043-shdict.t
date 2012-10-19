@@ -1256,7 +1256,7 @@ GET /t
 
             dogs:set("bah", "y", 0)
             dogs:set("bar", "z", 0)
-            local keys = dogs:keys(3)
+            local keys = dogs:get_keys(3)
             ngx.say(#keys)
         ';
     }
@@ -1264,4 +1264,110 @@ GET /t
 GET /t
 --- response_body
 2
+
+
+
+=== TEST 53: list keys in an empty shdict
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local keys = dogs:get_keys()
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+0
+
+
+
+
+=== TEST 54: list keys in an empty shdict with a limit
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local keys = dogs:get_keys(4)
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+0
+
+
+
+
+=== TEST 55: list all keys in a shdict with all keys expired
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", "x", 1)
+            dogs:set("bah", "y", 1)
+            dogs:set("bar", "z", 1)
+
+            ngx.sleep(1.5)
+            
+            local keys = dogs:get_keys()
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+0
+
+
+
+
+=== TEST 56: list all keys in a shdict with more than 1024 keys with no limit set
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            for i=1,2048 do
+                dogs:set(tostring(i), i)
+            end      
+            local keys = dogs:get_keys()
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+1024
+
+
+
+
+=== TEST 57: list all keys in a shdict with more than 1024 keys with 0 limit set
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            for i=1,2048 do
+                dogs:set(tostring(i), i)
+            end      
+            local keys = dogs:get_keys(0)
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+2048
 
