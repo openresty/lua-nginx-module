@@ -1172,3 +1172,96 @@ GET /t
 --- response_body
 0
 
+
+
+=== TEST 49: list all keys in a shdict
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 0)
+            local keys = dogs:keys()
+            ngx.say(#keys)
+            table.sort(keys)
+            for _,k in ipairs(keys) do
+                ngx.say(k)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+2
+bah
+bar
+
+
+
+=== TEST 50: list keys in a shdict with limit
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 0)
+            local keys = dogs:keys(1)
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+1
+
+
+
+=== TEST 51: list all keys in a shdict with expires
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", "x", 1)
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 100)
+
+            ngx.sleep(1.5)
+            
+            local keys = dogs:keys()
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+2
+
+
+
+=== TEST 52: list keys in a shdict with limit larger than number of keys
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /t {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+
+            dogs:set("bah", "y", 0)
+            dogs:set("bar", "z", 0)
+            local keys = dogs:keys(3)
+            ngx.say(#keys)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+2
+
