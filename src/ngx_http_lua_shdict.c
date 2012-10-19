@@ -24,7 +24,7 @@ static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
 static int ngx_http_lua_shdict_flush_expired(lua_State *L);
-static int ngx_http_lua_shdict_keys(lua_State *L);
+static int ngx_http_lua_shdict_get_keys(lua_State *L);
 
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
@@ -309,8 +309,8 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
         lua_setfield(L, -2, "flush_expired");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_keys);
-        lua_setfield(L, -2, "keys");
+        lua_pushcfunction(L, ngx_http_lua_shdict_get_keys);
+        lua_setfield(L, -2, "get_keys");
 
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
@@ -625,7 +625,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
  */
 
 static int
-ngx_http_lua_shdict_keys(lua_State *L)
+ngx_http_lua_shdict_get_keys(lua_State *L)
 {
     ngx_queue_t                 *q, *prev;
     ngx_http_lua_shdict_node_t  *sd;
@@ -633,7 +633,7 @@ ngx_http_lua_shdict_keys(lua_State *L)
     ngx_shm_zone_t              *zone;
     ngx_time_t                  *tp;
     int                          total = 0;
-    int                          attempts = 0;
+    int                          attempts = 1024;
     ngx_rbtree_node_t           *node;
     uint64_t                     now;
     int                          n;

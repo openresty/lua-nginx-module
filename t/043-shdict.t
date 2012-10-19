@@ -1184,7 +1184,7 @@ GET /t
 
             dogs:set("bah", "y", 0)
             dogs:set("bar", "z", 0)
-            local keys = dogs:keys()
+            local keys = dogs:get_keys()
             ngx.say(#keys)
             table.sort(keys)
             for _,k in ipairs(keys) do
@@ -1211,7 +1211,7 @@ bar
 
             dogs:set("bah", "y", 0)
             dogs:set("bar", "z", 0)
-            local keys = dogs:keys(1)
+            local keys = dogs:get_keys(1)
             ngx.say(#keys)
         ';
     }
@@ -1235,7 +1235,7 @@ GET /t
 
             ngx.sleep(1.5)
             
-            local keys = dogs:keys()
+            local keys = dogs:get_keys()
             ngx.say(#keys)
         ';
     }
