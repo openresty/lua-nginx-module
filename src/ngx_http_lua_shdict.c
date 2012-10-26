@@ -620,6 +620,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     return 1;
 }
 
+
 /*
  * This trades CPU for memory. This is potentially slow. O(2n)
  */
@@ -634,7 +635,6 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
     ngx_time_t                  *tp;
     int                          total = 0;
     int                          attempts = 1024;
-    ngx_rbtree_node_t           *node;
     uint64_t                     now;
     int                          n;
 
@@ -642,7 +642,7 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     if (n != 1 && n != 2) {
         return luaL_error(L, "expecting 1 or 2 argument(s), "
-                "but saw %d", n);
+                          "but saw %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -670,7 +670,8 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     now = (uint64_t) tp->sec * 1000 + tp->msec;
 
-    /* first run through -- get total number of elements we need to allocate*/
+    /* first run through: get total number of elements we need to allocate */
+
     q = ngx_queue_last(&ctx->sh->queue);
 
     while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
@@ -678,7 +679,7 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
 
-        if (0 == sd->expires || sd->expires > now) {
+        if (sd->expires == 0 || sd->expires > now) {
             total++;
             if (attempts && total == attempts) {
                 break;
@@ -690,16 +691,18 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     lua_createtable(L, total, 0);
 
-    /* second run through -- add keys to table */
-    q = ngx_queue_last(&ctx->sh->queue);
+    /* second run through: add keys to table */
+
     total = 0;
+    q = ngx_queue_last(&ctx->sh->queue);
+
     while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
         prev = ngx_queue_prev(q);
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
 
-        if (0 == sd->expires || sd->expires > now) {
-            lua_pushlstring(L, sd->data, sd->key_len);
+        if (sd->expires == 0 || sd->expires > now) {
+            lua_pushlstring(L, (char *) sd->data, sd->key_len);
             lua_rawseti(L, -2, ++total);
             if (attempts && total == attempts) {
                 break;

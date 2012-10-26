@@ -1234,7 +1234,7 @@ GET /t
             dogs:set("bar", "z", 100)
 
             ngx.sleep(1.5)
-            
+
             local keys = dogs:get_keys()
             ngx.say(#keys)
         ';
@@ -1285,7 +1285,6 @@ GET /t
 
 
 
-
 === TEST 54: list keys in an empty shdict with a limit
 --- http_config
     lua_shared_dict dogs 1m;
@@ -1304,7 +1303,6 @@ GET /t
 
 
 
-
 === TEST 55: list all keys in a shdict with all keys expired
 --- http_config
     lua_shared_dict dogs 1m;
@@ -1317,7 +1315,7 @@ GET /t
             dogs:set("bar", "z", 1)
 
             ngx.sleep(1.5)
-            
+
             local keys = dogs:get_keys()
             ngx.say(#keys)
         ';
@@ -1326,7 +1324,6 @@ GET /t
 GET /t
 --- response_body
 0
-
 
 
 
@@ -1339,7 +1336,7 @@ GET /t
             local dogs = ngx.shared.dogs
             for i=1,2048 do
                 dogs:set(tostring(i), i)
-            end      
+            end
             local keys = dogs:get_keys()
             ngx.say(#keys)
         ';
@@ -1348,7 +1345,6 @@ GET /t
 GET /t
 --- response_body
 1024
-
 
 
 
@@ -1361,7 +1357,7 @@ GET /t
             local dogs = ngx.shared.dogs
             for i=1,2048 do
                 dogs:set(tostring(i), i)
-            end      
+            end
             local keys = dogs:get_keys(0)
             ngx.say(#keys)
         ';
