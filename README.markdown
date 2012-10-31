@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 17 October 2012.
+This document describes ngx_lua [v0.7.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 30 October 2012.
 
 Synopsis
 ========
@@ -125,7 +125,7 @@ Synopsis
         location /foo {
             rewrite_by_lua '
                 res = ngx.location.capture("/memc",
-                    { args = { cmd = 'incr', key = ngx.var.uri } }
+                    { args = { cmd = "incr", key = ngx.var.uri } }
                 )
             ';
  
@@ -3617,6 +3617,20 @@ This feature was first introduced in the `v0.6.3` release.
 
 See also [ngx.shared.DICT.flush_all](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.flush_all) and [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
+ngx.shared.DICT.get_keys
+------------------------
+**syntax:** *keys = ngx.shared.DICT:get_keys(max_count?)*
+
+**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Fetch a list of the keys from the dictionary, up to `<max_count>`.
+
+By default, only the first 1024 keys (if any) are returned. When the `<max_count>` argument is given the value `0`, then all the keys will be returned even there is more than 1024 keys in the dictionary.
+
+**WARNING** Be careful when calling this method on dictionaries with a really huge number of keys. This method may lock the dictionary for quite a while and block all the nginx worker processes that are trying to access the dictionary.
+
+This feature was first introduced in the `v0.7.3` release.
+
 ngx.socket.udp
 --------------
 **syntax:** *udpsock = ngx.socket.udp()*
@@ -4960,5 +4974,5 @@ See Also
 
 Translations
 ============
-* [Chinese](http://wiki.nginx.org/HttpLuaModuleZh)
+* [Chinese](http://wiki.nginx.org/HttpLuaModuleZh) (still in progress)
 
