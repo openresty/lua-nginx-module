@@ -177,7 +177,6 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_exception.c \
                 $ngx_addon_dir/src/ngx_http_lua_util.c \
                 $ngx_addon_dir/src/ngx_http_lua_cache.c \
-                $ngx_addon_dir/src/ngx_http_lua_conf.c \
                 $ngx_addon_dir/src/ngx_http_lua_contentby.c \
                 $ngx_addon_dir/src/ngx_http_lua_rewriteby.c \
                 $ngx_addon_dir/src/ngx_http_lua_accessby.c \
@@ -226,7 +225,6 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_exception.h \
                 $ngx_addon_dir/src/ngx_http_lua_util.h \
                 $ngx_addon_dir/src/ngx_http_lua_cache.h \
-                $ngx_addon_dir/src/ngx_http_lua_conf.h \
                 $ngx_addon_dir/src/ngx_http_lua_contentby.h \
                 $ngx_addon_dir/src/ngx_http_lua_rewriteby.h \
                 $ngx_addon_dir/src/ngx_http_lua_accessby.h \

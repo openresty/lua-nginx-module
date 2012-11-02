@@ -10,7 +10,6 @@
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_cache.h"
-#include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_rewriteby.h"

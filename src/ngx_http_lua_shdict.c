@@ -6,7 +6,6 @@
 
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_conf.h"
 #include "ngx_http_lua_api.h"
 
 
