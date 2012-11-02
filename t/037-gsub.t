@@ -9,7 +9,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #no_diff();
 no_long_string();
@@ -252,6 +252,114 @@ n: 6
 --- response_body
 s: b
 n: 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: big subject string exceeding the luabuf chunk size (with trailing unmatched data, func repl)
+--- config
+    location /re {
+        content_by_lua '
+            local subj = string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. "aaa"
+
+            local function repl(m)
+                return string.rep("c", string.len(m[0]))
+            end
+
+            local s, n = ngx.re.gsub(subj, "b+", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body eval
+("a" x 8000) . ("c" x 1000) . ("a" x 8000) . ("c" x 1000)
+. "aaa
+2
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: big subject string exceeding the luabuf chunk size (without trailing unmatched data, func repl)
+--- config
+    location /re {
+        content_by_lua '
+            local subj = string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. string.rep("a", 8000)
+                .. string.rep("b", 1000)
+
+            local function repl(m)
+                return string.rep("c", string.len(m[0]))
+            end
+
+            local s, n = ngx.re.gsub(subj, "b+", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body eval
+("a" x 8000) . ("c" x 1000) . ("a" x 8000) . ("c" x 1000)
+. "\n2\n"
+--- no_error_log
+[error]
+
+
+
+=== TEST 16: big subject string exceeding the luabuf chunk size (with trailing unmatched data, str repl)
+--- config
+    location /re {
+        content_by_lua '
+            local subj = string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. "aaa"
+
+            local s, n = ngx.re.gsub(subj, "b(b+)(b)", "$1 $2")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body eval
+("a" x 8000) . ("b" x 998) . " b" . ("a" x 8000) . ("b" x 998) . " baaa
+2
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: big subject string exceeding the luabuf chunk size (without trailing unmatched data, str repl)
+--- config
+    location /re {
+        content_by_lua '
+            local subj = string.rep("a", 8000)
+                .. string.rep("b", 1000)
+                .. string.rep("a", 8000)
+                .. string.rep("b", 1000)
+
+            local s, n = ngx.re.gsub(subj, "b(b+)(b)", "$1 $2")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body eval
+("a" x 8000) . ("b" x 998) . " b" . ("a" x 8000) . ("b" x 998) . " b\n2\n"
 --- no_error_log
 [error]
 

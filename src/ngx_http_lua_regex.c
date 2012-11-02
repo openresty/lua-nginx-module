@@ -1492,7 +1492,7 @@ exec:
         }
 
         if (func) {
-            lua_pushvalue(L, -1);
+            lua_pushvalue(L, 3);
 
             lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
 
@@ -1529,12 +1529,14 @@ exec:
                     return luaL_argerror(L, 3, msg);
             }
 
+            lua_insert(L, 1);
+
             luaL_addlstring(&luabuf, (char *) &subj.data[cp_offset],
                     cap[0] - cp_offset);
 
             luaL_addlstring(&luabuf, (char *) tpl.data, tpl.len);
 
-            lua_pop(L, 1);
+            lua_remove(L, 1);
 
             cp_offset = cap[1];
             offset = cp_offset;
