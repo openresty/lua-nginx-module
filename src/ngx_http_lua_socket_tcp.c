@@ -1332,6 +1332,35 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                                "uri:\"%V?%V\"", (int) u->waiting, (int) u->eof,
                                &r->uri, &r->args);
 
+                if (u->is_downstream
+                    && b->last == b->pos
+                    && r->request_body->rest == 0)
+                {
+
+                    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+                    if (llcf->on_client_abort !=
+                            NGX_HTTP_LUA_CLIENT_ABORT_IGNORE)
+                    {
+                        rc = ngx_http_lua_check_broken_connection(r, rev);
+
+                        if (rc == NGX_OK) {
+                            goto success;
+                        }
+
+                        if (rc == NGX_HTTP_CLIENT_CLOSED_REQUEST) {
+                            ngx_http_lua_socket_handle_error(r, u,
+                                         NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT);
+
+                        } else {
+                            ngx_http_lua_socket_handle_error(r, u,
+                                             NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                        }
+
+                        return NGX_ERROR;
+                    }
+                }
+
 #if 1
                 if (ngx_handle_read_event(rev, 0) != NGX_OK) {
                     ngx_http_lua_socket_handle_error(r, u,
@@ -1340,6 +1369,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                 }
 #endif
 
+success:
                 ngx_http_lua_socket_handle_success(r, u);
                 return NGX_OK;
             }
@@ -1471,7 +1501,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                 if (llcf->on_client_abort == NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
                     if (r->request_body->rest) {
                         ngx_http_lua_socket_handle_error(r, u,
-                                                 NGX_HTTP_LUA_SOCKET_FT_CLOSED);
+                                         NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT);
                         return NGX_ERROR;
                     }
 

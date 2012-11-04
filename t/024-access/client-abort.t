@@ -369,6 +369,7 @@ hello
 --- stap eval: $::GCScript
 --- stap_out
 lua check broken conn
+lua check broken conn
 lua req cleanup
 delete thread 1
 
@@ -436,6 +437,7 @@ hello
 --- stap eval: $::GCScript
 --- stap_out
 lua check broken conn
+lua check broken conn
 lua req cleanup
 delete thread 1
 
@@ -500,6 +502,7 @@ hello
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+lua check broken conn
 lua check broken conn
 lua req cleanup
 delete thread 1
@@ -634,6 +637,7 @@ hello"
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+lua check broken conn
 lua check broken conn
 lua req cleanup
 delete thread 1

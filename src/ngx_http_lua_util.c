@@ -86,8 +86,6 @@ static ngx_int_t ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t *parent, ngx_http_lua_co_ctx_t *thread);
 static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
-static void ngx_http_lua_check_broken_connection(ngx_http_request_t *r,
-    ngx_event_t *ev);
 
 
 #ifndef LUA_PATH_SEP
@@ -2937,7 +2935,7 @@ ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
 }
 
 
-static void
+ngx_int_t
 ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
 {
     int                  n;
@@ -2958,15 +2956,11 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
             event = ev->write ? NGX_WRITE_EVENT : NGX_READ_EVENT;
 
             if (ngx_del_event(ev, event, 0) != NGX_OK) {
-                ngx_http_lua_request_cleanup(r);
-                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-                return;
+                return NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
         }
 
-        ngx_http_lua_request_cleanup(r);
-        ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
-        return;
+        return NGX_HTTP_CLIENT_CLOSED_REQUEST;
     }
 
 #if (NGX_HAVE_KQUEUE)
@@ -2984,26 +2978,11 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
             ev->error = 1;
         }
 
-        if (!u->cacheable && u->peer.connection) {
-            ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
-                          "kevent() reported that client prematurely closed "
-                          "connection, so upstream connection is closed too");
-
-            ngx_http_lua_request_cleanup(r);
-            ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
-            return;
-        }
-
         ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
                       "kevent() reported that client prematurely closed "
                       "connection");
 
-        if (u->peer.connection == NULL) {
-            ngx_http_lua_request_cleanup(r);
-            ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
-        }
-
-        return;
+        return NGX_HTTP_CLIENT_CLOSED_REQUEST;
     }
 
 #endif
@@ -3016,7 +2995,7 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
                    "http lua recv(): %d", n);
 
     if (ev->write && (n >= 0 || err == NGX_EAGAIN)) {
-        return;
+        return NGX_OK;
     }
 
     if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && ev->active) {
@@ -3026,10 +3005,7 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
 
 #if 1
         if (ngx_del_event(ev, event, 0) != NGX_OK) {
-            dd("failed to del event");
-            ngx_http_lua_request_cleanup(r);
-            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-            return;
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 #endif
     }
@@ -3037,13 +3013,13 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
     dd("HERE %d", (int) n);
 
     if (n > 0) {
-        return;
+        return NGX_OK;
     }
 
     if (n == -1) {
         if (err == NGX_EAGAIN) {
             dd("HERE");
-            return;
+            return NGX_OK;
         }
 
         ev->error = 1;
@@ -3058,15 +3034,25 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
     ngx_log_error(NGX_LOG_INFO, ev->log, err,
                   "client prematurely closed connection");
 
-    ngx_http_lua_request_cleanup(r);
-    ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
+    return NGX_HTTP_CLIENT_CLOSED_REQUEST;
 }
 
 
 void
 ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 {
-    ngx_http_lua_check_broken_connection(r, r->connection->read);
+    ngx_int_t           rc;
+
+    rc = ngx_http_lua_check_broken_connection(r, r->connection->read);
+
+    if (rc == NGX_OK) {
+        return;
+    }
+
+    /* rc == NGX_ERROR || rc > NGX_OK */
+
+    ngx_http_lua_request_cleanup(r);
+    ngx_http_finalize_request(r, rc);
 }
 
 

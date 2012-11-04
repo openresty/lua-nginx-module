@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -366,6 +366,7 @@ hello
 --- stap eval: $::GCScript
 --- stap_out
 lua check broken conn
+lua check broken conn
 lua req cleanup
 delete thread 1
 
@@ -429,6 +430,7 @@ hello
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
+lua check broken conn
 lua check broken conn
 lua req cleanup
 delete thread 1
@@ -495,10 +497,11 @@ hello
 --- stap eval: $::GCScript
 --- stap_out
 lua check broken conn
+lua check broken conn
 lua req cleanup
 delete thread 1
 
---- timeout: 0.2
+--- timeout: 0.1
 --- ignore_response
 --- no_error_log
 [error]
@@ -596,7 +599,7 @@ lua req cleanup
 --- no_error_log
 [error]
 --- error_log
-failed to receive: closed: hello
+failed to receive: client aborted: hello
 
 
 
@@ -648,7 +651,7 @@ failed to receive: client aborted: hello
                 ngx.log(ngx.NOTICE, "failed to receive: ", err)
                 return
             end
-            ngx.sleep(1)
+            ngx.sleep(0.1)
             error("bad")
         ';
     }
@@ -659,14 +662,19 @@ Connection: close\r
 Content-Length: 5\r
 \r
 hello"
+
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
+--- stap_out_like
+^(?:lua check broken conn
+terminate 1: ok
+delete thread 1
+lua req cleanup|lua check broken conn
 lua check broken conn
 lua req cleanup
-delete thread 1
+delete thread 1)$
 
---- timeout: 0.1
+--- shutdown
 --- ignore_response
 --- no_error_log
 [error]
@@ -716,6 +724,7 @@ done
         lua_on_client_abort stop;
         content_by_lua '
             ngx.req.read_body()
+            ngx.sleep(0.1)
         ';
     }
 --- request
@@ -725,12 +734,14 @@ hello
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
-terminate 1: ok
-delete thread 1
+lua check broken conn
 lua req cleanup
+delete thread 1
 
 --- shutdown: 1
 --- ignore_response
 --- no_error_log
 [error]
+--- error_log
+client prematurely closed connection
 
