@@ -64,6 +64,9 @@ function gen_id(k) {
 
 F(ngx_http_init_request) {
     in_req++
+
+    printf("in req: %d\n", in_req)
+
     if (in_req == 1) {
         delete ids
         cur = 0
@@ -76,6 +79,7 @@ F(ngx_http_init_request) {
 
 F(ngx_http_free_request) {
     in_req--
+    println("free request")
 }
 
 F(ngx_http_lua_post_thread) {

@@ -86,6 +86,8 @@ static ngx_int_t ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t *parent, ngx_http_lua_co_ctx_t *thread);
 static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
+static void ngx_http_lua_check_broken_connection(ngx_http_request_t *r,
+    ngx_event_t *ev);
 
 
 #ifndef LUA_PATH_SEP
@@ -2932,5 +2934,180 @@ ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     }
 
     coctx->zombie_child_threads = NULL;
+}
+
+
+static void
+ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
+{
+    int                  n;
+    char                 buf[1];
+    ngx_err_t            err;
+    ngx_int_t            event;
+    ngx_connection_t     *c;
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ev->log, 0,
+                   "http lua check client, write event:%d, \"%V\"",
+                   ev->write, &r->uri);
+
+    c = r->connection;
+
+    if (c->error) {
+        if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && ev->active) {
+
+            event = ev->write ? NGX_WRITE_EVENT : NGX_READ_EVENT;
+
+            if (ngx_del_event(ev, event, 0) != NGX_OK) {
+                ngx_http_lua_request_cleanup(r);
+                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                return;
+            }
+        }
+
+        ngx_http_lua_request_cleanup(r);
+        ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
+        return;
+    }
+
+#if (NGX_HAVE_KQUEUE)
+
+    if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
+
+        if (!ev->pending_eof) {
+            return;
+        }
+
+        ev->eof = 1;
+        c->error = 1;
+
+        if (ev->kq_errno) {
+            ev->error = 1;
+        }
+
+        if (!u->cacheable && u->peer.connection) {
+            ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
+                          "kevent() reported that client prematurely closed "
+                          "connection, so upstream connection is closed too");
+
+            ngx_http_lua_request_cleanup(r);
+            ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
+            return;
+        }
+
+        ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
+                      "kevent() reported that client prematurely closed "
+                      "connection");
+
+        if (u->peer.connection == NULL) {
+            ngx_http_lua_request_cleanup(r);
+            ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
+        }
+
+        return;
+    }
+
+#endif
+
+    n = recv(c->fd, buf, 1, MSG_PEEK);
+
+    err = ngx_socket_errno;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, err,
+                   "http lua recv(): %d", n);
+
+    if (ev->write && (n >= 0 || err == NGX_EAGAIN)) {
+        return;
+    }
+
+    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && ev->active) {
+        dd("event is active");
+
+        event = ev->write ? NGX_WRITE_EVENT : NGX_READ_EVENT;
+
+#if 1
+        if (ngx_del_event(ev, event, 0) != NGX_OK) {
+            dd("failed to del event");
+            ngx_http_lua_request_cleanup(r);
+            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+            return;
+        }
+#endif
+    }
+
+    dd("HERE %d", (int) n);
+
+    if (n > 0) {
+        return;
+    }
+
+    if (n == -1) {
+        if (err == NGX_EAGAIN) {
+            dd("HERE");
+            return;
+        }
+
+        ev->error = 1;
+
+    } else { /* n == 0 */
+        err = 0;
+    }
+
+    ev->eof = 1;
+    c->error = 1;
+
+    ngx_log_error(NGX_LOG_INFO, ev->log, err,
+                  "client prematurely closed connection");
+
+    ngx_http_lua_request_cleanup(r);
+    ngx_http_finalize_request(r, NGX_HTTP_CLIENT_CLOSED_REQUEST);
+}
+
+
+void
+ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
+{
+    ngx_http_lua_check_broken_connection(r, r->connection->read);
+}
+
+
+ngx_int_t
+ngx_http_lua_test_expect(ngx_http_request_t *r)
+{
+    ngx_int_t   n;
+    ngx_str_t  *expect;
+
+    if (r->expect_tested
+        || r->headers_in.expect == NULL
+        || r->http_version < NGX_HTTP_VERSION_11)
+    {
+        return NGX_OK;
+    }
+
+    r->expect_tested = 1;
+
+    expect = &r->headers_in.expect->value;
+
+    if (expect->len != sizeof("100-continue") - 1
+        || ngx_strncasecmp(expect->data, (u_char *) "100-continue",
+                           sizeof("100-continue") - 1)
+           != 0)
+    {
+        return NGX_OK;
+    }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "send 100 Continue");
+
+    n = r->connection->send(r->connection,
+                            (u_char *) "HTTP/1.1 100 Continue" CRLF CRLF,
+                            sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1);
+
+    if (n == sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1) {
+        return NGX_OK;
+    }
+
+    /* we assume that such small packet should be send successfully */
+
+    return NGX_ERROR;
 }
 

@@ -26,6 +26,7 @@ static ngx_int_t ngx_http_lua_read_body_resume(ngx_http_request_t *r);
 static void ngx_http_lua_req_body_cleanup(void *data);
 
 
+
 void
 ngx_http_lua_inject_req_body_api(lua_State *L)
 {
@@ -145,6 +146,8 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_lua_co_ctx_t   *coctx;
 
+    ngx_http_lua_loc_conf_t             *llcf;
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
             "lua req body post read");
 
@@ -157,6 +160,15 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
         ctx->cur_co_ctx = coctx;
 
         coctx->cleanup = NULL;
+
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->on_client_abort == NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
+            r->read_event_handler = ngx_http_block_reading;
+
+        } else {
+            r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+        }
 
         if (ctx->entered_content_phase) {
             (void) ngx_http_lua_read_body_resume(r);
@@ -1128,8 +1140,6 @@ ngx_http_lua_req_body_cleanup(void *data)
     if (r == NULL) {
         return;
     }
-
-    r->read_event_handler = ngx_http_block_reading;
 
     if (r->connection->read->timer_set) {
         ngx_del_timer(r->connection->read);

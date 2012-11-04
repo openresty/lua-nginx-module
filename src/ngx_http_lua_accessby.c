@@ -222,6 +222,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_ctx_t  *ctx;
     ngx_http_cleanup_t  *cln;
 
+    ngx_http_lua_loc_conf_t     *llcf;
+
     /*  {{{ new coroutine to handle request */
     co = ngx_http_lua_new_thread(r, L, &co_ref);
 
@@ -280,7 +282,11 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx->context = NGX_HTTP_LUA_CONTEXT_ACCESS;
 
-    c = r->connection;
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->on_client_abort != NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
+        r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+    }
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
@@ -289,6 +295,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (rc == NGX_ERROR || rc >= NGX_OK) {
         return rc;
     }
+
+    c = r->connection;
 
     if (rc == NGX_AGAIN) {
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);

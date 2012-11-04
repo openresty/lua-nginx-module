@@ -27,6 +27,8 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
 
+    ngx_http_lua_loc_conf_t      *llcf;
+
     dd("content by chunk");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -85,6 +87,12 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     ctx->context = NGX_HTTP_LUA_CONTEXT_CONTENT;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->on_client_abort != NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
+        r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+    }
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
