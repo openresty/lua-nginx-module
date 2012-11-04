@@ -111,7 +111,7 @@ terminate 2: ok
 delete thread 2
 lua req cleanup
 
---- stap_wait: 1
+--- wait: 1
 --- timeout: 0.1
 --- ignore_response
 --- no_error_log
@@ -174,7 +174,7 @@ terminate 1: fail
 lua req cleanup
 delete thread 1
 
---- stap_wait: 1.1
+--- wait: 1.1
 --- timeout: 0.1
 --- ignore_response
 --- error_log
@@ -409,7 +409,7 @@ lua req cleanup|lua check broken conn
 lua req cleanup
 delete thread 1)$
 
---- stap_wait: 1
+--- wait: 1
 --- timeout: 0.2
 --- ignore_response
 --- no_error_log
@@ -441,7 +441,7 @@ lua check broken conn
 lua req cleanup
 delete thread 1
 
---- stap_wait: 1
+--- wait: 1
 --- timeout: 0.2
 --- ignore_response
 --- no_error_log
@@ -473,7 +473,7 @@ lua check broken conn
 lua req cleanup
 delete thread 1
 
---- stap_wait: 1
+--- wait: 1
 --- timeout: 0.2
 --- ignore_response
 --- no_error_log
@@ -562,7 +562,7 @@ lua check broken conn
 lua req cleanup
 delete thread 1
 
---- stap_wait: 1
+--- wait: 1
 --- timeout: 0.2
 --- ignore_response
 --- no_error_log
