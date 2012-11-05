@@ -50,6 +50,7 @@ lua check broken conn
 lua req cleanup
 delete thread 1
 
+--- wait: 0.1
 --- timeout: 0.1
 --- ignore_response
 --- no_error_log
@@ -715,4 +716,113 @@ lua req cleanup
 --- ignore_response
 --- no_error_log
 [error]
+
+
+
+=== TEST 21: exec to lua + ignore
+--- config
+    location = /t {
+        lua_on_client_abort stop;
+        access_by_lua '
+            ngx.exec("/t2")
+        ';
+    }
+
+    location = /t2 {
+        lua_on_client_abort ignore;
+        content_by_lua '
+            ngx.sleep(1)
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+terminate 1: ok
+lua req cleanup
+delete thread 1
+terminate 2: ok
+delete thread 2
+lua req cleanup
+
+--- wait: 1
+--- timeout: 0.1
+--- ignore_response
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 22: exec to proxy + ignore
+--- config
+    location = /t {
+        lua_on_client_abort stop;
+        access_by_lua '
+            ngx.exec("/t2")
+        ';
+    }
+
+    location = /t2 {
+        proxy_ignore_client_abort on;
+        proxy_pass http://127.0.0.1:$server_port/sleep;
+    }
+
+    location = /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+terminate 1: ok
+lua req cleanup
+delete thread 1
+
+--- wait: 1
+--- timeout: 0.1
+--- ignore_response
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 23: exec (named location) to proxy + ignore
+--- config
+    location = /t {
+        lua_on_client_abort stop;
+        access_by_lua '
+            ngx.exec("@t2")
+        ';
+    }
+
+    location @t2 {
+        proxy_ignore_client_abort on;
+        proxy_pass http://127.0.0.1:$server_port/sleep;
+    }
+
+    location = /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+terminate 1: ok
+lua req cleanup
+delete thread 1
+
+--- wait: 1
+--- timeout: 0.1
+--- ignore_response
+--- no_error_log
+[error]
+[alert]
 

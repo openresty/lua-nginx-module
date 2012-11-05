@@ -286,6 +286,9 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (llcf->on_client_abort != NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
         r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+
+    } else {
+        r->read_event_handler = ngx_http_block_reading;
     }
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);

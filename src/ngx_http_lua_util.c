@@ -2004,6 +2004,14 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         r->write_event_handler = ngx_http_request_empty_handler;
 
 #if 1
+        if (r->read_event_handler == ngx_http_lua_rd_check_broken_connection) {
+            /* resume the read event handler */
+
+            r->read_event_handler = ngx_http_block_reading;
+        }
+#endif
+
+#if 1
         /* clear the modules contexts */
         ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);
 #endif
@@ -2030,11 +2038,15 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
             ctx->exec_uri.data);
 
-    /* resume the write event handler */
     r->write_event_handler = ngx_http_request_empty_handler;
 
-    rc = ngx_http_internal_redirect(r, &ctx->exec_uri,
-            &ctx->exec_args);
+    if (r->read_event_handler == ngx_http_lua_rd_check_broken_connection) {
+        /* resume the read event handler */
+
+        r->read_event_handler = ngx_http_block_reading;
+    }
+
+    rc = ngx_http_internal_redirect(r, &ctx->exec_uri, &ctx->exec_args);
 
     dd("internal redirect returned %d when in content phase? "
             "%d", (int) rc, ctx->entered_content_phase);
