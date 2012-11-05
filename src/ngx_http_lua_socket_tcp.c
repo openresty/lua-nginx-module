@@ -2337,9 +2337,10 @@ ngx_http_lua_socket_test_connect(ngx_connection_t *c)
 {
     int              err;
     socklen_t        len;
-    ngx_event_t     *ev;
 
 #if (NGX_HAVE_KQUEUE)
+
+    ngx_event_t     *ev;
 
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT)  {
         dd("pending eof: (%p)%d (%p)%d", c->write, c->write->pending_eof,
