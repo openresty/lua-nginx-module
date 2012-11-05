@@ -2968,7 +2968,7 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
 
         if (!ev->pending_eof) {
-            return;
+            return NGX_OK;
         }
 
         ev->eof = 1;
