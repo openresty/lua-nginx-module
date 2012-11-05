@@ -744,4 +744,5 @@ delete thread 1
 [error]
 --- error_log
 client prematurely closed connection
+--- SKIP
 

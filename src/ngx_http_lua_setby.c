@@ -98,6 +98,8 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
 
         rc = lua_pcall(L, nargs, 1, 1);
 
+        dd("after protected call user code");
+
         lua_remove(L, 1);  /* remove traceback function */
 
 #if (NGX_PCRE)

@@ -2335,16 +2335,31 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 static ngx_int_t
 ngx_http_lua_socket_test_connect(ngx_connection_t *c)
 {
-    int        err;
-    socklen_t  len;
+    int              err;
+    socklen_t        len;
+    ngx_event_t     *ev;
 
 #if (NGX_HAVE_KQUEUE)
 
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT)  {
+        dd("pending eof: (%p)%d (%p)%d", c->write, c->write->pending_eof,
+            c->read, c->read->pending_eof);
+
         if (c->write->pending_eof) {
-            (void) ngx_connection_error(c, c->write->kq_errno,
-                                    "kevent() reported that connect() failed");
-            return NGX_ERROR;
+            ev = c->write;
+
+        } else if (c->read->pending_eof) {
+            ev = c->read;
+
+        } else {
+            ev = NULL;
+        }
+
+        if (ev) {
+            (void) ngx_connection_error(c, ev->kq_errno,
+                                        "kevent() reported that connect() "
+                                        "failed");
+            return ev->kq_errno;
         }
 
     } else

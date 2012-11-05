@@ -188,8 +188,8 @@ GET /t
 --- response_body
 connected
 failed to receive data: connection refused
---- error_log
-recv() failed (111: Connection refused)
+--- error_log eval
+qr/recv\(\) failed \(\d+: Connection refused\)/
 
 
 

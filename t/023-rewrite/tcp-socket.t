@@ -291,8 +291,8 @@ connect: nil connection refused
 send: nil closed
 receive: nil closed
 close: nil closed
---- error_log
-connect() failed (111: Connection refused)
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
 
 
 
@@ -447,7 +447,7 @@ attempt to send data on a closed socket
 --- request
 GET /t
 --- response_body_like
-^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(110: Operation timed out\))?
+^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(\d+: Operation timed out\))?
 connected: nil
 failed to send request: closed$
 --- error_log
@@ -1000,8 +1000,8 @@ close: nil closed
     GET /test
 --- response_body
 failed to connect: connection refused
---- error_log
-connect() failed (111: Connection refused)
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
 
 
 

@@ -3,7 +3,7 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-repeat_each(2);
+#repeat_each(2);
 
 plan tests => repeat_each() * 87;
 
@@ -284,8 +284,8 @@ connect: nil connection refused
 send: nil closed
 receive: nil closed
 close: nil closed
---- error_log
-connect() failed (111: Connection refused)
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
 
 
 
@@ -432,7 +432,7 @@ attempt to send data on a closed socket
 --- request
 GET /t
 --- response_body_like
-^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(110: Operation timed out\))?
+^failed to connect: blah-blah-not-found\.agentzh\.org could not be resolved(?: \(\d+: Operation timed out\))?
 connected: nil
 failed to send request: closed$
 --- error_log
@@ -976,8 +976,8 @@ M(http-lua-info) {
 
 --- response_body
 failed to connect: connection refused
---- error_log
-connect() failed (111: Connection refused)
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
 
 
 
