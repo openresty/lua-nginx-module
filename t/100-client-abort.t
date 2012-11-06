@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 3 - 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -712,10 +712,10 @@ delete thread 1
 lua req cleanup
 
 --- shutdown: 1
---- response_body
-done
+--- ignore_response
 --- no_error_log
 [error]
+[alert]
 
 
 
