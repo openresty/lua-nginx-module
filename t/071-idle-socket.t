@@ -359,17 +359,17 @@ close: 1 nil
     }
 --- request
 GET /t
---- response_body eval
-qq{connected: 1
+--- response_body_like eval
+qr{connected: 1
 request sent: 57
-read: HTTP/1.1 200 OK\r
+read: HTTP/1\.1 200 OK\r
 Server: nginx\r
 Content-Type: text/plain\r
 Transfer-Encoding: chunked\r
 Connection: close\r
 \r
 6\r
-failed to set keepalive: connection in dubious state
+failed to set keepalive: (?:unread data in buffer|connection in dubious state)
 }
 --- no_error_log
 [error]
