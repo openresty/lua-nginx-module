@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 1);
+plan tests => repeat_each() * (blocks() * 3);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -853,5 +853,21 @@ delete thread 1
 --- ignore_response
 --- no_error_log
 [error]
+[alert]
+
+
+
+=== TEST 25: bug in ngx_http_upstream_test_connect for kqueue
+--- config
+    location /t {
+        proxy_pass http://127.0.0.1:1234/;
+    }
+--- request
+GET /t
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- error_log eval
+qr{connect\(\) failed \(\d+: Connection refused\) while connecting to upstream}
+--- no_error_log
 [alert]
 
