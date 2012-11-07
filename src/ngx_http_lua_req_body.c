@@ -163,11 +163,11 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-        if (llcf->on_client_abort == NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
-            r->read_event_handler = ngx_http_block_reading;
+        if (llcf->check_client_abort) {
+            r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
 
         } else {
-            r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+            r->read_event_handler = ngx_http_block_reading;
         }
 
         if (ctx->entered_content_phase) {

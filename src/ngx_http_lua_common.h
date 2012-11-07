@@ -183,10 +183,8 @@ typedef struct {
     ngx_uint_t                       pool_size;
 
     ngx_flag_t                       transform_underscores_in_resp_headers;
-
     ngx_flag_t                       log_socket_errors;
-
-    ngx_uint_t                       on_client_abort;
+    ngx_flag_t                       check_client_abort;
 } ngx_http_lua_loc_conf_t;
 
 
@@ -196,13 +194,6 @@ typedef enum {
     NGX_HTTP_LUA_USER_CORO_YIELD    = 2,
     NGX_HTTP_LUA_USER_THREAD_RESUME = 3
 } ngx_http_lua_user_coro_op_t;
-
-
-enum {
-    NGX_HTTP_LUA_CLIENT_ABORT_IGNORE = 0,
-    NGX_HTTP_LUA_CLIENT_ABORT_STOP   = 1,
-    NGX_HTTP_LUA_CLIENT_ABORT_ERROR  = 2  /* unused */
-};
 
 
 typedef enum {

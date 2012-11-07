@@ -35,7 +35,7 @@ __DATA__
 === TEST 1: sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.sleep(1)
         ';
@@ -62,7 +62,7 @@ client prematurely closed connection
 === TEST 2: sleep + stop (log handler still gets called)
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.sleep(1)
         ';
@@ -93,7 +93,7 @@ here in log by lua
 === TEST 3: sleep + ignore
 --- config
     location /t {
-        lua_on_client_abort ignore;
+        lua_check_client_abort off;
         content_by_lua '
             ngx.sleep(1)
         ';
@@ -119,7 +119,7 @@ lua req cleanup
 === TEST 4: subrequest + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.location.capture("/sub")
             error("bad things happen")
@@ -151,7 +151,7 @@ client prematurely closed connection
 === TEST 5: subrequest + ignore
 --- config
     location /t {
-        lua_on_client_abort ignore;
+        lua_check_client_abort off;
         content_by_lua '
             ngx.location.capture("/sub")
             error("bad things happen")
@@ -182,7 +182,7 @@ bad things happen
 === TEST 6: subrequest + stop (proxy, ignore client abort)
 --- config
     location = /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.location.capture("/sub")
             error("bad things happen")
@@ -195,7 +195,7 @@ bad things happen
     }
 
     location = /sleep {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.sleep(1)
         ';
@@ -222,7 +222,7 @@ client prematurely closed connection
 === TEST 7: subrequest + stop (proxy, check client abort)
 --- config
     location = /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.location.capture("/sub")
             error("bad things happen")
@@ -255,7 +255,7 @@ client prematurely closed connection
 === TEST 8: need body on + sleep + stop (log handler still gets called)
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         lua_need_request_body on;
         content_by_lua '
             ngx.sleep(1)
@@ -288,7 +288,7 @@ here in log by lua
 === TEST 9: ngx.req.read_body + sleep + stop (log handler still gets called)
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.req.read_body()
             ngx.sleep(1)
@@ -322,7 +322,7 @@ here in log by lua
 === TEST 10: ngx.req.socket + receive() + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             sock:receive()
@@ -352,7 +352,7 @@ client prematurely closed connection
 === TEST 11: ngx.req.socket + receive(N) + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             sock:receive(5)
@@ -383,7 +383,7 @@ client prematurely closed connection
 === TEST 12: ngx.req.socket + receive(n) + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             sock:receive(2)
@@ -415,7 +415,7 @@ delete thread 1)$
 === TEST 13: ngx.req.socket + m * receive(n) + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             sock:receive(2)
@@ -449,7 +449,7 @@ client prematurely closed connection
 === TEST 14: ngx.req.socket + receiveuntil + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             local it = sock:receiveuntil("\\n")
@@ -481,7 +481,7 @@ client prematurely closed connection
 === TEST 15: ngx.req.socket + receiveuntil + it(n) + sleep + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             local it = sock:receiveuntil("\\n")
@@ -514,7 +514,7 @@ client prematurely closed connection
 === TEST 16: cosocket + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.req.discard_body()
 
@@ -570,7 +570,7 @@ client prematurely closed connection
 === TEST 17: ngx.req.socket + receive n < content-length + ignore
 --- config
     location /t {
-        lua_on_client_abort ignore;
+        lua_check_client_abort off;
         content_by_lua '
             local sock = ngx.req.socket()
             local res, err, part = sock:receive("*a")
@@ -607,7 +607,7 @@ failed to receive: client aborted: hello
 === TEST 18: ngx.req.socket + receive n < content-length + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             local res, err, part = sock:receive("*a")
@@ -644,7 +644,7 @@ failed to receive: client aborted: hello
 === TEST 19: ngx.req.socket + receive n == content-length + stop
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             local sock = ngx.req.socket()
             local res, err = sock:receive("*a")
@@ -722,7 +722,7 @@ lua req cleanup
 === TEST 21: ngx.req.read_body + sleep + stop (log handler still gets called)
 --- config
     location /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.req.read_body()
             ngx.sleep(0.1)
@@ -752,14 +752,14 @@ client prematurely closed connection
 === TEST 22: exec to lua + ignore
 --- config
     location = /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.exec("/t2")
         ';
     }
 
     location = /t2 {
-        lua_on_client_abort ignore;
+        lua_check_client_abort off;
         content_by_lua '
             ngx.sleep(1)
         ';
@@ -788,7 +788,7 @@ lua req cleanup
 === TEST 23: exec to proxy + ignore
 --- config
     location = /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.exec("/t2")
         ';
@@ -824,7 +824,7 @@ delete thread 1
 === TEST 24: exec (named location) to proxy + ignore
 --- config
     location = /t {
-        lua_on_client_abort stop;
+        lua_check_client_abort on;
         content_by_lua '
             ngx.exec("@t2")
         ';
@@ -869,5 +869,31 @@ GET /t
 --- error_log eval
 qr{connect\(\) failed \(\d+: Connection refused\) while connecting to upstream}
 --- no_error_log
+[alert]
+
+
+
+=== TEST 26: sleep (default off)
+--- config
+    location /t {
+        content_by_lua '
+            ngx.sleep(1)
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+terminate 1: ok
+delete thread 1
+lua req cleanup
+
+--- wait: 1
+--- timeout: 0.1
+--- ignore_response
+--- no_error_log
+[error]
 [alert]
 

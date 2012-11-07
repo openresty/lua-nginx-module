@@ -39,16 +39,6 @@ static ngx_conf_post_t  ngx_http_lua_lowat_post =
     { ngx_http_lua_lowat_check };
 
 
-static ngx_conf_enum_t  ngx_http_lua_on_client_abort_state[] = {
-    { ngx_string("ignore"), NGX_HTTP_LUA_CLIENT_ABORT_IGNORE },
-    { ngx_string("stop"), NGX_HTTP_LUA_CLIENT_ABORT_STOP },
-#if 0
-    { ngx_string("error"), NGX_HTTP_LUA_CLIENT_ABORT_ERROR },
-#endif
-    { ngx_null_string, 0 }
-};
-
-
 static ngx_command_t ngx_http_lua_cmds[] = {
 
     { ngx_string("lua_shared_dict"),
@@ -319,13 +309,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, http10_buffering),
       NULL },
 
-    { ngx_string("lua_on_client_abort"),
+    { ngx_string("lua_check_client_abort"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
-                        |NGX_CONF_TAKE1,
-      ngx_conf_set_enum_slot,
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_lua_loc_conf_t, on_client_abort),
-      ngx_http_lua_on_client_abort_state },
+      offsetof(ngx_http_lua_loc_conf_t, check_client_abort),
+      NULL },
 
     ngx_null_command
 };
@@ -570,10 +560,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->body_filter_handler = NULL;
      */
 
-    conf->force_read_body   = NGX_CONF_UNSET;
-    conf->enable_code_cache = NGX_CONF_UNSET;
-    conf->http10_buffering  = NGX_CONF_UNSET;
-    conf->on_client_abort   = NGX_CONF_UNSET_UINT;
+    conf->force_read_body    = NGX_CONF_UNSET;
+    conf->enable_code_cache  = NGX_CONF_UNSET;
+    conf->http10_buffering   = NGX_CONF_UNSET;
+    conf->check_client_abort = NGX_CONF_UNSET;
 
     conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
@@ -636,9 +626,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
     ngx_conf_merge_value(conf->http10_buffering, prev->http10_buffering, 1);
-
-    ngx_conf_merge_uint_value(conf->on_client_abort, prev->on_client_abort,
-                              NGX_HTTP_LUA_CLIENT_ABORT_IGNORE);
+    ngx_conf_merge_value(conf->check_client_abort, prev->check_client_abort, 0);
 
     ngx_conf_merge_msec_value(conf->keepalive_timeout,
                               prev->keepalive_timeout, 60000);

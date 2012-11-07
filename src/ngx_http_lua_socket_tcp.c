@@ -1339,9 +1339,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
 
                     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-                    if (llcf->on_client_abort !=
-                            NGX_HTTP_LUA_CLIENT_ABORT_IGNORE)
-                    {
+                    if (llcf->check_client_abort) {
                         rc = ngx_http_lua_check_broken_connection(r, rev);
 
                         if (rc == NGX_OK) {
@@ -1498,14 +1496,16 @@ success:
 
                 llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-                if (llcf->on_client_abort == NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
-                    if (r->request_body->rest) {
-                        ngx_http_lua_socket_handle_error(r, u,
-                                         NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT);
-                        return NGX_ERROR;
-                    }
+                if (llcf->check_client_abort) {
 
-                } else {
+                    ngx_http_lua_socket_handle_error(r, u,
+                                         NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT);
+                    return NGX_ERROR;
+                }
+
+                /* llcf->check_client_abort == 0 */
+
+                if (r->request_body->rest) {
                     ngx_http_lua_socket_handle_error(r, u,
                                          NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT);
                     return NGX_ERROR;
@@ -1748,10 +1748,8 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     if (u->is_downstream) {
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-        if (llcf->on_client_abort == NGX_HTTP_LUA_CLIENT_ABORT_IGNORE) {
-            r->read_event_handler = ngx_http_block_reading;
+        if (llcf->check_client_abort) {
 
-        } else {
             r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
 
             ev = r->connection->read;
@@ -1765,6 +1763,10 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
                     return 2;
                 }
             }
+
+        } else {
+            /* llcf->check_client_abort == 0 */
+            r->read_event_handler = ngx_http_block_reading;
         }
     }
 #endif
