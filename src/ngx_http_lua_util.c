@@ -327,12 +327,36 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_co_ctx_t           *entry_coctx;
     ngx_http_lua_co_ctx_t           *cc;
 
-    if (ctx->uthreads && ctx->user_co_ctx) {
-        /* release all pending user threads */
-
+    cc = ctx->on_abort_co_ctx;
+    if (cc) {
         lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
         lua_rawget(L, LUA_REGISTRYINDEX);
         inited = 1;
+
+        if (cc->co_ref != LUA_NOREF) {
+            ngx_http_lua_probe_thread_delete(r, cc->co, ctx);
+
+            luaL_unref(L, -1, cc->co_ref);
+            cc->co_ref = LUA_NOREF;
+
+            if (cc->co_status != NGX_HTTP_LUA_CO_SUSPENDED) {
+                ctx->uthreads--;
+            }
+
+            cc->co_status = NGX_HTTP_LUA_CO_DEAD;
+        }
+
+        ctx->on_abort_co_ctx = NULL;
+    }
+
+    if (ctx->uthreads && ctx->user_co_ctx) {
+        /* release all pending user threads */
+
+        if (!inited) {
+            lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+            lua_rawget(L, LUA_REGISTRYINDEX);
+            inited = 1;
+        }
 
         cc = ctx->user_co_ctx->elts;
 
@@ -832,6 +856,8 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->entered_rewrite_phase = 0;
     ctx->entered_access_phase = 0;
     ctx->entered_content_phase = 0;
+
+    ctx->on_abort_co_ctx = NULL;
 
     ctx->exit_code = 0;
     ctx->exited = 0;
@@ -3056,6 +3082,10 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
     ngx_int_t                   rc;
     ngx_http_lua_ctx_t         *ctx;
 
+    if (r->done) {
+        return;
+    }
+
     rc = ngx_http_lua_check_broken_connection(r, r->connection->read);
 
     if (rc == NGX_OK) {
@@ -3069,16 +3099,18 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
         return;
     }
 
-    if (ctx->on_abort_co_ctx == NULL) {
+    if (ctx->on_abort_co_ctx == NULL
+        || ctx->on_abort_co_ctx->co_status != NGX_HTTP_LUA_CO_SUSPENDED)
+    {
         r->connection->error = 1;
         ngx_http_lua_request_cleanup(r);
         ngx_http_finalize_request(r, rc);
         return;
     }
 
-    /* ctx->on_abort_co_ctx != NULL */
-
+    ctx->uthreads++;
     ctx->resume_handler = ngx_http_lua_on_abort_resume;
+    ctx->on_abort_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
     ctx->cur_co_ctx = ctx->on_abort_co_ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,

@@ -367,7 +367,6 @@ ngx_http_lua_on_abort(lua_State *L)
     lua_pop(L, 1);
 
     coctx->is_uthread = 1;
-    ctx->uthreads++;
     ctx->on_abort_co_ctx = coctx;
 
     coctx->co_status = NGX_HTTP_LUA_CO_SUSPENDED;
