@@ -358,7 +358,7 @@ callback done: +OK
 
 
 
-=== TEST 8: ignore the client abort event in the user callback
+=== TEST 8: ignore the client abort event in the user callback (no check)
 --- config
     location /t {
         lua_check_client_abort off;
@@ -381,7 +381,6 @@ GET /t
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
-create 2 in 1
 terminate 1: fail
 lua req cleanup
 delete thread 1
@@ -576,4 +575,53 @@ done
 client prematurely closed connection
 on abort called
 main handler done
+
+
+
+=== TEST 13: regsiter on_abort callback multiple times
+--- config
+    location /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+            end)
+
+            if not ok then
+                ngx.say("1: cannot set on_abort: " .. err)
+                return
+            end
+
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+            end)
+
+            if not ok then
+                ngx.say("2: cannot set on_abort: " .. err)
+                return
+            end
+
+            ngx.thread.spawn(function ()
+                ngx.sleep(0.1)
+                ngx.say("done")
+            end)
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+terminate 1: ok
+delete thread 1
+lua req cleanup
+delete thread 2
+
+--- response_body
+2: cannot set on_abort: duplicate call
+
+--- no_error_log
+[error]
 

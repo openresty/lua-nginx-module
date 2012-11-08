@@ -32,23 +32,8 @@ static const char *
 static int
 ngx_http_lua_coroutine_create(lua_State *L)
 {
-    return ngx_http_lua_coroutine_create_helper(L, NULL, NULL, NULL);
-}
-
-
-int
-ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t **pr,
-    ngx_http_lua_ctx_t **pctx, ngx_http_lua_co_ctx_t **pcoctx)
-{
-    lua_State                     *mt;  /* the main thread */
-    lua_State                     *co;  /* new coroutine to be created */
-    ngx_http_request_t            *r;
-    ngx_http_lua_main_conf_t      *lmcf;
-    ngx_http_lua_ctx_t            *ctx;
-    ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
-
-    luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
-                 "Lua function expected");
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -63,6 +48,22 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t **pr,
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    return ngx_http_lua_coroutine_create_helper(L, r, ctx, NULL);
+}
+
+
+int
+ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t **pcoctx)
+{
+    lua_State                     *mt;  /* the main thread */
+    lua_State                     *co;  /* new coroutine to be created */
+    ngx_http_lua_main_conf_t      *lmcf;
+    ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
+
+    luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
+                 "Lua function expected");
 
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
@@ -99,14 +100,6 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t **pr,
 
     if (pcoctx) {
         *pcoctx = coctx;
-    }
-
-    if (pctx) {
-        *pctx = ctx;
-    }
-
-    if (pr) {
-        *pr = r;
     }
 
     return 1;    /* return new coroutine to Lua */

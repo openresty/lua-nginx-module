@@ -46,7 +46,21 @@ ngx_http_lua_uthread_spawn(lua_State *L)
 
     n = lua_gettop(L);
 
-    ngx_http_lua_coroutine_create_helper(L, &r, &ctx, &coctx);
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
 
     /* anchor the newly created coroutine into the Lua registry */
 
