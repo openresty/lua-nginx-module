@@ -6,6 +6,7 @@ use warnings;
 our $GCScript = <<'_EOC_';
 global ids, cur
 global in_req = 0
+global alive_reqs
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -13,16 +14,30 @@ function gen_id(k) {
     return cur
 }
 
-F(ngx_http_init_request) {
-    in_req++
-    if (in_req == 1) {
-        delete ids
-        cur = 0
+F(ngx_http_handler) {
+    if (!alive_reqs[$r] && $r == $r->main) {
+        in_req++
+        alive_reqs[$r] = 1
+
+        if (in_req == 1) {
+            delete ids
+            cur = 0
+        }
     }
 }
 
 F(ngx_http_free_request) {
-    in_req--
+    if (alive_reqs[$r]) {
+        in_req--
+        delete alive_reqs[$r]
+    }
+}
+
+F(ngx_http_terminate_request) {
+    if (alive_reqs[$r]) {
+        in_req--
+        delete alive_reqs[$r]
+    }
 }
 
 M(http-lua-user-thread-spawn) {
@@ -55,6 +70,7 @@ global ids, cur
 global timers
 global in_req = 0
 global co_status
+global alive_reqs
 
 function gen_id(k) {
     if (ids[k]) return ids[k]
@@ -62,24 +78,38 @@ function gen_id(k) {
     return cur
 }
 
-F(ngx_http_init_request) {
-    in_req++
+F(ngx_http_handler) {
+    if (!alive_reqs[$r] && $r == $r->main) {
+        in_req++
+        alive_reqs[$r] = 1
 
-    printf("in req: %d\n", in_req)
+        printf("in req: %d\n", in_req)
 
-    if (in_req == 1) {
-        delete ids
-        cur = 0
-        co_status[0] = "running"
-        co_status[1] = "suspended"
-        co_status[2] = "normal"
-        co_status[3] = "dead"
+        if (in_req == 1) {
+            delete ids
+            cur = 0
+            co_status[0] = "running"
+            co_status[1] = "suspended"
+            co_status[2] = "normal"
+            co_status[3] = "dead"
+        }
     }
 }
 
 F(ngx_http_free_request) {
-    in_req--
-    println("free request")
+    if (alive_reqs[$r]) {
+        in_req--
+        println("free request")
+        delete alive_reqs[$r]
+    }
+}
+
+F(ngx_http_terminate_request) {
+    if (alive_reqs[$r]) {
+        in_req--
+        println("terminate request")
+        delete alive_reqs[$r]
+    }
 }
 
 F(ngx_http_lua_post_thread) {
@@ -171,7 +201,9 @@ F(ngx_http_lua_run_posted_threads) {
 
 F(ngx_http_finalize_request) {
     printf("finalize request: rc:%d c:%d\n", $rc, $r->main->count);
-    #print_ubacktrace()
+    #if ($rc == -1) {
+        #print_ubacktrace()
+    #}
 }
 
 M(http-lua-user-coroutine-create) {

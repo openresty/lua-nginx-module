@@ -39,6 +39,7 @@
 #include "ngx_http_lua_phase.h"
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_uthread.h"
+#include "ngx_http_lua_contentby.h"
 
 
 #if 1
@@ -86,6 +87,7 @@ static ngx_int_t ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t *parent, ngx_http_lua_co_ctx_t *thread);
 static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
+static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
 
 
 #ifndef LUA_PATH_SEP
@@ -701,7 +703,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 84 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 85 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -2984,7 +2986,6 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
         }
 
         ev->eof = 1;
-        c->error = 1;
 
         if (ev->kq_errno) {
             ev->error = 1;
@@ -3041,7 +3042,6 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
     }
 
     ev->eof = 1;
-    c->error = 1;
 
     ngx_log_error(NGX_LOG_INFO, ev->log, err,
                   "client prematurely closed connection");
@@ -3053,7 +3053,8 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
 void
 ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 {
-    ngx_int_t           rc;
+    ngx_int_t                   rc;
+    ngx_http_lua_ctx_t         *ctx;
 
     rc = ngx_http_lua_check_broken_connection(r, r->connection->read);
 
@@ -3063,8 +3064,80 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 
     /* rc == NGX_ERROR || rc > NGX_OK */
 
-    ngx_http_lua_request_cleanup(r);
-    ngx_http_finalize_request(r, rc);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    if (ctx->on_abort_co_ctx == NULL) {
+        r->connection->error = 1;
+        ngx_http_lua_request_cleanup(r);
+        ngx_http_finalize_request(r, rc);
+        return;
+    }
+
+    /* ctx->on_abort_co_ctx != NULL */
+
+    ctx->resume_handler = ngx_http_lua_on_abort_resume;
+    ctx->cur_co_ctx = ctx->on_abort_co_ctx;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua waking up the on_abort callback thread");
+
+    if (ctx->entered_content_phase) {
+        r->write_event_handler = ngx_http_lua_content_wev_handler;
+    }
+
+    r->write_event_handler(r);
+}
+
+
+static ngx_int_t
+ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
+{
+    ngx_int_t                    rc;
+    ngx_connection_t            *c;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua resuming the on_abort callback thread");
+
+#if 0
+    ngx_http_lua_probe_info("tcp resume");
+#endif
+
+    c = r->connection;
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_finalize_request(r, NGX_DONE);
+        return ngx_http_lua_run_posted_threads(c,lmcf->lua, r, ctx);
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
 }
 
 

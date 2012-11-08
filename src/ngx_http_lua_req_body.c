@@ -149,7 +149,7 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t             *llcf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua req body post read");
+                   "lua req body post read");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 

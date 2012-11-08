@@ -280,6 +280,9 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_http_lua_co_ctx_t    entry_co_ctx; /* coroutine context for the
                                               entry coroutine */
 
+    ngx_http_lua_co_ctx_t   *on_abort_co_ctx; /* coroutine context for the
+                                                 on_abort thread */
+
     int                      ctx_ref;  /*  reference to anchor
                                            request ctx data in lua
                                            registry */

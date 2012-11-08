@@ -5,11 +5,13 @@
 
 #include "ngx_http_lua_control.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_coroutine.h"
 
 
 static int ngx_http_lua_ngx_exec(lua_State *L);
 static int ngx_http_lua_ngx_redirect(lua_State *L);
 static int ngx_http_lua_ngx_exit(lua_State *L);
+static int ngx_http_lua_on_abort(lua_State *L);
 
 
 void
@@ -32,6 +34,11 @@ ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
     lua_setfield(L, -2, "exit");
+
+    /* ngx.on_abort */
+
+    lua_pushcfunction(L, ngx_http_lua_on_abort);
+    lua_setfield(L, -2, "on_abort");
 }
 
 
@@ -304,9 +311,15 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    ngx_http_lua_check_if_abortable(L, ctx);
-
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
+    if (ctx->no_abort
+        && rc != NGX_ERROR
+        && rc != NGX_HTTP_REQUEST_TIME_OUT
+        && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST)
+    {
+        return luaL_error(L, "attempt to abort with pending subrequests");
+    }
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
 
@@ -327,5 +340,40 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     dd("calling yield");
     return lua_yield(L, 0);
+}
+
+
+static int
+ngx_http_lua_on_abort(lua_State *L)
+{
+    ngx_http_request_t           *r;
+    ngx_http_lua_ctx_t           *ctx;
+    ngx_http_lua_co_ctx_t        *coctx = NULL;
+    ngx_http_lua_loc_conf_t      *llcf;
+
+    ngx_http_lua_coroutine_create_helper(L, &r, &ctx, &coctx);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (!llcf->check_client_abort) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "lua_check_client_abort is off");
+        return 2;
+    }
+
+    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_pushvalue(L, -3);
+    coctx->co_ref = luaL_ref(L, -2);
+    lua_pop(L, 1);
+
+    coctx->is_uthread = 1;
+    ctx->uthreads++;
+    ctx->on_abort_co_ctx = coctx;
+
+    coctx->co_status = NGX_HTTP_LUA_CO_SUSPENDED;
+    coctx->parent_co_ctx = ctx->cur_co_ctx;
+
+    lua_pushinteger(L, 1);
+    return 1;
 }
 
