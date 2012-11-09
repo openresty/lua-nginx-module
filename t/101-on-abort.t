@@ -45,7 +45,7 @@ __DATA__
                 error("cannot set on_abort: " .. err)
             end
 
-            ngx.sleep(0.5)
+            ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
     }
@@ -63,8 +63,8 @@ delete thread 2
 delete thread 1
 lua req cleanup
 
---- timeout: 0.1
---- wait: 0.5
+--- timeout: 0.2
+--- wait: 0.7
 --- ignore_response
 --- no_error_log
 [error]
@@ -89,7 +89,7 @@ main handler done
                 error("cannot set on_abort: " .. err)
             end
 
-            ngx.sleep(0.5)
+            ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
     }
@@ -106,7 +106,7 @@ lua req cleanup
 delete thread 2
 delete thread 1
 
---- timeout: 0.1
+--- timeout: 0.2
 --- ignore_response
 --- no_error_log
 [error]
@@ -151,7 +151,7 @@ lua req cleanup
 delete thread 2
 delete thread 1
 
---- timeout: 0.1
+--- timeout: 0.2
 --- ignore_response
 --- no_error_log
 [error]
@@ -195,7 +195,7 @@ lua req cleanup
 delete thread 2
 delete thread 1
 
---- timeout: 0.1
+--- timeout: 0.2
 --- ignore_response
 --- no_error_log
 [error]
@@ -239,7 +239,7 @@ lua req cleanup
 delete thread 2
 delete thread 1
 
---- timeout: 0.1
+--- timeout: 0.2
 --- ignore_response
 --- no_error_log
 [error]
@@ -269,7 +269,7 @@ on abort called
     }
 
     location = /sleep {
-        echo_sleep 0.5;
+        echo_sleep 0.7;
     }
 --- request
 GET /t
@@ -285,7 +285,7 @@ delete thread 2
 delete thread 1
 lua req cleanup
 
---- timeout: 0.1
+--- timeout: 0.2
 --- wait: 0.4
 --- ignore_response
 --- error_log
@@ -328,7 +328,7 @@ main handler done
                 error("cannot set on_abort: " .. err)
             end
 
-            ngx.sleep(0.5)
+            ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
     }
@@ -345,7 +345,7 @@ lua req cleanup
 delete thread 2
 delete thread 1
 
---- timeout: 0.1
+--- timeout: 0.2
 --- wait: 0.2
 --- ignore_response
 --- no_error_log
@@ -371,7 +371,7 @@ callback done: +OK
                 error("cannot set on_abort: " .. err)
             end
 
-            ngx.sleep(0.5)
+            ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
     }
@@ -386,7 +386,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
---- wait: 0.5
+--- wait: 0.7
 --- ignore_response
 --- no_error_log
 client prematurely closed connection
@@ -450,7 +450,7 @@ main handler done
             end
 
             ngx.thread.spawn(function ()
-                ngx.sleep(0.5)
+                ngx.sleep(0.7)
                 ngx.log(ngx.NOTICE, "main handler done")
             end)
         ';
@@ -473,8 +473,8 @@ terminate 3: ok
 delete thread 3
 lua req cleanup
 
---- timeout: 0.1
---- wait: 0.5
+--- timeout: 0.2
+--- wait: 0.7
 --- ignore_response
 --- no_error_log
 [error]
@@ -500,7 +500,7 @@ main handler done
             end
 
             ngx.thread.spawn(function ()
-                ngx.sleep(0.5)
+                ngx.sleep(0.7)
                 ngx.log(ngx.NOTICE, "main handler done")
             end)
         ';
@@ -522,7 +522,7 @@ lua req cleanup
 delete thread 2
 delete thread 3
 
---- timeout: 0.1
+--- timeout: 0.2
 --- ignore_response
 --- no_error_log
 [error]
