@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 14);
+plan tests => repeat_each() * (blocks() * 4 + 15);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -368,7 +368,8 @@ callback done: +OK
             end)
 
             if not ok then
-                error("cannot set on_abort: " .. err)
+                ngx.say("cannot set on_abort: ", err)
+                return
             end
 
             ngx.sleep(0.7)
@@ -381,20 +382,17 @@ GET /t
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
 --- stap_out
-terminate 1: fail
-lua req cleanup
+terminate 1: ok
 delete thread 1
+lua req cleanup
 
 --- timeout: 0.2
---- wait: 0.7
---- ignore_response
+--- response_body
+cannot set on_abort: lua_check_client_abort is off
 --- no_error_log
 client prematurely closed connection
 on abort called
 main handler done
-
---- error_log
-cannot set on_abort: lua_check_client_abort is off
 
 
 
