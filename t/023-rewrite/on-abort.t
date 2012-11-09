@@ -36,7 +36,7 @@ __DATA__
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -48,6 +48,7 @@ __DATA__
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -61,6 +62,8 @@ terminate 2: ok
 terminate 1: ok
 delete thread 2
 delete thread 1
+terminate 3: ok
+delete thread 3
 lua req cleanup
 
 --- timeout: 0.2
@@ -79,7 +82,7 @@ main handler done
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(444)
@@ -92,6 +95,7 @@ main handler done
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -121,7 +125,7 @@ on abort called
 --- config
     location = /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(499)
@@ -133,6 +137,7 @@ on abort called
 
             ngx.location.capture("/sleep")
         ';
+        content_by_lua return;
     }
 
     location = /sleep {
@@ -165,7 +170,7 @@ on abort called
 --- config
     location = /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(408)
@@ -177,6 +182,7 @@ on abort called
 
             ngx.location.capture("/sleep")
         ';
+        content_by_lua return;
     }
 
     location = /sleep {
@@ -209,7 +215,7 @@ on abort called
 --- config
     location = /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(-1)
@@ -221,6 +227,7 @@ on abort called
 
             ngx.location.capture("/sleep")
         ';
+        content_by_lua return;
     }
 
     location = /sleep {
@@ -253,7 +260,7 @@ on abort called
 --- config
     location = /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(0)
@@ -266,6 +273,7 @@ on abort called
             ngx.location.capture("/sleep")
             ngx.log(ngx.ERR, "main handler done")
         ';
+        content_by_lua return;
     }
 
     location = /sleep {
@@ -283,6 +291,8 @@ terminate 2: fail
 terminate 1: ok
 delete thread 2
 delete thread 1
+terminate 3: ok
+delete thread 3
 lua req cleanup
 
 --- timeout: 0.2
@@ -291,7 +301,7 @@ lua req cleanup
 --- error_log
 client prematurely closed connection
 on abort called
-lua user thread aborted: runtime error: [string "content_by_lua"]:4: attempt to abort with pending subrequests
+lua user thread aborted: runtime error: [string "rewrite_by_lua"]:4: attempt to abort with pending subrequests
 main handler done
 
 
@@ -300,7 +310,7 @@ main handler done
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 local sock = ngx.socket.tcp()
@@ -331,6 +341,7 @@ main handler done
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -362,7 +373,7 @@ callback done: +OK
 --- config
     location /t {
         lua_check_client_abort off;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -374,6 +385,7 @@ callback done: +OK
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -402,7 +414,7 @@ cannot set on_abort: lua_check_client_abort is off
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -413,6 +425,7 @@ cannot set on_abort: lua_check_client_abort is off
 
             ngx.say("done")
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -423,8 +436,10 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-lua req cleanup
 delete thread 2
+terminate 3: ok
+delete thread 3
+lua req cleanup
 
 --- response_body
 done
@@ -440,7 +455,7 @@ main handler done
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -454,6 +469,7 @@ main handler done
                 ngx.log(ngx.NOTICE, "main handler done")
             end)
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -471,6 +487,8 @@ terminate 2: ok
 delete thread 2
 terminate 3: ok
 delete thread 3
+terminate 4: ok
+delete thread 4
 lua req cleanup
 
 --- timeout: 0.2
@@ -489,7 +507,7 @@ main handler done
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
                 ngx.exit(444)
@@ -504,6 +522,7 @@ main handler done
                 ngx.log(ngx.NOTICE, "main handler done")
             end)
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -537,7 +556,7 @@ on abort called
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -551,6 +570,7 @@ on abort called
                 ngx.say("done")
             end)
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -565,8 +585,10 @@ terminate 1: ok
 delete thread 1
 terminate 3: ok
 delete thread 3
-lua req cleanup
 delete thread 2
+terminate 4: ok
+delete thread 4
+lua req cleanup
 
 --- response_body
 done
@@ -582,7 +604,7 @@ main handler done
 --- config
     location /t {
         lua_check_client_abort on;
-        content_by_lua '
+        rewrite_by_lua '
             local ok, err = ngx.on_abort(function ()
                 ngx.log(ngx.NOTICE, "on abort called")
             end)
@@ -606,6 +628,7 @@ main handler done
                 ngx.say("done")
             end)
         ';
+        content_by_lua return;
     }
 --- request
 GET /t
@@ -616,8 +639,10 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-lua req cleanup
 delete thread 2
+terminate 3: ok
+delete thread 3
+lua req cleanup
 
 --- response_body
 2: cannot set on_abort: duplicate call
