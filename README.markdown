@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 30 October 2012.
+This document describes ngx_lua [v0.7.4](https://github.com/chaoslawful/lua-nginx-module/tags) released on 11 November 2012.
 
 Synopsis
 ========
@@ -1150,6 +1150,36 @@ lua_transform_underscores_in_response_headers
 Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](http://wiki.nginx.org/HttpLuaModule#ngx.header.HEADER) API to hypens (`-`).
 
 This directive was first introduced in the `v0.5.0rc32` release.
+
+lua_check_client_abort
+----------------------
+
+**syntax:** *lua_check_client_abort on|off*
+
+**default:** *lua_check_client_abort off*
+
+**context:** *http, server, location, location-if*
+
+This directive controls whether to check for premature client connection abortion.
+
+When this directive is turned on, the ngx_lua module will monitor the premature connection close event on the downstream connections. And when there is such an event, it will call the user Lua function callback (registered by [ngx.on_abort](http://wiki.nginx.org/HttpLuaModule#ngx.on_abort)) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
+
+When TCP keepalive is disabled, it is relying on the client side to close the socket gracefully (by sending a `FIN` packet or something like that). For (soft) real-time web applications, it is highly recommended to configure the [TCP keepalive](http://tldp.org/HOWTO/TCP-Keepalive-HOWTO/overview.html) support in your system's TCP stack implementation in order to detect "half-open" TCP connections in time.
+
+For example, on Linux, you can configure the standard [listen](http://wiki.nginx.org/HttpCoreModule#listen) directive in your `nginx.conf` file like this:
+
+
+    listen 80 so_keepalive=2s:2s:8;
+
+
+On FreeBSD, you can only tune the system-wide configuration for TCP keepalive, for example:
+
+    # sysctl net.inet.tcp.keepintvl=2000
+    # sysctl net.inet.tcp.keepidle=2000
+
+This directive was first introduced in the `v0.7.4` release.
+
+See also [ngx.on_abort](http://wiki.nginx.org/HttpLuaModule#ngx.on_abort).
 
 Nginx API for Lua
 =================
@@ -4450,6 +4480,43 @@ And it will generate the following output:
 
 
 This API was first enabled in the `v0.7.0` release.
+
+ngx.on_abort
+------------
+**syntax:** *ok, err = ngx.on_abort(callback)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
+
+Registers a user Lua function as the callback which gets called automatically when the client closes the (downstream) connection prematurely.
+
+Returns `1` if the callback is registered successfully or returns `nil` and a string describing the error otherwise.
+
+All the [Nginx API for Lua](http://wiki.nginx.org/HttpLuaModule#Nginx_API_for_Lua) can be used in the callback function because the function is run in a special "light thread", just as those "light threads" created by [ngx.thread.spawn](http://wiki.nginx.org/HttpLuaModule#ngx.thread.spawn).
+
+The callback function can decide what to do with the client abortion event all by itself. For example, it can simply ignore the event by doing nothing and the current Lua request handler will continue executing without interruptions. And the callback function can also decide to terminate everything by calling [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit), for example,
+
+
+    local function my_cleanup()
+        -- custom cleanup work goes here, like cancelling a pending DB transaction
+
+        -- now abort all the "light threads" running in the current request handler
+        ngx.exit(499)
+    end
+
+    local ok, err = ngx.on_abort(my_cleanup)
+    if not ok then
+        ngx.log(ngx.ERR, "failed to register the on_abort callback: ", err)
+        ngx.exit(500)
+    end
+
+
+When [lua_check_client_abort](http://wiki.nginx.org/HttpLuaModule#lua_check_client_abort) is set to `off` (which is the default), then this function call will always return the error message "lua_check_client_abort is off".
+
+According to the current implementation, this function can only be called once in a single request handler; subsequent calls will return the error message "duplicate call".
+
+This API was first introduced in the `v0.7.4` release.
+
+See also [lua_check_client_abort](http://wiki.nginx.org/HttpLuaModule#lua_check_client_abort).
 
 ndk.set_var.DIRECTIVE
 ---------------------
