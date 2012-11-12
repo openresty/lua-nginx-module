@@ -1144,22 +1144,19 @@ The various <code>*_by_lua</code> and <code>*_by_lua_file</code> configuration d
 
 The API is exposed to Lua in the form of two standard packages <code>ngx</code> and <code>ndk</code>. These packages are in the default global scope within ngx_lua and are always available within ngx_lua directives.
 
-The packages can be introduced into external Lua modules by using the [http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall package.seeall] option:
+The packages can be introduced into external Lua modules like this:
 
 <geshi lang="lua">
-    module("my_module", package.seeall)
+    local say = ngx.say
 
-    function say(a) ngx.say(a) end
+    module(...)
+
+    function foo(a) 
+        say(a) 
+    end
 </geshi>
 
-Alternatively, they can be imported to external Lua modules by using file scoped local Lua variables:
-
-<geshi lang="lua">
-    local ngx = ngx
-    module("my_module")
-
-    function say(a) ngx.say(a) end
-</geshi>
+Use of the [http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall package.seeall] flag is strongly discouraged due to its various bad side-effects.
 
 It is also possible to directly require the packages in external Lua modules:
 
@@ -4466,7 +4463,7 @@ Here is a complete small example:
 
 <geshi lang="lua">
     -- mydata.lua
-    module("mydata", package.seeall)
+    module(...)
  
     local data = {
         dog = 3,
@@ -4484,7 +4481,7 @@ and then accessing it from <code>nginx.conf</code>:
 <geshi lang="nginx">
     location /lua {
         content_lua_by_lua '
-            local mydata = require("mydata")
+            local mydata = require "mydata"
             ngx.say(mydata.get_age("dog"))
         ';
     }
@@ -4519,32 +4516,36 @@ This issue is due to limitations in the Nginx event model and only appears to af
 == Lua Variable Scope ==
 Care should be taken when importing modules and this form should be used:
 
-<geshi lang="nginx">
-        local xxx = require('xxx')
+<geshi lang="lua">
+    local xxx = require('xxx')
 </geshi>
 
 : instead of the old deprecated form:
 
-<geshi lang="nginx">
-        require('xxx')
+<geshi lang="lua">
+    require('xxx')
 </geshi>
 
 : If the old form is required, force reload the module for every request by using the <code>package.loaded.<module></code> command:
 
-<geshi lang="nginx">
-        package.loaded.xxx = nil
-        require('xxx')
+<geshi lang="lua">
+    package.loaded.xxx = nil
+    require('xxx')
 </geshi>
 
 It is recommended to always place the following piece of code at the end of Lua modules that use the I/O operations to prevent casual use of module-level global variables that are shared among ''all'' requests:
 
-<geshi lang="nginx">
-    getmetatable(foo.bar).__newindex = function (table, key, val)
-        error('Attempt to write to undeclared variable "' .. key .. '"')
-    end
+<geshi lang="lua">
+    local class_mt = {
+        -- to prevent use of casual module global variables
+        __newindex = function (table, key, val)
+            error('attempt to write to undeclared variable "' .. key .. '"')
+        end
+    }
+    setmetatable(_M, class_mt)
 </geshi>
 
-Assuming the current Lua module is named <code>foo.bar</code>, this will guarantee that local variables in module <code>foo.bar</code> functions have been declared as <code>local</code>. It prevents undesirable race conditions while accessing such variables. See [[#Data_Sharing_within_an_Nginx_Worker|Data Sharing within an Nginx Worker]] for the reasons behind this.
+This will guarantee that local variables in the Lua module functions are all declared with the <code>local</code> keyword, otherwise a runtime exception will be thrown. It prevents undesirable race conditions while accessing such variables. See [[#Data_Sharing_within_an_Nginx_Worker|Data Sharing within an Nginx Worker]] for the reasons behind this.
 
 == Locations Configured by Subrequest Directives of Other Modules ==
 The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives cannot capture locations that include the [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives.

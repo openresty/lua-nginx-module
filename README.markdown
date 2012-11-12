@@ -1191,22 +1191,19 @@ The various `*_by_lua` and `*_by_lua_file` configuration directives serve as gat
 
 The API is exposed to Lua in the form of two standard packages `ngx` and `ndk`. These packages are in the default global scope within ngx_lua and are always available within ngx_lua directives.
 
-The packages can be introduced into external Lua modules by using the [package.seeall](http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall) option:
+The packages can be introduced into external Lua modules like this:
 
 
-    module("my_module", package.seeall)
+    local say = ngx.say
 
-    function say(a) ngx.say(a) end
+    module(...)
+
+    function foo(a) 
+        say(a) 
+    end
 
 
-Alternatively, they can be imported to external Lua modules by using file scoped local Lua variables:
-
-
-    local ngx = ngx
-    module("my_module")
-
-    function say(a) ngx.say(a) end
-
+Use of the [package.seeall](http://www.lua.org/manual/5.1/manual.html#pdf-package.seeall) flag is strongly discouraged due to its various bad side-effects.
 
 It is also possible to directly require the packages in external Lua modules:
 
@@ -4622,7 +4619,7 @@ Here is a complete small example:
 
 
     -- mydata.lua
-    module("mydata", package.seeall)
+    module(...)
  
     local data = {
         dog = 3,
@@ -4640,7 +4637,7 @@ and then accessing it from `nginx.conf`:
 
     location /lua {
         content_lua_by_lua '
-            local mydata = require("mydata")
+            local mydata = require "mydata"
             ngx.say(mydata.get_age("dog"))
         ';
     }
@@ -4680,31 +4677,35 @@ Lua Variable Scope
 Care should be taken when importing modules and this form should be used:
 
 
-        local xxx = require('xxx')
+    local xxx = require('xxx')
 
 
 	instead of the old deprecated form:
 
 
-        require('xxx')
+    require('xxx')
 
 
 	If the old form is required, force reload the module for every request by using the `package.loaded.<module>` command:
 
 
-        package.loaded.xxx = nil
-        require('xxx')
+    package.loaded.xxx = nil
+    require('xxx')
 
 
 It is recommended to always place the following piece of code at the end of Lua modules that use the I/O operations to prevent casual use of module-level global variables that are shared among *all* requests:
 
 
-    getmetatable(foo.bar).__newindex = function (table, key, val)
-        error('Attempt to write to undeclared variable "' .. key .. '"')
-    end
+    local class_mt = {
+        -- to prevent use of casual module global variables
+        __newindex = function (table, key, val)
+            error('attempt to write to undeclared variable "' .. key .. '"')
+        end
+    }
+    setmetatable(_M, class_mt)
 
 
-Assuming the current Lua module is named `foo.bar`, this will guarantee that local variables in module `foo.bar` functions have been declared as `local`. It prevents undesirable race conditions while accessing such variables. See [Data Sharing within an Nginx Worker](http://wiki.nginx.org/HttpLuaModule#Data_Sharing_within_an_Nginx_Worker) for the reasons behind this.
+This will guarantee that local variables in the Lua module functions are all declared with the `local` keyword, otherwise a runtime exception will be thrown. It prevents undesirable race conditions while accessing such variables. See [Data Sharing within an Nginx Worker](http://wiki.nginx.org/HttpLuaModule#Data_Sharing_within_an_Nginx_Worker) for the reasons behind this.
 
 Locations Configured by Subrequest Directives of Other Modules
 --------------------------------------------------------------
