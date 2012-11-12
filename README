@@ -1314,6 +1314,14 @@ Directives
     "light threads" running in the current request's request handler when
     there is no user callback function registered.
 
+    According to the current implementation, however, if the client closes
+    the connection before the Lua code finishes reading the request body
+    data via ngx.req.socket, then ngx_lua will neither stop all the running
+    "light threads" nor call the user callback (if ngx.on_abort has been
+    called). Instead, the reading operation on ngx.req.socket will just
+    return the error message "client aborted" as the second return value
+    (the first return value is surely "nil").
+
     When TCP keepalive is disabled, it is relying on the client side to
     close the socket gracefully (by sending a "FIN" packet or something like
     that). For (soft) real-time web applications, it is highly recommended

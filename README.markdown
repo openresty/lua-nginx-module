@@ -1164,6 +1164,8 @@ This directive controls whether to check for premature client connection abortio
 
 When this directive is turned on, the ngx_lua module will monitor the premature connection close event on the downstream connections. And when there is such an event, it will call the user Lua function callback (registered by [ngx.on_abort](http://wiki.nginx.org/HttpLuaModule#ngx.on_abort)) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
 
+According to the current implementation, however, if the client closes the connection before the Lua code finishes reading the request body data via [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket), then ngx_lua will neither stop all the running "light threads" nor call the user callback (if [ngx.on_abort](http://wiki.nginx.org/HttpLuaModule#ngx.on_abort) has been called). Instead, the reading operation on [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket) will just return the error message "client aborted" as the second return value (the first return value is surely `nil`).
+
 When TCP keepalive is disabled, it is relying on the client side to close the socket gracefully (by sending a `FIN` packet or something like that). For (soft) real-time web applications, it is highly recommended to configure the [TCP keepalive](http://tldp.org/HOWTO/TCP-Keepalive-HOWTO/overview.html) support in your system's TCP stack implementation in order to detect "half-open" TCP connections in time.
 
 For example, on Linux, you can configure the standard [listen](http://wiki.nginx.org/HttpCoreModule#listen) directive in your `nginx.conf` file like this:
