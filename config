@@ -11,9 +11,9 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
     ngx_feature_path="$LUAJIT_INC"
     if [ $NGX_RPATH = YES ]; then
-        ngx_feature_libs="-R$LUAJIT_LIB -L$LUAJIT_LIB -lluajit-5.1 -lm"
+        ngx_feature_libs="-R$LUAJIT_LIB -L$LUAJIT_LIB -lluajit -lm"
     else
-        ngx_feature_libs="-L$LUAJIT_LIB -lluajit-5.1 -lm"
+        ngx_feature_libs="-L$LUAJIT_LIB -lluajit -lm"
     fi
 
     . auto/feature
@@ -131,9 +131,9 @@ END
             ngx_feature="LuaJIT library in /usr/"
             ngx_feature_path="/usr/include/luajit-2.0"
             if [ $NGX_RPATH = YES ]; then
-                ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1"
+                ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit"
             else
-                ngx_feature_libs="-L/usr/lib -lm -lluajit-5.1"
+                ngx_feature_libs="-L/usr/lib -lm -lluajit"
             fi
             . auto/feature
         fi
