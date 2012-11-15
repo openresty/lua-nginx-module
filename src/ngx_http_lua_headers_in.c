@@ -183,6 +183,7 @@ new_header:
 
     if (value->len == 0) {
         h->hash = 0;
+
     } else {
         h->hash = hv->hash;
     }
@@ -380,23 +381,24 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
         cur->nelts--;
 
         if (cur == l->last) {
-            if (l->nalloc > 1) {
-                l->nalloc--;
-                return NGX_OK;
-            }
-
-            /* l->nalloc == 1 */
-
-            part = &l->part;
-            while (part->next != cur) {
-                if (part->next == NULL) {
-                    return NGX_ERROR;
+            if (cur->nelts == 0) {
+#if 1
+                part = &l->part;
+                while (part->next != cur) {
+                    if (part->next == NULL) {
+                        return NGX_ERROR;
+                    }
+                    part = part->next;
                 }
-                part = part->next;
-            }
 
-            part->next = NULL;
-            l->last = part;
+                l->last = part;
+                part->next = NULL;
+                l->nalloc = part->nelts;
+#endif
+
+            } else {
+                l->nalloc = cur->nelts;
+            }
 
             return NGX_OK;
         }
@@ -424,7 +426,7 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
         cur->nelts--;
 
         if (cur == l->last) {
-            l->nalloc--;
+            l->nalloc = cur->nelts;
         }
 
         return NGX_OK;
@@ -441,12 +443,12 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
     new->nelts = cur->nelts - i - 1;
     new->next = cur->next;
 
-    l->nalloc = new->nelts;
-
     cur->nelts = i;
     cur->next = new;
+
     if (cur == l->last) {
         l->last = new;
+        l->nalloc = new->nelts;
     }
 
     return NGX_OK;
