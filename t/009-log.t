@@ -8,7 +8,7 @@ log_level('debug'); # to ensure any log-level can be outputed
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 #no_diff();
 #no_long_string();
@@ -434,4 +434,23 @@ GET /log
 --- error_code: 500
 --- error_log
 bad log level: 9
+
+
+
+=== TEST 22: \0 in the log message
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.log(ngx.WARN, "hello\\0world")
+            ngx.say("ok")
+        ';
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- error_log eval
+"2: hello\0world, client: "
 

@@ -181,7 +181,7 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         }
     }
 
-    buf = lua_newuserdata(L, size + 1);
+    buf = lua_newuserdata(L, size);
 
     p = ngx_copy(buf, name.data, name.len);
 
@@ -245,14 +245,12 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         }
     }
 
-    *p++ = '\0';
-
-    if (p - buf > (off_t) (size + 1)) {
+    if (p - buf > (off_t) size) {
         return luaL_error(L, "buffer error: %d > %d", (int) (p - buf),
-                          (int) (size + 1));
+                          (int) size);
     }
 
-    ngx_log_error(level, log, 0, "%s%s", ident, buf);
+    ngx_log_error(level, log, 0, "%s%*s", ident, (size_t) (p - buf), buf);
 
     return 0;
 }
