@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 15);
+plan tests => repeat_each() * (blocks() * 4 + 18);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -622,4 +622,133 @@ delete thread 2
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: abort with 499 in the user callback, but the header is already sent
+--- config
+    location /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+                ngx.exit(499)
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.send_headers()
+            ngx.sleep(0.7)
+            ngx.log(ngx.NOTICE, "main handler done")
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+lua check broken conn
+terminate 2: ok
+lua req cleanup
+delete thread 2
+delete thread 1
+
+--- timeout: 0.2
+--- ignore_response
+--- no_error_log
+[error]
+main handler done
+--- error_log
+client prematurely closed connection
+on abort called
+
+
+
+=== TEST 15: abort with 444 in the user callback, but the header is already sent
+--- config
+    location /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+                ngx.exit(444)
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.send_headers()
+            ngx.sleep(0.7)
+            ngx.log(ngx.NOTICE, "main handler done")
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+lua check broken conn
+terminate 2: ok
+lua req cleanup
+delete thread 2
+delete thread 1
+
+--- timeout: 0.2
+--- ignore_response
+--- no_error_log
+[error]
+main handler done
+--- error_log
+client prematurely closed connection
+on abort called
+
+
+
+=== TEST 16: abort with 408 in the user callback, but the header is already sent
+--- config
+    location /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+                ngx.exit(408)
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.send_headers()
+            ngx.sleep(0.7)
+            ngx.log(ngx.NOTICE, "main handler done")
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+lua check broken conn
+terminate 2: ok
+lua req cleanup
+delete thread 2
+delete thread 1
+
+--- timeout: 0.2
+--- ignore_response
+--- no_error_log
+[error]
+main handler done
+--- error_log
+client prematurely closed connection
+on abort called
 

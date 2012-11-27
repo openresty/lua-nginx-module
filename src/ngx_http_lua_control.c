@@ -321,8 +321,12 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "attempt to abort with pending subrequests");
     }
 
-    if (rc >= NGX_HTTP_SPECIAL_RESPONSE && ctx->headers_sent) {
-
+    if (ctx->headers_sent
+        && rc >= NGX_HTTP_SPECIAL_RESPONSE
+        && rc != NGX_HTTP_REQUEST_TIME_OUT
+        && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST
+        && rc != NGX_HTTP_CLOSE)
+    {
         if (rc != (ngx_int_t) r->headers_out.status) {
             return luaL_error(L, "attempt to set status %d via ngx.exit after "
                               "sending out the response status %d", (int) rc,
