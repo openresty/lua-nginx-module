@@ -20,7 +20,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 10);
+plan tests => repeat_each() * (blocks() * 4 + 14);
 
 our $HtmlDir = html_dir;
 
@@ -39,10 +39,11 @@ __DATA__
     server_tokens off;
     lua_socket_connect_timeout 100ms;
     resolver $TEST_NGINX_RESOLVER;
-    location /t {
+    resolver_timeout 1s;
+    location /t1 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("www.taobao.com", 12345)
+            local ok, err = sock:connect("www.google.com", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -54,25 +55,27 @@ __DATA__
         content_by_lua return;
     }
 --- request
-GET /t
+GET /t1
 --- response_body
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 100
 lua tcp socket connect timed out
-
+--- timeout: 5
 
 
 === TEST 2: sock:settimeout() overrides lua_socket_connect_timeout
 --- config
     server_tokens off;
     lua_socket_connect_timeout 60s;
+    lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    location /t {
+    resolver_timeout 1s;
+    location /t2 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(150)
-            local ok, err = sock:connect("www.taobao.com", 12345)
+            local ok, err = sock:connect("www.google.com", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -84,25 +87,30 @@ lua tcp socket connect timed out
         content_by_lua return;
     }
 --- request
-GET /t
+GET /t2
 --- response_body
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 150
-lua tcp socket connect timed out
+--- no_error_log
+[error]
+[alert]
+--- timeout: 5
 
 
 
 === TEST 3: sock:settimeout(nil) does not override lua_socket_connect_timeout
 --- config
     server_tokens off;
+    lua_socket_log_errors off;
     lua_socket_connect_timeout 102ms;
     resolver $TEST_NGINX_RESOLVER;
-    location /t {
+    resolver_timeout 1s;
+    location /t3 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(nil)
-            local ok, err = sock:connect("www.taobao.com", 12345)
+            local ok, err = sock:connect("www.google.com", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -114,12 +122,15 @@ lua tcp socket connect timed out
         content_by_lua return;
     }
 --- request
-GET /t
+GET /t3
 --- response_body
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+--- no_error_log
+[error]
+[alert]
+--- timeout: 5
 
 
 
@@ -127,12 +138,14 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
+    lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    location /t {
+    resolver_timeout 1s;
+    location /t4 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(0)
-            local ok, err = sock:connect("www.taobao.com", 12345)
+            local ok, err = sock:connect("www.google.com", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -144,12 +157,15 @@ lua tcp socket connect timed out
         content_by_lua return;
     }
 --- request
-GET /t
+GET /t4
 --- response_body
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+--- timeout: 5
+--- no_error_log
+[error]
+[alert]
 --- timeout: 5
 
 
@@ -158,12 +174,14 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
+    lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    location /t {
+    resolver_timeout 1s;
+    location /t5 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(-1)
-            local ok, err = sock:connect("www.taobao.com", 12345)
+            local ok, err = sock:connect("www.google.com", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -175,12 +193,15 @@ lua tcp socket connect timed out
         content_by_lua return;
     }
 --- request
-GET /t
+GET /t5
 --- response_body
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+--- no_error_log
+[error]
+[alert]
+--- timeout: 5
 
 
 
@@ -188,7 +209,6 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
     location /t {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()

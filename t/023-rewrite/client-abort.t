@@ -52,6 +52,7 @@ delete thread 1
 
 --- wait: 0.1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -82,6 +83,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -114,6 +116,7 @@ lua req cleanup
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -144,6 +147,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -177,6 +181,7 @@ delete thread 1
 
 --- wait: 1.1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- error_log
 bad things happen
@@ -215,6 +220,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -248,6 +254,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -280,6 +287,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -313,6 +321,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -344,6 +353,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -375,6 +385,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -412,6 +423,7 @@ delete thread 1)$
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -444,6 +456,7 @@ delete thread 1
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -476,6 +489,7 @@ delete thread 1
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -509,6 +523,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -565,6 +580,7 @@ delete thread 1
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -605,6 +621,7 @@ delete thread 2
 lua req cleanup
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -645,6 +662,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -750,6 +768,7 @@ lua req cleanup
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -786,6 +805,7 @@ delete thread 1
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
@@ -822,6 +842,7 @@ delete thread 1
 
 --- wait: 1
 --- timeout: 0.2
+--- abort
 --- ignore_response
 --- no_error_log
 [error]
