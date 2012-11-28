@@ -240,7 +240,7 @@ and the Lua `package.loaded` table will be cleared
 at the entry point of every request (such that Lua modules
 will not be cached either). With this in place, developers can adopt an edit-and-refresh approach.
 
-Please note however, that Lua code written inline within nginx.conf
+Please note however, that Lua code written inlined within nginx.conf
 such as those specified by [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_by_lua), [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua),
 [access_by_lua](http://wiki.nginx.org/HttpLuaModule#access_by_lua), and [rewrite_by_lua](http://wiki.nginx.org/HttpLuaModule#rewrite_by_lua) will *always* be
 cached because only the Nginx config file parser can correctly parse the `nginx.conf`
@@ -3560,6 +3560,8 @@ These two forms are fundamentally equivalent.
 
 This feature was first introduced in the `v0.3.1rc22` release.
 
+Please note that while internally the key-value pair is set atomically, the atomicity does not go across the method call boundary.
+
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
 ngx.shared.DICT.add
@@ -4104,7 +4106,7 @@ tcpsock:setkeepalive
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Puts the current socket's connection into the cosocket built-in connection pool and keep it alive until other [connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method calls request it or the associated maximal idle timeout is expired.
+Puts the current socket's connection immediately into the cosocket built-in connection pool and keep it alive until other [connect](http://wiki.nginx.org/HttpLuaModule#tcpsock:connect) method calls request it or the associated maximal idle timeout is expired.
 
 The first optional argument, `timeout`, can be used to specify the maximal idle timeout (in milliseconds) for the current connection. If omitted, the default setting in the [lua_socket_keepalive_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_keepalive_timeout) config directive will be used. If the `0` value is given, then the timeout interval is unlimited.
 
@@ -4636,7 +4638,7 @@ and then accessing it from `nginx.conf`:
 
 
     location /lua {
-        content_lua_by_lua '
+        content_by_lua '
             local mydata = require "mydata"
             ngx.say(mydata.get_age("dog"))
         ';

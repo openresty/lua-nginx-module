@@ -250,9 +250,9 @@ Directives
     request (such that Lua modules will not be cached either). With this in
     place, developers can adopt an edit-and-refresh approach.
 
-    Please note however, that Lua code written inline within nginx.conf such
-    as those specified by set_by_lua, content_by_lua, access_by_lua, and
-    rewrite_by_lua will *always* be cached because only the Nginx config
+    Please note however, that Lua code written inlined within nginx.conf
+    such as those specified by set_by_lua, content_by_lua, access_by_lua,
+    and rewrite_by_lua will *always* be cached because only the Nginx config
     file parser can correctly parse the "nginx.conf" file and the only ways
     to to reload the config file are to send a "HUP" signal or to restart
     Nginx.
@@ -3891,6 +3891,9 @@ Nginx API for Lua
 
     This feature was first introduced in the "v0.3.1rc22" release.
 
+    Please note that while internally the key-value pair is set atomically,
+    the atomicity does not go across the method call boundary.
+
     See also ngx.shared.DICT.
 
   ngx.shared.DICT.add
@@ -4570,9 +4573,9 @@ Nginx API for Lua
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-    Puts the current socket's connection into the cosocket built-in
-    connection pool and keep it alive until other connect method calls
-    request it or the associated maximal idle timeout is expired.
+    Puts the current socket's connection immediately into the cosocket
+    built-in connection pool and keep it alive until other connect method
+    calls request it or the associated maximal idle timeout is expired.
 
     The first optional argument, "timeout", can be used to specify the
     maximal idle timeout (in milliseconds) for the current connection. If
@@ -5218,7 +5221,7 @@ Data Sharing within an Nginx Worker
     and then accessing it from "nginx.conf":
 
         location /lua {
-            content_lua_by_lua '
+            content_by_lua '
                 local mydata = require "mydata"
                 ngx.say(mydata.get_age("dog"))
             ';
