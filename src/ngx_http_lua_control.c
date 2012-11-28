@@ -328,9 +328,9 @@ ngx_http_lua_ngx_exit(lua_State *L)
         && rc != NGX_HTTP_CLOSE)
     {
         if (rc != (ngx_int_t) r->headers_out.status) {
-            return luaL_error(L, "attempt to set status %d via ngx.exit after "
-                              "sending out the response status %d", (int) rc,
-                              (int) r->headers_out.status);
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
+                          "set status %i via ngx.exit after sending out the "
+                          "response status %ui", rc, r->headers_out.status);
         }
 
         rc = NGX_HTTP_OK;
