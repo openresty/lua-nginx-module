@@ -64,6 +64,7 @@ lua tcp socket connect timed out
 --- timeout: 5
 
 
+
 === TEST 2: sock:settimeout() overrides lua_socket_connect_timeout
 --- config
     server_tokens off;
