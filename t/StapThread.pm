@@ -200,12 +200,22 @@ F(ngx_http_lua_run_posted_threads) {
 }
 
 F(ngx_http_finalize_request) {
-    printf("finalize request: rc:%d c:%d\n", $rc, $r->main->count);
+    printf("finalize request %s: rc:%d c:%d a:%d\n", ngx_http_req_uri($r), $rc, $r->main->count, $r == $r->main);
     #if ($rc == -1) {
         #print_ubacktrace()
     #}
 }
-
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: %s rc=%d, status=%d a=%d\n", ngx_http_req_uri($r), $rc,
+         $r->headers_out->status, $r == $r->main)
+    #print_ubacktrace()
+}
+M(http-subrequest-done) {
+    printf("subrequest %s done\n", ngx_http_req_uri($r))
+}
+M(http-subrequest-wake-parent) {
+    printf("subrequest wake parent %s\n", ngx_http_req_uri($r->parent))
+}
 M(http-lua-user-coroutine-create) {
     p = gen_id($arg2)
     c = gen_id($arg3)
@@ -238,7 +248,7 @@ F(ngx_http_lua_sleep_resume) {
 
 M(http-lua-coroutine-done) {
     t = gen_id($arg2)
-    printf("terminate coro %d: %s\n", t, $arg3 ? "ok" : "fail")
+    printf("terminate coro %d: %s, waited by parent:%d, child cocotx: %p\n", t, $arg3 ? "ok" : "fail", $ctx->cur_co_ctx->waited_by_parent, $ctx->cur_co_ctx)
     //print_ubacktrace()
 }
 
@@ -250,16 +260,15 @@ F(ngx_http_lua_del_all_threads) {
     println("del all threads")
 }
 
-/*
 M(http-lua-info) {
     msg = user_string($arg1)
     printf("lua info: %s\n", msg)
 }
-*/
 
-F(ngx_http_lua_uthread_wait) {
-    t = gen_id($L)
-    printf("lua thread %d waiting\n", t)
+M(http-lua-user-thread-wait) {
+    p = gen_id($arg1)
+    c = gen_id($arg2)
+    printf("lua thread %d waiting on %d, child coctx: %p\n", p, c, $sub_coctx)
 }
 _EOC_
 

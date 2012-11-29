@@ -50,6 +50,7 @@ static ngx_int_t ngx_http_lua_subrequest_resume(ngx_http_request_t *r);
 static void ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static void ngx_http_lua_cancel_subreq(ngx_http_request_t *r);
+static ngx_int_t ngx_http_post_request_to_head(ngx_http_request_t *r);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -839,6 +840,10 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     ctx = psr_data->ctx;
 
     if (ctx->run_post_subrequest) {
+        if (r != r->connection->data) {
+            r->connection->data = r;
+        }
+
         return NGX_OK;
     }
 
@@ -952,13 +957,20 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         dd("free bufs: %p", pr_ctx->free_bufs);
     }
 
-    /* work-around issues in nginx's event module */
+    ngx_http_post_request_to_head(pr);
 
     if (r != r->connection->data) {
         r->connection->data = r;
     }
 
-    if (rc == NGX_ERROR) {
+    if (rc == NGX_ERROR
+        || rc == NGX_HTTP_CREATED
+        || rc == NGX_HTTP_NO_CONTENT
+        || (rc >= NGX_HTTP_SPECIAL_RESPONSE
+            && rc != NGX_HTTP_CLOSE
+            && rc != NGX_HTTP_REQUEST_TIME_OUT
+            && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST))
+    {
         return NGX_OK;
     }
 
@@ -1469,5 +1481,23 @@ ngx_http_lua_cancel_subreq(ngx_http_request_t *r)
     *p = NULL;
 
     r->connection->data = r->parent;
+}
+
+
+static ngx_int_t
+ngx_http_post_request_to_head(ngx_http_request_t *r)
+{
+    ngx_http_posted_request_t  *pr;
+
+    pr = ngx_palloc(r->pool, sizeof(ngx_http_posted_request_t));
+    if (pr == NULL) {
+        return NGX_ERROR;
+    }
+
+    pr->request = r;
+    pr->next = r->main->posted_requests;
+    r->main->posted_requests = pr;
+
+    return NGX_OK;
 }
 
