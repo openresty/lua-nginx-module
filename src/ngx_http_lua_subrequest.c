@@ -971,6 +971,25 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
             && rc != NGX_HTTP_REQUEST_TIME_OUT
             && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST))
     {
+        /* emulate ngx_http_special_response_handler */
+
+        if (rc > NGX_OK) {
+            r->err_status = rc;
+
+            r->expect_tested = 1;
+            r->headers_out.content_type.len = 0;
+            r->headers_out.content_length_n = 0;
+
+            ngx_http_clear_accept_ranges(r);
+            ngx_http_clear_last_modified(r);
+
+            rc = ngx_http_send_header(r);
+
+            if (rc == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+        }
+
         return NGX_OK;
     }
 
