@@ -59,6 +59,9 @@
 #define ngx_http_lua_probe_coroutine_done(r, co, success)                    \
     NGINX_LUA_HTTP_LUA_COROUTINE_DONE(r, co, success)
 
+#define ngx_http_lua_probe_user_thread_wait(parent, child)                   \
+    NGINX_LUA_HTTP_LUA_USER_THREAD_WAIT(parent, child)
+
 #else /* !(NGX_DTRACE) */
 
 #define ngx_http_lua_probe_info(s)
@@ -75,6 +78,7 @@
 #define ngx_http_lua_probe_thread_delete(r, thread, ctx)
 #define ngx_http_lua_probe_run_posted_thread(r, thread, status)
 #define ngx_http_lua_probe_coroutine_done(r, co, success)
+#define ngx_http_lua_probe_user_thread_wait(parent, child)
 
 #endif
 

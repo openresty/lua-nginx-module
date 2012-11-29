@@ -175,6 +175,7 @@ ngx_http_lua_uthread_wait(lua_State *L)
             break;
         }
 
+        ngx_http_lua_probe_user_thread_wait(L, sub_coctx->co);
         sub_coctx->waited_by_parent = 1;
     }
 

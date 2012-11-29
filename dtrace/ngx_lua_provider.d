@@ -47,6 +47,9 @@ provider nginx_lua {
 
     probe http__lua__coroutine__done(ngx_http_request_t *r, void *co,
             int success);
+
+    /* lua_State *parent, lua_State *child */
+    probe http__lua__user__thread__wait(void *parent, void *child);
 };
 
 
