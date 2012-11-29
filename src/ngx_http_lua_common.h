@@ -274,7 +274,7 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
 
     /* FIXME: we should use rbtree here to prevent O(n) lookup overhead */
-    ngx_array_t             *user_co_ctx; /* coroutine contexts for user
+    ngx_list_t              *user_co_ctx; /* coroutine contexts for user
                                              coroutines */
 
     ngx_http_lua_co_ctx_t    entry_co_ctx; /* coroutine context for the
