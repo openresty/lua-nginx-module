@@ -73,7 +73,6 @@ qr{upstream timed out \(\d+: Connection timed out\) while sending query to drizz
 
 
 
-
 === TEST 2: no error pages
 --- http_config
     upstream backend {
