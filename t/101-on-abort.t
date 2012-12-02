@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 18);
+plan tests => repeat_each() * (blocks() * 4 + 16);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -293,7 +293,7 @@ lua req cleanup
 
 --- timeout: 0.2
 --- abort
---- wait: 0.5
+--- wait: 0.6
 --- ignore_response
 --- error_log
 client prematurely closed connection
@@ -531,6 +531,7 @@ delete thread 2
 delete thread 3
 
 --- timeout: 0.2
+--- wait: 0.1
 --- abort
 --- ignore_response
 --- no_error_log
@@ -765,4 +766,25 @@ main handler done
 --- error_log
 client prematurely closed connection
 on abort called
+
+
+
+=== TEST 17: GC issue with the on_abort thread object
+--- config
+    location = /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            ngx.on_abort(function () end)
+            collectgarbage()
+            ngx.sleep(60)
+        ';
+    }
+--- request
+    GET /t
+--- abort
+--- timeout: 0.2
+--- ignore_response
+--- no_error_log
+[error]
+[alert]
 

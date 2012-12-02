@@ -386,12 +386,17 @@ ngx_http_lua_on_abort(lua_State *L)
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_pushvalue(L, -3);
+    lua_pushvalue(L, -2);
+
+    dd("on_wait thread 1: %p", lua_tothread(L, -1));
+
     coctx->co_ref = luaL_ref(L, -2);
     lua_pop(L, 1);
 
     coctx->is_uthread = 1;
     ctx->on_abort_co_ctx = coctx;
+
+    dd("on_wait thread 2: %p", coctx->co);
 
     coctx->co_status = NGX_HTTP_LUA_CO_SUSPENDED;
     coctx->parent_co_ctx = ctx->cur_co_ctx;
