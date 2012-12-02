@@ -1640,3 +1640,35 @@ ok
 [alert]
 --- timeout: 3
 
+
+
+=== TEST 31: simple user thread without I/O
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.sleep(0.1)
+                ngx.say("f")
+            end
+
+            ngx.thread.spawn(f)
+            collectgarbage()
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
+delete thread 1
+terminate 2: ok
+delete thread 2
+
+--- response_body
+f
+--- no_error_log
+[error]
+

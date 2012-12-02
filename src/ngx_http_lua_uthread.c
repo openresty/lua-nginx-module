@@ -66,7 +66,7 @@ ngx_http_lua_uthread_spawn(lua_State *L)
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_pushvalue(L, -3);
+    lua_pushvalue(L, -2);
     coctx->co_ref = luaL_ref(L, -2);
     lua_pop(L, 1);
 
