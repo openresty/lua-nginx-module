@@ -15,6 +15,7 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
 
 #no_shuffle();
+worker_connections(256);
 no_long_string();
 run_tests();
 
@@ -1638,7 +1639,7 @@ ok
 --- no_error_log
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
