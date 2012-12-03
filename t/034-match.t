@@ -750,6 +750,29 @@ hello, 1234
 hello
 hello
 nil
---- no_error_log
-[error]
+
+
+
+=== TEST 36: duplicate named pattern w/ extraction
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "(?<first>[a-z]+), (?<first>[0-9]+)", "D")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(table.concat(m.first,"-"))
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+hello
+1234
+hello-1234
 

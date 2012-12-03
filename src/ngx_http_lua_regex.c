@@ -485,24 +485,54 @@ exec:
     }
 
     for(j = 0 ; j < name_count; j++) {
+        size_t match_len;
         unsigned char* const data_start = &name_table[j * name_entry_size];
         const int pattern_num = data_start[0]<<8 | data_start[1]<<0;
         char* const name_start = (char*)&data_start[2];
         const int n = pattern_num*2;
 
-        lua_pushlstring(L, name_start, strlen(name_start));
+        if (re_comp.options & PCRE_DUPNAMES) {
+            lua_getfield (L, -1, name_start);
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
 
-        if (cap[n] < 0 || cap[n + 1] < 0){
-            lua_pushnil(L);
+                /* assume named matches will be unique, create an array of size 1. */
+                lua_pushlstring(L, name_start, strlen(name_start));
+                lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+                lua_rawset (L, -3);
+
+                lua_getfield (L, -1, name_start);
+            }
+
+            match_len = lua_objlen(L, -1);
+            if (cap[n] < 0) {
+                lua_pushnil(L);
+
+            } else {
+                lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                        cap[n + 1] - cap[n]);
+
+                dd("pushing capture %s for %s at %d", lua_tostring(L, -1), name_start, (int)match_len + 1);
+            }
+            lua_rawseti(L, -2, (int) match_len + 1);
+            /* pop the m[name_start] array we pulled in */
+            lua_pop(L, 1);
 
         } else {
-            lua_pushlstring(L, (char *) &subj.data[cap[n]],
-                    cap[n + 1] - cap[n]);
+            lua_pushlstring(L, name_start, strlen(name_start));
 
-            dd("pushing capture %s for %s", lua_tostring(L, -1), name_start);
+            if (cap[n] < 0 || cap[n + 1] < 0) {
+                lua_pushnil(L);
+
+            } else {
+                lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                        cap[n + 1] - cap[n]);
+
+                dd("pushing capture %s for %s", lua_tostring(L, -1), name_start);
+            }
+
+            lua_rawset (L, -3);
         }
-
-        lua_rawset (L, -3);
     }
 
 
@@ -1073,6 +1103,10 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_lua_regex_compile_t *re,
 
             case 'a':
                 re->options |= PCRE_ANCHORED;
+                break;
+
+            case 'D':
+                re->options |= PCRE_DUPNAMES;
                 break;
 
             default:

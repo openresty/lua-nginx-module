@@ -3266,6 +3266,13 @@ Specify `options` to control how the match operation will be performed. The foll
 
     x             extended mode (similar to Perl's /x modifier)
 
+    D             enable duplicate named pattern support. This allows named pattern
+                  names to be repeated, returning the captures in an array.
+                  e.g.
+                    local m = ngx.re.match("hello, world", "(?<named>world)|(?<named>hello)")
+                    -- m["named"] == {[1] = "world", [2] = hello}
+
+
 
 These options can be combined:
 
