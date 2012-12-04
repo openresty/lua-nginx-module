@@ -3192,6 +3192,14 @@ Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org
     end
 
 
+ngx.req.start_time
+------------------
+**syntax:** *secs = ngx.req.start_time()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a floating-point number for the elapsed time in seconds (including milliseconds as the decimal part) from the beginning of the current request.
+
 ngx.is_subrequest
 -----------------
 **syntax:** *value = ngx.is_subrequest*
