@@ -869,8 +869,6 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ctx->entered_access_phase = 0;
     ctx->entered_content_phase = 0;
 
-    ctx->on_abort_co_ctx = NULL;
-
     ctx->exit_code = 0;
     ctx->exited = 0;
     ctx->resume_handler = ngx_http_lua_wev_handler;
