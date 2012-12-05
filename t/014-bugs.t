@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 20);
+plan tests => repeat_each() * (blocks() * 2 + 21);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -692,4 +692,35 @@ a0
 hi
 --- response_headers
 Content-Type: application/json; charset=utf-8
+
+
+
+=== TEST 32: hang on upstream_next (from kindy)
+--- http_config
+    upstream xx {
+        server 127.0.0.1:8888;
+        server 127.0.0.1:8888;
+    }
+
+    server {
+        server_name "xx";
+        listen 8888;
+
+        return 444;
+    }
+--- config
+    location = /t {
+        proxy_pass http://xx;
+    }
+
+    location = /bad {
+        return 444;
+    }
+--- request
+    GET /t
+--- timeout: 1
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- error_log
+upstream prematurely closed connection while reading response header from upstream
 
