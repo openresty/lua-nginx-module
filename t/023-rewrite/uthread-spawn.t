@@ -1350,7 +1350,7 @@ status: 404
 status: 404
 --- no_error_log
 [error]
---- timeout: 3
+--- timeout: 6
 
 
 

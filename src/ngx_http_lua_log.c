@@ -61,7 +61,7 @@ ngx_http_lua_ngx_log(lua_State *L)
 
 /**
  * Override Lua print function, output message to nginx error logs. Equal to
- * ngx.log(ngx.ERR, ...).
+ * ngx.log(ngx.NOTICE, ...).
  *
  * @param L Lua state pointer
  * @retval always 0 (don't return values to Lua)
