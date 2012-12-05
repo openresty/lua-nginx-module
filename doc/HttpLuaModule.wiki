@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.5] released on 20 November 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.6] released on 5 December 2012.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -558,7 +558,7 @@ can be implemented in ngx_lua as:
         rewrite_by_lua '
             local res = ngx.location.capture("/check-spam")
             if res.body == "spam" then
-                ngx.redirect("/terms-of-use.html")
+                return ngx.redirect("/terms-of-use.html")
             end
         ';
  
@@ -2578,8 +2578,6 @@ We can also use the numerical code directly as the second <code>status</code> ar
 
 This method ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
-This method never returns.
-
 This method is very much like the [[HttpRewriteModule#rewrite|rewrite]] directive with the <code>redirect</code> modifier in the standard
 [[HttpRewriteModule]], for example, this <code>nginx.conf</code> snippet
 
@@ -2611,7 +2609,7 @@ URI arguments can be specified as well, for example:
     return ngx.redirect('/foo?a=3&b=4')
 </geshi>
 
-It is strongly recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.redirect(...)</code>.
+This method call terminates the current request's processing and never returns. It is recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.redirect(...)</code>, so as to be more explicit.
 
 == ngx.send_headers ==
 '''syntax:''' ''ngx.send_headers()''

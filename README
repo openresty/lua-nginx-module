@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.7.5
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 20
-    November 2012.
+    This document describes ngx_lua v0.7.6
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 5
+    December 2012.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -639,7 +639,7 @@ Directives
             rewrite_by_lua '
                 local res = ngx.location.capture("/check-spam")
                 if res.body == "spam" then
-                    ngx.redirect("/terms-of-use.html")
+                    return ngx.redirect("/terms-of-use.html")
                 end
             ';
 
@@ -2899,8 +2899,6 @@ Nginx API for Lua
     This method *must* be called before ngx.send_headers or explicit
     response body outputs by either ngx.print or ngx.say.
 
-    This method never returns.
-
     This method is very much like the rewrite directive with the "redirect"
     modifier in the standard [[HttpRewriteModule]], for example, this
     "nginx.conf" snippet
@@ -2923,8 +2921,9 @@ Nginx API for Lua
 
         return ngx.redirect('/foo?a=3&b=4')
 
-    It is strongly recommended to combine the "return" statement with this
-    call, i.e., "return ngx.redirect(...)".
+    This method call terminates the current request's processing and never
+    returns. It is recommended to combine the "return" statement with this
+    call, i.e., "return ngx.redirect(...)", so as to be more explicit.
 
   ngx.send_headers
     syntax: *ngx.send_headers()*

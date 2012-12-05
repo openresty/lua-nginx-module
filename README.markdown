@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 20 November 2012.
+This document describes ngx_lua [v0.7.6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 5 December 2012.
 
 Synopsis
 ========
@@ -580,7 +580,7 @@ can be implemented in ngx_lua as:
         rewrite_by_lua '
             local res = ngx.location.capture("/check-spam")
             if res.body == "spam" then
-                ngx.redirect("/terms-of-use.html")
+                return ngx.redirect("/terms-of-use.html")
             end
         ';
  
@@ -2658,8 +2658,6 @@ We can also use the numerical code directly as the second `status` argument:
 
 This method *must* be called before [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) or explicit response body outputs by either [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say).
 
-This method never returns.
-
 This method is very much like the [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive with the `redirect` modifier in the standard
 [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule), for example, this `nginx.conf` snippet
 
@@ -2691,7 +2689,7 @@ URI arguments can be specified as well, for example:
     return ngx.redirect('/foo?a=3&b=4')
 
 
-It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`.
+This method call terminates the current request's processing and never returns. It is recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`, so as to be more explicit.
 
 ngx.send_headers
 ----------------
