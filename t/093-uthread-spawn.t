@@ -1300,7 +1300,7 @@ status: 404
 status: 404
 --- no_error_log
 [error]
---- timeout: 3
+--- timeout: 6
 
 
 
@@ -1546,11 +1546,11 @@ delete thread 1
 ok
 --- no_error_log
 [error]
---- timeout: 3
+--- timeout: 6
 
 
 
-=== TEST 30: multiple user threads + subrequests returning 404 remotely (wait)
+=== TEST 30: multiple user threads + subrequests remotely (wait)
 --- config
     location /t {
         content_by_lua '
@@ -1639,7 +1639,7 @@ ok
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 
