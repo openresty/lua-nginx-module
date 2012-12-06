@@ -10,7 +10,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 #no_long_string();
@@ -152,4 +152,22 @@ GET /201
 GET /201
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
+
+
+
+=== TEST 10: set ngx.status before headers are sent
+--- config
+    location /t {
+        content_by_lua '
+            ngx.say("ok")
+            ngx.status = 201
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_code: 200
+--- error_log eval
+qr/\[error\] .*? attempt to set ngx\.status after sending out response headers/
 
