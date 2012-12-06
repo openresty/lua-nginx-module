@@ -1772,6 +1772,12 @@ before sending out the response headers.
     status = ngx.status
 </geshi>
 
+Setting <code>ngx.status</code> after the response header is sent out has no effect but leaving an error message in your nginx's error log file:
+
+<geshi lang="text">
+    attempt to set ngx.status after sending out response headers
+</geshi>
+
 == ngx.header.HEADER ==
 '''syntax:''' ''ngx.header.HEADER = VALUE''
 
@@ -4123,7 +4129,7 @@ By default, the corresponding Nginx handler (e.g., [[#rewrite_by_lua|rewrite_by_
 
 When the user "light thread" terminates with a Lua error, however, it will not abort other running "light threads" like the "entry thread" does.
 
-Due to the limitation in the Nginx subrequest model, it is not allowed to abort a running Nginx subrequest in general. So it is also prohibited to abort a running "light thread" that is pending on one ore more Nginx subrequests. You must call [[#ngx.thread.wait|ngx.thread.wait]] to wait for those "light thread" to terminate before quitting the "world".
+Due to the limitation in the Nginx subrequest model, it is not allowed to abort a running Nginx subrequest in general. So it is also prohibited to abort a running "light thread" that is pending on one ore more Nginx subrequests. You must call [[#ngx.thread.wait|ngx.thread.wait]] to wait for those "light thread" to terminate before quitting the "world". A notable exception here is that you can abort pending subrequests by calling [[#ngx.exit|ngx.exit]] with and only with the status code <code>ngx.ERROR</code> (-1), <code>408</code>, <code>444</code>, or <code>499</code>.
 
 The "light threads" are not scheduled in a pre-emptive way. In other words, no time-slicing is performed automatically. A "light thread" will keep running exclusively on the CPU until
 # a (nonblocking) I/O operation cannot be completed in a single run,
