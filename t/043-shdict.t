@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 no_long_string();
@@ -373,6 +373,9 @@ false expecting exactly two arguments, but only seen 1
 GET /test
 --- response_body
 false no memory false
+--- log_level: info
+--- error_log eval
+qr/\[info\] .* ngx_slab_alloc\(\) failed: no memory in lua_shared_dict zone "dogs"/
 
 
 
@@ -643,6 +646,9 @@ hello
 GET /test
 --- response_body
 false no memory true
+--- log_level: info
+--- error_log eval
+qr/\[info\] .* ngx_slab_alloc\(\) failed: no memory in lua_shared_dict zone "dogs"/
 
 
 
