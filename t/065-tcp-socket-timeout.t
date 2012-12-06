@@ -44,6 +44,7 @@ __DATA__
     server_tokens off;
     lua_socket_connect_timeout 100ms;
     resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()

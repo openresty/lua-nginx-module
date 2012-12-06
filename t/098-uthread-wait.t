@@ -264,6 +264,7 @@ delete thread 3
 terminate 1: ok
 delete thread 1
 
+--- wait: 0.1
 --- response_body
 f thread created: running
 g thread created: running

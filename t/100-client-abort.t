@@ -517,6 +517,7 @@ lua req cleanup
 delete thread 1
 
 --- timeout: 0.2
+--- wait: 0.1
 --- abort
 --- ignore_response
 --- no_error_log
