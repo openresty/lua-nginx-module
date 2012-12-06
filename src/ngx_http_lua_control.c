@@ -315,6 +315,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     if (ctx->no_abort
         && rc != NGX_ERROR
+        && rc != NGX_HTTP_CLOSE
         && rc != NGX_HTTP_REQUEST_TIME_OUT
         && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST)
     {

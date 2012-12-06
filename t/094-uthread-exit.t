@@ -1048,7 +1048,7 @@ after
 
 
 
-=== TEST 13: exit in user thread (entry thread is still pending on ngx.location.capture), with pending output
+=== TEST 13: exit(0) in user thread (entry thread is still pending on ngx.location.capture), with pending output
 --- config
     location /lua {
         client_body_timeout 12000ms;
@@ -1394,5 +1394,251 @@ free request
 attempt to abort with pending subrequests
 --- no_error_log
 [alert]
+[warn]
+
+
+
+=== TEST 17: exit(444) in user thread (entry thread is still pending on ngx.location.capture), with pending output
+--- config
+    location /lua {
+        client_body_timeout 12000ms;
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(444)
+            end
+
+            ngx.say("before")
+            ngx.thread.spawn(f)
+            ngx.say("after")
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("end")
+        ';
+    }
+
+    location = /sleep {
+        echo_sleep 0.2;
+    }
+--- request
+POST /lua
+--- more_headers
+Content-Length: 1024
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+M(timer-add) {
+    if ($arg2 == 200 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+add timer 100
+add timer 200
+expire timer 100
+terminate 2: ok
+delete thread 2
+delete thread 1
+delete timer 200
+free request
+
+--- ignore_response
+--- no_error_log
+[alert]
+[error]
+[warn]
+
+
+
+=== TEST 18: exit(408) in user thread (entry thread is still pending on ngx.location.capture), with pending output
+--- config
+    location /lua {
+        client_body_timeout 12000ms;
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(408)
+            end
+
+            ngx.say("before")
+            ngx.thread.spawn(f)
+            ngx.say("after")
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("end")
+        ';
+    }
+
+    location = /sleep {
+        echo_sleep 0.2;
+    }
+--- request
+POST /lua
+--- more_headers
+Content-Length: 1024
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+M(timer-add) {
+    if ($arg2 == 200 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+add timer 100
+add timer 200
+expire timer 100
+terminate 2: ok
+delete thread 2
+delete thread 1
+delete timer 200
+free request
+
+--- ignore_response
+--- no_error_log
+[alert]
+[error]
+[warn]
+
+
+
+=== TEST 19: exit(499) in user thread (entry thread is still pending on ngx.location.capture), with pending output
+--- config
+    location /lua {
+        client_body_timeout 12000ms;
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                ngx.sleep(0.1)
+                ngx.exit(499)
+            end
+
+            ngx.say("before")
+            ngx.thread.spawn(f)
+            ngx.say("after")
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("end")
+        ';
+    }
+
+    location = /sleep {
+        echo_sleep 0.2;
+    }
+--- request
+POST /lua
+--- more_headers
+Content-Length: 1024
+--- stap2 eval: $::StapScript
+--- stap eval
+<<'_EOC_' . $::GCScript;
+
+global timers
+
+F(ngx_http_free_request) {
+    println("free request")
+}
+
+M(timer-add) {
+    if ($arg2 == 200 || $arg2 == 100) {
+        timers[$arg1] = $arg2
+        printf("add timer %d\n", $arg2)
+    }
+}
+
+M(timer-del) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("delete timer %d\n", tm)
+        delete timers[$arg1]
+    }
+}
+
+M(timer-expire) {
+    tm = timers[$arg1]
+    if (tm == 200 || tm == 100) {
+        printf("expire timer %d\n", timers[$arg1])
+        delete timers[$arg1]
+    }
+}
+_EOC_
+
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+add timer 100
+add timer 200
+expire timer 100
+terminate 2: ok
+delete thread 2
+delete thread 1
+delete timer 200
+free request
+
+--- ignore_response
+--- no_error_log
+[alert]
+[error]
 [warn]
 
