@@ -3122,6 +3122,7 @@ void
 ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 {
     ngx_int_t                   rc;
+    ngx_event_t                *rev;
     ngx_http_lua_ctx_t         *ctx;
 
     if (r->done) {
@@ -3141,12 +3142,27 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
         return;
     }
 
-    if (ctx->on_abort_co_ctx == NULL
-        || ctx->on_abort_co_ctx->co_status != NGX_HTTP_LUA_CO_SUSPENDED)
-    {
+    if (ctx->on_abort_co_ctx == NULL) {
         r->connection->error = 1;
         ngx_http_lua_request_cleanup(r);
         ngx_http_finalize_request(r, rc);
+        return;
+    }
+
+    if (ctx->on_abort_co_ctx->co_status != NGX_HTTP_LUA_CO_SUSPENDED) {
+
+        /* on_abort already run for the current request handler */
+
+        rev = r->connection->read;
+
+        if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && rev->active) {
+            if (ngx_del_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
+                ngx_http_lua_request_cleanup(r);
+                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                return;
+            }
+        }
+
         return;
     }
 
