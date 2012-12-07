@@ -124,7 +124,7 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 20
+n = 21
 --- no_error_log
 [error]
 
@@ -146,7 +146,7 @@ n = 20
 --- request
 GET /test
 --- response_body
-n = 20
+n = 21
 --- no_error_log
 [error]
 
@@ -173,7 +173,7 @@ n = 20
 --- request
 GET /test
 --- response_body
-n = 20
+n = 21
 --- no_error_log
 [error]
 

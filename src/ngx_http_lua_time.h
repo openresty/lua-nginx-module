@@ -6,7 +6,7 @@
 
 
 void ngx_http_lua_inject_time_api(lua_State *L);
+void ngx_http_lua_inject_req_time_api(lua_State *L);
 
 
 #endif /* NGX_HTTP_LUA_TIME_H */
-

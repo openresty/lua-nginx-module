@@ -4,6 +4,7 @@
 #include "ddebug.h"
 
 #include "ngx_http_lua_time.h"
+#include "ngx_http_lua_util.h"
 
 
 static int ngx_http_lua_ngx_today(lua_State *L);
@@ -15,6 +16,7 @@ static int ngx_http_lua_ngx_cookie_time(lua_State *L);
 static int ngx_http_lua_ngx_http_time(lua_State *L);
 static int ngx_http_lua_ngx_parse_http_time(lua_State *L);
 static int ngx_http_lua_ngx_update_time(lua_State *L);
+static int ngx_http_lua_ngx_req_start_time(lua_State *L);
 
 
 static int
@@ -175,6 +177,25 @@ ngx_http_lua_ngx_parse_http_time(lua_State *L)
 }
 
 
+static int
+ngx_http_lua_ngx_req_start_time(lua_State *L)
+{
+    ngx_http_request_t  *r;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    lua_pushnumber(L, (lua_Number) (r->start_sec + r->start_msec / 1000.0L));
+    return 1;
+}
+
+
 void
 ngx_http_lua_inject_time_api(lua_State *L)
 {
@@ -211,7 +232,15 @@ ngx_http_lua_inject_time_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_http_time);
     lua_setfield(L, -2, "http_time");
 
-	lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
+    lua_pushcfunction(L, ngx_http_lua_ngx_parse_http_time);
     lua_setfield(L, -2, "parse_http_time");
+}
+
+
+void
+ngx_http_lua_inject_req_time_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_start_time);
+    lua_setfield(L, -2, "start_time");
 }
 
