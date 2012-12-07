@@ -279,7 +279,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         return luaL_argerror(L, 2, msg);
     }
 
-#if LUA_HAVE_PCRE_JIT
+#if (LUA_HAVE_PCRE_JIT)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
 
@@ -310,7 +310,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "pcre JIT compiling result: %d", jitted);
         }
-#   endif /* NGX_DEBUG */
+#   endif /* !(NGX_DEBUG) */
 
     } else {
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
@@ -324,18 +324,18 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
         if (msg != NULL) {
             ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "pcre_study failed with PCRE_STUDY_JIT_COMPILE: %s (%p)",
-                msg, sd);
+                           "pcre_study failed with PCRE_STUDY_JIT_COMPILE: "
+                           "%s (%p)", msg, sd);
         }
 #   endif /* NGX_DEBUG */
     }
 
-#else  /* LUA_HAVE_PCRE_JIT */
+#else  /* !(LUA_HAVE_PCRE_JIT) */
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "your pcre build does not have JIT support and "
-                "the \"j\" regex option is ignored");
+                       "your pcre build does not have JIT support and "
+                       "the \"j\" regex option is ignored");
     }
 
 #endif /* LUA_HAVE_PCRE_JIT */
