@@ -1464,7 +1464,7 @@ upstream timed out
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering on;
         proxy_pass http://127.0.0.1:19113;
     }
