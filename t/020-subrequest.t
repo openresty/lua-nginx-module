@@ -85,7 +85,7 @@ DELETE
         proxy_pass http://127.0.0.1:$server_port/other;
     }
 
-    location /lua {
+    location /t {
         content_by_lua '
             res = ngx.location.capture("/foo",
                 { method = ngx.HTTP_POST });
@@ -94,7 +94,7 @@ DELETE
         ';
     }
 --- request
-GET /lua
+GET /t
 --- response_body
 POST
 --- no_error_log
@@ -1464,7 +1464,7 @@ upstream timed out
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering on;
         proxy_pass http://127.0.0.1:19113;
     }
