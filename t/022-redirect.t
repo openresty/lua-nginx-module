@@ -15,9 +15,6 @@ plan tests => repeat_each() * (blocks() * 3 + 1);
 #no_diff();
 #no_long_string();
 
-$ENV{TEST_NGINX_PORT} ||= 1984;
-$ENV{TEST_NGINX_CLIENT_PORT} ||= 1984;
-
 run_tests();
 
 __DATA__
@@ -113,7 +110,7 @@ GET /read
         echo hello, world;
     }
     location /proxy {
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT/echo;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
     }
     location /read {
         content_by_lua '
@@ -153,7 +150,7 @@ Location: http://google.com/foo?bar=3
         echo hello, world;
     }
     location /proxy {
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT/echo;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
     }
     location /read {
         content_by_lua '

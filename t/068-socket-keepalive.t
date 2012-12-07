@@ -9,7 +9,6 @@ plan tests => repeat_each() * (blocks() * 5 + 7);
 
 our $HtmlDir = html_dir;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 $ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
@@ -175,7 +174,7 @@ received: OK
    server_tokens off;
    keepalive_timeout 100ms;
    location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -251,7 +250,7 @@ done
    location /t {
         keepalive_timeout 60s;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -325,7 +324,7 @@ done
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 100ms;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -403,7 +402,7 @@ qr/lua tcp socket connection pool size: 30\b/]
        lua_socket_keepalive_timeout 100ms;
        lua_socket_pool_size 1;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -480,7 +479,7 @@ qr/lua tcp socket connection pool size: 1\b/]
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 0;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -555,7 +554,7 @@ qr/lua tcp socket connection pool size: 30\b/]
         keepalive_timeout 60s;
         lua_socket_keepalive_timeout 60s;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -633,7 +632,7 @@ qr/lua tcp socket connection pool size: 30\b/]
        lua_socket_keepalive_timeout 100ms;
        lua_socket_pool_size 100;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -710,7 +709,7 @@ qr/lua tcp socket connection pool size: 25\b/]
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 1000ms;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua '
             local port = ngx.var.port
 
@@ -1024,7 +1023,7 @@ lua tcp socket keepalive create connection pool for key "B"
             local test = require "test"
             local port = ngx.var.port
             test.go($TEST_NGINX_MEMCACHED_PORT, "foo")
-            test.go($TEST_NGINX_CLIENT_PORT, "foo")
+            test.go($TEST_NGINX_SERVER_PORT, "foo")
         ';
     }
 --- user_files
@@ -1186,7 +1185,7 @@ lua tcp socket get keepalive peer: using connection
             local test = require "test"
             local port = ngx.var.port
             test.go($TEST_NGINX_MEMCACHED_PORT, 3.14)
-            test.go($TEST_NGINX_CLIENT_PORT, 3.14)
+            test.go($TEST_NGINX_SERVER_PORT, 3.14)
         ';
     }
 --- user_files
@@ -1233,7 +1232,7 @@ lua tcp socket get keepalive peer: using connection
             local test = require "test"
             local port = ngx.var.port
             test.go($TEST_NGINX_MEMCACHED_PORT, nil)
-            test.go($TEST_NGINX_CLIENT_PORT, nil)
+            test.go($TEST_NGINX_SERVER_PORT, nil)
         ';
     }
 --- user_files
@@ -1274,7 +1273,7 @@ bad argument #3 to 'connect' (bad "pool" option type: nil)
             local test = require "test"
             local port = ngx.var.port
             test.go($TEST_NGINX_MEMCACHED_PORT, {})
-            test.go($TEST_NGINX_CLIENT_PORT, {})
+            test.go($TEST_NGINX_SERVER_PORT, {})
         ';
     }
 --- user_files
@@ -1315,7 +1314,7 @@ bad argument #3 to 'connect' (bad "pool" option type: table)
             local test = require "test"
             local port = ngx.var.port
             test.go($TEST_NGINX_MEMCACHED_PORT, true)
-            test.go($TEST_NGINX_CLIENT_PORT, false)
+            test.go($TEST_NGINX_SERVER_PORT, false)
         ';
     }
 --- user_files

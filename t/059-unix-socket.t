@@ -7,7 +7,6 @@ repeat_each(2);
 
 plan tests => blocks() * repeat_each() * 2;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 no_long_string();

@@ -9,7 +9,6 @@ plan tests => repeat_each() * (blocks() * 3);
 
 our $HtmlDir = html_dir;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 #$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 no_long_string();

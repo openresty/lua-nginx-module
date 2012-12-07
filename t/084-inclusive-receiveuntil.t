@@ -9,7 +9,6 @@ plan tests => repeat_each() * (blocks() * 3);
 
 our $HtmlDir = html_dir;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 no_long_string();
@@ -24,7 +23,7 @@ __DATA__
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -96,7 +95,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -168,7 +167,7 @@ close: nil closed
     server_tokens off;
     lua_socket_buffer_size 1;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -240,7 +239,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -311,7 +310,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -382,7 +381,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -453,7 +452,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -520,7 +519,7 @@ bad "inclusive" option value type: string
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua '
             -- collectgarbage("collect")
@@ -587,7 +586,7 @@ bad "inclusive" option value type: string
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         lua_socket_buffer_size 1;
 
         content_by_lua '
@@ -664,7 +663,7 @@ close: nil closed
 --- config
     server_tokens off;
     location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         lua_socket_buffer_size 1;
 
         content_by_lua '

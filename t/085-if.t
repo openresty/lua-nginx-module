@@ -12,8 +12,6 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 + 2);
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
-
 #no_diff();
 #no_long_string();
 run_tests();
@@ -188,7 +186,7 @@ This test case requires the following patch for the nginx core:
 http://mailman.nginx.org/pipermail/nginx-devel/2012-June/002374.html
 --- config
     location /proxy-pass-uri {
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT/;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/;
 
         set $true 1;
 

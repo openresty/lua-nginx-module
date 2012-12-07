@@ -14,8 +14,6 @@ plan tests => repeat_each() * (blocks() * 2 + 5);
 
 no_root_location();
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= $ENV{TEST_NGINX} ||= server_port();
-
 #no_shuffle();
 #no_diff();
 no_long_string();
@@ -457,7 +455,7 @@ foo: /foo?world
             ngx.req.set_uri_args("hello")
             ngx.req.set_uri("/bar")
         ';
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
     GET /foo?world
@@ -477,7 +475,7 @@ HTTP/1.0 hello
             ngx.req.set_uri("/bar")
             ngx.req.set_uri_args({["ca t"] = "%"})
         ';
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
     GET /foo?world
@@ -982,7 +980,7 @@ CORE::join("", @k);
             ngx.req.set_uri_args({a = 3, b = {5, 6}})
             ngx.req.set_uri("/bar")
         ';
-        proxy_pass http://127.0.0.1:$TEST_NGINX_CLIENT_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
     GET /foo?world

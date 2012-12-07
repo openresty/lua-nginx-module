@@ -8,7 +8,6 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 3);
 
 $ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 
 #log_level "warn";
 #worker_connections(1024);

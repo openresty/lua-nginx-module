@@ -9,7 +9,6 @@ plan tests => repeat_each() * (blocks() * 5 + 8);
 
 our $HtmlDir = html_dir;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 #$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
@@ -177,7 +176,7 @@ received: OK
    server_tokens off;
    keepalive_timeout 100ms;
    location /t {
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -255,7 +254,7 @@ done
    location /t {
         keepalive_timeout 60s;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -331,7 +330,7 @@ done
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 100ms;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -411,7 +410,7 @@ qr/lua tcp socket connection pool size: 30\b/]
        lua_socket_keepalive_timeout 100ms;
        lua_socket_pool_size 1;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -490,7 +489,7 @@ qr/lua tcp socket connection pool size: 1\b/]
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 0;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -567,7 +566,7 @@ qr/lua tcp socket connection pool size: 30\b/]
         keepalive_timeout 60s;
         lua_socket_keepalive_timeout 60s;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -647,7 +646,7 @@ qr/lua tcp socket connection pool size: 30\b/]
        lua_socket_keepalive_timeout 100ms;
        lua_socket_pool_size 100;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 
@@ -726,7 +725,7 @@ qr/lua tcp socket connection pool size: 25\b/]
        keepalive_timeout 60s;
        lua_socket_keepalive_timeout 1000ms;
 
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         rewrite_by_lua '
             local port = ngx.var.port
 

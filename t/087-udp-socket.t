@@ -9,7 +9,6 @@ plan tests => repeat_each() * (3 * blocks() + 6);
 
 our $HtmlDir = html_dir;
 
-$ENV{TEST_NGINX_CLIENT_PORT} ||= server_port();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -148,7 +147,7 @@ GET /t
     server_tokens off;
     location /t {
         #set $port 5000;
-        set $port $TEST_NGINX_CLIENT_PORT;
+        set $port $TEST_NGINX_SERVER_PORT;
         #set $port 1234;
 
         content_by_lua '

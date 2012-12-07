@@ -698,13 +698,13 @@ Content-Type: application/json; charset=utf-8
 === TEST 32: hang on upstream_next (from kindy)
 --- http_config
     upstream xx {
-        server 127.0.0.1:$TEST_NGINX_PORT;
-        server 127.0.0.1:$TEST_NGINX_PORT;
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 
     server {
         server_name "xx";
-        listen $TEST_NGINX_PORT;
+        listen $TEST_NGINX_SERVER_PORT;
 
         return 444;
     }
