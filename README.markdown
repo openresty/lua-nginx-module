@@ -1939,6 +1939,24 @@ Note that `ngx.header` is not a normal Lua table and as such, it is not possible
 
 For reading *request* headers, use the [ngx.req.get_headers](http://wiki.nginx.org/HttpLuaModule#ngx.req.get_headers) function instead.
 
+ngx.req.start_time
+------------------
+**syntax:** *secs = ngx.req.start_time()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a floating-point number representing the timestamp (including milliseconds as the decimal part) when the current request was created.
+
+The following example emulates the `$request_time` variable value (provided by [HttpLogModule](http://wiki.nginx.org/HttpLogModule)) in pure Lua:
+
+
+    local request_time = ngx.now() - ngx.req.start_time()
+
+
+This function was first introduced in the `v0.7.7` release.
+
+See also [ngx.now](http://wiki.nginx.org/HttpLuaModule#ngx.now) and [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time).
+
 ngx.req.get_method
 ------------------
 **syntax:** *method_name = ngx.req.get_method()*
@@ -2367,6 +2385,14 @@ is equivalent to
     ngx.req.clear_header("X-Foo")
 
 
+ngx.req.clear_header
+--------------------
+**syntax:** *ngx.req.clear_header(header_name)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua**
+
+Clear the current request's request header named `header_name`. None of the current request's subrequests will be affected.
+
 ngx.req.read_body
 -----------------
 **syntax:** *ngx.req.read_body()*
@@ -2570,14 +2596,6 @@ The socket object returned by this method is usually used to read the current re
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
 
 This function was first introduced in the `v0.5.0rc1` release.
-
-ngx.req.clear_header
---------------------
-**syntax:** *ngx.req.clear_header(header_name)*
-
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua**
-
-Clear the current request's request header named `header_name`. None of the current request's subrequests will be affected.
 
 ngx.exec
 --------
@@ -3121,7 +3139,7 @@ ngx.now
 
 Returns a floating-point number for the elapsed time in seconds (including milliseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-Use the Nginx core [timer_resolution](http://wiki.nginx.org/CoreModule#timer_resolution) directive to adjust the accuracy or forcibly update the Nginx time cache by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
+You can forcibly update the Nginx time cache by calling [ngx.update_time](http://wiki.nginx.org/HttpLuaModule#ngx.update_time) first.
 
 This API was first introduced in `v0.3.1rc32`.
 
@@ -3194,19 +3212,6 @@ Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org
     if time == nil then
         ...
     end
-
-
-ngx.req.start_time
-------------------
-**syntax:** *secs = ngx.req.start_time()*
-
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
-
-Returns a floating-point number representing the timestamp (including milliseconds as the decimal part) when the current request was created.
-
-The following example is similar to $request_time in Nginx log module :
-
-    local request_time = ngx.now() - ngx.req.start_time()
 
 
 ngx.is_subrequest
