@@ -3196,6 +3196,19 @@ Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org
     end
 
 
+ngx.req.start_time
+------------------
+**syntax:** *secs = ngx.req.start_time()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a floating-point number representing the timestamp (including milliseconds as the decimal part) when the current request was created.
+
+The following example is similar to $request_time in Nginx log module :
+
+    local request_time = ngx.now() - ngx.req.start_time()
+
+
 ngx.is_subrequest
 -----------------
 **syntax:** *value = ngx.is_subrequest*

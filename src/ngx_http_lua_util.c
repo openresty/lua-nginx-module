@@ -1999,7 +1999,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 20 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 21 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(log, L);
 
@@ -2012,6 +2012,8 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_socket_api(L);
 
     ngx_http_lua_inject_req_method_api(L);
+
+    ngx_http_lua_inject_req_time_api(L);
 
     lua_setfield(L, -2, "req");
 }
@@ -3271,4 +3273,3 @@ ngx_http_lua_test_expect(ngx_http_request_t *r)
 
     return NGX_ERROR;
 }
-
