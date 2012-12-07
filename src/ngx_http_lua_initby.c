@@ -52,7 +52,7 @@ ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status)
             msg = "unknown error";
         }
 
-        ngx_log_error(NGX_LOG_ERR, log, 0, "failed run init_by_lua*: %s",
+        ngx_log_error(NGX_LOG_ERR, log, 0, "failed to run init_by_lua*: %s",
                       msg);
         lua_pop(L, 1);
     }
