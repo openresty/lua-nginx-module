@@ -260,7 +260,11 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
             "coroutine.wrap = function(f)\n"
                "local co = create(f)\n"
                "return function(...) return select(2, resume(co, ...)) end\n"
-            "end";
+            "end\n"
+#if 0
+            "debug.sethook(function () collectgarbage() end, 'rl', 1)"
+#endif
+            ;
 
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "coroutine.wrap");
     }

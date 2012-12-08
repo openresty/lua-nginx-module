@@ -1187,3 +1187,39 @@ delete thread 1
 --- error_log
 lua entry thread aborted: runtime error: [string "content_by_lua"]:11: attempt to wait on a coroutine that is not a user thread
 
+
+
+=== TEST 20: lua backtrace dumper may access dead parent coroutines
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.sleep(0.1)
+                collectgarbage()
+                error("f done")
+            end
+
+            ngx.thread.spawn(f)
+            ngx.say("ok")
+
+            collectgarbage()
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 1: ok
+delete thread 1
+terminate 2: fail
+delete thread 2
+
+--- response_body
+ok
+
+--- error_log
+lua user thread aborted: runtime error: [string "content_by_lua"]:5: f done
+

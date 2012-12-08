@@ -2660,7 +2660,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
 
         /* check if the coroutine has a parent coroutine*/
         coctx = coctx->parent_co_ctx;
-        if (!coctx) {
+        if (!coctx || coctx->co_status == NGX_HTTP_LUA_CO_DEAD) {
             break;
         }
 
