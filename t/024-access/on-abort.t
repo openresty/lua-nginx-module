@@ -68,7 +68,7 @@ lua req cleanup
 
 --- timeout: 0.2
 --- abort
---- wait: 0.5
+--- wait: 0.7
 --- ignore_response
 --- no_error_log
 [error]
