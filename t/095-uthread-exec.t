@@ -337,6 +337,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 end
 --- error_log
