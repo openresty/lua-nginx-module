@@ -795,6 +795,7 @@ ngx_http_lua_pool_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
 static int
 ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 {
+    u_char                      *p;
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
@@ -817,7 +818,24 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         return luaL_error(L, "expecting 1 or 2 arguments but seen %d", n);
     }
 
-    name.data = (u_char *) luaL_checklstring(L, 1, &name.len);
+    p = (u_char *) luaL_checklstring(L, 1, &name.len);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
+    name.data = ngx_palloc(r->pool, name.len + 1);
+    if (name.data == NULL) {
+        return luaL_error(L, "out of memory");
+    }
+
+    ngx_memcpy(name.data, p, name.len);
+    name.data[name.len] = '\0';
 
     if (n == 2) {
         luaL_checktype(L, 2, LUA_TBOOLEAN);
@@ -828,15 +846,6 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     }
 
     dd("clean: %d", (int) clean);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    if (r == NULL) {
-        return luaL_error(L, "request object not found");
-    }
 
     if (r->request_body == NULL) {
 
