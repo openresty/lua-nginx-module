@@ -3474,7 +3474,7 @@ Nginx API for Lua
     the time stamp in seconds (like those returned from ngx.time).
 
         ngx.say(ngx.http_time(1290079655))
-            -- yields "Thu, 18 Nov 10 11:27:35 GMT"
+            -- yields "Thu, 18 Nov 2010 11:27:35 GMT"
 
   ngx.parse_http_time
     syntax: *sec = ngx.parse_http_time(str)*
@@ -3485,7 +3485,7 @@ Nginx API for Lua
     Parse the http time string (as returned by ngx.http_time) into seconds.
     Returns the seconds or "nil" if the input string is in bad forms.
 
-        local time = ngx.parse_http_time("Thu, 18 Nov 10 11:27:35 GMT")
+        local time = ngx.parse_http_time("Thu, 18 Nov 2010 11:27:35 GMT")
         if time == nil then
             ...
         end
