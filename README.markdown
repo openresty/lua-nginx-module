@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.8](https://github.com/chaoslawful/lua-nginx-module/tags) released on 8 December 2012.
+This document describes ngx_lua [v0.7.8](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 December 2012.
 
 Synopsis
 ========
@@ -3196,7 +3196,7 @@ Returns a formated string can be used as the http header time (for example, bein
 
 
     ngx.say(ngx.http_time(1290079655))
-        -- yields "Thu, 18 Nov 10 11:27:35 GMT"
+        -- yields "Thu, 18 Nov 2010 11:27:35 GMT"
 
 
 ngx.parse_http_time
@@ -3208,7 +3208,7 @@ ngx.parse_http_time
 Parse the http time string (as returned by [ngx.http_time](http://wiki.nginx.org/HttpLuaModule#ngx.http_time)) into seconds. Returns the seconds or `nil` if the input string is in bad forms.
 
 
-    local time = ngx.parse_http_time("Thu, 18 Nov 10 11:27:35 GMT")
+    local time = ngx.parse_http_time("Thu, 18 Nov 2010 11:27:35 GMT")
     if time == nil then
         ...
     end

@@ -9,7 +9,7 @@ Status
 
 Version
     This document describes ngx_lua v0.7.8
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 8
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 9
     December 2012.
 
 Synopsis
