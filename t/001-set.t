@@ -157,7 +157,7 @@ GET /set-both
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-varaible "b" not found for writing; maybe it is a built-in variable that is not changeable or you sould have used "set $b '';" earlier in the config file
+varaible "b" not found for writing; maybe it is a built-in variable that is not changeable or you forgot to use "set $b '';" in the config file to define it first
 
 
 
@@ -489,7 +489,7 @@ world
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-varaible "arg_foo" not found for writing; maybe it is a built-in variable that is not changeable or you sould have used "set $arg_foo '';" earlier in the config file
+varaible "arg_foo" not found for writing; maybe it is a built-in variable that is not changeable or you forgot to use "set $arg_foo '';" in the config file to define it first
 
 
 
