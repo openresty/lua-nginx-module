@@ -2120,7 +2120,10 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    ctx->exit_code);
 
 #if 1
-    if (!ctx->headers_sent && ctx->exit_code >= NGX_HTTP_OK) {
+    if (!ctx->headers_sent
+        && r->headers_out.status == 0
+        && ctx->exit_code >= NGX_HTTP_OK)
+    {
         r->headers_out.status = ctx->exit_code;
     }
 #endif
