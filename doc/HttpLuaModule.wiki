@@ -4539,7 +4539,7 @@ This issue is due to limitations in the Nginx event model and only appears to af
 * As the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] when the standard Lua 5.1 interpreter is used and the <code>attempt to yield across metamethod/C-call boundary</code> error will be produced. Please use LuaJIT 2.0, which supports a fully resumable VM, to avoid this.
 
 == Lua Variable Scope ==
-Care should be taken when importing modules and this form should be used:
+Care must be taken when importing modules and this form should be used:
 
 <geshi lang="lua">
     local xxx = require('xxx')
@@ -4551,12 +4551,7 @@ Care should be taken when importing modules and this form should be used:
     require('xxx')
 </geshi>
 
-: If the old form is required, force reload the module for every request by using the <code>package.loaded.<module></code> command:
-
-<geshi lang="lua">
-    package.loaded.xxx = nil
-    require('xxx')
-</geshi>
+Here is the reason: by design, the global environment has exactly the same lifetime as the Nginx request handler associated with it. Each request handler has its own set of Lua global variables and that is the idea of request isolation. The Lua module is actually loaded by the first Nginx request handler and is cached by the <code>require()</code> built-in in the package.loaded table for later reference, and <code>require()</code> has the side effect of setting a global variable to the loaded module table. But this global variable will be cleared at the end of the request handler,  and every subsequent request handler all has its own (clean) global environment. So one will get Lua exception for accessing the <code>nil</code> value.
 
 It is recommended to always place the following piece of code at the end of Lua modules that use the I/O operations to prevent casual use of module-level global variables that are shared among ''all'' requests:
 
