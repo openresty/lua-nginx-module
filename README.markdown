@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.8](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 December 2012.
+This document describes ngx_lua [v0.7.9](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 December 2012.
 
 Synopsis
 ========
@@ -1747,6 +1747,8 @@ subrequest responses. For example, when using the standard `ngx_proxy` module to
 subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
+
+When the `body` option is not specified, the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
 
 There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was `50` concurrent subrequests and in more recent versions, Nginx `1.1.x` onwards, this was increased to `200` concurrent subrequests. When this limit is exceeded, the following error message is added to the `error.log` file:
 

@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.7.8
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 9
+    This document describes ngx_lua v0.7.9
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 22
     December 2012.
 
 Synopsis
@@ -1927,6 +1927,10 @@ Nginx API for Lua
     responses that cannot be handled properly in Lua code. Original request
     headers should be ignored by setting proxy_pass_request_headers to "off"
     in subrequest locations.
+
+    When the "body" option is not specified, the "POST" and "PUT"
+    subrequests will inherit the request bodies of the parent request (if
+    any).
 
     There is a hard-coded upper limit on the number of concurrent
     subrequests possible for every main request. In older versions of Nginx,
