@@ -276,6 +276,7 @@ ngx_http_lua_var_set(lua_State *L)
     return luaL_error(L, "varaible \"%s\" not found for writing; "
                       "maybe it is a built-in variable that is not changeable "
                       "or you forgot to use \"set $%s '';\" "
-                      "in the config file to define it first", lowcase, lowcase);
+                      "in the config file to define it first",
+                      lowcase, lowcase);
 }
 
