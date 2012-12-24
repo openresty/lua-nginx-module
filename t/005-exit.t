@@ -482,7 +482,7 @@ hello
 --- request
 GET /lua
 --- error_code: 501
---- response_body_like: 501 Method Not Implemented
+--- response_body_like: 501 (?:Method )?Not Implemented
 --- no_error_log
 [error]
 
@@ -498,7 +498,7 @@ GET /lua
 --- request
 GET /lua
 --- error_code: 501
---- response_body_like: 501 Method Not Implemented
+--- response_body_like: 501 (?:Method )?Not Implemented
 --- no_error_log
 [error]
 
