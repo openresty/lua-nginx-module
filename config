@@ -104,7 +104,7 @@ END
 
         if [ $ngx_found = no ]; then
             # FreeBSD
-            ngx_feature="Lua library in /usr/local/../lua51/"
+            ngx_feature="Lua library in /usr/local/*/lua51/"
             ngx_feature_path="/usr/local/include/lua51"
             if [ $NGX_RPATH = YES ]; then
                 ngx_feature_libs="-R/usr/local/lib/lua51 -L/usr/local/lib/lua51 -llua -lm"
@@ -126,6 +126,18 @@ END
             . auto/feature
         fi
 
+        if [ $ngx_found = no ]; then
+            # FreeBSD with luajit-2.0 from ports collection
+            ngx_feature="LuaJIT library in /usr/local/"
+            ngx_feature_path="/usr/local/include/luajit-2.0"
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -lluajit-5.1 -lm"
+            else
+                ngx_feature_libs="-L/usr/local/lib -lluajit-5.1 -lm"
+            fi
+            . auto/feature
+        fi
+.
         if [ $ngx_found = no ]; then
             # Gentoo with LuaJIT-2.0
             ngx_feature="LuaJIT library in /usr/"
