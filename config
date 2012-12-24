@@ -115,6 +115,18 @@ END
         fi
 
         if [ $ngx_found = no ]; then
+            # FreeBSD with luajit-2.0 from ports collection
+            ngx_feature="Lua library in /usr/local/../luajit-2.0/"
+            ngx_feature_path="/usr/local/include/luajit-2.0"
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -lluajit-5.1 -lm"
+            else
+                ngx_feature_libs="-L/usr/local/lib -lluajit-5.1 -lm"
+            fi
+            . auto/feature
+        fi
+
+        if [ $ngx_found = no ]; then
             # Debian
             ngx_feature="Lua library in /usr/"
             ngx_feature_path="/usr/include/lua5.1"
