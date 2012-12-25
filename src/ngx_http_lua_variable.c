@@ -99,10 +99,7 @@ ngx_http_lua_var_get(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
 
-    lowcase = ngx_palloc(r->pool, len);
-    if (lowcase == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
+    lowcase = lua_newuserdata(L, len);
 
     hash = ngx_hash_strlow(lowcase, p, len);
 
@@ -158,12 +155,7 @@ ngx_http_lua_var_set(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
-    lowcase = ngx_palloc(r->pool, len + 1);
-    if (lowcase == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
-
-    lowcase[len] = '\0';
+    lowcase = lua_newuserdata(L, len);
 
     hash = ngx_hash_strlow(lowcase, p, len);
 
