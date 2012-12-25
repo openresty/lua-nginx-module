@@ -189,7 +189,7 @@ ngx_http_lua_var_set(lua_State *L)
 
     default:
         msg = lua_pushfstring(L, "string, number, or nil expected, "
-                "but got %s", lua_typename(L, value_type));
+                              "but got %s", lua_typename(L, value_type));
         return luaL_argerror(L, 1, msg);
     }
 
@@ -260,7 +260,7 @@ ngx_http_lua_var_set(lua_State *L)
         }
 
         return luaL_error(L, "variable \"%s\" cannot be assigned a value",
-                lowcase);
+                          lowcase);
     }
 
     /* variable not found */
