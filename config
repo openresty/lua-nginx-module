@@ -137,7 +137,7 @@ END
             fi
             . auto/feature
         fi
-.
+
         if [ $ngx_found = no ]; then
             # Gentoo with LuaJIT-2.0
             ngx_feature="LuaJIT library in /usr/"
