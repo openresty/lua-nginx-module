@@ -3351,7 +3351,7 @@ Here is a small example to demonstrate its basic usage:
 More often we just put it into a Lua `for` loop:
 
 
-    for m in ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+    for m in ngx.re.gmatch("hello, world!", "([a-z]+)", "i") do
         ngx.say(m[0])
         ngx.say(m[1])
     end
