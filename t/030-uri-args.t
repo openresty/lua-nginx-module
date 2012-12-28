@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 no_root_location();
 
@@ -1110,4 +1110,82 @@ GET /lua
 --- response_body
 a = bar
 b = foo
+
+
+
+=== TEST 48: ngx.decode_args should not modify lua strings in place
+--- config
+    location /lua {
+        content_by_lua '
+            local s = "f+f=bar&B=foo"
+            args = ngx.decode_args(s)
+            for k, v in pairs(args) do
+                ngx.say("key: ", k)
+            end
+            ngx.say("s = ", s)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+key: f f
+key: B
+s = f+f=bar&B=foo
+--- no_error_log
+[error]
+
+
+
+=== TEST 49: ngx.decode_args should not modify lua strings in place (sample from Xu Jian)
+--- config
+    lua_need_request_body on;
+    location /t {
+        content_by_lua '
+            function split(s, delimiter)
+                local result = {}
+                local from = 1
+                local delim_from, delim_to = string.find(s, delimiter, from)
+                while delim_from do
+                    table.insert(result, string.sub(s, from, delim_from - 1))
+                    from = delim_to + 1
+                    delim_from, delim_to = string.find(s, delimiter, from)
+                end
+                table.insert(result, string.sub(s, from))
+                return result
+            end
+
+            local post_data = ngx.req.get_body_data()
+
+            local commands = split(post_data, "||")
+            for _, command in pairs(commands) do
+                --command = ngx.unescape_uri(command)
+                local request_args = ngx.decode_args(command, 0)
+                for key, value in pairs(request_args) do
+                    ngx.say(key, ": ", value)
+                end
+                ngx.say(" ===============")
+            end
+        ';
+    }
+--- request
+POST /t
+method=zadd&key=User%3A1227713%3Alikes%3Atwitters&arg1=1356514698&arg2=780984852||method=zadd&key=User%3A1227713%3Alikes%3Atwitters&arg1=1356514698&arg2=780984852||method=zadd&key=User%3A1227713%3Alikes%3Atwitters&arg1=1356514698&arg2=780984852
+--- response_body
+arg2: 780984852
+method: zadd
+key: User:1227713:likes:twitters
+arg1: 1356514698
+ ===============
+arg2: 780984852
+method: zadd
+key: User:1227713:likes:twitters
+arg1: 1356514698
+ ===============
+arg2: 780984852
+method: zadd
+key: User:1227713:likes:twitters
+arg1: 1356514698
+ ===============
+--- no_error_log
+[error]
 

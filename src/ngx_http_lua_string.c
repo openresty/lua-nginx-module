@@ -593,7 +593,7 @@ static int
 ngx_http_lua_ngx_decode_args(lua_State *L) {
     ngx_http_request_t          *r;
     u_char                      *buf;
-    u_char                      *last;
+    u_char                      *tmp;
     size_t                       len = 0;
     int                          n;
     int                          max;
@@ -623,11 +623,12 @@ ngx_http_lua_ngx_decode_args(lua_State *L) {
         return luaL_error(L, "no request object found");
     }
 
+    tmp = lua_newuserdata(L, len);
+    ngx_memcpy(tmp, buf, len);
+
     lua_createtable(L, 0, 4);
 
-    last = buf + len;
-
-    return ngx_http_lua_parse_args(r, L, buf, last, max);
+    return ngx_http_lua_parse_args(r, L, tmp, tmp + len, max);
 }
 
 
