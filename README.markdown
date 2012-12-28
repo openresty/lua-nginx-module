@@ -4025,7 +4025,7 @@ The iterator function behaves differently (i.e., like a real iterator) when it i
 
     local reader = sock:receiveuntil("\r\n--abcedhb")
 
-    while true then
+    while true do
         local data, err, partial = reader(4)
         if not data then
             if err then
