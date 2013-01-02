@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 1);
+plan tests => repeat_each() * (blocks() * 3);
 
 #no_diff();
 no_long_string();
@@ -822,4 +822,34 @@ nil
 --- response_body
 Hello
 Hello
+
+
+
+=== TEST 42: github issue #199: underscores in lua variables
+--- config
+    location /read {
+        content_by_lua '
+          ngx.header.content_type = "text/my-plain"
+
+          local results = {}
+          results.something = "hello"
+          results.content_type = "anything"
+          results.somehing_else = "hi"
+
+          for k, v in pairs(results) do
+            ngx.say(k .. ": " .. v)
+          end
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Content-Type: text/my-plain
+
+--- response_body
+somehing_else: hi
+something: hello
+content_type: anything
+--- no_error_log
+[error]
 
