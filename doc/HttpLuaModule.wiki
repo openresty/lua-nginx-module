@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.12] released on 29 December 2012.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.13] released on 3 January 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -4851,9 +4851,9 @@ filtering chain determines the final output. The correct adding order is:
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2012, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2013, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2012, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2013, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
 
 All rights reserved.
 
