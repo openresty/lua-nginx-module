@@ -67,7 +67,19 @@ END
         . auto/feature
 
         if [ $ngx_found = no ]; then
-            # OpenBSD
+            # OpenBSD-5.2
+            ngx_feature="Lua library in /usr/local/"
+            ngx_feature_path="/usr/local/include/lua-5.1"
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -llua -lm"
+            else
+                ngx_feature_libs="-L/usr/local/lib -llua5.1 -lm"
+            fi
+            . auto/feature
+        fi
+
+        if [ $ngx_found = no ]; then
+            # OpenBSD < 5.2
             ngx_feature="Lua library in /usr/local/"
             ngx_feature_path="/usr/local/include"
             if [ $NGX_RPATH = YES ]; then
