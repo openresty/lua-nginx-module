@@ -385,7 +385,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
         /* asking for the eof argument */
 
         for (cl = in; cl; cl = cl->next) {
-            if (cl->buf->last_buf) {
+            if (cl->buf->last_buf || cl->buf->last_in_chain) {
                 lua_pushboolean(L, 1);
                 return 1;
             }

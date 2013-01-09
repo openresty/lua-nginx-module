@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 21);
+plan tests => repeat_each() * (blocks() * 2 + 22);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -723,4 +723,30 @@ Content-Type: application/json; charset=utf-8
 --- error_code: 502
 --- error_log
 upstream prematurely closed connection while reading response header from upstream
+
+
+
+=== TEST 33: last_in_chain is set properly in subrequests
+--- config
+    location = /sub {
+        echo hello;
+        body_filter_by_lua '
+            local eof = ngx.arg[2]
+            if eof then
+                print("eof found in body stream")
+            end
+        ';
+    }
+
+    location = /main {
+        echo_location /sub;
+    }
+
+--- request
+    GET /main
+--- response_body
+hello
+--- log_level: notice
+--- error_log
+eof found in body stream
 
