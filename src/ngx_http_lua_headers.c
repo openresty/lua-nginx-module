@@ -188,8 +188,10 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx->headers_sent) {
-        return luaL_error(L, "attempt to set ngx.header.HEADER after "
-                "sending out response headers");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
+                      "set ngx.header.HEADER after sending out "
+                      "response headers");
+        return 0;
     }
 
     /* we skip the first argument that is the table */

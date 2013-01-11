@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 #no_diff();
 no_long_string();
@@ -274,7 +274,8 @@ Fooy: cony1, cony2
     }
 --- request
     GET /lua
---- ignore_response
+--- response_body chop
+hello
 --- error_log
 attempt to set ngx.header.HEADER after sending out response headers
 --- no_error_log eval
