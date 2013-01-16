@@ -112,11 +112,19 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_req_body_post_read);
 
+#if (nginx_version < 1002006) ||                                             \
+        (nginx_version >= 1003000 && nginx_version < 1003009)
     r->main->count--;
+#endif
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to read request body");
     }
+
+#if (nginx_version >= 1002006 && nginx_version < 1003000) ||                 \
+        nginx_version >= 1003009
+    r->main->count--;
+#endif
 
     if (rc == NGX_AGAIN) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,

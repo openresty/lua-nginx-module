@@ -33,6 +33,7 @@ hello, world
 hello, world
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -1313,4 +1314,31 @@ failed to get req socket: request body already exists
 [error]
 --- no_error_log
 a client request body is buffered to a temporary file
+
+
+
+=== TEST 41: failed to write 100 continue
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.sleep(0.01)
+            ngx.req.read_body()
+            ngx.say(ngx.var.request_body)
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- more_headers
+Expect: 100-Continue
+--- abort
+--- timeout: 0.001
+--- wait: 0.1
+--- ignore_response
+hello, world
+--- error_log
+failed to read request body
+--- no_error_log
+[alert]
+http finalize request: 500, "/test?" a:1, c:0
 
