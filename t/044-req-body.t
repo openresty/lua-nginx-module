@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 5);
+plan tests => repeat_each() * (blocks() * 4 + 4);
 
 #no_diff();
 no_long_string();
@@ -1336,8 +1336,6 @@ Expect: 100-Continue
 --- wait: 0.1
 --- ignore_response
 hello, world
---- error_log
-failed to read request body
 --- no_error_log
 [alert]
 http finalize request: 500, "/test?" a:1, c:0
