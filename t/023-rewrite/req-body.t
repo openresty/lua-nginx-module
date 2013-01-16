@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 #no_long_string();
@@ -125,5 +125,6 @@ Expect: 100-Continue
 hello, world
 --- no_error_log
 [alert]
+[error]
 http finalize request: 500, "/test?" a:1, c:0
 

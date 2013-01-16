@@ -118,7 +118,14 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 #endif
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return luaL_error(L, "failed to read request body");
+        ctx->exit_code = rc;
+        ctx->exited = 1;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http read client request body returned error code %i, "
+                       "exitting now", rc);
+
+        return lua_yield(L, 0);
     }
 
 #if (nginx_version >= 1002006 && nginx_version < 1003000) ||                 \
