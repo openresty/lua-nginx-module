@@ -1277,6 +1277,10 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     u_char                      *p;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
+    int                          name_entry_size;
+    int                          name_count;
+    u_char                      *name_table;
+    int                          j;
 
     ngx_http_lua_complex_value_t              *ctpl = NULL;
     ngx_http_lua_compile_complex_value_t       ccv;
@@ -1625,6 +1629,29 @@ exec:
     offset = 0;
     cp_offset = 0;
 
+    if ((rc = pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
+             &name_count)) != 0)
+    {
+        msg = "cannot acquire named pattern count";
+        goto error;
+    }
+
+    if (name_count > 0) {
+        if ((rc = pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                 &name_entry_size)) != 0)
+        {
+            msg = "cannot acquire name pattern entry size";
+            goto error;
+        }
+
+        if ((rc = pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMETABLE,
+                 &name_table)) != 0)
+        {
+            msg = "cannot acquire name pattern table";
+            goto error;
+        }
+    }
+
     for (;;) {
         if (flags & NGX_LUA_RE_MODE_DFA) {
 
@@ -1693,6 +1720,67 @@ exec:
                 }
 
                 lua_rawseti(L, -2, (int) i);
+            }
+
+            for(j = 0 ; j < name_count; j++) {
+                size_t                  match_len;
+                unsigned char* const    start = &name_table[j * name_entry_size];
+                const int               pattern_num = start[0]<<8 | start[1]<<0;
+                char* const             name_start = (char*)&start[2];
+                const int               n = pattern_num*2;
+
+                ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                        "Looking at name %s, pattern_num %d, name_count %d, j: %d",
+                        name_start, pattern_num, name_count, j);
+
+                if (re_comp.options & PCRE_DUPNAMES) {
+                    lua_getfield (L, -1, name_start);
+
+                    if (lua_isnil(L, -1)) {
+                        lua_pop(L, 1);
+
+                        /* assume named matches will be unique,
+                         * create an array of size 1. */
+                        lua_pushlstring(L, name_start, strlen(name_start));
+                        lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+                        lua_rawset (L, -3);
+
+                        lua_getfield (L, -1, name_start);
+                    }
+
+                    match_len = lua_objlen(L, -1);
+
+                    if (cap[n] < 0) {
+                        lua_pushnil(L);
+
+                    } else {
+                        lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                                cap[n + 1] - cap[n]);
+
+                        dd("pushing capture %s for %s at %d",
+                           lua_tostring(L, -1), name_start, (int)match_len + 1);
+                    }
+
+                    lua_rawseti(L, -2, (int) match_len + 1);
+
+                    /* pop the m[name_start] array we pulled in */
+                    lua_pop(L, 1);
+
+                } else {
+                    lua_pushlstring(L, name_start, strlen(name_start));
+
+                    if (cap[n] < 0 || cap[n + 1] < 0) {
+                        lua_pushnil(L);
+
+                    } else {
+                        lua_pushlstring(L, (char *) &subj.data[cap[n]],
+                                cap[n + 1] - cap[n]);
+
+                        dd("pushing capture %s for %s", lua_tostring(L, -1), name_start);
+                    }
+
+                    lua_rawset (L, -3);
+                }
             }
 
             dd("stack size at call: %d", lua_gettop(L));
