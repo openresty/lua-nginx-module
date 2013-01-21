@@ -107,7 +107,6 @@ sub: foo
 --- config
     location = /test {
         access_by_lua '
-            ngx.sleep(0.01)
             ngx.req.read_body()
             ngx.say(ngx.var.request_body)
             ngx.exit(200)
@@ -118,11 +117,7 @@ POST /test
 hello, world
 --- more_headers
 Expect: 100-Continue
---- abort
---- timeout: 0.001
---- wait: 0.1
 --- ignore_response
-hello, world
 --- no_error_log
 [alert]
 [error]

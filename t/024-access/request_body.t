@@ -149,6 +149,7 @@ world\x03\x04\xff"
 "nil"
 
 
+
 === TEST 8: Expect: 100-Continue
 --- config
     location /echo_body {
@@ -163,9 +164,6 @@ POST /echo_body
 hello world
 --- more_headers
 Expect: 100-Continue
---- abort
---- timeout: 0.001
---- wait: 0.1
 --- ignore_response
 --- no_error_log
 [error]
