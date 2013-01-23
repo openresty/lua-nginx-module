@@ -750,3 +750,24 @@ hello
 --- error_log
 eof found in body stream
 
+
+
+=== TEST 34: testing a segfault when using ngx_poll_module + ngx_resolver
+See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-January/003275.html
+--- config
+    location /t {
+        set $myserver nginx.org;
+        proxy_pass http://$myserver/;
+        resolver 127.0.0.1;
+    }
+--- request
+    GET /t
+--- ignore_response
+--- abort
+--- timeout: 0.3
+--- log_level: notice
+--- no_error_log
+[alert]
+--- error_log eval
+qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
+
