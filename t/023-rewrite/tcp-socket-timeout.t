@@ -42,7 +42,7 @@ __DATA__
     location /t1 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("www.google.com", 12345)
+            local ok, err = sock:connect("agentzh.org", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -75,7 +75,7 @@ lua tcp socket connect timed out
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(150)
-            local ok, err = sock:connect("www.google.com", 12345)
+            local ok, err = sock:connect("agentzh.org", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -110,7 +110,7 @@ lua tcp socket connect timeout: 150
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(nil)
-            local ok, err = sock:connect("www.google.com", 12345)
+            local ok, err = sock:connect("agentzh.org", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -145,7 +145,7 @@ lua tcp socket connect timeout: 102
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(0)
-            local ok, err = sock:connect("www.google.com", 12345)
+            local ok, err = sock:connect("agentzh.org", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -181,7 +181,7 @@ lua tcp socket connect timeout: 102
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(-1)
-            local ok, err = sock:connect("www.google.com", 12345)
+            local ok, err = sock:connect("agentzh.org", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return

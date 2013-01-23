@@ -309,12 +309,12 @@ exiting the user thread
 === TEST 5: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.tcp)
 --- config
     location /lua {
-        resolver www.google.com;
+        resolver agentzh.org;
         resolver_timeout 12s;
         access_by_lua '
             function f()
                 ngx.say("hello in thread")
-                ngx.sleep(0.1)
+                ngx.sleep(0.001)
                 ngx.exit(0)
             end
 
@@ -322,7 +322,7 @@ exiting the user thread
             ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("www.google.com", 80)
+            local ok, err = sock:connect("agentzh.org", 80)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -348,7 +348,7 @@ F(ngx_resolve_name) {
 }
 
 M(timer-add) {
-    if ($arg2 == 12000 || $arg2 == 100) {
+    if ($arg2 == 12000 || $arg2 == 1) {
         timers[$arg1] = $arg2
         printf("add timer %d\n", $arg2)
     }
@@ -356,7 +356,7 @@ M(timer-add) {
 
 M(timer-del) {
     tm = timers[$arg1]
-    if (tm == 12000 || tm == 100) {
+    if (tm == 12000 || tm == 1) {
         printf("delete timer %d\n", tm)
         delete timers[$arg1]
     }
@@ -369,7 +369,7 @@ M(timer-del) {
 
 M(timer-expire) {
     tm = timers[$arg1]
-    if (tm == 12000 || tm == 100) {
+    if (tm == 12000 || tm == 1) {
         printf("expire timer %d\n", timers[$arg1])
         delete timers[$arg1]
     }
@@ -383,10 +383,10 @@ _EOC_
 --- stap_out
 create 2 in 1
 spawn user thread 2 in 1
-add timer 100
-resolving www.google.com
+add timer 1
+resolving agentzh.org
 add timer 12000
-expire timer 100
+expire timer 1
 terminate 2: ok
 lua tcp resolve cleanup
 delete timer 12000
@@ -408,12 +408,12 @@ after
 === TEST 6: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.udp)
 --- config
     location /lua {
-        resolver www.google.com;
+        resolver agentzh.org;
         resolver_timeout 12s;
         access_by_lua '
             function f()
                 ngx.say("hello in thread")
-                ngx.sleep(0.1)
+                ngx.sleep(0.001)
                 ngx.exit(0)
             end
 
@@ -421,7 +421,7 @@ after
             ngx.thread.spawn(f)
             ngx.say("after")
             local sock = ngx.socket.udp()
-            local ok, err = sock:setpeername("www.google.com", 80)
+            local ok, err = sock:setpeername("agentzh.org", 80)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -447,7 +447,7 @@ F(ngx_resolve_name) {
 }
 
 M(timer-add) {
-    if ($arg2 == 12000 || $arg2 == 100) {
+    if ($arg2 == 12000 || $arg2 == 1) {
         timers[$arg1] = $arg2
         printf("add timer %d\n", $arg2)
     }
@@ -455,7 +455,7 @@ M(timer-add) {
 
 M(timer-del) {
     tm = timers[$arg1]
-    if (tm == 12000 || tm == 100) {
+    if (tm == 12000 || tm == 1) {
         printf("delete timer %d\n", tm)
         delete timers[$arg1]
     }
@@ -468,7 +468,7 @@ M(timer-del) {
 
 M(timer-expire) {
     tm = timers[$arg1]
-    if (tm == 12000 || tm == 100) {
+    if (tm == 12000 || tm == 1) {
         printf("expire timer %d\n", timers[$arg1])
         delete timers[$arg1]
     }
@@ -482,10 +482,10 @@ _EOC_
 --- stap_out
 create 2 in 1
 spawn user thread 2 in 1
-add timer 100
-resolving www.google.com
+add timer 1
+resolving agentzh.org
 add timer 12000
-expire timer 100
+expire timer 1
 terminate 2: ok
 lua udp resolve cleanup
 delete timer 12000

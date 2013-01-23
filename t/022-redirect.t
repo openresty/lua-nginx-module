@@ -23,14 +23,14 @@ __DATA__
 --- config
     location /read {
         content_by_lua '
-            ngx.redirect("http://google.com/foo");
+            ngx.redirect("http://agentzh.org/foo");
             ngx.say("hi")
         ';
     }
 --- request
 GET /read
 --- response_headers
-Location: http://google.com/foo
+Location: http://agentzh.org/foo
 --- response_body_like: 302 Found
 --- error_code: 302
 
@@ -40,14 +40,14 @@ Location: http://google.com/foo
 --- config
     location /read {
         content_by_lua '
-            ngx.redirect("http://google.com/foo", ngx.HTTP_MOVED_TEMPORARILY);
+            ngx.redirect("http://agentzh.org/foo", ngx.HTTP_MOVED_TEMPORARILY);
             ngx.say("hi")
         ';
     }
 --- request
 GET /read
 --- response_headers
-Location: http://google.com/foo
+Location: http://agentzh.org/foo
 --- response_body_like: 302 Found
 --- error_code: 302
 
@@ -57,14 +57,14 @@ Location: http://google.com/foo
 --- config
     location /read {
         content_by_lua '
-            ngx.redirect("http://google.com/foo", ngx.HTTP_MOVED_PERMANENTLY);
+            ngx.redirect("http://agentzh.org/foo", ngx.HTTP_MOVED_PERMANENTLY);
             ngx.say("hi")
         ';
     }
 --- request
 GET /read
 --- response_headers
-Location: http://google.com/foo
+Location: http://agentzh.org/foo
 --- response_body_like: 301 Moved Permanently
 --- error_code: 301
 
@@ -74,7 +74,7 @@ Location: http://google.com/foo
 --- config
     location /read {
         content_by_lua '
-            ngx.redirect("http://google.com/foo", 404);
+            ngx.redirect("http://agentzh.org/foo", 404);
             ngx.say("hi")
         ';
     }
@@ -131,14 +131,14 @@ GET /read
 --- config
     location /read {
         content_by_lua '
-            ngx.redirect("http://google.com/foo?bar=3");
+            ngx.redirect("http://agentzh.org/foo?bar=3");
             ngx.say("hi")
         ';
     }
 --- request
 GET /read
 --- response_headers
-Location: http://google.com/foo?bar=3
+Location: http://agentzh.org/foo?bar=3
 --- response_body_like: 302 Found
 --- error_code: 302
 

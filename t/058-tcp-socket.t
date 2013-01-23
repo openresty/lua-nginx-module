@@ -298,7 +298,7 @@ qr/connect\(\) failed \(\d+: Connection refused\)/
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("google.com", 16787)
+            local ok, err = sock:connect("agentzh.org", 12345)
             ngx.say("connect: ", ok, " ", err)
 
             local bytes

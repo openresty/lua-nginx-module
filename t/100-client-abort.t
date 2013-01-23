@@ -196,7 +196,7 @@ bad things happen
 
     location = /sub {
         proxy_ignore_client_abort on;
-        proxy_pass http://www.google.com:1234/;
+        proxy_pass http://agentzh.org:12345/;
     }
 
     location = /sleep {
@@ -237,7 +237,7 @@ client prematurely closed connection
 
     location = /sub {
         proxy_ignore_client_abort off;
-        proxy_pass http://www.google.com:1234/;
+        proxy_pass http://agentzh.org:12345/;
     }
 --- request
 GET /t
