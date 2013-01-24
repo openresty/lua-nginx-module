@@ -771,7 +771,7 @@ Uses Lua code specified in `<lua-script-str>` to define an output body filter.
 
 The input data chunk is passed via [ngx.arg](http://wiki.nginx.org/HttpLuaModule#ngx.arg)[1] (as a Lua string value) and the "eof" flag indicating the end of the response body data stream is passed via [ngx.arg](http://wiki.nginx.org/HttpLuaModule#ngx.arg)[2] (as a Lua boolean value).
 
-Behind the scene, the "eof" flag is just the `last_buf` flag of the nginx chain link buffers. And in the context of an Nginx subrequest, there is no "eof" flag at all, due to the underlying limitation in the Nginx core.
+Behind the scene, the "eof" flag is just the `last_buf` (for main requests) or `last_in_chain` (for subrequests) flag of the Nginx chain link buffers. (Before the `v0.7.14` release, the "eof" flag does not work at all in subrequests.)
 
 The output data stream can be aborted immediately by running the following Lua statement:
 
@@ -3112,6 +3112,14 @@ Returns the binary form of the SHA-1 digest of the `str` argument.
 This function requires SHA-1 support in the Nginx build. (This usually just means OpenSSL should be installed while building Nginx).
 
 This function was first introduced in the `v0.5.0rc6`.
+
+ngx.quote_sql_str
+-----------------
+**syntax:** *quoted_value = ngx.quote_sql_str(raw_value)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a quoted SQL string literal according to the MySQL quoting rules.
 
 ngx.today
 ---------
