@@ -3286,6 +3286,15 @@ Specify `options` to control how the match operation will be performed. The foll
                   this requires PCRE 6.0+ or else a Lua exception will be thrown.
                   first introduced in ngx_lua v0.3.1rc30.
 
+    D             enable duplicate named pattern support. This allows named
+                  subpattern names to be repeated, returning the captures in
+                  an array-like Lua table. for example,
+                    local m = ngx.re.match("hello, world",
+                                           "(?<named>\w+), (?<named>\w+)",
+                                           "D")
+                    -- m["named"] == {"hello", "world"}
+                  this option was first introduced in the v0.7.14 release.
+
     i             case insensitive mode (similar to Perl's /i modifier)
 
     j             enable PCRE JIT compilation, this requires PCRE 8.21+ which
@@ -3307,15 +3316,6 @@ Specify `options` to control how the match operation will be performed. The foll
                   the --enable-utf8 option or else a Lua exception will be thrown.
 
     x             extended mode (similar to Perl's /x modifier)
-
-    D             enable duplicate named pattern support. This allows named
-                  subpattern names to be repeated, returning the captures in
-                  an array-like Lua table. for example,
-                    local m = ngx.re.match("hello, world",
-                                           "(?<named>\w+), (?<named>\w+)",
-                                           "D")
-                    -- m["named"] == {"hello", "world"}
-                  this option was first introduced in the v0.7.14 release.
 
 
 These options can be combined:
