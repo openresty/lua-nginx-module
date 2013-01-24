@@ -30,6 +30,7 @@
 #define NGX_LUA_RE_COMPILE_ONCE      (1<<0)
 #define NGX_LUA_RE_MODE_DFA          (1<<1)
 #define NGX_LUA_RE_MODE_JIT          (1<<2)
+#define NGX_LUA_RE_MODE_DUPNAMES     (1<<3)
 
 #define NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT (100)
 
@@ -80,6 +81,9 @@ static void ngx_http_lua_regex_free_study_data(ngx_pool_t *pool,
 static ngx_int_t ngx_lua_regex_compile(ngx_lua_regex_compile_t *rc);
 static void ngx_http_lua_ngx_re_gmatch_cleanup(void *data);
 static int ngx_http_lua_ngx_re_gmatch_gc(lua_State *L);
+static void ngx_http_lua_re_collect_named_captures(lua_State *L,
+    u_char *name_table, int name_count, int name_entry_size,
+    unsigned flags, ngx_str_t *subj);
 
 
 #define ngx_http_lua_regex_exec(re, e, s, start, captures, size) \
@@ -116,6 +120,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     ngx_http_lua_main_conf_t    *lmcf = NULL;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
+    int                          name_entry_size, name_count;
+    u_char                      *name_table;
 
     nargs = lua_gettop(L);
 
@@ -390,6 +396,29 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     }
 
 exec:
+    if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
+                      &name_count) != 0)
+    {
+        msg = "cannot acquire named subpattern count";
+        goto error;
+    }
+
+    if (name_count > 0) {
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                          &name_entry_size) != 0)
+        {
+            msg = "cannot acquire named subpattern entry size";
+            goto error;
+        }
+
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMETABLE,
+                          &name_table) != 0)
+        {
+            msg = "cannot acquire named subpattern table";
+            goto error;
+        }
+    }
+
     if (flags & NGX_LUA_RE_MODE_DFA) {
 
 #if LUA_HAVE_PCRE_DFA
@@ -461,6 +490,11 @@ exec:
         }
 
         lua_rawseti(L, -2, (int) i);
+    }
+
+    if (name_count > 0) {
+        ngx_http_lua_re_collect_named_captures(L, name_table, name_count,
+                                               name_entry_size, flags, &subj);
     }
 
     if (nargs == 4) { /* having ctx table */
@@ -838,6 +872,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     ngx_str_t                    subj;
     int                          offset;
     const char                  *msg = NULL;
+    int                          name_entry_size, name_count;
+    u_char                      *name_table;
 
     /* upvalues in order: subj ctx offset */
 
@@ -869,6 +905,29 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     dd("regex exec...");
+
+    if (pcre_fullinfo(ctx->regex, NULL, PCRE_INFO_NAMECOUNT,
+                      &name_count) != 0)
+    {
+        msg = "cannot acquire named subpattern count";
+        goto error;
+    }
+
+    if (name_count > 0) {
+        if (pcre_fullinfo(ctx->regex, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                          &name_entry_size) != 0)
+        {
+            msg = "cannot acquire named subpattern entry size";
+            goto error;
+        }
+
+        if (pcre_fullinfo(ctx->regex, NULL, PCRE_INFO_NAMETABLE,
+                          &name_table) != 0)
+        {
+            msg = "cannot acquire named subpattern table";
+            goto error;
+        }
+    }
 
     if (ctx->flags & NGX_LUA_RE_MODE_DFA) {
 
@@ -941,6 +1000,12 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         }
 
         lua_rawseti(L, -2, (int) i);
+    }
+
+    if (name_count > 0) {
+        ngx_http_lua_re_collect_named_captures(L, name_table, name_count,
+                                               name_entry_size, ctx->flags,
+                                               &subj);
     }
 
     offset = cap[1];
@@ -1032,6 +1097,11 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_lua_regex_compile_t *re,
                 re->options |= PCRE_ANCHORED;
                 break;
 
+            case 'D':
+                re->options |= PCRE_DUPNAMES;
+                flags |= NGX_LUA_RE_MODE_DUPNAMES;
+                break;
+
             default:
                 msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
                 return luaL_argerror(L, narg, msg);
@@ -1094,6 +1164,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     u_char                      *p;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
+    int                          name_entry_size, name_count;
+    u_char                      *name_table;
 
     ngx_http_lua_complex_value_t              *ctpl = NULL;
     ngx_http_lua_compile_complex_value_t       ccv;
@@ -1442,6 +1514,29 @@ exec:
     offset = 0;
     cp_offset = 0;
 
+    if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
+                      &name_count) != 0)
+    {
+        msg = "cannot acquire named subpattern count";
+        goto error;
+    }
+
+    if (name_count > 0) {
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                          &name_entry_size) != 0)
+        {
+            msg = "cannot acquire named subpattern entry size";
+            goto error;
+        }
+
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMETABLE,
+                          &name_table) != 0)
+        {
+            msg = "cannot acquire named subpattern table";
+            goto error;
+        }
+    }
+
     for (;;) {
         if (flags & NGX_LUA_RE_MODE_DFA) {
 
@@ -1510,6 +1605,13 @@ exec:
                 }
 
                 lua_rawseti(L, -2, (int) i);
+            }
+
+            if (name_count > 0) {
+                ngx_http_lua_re_collect_named_captures(L, name_table,
+                                                       name_count,
+                                                       name_entry_size,
+                                                       flags, &subj);
             }
 
             dd("stack size at call: %d", lua_gettop(L));
@@ -1770,6 +1872,51 @@ ngx_http_lua_ngx_re_gmatch_gc(lua_State *L)
     }
 
     return 0;
+}
+
+
+static void
+ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
+    int name_count, int name_entry_size, unsigned flags, ngx_str_t *subj)
+{
+    int              i, n;
+    size_t           len;
+    u_char          *name_entry;
+    char            *name;
+
+    for (i = 0; i < name_count; i++) {
+
+        name_entry = &name_table[i * name_entry_size];
+        n = (name_entry[0] << 8) | name_entry[1];
+        name = (char *) &name_entry[2];
+
+        if (flags & NGX_LUA_RE_MODE_DUPNAMES) {
+            lua_getfield(L, -1, name);
+
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+
+                /* assuming named submatches are usually unique */
+                lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+                lua_pushstring(L, name);
+                lua_pushvalue(L, -2); /* big_tb small_tb key small_tb */
+                lua_rawset(L, -4); /* big_tb small_tb */
+            }
+
+            len = lua_objlen(L, -1);
+
+            lua_rawgeti(L, -2, n);
+            lua_rawseti(L, -2, (int) len + 1);
+
+            /* pop the m[name] array we pulled in */
+            lua_pop(L, 1);
+
+        } else {
+            lua_pushstring(L, name);
+            lua_rawgeti(L, -2, n);
+            lua_rawset(L, -3);
+        }
+    }
 }
 
 

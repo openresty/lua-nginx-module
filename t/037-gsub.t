@@ -363,3 +363,24 @@ n: 1
 --- no_error_log
 [error]
 
+
+
+=== TEST 18: named pattern repl w/ callback
+--- config
+    location /re {
+       content_by_lua '
+            local repl = function (m)
+                return "[" .. m[0] .. "," .. m["first"] .. "]"
+            end
+
+            local s, n = ngx.re.gsub("hello, world", "(?<first>[a-z])[a-z]+", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+[hello,h], [world,w]
+2
+

@@ -511,3 +511,173 @@ matched: []
 matched: []
 matched: []
 
+
+
+=== TEST 21: gmatch with named pattern
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("1234, 1234", "(?<first>[0-9]+)")
+            m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m["first"])
+            else
+                ngx.say("not matched!")
+            end
+
+            m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m["first"])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+1234
+1234
+1234
+1234
+1234
+
+
+
+=== TEST 22: gmatch with multiple named pattern
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("1234, abcd, 1234", "(?<first>[0-9]+)|(?<second>[a-z]+)")
+
+            m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(m["first"])
+                ngx.say(m["second"])
+            else
+                ngx.say("not matched!")
+            end
+
+            m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(m["first"])
+                ngx.say(m["second"])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+1234
+nil
+1234
+nil
+abcd
+nil
+abcd
+nil
+abcd
+
+
+
+=== TEST 23: gmatch with duplicate named pattern w/ extraction
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("hello, 1234", "(?<first>[a-z]+), (?<first>[0-9]+)", "D")
+            m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(table.concat(m.first,"-"))
+            else
+                ngx.say("not matched!")
+            end
+
+            m = it()
+            if m then
+             ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(table.concat(m.first,"-"))
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+hello
+1234
+hello-1234
+not matched!
+
+
+
+=== TEST 24: named captures are empty
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("1234", "(?<first>[a-z]*)([0-9]+)", "")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m.first)
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+
+
+1234
+
+
+
+=== TEST 25: named captures are empty (with regex cache)
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("1234", "(?<first>[a-z]*)([0-9]+)", "o")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+                ngx.say(m.first)
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+
+
+1234
+

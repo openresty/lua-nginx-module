@@ -3537,13 +3537,25 @@ Nginx API for Lua
         -- m[0] == "1234"
         -- m[1] == "1"
 
-    Unmatched sub-patterns will have "nil" values in their "captures" table
+    Named captures are also supported since the "v0.7.14" release and are
+    returned in the same Lua table as key-value pairs as the numbered
+    captures.
+
+        local m = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
+        -- m[0] == "1234"
+        -- m[1] == "1"
+        -- m[2] == "234"
+        -- m["remaining"] == "234"
+
+    Unmatched subpatterns will have "nil" values in their "captures" table
     fields.
 
-        local m = ngx.re.match("hello, world", "(world)|(hello)")
+        local m = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
         -- m[0] == "hello"
         -- m[1] == nil
         -- m[2] == "hello"
+        -- m[3] == nil
+        -- m["named"] == nil
 
     Specify "options" to control how the match operation will be performed.
     The following option characters are supported:
@@ -3572,6 +3584,15 @@ Nginx API for Lua
                       the --enable-utf8 option or else a Lua exception will be thrown.
 
         x             extended mode (similar to Perl's /x modifier)
+
+        D             enable duplicate named pattern support. This allows named
+                      subpattern names to be repeated, returning the captures in
+                      an array-like Lua table. for example,
+                        local m = ngx.re.match("hello, world",
+                                               "(?<named>\w+), (?<named>\w+)",
+                                               "D")
+                        -- m["named"] == {"hello", "world"}
+                      this option was first introduced in the v0.7.14 release.
 
     These options can be combined:
 

@@ -636,3 +636,105 @@ nil
 567
 98
 
+
+
+=== TEST 30: named subpatterns w/ extraction
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "(?<first>[a-z]+), [0-9]+", "o")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m.first)
+                ngx.say(m.second)
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+hello
+hello
+nil
+
+
+
+=== TEST 31: duplicate named subpatterns w/ extraction
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, 1234", "(?<first>[a-z]+), (?<first>[0-9]+)", "Do")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(table.concat(m.first,"-"))
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, 1234
+hello
+1234
+hello-1234
+
+
+
+=== TEST 32: named captures are empty strings
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("1234", "(?<first>[a-z]*)([0-9]+)", "o")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m.first)
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+
+
+1234
+
+
+
+=== TEST 33: named captures are nil
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)", "o")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+                ngx.say(m[3])
+                ngx.say(m["named"])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+nil
+hello
+nil
+nil
+
