@@ -3242,7 +3242,7 @@ Matches the `subject` string using the Perl compatible regular expression `regex
 
 Only the first occurrence of the match is returned, or `nil` if no match is found. In case of fatal errors, like seeing bad `UTF-8` sequences in `UTF-8` mode, a Lua exception will be raised.
 
-When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized sub-pattern's capturing, `captures[2]` the second, and so on.
+When a match is found, a Lua table `captures` is returned, where `captures[0]` holds the whole substring being matched, and `captures[1]` holds the first parenthesized sub-pattern's capturing, `captures[2]` the second, and so on. Named patterns are supported and will be returned in addition to the numbered captures.
 
 
     local m = ngx.re.match("hello, 1234", "[0-9]+")
@@ -3254,14 +3254,20 @@ When a match is found, a Lua table `captures` is returned, where `captures[0]` h
     -- m[0] == "1234"
     -- m[1] == "1"
 
+    local m = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
+    -- m[0] == "1234"
+    -- m[1] == "1"
+    -- m["remaining"] == "234"
+
 
 Unmatched sub-patterns will have `nil` values in their `captures` table fields.
 
 
-    local m = ngx.re.match("hello, world", "(world)|(hello)")
+    local m = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
     -- m[0] == "hello"
     -- m[1] == nil
     -- m[2] == "hello"
+    -- m["howdy"] == nil
 
 
 Specify `options` to control how the match operation will be performed. The following option characters are supported:
@@ -3291,6 +3297,13 @@ Specify `options` to control how the match operation will be performed. The foll
                   the --enable-utf8 option or else a Lua exception will be thrown.
 
     x             extended mode (similar to Perl's /x modifier)
+
+    D             enable duplicate named pattern support. This allows named pattern
+                  names to be repeated, returning the captures in an array.
+                  e.g.
+                    local m = ngx.re.match("hello, world", "(?<named>world)|(?<named>hello)")
+                    -- m["named"] == {[1] = "world", [2] = hello}
+
 
 
 These options can be combined:

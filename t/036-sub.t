@@ -366,3 +366,57 @@ nil
 --- response_body
 howdy, world
 
+
+
+=== TEST 20: matched and with variables w/o using named patterns in sub
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("a b c d", "(?<first>b) (?<second>c)", "[$0] [$1] [$2] [$3] [$134]")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+a [b c] [b] [c] [] [] d
+1
+
+
+
+=== TEST 21: matched and with variables using named patterns in func
+--- config
+    error_log /tmp/nginx_error debug;
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                return "[" .. m[0] .. "] [" .. m["first"] .. "] [" .. m[2] .. "]"
+            end
+
+            local s, n = ngx.re.sub("a b c d", "(?<first>b) (?<second>c)", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+a [b c] [b] [c] d
+1
+
+
+=== TEST 22: matched and with variables w/ using named patterns in sub
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("a b c d", "(?<first>b) (?<second>c)", "[$0] [${first}] [${second}] [$3] [$134]")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+a [b c] [b] [c] [] [] d
+1
