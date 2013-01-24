@@ -481,6 +481,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         in = lua_touserdata(L, -1);
 
         if (last) {
+            ctx->seen_last_in_filter = 1;
+
             if (in) {
                 for (cl = in; cl; cl = cl->next) {
                     if (cl->next == NULL) {
@@ -654,14 +656,14 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     }
 
     if (last) {
+        ctx->seen_last_in_filter = 1;
+
         if (r == r->main) {
             cl->buf->last_buf = 1;
 
         } else {
             cl->buf->last_in_chain = 1;
         }
-
-        ctx->seen_last_in_filter = 1;
     }
 
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
