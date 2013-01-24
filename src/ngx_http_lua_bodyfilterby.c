@@ -284,6 +284,16 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
     }
 
+    if (ctx->seen_last_in_filter) {
+        for (/* void */; in; in = in->next) {
+            dd("mark the buf as consumed: %d", (int) ngx_buf_size(in->buf));
+            in->buf->pos = in->buf->last;
+            in->buf->file_pos = in->buf->file_last;
+        }
+
+        return NGX_OK;
+    }
+
     if (ctx->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
@@ -420,7 +430,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
         size += b->last - b->pos;
 
-        if (b->last_buf) {
+        if (b->last_buf || b->last_in_chain) {
             break;
         }
     }
@@ -431,7 +441,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
         b = cl->buf;
         p = ngx_copy(p, b->pos, b->last - b->pos);
 
-        if (b->last_buf) {
+        if (b->last_buf || b->last_in_chain) {
             break;
         }
     }
@@ -474,7 +484,13 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             if (in) {
                 for (cl = in; cl; cl = cl->next) {
                     if (cl->next == NULL) {
-                        cl->buf->last_buf = 1;
+                        if (r == r->main) {
+                            cl->buf->last_buf = 1;
+
+                        } else {
+                            cl->buf->last_in_chain = 1;
+                        }
+
                         break;
                     }
                 }
@@ -490,7 +506,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                     return luaL_error(L, "out of memory");
                 }
 
-                cl->buf->last_buf = 1;
+                if (r == r->main) {
+                    cl->buf->last_buf = 1;
+
+                } else {
+                    cl->buf->last_in_chain = 1;
+                }
 
                 lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
                 lua_pushlightuserdata(L, cl);
@@ -504,6 +525,10 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                 for (size = 0, cl = in; cl; cl = cl->next) {
                     if (cl->buf->last_buf) {
                         cl->buf->last_buf = 0;
+                    }
+
+                    if (cl->buf->last_in_chain) {
+                        cl->buf->last_in_chain = 0;
                     }
 
                     size += cl->buf->last - cl->buf->pos;
@@ -542,6 +567,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         for (cl = in; cl; cl = cl->next) {
             dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
             cl->buf->pos = cl->buf->last;
+            cl->buf->file_pos = cl->buf->file_last;
         }
 
         lua_pushlightuserdata(L, NULL); /* key val */
@@ -566,7 +592,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
     last = 0;
     for (cl = in; cl; cl = cl->next) {
-        if (cl->buf->last_buf) {
+        if (cl->buf->last_buf || cl->buf->last_in_chain) {
             last = 1;
         }
 
@@ -577,7 +603,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     if (size == 0) {
         if (last) {
             if (in) {
-                in->buf->last_buf = 1;
+                if (r == r->main) {
+                    in->buf->last_buf = 1;
+
+                } else {
+                    in->buf->last_in_chain = 1;
+                }
 
             } else {
 
@@ -591,7 +622,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                     return luaL_error(L, "out of memory");
                 }
 
-                cl->buf->last_buf = 1;
+                if (r == r->main) {
+                    cl->buf->last_buf = 1;
+
+                } else {
+                    in->buf->last_in_chain = 1;
+                }
 
                 lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
                 lua_pushlightuserdata(L, cl);
@@ -617,7 +653,16 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         cl->buf->last = ngx_copy(cl->buf->pos, data, size);
     }
 
-    cl->buf->last_buf = last;
+    if (last) {
+        if (r == r->main) {
+            cl->buf->last_buf = 1;
+
+        } else {
+            cl->buf->last_in_chain = 1;
+        }
+
+        ctx->seen_last_in_filter = 1;
+    }
 
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_pushlightuserdata(L, cl);

@@ -483,3 +483,27 @@ in function 'error'
 in function 'bar'
 in function 'foo'
 
+
+
+=== TEST 18: setting "eof" in subrequests
+--- config
+    location /t {
+        echo_location /read;
+        echo_location /read;
+    }
+
+    location /read {
+        echo -n hello world;
+        echo -n hiya globe;
+
+        body_filter_by_lua '
+            ngx.arg[2] = 1
+        ';
+    }
+--- request
+GET /t
+--- response_body chop
+hello worldhello world
+--- no_error_log
+[error]
+

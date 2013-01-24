@@ -357,6 +357,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         no_abort:1; /* prohibit "world abortion" via ngx.exit()
                                     and etc */
+
+    unsigned         seen_last_in_filter:1;  /* used by body_filter_by_lua* */
 } ngx_http_lua_ctx_t;
 
 
