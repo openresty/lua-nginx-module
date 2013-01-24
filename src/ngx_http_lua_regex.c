@@ -1102,6 +1102,10 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_lua_regex_compile_t *re,
                 flags |= NGX_LUA_RE_MODE_DUPNAMES;
                 break;
 
+            case 'J':
+                re->options |= PCRE_JAVASCRIPT_COMPAT;
+                break;
+
             default:
                 msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
                 return luaL_argerror(L, narg, msg);

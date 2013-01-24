@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 no_long_string();
@@ -854,6 +854,27 @@ hello, world
 hello
 world
 hello-world
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: Javascript compatible mode
+--- config
+    location /t {
+        content_by_lua '
+            local m = ngx.re.match("章", [[\\u7AE0]], "uJ")
+            if m then
+                ngx.say("matched: ", m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+matched: 章
 --- no_error_log
 [error]
 

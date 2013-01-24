@@ -3293,6 +3293,9 @@ Specify `options` to control how the match operation will be performed. The foll
                   this option should always be used together with the 'o' option.
                   first introduced in ngx_lua v0.3.1rc30.
 
+    J             enable the PCRE Javascript compatible mode. this option was
+                  first introduced in the v0.7.14 release.
+
     m             multi-line mode (similar to Perl's /m modifier)
 
     o             compile-once mode (similar to Perl's /o modifier),
