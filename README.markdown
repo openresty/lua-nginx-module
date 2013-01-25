@@ -3294,6 +3294,7 @@ Specify `options` to control how the match operation will be performed. The foll
                                            "D")
                     -- m["named"] == {"hello", "world"}
                   this option was first introduced in the v0.7.14 release.
+                  this option requires at least PCRE 8.12.
 
     i             case insensitive mode (similar to Perl's /i modifier)
 
@@ -3303,7 +3304,8 @@ Specify `options` to control how the match operation will be performed. The foll
                   first introduced in ngx_lua v0.3.1rc30.
 
     J             enable the PCRE Javascript compatible mode. this option was
-                  first introduced in the v0.7.14 release.
+                  first introduced in the v0.7.14 release. this option requires
+                  at least PCRE 8.12.
 
     m             multi-line mode (similar to Perl's /m modifier)
 

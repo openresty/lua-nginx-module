@@ -1097,6 +1097,7 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_lua_regex_compile_t *re,
                 re->options |= PCRE_ANCHORED;
                 break;
 
+#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 12)
             case 'D':
                 re->options |= PCRE_DUPNAMES;
                 flags |= NGX_LUA_RE_MODE_DUPNAMES;
@@ -1105,6 +1106,7 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_lua_regex_compile_t *re,
             case 'J':
                 re->options |= PCRE_JAVASCRIPT_COMPAT;
                 break;
+#endif
 
             default:
                 msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
