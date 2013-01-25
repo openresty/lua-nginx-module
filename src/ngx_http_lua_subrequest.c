@@ -499,12 +499,14 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         /* set by ngx_memzero:
          *      sr_ctx->run_post_subrequest = 0
          *      sr_ctx->free = NULL
+         *      sr_ctx->body = NULL
          */
 
         ngx_http_lua_init_ctx(sr_ctx);
 
         sr_ctx->capture = 1;
         sr_ctx->index = index;
+        sr_ctx->last_body = &sr_ctx->body;
 
         psr_data->ctx = sr_ctx;
         psr_data->pr_co_ctx = coctx;

@@ -303,6 +303,8 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_chain_t             *body; /* buffered subrequest response body
                                       chains */
 
+    ngx_chain_t            **last_body; /* for the "body" field */
+
     ngx_str_t                exec_uri;
     ngx_str_t                exec_args;
 

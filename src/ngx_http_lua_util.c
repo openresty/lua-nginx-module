@@ -795,17 +795,11 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
 ngx_int_t
 ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-    ngx_chain_t **chain, ngx_chain_t *in)
+    ngx_chain_t ***plast, ngx_chain_t *in)
 {
-    ngx_chain_t     *cl, **ll;
+    ngx_chain_t     *cl;
     size_t           len;
     ngx_buf_t       *b;
-
-    ll = chain;
-
-    for (cl = *chain; cl; cl = cl->next) {
-        ll = &cl->next;
-    }
 
     len = 0;
 
@@ -835,13 +829,14 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     while (in) {
         if (ngx_buf_in_memory(in->buf)) {
             b->last = ngx_copy(b->last, in->buf->pos,
-                    in->buf->last - in->buf->pos);
+                               in->buf->last - in->buf->pos);
         }
 
         in = in->next;
     }
 
-    *ll = cl;
+    **plast = cl;
+    *plast = &cl->next;
 
     return NGX_OK;
 }

@@ -77,6 +77,8 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 
                 ctx->capture = old_ctx->capture;
                 ctx->index = old_ctx->index;
+                ctx->body = NULL;
+                ctx->last_body = &ctx->body;
                 psr_data->ctx = ctx;
             }
         }
@@ -142,7 +144,7 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                    "lua capture body filter capturing response body, uri "
                    "\"%V\"", &r->uri);
 
-    rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->body, in);
+    rc = ngx_http_lua_add_copy_chain(r, pr_ctx, &ctx->last_body, in);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
