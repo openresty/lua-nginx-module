@@ -374,25 +374,15 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         return luaL_error(L, "request object not found");
     }
 
-    if (r->request_body == NULL) {
-
-#if 1
-        rc = ngx_http_discard_request_body(r);
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-            return luaL_error(L, "failed to discard request body");
-        }
-#endif
-
-        rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
-        if (rb == NULL) {
-            return luaL_error(L, "out of memory");
-        }
-
-        r->request_body = rb;
-
-    } else {
-        rb = r->request_body;
+    if (r->discard_body) {
+        return luaL_error(L, "request body already discarded asynchronously");
     }
+
+    if (r->request_body == NULL) {
+        return luaL_error(L, "request body not read yet");
+    }
+
+    rb = r->request_body;
 
     tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
@@ -527,7 +517,6 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_int_t                    rc;
     size_t                       size;
     lua_Integer                  num;
 #if 1
@@ -545,6 +534,14 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r->discard_body) {
+        return luaL_error(L, "request body already discarded asynchronously");
+    }
+
+    if (r->request_body == NULL) {
+        return luaL_error(L, "request body not read yet");
+    }
 
     if (n == 1) {
         num = luaL_checkinteger(L, 1);
@@ -567,25 +564,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         }
     }
 
-    if (r->request_body == NULL) {
-
-#if 1
-        rc = ngx_http_discard_request_body(r);
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-            return luaL_error(L, "failed to discard request body");
-        }
-#endif
-
-        rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
-        if (rb == NULL) {
-            return luaL_error(L, "out of memory");
-        }
-
-        r->request_body = rb;
-
-    } else {
-        rb = r->request_body;
-    }
+    rb = r->request_body;
 
 #if 1
     tf = rb->temp_file;
@@ -844,6 +823,14 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         return luaL_error(L, "request object not found");
     }
 
+    if (r->discard_body) {
+        return luaL_error(L, "request body already discarded asynchronously");
+    }
+
+    if (r->request_body == NULL) {
+        return luaL_error(L, "request body not read yet");
+    }
+
     name.data = ngx_palloc(r->pool, name.len + 1);
     if (name.data == NULL) {
         return luaL_error(L, "out of memory");
@@ -862,25 +849,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
     dd("clean: %d", (int) clean);
 
-    if (r->request_body == NULL) {
-
-#if 1
-        rc = ngx_http_discard_request_body(r);
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-            return luaL_error(L, "failed to discard request body");
-        }
-#endif
-
-        rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
-        if (rb == NULL) {
-            return luaL_error(L, "out of memory");
-        }
-
-        r->request_body = rb;
-
-    } else {
-        rb = r->request_body;
-    }
+    rb = r->request_body;
 
     /* clean up existing r->request_body->bufs (if any) */
 
@@ -1098,6 +1067,19 @@ ngx_http_lua_write_request_body(ngx_http_request_t *r, ngx_chain_t *body)
         }
 
         rb->temp_file = tf;
+
+        if (body == NULL) {
+            /* empty body with r->request_body_in_file_only */
+
+            if (ngx_create_temp_file(&tf->file, tf->path, tf->pool,
+                                     tf->persistent, tf->clean, tf->access)
+                != NGX_OK)
+            {
+                return NGX_ERROR;
+            }
+
+            return NGX_OK;
+        }
     }
 
     n = ngx_write_chain_to_temp_file(rb->temp_file, body);
