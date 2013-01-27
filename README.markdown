@@ -2494,10 +2494,6 @@ Set the current request's request body using the in-memory data specified by the
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.11: [nginx-1.0.11-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.11-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well.
-
-This patch has already been applied to [ngx_openresty](http://openresty.org/) 1.0.8.17 and above.
-
 This function was first introduced in the `v0.3.1rc18` release.
 
 See also [ngx.req.set_body_file](http://wiki.nginx.org/HttpLuaModule#ngx.req.set_body_file).
@@ -2515,9 +2511,6 @@ If the optional `auto_clean` argument is given a `true` value, then this file wi
 Please ensure that the file specified by the `file_name` argument exists and is readable by an Nginx worker process by setting its permission properly to avoid Lua exception errors.
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
-
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [nginx-1.0.9-allow_request_body_updating.patch](https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch), and this patch should be applied cleanly to other releases of Nginx as well. 
-This patch has already been applied to [ngx_openresty](http://openresty.org/) 1.0.8.17 and above.
 
 This function was first introduced in the `v0.3.1rc18` release.
 

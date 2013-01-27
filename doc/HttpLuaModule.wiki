@@ -2420,10 +2420,6 @@ Set the current request's request body using the in-memory data specified by the
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
 
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.11: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.11-allow_request_body_updating.patch nginx-1.0.11-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well.
-
-This patch has already been applied to [http://openresty.org/ ngx_openresty] 1.0.8.17 and above.
-
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
 See also [[#ngx.req.set_body_file|ngx.req.set_body_file]].
@@ -2440,9 +2436,6 @@ If the optional <code>auto_clean</code> argument is given a <code>true</code> va
 Please ensure that the file specified by the <code>file_name</code> argument exists and is readable by an Nginx worker process by setting its permission properly to avoid Lua exception errors.
 
 If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
-
-This function requires patching the Nginx core to function properly because the Nginx core does not allow modifying request bodies by the current design. Here is a patch for Nginx 1.0.9: [https://github.com/agentzh/ngx_openresty/blob/master/patches/nginx-1.0.9-allow_request_body_updating.patch nginx-1.0.9-allow_request_body_updating.patch], and this patch should be applied cleanly to other releases of Nginx as well. 
-This patch has already been applied to [http://openresty.org/ ngx_openresty] 1.0.8.17 and above.
 
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
