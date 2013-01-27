@@ -575,6 +575,9 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     return lua_yield(L, 0);
@@ -868,6 +871,9 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     u->co_ctx = ctx->cur_co_ctx;
@@ -878,6 +884,9 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     return NGX_AGAIN;
@@ -1129,6 +1138,9 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     u->co_ctx = ctx->cur_co_ctx;
@@ -1694,6 +1706,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     u->co_ctx = ctx->cur_co_ctx;
@@ -2620,6 +2635,9 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     u->co_ctx = ctx->cur_co_ctx;

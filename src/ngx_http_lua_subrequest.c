@@ -153,6 +153,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no co ctx found");
     }
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua location capture, uri:\"%V\" c:%ud", &r->uri,
+                   r->main->count);
+
     sr_statuses_len = nsubreqs * sizeof(ngx_int_t);
     sr_headers_len  = nsubreqs * sizeof(ngx_http_headers_out_t *);
     sr_bodies_len   = nsubreqs * sizeof(ngx_str_t);
@@ -849,8 +853,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         return NGX_OK;
     }
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua run post subrequest handler: rc:%d", rc);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run post subrequest handler, rc:%i c:%ud", rc,
+                   r->main->count);
 
     ctx->run_post_subrequest = 1;
 
@@ -877,6 +882,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
                        "lua restoring write event handler");
 
         pr->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        pr->write_event_handler = ngx_http_core_run_phases;
     }
 
     dd("status rc = %d", (int) rc);

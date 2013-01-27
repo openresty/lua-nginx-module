@@ -117,7 +117,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
     r->main->count--;
 #endif
 
-    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+    if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         ctx->exit_code = rc;
         ctx->exited = 1;
 
@@ -131,6 +131,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 #if (nginx_version >= 1002006 && nginx_version < 1003000) ||                 \
         nginx_version >= 1003009
     r->main->count--;
+    dd("decrement r->main->count: %d", (int) r->main->count);
 #endif
 
     if (rc == NGX_AGAIN) {
@@ -163,8 +164,8 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
 
     ngx_http_lua_loc_conf_t             *llcf;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua req body post read");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua req body post read, c:%ud", r->main->count);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 

@@ -55,7 +55,7 @@ GET /t
 --- response_body
 hello
 --- error_log
-lua rewrite handler, uri "/t"
+lua rewrite handler, uri:"/t"
 lua capture header filter, uri "/t"
 lua capture body filter, uri "/t"
 --- no_error_log
@@ -65,6 +65,7 @@ lua header filter for user lua code, uri "/t"
 lua body filter for user lua code, uri "/t"
 lua log handler, uri "/t"
 [error]
+--- log_level: debug
 
 
 

@@ -390,6 +390,9 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     return lua_yield(L, 0);
@@ -902,6 +905,9 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+    } else {
+        r->write_event_handler = ngx_http_core_run_phases;
     }
 
     u->co_ctx = ctx->cur_co_ctx;

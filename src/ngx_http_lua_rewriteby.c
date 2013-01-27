@@ -29,8 +29,9 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua rewrite handler, uri \"%V\"", &r->uri);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua rewrite handler, uri:\"%V\" c:%ud", &r->uri,
+                   r->main->count);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 

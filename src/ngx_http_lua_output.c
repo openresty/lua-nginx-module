@@ -550,6 +550,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
         if (ctx->entered_content_phase) {
             /* mimic ngx_http_set_write_handler */
             r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+        } else {
+            r->write_event_handler = ngx_http_core_run_phases;
         }
 
         wev = r->connection->write;
