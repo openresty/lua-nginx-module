@@ -953,7 +953,8 @@ a client request body is buffered to a temporary file
 lua entry thread aborted: runtime error: [string "content_by_lua"]:2: request body not read yet
 
 
-=== TEST 33: init & append & finish (use default buffer size)
+
+=== TEST 34: init & append & finish (use default buffer size)
 --- config
     location /t {
         client_body_buffer_size 4;
@@ -983,7 +984,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 34: init & append & finish (exceeding the buffer size, proxy)
+=== TEST 35: init & append & finish (exceeding the buffer size, proxy)
 --- config
     location /t {
         rewrite_by_lua '
@@ -1028,7 +1029,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 35: init & append & finish (just in buffer, proxy)
+=== TEST 36: init & append & finish (just in buffer, proxy)
 --- config
     location /t {
         rewrite_by_lua '
@@ -1057,7 +1058,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 36: init & append & finish (exceeding buffer size, discard on-disk buffer)
+=== TEST 37: init & append & finish (exceeding buffer size, discard on-disk buffer)
 --- config
     client_header_buffer_size 100;
     location /t {
@@ -1154,7 +1155,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 37: ngx.req.socket + init & append & finish (requests)
+=== TEST 38: ngx.req.socket + init & append & finish (requests)
 --- config
     location = /t {
         client_body_buffer_size 1;
@@ -1203,7 +1204,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 38: ngx.req.socket + init & append & finish (pipelined requests, small buffer size)
+=== TEST 39: ngx.req.socket + init & append & finish (pipelined requests, small buffer size)
 --- config
     location = /t {
         client_body_buffer_size 1;
@@ -1257,7 +1258,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 39: ngx.req.socket + init & append & finish (pipelined requests, big buffer size)
+=== TEST 40: ngx.req.socket + init & append & finish (pipelined requests, big buffer size)
 --- config
     location = /t {
         client_body_buffer_size 100;
@@ -1312,7 +1313,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 40: calling ngx.req.socket after ngx.req.read_body
+=== TEST 41: calling ngx.req.socket after ngx.req.read_body
 --- config
     location = /t {
         client_body_buffer_size 100;
@@ -1341,7 +1342,7 @@ a client request body is buffered to a temporary file
 
 
 
-=== TEST 41: failed to write 100 continue
+=== TEST 42: failed to write 100 continue
 --- config
     location = /test {
         content_by_lua '
