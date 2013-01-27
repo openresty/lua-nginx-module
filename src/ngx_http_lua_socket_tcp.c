@@ -2979,6 +2979,14 @@ ngx_http_lua_req_socket(lua_State *L)
                           "subrequest");
     }
 
+#if nginx_version >= 1003009
+    if (r->headers_in.chunked) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "chunked request bodies not supported yet");
+        return 2;
+    }
+#endif
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
