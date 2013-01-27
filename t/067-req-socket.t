@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 7);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 our $HtmlDir = html_dir;
 
@@ -622,6 +622,45 @@ F(ngx_http_free_request) {
 */
 --- response_body
 failed to get the request socket: chunked request bodies not supported yet
+--- no_error_log
+[error]
+[alert]
+--- skip_nginx: 4: <1.3.9
+
+
+
+=== TEST 10: chunked support in ngx.req.read_body
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- raw_request eval
+"POST /t HTTP/1.1\r
+Host: localhost\r
+Transfer-Encoding: chunked\r
+Connection: close\r
+\r
+b\r
+hello world\r
+0\r
+\r
+"
+--- stap2
+/*
+F(ngx_http_finalize_request) {
+    if ($r->main->count == 2) {
+        print_ubacktrace()
+    }
+}
+F(ngx_http_free_request) {
+    print_ubacktrace()
+}
+*/
+--- response_body
+hello world
 --- no_error_log
 [error]
 [alert]
