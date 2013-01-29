@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.13](https://github.com/chaoslawful/lua-nginx-module/tags) released on 3 January 2013.
+This document describes ngx_lua [v0.7.14](https://github.com/chaoslawful/lua-nginx-module/tags) released on 28 January 2013.
 
 Synopsis
 ========
@@ -4887,9 +4887,9 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 
 Nginx Compatibility
 ===================
-The module is compatible with the following versions of Nginx:
+The latest module is compatible with the following versions of Nginx:
 
-* 1.3.x (last tested: 1.3.7)
+* 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.6)
 * 1.1.x (last tested: 1.1.5)
 * 1.0.x (last tested: 1.0.15)
@@ -5059,7 +5059,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2013, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2013, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>.
+Copyright (C) 2009-2013, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
 
 All rights reserved.
 
