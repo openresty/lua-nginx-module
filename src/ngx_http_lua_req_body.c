@@ -281,6 +281,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
     len = 0;
 
     for (; cl; cl = cl->next) {
+        dd("body chunk len: %d", (int) ngx_buf_size(cl->buf));
         len += cl->buf->last - cl->buf->pos;
     }
 

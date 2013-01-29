@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 37);
+plan tests => repeat_each() * (blocks() * 3 + 38);
 
 #no_diff();
 no_long_string();
@@ -1360,4 +1360,39 @@ Expect: 100-Continue
 [alert]
 [error]
 http finalize request: 500, "/test?" a:1, c:0
+
+
+
+=== TEST 43: chunked support in ngx.req.read_body
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+--- raw_request eval
+"POST /t HTTP/1.1\r
+Host: localhost\r
+Transfer-Encoding: chunked\r
+Connection: close\r
+\r
+5\r
+hello\r
+1\r
+,\r
+1\r
+ \r
+5\r
+world\r
+0\r
+\r
+"
+
+--- response_body
+hello, world
+--- no_error_log
+[error]
+[alert]
+--- skip_nginx: 4: <1.3.9
 
