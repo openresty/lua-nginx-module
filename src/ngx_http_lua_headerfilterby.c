@@ -1,4 +1,8 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
@@ -150,8 +154,10 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->header_filter_src.value.data,
-            llcf->header_filter_src.value.len, llcf->header_filter_src_key,
-            "header_filter_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
+                                       llcf->header_filter_src.value.len,
+                                       llcf->header_filter_src_key,
+                                       "header_filter_by_lua", &err,
+                                       llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -191,12 +197,13 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
     /* Eval nginx variables in code path string first */
     if (ngx_http_complex_value(r, &llcf->header_filter_src, &eval_src)
-            != NGX_OK) {
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
-            eval_src.len);
+                                           eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
@@ -207,7 +214,8 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path,
-            llcf->header_filter_src_key, &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->header_filter_src_key, &err,
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -305,3 +313,4 @@ ngx_http_lua_header_filter_init()
     return NGX_OK;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

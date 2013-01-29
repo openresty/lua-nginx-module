@@ -1,3 +1,10 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -329,3 +336,4 @@ ngx_http_lua_coroutine_status(lua_State *L)
     return 1;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

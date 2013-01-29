@@ -1,7 +1,13 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
 
-#ifndef NGX_HTTP_LUA_COMMON_H
-#define NGX_HTTP_LUA_COMMON_H
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
+#ifndef _NGX_HTTP_LUA_COMMON_H_INCLUDED_
+#define _NGX_HTTP_LUA_COMMON_H_INCLUDED_
+
 
 #include <nginx.h>
 #include <ngx_core.h>
@@ -394,5 +400,6 @@ extern ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 extern ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 
-#endif /* NGX_HTTP_LUA_COMMON_H */
+#endif /* _NGX_HTTP_LUA_COMMON_H_INCLUDED_ */
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

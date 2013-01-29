@@ -1,3 +1,9 @@
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -124,8 +130,8 @@ ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
             sdn = (ngx_http_lua_shdict_node_t *) &node->color;
             sdnt = (ngx_http_lua_shdict_node_t *) &temp->color;
 
-            p = (ngx_memn2cmp(sdn->data, sdnt->data, sdn->key_len,
-                sdnt->key_len) < 0) ? &temp->left : &temp->right;
+            p = ngx_memn2cmp(sdn->data, sdnt->data, sdn->key_len,
+                             sdnt->key_len) < 0 ? &temp->left : &temp->right;
         }
 
         if (*p == sentinel) {
@@ -359,7 +365,7 @@ ngx_http_lua_shdict_get(lua_State *L)
 
     if (n != 2) {
         return luaL_error(L, "expecting exactly two arguments, "
-                "but only seen %d", n);
+                          "but only seen %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -432,8 +438,8 @@ ngx_http_lua_shdict_get(lua_State *L)
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             return luaL_error(L, "bad lua number value size found for key %s "
-                    "in shared_dict %s: %lu", key.data, name.data,
-                    (unsigned long) value.len);
+                              "in shared_dict %s: %lu", key.data, name.data,
+                              (unsigned long) value.len);
         }
 
         num = *(lua_Number *) value.data;
@@ -448,8 +454,8 @@ ngx_http_lua_shdict_get(lua_State *L)
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             return luaL_error(L, "bad lua boolean value size found for key %s "
-                    "in shared_dict %s: %lu", key.data, name.data,
-                    (unsigned long) value.len);
+                              "in shared_dict %s: %lu", key.data, name.data,
+                              (unsigned long) value.len);
         }
 
         c = *value.data;
@@ -462,8 +468,8 @@ ngx_http_lua_shdict_get(lua_State *L)
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         return luaL_error(L, "bad value type found for key %s in "
-                "shared_dict %s: %d", key.data, name.data,
-                value_type);
+                          "shared_dict %s: %d", key.data, name.data,
+                          value_type);
     }
 
     user_flags = sd->user_flags;
@@ -488,7 +494,7 @@ ngx_http_lua_shdict_delete(lua_State *L)
 
     if (n != 2) {
         return luaL_error(L, "expecting 2 arguments, "
-                "but only seen %d", n);
+                          "but only seen %d", n);
     }
 
     lua_pushnil(L);
@@ -509,8 +515,7 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 1) {
-        return luaL_error(L, "expecting 1 argument, "
-                "but seen %d", n);
+        return luaL_error(L, "expecting 1 argument, but seen %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -557,8 +562,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 or 2 argument(s), "
-                "but saw %d", n);
+        return luaL_error(L, "expecting 1 or 2 argument(s), but saw %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -600,9 +604,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
                 ((u_char *) sd - offsetof(ngx_rbtree_node_t, color));
 
             ngx_rbtree_delete(&ctx->sh->rbtree, node);
-
             ngx_slab_free_locked(ctx->shpool, node);
-
             freed++;
 
             if (attempts && freed == attempts) {
@@ -767,7 +769,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     if (n != 3 && n != 4 && n != 5) {
         return luaL_error(L, "expecting 3, 4 or 5 arguments, "
-                "but only seen %d", n);
+                          "but only seen %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -788,9 +790,8 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     }
 
     if (key.len > 65535) {
-        return luaL_error(L,
-                      "the key argument is more than 65535 bytes: %d",
-                      (int) key.len);
+        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
+                          (int) key.len);
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -825,8 +826,8 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     default:
         return luaL_error(L, "unsupported value type for key \"%s\" in "
-                "shared_dict \"%s\": %s", key.data, name.data,
-                lua_typename(L, value_type));
+                          "shared_dict \"%s\": %s", key.data, name.data,
+                          lua_typename(L, value_type));
     }
 
     if (n >= 4) {
@@ -902,8 +903,8 @@ replace:
         if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                "lua shared dict set: found old entry and value size matched, "
-                "reusing it");
+                           "lua shared dict set: found old entry and value "
+                           "size matched, reusing it");
 
             ngx_queue_remove(&sd->queue);
             ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
@@ -913,7 +914,7 @@ replace:
             if (exptime > 0) {
                 tp = ngx_timeofday();
                 sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
-                        + exptime * 1000;
+                              + exptime * 1000;
 
             } else {
                 sd->expires = 0;
@@ -939,8 +940,8 @@ replace:
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-            "lua shared dict set: found old entry bug value size NOT matched, "
-            "removing it first");
+                       "lua shared dict set: found old entry bug value size "
+                       "NOT matched, removing it first");
 
 remove:
         ngx_queue_remove(&sd->queue);
@@ -967,7 +968,7 @@ insert:
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-        "lua shared dict set: creating a new entry");
+                   "lua shared dict set: creating a new entry");
 
     n = offsetof(ngx_rbtree_node_t, color)
         + offsetof(ngx_http_lua_shdict_node_t, data)
@@ -979,8 +980,8 @@ insert:
     if (node == NULL) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-            "lua shared dict set: overriding non-expired items due to memory "
-            "shortage for entry \"%V\"", &name);
+                       "lua shared dict set: overriding non-expired items "
+                       "due to memory shortage for entry \"%V\"", &name);
 
         for (i = 0; i < 30; i++) {
             if (ngx_http_lua_shdict_expire(ctx, 0) == 0) {
@@ -1012,7 +1013,7 @@ allocated:
     if (exptime > 0) {
         tp = ngx_timeofday();
         sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
-                + exptime * 1000;
+                      + exptime * 1000;
 
     } else {
         sd->expires = 0;
@@ -1059,8 +1060,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 3) {
-        return luaL_error(L, "expecting 3 arguments, "
-                "but only seen %d", n);
+        return luaL_error(L, "expecting 3 arguments, but only seen %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
@@ -1079,9 +1079,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
     }
 
     if (key.len > 65535) {
-        return luaL_error(L,
-                      "the key argument is more than 65535 bytes: %d",
-                      (int) key.len);
+        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
+                          (int) key.len);
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -1127,7 +1126,6 @@ ngx_http_lua_shdict_incr(lua_State *L)
     p = sd->data + key.len;
 
     num = *(lua_Number *) p;
-
     num += value;
 
     ngx_memcpy(p, (lua_Number *) &num, sizeof(lua_Number));
@@ -1258,6 +1256,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
             if (part->next == NULL) {
                 break;
             }
+
             part = part->next;
             zone = part->elts;
             i = 0;
@@ -1278,3 +1277,4 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
     return NULL;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

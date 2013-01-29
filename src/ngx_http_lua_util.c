@@ -1,4 +1,9 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
@@ -3269,3 +3274,5 @@ ngx_http_lua_test_expect(ngx_http_request_t *r)
 
     return NGX_ERROR;
 }
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

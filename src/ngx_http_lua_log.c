@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
@@ -9,11 +17,8 @@
 
 static int ngx_http_lua_print(lua_State *L);
 static int ngx_http_lua_ngx_log(lua_State *L);
-
-
 static int log_wrapper(ngx_log_t *log, const char *ident,
-        ngx_uint_t level, lua_State *L);
-
+    ngx_uint_t level, lua_State *L);
 static void ngx_http_lua_inject_log_consts(lua_State *L);
 
 
@@ -93,7 +98,7 @@ ngx_http_lua_print(lua_State *L)
 
 static int
 log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
-        lua_State *L)
+    lua_State *L)
 {
     u_char              *buf;
     u_char              *p, *q;
@@ -176,7 +181,8 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
 
             default:
                 msg = lua_pushfstring(L, "string, number, boolean, or nil "
-                         "expected, got %s", lua_typename(L, type));
+                                      "expected, got %s",
+                                      lua_typename(L, type));
                 return luaL_argerror(L, i, msg);
         }
     }
@@ -302,3 +308,4 @@ ngx_http_lua_inject_log_consts(lua_State *L)
     /* }}} */
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

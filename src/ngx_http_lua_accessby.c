@@ -1,9 +1,15 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include <nginx.h>
 #include "ngx_http_lua_accessby.h"
@@ -44,7 +50,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         last_ph = &ph[cur_ph->next - 2];
 
         dd("ph cur: %d, ph next: %d", (int) r->phase_handler,
-                (int) (cur_ph->next - 2));
+           (int) (cur_ph->next - 2));
 
 #if 0
         if (cur_ph == last_ph) {
@@ -111,7 +117,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         r->request_body_in_clean_file = 1;
 
         rc = ngx_http_read_client_request_body(r,
-                ngx_http_lua_generic_phase_post_read);
+                                       ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
 #if (nginx_version < 1002006) ||                                             \
@@ -149,8 +155,10 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
-            llcf->access_src.value.len, llcf->access_src_key,
-            "access_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
+                                       llcf->access_src.value.len,
+                                       llcf->access_src_key,
+                                       "access_by_lua", &err,
+                                       llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -197,7 +205,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-            &err, llcf->enable_code_cache ? 1 : 0);
+                                     &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -331,3 +339,4 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     return NGX_DECLINED;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

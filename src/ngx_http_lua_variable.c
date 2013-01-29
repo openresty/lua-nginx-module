@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_util.h"
@@ -76,8 +84,9 @@ ngx_http_lua_var_get(lua_State *L)
 
         dd("n = %d, ncaptures = %d", (int) n, (int) r->ncaptures);
 
-        if (r->captures == NULL || r->captures_data == NULL ||
-                n >= r->ncaptures)
+        if (r->captures == NULL
+            || r->captures_data == NULL
+            || n >= r->ncaptures)
         {
             lua_pushnil(L);
             return 1;
@@ -114,7 +123,6 @@ ngx_http_lua_var_get(lua_State *L)
     }
 
     lua_pushlstring(L, (const char *) vv->data, (size_t) vv->len);
-
     return 1;
 }
 
@@ -272,3 +280,4 @@ ngx_http_lua_var_set(lua_State *L)
                       lowcase, lowcase);
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

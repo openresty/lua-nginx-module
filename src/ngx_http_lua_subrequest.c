@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_subrequest.h"
 #include "ngx_http_lua_util.h"
@@ -29,7 +37,7 @@ ngx_str_t  ngx_http_lua_options_method =
 
 
 static ngx_str_t  ngx_http_lua_content_length_header_key =
-        ngx_string("Content-Length");
+    ngx_string("Content-Length");
 
 
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
@@ -162,7 +170,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     sr_bodies_len   = nsubreqs * sizeof(ngx_str_t);
 
     p = ngx_pcalloc(r->pool, sr_statuses_len + sr_headers_len +
-            sr_bodies_len);
+                    sr_bodies_len);
 
     if (p == NULL) {
         return luaL_error(L, "out of memory");
@@ -194,15 +202,15 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         if (lua_type(L, -1) != LUA_TTABLE) {
             return luaL_error(L, "the query argument %d is not a table, "
-                    "but a %s",
-                    index, lua_typename(L, lua_type(L, -1)));
+                              "but a %s",
+                              index, lua_typename(L, lua_type(L, -1)));
         }
 
         nargs = lua_objlen(L, -1);
 
         if (nargs != 1 && nargs != 2) {
             return luaL_error(L, "query argument %d expecting one or "
-                    "two arguments", index);
+                              "two arguments", index);
         }
 
         lua_rawgeti(L, 2, 1); /* queries query uri */
@@ -234,8 +242,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             if (lua_type(L, 4) != LUA_TTABLE) {
                 return luaL_error(L, "expecting table as the 2nd argument for "
-                        "subrequest %d, but got %s", index,
-                        luaL_typename(L, 4));
+                                  "subrequest %d, but got %s", index,
+                                  luaL_typename(L, 4));
             }
 
             dd("queries query uri opts: %d", lua_gettop(L));
@@ -369,7 +377,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             if (type != LUA_TNIL) {
                 if (type != LUA_TTABLE) {
                     return luaL_error(L, "Bad ctx option value type %s, "
-                            "expected a Lua table", lua_typename(L, type));
+                                      "expected a Lua table",
+                                      lua_typename(L, type));
                 }
 
                 custom_ctx = 1;
@@ -578,7 +587,9 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->request_body = body;
 
         rc = ngx_http_lua_set_content_length_header(sr,
-                body->buf ? ngx_buf_size(body->buf) : 0);
+                                                    body->buf
+                                                    ? ngx_buf_size(body->buf)
+                                                    : 0);
 
         if (rc != NGX_OK) {
             return NGX_ERROR;
@@ -626,7 +637,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
         default:
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "unsupported HTTP method: %u", (unsigned) method);
+                          "unsupported HTTP method: %u", (unsigned) method);
 
             return NGX_ERROR;
     }
@@ -668,7 +679,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
 static ngx_int_t
 ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
-       ngx_array_t *extra_vars)
+   ngx_array_t *extra_vars)
 {
     ngx_http_core_main_conf_t   *cmcf;
     ngx_http_variable_t         *v;
@@ -758,7 +769,8 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
                 vv->len = len;
 
                 ngx_log_debug2(NGX_LOG_DEBUG_HTTP, sr->connection->log, 0,
-                      "variable \"%V\" set to value \"%v\"", &name, vv);
+                               "variable \"%V\" set to value \"%v\"",
+                               &name, vv);
 
                 continue;
             }
@@ -777,7 +789,7 @@ ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
 
 static void
 ngx_http_lua_process_vars_option(ngx_http_request_t *r, lua_State *L,
-        int table, ngx_array_t **varsp)
+    int table, ngx_array_t **varsp)
 {
     ngx_array_t         *vars;
     ngx_keyval_t        *var;
@@ -805,7 +817,7 @@ ngx_http_lua_process_vars_option(ngx_http_request_t *r, lua_State *L,
 
         if (lua_type(L, -2) != LUA_TSTRING) {
             luaL_error(L, "attempt to use a non-string key in the "
-                    "\"vars\" option table");
+                       "\"vars\" option table");
             return;
         }
 
@@ -1019,7 +1031,8 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
     r->headers_in.content_length_n = len;
 
     if (ngx_list_init(&r->headers_in.headers, r->pool, 20,
-                sizeof(ngx_table_elt_t)) != NGX_OK) {
+                      sizeof(ngx_table_elt_t)) != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
@@ -1054,13 +1067,13 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 
 #if 0
     dd("content length hash: %lu == %lu", (unsigned long) h->hash,
-            ngx_hash_key_lc((u_char *) "Content-Length",
-            sizeof("Content-Length") - 1));
+       ngx_hash_key_lc((u_char *) "Content-Length",
+       sizeof("Content-Length") - 1));
 #endif
 
     dd("r content length: %.*s",
-            (int)r->headers_in.content_length->value.len,
-            r->headers_in.content_length->value.data);
+       (int)r->headers_in.content_length->value.len,
+       r->headers_in.content_length->value.data);
 
     pr = r->parent;
 
@@ -1085,9 +1098,9 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
             i = 0;
         }
 
-        if (header[i].key.len == sizeof("Content-Length") - 1 &&
-                ngx_strncasecmp(header[i].key.data, (u_char *) "Content-Length",
-                sizeof("Content-Length") - 1) == 0)
+        if (header[i].key.len == sizeof("Content-Length") - 1
+            && ngx_strncasecmp(header[i].key.data, (u_char *) "Content-Length",
+                               sizeof("Content-Length") - 1) == 0)
         {
             continue;
         }
@@ -1130,10 +1143,10 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
     for (index = 0; index < coctx->nsubreqs; index++) {
         dd("summary: reqs %d, subquery %d, pending %d, req %.*s",
-                (int) coctx->nsubreqs,
-                (int) index,
-                (int) coctx->pending_subreqs,
-                (int) r->uri.len, r->uri.data);
+           (int) coctx->nsubreqs,
+           (int) index,
+           (int) coctx->pending_subreqs,
+           (int) r->uri.len, r->uri.data);
 
         /*  {{{ construct ret value */
         lua_newtable(co);
@@ -1192,7 +1205,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                     header[i].key.data);
 
             lua_pushlstring(co, (char *) header[i].key.data,
-                    header[i].key.len); /* header key */
+                            header[i].key.len); /* header key */
             lua_pushvalue(co, -1); /* stack: table key key */
 
             /* check if header already exists */
@@ -1202,7 +1215,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                 lua_pop(co, 1); /* stack: table key */
 
                 lua_pushlstring(co, (char *) header[i].value.data,
-                        header[i].value.len); /* stack: table key value */
+                                header[i].value.len);
+                    /* stack: table key value */
 
                 lua_rawset(co, -3); /* stack: table */
 
@@ -1216,7 +1230,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                     lua_rawseti(co, -2, 1); /* stack: table key table */
 
                     lua_pushlstring(co, (char *) header[i].value.data,
-                            header[i].value.len);
+                                    header[i].value.len);
                         /* stack: table key table value */
 
                     lua_rawseti(co, -2, lua_objlen(co, -2) + 1);
@@ -1226,7 +1240,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
                 } else {
                     lua_pushlstring(co, (char *) header[i].value.data,
-                            header[i].value.len);
+                                    header[i].value.len);
                         /* stack: table key table value */
 
                     lua_rawseti(co, -2, lua_objlen(co, -2) + 1);
@@ -1240,7 +1254,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         if (sr_headers->content_type.len) {
             lua_pushliteral(co, "Content-Type"); /* header key */
             lua_pushlstring(co, (char *) sr_headers->content_type.data,
-                    sr_headers->content_type.len); /* head key value */
+                            sr_headers->content_type.len); /* head key value */
             lua_rawset(co, -3); /* head */
         }
 
@@ -1260,7 +1274,8 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         if (sr_headers->location && sr_headers->location->value.len) {
             lua_pushliteral(co, "Location"); /* header key */
             lua_pushlstring(co, (char *) sr_headers->location->value.data,
-                    sr_headers->location->value.len); /* head key value */
+                            sr_headers->location->value.len);
+            /* head key value */
             lua_rawset(co, -3); /* head */
         }
 
@@ -1530,3 +1545,4 @@ ngx_http_post_request_to_head(ngx_http_request_t *r)
     return NGX_OK;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

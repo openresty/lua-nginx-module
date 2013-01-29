@@ -1,5 +1,11 @@
-#ifndef NGX_HTTP_LUA_API_H
-#define NGX_HTTP_LUA_API_H
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
+#ifndef _NGX_HTTP_LUA_API_H_INCLUDED_
+#define _NGX_HTTP_LUA_API_H_INCLUDED_
 
 
 #include <nginx.h>
@@ -36,5 +42,6 @@ ngx_int_t ngx_http_lua_shared_dict_get(ngx_shm_zone_t *shm_zone,
 ngx_shm_zone_t *ngx_http_lua_find_zone(u_char *name_data, size_t name_len);
 
 
-#endif /* NGX_HTTP_LUA_API_H */
+#endif /* _NGX_HTTP_LUA_API_H_INCLUDED_ */
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

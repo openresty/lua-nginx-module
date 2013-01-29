@@ -1,5 +1,11 @@
-#ifndef NGX_HTTP_LUA_SOCKET_TCP_H
-#define NGX_HTTP_LUA_SOCKET_TCP_H
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
+#ifndef _NGX_HTTP_LUA_SOCKET_TCP_H_INCLUDED_
+#define _NGX_HTTP_LUA_SOCKET_TCP_H_INCLUDED_
 
 
 #include "ngx_http_lua_common.h"
@@ -121,9 +127,9 @@ typedef struct {
 
 
 void ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L);
-
 void ngx_http_lua_inject_req_socket_api(lua_State *L);
 
 
-#endif /* NGX_HTTP_LUA_SOCKET_TCP_H */
+#endif /* _NGX_HTTP_LUA_SOCKET_TCP_H_INCLUDED_ */
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

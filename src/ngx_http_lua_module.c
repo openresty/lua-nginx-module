@@ -1,9 +1,15 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_capturefilter.h"
@@ -720,3 +726,4 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     return NGX_CONF_OK;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -1,4 +1,9 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
@@ -176,7 +181,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         r->request_body_in_clean_file = 1;
 
         rc = ngx_http_read_client_request_body(r,
-                ngx_http_lua_content_phase_post_read);
+                                       ngx_http_lua_content_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
 #if (nginx_version < 1002006) ||                                             \
@@ -251,7 +256,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->content_src_key,
-            &err, llcf->enable_code_cache ? 1 : 0);
+                                     &err, llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -287,8 +292,10 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->content_src.value.data,
-            llcf->content_src.value.len, llcf->content_src_key,
-            "content_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
+                                       llcf->content_src.value.len,
+                                       llcf->content_src_key,
+                                       "content_by_lua", &err,
+                                       llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -373,3 +380,4 @@ done:
     return NGX_DONE;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

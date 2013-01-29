@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_uri.h"
 #include "ngx_http_lua_util.h"
@@ -52,9 +60,9 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
             }
 
             dd("rewrite: %d, access: %d, content: %d",
-                    (int) ctx->entered_rewrite_phase,
-                    (int) ctx->entered_access_phase,
-                    (int) ctx->entered_content_phase);
+               (int) ctx->entered_rewrite_phase,
+               (int) ctx->entered_access_phase,
+               (int) ctx->entered_content_phase);
 
             ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE);
 
@@ -97,3 +105,4 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     return 0;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

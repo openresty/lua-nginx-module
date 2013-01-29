@@ -1,3 +1,9 @@
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -121,9 +127,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "tcp");
 
     {
-        const char    buf[] = "local sock = ngx.socket.tcp()"
-                   " local ok, err = sock:connect(...)"
-                   " if ok then return sock else return nil, err end";
+        const char  buf[] = "local sock = ngx.socket.tcp()"
+                            " local ok, err = sock:connect(...)"
+                            " if ok then return sock else return nil, err end";
 
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.socket.connect");
     }
@@ -1037,7 +1043,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
             pat.data = (u_char *) luaL_checklstring(L, 2, &pat.len);
             if (pat.len != 2 || pat.data[0] != '*') {
                 p = (char *) lua_pushfstring(L, "bad pattern argument: %s",
-                                    (char *) pat.data);
+                                             (char *) pat.data);
 
                 return luaL_argerror(L, 2, p);
             }
@@ -1384,7 +1390,7 @@ success:
 
             if (rc == NGX_ERROR) {
                 dd("input filter error: ft_type:%d waiting:%d",
-                        (int) u->ft_type, (int) u->waiting);
+                   (int) u->ft_type, (int) u->waiting);
 
                 ngx_http_lua_socket_handle_error(r, u,
                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
@@ -1640,8 +1646,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
         default:
             msg = lua_pushfstring(L, "string, number, boolean, nil, "
-                    "or array table expected, got %s",
-                    lua_typename(L, type));
+                                  "or array table expected, got %s",
+                                  lua_typename(L, type));
 
             return luaL_argerror(L, 2, msg);
     }
@@ -3300,8 +3306,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
                        "lua tcp socket connection pool size: %ui", pool_size);
 
         size = sizeof(ngx_http_lua_socket_pool_t) + key.len
-                + sizeof(ngx_http_lua_socket_pool_item_t)
-                * pool_size;
+               + sizeof(ngx_http_lua_socket_pool_item_t)
+               * pool_size;
 
         spool = lua_newuserdata(L, size);
         if (spool == NULL) {
@@ -3602,7 +3608,7 @@ close:
     spool->active_connections--;
 
     dd("keepalive: active connections: %u",
-            (unsigned) spool->active_connections);
+       (unsigned) spool->active_connections);
 
     if (spool->active_connections == 0) {
         ngx_http_lua_socket_free_pool(ev->log, spool);
@@ -3772,7 +3778,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
         last = ngx_copy(last, b->pos, b->last - b->pos);
 
         dd("copying input data chunk from %p: \"%.*s\"", cl,
-            (int) (b->last - b->pos), b->pos);
+           (int) (b->last - b->pos), b->pos);
     }
 
     lua_pushlstring(L, (char *) p, size);
@@ -3881,10 +3887,10 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     new_cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_recv_bufs,
-                                          size,
-                                          (ngx_buf_tag_t)
-                                          &ngx_http_lua_module);
+                                              &ctx->free_recv_bufs,
+                                              size,
+                                              (ngx_buf_tag_t)
+                                              &ngx_http_lua_module);
 
     if (new_cl == NULL) {
         return NGX_ERROR;
@@ -3895,10 +3901,10 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     b->last = ngx_copy(b->last, pat, prefix);
 
     dd("copy resumed data to %p: %d: \"%.*s\"",
-        new_cl, (int) (b->last - b->pos), (int) (b->last - b->pos), b->pos);
+       new_cl, (int) (b->last - b->pos), (int) (b->last - b->pos), b->pos);
 
     dd("before resuming data: bufs_in %p, buf_in %p, buf_in next %p",
-        u->bufs_in, u->buf_in, u->buf_in->next);
+       u->bufs_in, u->buf_in, u->buf_in->next);
 
     ll = &u->bufs_in;
     for (cl = u->bufs_in; cl->next; cl = cl->next) {
@@ -3909,14 +3915,14 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     new_cl->next = u->buf_in;
 
     dd("after resuming data: bufs_in %p, buf_in %p, buf_in next %p",
-        u->bufs_in, u->buf_in, u->buf_in->next);
+       u->bufs_in, u->buf_in, u->buf_in->next);
 
 #if (DDEBUG)
     for (cl = u->bufs_in; cl; cl = cl->next) {
         b = cl->buf;
 
         dd("result buf after resuming data: %p: %.*s", cl,
-            (int) ngx_buf_size(b), b->pos);
+           (int) ngx_buf_size(b), b->pos);
     }
 #endif
 
@@ -4031,3 +4037,4 @@ ngx_http_lua_tcp_socket_cleanup(void *data)
     ngx_http_lua_socket_tcp_finalize(u->request, u);
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

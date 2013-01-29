@@ -1,9 +1,15 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_exception.h"
@@ -22,9 +28,7 @@
 
 
 static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
-        ngx_http_request_t *r, ngx_chain_t *in);
-
-
+    ngx_http_request_t *r, ngx_chain_t *in);
 static ngx_http_output_body_filter_pt ngx_http_next_body_filter;
 
 
@@ -163,8 +167,10 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->body_filter_src.value.data,
-            llcf->body_filter_src.value.len, llcf->body_filter_src_key,
-            "body_filter_by_lua", &err, llcf->enable_code_cache ? 1 : 0);
+                                       llcf->body_filter_src.value.len,
+                                       llcf->body_filter_src_key,
+                                       "body_filter_by_lua", &err,
+                                       llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -172,7 +178,7 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Failed to load Lua inlined code: %s", err);
+                      "Failed to load Lua inlined code: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -204,12 +210,13 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 
     /* Eval nginx variables in code path string first */
     if (ngx_http_complex_value(r, &llcf->body_filter_src, &eval_src)
-            != NGX_OK) {
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
-            eval_src.len);
+                                           eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
@@ -220,7 +227,8 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path,
-            llcf->body_filter_src_key, &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->body_filter_src_key, &err,
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
         if (err == NULL) {
@@ -672,3 +680,4 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     return 0;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

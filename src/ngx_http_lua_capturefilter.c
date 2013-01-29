@@ -1,9 +1,15 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include <nginx.h>
 #include "ngx_http_lua_capturefilter.h"
@@ -18,7 +24,7 @@ ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
 
 static ngx_int_t ngx_http_lua_capture_header_filter(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_capture_body_filter(ngx_http_request_t *r,
-        ngx_chain_t *in);
+    ngx_chain_t *in);
 
 
 ngx_int_t
@@ -154,3 +160,4 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     return NGX_OK;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

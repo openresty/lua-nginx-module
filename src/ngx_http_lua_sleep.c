@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_sleep.h"
@@ -62,7 +70,7 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     coctx->sleep.log = r->connection->log;
 
     dd("adding timer with delay %lu ms, r:%.*s", (unsigned long) delay,
-            (int) r->uri.len, r->uri.data);
+       (int) r->uri.len, r->uri.data);
 
     ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
 
@@ -179,3 +187,4 @@ ngx_http_lua_sleep_resume(ngx_http_request_t *r)
     return rc;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

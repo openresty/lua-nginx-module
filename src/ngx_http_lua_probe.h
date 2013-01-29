@@ -4,8 +4,8 @@
  *  https://github.com/agentzh/nginx-devel-utils
  */
 
-#ifndef NGX_HTTP_LUA_PROBE_H
-#define NGX_HTTP_LUA_PROBE_H
+#ifndef _NGX_HTTP_LUA_PROBE_H_INCLUDED_
+#define _NGX_HTTP_LUA_PROBE_H_INCLUDED_
 
 
 #include <ngx_config.h>
@@ -82,4 +82,4 @@
 
 #endif
 
-#endif /* NGX_HTTP_LUA_PROBE_H */
+#endif /* _NGX_HTTP_LUA_PROBE_H_INCLUDED_ */

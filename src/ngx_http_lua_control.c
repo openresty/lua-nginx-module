@@ -1,3 +1,10 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -59,7 +66,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     n = lua_gettop(L);
     if (n != 1 && n != 2) {
         return luaL_error(L, "expecting one or two arguments, but got %d",
-                n);
+                          n);
     }
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
@@ -142,7 +149,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
         default:
             msg = lua_pushfstring(L, "string, number, or table expected, "
-                    "but got %s", luaL_typename(L, 2));
+                                  "but got %s", luaL_typename(L, 2));
             return luaL_argerror(L, 2, msg);
         }
 
@@ -171,7 +178,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     if (ctx->headers_sent) {
         return luaL_error(L, "attempt to call ngx.exec after "
-                "sending out response headers");
+                          "sending out response headers");
     }
 
     ctx->exec_uri = uri;
@@ -211,7 +218,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
                 rc != NGX_HTTP_MOVED_PERMANENTLY)
         {
             return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY and "
-                    "ngx.HTTP_MOVED_PERMANENTLY are allowed");
+                              "ngx.HTTP_MOVED_PERMANENTLY are allowed");
         }
     } else {
         rc = NGX_HTTP_MOVED_TEMPORARILY;
@@ -239,7 +246,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     if (ctx->headers_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
-                "the headers");
+                          "the headers");
     }
 
     uri = ngx_palloc(r->pool, len);
@@ -256,7 +263,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     r->headers_out.location->hash =
             ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-                    ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+                     ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
 
 #if 0
     dd("location hash: %lu == %lu",
@@ -406,3 +413,4 @@ ngx_http_lua_on_abort(lua_State *L)
     return 1;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

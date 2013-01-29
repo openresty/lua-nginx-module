@@ -1,9 +1,15 @@
-/* vim:set ft=c ts=4 sw=4 et fdm=marker: */
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
 
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include <nginx.h>
 #include "ngx_http_lua_clfactory.h"
@@ -62,6 +68,7 @@
 #define    LUA_BIG_ENDIAN_8BYTES_CODE_LEN           (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
 #define    LUAC_VERSION            0x51
+
 
 /*
  * taken from chaoslawful:
@@ -360,6 +367,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
         size_t i = 0;
         dd("==LJ_END_CODE: %ld rest_len: %ld==", lf->end_code_len,
            lf->rest_len);
+
         for (i = 0; i < lf->end_code_len; i++) {
             dd("%ld: 0x%02X", i, (unsigned) ((u_char) lf->end_code.ptr[i]));
         }
@@ -784,3 +792,4 @@ clfactory_getS(lua_State *L, void *ud, size_t *size)
     return ls->s;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

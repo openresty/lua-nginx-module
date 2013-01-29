@@ -1,3 +1,9 @@
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -748,8 +754,8 @@ ngx_http_lua_socket_udp_send(lua_State *L)
 
         default:
             msg = lua_pushfstring(L, "string, number, boolean, nil, "
-                    "or array table expected, got %s",
-                    lua_typename(L, type));
+                                  "or array table expected, got %s",
+                                  lua_typename(L, type));
 
             return luaL_argerror(L, 2, msg);
     }
@@ -1490,3 +1496,4 @@ ngx_http_lua_udp_socket_cleanup(void *data)
     ngx_http_lua_socket_udp_finalize(u->request, u);
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

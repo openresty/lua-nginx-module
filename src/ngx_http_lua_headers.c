@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_headers_out.h"
@@ -92,7 +100,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         /* stack: table key */
 
         lua_pushlstring(L, (char *) header[i].value.data,
-                header[i].value.len); /* stack: table key value */
+                        header[i].value.len); /* stack: table key value */
 
         ngx_http_lua_set_multi_value_table(L, -3);
 
@@ -102,7 +110,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 
         if (max > 0 && ++count == max) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                    "lua hit request header limit %d", max);
+                           "lua hit request header limit %d", max);
 
             return 1;
         }
@@ -224,8 +232,8 @@ ngx_http_lua_ngx_header_set(lua_State *L)
         rc = ngx_http_set_content_type(r);
         if (rc != NGX_OK) {
             return luaL_error(L,
-                    "failed to set default content type: %d",
-                    (int) rc);
+                              "failed to set default content type: %d",
+                              (int) rc);
         }
 
         ctx->headers_set = 1;
@@ -257,12 +265,12 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                 value.len = len;
 
                 rc = ngx_http_lua_set_output_header(r, key, value,
-                        i == 1 /* override */);
+                                                    i == 1 /* override */);
 
                 if (rc == NGX_ERROR) {
                     return luaL_error(L,
-                            "failed to set header %s (error: %d)",
-                            key.data, (int) rc);
+                                      "failed to set header %s (error: %d)",
+                                      key.data, (int) rc);
                 }
             }
 
@@ -281,13 +289,13 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     }
 
     dd("key: %.*s, value: %.*s",
-            (int) key.len, key.data, (int) value.len, value.data);
+       (int) key.len, key.data, (int) value.len, value.data);
 
     rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
 
     if (rc == NGX_ERROR) {
         return luaL_error(L, "failed to set header %s (error: %d)",
-                key.data, (int) rc);
+                          key.data, (int) rc);
     }
 
     return 0;
@@ -299,7 +307,7 @@ ngx_http_lua_ngx_req_header_clear(lua_State *L)
 {
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one arguments, but seen %d",
-                lua_gettop(L));
+                          lua_gettop(L));
     }
 
     lua_pushnil(L);
@@ -313,7 +321,7 @@ ngx_http_lua_ngx_req_header_set(lua_State *L)
 {
     if (lua_gettop(L) != 2) {
         return luaL_error(L, "expecting two arguments, but seen %d",
-                lua_gettop(L));
+                          lua_gettop(L));
     }
 
     return ngx_http_lua_ngx_req_header_set_helper(L);
@@ -395,12 +403,12 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
                 value.len = len;
 
                 rc = ngx_http_lua_set_input_header(r, key, value,
-                        i == 1 /* override */);
+                                                   i == 1 /* override */);
 
                 if (rc == NGX_ERROR) {
                     return luaL_error(L,
-                            "failed to set header %s (error: %d)",
-                            key.data, (int) rc);
+                                      "failed to set header %s (error: %d)",
+                                      key.data, (int) rc);
                 }
             }
 
@@ -425,13 +433,13 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 
     dd("key: %.*s, value: %.*s",
-            (int) key.len, key.data, (int) value.len, value.data);
+       (int) key.len, key.data, (int) value.len, value.data);
 
     rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
 
     if (rc == NGX_ERROR) {
         return luaL_error(L, "failed to set header %s (error: %d)",
-                key.data, (int) rc);
+                          key.data, (int) rc);
     }
 
     return 0;
@@ -491,7 +499,7 @@ ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
     }
 
     lua_setfield(L, -2, "__index");
-
     lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

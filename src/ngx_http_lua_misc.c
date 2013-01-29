@@ -1,7 +1,15 @@
+
+/*
+ * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
 
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_ctx.h"
@@ -46,21 +54,21 @@ ngx_http_lua_ngx_get(lua_State *L)
 
     dd("ngx get %s", p);
 
-    if (len == sizeof("status") - 1 &&
-            ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
+    if (len == sizeof("status") - 1
+        && ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
     {
         lua_pushnumber(L, (lua_Number) r->headers_out.status);
         return 1;
     }
 
-    if (len == sizeof("ctx") - 1 &&
-            ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
+    if (len == sizeof("ctx") - 1
+        && ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
     {
         return ngx_http_lua_ngx_get_ctx(L);
     }
 
-    if (len == sizeof("is_subrequest") - 1 &&
-            ngx_strncmp(p, "is_subrequest", sizeof("is_subrequest") - 1) == 0)
+    if (len == sizeof("is_subrequest") - 1
+        && ngx_strncmp(p, "is_subrequest", sizeof("is_subrequest") - 1) == 0)
     {
         lua_pushboolean(L, r != r->main);
         return 1;
@@ -130,3 +138,4 @@ ngx_http_lua_ngx_set(lua_State *L)
     return luaL_error(L, "attempt to write to ngx. with the key \"%s\"", p);
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

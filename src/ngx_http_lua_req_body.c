@@ -1,3 +1,9 @@
+
+/*
+ * Copyright (C) Yichun Zhang (agentzh)
+ */
+
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -136,7 +142,8 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
     if (rc == NGX_AGAIN) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua read buffered request body requires I/O interruptions");
+                       "lua read buffered request body requires I/O "
+                       "interruptions");
 
         ctx->waiting_more_body = 1;
         ctx->req_body_reader_co_ctx = coctx;
@@ -150,7 +157,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
     /* rc == NGX_OK */
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua has read buffered request body in a single run");
+                   "lua has read buffered request body in a single run");
 
     return 0;
 }
@@ -329,17 +336,16 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
     }
 
     dd("XXX file directio: %u, f:%u, m:%u, t:%u, end - pos %d, size %d",
-            r->request_body->temp_file->file.directio,
-            r->request_body->bufs->buf->in_file,
-            r->request_body->bufs->buf->memory,
-            r->request_body->bufs->buf->temporary,
-            (int) (r->request_body->bufs->buf->end -
-                r->request_body->bufs->buf->pos),
-            (int) ngx_buf_size(r->request_body->bufs->buf)
-            );
+       r->request_body->temp_file->file.directio,
+       r->request_body->bufs->buf->in_file,
+       r->request_body->bufs->buf->memory,
+       r->request_body->bufs->buf->temporary,
+       (int) (r->request_body->bufs->buf->end -
+       r->request_body->bufs->buf->pos),
+       (int) ngx_buf_size(r->request_body->bufs->buf));
 
     lua_pushlstring(L, (char *) r->request_body->temp_file->file.name.data,
-                       r->request_body->temp_file->file.name.len);
+                    r->request_body->temp_file->file.name.len);
     return 1;
 }
 
@@ -394,13 +400,13 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         if (tf->file.fd != NGX_INVALID_FILE) {
 
             dd("cleaning temp file %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
 
             ngx_http_lua_pool_cleanup_file(r->pool, tf->file.fd);
             tf->file.fd = NGX_INVALID_FILE;
 
             dd("temp file cleaned: %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
         }
 
         rb->temp_file = NULL;
@@ -414,7 +420,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
                 if (cl->buf->tag == tag && cl->buf->temporary) {
 
                     dd("free old request body buffer: size:%d",
-                        (int) ngx_buf_size(cl->buf));
+                       (int) ngx_buf_size(cl->buf));
 
                     ngx_pfree(r->pool, cl->buf->start);
                     cl->buf->tag = (ngx_buf_tag_t) NULL;
@@ -435,7 +441,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         for (cl = rb->bufs; cl; cl = cl->next) {
             if (cl->buf->tag == tag && cl->buf->temporary) {
                 dd("free old request body buffer: size:%d",
-                    (int) ngx_buf_size(cl->buf));
+                   (int) ngx_buf_size(cl->buf));
 
                 ngx_pfree(r->pool, cl->buf->start);
                 cl->buf->tag = (ngx_buf_tag_t) NULL;
@@ -490,7 +496,7 @@ set_header:
     value.data[value.len] = '\0';
 
     dd("setting request Content-Length to %.*s (%d)",
-            (int) value.len, value.data, (int) body.len);
+       (int) value.len, value.data, (int) body.len);
 
     r->headers_in.content_length_n = body.len;
 
@@ -505,7 +511,7 @@ set_header:
         rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to reset the Content-Length "
-                    "input header");
+                              "input header");
         }
     }
 
@@ -575,7 +581,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         if (tf->file.fd != NGX_INVALID_FILE) {
 
             dd("cleaning temp file %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
 
             ngx_http_lua_pool_cleanup_file(r->pool, tf->file.fd);
 
@@ -584,7 +590,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
             tf->file.fd = NGX_INVALID_FILE;
 
             dd("temp file cleaned: %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
         }
 
         rb->temp_file = NULL;
@@ -696,9 +702,10 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r->request_body == NULL || r->request_body->buf == NULL
-        || r->request_body->bufs == NULL) {
-
+    if (r->request_body == NULL
+        || r->request_body->buf == NULL
+        || r->request_body->bufs == NULL)
+    {
         return luaL_error(L, "request_body not initalized");
     }
 
@@ -756,7 +763,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to reset the Content-Length "
-                    "input header");
+                              "input header");
         }
     }
 
@@ -863,7 +870,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         for (cl = rb->bufs; cl; cl = cl->next) {
             if (cl->buf->tag == tag && cl->buf->temporary) {
                 dd("free old request body buffer: size:%d",
-                        (int) ngx_buf_size(cl->buf));
+                   (int) ngx_buf_size(cl->buf));
 
                 ngx_pfree(r->pool, cl->buf->start);
                 cl->buf->tag = (ngx_buf_tag_t) NULL;
@@ -909,7 +916,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         if (tf->file.fd != NGX_INVALID_FILE) {
 
             dd("cleaning temp file %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
 
             ngx_http_lua_pool_cleanup_file(r->pool, tf->file.fd);
 
@@ -918,7 +925,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
             tf->file.fd = NGX_INVALID_FILE;
 
             dd("temp file cleaned: %.*s", (int) tf->file.name.len,
-                    tf->file.name.data);
+               tf->file.name.data);
         }
 
     } else {
@@ -978,7 +985,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     /* register file cleanup hook */
 
     cln = ngx_pool_cleanup_add(r->pool,
-            sizeof(ngx_pool_cleanup_file_t));
+                               sizeof(ngx_pool_cleanup_file_t));
 
     if (cln == NULL) {
         return luaL_error(L, "out of memory");
@@ -1029,7 +1036,7 @@ set_header:
         rc = ngx_http_lua_set_input_header(r, key, value, 1 /* override */);
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to reset the Content-Length "
-                    "input header");
+                              "input header");
         }
     }
 
@@ -1162,3 +1169,4 @@ ngx_http_lua_req_body_cleanup(void *data)
     r->keepalive = 0;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
