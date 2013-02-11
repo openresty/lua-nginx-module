@@ -75,8 +75,9 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua log handler, uri \"%V\"", &r->uri);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua log handler, uri:\"%V\" c:%ud", &r->uri,
+                   r->main->count);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 

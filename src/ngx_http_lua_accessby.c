@@ -32,8 +32,9 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
     ngx_http_phase_handler_t    tmp, *ph, *cur_ph, *last_ph;
     ngx_http_core_main_conf_t  *cmcf;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua access handler, uri \"%V\"", &r->uri);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua access handler, uri:\"%V\" c:%ud", &r->uri,
+                   r->main->count);
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 

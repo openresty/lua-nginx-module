@@ -141,8 +141,9 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua content handler, uri \"%V\"", &r->uri);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua content handler, uri:\"%V\" c:%ud", &r->uri,
+                   r->main->count);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
