@@ -923,3 +923,60 @@ status: running
 --- no_error_log
 [error]
 
+
+
+=== TEST 23: github issue #208: coroutine as iterator doesn't work
+--- config
+    location = /t {
+        content_by_lua '
+            local say = ngx.say
+            local wrap, yield = coroutine.wrap, coroutine.yield
+
+            local function it(it_state)
+              for i = 1, it_state.i do
+                yield(it_state.path, tostring(i))
+              end
+              return nil
+            end
+
+            local function it_factory(path)
+              local it_state = { i = 10, path = path }
+              return wrap(it), it_state
+            end
+
+            --[[
+            for path, value in it_factory("test") do
+              say(path, value)
+            end
+            ]]
+
+            do
+              local f, s, var = it_factory("test")
+              while true do
+                local path, value = f(s, var)
+                var = path
+                if var == nil then break end
+                say(path, value)
+              end
+            end
+        ';
+    }
+--- request
+    GET /t
+--- more_headers
+Cookie: abc=32
+--- stap2 eval: $::StapScript
+--- response_body
+test1
+test2
+test3
+test4
+test5
+test6
+test7
+test8
+test9
+test10
+--- no_error_log
+[error]
+
