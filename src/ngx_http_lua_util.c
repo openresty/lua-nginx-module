@@ -970,7 +970,7 @@ ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, int nret)
 {
-    ngx_http_lua_co_ctx_t   *next_coctx, *parent_coctx;
+    ngx_http_lua_co_ctx_t   *next_coctx, *parent_coctx, *orig_coctx;
     int                      rv, nrets, success = 1;
     lua_State               *next_co;
     lua_State               *old_co;
@@ -1015,7 +1015,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             dd("ctx: %p", ctx);
             dd("cur co: %p", ctx->cur_co_ctx->co);
 
-            rv = lua_resume(ctx->cur_co_ctx->co, nrets);
+            orig_coctx = ctx->cur_co_ctx;
+            rv = lua_resume(orig_coctx->co, nrets);
 
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
@@ -1295,6 +1296,10 @@ user_co_done:
             default:
                 err = "unknown error";
                 break;
+            }
+
+            if (ctx->cur_co_ctx != orig_coctx) {
+                ctx->cur_co_ctx = orig_coctx;
             }
 
             if (lua_isstring(ctx->cur_co_ctx->co, -1)) {
