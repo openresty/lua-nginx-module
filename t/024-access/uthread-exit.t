@@ -897,6 +897,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
