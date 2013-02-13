@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.14] released on 28 January 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.15] released on 12 February 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1073,9 +1073,9 @@ This directive was first introduced in the <code>v0.5.13</code> release.
 
 '''context:''' ''http, server, location, location-if''
 
-Enables or disables response caching for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which replies on a proper <code>Content-Length</code> response header.
+Enables or disables automatic response buffering for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which replies on a proper <code>Content-Length</code> response header.
 
-If the Lua code explicitly sets a <code>Content-Length</code> response header before sending the headers (either explicitly via [[#ngx.send_headers|ngx.send_headers]] or implicitly via the first [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] call).
+If the Lua code explicitly sets a <code>Content-Length</code> response header before sending the headers (either explicitly via [[#ngx.send_headers|ngx.send_headers]] or implicitly via the first [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] call), then the HTTP 1.0 response buffering will be disabled even when this directive is turned on.
 
 To output very large response data in a streaming fashion (via the [[#ngx.flush|ngx.flush]] call, for example), this directive MUST be turned off to minimize memory usage.
 
@@ -2127,17 +2127,21 @@ This argument can be set to zero to remove the limit and to process all request 
 Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_post_args ==
-'''syntax:''' ''ngx.req.get_post_args(max_args?)''
+'''syntax:''' ''args, err = ngx.req.get_post_args(max_args?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
 
-Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid Lua exception errors.
+Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid errors.
 
 <geshi lang="nginx">
     location = /test {
         content_by_lua '
             ngx.req.read_body()
             local args = ngx.req.get_post_args()
+            if not args then
+                ngx.say("failed to get post args: ", err)
+                return
+            end
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
