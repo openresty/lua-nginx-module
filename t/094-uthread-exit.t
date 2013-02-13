@@ -285,6 +285,7 @@ delete thread 1
 terminate 2: ok
 delete thread 2
 
+--- wait: 0.1
 --- response_body
 before
 after
@@ -867,6 +868,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -955,6 +957,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1039,6 +1042,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1123,6 +1127,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- ignore_response
 --- error_log
 attempt to abort with pending subrequests
@@ -1209,6 +1214,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 end
 --- error_log
@@ -1300,6 +1306,7 @@ delete thread 2
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 end
 --- error_log
@@ -1389,6 +1396,7 @@ delete thread 1
 delete timer 200
 free request
 
+--- wait: 0.1
 --- ignore_response
 --- error_log
 attempt to abort with pending subrequests
@@ -1472,6 +1480,7 @@ delete thread 1
 delete timer 200
 free request
 
+--- wait: 0.1
 --- ignore_response
 --- no_error_log
 [alert]
@@ -1554,6 +1563,7 @@ delete thread 1
 delete timer 200
 free request
 
+--- wait: 0.1
 --- ignore_response
 --- no_error_log
 [alert]
@@ -1636,6 +1646,7 @@ delete thread 1
 delete timer 200
 free request
 
+--- wait: 0.1
 --- ignore_response
 --- no_error_log
 [alert]

@@ -297,6 +297,7 @@ delete thread 2
 terminate 3: ok
 delete thread 3
 
+--- wait: 0.1
 --- response_body
 before
 after
@@ -916,6 +917,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1007,6 +1009,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1094,6 +1097,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1181,6 +1185,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1271,6 +1276,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 end
 --- error_log
@@ -1365,6 +1371,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 end
 --- error_log
