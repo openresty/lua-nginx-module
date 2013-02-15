@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #no_diff();
 no_long_string();
@@ -422,6 +422,25 @@ This is still a TODO
     GET /re
 --- response_body
 a [b c] [b] [c] [] [] d
+1
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: $0 without parens
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("a b c d", [[\w]], "[$0]")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+[a] b c d
 1
 --- no_error_log
 [error]

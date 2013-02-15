@@ -9,7 +9,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 9);
 
 #no_diff();
 no_long_string();
@@ -383,4 +383,23 @@ n: 1
 --- response_body
 [hello,h], [world,w]
 2
+
+
+
+=== TEST 19: $0 without parens
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("a b c d", [[\w]], "[$0]")
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+[a] [b] [c] [d]
+4
+--- no_error_log
+[error]
 
