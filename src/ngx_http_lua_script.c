@@ -69,7 +69,6 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
     n = (nv * (2 * sizeof(ngx_http_lua_script_copy_code_t)
                    + sizeof(ngx_http_lua_script_copy_capture_code_t))
                 + sizeof(uintptr_t)
-                + v->len
                 + sizeof(uintptr_t) - 1)
             & ~(sizeof(uintptr_t) - 1);
 
@@ -493,7 +492,6 @@ ngx_http_lua_script_init_arrays(ngx_http_lua_script_compile_t *sc)
         n = (sc->variables * (2 * sizeof(ngx_http_lua_script_copy_code_t)
                               + sizeof(ngx_http_lua_script_copy_capture_code_t))
                 + sizeof(uintptr_t)
-                + sc->source->len
                 + sizeof(uintptr_t) - 1)
             & ~(sizeof(uintptr_t) - 1);
 
