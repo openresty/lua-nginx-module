@@ -185,7 +185,6 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
                 name.data = &sc->source->data[i];
                 i++;
                 name.len++;
-                sc->size += name.len;
 
                 if (ngx_http_lua_script_add_copy_code(sc, &name,
                                                       (i == sc->source->len))
@@ -295,8 +294,6 @@ ngx_http_lua_script_compile(ngx_http_lua_script_compile_t *sc)
             i++;
             name.len++;
         }
-
-        sc->size += name.len;
 
         if (ngx_http_lua_script_add_copy_code(sc, &name, (i == sc->source->len))
             != NGX_OK)

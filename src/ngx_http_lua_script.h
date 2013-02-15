@@ -20,7 +20,6 @@ typedef struct {
     ngx_array_t               **values;
 
     ngx_uint_t                  variables;
-    ngx_uint_t                  size;
 
     unsigned                    complete_lengths:1;
     unsigned                    complete_values:1;
