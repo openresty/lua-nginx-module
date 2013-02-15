@@ -71,7 +71,7 @@ typedef struct {
 typedef struct {
     ngx_http_lua_script_code_pt     code;
     uintptr_t                       n;
-} ngx_http_lua_script_copy_capture_code_t;
+} ngx_http_lua_script_capture_code_t;
 
 
 ngx_int_t ngx_http_lua_compile_complex_value(
