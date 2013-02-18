@@ -182,6 +182,7 @@ delete thread 3
 terminate 2: ok
 delete thread 2
 
+--- wait: 0.1
 --- response_body
 1: before thread create
 1: before sleep

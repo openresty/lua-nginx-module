@@ -204,6 +204,7 @@ delete thread 2
 terminate 4: ok
 delete thread 4
 
+--- wait: 0.1
 --- response_body
 1: before thread create
 1: before sleep
