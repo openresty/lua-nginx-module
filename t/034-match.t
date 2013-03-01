@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #no_diff();
 no_long_string();
@@ -875,6 +875,30 @@ hello-world
 GET /t
 --- response_body
 matched: 章
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: empty duplicate captures
+--- config
+    location = /t {
+        content_by_lua "
+            local target = 'test'
+            local regex = '^(?:(?<group1>(?:foo))|(?<group2>(?:bar))|(?<group3>(?:test)))$'
+
+            -- Note the D here
+            local m = ngx.re.match(target, regex, 'D')
+
+            ngx.say(type(m.group1))
+            ngx.say(type(m.group2))
+        ";
+    }
+--- request
+GET /t
+--- response_body
+nil
+nil
 --- no_error_log
 [error]
 

@@ -1902,13 +1902,21 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
     char            *name;
 
     for (i = 0; i < name_count; i++) {
+        dd("top: %d", lua_gettop(L));
 
         name_entry = &name_table[i * name_entry_size];
         n = (name_entry[0] << 8) | name_entry[1];
         name = (char *) &name_entry[2];
 
+        lua_rawgeti(L, -1, n);
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 1);
+            continue;
+        }
+
         if (flags & NGX_LUA_RE_MODE_DUPNAMES) {
-            lua_getfield(L, -1, name);
+
+            lua_getfield(L, -2, name); /* big_tb cap small_tb */
 
             if (lua_isnil(L, -1)) {
                 lua_pop(L, 1);
@@ -1916,23 +1924,26 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
                 /* assuming named submatches are usually unique */
                 lua_createtable(L, 1 /* narr */, 0 /* nrec */);
                 lua_pushstring(L, name);
-                lua_pushvalue(L, -2); /* big_tb small_tb key small_tb */
-                lua_rawset(L, -4); /* big_tb small_tb */
+                lua_pushvalue(L, -2); /* big_tb cap small_tb key small_tb */
+                lua_rawset(L, -5); /* big_tb cap small_tb */
+                len = 0;
+
+            } else {
+                len = lua_objlen(L, -1);
             }
 
-            len = lua_objlen(L, -1);
-
-            lua_rawgeti(L, -2, n);
-            lua_rawseti(L, -2, (int) len + 1);
-
-            /* pop the m[name] array we pulled in */
-            lua_pop(L, 1);
+            lua_pushvalue(L, -2); /* big_tb cap small_tb cap */
+            lua_rawseti(L, -2, (int) len + 1); /* big_tb cap small_tb */
+            lua_pop(L, 2);
 
         } else {
-            lua_pushstring(L, name);
-            lua_rawgeti(L, -2, n);
-            lua_rawset(L, -3);
+            lua_pushstring(L, name); /* big_tb cap key */
+            lua_pushvalue(L, -2); /* big_tb cap key cap */
+            lua_rawset(L, -4); /* big_tb cap */
+            lua_pop(L, 1);
         }
+
+        dd("top 2: %d", lua_gettop(L));
     }
 }
 
