@@ -165,6 +165,7 @@ terminate 3: ok
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -937,6 +938,10 @@ after
     }
 --- request
 POST /lua
+
+--- more_headers
+Content-Length: 1024
+
 --- stap2 eval: $::StapScript
 --- stap eval
 <<'_EOC_' . $::GCScript;

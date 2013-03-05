@@ -1323,7 +1323,9 @@ this exposed a memory leak in receiveuntil
         ';
     }
 --- request
-    GET /t
+    POST /t
+
+--- more_headers: Content-Length: 1024
 --- response_body
 ok
 --- no_error_log

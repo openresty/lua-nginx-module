@@ -666,3 +666,89 @@ hello world
 [alert]
 --- skip_nginx: 4: <1.3.9
 
+
+
+=== TEST 11: downstream cosocket for GET requests (w/o request bodies)
+--- config
+    #resolver 8.8.8.8;
+    location = /t {
+        content_by_lua '
+           local sock, err = ngx.req.socket()
+
+           if not sock then
+              ngx.say("failed to get socket: ", err)
+              return nil
+           end
+
+           while true do
+              local data, err, partial = sock:receive(4096)
+
+              ngx.log(ngx.INFO, "Received data")
+
+              if err then
+                 ngx.say("err: ", err)
+                 if partial then
+                    ngx.print(partial)
+                 end
+
+                 break
+              end
+
+              if data then
+                 ngx.print(data)
+              end
+           end
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+failed to get socket: no body
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: downstream cosocket for POST requests with 0 size bodies
+--- config
+    #resolver 8.8.8.8;
+    location = /t {
+        content_by_lua '
+           local sock, err = ngx.req.socket()
+
+           if not sock then
+              ngx.say("failed to get socket: ", err)
+              return nil
+           end
+
+           while true do
+              local data, err, partial = sock:receive(4096)
+
+              ngx.log(ngx.INFO, "Received data")
+
+              if err then
+                 ngx.say("err: ", err)
+                 if partial then
+                    ngx.print(partial)
+                 end
+
+                 break
+              end
+
+              if data then
+                 ngx.print(data)
+              end
+           end
+        ';
+    }
+
+--- request
+POST /t
+--- more_headers
+Content-Length: 0
+--- response_body
+failed to get socket: no body
+--- no_error_log
+[error]
+
