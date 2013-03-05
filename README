@@ -2141,6 +2141,19 @@ Nginx API for Lua
 
     See also ngx.now and ngx.update_time.
 
+  ngx.req.http_version
+    syntax: *num = ngx.req.http_version()*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua**
+
+    Returns the HTTP version number for the current request as a Lua number.
+
+    Current possible values are 1.0, 1.1, and 0.9. Returns "nil" for
+    unrecognized values.
+
+    This method was first introduced in the "v0.7.17" release.
+
   ngx.req.get_method
     syntax: *method_name = ngx.req.get_method()*
 

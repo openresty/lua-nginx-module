@@ -17,12 +17,49 @@
 #include "ngx_http_lua_util.h"
 
 
+static int ngx_http_lua_ngx_req_http_version(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
 static int ngx_http_lua_ngx_header_get(lua_State *L);
 static int ngx_http_lua_ngx_header_set(lua_State *L);
 static int ngx_http_lua_ngx_req_get_headers(lua_State *L);
 static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
+
+
+static int
+ngx_http_lua_ngx_req_http_version(lua_State *L)
+{
+    ngx_http_request_t          *r;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    switch (r->http_version) {
+    case NGX_HTTP_VERSION_9:
+        lua_pushnumber(L, 0.9);
+        break;
+
+    case NGX_HTTP_VERSION_10:
+        lua_pushnumber(L, 1.0);
+        break;
+
+    case NGX_HTTP_VERSION_11:
+        lua_pushnumber(L, 1.1);
+        break;
+
+    default:
+        lua_pushnil(L);
+        break;
+    }
+
+    return 1;
+}
 
 
 static int
@@ -465,6 +502,9 @@ void
 ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
 {
     int         rc;
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_http_version);
+    lua_setfield(L, -2, "http_version");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_header_clear);
     lua_setfield(L, -2, "clear_header");
