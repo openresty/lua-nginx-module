@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => (2 * blocks() + 5) * repeat_each();
+plan tests => (2 * blocks() + 6) * repeat_each();
 
 #no_diff();
 no_long_string();
@@ -1036,4 +1036,30 @@ foo-20: 20\r
 foo-21: 21\r
 
 "
+
+
+
+=== TEST 34: raw form
+--- config
+    location /t {
+        content_by_lua '
+           -- get ALL the raw headers (0 == no limit, not recommended)
+           local headers = ngx.req.get_headers(0, true)
+           for k, v in pairs(headers) do
+              ngx.say{ k, ": ", v}
+           end
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+My-Foo: bar
+Bar: baz
+--- response_body
+Host: localhost
+Bar: baz
+My-Foo: bar
+Connection: Close
+--- no_error_log
+[error]
 

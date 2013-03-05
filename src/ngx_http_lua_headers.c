@@ -44,7 +44,6 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
 
         } else {
             max = luaL_checkinteger(L, 1);
-            lua_pop(L, 1);
         }
 
         if (n >= 2) {
