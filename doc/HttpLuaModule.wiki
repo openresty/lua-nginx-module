@@ -2644,6 +2644,12 @@ which is equivalent to
     return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
 </geshi>
 
+Redirecting arbitrary external URLs is also supported, for example:
+
+<geshi lang="lua">
+    return ngx.redirect("http://www.google.com")
+</geshi>
+
 We can also use the numerical code directly as the second <code>status</code> argument:
 
 <geshi lang="lua">

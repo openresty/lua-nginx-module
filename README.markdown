@@ -2727,6 +2727,12 @@ which is equivalent to
     return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
 
 
+Redirecting arbitrary external URLs is also supported, for example:
+
+
+    return ngx.redirect("http://www.google.com")
+
+
 We can also use the numerical code directly as the second `status` argument:
 
 
