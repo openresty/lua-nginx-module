@@ -18,6 +18,7 @@
 
 
 static int ngx_http_lua_ngx_req_http_version(lua_State *L);
+static int ngx_http_lua_ngx_req_raw_header(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set_helper(lua_State *L);
 static int ngx_http_lua_ngx_header_get(lua_State *L);
 static int ngx_http_lua_ngx_header_set(lua_State *L);
@@ -58,6 +59,172 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         break;
     }
 
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_req_raw_header(lua_State *L)
+{
+    int                          n;
+    u_char                      *data, *p, *last;
+    unsigned                     no_req_line = 0, found;
+    size_t                       size;
+    ngx_buf_t                   *b, *first = NULL;
+    ngx_int_t                    i;
+    ngx_http_request_t          *r;
+    ngx_http_connection_t       *hc;
+
+    n = lua_gettop(L);
+    if (n > 0) {
+        no_req_line = lua_toboolean(L, 1);
+    }
+
+    dd("no req line: %d", (int) no_req_line);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    hc = r->http_connection;
+
+    if (hc->nbusy) {
+        b = NULL;  /* to suppress a gcc warning */
+        size = 0;
+        for (i = 0; i < hc->nbusy; i++) {
+            b = hc->busy[i];
+
+            if (first == NULL) {
+                if (r->request_line.data >= b->pos
+                    || r->request_line.data + r->request_line.len + 2
+                       <= b->start)
+                {
+                    continue;
+                }
+
+                dd("found first at %d", (int) i);
+                first = b;
+            }
+
+            size += b->pos - b->start;
+
+            if (b == r->header_in) {
+                break;
+            }
+        }
+
+    } else {
+        if (r != r->main) {
+            b = r->main->header_in;
+
+        } else {
+            b = r->header_in;
+        }
+
+        if (b == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        size = b->pos - r->request_line.data;
+    }
+
+    data = lua_newuserdata(L, size);
+
+    if (hc->nbusy) {
+        last = data;
+        found = 0;
+        for (i = 0; i < hc->nbusy; i++) {
+            b = hc->busy[i];
+
+            if (!found) {
+                if (b != first) {
+                    continue;
+                }
+
+                dd("found first");
+                found = 1;
+            }
+
+            p = last;
+
+            if (b == first) {
+                dd("request line: %.*s", (int) r->request_line.len,
+                   r->request_line.data);
+
+                if (no_req_line) {
+                    last = ngx_copy(last,
+                                    r->request_line.data + r->request_line.len
+                                    + 2,
+                                    b->pos - r->request_line.data
+                                    - r->request_line.len - 2);
+
+                } else {
+                    last = ngx_copy(last,
+                                    r->request_line.data,
+                                    b->pos - r->request_line.data);
+
+                }
+
+            } else {
+                last = ngx_copy(last, b->start, b->pos - b->start);
+            }
+
+#if 1
+            /* skip truncated header entries (if any) */
+            while (last > p && last[-1] != LF) {
+                last--;
+            }
+#endif
+
+            for (; p != last; p++) {
+                if (*p == '\0') {
+                    if (p + 1 == last) {
+                        /* XXX this should not happen */
+                        dd("found string end!!");
+
+                    } else if (*(p + 1) == LF) {
+                        *p = CR;
+
+                    } else {
+                        *p = ':';
+                    }
+                }
+            }
+
+            if (b == r->header_in) {
+                break;
+            }
+        }
+
+    } else {
+        if (no_req_line) {
+            last = ngx_copy(data,
+                            r->request_line.data + r->request_line.len + 2,
+                            size - r->request_line.len - 2);
+
+        } else {
+            last = ngx_copy(data, r->request_line.data, size);
+        }
+
+        for (p = data; p != last; p++) {
+            if (*p == '\0') {
+                if (p + 1 != last && *(p + 1) == LF) {
+                    *p = CR;
+
+                } else {
+                    *p = ':';
+                }
+            }
+        }
+    }
+
+    lua_pushlstring(L, (char *) data, last - data);
     return 1;
 }
 
@@ -505,6 +672,9 @@ ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_http_version);
     lua_setfield(L, -2, "http_version");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_raw_header);
+    lua_setfield(L, -2, "raw_header");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_header_clear);
     lua_setfield(L, -2, "clear_header");

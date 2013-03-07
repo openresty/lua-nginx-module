@@ -1971,6 +1971,48 @@ Current possible values are 1.0, 1.1, and 0.9. Returns `nil` for unrecognized va
 
 This method was first introduced in the `v0.7.17` release.
 
+ngx.req.raw_header
+------------------
+**syntax:** *str = ngx.req.raw_header(no_request_line?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+
+Returns the original raw HTTP protocol header received by the Nginx server.
+
+By default, the request line and trailing `CR LF` terminator will also be included. For example,
+
+
+    ngx.print(ngx.req.raw_header())
+
+
+gives something like this:
+
+
+    GET /t HTTP/1.1
+    Host: localhost
+    Connection: close
+    Foo: bar
+
+
+
+You can specify the optional
+`no_request_line` argument as a `true` value to exclude the request line from the result. For example,
+
+
+    ngx.print(ngx.req.raw_header(true))
+
+
+outputs something like this:
+
+
+    Host: localhost
+    Connection: close
+    Foo: bar
+
+
+
+This method was first introduced in the `v0.7.17` release.
+
 ngx.req.get_method
 ------------------
 **syntax:** *method_name = ngx.req.get_method()*

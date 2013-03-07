@@ -1910,6 +1910,47 @@ Current possible values are 1.0, 1.1, and 0.9. Returns <code>nil</code> for unre
 
 This method was first introduced in the <code>v0.7.17</code> release.
 
+== ngx.req.raw_header ==
+'''syntax:''' ''str = ngx.req.raw_header(no_request_line?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Returns the original raw HTTP protocol header received by the Nginx server.
+
+By default, the request line and trailing <code>CR LF</code> terminator will also be included. For example,
+
+<geshi lang="lua">
+    ngx.print(ngx.req.raw_header())
+</geshi>
+
+gives something like this:
+
+<geshi lang="text">
+    GET /t HTTP/1.1
+    Host: localhost
+    Connection: close
+    Foo: bar
+
+</geshi>
+
+You can specify the optional
+<code>no_request_line</code> argument as a <code>true</code> value to exclude the request line from the result. For example,
+
+<geshi lang="lua">
+    ngx.print(ngx.req.raw_header(true))
+</geshi>
+
+outputs something like this:
+
+<geshi lang="text">
+    Host: localhost
+    Connection: close
+    Foo: bar
+
+</geshi>
+
+This method was first introduced in the <code>v0.7.17</code> release.
+
 == ngx.req.get_method ==
 '''syntax:''' ''method_name = ngx.req.get_method()''
 

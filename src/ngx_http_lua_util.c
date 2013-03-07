@@ -2005,7 +2005,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 22 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 23 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(log, L);
     ngx_http_lua_inject_req_uri_api(log, L);
