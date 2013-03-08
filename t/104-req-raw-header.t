@@ -313,7 +313,7 @@ $headers}]
 Host: localhost\r
 Connection: close\r
 Foo: bar baz\r
-  blah
+  blah\r
 \r
 "
 --- response_body eval
@@ -321,7 +321,7 @@ qq{GET /t HTTP/1.1\r
 Host: localhost\r
 Connection: close\r
 Foo: bar baz\r
-  blah
+  blah\r
 \r
 }
 --- no_error_log
