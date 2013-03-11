@@ -60,6 +60,7 @@ Connection: Close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -85,6 +86,7 @@ Connection: Close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -180,6 +182,7 @@ Connection: close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -208,6 +211,7 @@ Connection: close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -236,6 +240,7 @@ Connection: close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -298,6 +303,7 @@ $headers}]
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 
@@ -356,4 +362,5 @@ Connection: close\r
 
 --- no_error_log
 [error]
+--- timeout: 5
 
