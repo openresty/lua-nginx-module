@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.16] released on 22 February 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.17] released on 10 March 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1089,7 +1089,7 @@ This directive was first introduced in the <code>v0.5.0rc19</code> release.
 
 '''default:''' ''rewrite_by_lua_no_postpone off''
 
-'''context:''' ''http, server, location, location-if''
+'''context:''' ''http''
 
 Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
 
