@@ -456,6 +456,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         u->prepare_retvals = ngx_http_lua_socket_error_retval_handler;
         ngx_http_lua_socket_udp_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
+
+        if (waiting) {
+            ngx_http_run_posted_requests(r->connection);
+        }
+
         return;
     }
 
@@ -486,6 +491,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
         lua_pushnil(L);
         lua_pushliteral(L, "name cannot be resolved to a address");
+
+        if (waiting) {
+            ngx_http_run_posted_requests(r->connection);
+        }
+
         return;
     }
 
@@ -507,6 +517,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
         lua_pushnil(L);
         lua_pushliteral(L, "out of memory");
+
+        if (waiting) {
+            ngx_http_run_posted_requests(r->connection);
+        }
+
         return;
     }
 
@@ -536,6 +551,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     if (waiting) {
         lctx->resume_handler = ngx_http_lua_socket_udp_resume;
         r->write_event_handler(r);
+        ngx_http_run_posted_requests(r->connection);
 
     } else {
         (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
