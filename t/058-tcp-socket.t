@@ -3,9 +3,9 @@
 use lib 'lib';
 use Test::Nginx::Socket;
 
-#repeat_each(2);
+repeat_each(2);
 
-plan tests => repeat_each() * 87;
+plan tests => repeat_each() * 94;
 
 our $HtmlDir = html_dir;
 
@@ -1985,6 +1985,100 @@ connected: 1
 request sent: 57
 send(""): 0
 close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 33: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
+--- config
+    resolver 8.8.8.8;
+
+    location = /sub {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("xxx", 80)
+            if not ok then
+                ngx.say("failed to connect to xxx: ", err)
+                return
+            end
+            ngx.say("successfully connected to xxx!")
+            sock:close()
+        ';
+    }
+
+    location = /lua {
+        content_by_lua '
+            local res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^failed to connect to xxx: xxx could not be resolved.*?Host not found
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 34: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
+--- config
+    resolver 8.8.8.8;
+
+    location = /sub {
+        content_by_lua '
+            if not package.i then
+                package.i = 1
+            end
+
+            local servers = {"openresty.org", "agentzh.org", "sregex.org"}
+            local server = servers[package.i]
+            package.i = package.i + 1
+
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect(server, 80)
+            if not ok then
+                ngx.say("failed to connect to agentzh.org: ", err)
+                return
+            end
+            ngx.say("successfully connected to xxx!")
+            sock:close()
+        ';
+    }
+
+    location = /lua {
+        content_by_lua '
+            local res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+successfully connected to xxx!
+
+--- stap
+F(ngx_http_lua_socket_resolve_handler) {
+    println("lua socket resolve handler")
+}
+
+F(ngx_http_lua_socket_tcp_connect_retval_handler) {
+    println("lua socket tcp connect retval handler")
+}
+
+F(ngx_http_run_posted_requests) {
+    println("run posted requests")
+}
+
+--- stap_out_like
+run posted requests
+lua socket resolve handler
+run posted requests
+lua socket tcp connect retval handler
+run posted requests
+
 --- no_error_log
 [error]
 
