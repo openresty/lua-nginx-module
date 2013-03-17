@@ -594,6 +594,7 @@ static void
 ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
     ngx_http_request_t                  *r;
+    ngx_connection_t                    *c;
     ngx_http_upstream_resolved_t        *ur;
     ngx_http_lua_ctx_t                  *lctx;
     lua_State                           *L;
@@ -606,9 +607,10 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     u = ctx->data;
     r = u->request;
+    c = r->connection;
     ur = u->resolved;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua tcp socket resolve handler");
 
     lctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -625,7 +627,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     waiting = u->waiting;
 
     if (ctx->state) {
-        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "lua tcp socket resolver error: %s (waiting: %d)",
                        ngx_resolver_strerror(ctx->state), (int) u->waiting);
 
@@ -641,7 +643,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
                                          NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
 
         if (waiting) {
-            ngx_http_run_posted_requests(r->connection);
+            ngx_http_run_posted_requests(c);
         }
 
         return;
@@ -660,7 +662,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
         addr = ntohl(ctx->addrs[i]);
 
-        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "name was resolved to %ud.%ud.%ud.%ud",
                        (addr >> 24) & 0xff, (addr >> 16) & 0xff,
                        (addr >> 8) & 0xff, addr & 0xff);
@@ -676,7 +678,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         lua_pushliteral(L, "name cannot be resolved to a address");
 
         if (waiting) {
-            ngx_http_run_posted_requests(r->connection);
+            ngx_http_run_posted_requests(c);
         }
 
         return;
@@ -702,7 +704,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         lua_pushliteral(L, "out of memory");
 
         if (waiting) {
-            ngx_http_run_posted_requests(r->connection);
+            ngx_http_run_posted_requests(c);
         }
 
         return;
@@ -734,7 +736,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     if (waiting) {
         lctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         r->write_event_handler(r);
-        ngx_http_run_posted_requests(r->connection);
+        ngx_http_run_posted_requests(c);
 
     } else {
         (void) ngx_http_lua_socket_resolve_retval_handler(r, u, L);
