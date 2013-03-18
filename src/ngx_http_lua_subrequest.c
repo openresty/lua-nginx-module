@@ -400,8 +400,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                     return luaL_error(L, "Bad http request body");
                 }
 
-                body = ngx_pcalloc(r->pool,
-                        sizeof(ngx_http_request_body_t));
+                body = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
 
                 if (body == NULL) {
                     return luaL_error(L, "out of memory");
