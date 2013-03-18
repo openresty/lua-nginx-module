@@ -59,6 +59,7 @@ static void ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static void ngx_http_lua_cancel_subreq(ngx_http_request_t *r);
 static ngx_int_t ngx_http_post_request_to_head(ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -606,6 +607,16 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 #if 1
         sr->request_body = NULL;
 #endif
+
+    } else if (sr->request_body) {
+
+        /* deep-copy the request body */
+
+        if (sr->request_body->temp_file) {
+            if (ngx_http_lua_copy_in_file_request_body(sr) != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
     }
 
     sr->method = method;
@@ -1541,6 +1552,43 @@ ngx_http_post_request_to_head(ngx_http_request_t *r)
     pr->request = r;
     pr->next = r->main->posted_requests;
     r->main->posted_requests = pr;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r)
+{
+    ngx_temp_file_t     *tf;
+
+    ngx_http_request_body_t   *body;
+
+    tf = r->request_body->temp_file;
+
+    if (!tf->persistent || !tf->clean) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "the request body was not read by ngx_lua");
+
+        return NGX_ERROR;
+    }
+
+    body = ngx_palloc(r->pool, sizeof(ngx_http_request_body_t));
+    if (body == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(body, r->request_body, sizeof(ngx_http_request_body_t));
+
+    body->temp_file = ngx_palloc(r->pool, sizeof(ngx_temp_file_t));
+    if (body->temp_file == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(body->temp_file, tf, sizeof(ngx_temp_file_t));
+    dd("file fd: %d", body->temp_file->file.fd);
+
+    r->request_body = body;
 
     return NGX_OK;
 }

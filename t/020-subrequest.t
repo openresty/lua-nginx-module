@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 10);
+plan tests => repeat_each() * (blocks() * 3 + 11);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -1688,4 +1688,166 @@ status: 504
 body: hello world
 --- error_log
 upstream timed out
+
+
+
+=== TEST 52: forwarding in-memory request bodies to multiple subrequests
+--- config
+    location /other {
+        default_type 'foo/bar';
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location /back {
+        echo_read_request_body;
+        echo_request_body;
+    }
+
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+
+            for i = 1, 2 do
+                res = ngx.location.capture("/other",
+                    { method = ngx.HTTP_POST });
+
+                ngx.say(res.body)
+            end
+        ';
+    }
+
+--- request eval
+"POST /lua
+" . "hello world"
+
+--- response_body
+hello world
+hello world
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 53: forwarding in-file request bodies to multiple subrequests (client_body_in_file_only)
+--- config
+    location /other {
+        default_type 'foo/bar';
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location /back {
+        echo_read_request_body;
+        echo_request_body;
+    }
+
+    client_body_in_file_only on;
+
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+
+            for i = 1, 2 do
+                res = ngx.location.capture("/other",
+                    { method = ngx.HTTP_POST });
+
+                ngx.say(res.body)
+            end
+        ';
+    }
+
+--- request eval
+"POST /lua
+" . "hello world"
+
+--- response_body
+hello world
+hello world
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 54: forwarding in-file request bodies to multiple subrequests (exceeding client_body_buffer_size)
+--- config
+    location /other {
+        default_type 'foo/bar';
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+
+    location /back {
+        echo_read_request_body;
+        echo_request_body;
+    }
+
+    location /lua {
+        #client_body_in_file_only on;
+        client_body_buffer_size 1;
+        content_by_lua '
+            ngx.req.read_body()
+
+            for i = 1, 2 do
+                res = ngx.location.capture("/other",
+                    { method = ngx.HTTP_POST });
+
+                ngx.say(res.body)
+            end
+        ';
+    }
+--- request eval
+"POST /lua
+" . ("hello world" x 100)
+
+--- stap2
+global valid = 0
+global fds
+
+F(ngx_http_handler) { valid = 1  }
+
+probe syscall.open {
+    if (valid && pid() == target()) {
+        print(name, "(", argstr, ")")
+    }
+}
+
+probe syscall.close {
+    if (valid && pid() == target() && fds[sprintf("%d", $fd)]) {
+        println(name, "(", argstr, ")")
+    }
+}
+
+probe syscall.unlink {
+    if (valid && pid() == target()) {
+        println(name, "(", argstr, ")")
+    }
+}
+
+probe syscall.open.return {
+    if (valid && pid() == target()) {
+        println(" = ", retstr)
+        fds[retstr] = 1
+    }
+}
+
+F(ngx_http_lua_subrequest) {
+    println("lua subrequest")
+}
+
+F(ngx_output_chain) {
+    printf("output chain: %s\n", ngx_chain_dump($in))
+}
+
+F(ngx_pool_run_cleanup_file) {
+    println("clean up file: ", $fd)
+}
+
+--- response_body eval
+("hello world" x 100) . "\n"
+. ("hello world" x 100) . "\n"
+
+--- no_error_log
+[error]
+--- error_log
+a client request body is buffered to a temporary file
 
