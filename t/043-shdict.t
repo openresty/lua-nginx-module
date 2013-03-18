@@ -8,7 +8,7 @@ use Test::Nginx::Socket;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 15);
 
 #no_diff();
 no_long_string();
@@ -1372,4 +1372,83 @@ GET /t
 GET /t
 --- response_body
 2048
+
+
+
+=== TEST 58: safe_set
+--- http_config
+    lua_shared_dict dogs 100k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local i = 0
+            while i < 1000 do
+                i = i + 1
+                local val = string.rep(" hello", 10) .. i
+                local res, err = dogs:safe_set("key_" .. i, val)
+                if not res then
+                    ngx.say(res, " ", err)
+                    break
+                end
+            end
+            ngx.say("abort at ", i)
+            ngx.say("cur value: ", dogs:get("key_" .. i))
+            if i > 1 then
+                ngx.say("1st value: ", dogs:get("key_1"))
+            end
+            if i > 2 then
+                ngx.say("2nd value: ", dogs:get("key_2"))
+            end
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test"]
+--- response_body eval
+my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+[qr/$a/, qr/$a/]
+--- no_error_log
+[error]
+
+
+
+=== TEST 59: safe_add
+--- http_config
+    lua_shared_dict dogs 100k;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local i = 0
+            while i < 1000 do
+                i = i + 1
+                local val = string.rep(" hello", 10) .. i
+                local res, err = dogs:safe_add("key_" .. i, val)
+                if not res then
+                    ngx.say(res, " ", err)
+                    break
+                end
+            end
+            ngx.say("abort at ", i)
+            ngx.say("cur value: ", dogs:get("key_" .. i))
+            if i > 1 then
+                ngx.say("1st value: ", dogs:get("key_1"))
+            end
+            if i > 2 then
+                ngx.say("2nd value: ", dogs:get("key_2"))
+            end
+        ';
+    }
+--- pipelined_requests eval
+["GET /test", "GET /test"]
+--- response_body eval
+my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+[qr/$a/,
+q{false exists
+abort at 1
+cur value:  hello hello hello hello hello hello hello hello hello hello1
+}
+]
+--- no_error_log
+[error]
 

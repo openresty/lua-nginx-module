@@ -3553,7 +3553,9 @@ The resulting object `dict` has the following methods:
 
 * [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get)
 * [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set)
+* [safe_set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.safe_set)
 * [add](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.add)
+* [safe_add](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.safe_add)
 * [replace](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.replace)
 * [incr](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.incr)
 * [delete](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.delete)
@@ -3680,6 +3682,18 @@ Please note that while internally the key-value pair is set atomically, the atom
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
+ngx.shared.DICT.safe_set
+------------------------
+**syntax:** *ok, err = ngx.shared.DICT:safe_set(key, value, exptime?, flags?)*
+
+**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Similar to the [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set) method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
+
+This feature was first introduced in the `v0.7.18` release.
+
+See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
 ngx.shared.DICT.add
 -------------------
 **syntax:** *success, err, forcible = ngx.shared.DICT:add(key, value, exptime?, flags?)*
@@ -3691,6 +3705,18 @@ Just like the [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set) met
 If the `key` argument already exists in the dictionary (and not expired for sure), the `success` return value will be `false` and the `err` return value will be `"exists"`.
 
 This feature was first introduced in the `v0.3.1rc22` release.
+
+See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
+ngx.shared.DICT.safe_add
+------------------------
+**syntax:** *ok, err = ngx.shared.DICT:safe_add(key, value, exptime?, flags?)*
+
+**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Similar to the [add](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.add) method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
+
+This feature was first introduced in the `v0.7.18` release.
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
