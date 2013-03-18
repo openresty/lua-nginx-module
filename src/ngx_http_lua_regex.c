@@ -284,11 +284,13 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     if (rc != NGX_OK) {
         dd("compile failed");
 
+        lua_pushnil(L);
+
         re_comp.err.data[re_comp.err.len] = '\0';
         msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
                               pat.data, re_comp.err.data);
 
-        return luaL_argerror(L, 2, msg);
+        return 2;
     }
 
 #if (LUA_HAVE_PCRE_JIT)
@@ -367,7 +369,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
     if (cap == NULL) {
         flags &= ~NGX_LUA_RE_COMPILE_ONCE;
-        msg = "out of memory";
+        msg = "no memory";
         goto error;
     }
 
@@ -380,7 +382,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
-            return luaL_error(L, "out of memory");
+            msg = "no memory";
+            goto error;
         }
 
         dd("saving regex %p, ncaptures %d,  captures %p", re_comp.regex,
@@ -537,7 +540,9 @@ error:
         }
     }
 
-    return luaL_error(L, msg);
+    lua_pushnil(L);
+    lua_pushstring(L, msg);
+    return 2;
 }
 
 
@@ -694,11 +699,13 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     if (rc != NGX_OK) {
         dd("compile failed");
 
+        lua_pushnil(L);
+
         re_comp.err.data[re_comp.err.len] = '\0';
         msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
                               pat.data, re_comp.err.data);
 
-        return luaL_argerror(L, 2, msg);
+        return 2;
     }
 
 #if LUA_HAVE_PCRE_JIT
@@ -775,7 +782,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     cap = ngx_palloc(pool, ovecsize * sizeof(int));
     if (cap == NULL) {
         flags &= ~NGX_LUA_RE_COMPILE_ONCE;
-        msg = "out of memory";
+        msg = "no memory";
         goto error;
     }
 
@@ -788,7 +795,8 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
-            return luaL_error(L, "out of memory");
+            msg = "no memory";
+            goto error;
         }
 
         dd("saving regex %p, ncaptures %d,  captures %p", re_comp.regex,
@@ -830,7 +838,8 @@ compiled:
 
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
-            return luaL_error(L, "out of memory");
+            msg = "no memory";
+            goto error;
         }
 
         cln->handler = ngx_http_lua_ngx_re_gmatch_cleanup;
@@ -863,7 +872,9 @@ error:
         }
     }
 
-    return luaL_error(L, msg);
+    lua_pushnil(L);
+    lua_pushstring(L, msg);
+    return 2;
 }
 
 
@@ -1051,7 +1062,9 @@ error:
         ngx_pfree(r->pool, cap);
     }
 
-    return luaL_error(L, msg);
+    lua_pushnil(L);
+    lua_pushstring(L, msg);
+    return 2;
 }
 
 
@@ -1356,11 +1369,14 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     if (rc != NGX_OK) {
         dd("compile failed");
 
+        lua_pushnil(L);
+        lua_pushnil(L);
+
         re_comp.err.data[re_comp.err.len] = '\0';
         msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
                               pat.data, re_comp.err.data);
 
-        return luaL_argerror(L, 2, msg);
+        return 3;
     }
 
 #if LUA_HAVE_PCRE_JIT
@@ -1437,7 +1453,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     cap = ngx_palloc(pool, ovecsize * sizeof(int));
     if (cap == NULL) {
         flags &= ~NGX_LUA_RE_COMPILE_ONCE;
-        msg = "out of memory";
+        msg = "no memory";
         goto error;
     }
 
@@ -1448,7 +1464,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
         ctpl = ngx_palloc(pool, sizeof(ngx_http_lua_complex_value_t));
         if (ctpl == NULL) {
             flags &= ~NGX_LUA_RE_COMPILE_ONCE;
-            msg = "out of memory";
+            msg = "no memory";
             goto error;
         }
 
@@ -1457,7 +1473,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
             p = ngx_palloc(pool, tpl.len + 1);
             if (p == NULL) {
                 flags &= ~NGX_LUA_RE_COMPILE_ONCE;
-                msg = "out of memory";
+                msg = "no memory";
                 goto error;
             }
 
@@ -1487,8 +1503,11 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
             ngx_pfree(pool, re_comp.regex);
 
-            return luaL_error(L, "bad template for substitution: \"%s\"",
-                              lua_tostring(L, 3));
+            lua_pushnil(L);
+            lua_pushnil(L);
+            lua_pushfstring(L, "bad template for substitution: \"%s\"",
+                            lua_tostring(L, 3));
+            return 3;
         }
     }
 
@@ -1501,7 +1520,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
         if (re == NULL) {
-            return luaL_error(L, "out of memory");
+            msg = "no memory";
+            goto error;
         }
 
         dd("saving regex %p, ncaptures %d,  captures %p", re_comp.regex,
@@ -1755,7 +1775,10 @@ error:
         }
     }
 
-    return luaL_error(L, msg);
+    lua_pushnil(L);
+    lua_pushnil(L);
+    lua_pushstring(L, msg);
+    return 3;
 }
 
 

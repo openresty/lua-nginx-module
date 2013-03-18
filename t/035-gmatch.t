@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(5);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
 our $HtmlDir = html_dir;
 
@@ -680,4 +680,64 @@ not matched!
 
 
 1234
+
+
+
+=== TEST 26: bad pattern
+--- config
+    location /re {
+        content_by_lua '
+            local it, err = ngx.re.gmatch("hello\\nworld", "(abc")
+            if not err then
+                ngx.say("good")
+
+            else
+                ngx.say("error: ", err)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+error: failed to compile regex "(abc": pcre_compile() failed: missing ) in "(abc"
+--- no_error_log
+[error]
+
+
+
+=== TEST 27: bad UTF-8
+--- config
+    location = /t {
+        content_by_lua '
+            local target = "你好"
+            local regex = "你好"
+
+            -- Note the D here
+            local it, err = ngx.re.gmatch(string.sub(target, 1, 4), regex, "u")
+
+            if err then
+                ngx.say("error: ", err)
+                return
+            end
+
+            local m, err = it()
+            if err then
+                ngx.say("error: ", err)
+                return
+            end
+
+            if m then
+                ngx.say("matched: ", m[0])
+            else
+                ngx.say("not matched")
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body_like chop
+error: pcre_exec\(\) failed: -10 on "你.*?"
+
+--- no_error_log
+[error]
 

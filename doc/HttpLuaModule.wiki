@@ -3175,23 +3175,33 @@ Parse the http time string (as returned by [[#ngx.http_time|ngx.http_time]]) int
 Returns <code>true</code> if the current request is an nginx subrequest, or <code>false</code> otherwise.
 
 == ngx.re.match ==
-'''syntax:''' ''captures = ngx.re.match(subject, regex, options?, ctx?)''
+'''syntax:''' ''captures, err = ngx.re.match(subject, regex, options?, ctx?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Matches the <code>subject</code> string using the Perl compatible regular expression <code>regex</code> with the optional <code>options</code>.
 
-Only the first occurrence of the match is returned, or <code>nil</code> if no match is found. In case of fatal errors, like seeing bad <code>UTF-8</code> sequences in <code>UTF-8</code> mode, a Lua exception will be raised.
+Only the first occurrence of the match is returned, or <code>nil</code> if no match is found. In case of errors, like seeing a bad regular expression or exceeding the PCRE stack limit, `nil` and a string describing the error will be returned.
 
 When a match is found, a Lua table <code>captures</code> is returned, where <code>captures[0]</code> holds the whole substring being matched, and <code>captures[1]</code> holds the first parenthesized sub-pattern's capturing, <code>captures[2]</code> the second, and so on.
 
 <geshi lang="lua">
-    local m = ngx.re.match("hello, 1234", "[0-9]+")
-    -- m[0] == "1234"
+    local m, err = ngx.re.match("hello, 1234", "[0-9]+")
+    if m then
+        -- m[0] == "1234"
+
+    else
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+
+        ngx.say("match not found")
+    end
 </geshi>
 
 <geshi lang="lua">
-    local m = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
+    local m, err = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
     -- m[0] == "1234"
     -- m[1] == "1"
 </geshi>
@@ -3200,7 +3210,7 @@ Named captures are also supported since the <code>v0.7.14</code> release
 and are returned in the same Lua table as key-value pairs as the numbered captures.
 
 <geshi lang="lua">
-    local m = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
+    local m, err = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
     -- m[0] == "1234"
     -- m[1] == "1"
     -- m[2] == "234"
@@ -3210,7 +3220,7 @@ and are returned in the same Lua table as key-value pairs as the numbered captur
 Unmatched subpatterns will have <code>nil</code> values in their <code>captures</code> table fields.
 
 <geshi lang="lua">
-    local m = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
+    local m, err = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
     -- m[0] == "hello"
     -- m[1] == nil
     -- m[2] == "hello"
@@ -3280,14 +3290,14 @@ The optional fourth argument, <code>ctx</code>, can be a Lua table holding an op
 
 <geshi lang="lua">
     local ctx = {}
-    local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+    local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "1234"
          -- ctx.pos == 4
 </geshi>
 
 <geshi lang="lua">
     local ctx = { pos = 2 }
-    local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+    local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "34"
          -- ctx.pos == 4
 </geshi>
@@ -3307,26 +3317,65 @@ To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the 
 This feature was introduced in the <code>v0.2.1rc11</code> release.
 
 == ngx.re.gmatch ==
-'''syntax:''' ''iterator = ngx.re.gmatch(subject, regex, options?)''
+'''syntax:''' ''iterator, err = ngx.re.gmatch(subject, regex, options?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the PCRE <code>regex</code>.
 
+In case of errors, like seeing an ill-formed regular expression, `nil` and a string describing the error will be returned.
+
 Here is a small example to demonstrate its basic usage:
 
 <geshi lang="lua">
-    local iterator = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+    local iterator, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+    if not iterator then
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
+
     local m
-    m = iterator()    -- m[0] == m[1] == "hello"
-    m = iterator()    -- m[0] == m[1] == "world"
-    m = iterator()    -- m == nil
+    m, err = iterator()    -- m[0] == m[1] == "hello"
+    if err then
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
+
+    m, err = iterator()    -- m[0] == m[1] == "world"
+    if err then
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
+
+    m, err = iterator()    -- m == nil
+    if err then
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
 </geshi>
 
-More often we just put it into a Lua <code>for</code> loop:
+More often we just put it into a Lua loop:
 
 <geshi lang="lua">
-    for m in ngx.re.gmatch("hello, world!", "([a-z]+)", "i") do
+    local it, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+    if not it then
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
+
+    while true do
+        local m, err = it()
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+
+        if not m then
+            -- no match found (any more)
+            break
+        end
+
+        -- found a match
         ngx.say(m[0])
         ngx.say(m[1])
     end
@@ -3341,20 +3390,26 @@ This method requires the PCRE library enabled in Nginx.  ([[#Special PCRE Sequen
 This feature was first introduced in the <code>v0.2.1rc12</code> release.
 
 == ngx.re.sub ==
-'''syntax:''' ''newstr, n = ngx.re.sub(subject, regex, replace, options?)''
+'''syntax:''' ''newstr, n, err = ngx.re.sub(subject, regex, replace, options?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Substitutes the first match of the Perl compatible regular expression <code>regex</code> on the <code>subject</code> argument string with the string or function argument <code>replace</code>. The optional <code>options</code> argument has exactly the same meaning as in [[#ngx.re.match|ngx.re.match]].
 
-This method returns the resulting new string as well as the number of successful substitutions, or throw out a Lua exception when an error occurred (syntax errors in the <code><replace></code> string argument, for example).
+This method returns the resulting new string as well as the number of successful substitutions. In case of failures, like syntax errors in the regular expressions or the <code><replace></code> string argument, it will return `nil` and a string describing the error.
 
 When the <code>replace</code> is a string, then it is treated as a special template for string replacement. For example,
 
 <geshi lang="lua">
-    local newstr, n = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+    local newstr, n, err = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+    if newstr then
         -- newstr == "hello, [12][1]34"
         -- n == 1
+
+    else
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
 </geshi>
 
 where <code>$0</code> referring to the whole substring matched by the pattern and <code>$1</code> referring to the first parenthesized capturing substring.
@@ -3362,7 +3417,7 @@ where <code>$0</code> referring to the whole substring matched by the pattern an
 Curly braces can also be used to disambiguate variable names from the background string literals: 
 
 <geshi lang="lua">
-    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
+    local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
         -- newstr == "hello, 10034"
         -- n == 1
 </geshi>
@@ -3370,7 +3425,7 @@ Curly braces can also be used to disambiguate variable names from the background
 Literal dollar sign characters (<code>$</code>) in the <code>replace</code> string argument can be escaped by another dollar sign, for instance,
 
 <geshi lang="lua">
-    local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "$$")
+    local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "$$")
         -- newstr == "hello, $234"
         -- n == 1
 </geshi>
@@ -3383,7 +3438,7 @@ When the <code>replace</code> argument is of type "function", then it will be in
     local func = function (m)
         return "[" .. m[0] .. "][" .. m[1] .. "]"
     end
-    local newstr, n = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
+    local newstr, n, err = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
         -- newstr == "hello, [12][1]34"
         -- n == 1
 </geshi>
@@ -3404,16 +3459,22 @@ Just like [[#ngx.re.sub|ngx.re.sub]], but does global substitution.
 Here is some examples:
 
 <geshi lang="lua">
-    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+    local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+    if newstr then
         -- newstr == "[hello,h], [world,w]"
         -- n == 2
+
+    else
+        ngx.log(ngx.ERR, "error: ", err)
+        return
+    end
 </geshi>
 
 <geshi lang="lua">
     local func = function (m)
         return "[" .. m[0] .. "," .. m[1] .. "]"
     end
-    local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
+    local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
         -- newstr == "[hello,h], [world,w]"
         -- n == 2
 </geshi>
