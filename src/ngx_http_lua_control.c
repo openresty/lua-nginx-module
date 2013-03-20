@@ -161,6 +161,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     if (user_args.len) {
         if (args.len == 0) {
             args = user_args;
+
         } else {
             p = ngx_palloc(r->pool, args.len + user_args.len + 1);
             if (p == NULL) {
