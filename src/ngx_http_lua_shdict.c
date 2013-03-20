@@ -16,6 +16,7 @@
 
 
 static int ngx_http_lua_shdict_set(lua_State *L);
+static int ngx_http_lua_shdict_safe_set(lua_State *L);
 static int ngx_http_lua_shdict_get(lua_State *L);
 static int ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx,
     ngx_uint_t n);
@@ -24,6 +25,7 @@ static ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone,
     ngx_http_lua_shdict_node_t **sdp);
 static int ngx_http_lua_shdict_set_helper(lua_State *L, int flags);
 static int ngx_http_lua_shdict_add(lua_State *L);
+static int ngx_http_lua_shdict_safe_add(lua_State *L);
 static int ngx_http_lua_shdict_replace(lua_State *L);
 static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
@@ -34,6 +36,7 @@ static int ngx_http_lua_shdict_get_keys(lua_State *L);
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
+#define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
 
 
 ngx_int_t
@@ -296,8 +299,14 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_pushcfunction(L, ngx_http_lua_shdict_set);
         lua_setfield(L, -2, "set");
 
+        lua_pushcfunction(L, ngx_http_lua_shdict_safe_set);
+        lua_setfield(L, -2, "safe_set");
+
         lua_pushcfunction(L, ngx_http_lua_shdict_add);
         lua_setfield(L, -2, "add");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_safe_add);
+        lua_setfield(L, -2, "safe_add");
 
         lua_pushcfunction(L, ngx_http_lua_shdict_replace);
         lua_setfield(L, -2, "replace");
@@ -728,6 +737,14 @@ ngx_http_lua_shdict_add(lua_State *L)
 
 
 static int
+ngx_http_lua_shdict_safe_add(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_ADD
+                                          |NGX_HTTP_LUA_SHDICT_SAFE_STORE);
+}
+
+
+static int
 ngx_http_lua_shdict_replace(lua_State *L)
 {
     return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_REPLACE);
@@ -738,6 +755,13 @@ static int
 ngx_http_lua_shdict_set(lua_State *L)
 {
     return ngx_http_lua_shdict_set_helper(L, 0);
+}
+
+
+static int
+ngx_http_lua_shdict_safe_set(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_SAFE_STORE);
 }
 
 
@@ -978,6 +1002,14 @@ insert:
     node = ngx_slab_alloc_locked(ctx->shpool, n);
 
     if (node == NULL) {
+
+        if (flags & NGX_HTTP_LUA_SHDICT_SAFE_STORE) {
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            lua_pushnil(L);
+            lua_pushliteral(L, "no memory");
+            return 2;
+        }
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                        "lua shared dict set: overriding non-expired items "

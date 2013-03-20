@@ -3433,7 +3433,9 @@ The resulting object <code>dict</code> has the following methods:
 
 * [[#ngx.shared.DICT.get|get]]
 * [[#ngx.shared.DICT.set|set]]
+* [[#ngx.shared.DICT.safe_set|safe_set]]
 * [[#ngx.shared.DICT.add|add]]
+* [[#ngx.shared.DICT.safe_add|safe_add]]
 * [[#ngx.shared.DICT.replace|replace]]
 * [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.delete|delete]]
@@ -3558,6 +3560,17 @@ Please note that while internally the key-value pair is set atomically, the atom
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
+== ngx.shared.DICT.safe_set ==
+'''syntax:''' ''ok, err = ngx.shared.DICT:safe_set(key, value, exptime?, flags?)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Similar to the [[#ngx.shared.DICT.set|set]] method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
+
+This feature was first introduced in the <code>v0.7.18</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
 == ngx.shared.DICT.add ==
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:add(key, value, exptime?, flags?)''
 
@@ -3568,6 +3581,17 @@ Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value
 If the <code>key</code> argument already exists in the dictionary (and not expired for sure), the <code>success</code> return value will be <code>false</code> and the <code>err</code> return value will be <code>"exists"</code>.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.safe_add ==
+'''syntax:''' ''ok, err = ngx.shared.DICT:safe_add(key, value, exptime?, flags?)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Similar to the [[#ngx.shared.DICT.add|add]] method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
+
+This feature was first introduced in the <code>v0.7.18</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
