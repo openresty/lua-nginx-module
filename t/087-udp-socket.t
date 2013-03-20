@@ -16,6 +16,7 @@ log_level 'warn';
 
 no_long_string();
 #no_diff();
+#no_shuffle();
 
 run_tests();
 
@@ -725,4 +726,71 @@ successfully connected to xxx!
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: datagram unix domain socket
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        #set $port 1234;
+
+        content_by_lua '
+            local socket = ngx.socket
+            -- local socket = require "socket"
+
+            local udp = socket.udp()
+
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("unix:a.sock")
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected")
+
+            local req = "hello,\\nserver"
+            local ok, err = udp:send(req)
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+
+            local data, err = udp:receive()
+            if not data then
+                ngx.say("failed to receive data: ", err)
+                return
+            end
+            ngx.print("received ", #data, " bytes: ", data)
+        ';
+    }
+--- request
+GET /t
+
+--- udp_listen: a.sock
+--- udp_reply
+hello,
+client
+
+--- response_body
+connected
+received 14 bytes: hello,
+client
+
+--- stap2
+probe syscall.socket, syscall.connect {
+    print(name, "(", argstr, ")")
+}
+
+probe syscall.socket.return, syscall.connect.return {
+    println(" = ", retstr)
+}
+--- no_error_log
+[error]
+--- skip_eval: 3: $^O ne 'linux'
 

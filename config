@@ -296,6 +296,17 @@ USE_SHA1=YES
 
 CORE_INCS="$CORE_INCS $ngx_addon_dir/src/api"
 
+ngx_feature="SO_PASSCRED"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_SO_PASSCRED"
+ngx_feature_run=no
+ngx_feature_incs="#include <sys/types.h>
+#include <sys/socket.h>"
+ngx_feature_path=
+ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
+
+. auto/feature
+
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
 

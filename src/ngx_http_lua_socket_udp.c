@@ -624,6 +624,26 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* rc == NGX_OK */
 
+    /*
+     * TODO: we should accept an extra argument to setpeername()
+     * to allow the user bind the datagram unix domain socket herself,
+     * which is necessary for systems without autobind support.
+     */
+
+#if (NGX_HTTP_LUA_HAVE_SO_PASSCRED)
+    if (uc->sockaddr->sa_family == AF_UNIX) {
+        int     value = 1;
+
+        if (setsockopt(uc->connection->fd, SOL_SOCKET, SO_PASSCRED, &value,
+                       sizeof(value))
+            != 0)
+        {
+            u->socket_errno = ngx_socket_errno;
+            return ngx_http_lua_socket_error_retval_handler(r, u, L);
+        }
+    }
+#endif
+
     c = uc->connection;
 
     c->data = u;
