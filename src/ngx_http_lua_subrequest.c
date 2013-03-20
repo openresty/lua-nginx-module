@@ -470,7 +470,17 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         }
 
         if (args.len == 0) {
-            args = extra_args;
+            if (extra_args.len) {
+                p = ngx_palloc(r->pool, extra_args.len);
+                if (p == NULL) {
+                    return luaL_error(L, "out of memory");
+                }
+
+                ngx_memcpy(p, extra_args.data, extra_args.len);
+
+                args.data = p;
+                args.len = extra_args.len;
+            }
 
         } else if (extra_args.len) {
             /* concatenate the two parts of args together */
