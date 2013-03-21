@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 6);
+plan tests => repeat_each() * (3 * blocks() + 7);
 
 our $HtmlDir = html_dir;
 
@@ -792,5 +792,6 @@ probe syscall.socket.return, syscall.connect.return {
 }
 --- no_error_log
 [error]
+[crit]
 --- skip_eval: 3: $^O ne 'linux'
 

@@ -169,6 +169,12 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     ngx_http_lua_socket_udp_upstream_t      *u;
 
+    /*
+     * TODO: we should probably accept an extra argument to setpeername()
+     * to allow the user bind the datagram unix domain socket himself,
+     * which is necessary for systems without autobind support.
+     */
+
     n = lua_gettop(L);
     if (n != 2 && n != 3) {
         return luaL_error(L, "ngx.socket.udp setpeername: expecting 2 or 3 "
@@ -623,26 +629,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     /* rc == NGX_OK */
-
-    /*
-     * TODO: we should accept an extra argument to setpeername()
-     * to allow the user bind the datagram unix domain socket herself,
-     * which is necessary for systems without autobind support.
-     */
-
-#if (NGX_HTTP_LUA_HAVE_SO_PASSCRED)
-    if (uc->sockaddr->sa_family == AF_UNIX) {
-        int     value = 1;
-
-        if (setsockopt(uc->connection->fd, SOL_SOCKET, SO_PASSCRED, &value,
-                       sizeof(value))
-            != 0)
-        {
-            u->socket_errno = ngx_socket_errno;
-            return ngx_http_lua_socket_error_retval_handler(r, u, L);
-        }
-    }
-#endif
 
     c = uc->connection;
 
@@ -1346,6 +1332,27 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
     rev->own_lock = &c->lock;
     wev->own_lock = &c->lock;
 
+#endif
+
+#if (NGX_HTTP_LUA_HAVE_SO_PASSCRED)
+    if (uc->sockaddr->sa_family == AF_UNIX) {
+        struct sockaddr         addr;
+
+        addr.sa_family = AF_UNIX;
+
+        /* just to make valgrind happy */
+        ngx_memzero(addr.sa_data, sizeof(addr.sa_data));
+
+        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, &uc->log, 0, "datagram unix "
+                       "domain socket autobind");
+
+        if (bind(uc->connection->fd, &addr, sizeof(sa_family_t)) != 0) {
+            ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
+                          "bind() failed");
+
+            return NGX_ERROR;
+        }
+    }
 #endif
 
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, &uc->log, 0,
