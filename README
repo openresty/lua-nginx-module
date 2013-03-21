@@ -3550,7 +3550,7 @@ Nginx API for Lua
     otherwise.
 
   ngx.re.match
-    syntax: *captures = ngx.re.match(subject, regex, options?, ctx?)*
+    syntax: *captures, err = ngx.re.match(subject, regex, options?, ctx?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
@@ -3559,18 +3559,29 @@ Nginx API for Lua
     expression "regex" with the optional "options".
 
     Only the first occurrence of the match is returned, or "nil" if no match
-    is found. In case of fatal errors, like seeing bad "UTF-8" sequences in
-    "UTF-8" mode, a Lua exception will be raised.
+    is found. In case of errors, like seeing a bad regular expression or
+    exceeding the PCRE stack limit, `nil` and a string describing the error
+    will be returned.
 
     When a match is found, a Lua table "captures" is returned, where
     "captures[0]" holds the whole substring being matched, and "captures[1]"
     holds the first parenthesized sub-pattern's capturing, "captures[2]" the
     second, and so on.
 
-        local m = ngx.re.match("hello, 1234", "[0-9]+")
-        -- m[0] == "1234"
+        local m, err = ngx.re.match("hello, 1234", "[0-9]+")
+        if m then
+            -- m[0] == "1234"
 
-        local m = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
+        else
+            if err then
+                ngx.log(ngx.ERR, "error: ", err)
+                return
+            end
+
+            ngx.say("match not found")
+        end
+
+        local m, err = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
         -- m[0] == "1234"
         -- m[1] == "1"
 
@@ -3578,7 +3589,7 @@ Nginx API for Lua
     returned in the same Lua table as key-value pairs as the numbered
     captures.
 
-        local m = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
+        local m, err = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
         -- m[0] == "1234"
         -- m[1] == "1"
         -- m[2] == "234"
@@ -3587,7 +3598,7 @@ Nginx API for Lua
     Unmatched subpatterns will have "nil" values in their "captures" table
     fields.
 
-        local m = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
+        local m, err = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
         -- m[0] == "hello"
         -- m[1] == nil
         -- m[2] == "hello"
@@ -3660,12 +3671,12 @@ Nginx API for Lua
     match. When match fails, the "ctx" table will be left intact.
 
         local ctx = {}
-        local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+        local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
              -- m[0] = "1234"
              -- ctx.pos == 4
 
         local ctx = { pos = 2 }
-        local m = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+        local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
              -- m[0] = "34"
              -- ctx.pos == 4
 
@@ -3690,7 +3701,7 @@ Nginx API for Lua
     This feature was introduced in the "v0.2.1rc11" release.
 
   ngx.re.gmatch
-    syntax: *iterator = ngx.re.gmatch(subject, regex, options?)*
+    syntax: *iterator, err = ngx.re.gmatch(subject, regex, options?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
@@ -3699,17 +3710,57 @@ Nginx API for Lua
     let the user programmer iterate all the matches over the "<subject>"
     string argument with the PCRE "regex".
 
+    In case of errors, like seeing an ill-formed regular expression, `nil`
+    and a string describing the error will be returned.
+
     Here is a small example to demonstrate its basic usage:
 
-        local iterator = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+        local iterator, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+        if not iterator then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+
         local m
-        m = iterator()    -- m[0] == m[1] == "hello"
-        m = iterator()    -- m[0] == m[1] == "world"
-        m = iterator()    -- m == nil
+        m, err = iterator()    -- m[0] == m[1] == "hello"
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
 
-    More often we just put it into a Lua "for" loop:
+        m, err = iterator()    -- m[0] == m[1] == "world"
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
 
-        for m in ngx.re.gmatch("hello, world!", "([a-z]+)", "i") do
+        m, err = iterator()    -- m == nil
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+
+    More often we just put it into a Lua loop:
+
+        local it, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+        if not it then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+
+        while true do
+            local m, err = it()
+            if err then
+                ngx.log(ngx.ERR, "error: ", err)
+                return
+            end
+
+            if not m then
+                -- no match found (any more)
+                break
+            end
+
+            -- found a match
             ngx.say(m[0])
             ngx.say(m[1])
         end
@@ -3727,7 +3778,7 @@ Nginx API for Lua
     This feature was first introduced in the "v0.2.1rc12" release.
 
   ngx.re.sub
-    syntax: *newstr, n = ngx.re.sub(subject, regex, replace, options?)*
+    syntax: *newstr, n, err = ngx.re.sub(subject, regex, replace, options?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
@@ -3738,16 +3789,22 @@ Nginx API for Lua
     meaning as in ngx.re.match.
 
     This method returns the resulting new string as well as the number of
-    successful substitutions, or throw out a Lua exception when an error
-    occurred (syntax errors in the "<replace>" string argument, for
-    example).
+    successful substitutions. In case of failures, like syntax errors in the
+    regular expressions or the "<replace>" string argument, it will return
+    `nil` and a string describing the error.
 
     When the "replace" is a string, then it is treated as a special template
     for string replacement. For example,
 
-        local newstr, n = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+        local newstr, n, err = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+        if newstr then
             -- newstr == "hello, [12][1]34"
             -- n == 1
+
+        else
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
 
     where $0 referring to the whole substring matched by the pattern and $1
     referring to the first parenthesized capturing substring.
@@ -3755,14 +3812,14 @@ Nginx API for Lua
     Curly braces can also be used to disambiguate variable names from the
     background string literals:
 
-        local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
+        local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
             -- newstr == "hello, 10034"
             -- n == 1
 
     Literal dollar sign characters ("$") in the "replace" string argument
     can be escaped by another dollar sign, for instance,
 
-        local newstr, n = ngx.re.sub("hello, 1234", "[0-9]", "$$")
+        local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "$$")
             -- newstr == "hello, $234"
             -- n == 1
 
@@ -3778,7 +3835,7 @@ Nginx API for Lua
         local func = function (m)
             return "[" .. m[0] .. "][" .. m[1] .. "]"
         end
-        local newstr, n = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
+        local newstr, n, err = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
             -- newstr == "hello, [12][1]34"
             -- n == 1
 
@@ -3800,14 +3857,20 @@ Nginx API for Lua
 
     Here is some examples:
 
-        local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+        local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+        if newstr then
             -- newstr == "[hello,h], [world,w]"
             -- n == 2
+
+        else
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
 
         local func = function (m)
             return "[" .. m[0] .. "," .. m[1] .. "]"
         end
-        local newstr, n = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
+        local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
             -- newstr == "[hello,h], [world,w]"
             -- n == 2
 
