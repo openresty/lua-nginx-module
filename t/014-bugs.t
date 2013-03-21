@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 22);
+plan tests => repeat_each() * (blocks() * 2 + 23);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -770,4 +770,48 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 [alert]
 --- error_log eval
 qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
+
+
+
+=== TEST 35: github issue #218: ngx.location.capture hangs when querying a remote host that does not exist or is really slow to respond
+--- config
+    set $myurl "https://not-exist.agentzh.org";
+    location /toto {
+        content_by_lua '
+                local cjson = require "cjson"
+                local proxyUrl = "/myproxy/entity"
+                local res = ngx.location.capture( proxyUrl,  { method = ngx.HTTP_GET })
+                ngx.say("Hello, " .. cjson.encode(res))
+            ';
+    }
+    location ~ /myproxy {
+
+        rewrite    ^/myproxy/(.*)  /$1  break;
+        resolver_timeout 1s;
+        #resolver 172.16.0.23; #  AWS DNS resolver address is the same in all regions - 172.16.0.23
+        resolver 8.8.8.8;
+        proxy_read_timeout 1s;
+        proxy_send_timeout 1s;
+        proxy_connect_timeout 1s;
+        proxy_pass $myurl:443;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length 0;
+        proxy_set_header  Accept-Encoding  "";
+    }
+
+--- request
+GET /toto
+
+--- stap2
+F(ngx_http_lua_post_subrequest) {
+    println("lua post subrequest")
+    print_ubacktrace()
+}
+
+--- response_body
+Hello, {"status":502,"body":"","header":{"Content-Length":0}}
+
+--- error_log
+not-exist.agentzh.org could not be resolved
+--- timeout: 3
 
