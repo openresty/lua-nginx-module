@@ -778,10 +778,9 @@ qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
     set $myurl "https://not-exist.agentzh.org";
     location /toto {
         content_by_lua '
-                local cjson = require "cjson"
                 local proxyUrl = "/myproxy/entity"
                 local res = ngx.location.capture( proxyUrl,  { method = ngx.HTTP_GET })
-                ngx.say("Hello, " .. cjson.encode(res))
+                ngx.say("Hello, ", res.status)
             ';
     }
     location ~ /myproxy {
@@ -809,7 +808,7 @@ F(ngx_http_lua_post_subrequest) {
 }
 
 --- response_body
-Hello, {"status":502,"body":"","header":{"Content-Length":0}}
+Hello, 502
 
 --- error_log
 not-exist.agentzh.org could not be resolved
