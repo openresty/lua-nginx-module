@@ -384,6 +384,7 @@ lua check broken conn
 lua req cleanup
 delete thread 1
 
+--- wait: 0.1
 --- timeout: 0.2
 --- abort
 --- ignore_response
