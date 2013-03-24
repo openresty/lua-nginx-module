@@ -255,7 +255,7 @@ end
 
 --- stap2
 M(http-lua-info) {
-    printf("tcp resume: %p\n", $coctx)
+    printf("udp resume: %p\n", $coctx)
     print_ubacktrace()
 }
 
@@ -501,7 +501,7 @@ lua udp socket receive buffer size: 1400
 
 
 
-=== TEST 9: read timeout and resend
+=== TEST 9: read timeout and re-receive
 --- config
     location = /t {
         content_by_lua '
