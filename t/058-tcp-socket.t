@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 94;
+plan tests => repeat_each() * 95;
 
 our $HtmlDir = html_dir;
 
@@ -2015,6 +2015,16 @@ close: 1 nil
     }
 --- request
 GET /lua
+
+--- stap
+F(ngx_resolve_name_done) {
+    println("resolve name done")
+    #print_ubacktrace()
+}
+
+--- stap_out
+resolve name done
+
 --- response_body_like chop
 ^failed to connect to xxx: xxx could not be resolved.*?Host not found
 
