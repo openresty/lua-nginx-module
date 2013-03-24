@@ -5,14 +5,14 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 7);
+plan tests => repeat_each() * (3 * blocks() + 8);
 
 our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
-log_level 'warn';
+#log_level 'warn';
 
 no_long_string();
 #no_diff();
@@ -679,7 +679,16 @@ lua udp socket receive buffer size: 8192
         ';
     }
 --- request
-GET /lua
+GET /sub
+
+--- stap
+F(ngx_resolve_name_done) {
+    println("resolve name done")
+}
+
+--- stap_out
+resolve name done
+
 --- response_body_like chop
 ^failed to connect to xxx: xxx could not be resolved.*?Host not found
 

@@ -461,6 +461,11 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
                         ngx_resolver_strerror(ctx->state));
         lua_concat(L, 2);
 
+#if 1
+        ur->ctx = NULL;
+        ngx_resolve_name_done(ctx);
+#endif
+
         u->prepare_retvals = ngx_http_lua_socket_error_retval_handler;
         ngx_http_lua_socket_udp_handle_error(r, u,
                                              NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
