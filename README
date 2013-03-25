@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.7.17
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 10
+    This document describes ngx_lua v0.7.18
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 24
     March 2013.
 
 Synopsis
@@ -3560,7 +3560,7 @@ Nginx API for Lua
 
     Only the first occurrence of the match is returned, or "nil" if no match
     is found. In case of errors, like seeing a bad regular expression or
-    exceeding the PCRE stack limit, `nil` and a string describing the error
+    exceeding the PCRE stack limit, "nil" and a string describing the error
     will be returned.
 
     When a match is found, a Lua table "captures" is returned, where
@@ -3649,10 +3649,10 @@ Nginx API for Lua
 
     These options can be combined:
 
-        local m = ngx.re.match("hello, world", "HEL LO", "ix")
+        local m, err = ngx.re.match("hello, world", "HEL LO", "ix")
         -- m[0] == "hello"
 
-        local m = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
+        local m, err = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
         -- m[0] == "hello, 美好"
         -- m[1] == "美好"
 
@@ -3710,7 +3710,7 @@ Nginx API for Lua
     let the user programmer iterate all the matches over the "<subject>"
     string argument with the PCRE "regex".
 
-    In case of errors, like seeing an ill-formed regular expression, `nil`
+    In case of errors, like seeing an ill-formed regular expression, "nil"
     and a string describing the error will be returned.
 
     Here is a small example to demonstrate its basic usage:
@@ -3791,7 +3791,7 @@ Nginx API for Lua
     This method returns the resulting new string as well as the number of
     successful substitutions. In case of failures, like syntax errors in the
     regular expressions or the "<replace>" string argument, it will return
-    `nil` and a string describing the error.
+    "nil" and a string describing the error.
 
     When the "replace" is a string, then it is treated as a special template
     for string replacement. For example,
@@ -3800,7 +3800,6 @@ Nginx API for Lua
         if newstr then
             -- newstr == "hello, [12][1]34"
             -- n == 1
-
         else
             ngx.log(ngx.ERR, "error: ", err)
             return
@@ -3848,7 +3847,8 @@ Nginx API for Lua
     This feature was first introduced in the "v0.2.1rc13" release.
 
   ngx.re.gsub
-    syntax: *newstr, n = ngx.re.gsub(subject, regex, replace, options?)*
+    syntax: *newstr, n, err = ngx.re.gsub(subject, regex, replace,
+    options?)*
 
     context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
     header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
@@ -3861,7 +3861,6 @@ Nginx API for Lua
         if newstr then
             -- newstr == "[hello,h], [world,w]"
             -- n == 2
-
         else
             ngx.log(ngx.ERR, "error: ", err)
             return
@@ -4295,7 +4294,8 @@ Nginx API for Lua
             ';
         }
 
-    Connecting to a datagram unix domain socket file is also possible:
+    Since the "v0.7.18" release, connecting to a datagram unix domain socket
+    file is also possible on Linux:
 
         local sock = ngx.socket.udp()
         local ok, err = sock:setpeername("unix:/tmp/some-datagram-service.sock")
@@ -4305,7 +4305,8 @@ Nginx API for Lua
         end
 
     assuming the datagram service is listening on the unix domain socket
-    file "/tmp/some-datagram-service.sock".
+    file "/tmp/some-datagram-service.sock" and the client socket will use
+    the "autobind" feature on Linux.
 
     Calling this method on an already connected socket object will cause the
     original connection to be closed first.
@@ -5400,9 +5401,10 @@ Data Sharing within an Nginx Worker
     worker process, encapsulate the shared data into a Lua module, use the
     Lua "require" builtin to import the module, and then manipulate the
     shared data in Lua. This works because required Lua modules are loaded
-    only once and all coroutines will share the same copy of the module.
-    Note however that Lua global variables WILL NOT persist between requests
-    because of the one-coroutine-per-request isolation design.
+    only once and all coroutines will share the same copy of the module
+    (both its code and data). Note however that Lua global variables (note,
+    not module-level variables) WILL NOT persist between requests because of
+    the one-coroutine-per-request isolation design.
 
     Here is a complete small example:
 

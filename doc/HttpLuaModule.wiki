@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.17] released on 10 March 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.18] released on 24 March 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3181,7 +3181,7 @@ Returns <code>true</code> if the current request is an nginx subrequest, or <cod
 
 Matches the <code>subject</code> string using the Perl compatible regular expression <code>regex</code> with the optional <code>options</code>.
 
-Only the first occurrence of the match is returned, or <code>nil</code> if no match is found. In case of errors, like seeing a bad regular expression or exceeding the PCRE stack limit, `nil` and a string describing the error will be returned.
+Only the first occurrence of the match is returned, or <code>nil</code> if no match is found. In case of errors, like seeing a bad regular expression or exceeding the PCRE stack limit, <code>nil</code> and a string describing the error will be returned.
 
 When a match is found, a Lua table <code>captures</code> is returned, where <code>captures[0]</code> holds the whole substring being matched, and <code>captures[1]</code> holds the first parenthesized sub-pattern's capturing, <code>captures[2]</code> the second, and so on.
 
@@ -3274,12 +3274,12 @@ Specify <code>options</code> to control how the match operation will be performe
 These options can be combined:
 
 <geshi lang="nginx">
-    local m = ngx.re.match("hello, world", "HEL LO", "ix")
+    local m, err = ngx.re.match("hello, world", "HEL LO", "ix")
     -- m[0] == "hello"
 </geshi>
 
 <geshi lang="nginx">
-    local m = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
+    local m, err = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
     -- m[0] == "hello, 美好"
     -- m[1] == "美好"
 </geshi>
@@ -3323,7 +3323,7 @@ This feature was introduced in the <code>v0.2.1rc11</code> release.
 
 Similar to [[#ngx.re.match|ngx.re.match]], but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the <code><subject></code> string argument with the PCRE <code>regex</code>.
 
-In case of errors, like seeing an ill-formed regular expression, `nil` and a string describing the error will be returned.
+In case of errors, like seeing an ill-formed regular expression, <code>nil</code> and a string describing the error will be returned.
 
 Here is a small example to demonstrate its basic usage:
 
@@ -3396,7 +3396,7 @@ This feature was first introduced in the <code>v0.2.1rc12</code> release.
 
 Substitutes the first match of the Perl compatible regular expression <code>regex</code> on the <code>subject</code> argument string with the string or function argument <code>replace</code>. The optional <code>options</code> argument has exactly the same meaning as in [[#ngx.re.match|ngx.re.match]].
 
-This method returns the resulting new string as well as the number of successful substitutions. In case of failures, like syntax errors in the regular expressions or the <code><replace></code> string argument, it will return `nil` and a string describing the error.
+This method returns the resulting new string as well as the number of successful substitutions. In case of failures, like syntax errors in the regular expressions or the <code><replace></code> string argument, it will return <code>nil</code> and a string describing the error.
 
 When the <code>replace</code> is a string, then it is treated as a special template for string replacement. For example,
 
@@ -3405,7 +3405,6 @@ When the <code>replace</code> is a string, then it is treated as a special templ
     if newstr then
         -- newstr == "hello, [12][1]34"
         -- n == 1
-
     else
         ngx.log(ngx.ERR, "error: ", err)
         return
@@ -3450,7 +3449,7 @@ This method requires the PCRE library enabled in Nginx.  ([[#Special PCRE Sequen
 This feature was first introduced in the <code>v0.2.1rc13</code> release.
 
 == ngx.re.gsub ==
-'''syntax:''' ''newstr, n = ngx.re.gsub(subject, regex, replace, options?)''
+'''syntax:''' ''newstr, n, err = ngx.re.gsub(subject, regex, replace, options?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
@@ -3463,7 +3462,6 @@ Here is some examples:
     if newstr then
         -- newstr == "[hello,h], [world,w]"
         -- n == 2
-
     else
         ngx.log(ngx.ERR, "error: ", err)
         return
@@ -3791,7 +3789,7 @@ Here is an example for connecting to a UDP (memcached) server:
     }
 </geshi>
 
-Connecting to a datagram unix domain socket file is also possible:
+Since the <code>v0.7.18</code> release, connecting to a datagram unix domain socket file is also possible on Linux:
 
 <geshi lang="lua">
     local sock = ngx.socket.udp()
@@ -3802,7 +3800,7 @@ Connecting to a datagram unix domain socket file is also possible:
     end
 </geshi>
 
-assuming the datagram service is listening on the unix domain socket file <code>/tmp/some-datagram-service.sock</code>.
+assuming the datagram service is listening on the unix domain socket file <code>/tmp/some-datagram-service.sock</code> and the client socket will use the "autobind" feature on Linux.
 
 Calling this method on an already connected socket object will cause the original connection to be closed first.
 
@@ -4656,7 +4654,7 @@ To force <code>curl</code> to send HTTP 1.0 requests, use the <code>-0</code> op
 
 = Data Sharing within an Nginx Worker =
 
-To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua <code>require</code> builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module. Note however that Lua global variables WILL NOT persist between requests because of the one-coroutine-per-request isolation design.
+To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua <code>require</code> builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module (both its code and data). Note however that Lua global variables (note, not module-level variables) WILL NOT persist between requests because of the one-coroutine-per-request isolation design.
 
 Here is a complete small example:
 

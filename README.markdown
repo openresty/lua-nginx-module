@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.17](https://github.com/chaoslawful/lua-nginx-module/tags) released on 10 March 2013.
+This document describes ngx_lua [v0.7.18](https://github.com/chaoslawful/lua-nginx-module/tags) released on 24 March 2013.
 
 Synopsis
 ========
@@ -3390,12 +3390,12 @@ Specify `options` to control how the match operation will be performed. The foll
 These options can be combined:
 
 
-    local m = ngx.re.match("hello, world", "HEL LO", "ix")
+    local m, err = ngx.re.match("hello, world", "HEL LO", "ix")
     -- m[0] == "hello"
 
 
 
-    local m = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
+    local m, err = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
     -- m[0] == "hello, 美好"
     -- m[1] == "美好"
 
@@ -3523,7 +3523,6 @@ When the `replace` is a string, then it is treated as a special template for str
     if newstr then
         -- newstr == "hello, [12][1]34"
         -- n == 1
-
     else
         ngx.log(ngx.ERR, "error: ", err)
         return
@@ -3569,7 +3568,7 @@ This feature was first introduced in the `v0.2.1rc13` release.
 
 ngx.re.gsub
 -----------
-**syntax:** *newstr, n = ngx.re.gsub(subject, regex, replace, options?)*
+**syntax:** *newstr, n, err = ngx.re.gsub(subject, regex, replace, options?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
 
@@ -3582,7 +3581,6 @@ Here is some examples:
     if newstr then
         -- newstr == "[hello,h], [world,w]"
         -- n == 2
-
     else
         ngx.log(ngx.ERR, "error: ", err)
         return
@@ -3924,7 +3922,7 @@ Here is an example for connecting to a UDP (memcached) server:
     }
 
 
-Connecting to a datagram unix domain socket file is also possible:
+Since the `v0.7.18` release, connecting to a datagram unix domain socket file is also possible on Linux:
 
 
     local sock = ngx.socket.udp()
@@ -3935,7 +3933,7 @@ Connecting to a datagram unix domain socket file is also possible:
     end
 
 
-assuming the datagram service is listening on the unix domain socket file `/tmp/some-datagram-service.sock`.
+assuming the datagram service is listening on the unix domain socket file `/tmp/some-datagram-service.sock` and the client socket will use the "autobind" feature on Linux.
 
 Calling this method on an already connected socket object will cause the original connection to be closed first.
 
@@ -4818,7 +4816,7 @@ To force `curl` to send HTTP 1.0 requests, use the `-0` option.
 Data Sharing within an Nginx Worker
 ===================================
 
-To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua `require` builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module. Note however that Lua global variables WILL NOT persist between requests because of the one-coroutine-per-request isolation design.
+To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua `require` builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module (both its code and data). Note however that Lua global variables (note, not module-level variables) WILL NOT persist between requests because of the one-coroutine-per-request isolation design.
 
 Here is a complete small example:
 
