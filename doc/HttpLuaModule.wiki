@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.18] released on 24 March 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.7.19] released on 27 March 2013.
 
 = Synopsis =
 <geshi lang="nginx">
