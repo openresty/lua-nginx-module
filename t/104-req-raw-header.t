@@ -364,3 +364,121 @@ Connection: close\r
 [error]
 --- timeout: 5
 
+
+
+=== TEST 14: small header (POST body)
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+POST /t
+hello
+--- response_body eval
+qq{POST /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+Content-Length: 5\r
+\r
+}
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: small header (POST body) - in subrequests
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/t")
+            ngx.print(res.body)
+        ';
+    }
+
+--- request
+POST /main
+hello
+--- response_body eval
+qq{POST /main HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+Content-Length: 5\r
+\r
+}
+--- no_error_log
+[error]
+
+
+
+=== TEST 16: large header (POST body)
+--- config
+    client_header_buffer_size 10;
+    large_client_header_buffers 30 561;
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+POST /t
+hello
+--- more_headers eval
+CORE::join"\n", map { "Header$_: value-$_" } 1..512
+
+--- response_body eval
+qq{POST /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+}
+.(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\nContent-Length: 5\r\n\r\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 17: large header (POST body) - in subrequests
+--- config
+    client_header_buffer_size 10;
+    large_client_header_buffers 30 561;
+    location /t {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+
+    location /main {
+        content_by_lua '
+            local res = ngx.location.capture("/t")
+            ngx.print(res.body)
+        ';
+    }
+--- request
+POST /main
+hello
+--- more_headers eval
+CORE::join"\n", map { "Header$_: value-$_" } 1..512
+
+--- response_body eval
+qq{POST /main HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+}
+.(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\nContent-Length: 5\r\n\r\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+

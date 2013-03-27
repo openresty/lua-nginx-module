@@ -67,7 +67,7 @@ static int
 ngx_http_lua_ngx_req_raw_header(lua_State *L)
 {
     int                          n;
-    u_char                      *data, *p, *last;
+    u_char                      *data, *p, *last, *pos;
     unsigned                     no_req_line = 0, found;
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
@@ -91,7 +91,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    hc = r->http_connection;
+    hc = r->main->http_connection;
 
     if (hc->nbusy) {
         b = NULL;  /* to suppress a gcc warning */
@@ -100,8 +100,9 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             b = hc->busy[i];
 
             if (first == NULL) {
-                if (r->request_line.data >= b->pos
-                    || r->request_line.data + r->request_line.len + 2
+                if (r->main->request_line.data >= b->pos
+                    || r->main->request_line.data
+                       + r->main->request_line.len + 2
                        <= b->start)
                 {
                     continue;
@@ -111,27 +112,28 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 first = b;
             }
 
-            size += b->pos - b->start;
-
-            if (b == r->header_in) {
+            if (b == r->main->header_in) {
+                size += r->main->header_end + 2 - b->start;
                 break;
             }
+
+            size += b->pos - b->start;
         }
 
     } else {
-        if (r != r->main) {
-            b = r->main->header_in;
-
-        } else {
-            b = r->header_in;
-        }
+        b = r->main->header_in;
 
         if (b == NULL) {
             lua_pushnil(L);
             return 1;
         }
 
-        size = b->pos - r->request_line.data;
+        if (b == r->main->header_in) {
+            size = r->main->header_end + 2 - r->main->request_line.data;
+
+        } else {
+            size = b->pos - r->main->request_line.data;
+        }
     }
 
     data = lua_newuserdata(L, size);
@@ -153,26 +155,33 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
             p = last;
 
+            if (b == r->main->header_in) {
+                pos = r->main->header_end + 2;
+
+            } else {
+                pos = b->pos;
+            }
+
             if (b == first) {
-                dd("request line: %.*s", (int) r->request_line.len,
-                   r->request_line.data);
+                dd("request line: %.*s", (int) r->main->request_line.len,
+                   r->main->request_line.data);
 
                 if (no_req_line) {
                     last = ngx_copy(last,
-                                    r->request_line.data + r->request_line.len
-                                    + 2,
-                                    b->pos - r->request_line.data
-                                    - r->request_line.len - 2);
+                                    r->main->request_line.data
+                                    + r->main->request_line.len + 2,
+                                    pos - r->main->request_line.data
+                                    - r->main->request_line.len - 2);
 
                 } else {
                     last = ngx_copy(last,
-                                    r->request_line.data,
-                                    b->pos - r->request_line.data);
+                                    r->main->request_line.data,
+                                    pos - r->main->request_line.data);
 
                 }
 
             } else {
-                last = ngx_copy(last, b->start, b->pos - b->start);
+                last = ngx_copy(last, b->start, pos - b->start);
             }
 
 #if 1
@@ -197,7 +206,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 }
             }
 
-            if (b == r->header_in) {
+            if (b == r->main->header_in) {
                 break;
             }
         }
@@ -205,11 +214,12 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     } else {
         if (no_req_line) {
             last = ngx_copy(data,
-                            r->request_line.data + r->request_line.len + 2,
-                            size - r->request_line.len - 2);
+                            r->main->request_line.data
+                            + r->main->request_line.len + 2,
+                            size - r->main->request_line.len - 2);
 
         } else {
-            last = ngx_copy(data, r->request_line.data, size);
+            last = ngx_copy(data, r->main->request_line.data, size);
         }
 
         for (p = data; p != last; p++) {
