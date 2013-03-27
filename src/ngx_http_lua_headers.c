@@ -234,6 +234,10 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         }
     }
 
+    if (last - data > (ssize_t) size) {
+        return luaL_error(L, "buffer error");
+    }
+
     lua_pushlstring(L, (char *) data, last - data);
     return 1;
 }
