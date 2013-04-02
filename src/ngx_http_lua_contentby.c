@@ -19,8 +19,6 @@
 
 
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
-static ngx_int_t ngx_http_lua_content_run_posted_threads(lua_State *L,
-    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, int n);
 
 
 ngx_int_t
@@ -220,7 +218,7 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
-        ngx_http_finalize_request(r, ngx_http_lua_content_handler(r));
+        ngx_http_lua_finalize_request(r, ngx_http_lua_content_handler(r));
 
     } else {
         r->main->count--;
@@ -313,12 +311,14 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 }
 
 
-static ngx_int_t
+ngx_int_t
 ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, int n)
 {
     ngx_int_t                        rc;
     ngx_http_lua_posted_thread_t    *pt;
+
+    dd("run posted threads: %p", ctx->posted_threads);
 
     for ( ;; ) {
         pt = ctx->posted_threads;
@@ -330,6 +330,8 @@ ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
 
         ngx_http_lua_probe_run_posted_thread(r, pt->co_ctx->co,
                                              (int) pt->co_ctx->co_status);
+
+        dd("posted thread status: %d", pt->co_ctx->co_status);
 
         if (pt->co_ctx->co_status != NGX_HTTP_LUA_CO_RUNNING) {
             continue;
@@ -350,7 +352,7 @@ ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
 
         if (rc == NGX_OK) {
             while (n > 0) {
-                ngx_http_finalize_request(r, NGX_DONE);
+                ngx_http_lua_finalize_request(r, NGX_DONE);
                 n--;
             }
 
@@ -375,7 +377,7 @@ done:
     /* n > 1 */
 
     do {
-        ngx_http_finalize_request(r, NGX_DONE);
+        ngx_http_lua_finalize_request(r, NGX_DONE);
     } while (--n > 1);
 
     return NGX_DONE;

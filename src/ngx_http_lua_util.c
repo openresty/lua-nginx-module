@@ -45,6 +45,7 @@
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_uthread.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_timer.h"
 
 
 #if 1
@@ -93,6 +94,8 @@ static ngx_int_t ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
 static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
+static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
+static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 
 
 #ifndef LUA_PATH_SEP
@@ -744,7 +747,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 85 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 86 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -771,6 +774,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_socket_tcp_api(cf->log, L);
     ngx_http_lua_inject_socket_udp_api(cf->log, L);
     ngx_http_lua_inject_uthread_api(cf->log, L);
+    ngx_http_lua_inject_timer_api(L);
 
     ngx_http_lua_inject_misc_api(L);
 
@@ -930,6 +934,13 @@ ngx_http_lua_request_cleanup(void *data)
     }
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+#if 1
+    if (r->connection->fd == -1) {
+        /* being a fake request */
+        lmcf->running_timers--;
+    }
+#endif
 
     L = lmcf->lua;
 
@@ -1447,7 +1458,7 @@ no_parent:
     return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
-    if (ctx->entered_content_phase) {
+    if (ctx->entered_content_phase && r->connection->fd != -1) {
         rc = ngx_http_lua_send_chain_link(r, ctx,
                                           NULL /* last_buf */);
 
@@ -1494,7 +1505,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
             c->timedout = 1;
 
             if (ctx->entered_content_phase) {
-                ngx_http_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
+                ngx_http_lua_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
             }
 
             return NGX_HTTP_REQUEST_TIME_OUT;
@@ -1508,7 +1519,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
             if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
                 if (ctx->entered_content_phase) {
-                    ngx_http_finalize_request(r, NGX_ERROR);
+                    ngx_http_lua_finalize_request(r, NGX_ERROR);
                 }
                 return NGX_ERROR;
             }
@@ -1528,7 +1539,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
         if (rc == NGX_ERROR || rc > NGX_OK) {
             if (ctx->entered_content_phase) {
-                ngx_http_finalize_request(r, rc);
+                ngx_http_lua_finalize_request(r, rc);
             }
 
             return rc;
@@ -1559,7 +1570,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
             if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
                 if (ctx->entered_content_phase) {
-                    ngx_http_finalize_request(r, NGX_ERROR);
+                    ngx_http_lua_finalize_request(r, NGX_ERROR);
                 }
 
                 return NGX_ERROR;
@@ -2890,14 +2901,14 @@ ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
         }
 
         if (rc == NGX_DONE) {
-            ngx_http_finalize_request(r, NGX_DONE);
+            ngx_http_lua_finalize_request(r, NGX_DONE);
             continue;
         }
 
         /* rc == NGX_ERROR || rc >= NGX_OK */
 
         if (ctx->entered_content_phase) {
-            ngx_http_finalize_request(r, rc);
+            ngx_http_lua_finalize_request(r, rc);
         }
 
         return rc;
@@ -3150,7 +3161,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
     if (ctx->on_abort_co_ctx == NULL) {
         r->connection->error = 1;
         ngx_http_lua_request_cleanup(r);
-        ngx_http_finalize_request(r, rc);
+        ngx_http_lua_finalize_request(r, rc);
         return;
     }
 
@@ -3163,7 +3174,8 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
         if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && rev->active) {
             if (ngx_del_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
                 ngx_http_lua_request_cleanup(r);
-                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                ngx_http_lua_finalize_request(r,
+                                              NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;
             }
         }
@@ -3226,12 +3238,12 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        ngx_http_finalize_request(r, NGX_DONE);
+        ngx_http_lua_finalize_request(r, NGX_DONE);
         return ngx_http_lua_run_posted_threads(c,lmcf->lua, r, ctx);
     }
 
     if (ctx->entered_content_phase) {
-        ngx_http_finalize_request(r, rc);
+        ngx_http_lua_finalize_request(r, rc);
         return NGX_DONE;
     }
 
@@ -3278,6 +3290,161 @@ ngx_http_lua_test_expect(ngx_http_request_t *r)
     /* we assume that such small packet should be send successfully */
 
     return NGX_ERROR;
+}
+
+
+void
+ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
+{
+    if (r->connection->fd != -1) {
+        ngx_http_finalize_request(r, rc);
+        return;
+    }
+
+    ngx_http_lua_finalize_fake_request(r, rc);
+}
+
+
+void
+ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
+{
+    ngx_connection_t          *c;
+
+    c = r->connection;
+
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http lua finalize fake request: %d, a:%d, c:%d",
+                   rc, r == c->data, r->main->count);
+
+    if (rc == NGX_DONE) {
+        ngx_http_lua_close_fake_request(r);
+        return;
+    }
+
+    if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        ngx_http_lua_close_fake_request(r);
+        return;
+    }
+
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+
+    if (c->write->timer_set) {
+        c->write->delayed = 0;
+        ngx_del_timer(c->write);
+    }
+
+    ngx_http_lua_close_fake_request(r);
+}
+
+
+static void
+ngx_http_lua_close_fake_request(ngx_http_request_t *r)
+{
+    ngx_connection_t  *c;
+
+    r = r->main;
+    c = r->connection;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http lua fake request count:%d", r->count);
+
+    if (r->count == 0) {
+        ngx_log_error(NGX_LOG_ALERT, c->log, 0, "http lua fake request "
+                      "count is zero");
+    }
+
+    r->count--;
+
+    if (r->count) {
+        return;
+    }
+
+    ngx_http_lua_free_fake_request(r);
+    ngx_http_lua_close_fake_connection(c);
+}
+
+
+static void
+ngx_http_lua_free_fake_request(ngx_http_request_t *r)
+{
+    ngx_log_t                 *log;
+    ngx_http_cleanup_t        *cln;
+    ngx_http_log_ctx_t        *ctx;
+
+    log = r->connection->log;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "http lua close fake "
+                   "request");
+
+    if (r->pool == NULL) {
+        ngx_log_error(NGX_LOG_ALERT, log, 0, "http lua fake request "
+                      "already closed");
+        return;
+    }
+
+    for (cln = r->cleanup; cln; cln = cln->next) {
+        if (cln->handler) {
+            cln->handler(cln->data);
+        }
+    }
+
+    /* the various request strings were allocated from r->pool */
+    ctx = log->data;
+    ctx->request = NULL;
+
+    r->request_line.len = 0;
+
+    r->connection->destroyed = 1;
+
+    ngx_destroy_pool(r->pool);
+}
+
+
+void
+ngx_http_lua_close_fake_connection(ngx_connection_t *c)
+{
+    ngx_pool_t          *pool;
+    ngx_connection_t    *saved_c = NULL;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http lua close fake http connection");
+
+    c->destroyed = 1;
+
+    pool = c->pool;
+
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+
+    if (c->write->timer_set) {
+        ngx_del_timer(c->write);
+    }
+
+    c->read->closed = 1;
+    c->write->closed = 1;
+
+    /* we temporarily use a valid fd (0) to make ngx_free_connection happy */
+
+    c->fd = 0;
+
+    if (ngx_cycle->files) {
+        saved_c = ngx_cycle->files[0];
+    }
+
+    ngx_free_connection(c);
+
+    c->fd = -1;
+
+    if (ngx_cycle->files) {
+        ngx_cycle->files[0] = saved_c;
+    }
+
+    if (pool) {
+        ngx_destroy_pool(pool);
+    }
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

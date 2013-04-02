@@ -260,10 +260,12 @@ F(ngx_http_lua_del_all_threads) {
     println("del all threads")
 }
 
+/*
 M(http-lua-info) {
     msg = user_string($arg1)
     printf("lua info: %s\n", msg)
 }
+*/
 
 M(http-lua-user-thread-wait) {
     p = gen_id($arg1)

@@ -77,6 +77,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_LOG            0x10
 #define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x20
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
+#define NGX_HTTP_LUA_CONTEXT_TIMER          0x80
 
 
 typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
@@ -99,6 +100,12 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t        lua_cpath;
 
     ngx_pool_t      *pool;
+
+    ngx_int_t        max_pending_timers;
+    ngx_int_t        pending_timers;
+
+    ngx_int_t        max_running_timers;
+    ngx_int_t        running_timers;
 
 #if (NGX_PCRE)
     ngx_int_t        regex_cache_entries;
@@ -271,10 +278,6 @@ struct ngx_http_lua_co_ctx_s {
 
 
 typedef struct ngx_http_lua_ctx_s {
-    uint8_t                  context;   /* the current running directive context
-                                           (or running phase) for the current
-                                           Lua chunk */
-
     ngx_http_handler_pt      resume_handler;
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
@@ -325,6 +328,10 @@ typedef struct ngx_http_lua_ctx_s {
                                                     request */
 
     ngx_http_lua_posted_thread_t   *posted_threads;
+
+    uint16_t                 context;   /* the current running directive context
+                                           (or running phase) for the current
+                                           Lua chunk */
 
     unsigned                 run_post_subrequest:1; /* whether it has run
                                                        post_subrequest

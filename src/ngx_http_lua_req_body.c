@@ -226,6 +226,8 @@ ngx_http_lua_ngx_req_discard_body(lua_State *L)
         return luaL_error(L, "request object not found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     rc = ngx_http_discard_request_body(r);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -260,6 +262,8 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     if (r->request_body == NULL
         || r->request_body->temp_file
@@ -330,6 +334,8 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
         return luaL_error(L, "request object not found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     if (r->request_body == NULL || r->request_body->temp_file == NULL) {
         lua_pushnil(L);
         return 1;
@@ -381,6 +387,8 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     if (r->discard_body) {
         return luaL_error(L, "request body already discarded asynchronously");
@@ -543,6 +551,8 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    ngx_http_lua_check_fake_request(L, r);
+
     if (r->discard_body) {
         return luaL_error(L, "request body already discarded asynchronously");
     }
@@ -641,6 +651,8 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    ngx_http_lua_check_fake_request(L, r);
+
     if (r->request_body == NULL
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
@@ -701,6 +713,12 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request");
+    }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     if (r->request_body == NULL
         || r->request_body->buf == NULL
@@ -831,6 +849,8 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     if (r->discard_body) {
         return luaL_error(L, "request body already discarded asynchronously");
@@ -1131,12 +1151,12 @@ ngx_http_lua_read_body_resume(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        ngx_http_finalize_request(r, NGX_DONE);
+        ngx_http_lua_finalize_request(r, NGX_DONE);
         return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
     }
 
     if (ctx->entered_content_phase) {
-        ngx_http_finalize_request(r, rc);
+        ngx_http_lua_finalize_request(r, rc);
         return NGX_DONE;
     }
 
