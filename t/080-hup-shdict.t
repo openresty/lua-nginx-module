@@ -8,6 +8,7 @@ BEGIN {
 
     } else {
         $ENV{TEST_NGINX_USE_HUP} = 1;
+        undef $ENV{TEST_NGINX_USE_STAP};
     }
 }
 
