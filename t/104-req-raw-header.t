@@ -482,3 +482,63 @@ Connection: Close\r
 [error]
 --- timeout: 5
 
+
+
+=== TEST 18: large header (POST body) - r->header_end is outside r->header_in
+--- config
+    client_header_buffer_size 10;
+    large_client_header_buffers 30 564;
+    location /t {
+        content_by_lua '
+            -- ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+POST /t
+hello
+--- more_headers eval
+CORE::join("\n", map { "Header$_: value-$_" } 1..80) . "\nA: abcdefghijklmnopqrs\n"
+
+--- response_body eval
+qq{POST /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+}
+.(CORE::join "\r\n", map { "Header$_: value-$_" } 1..80)
+. "\r\nA: abcdefghijklmnopqrs\r\nContent-Length: 5\r\n\r\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 19: large header (POST body) - r->header_end is outside r->header_in (2)
+--- config
+    client_header_buffer_size 10;
+    large_client_header_buffers 30 564;
+    location /t {
+        content_by_lua '
+            -- ngx.req.read_body()
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+POST /t
+hello
+--- more_headers eval
+CORE::join("\n", map { "Header$_: value-$_" } 1..52) . "\nA: abcdefghijklmnopqrs\n"
+
+--- response_body eval
+qq{POST /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+}
+.(CORE::join "\r\n", map { "Header$_: value-$_" } 1..52)
+. "\r\nA: abcdefghijklmnopqrs\r\nContent-Length: 5\r\n\r\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+

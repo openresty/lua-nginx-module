@@ -134,6 +134,7 @@ ngx_http_lua_ngx_set(lua_State *L)
 
         /* get the value */
         r->headers_out.status = (ngx_uint_t) luaL_checknumber(L, 3);
+        r->headers_out.status_line.len = 0;
         return 0;
     }
 
