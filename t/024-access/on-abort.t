@@ -303,7 +303,7 @@ lua req cleanup
 
 --- timeout: 0.2
 --- abort
---- wait: 0.5
+--- wait: 0.6
 --- ignore_response
 --- error_log
 client prematurely closed connection
