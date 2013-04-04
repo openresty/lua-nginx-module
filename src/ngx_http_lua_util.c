@@ -2405,6 +2405,7 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
     }
 
     ngx_http_lua_request_cleanup(r);
+    ngx_http_lua_init_ctx(ctx);
 
     return NGX_OK;
 }

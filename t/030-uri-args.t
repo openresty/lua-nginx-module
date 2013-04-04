@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 11);
 
 no_root_location();
 
@@ -1191,4 +1191,36 @@ arg1: 1356514698
  ===============
 --- no_error_log
 [error]
+
+
+
+=== TEST 50: recursive rewrite
+--- config
+    rewrite_by_lua '
+        local args = ngx.var.args
+        if args == "jump" then
+            ngx.req.set_uri("/jump",true)
+        end
+    ';
+
+    location /jump {
+        echo "Jump around!";
+    }
+
+    location / {
+        echo "$scheme://$http_host$request_uri";
+    }
+--- request
+GET /?jump
+
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+
+--- no_error_log
+[alert]
+[crit]
+--- error_log
+rewrite or internal redirection cycle while processing "/jump"
+--- timeout: 10
+--- log_level: debug
 
