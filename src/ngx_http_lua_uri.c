@@ -47,6 +47,12 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (len == 0) {
+        return luaL_error(L, "attempt to use zero-length uri");
+    }
+
     if (n == 2) {
 
         luaL_checktype(L, 2, LUA_TBOOLEAN);
@@ -66,17 +72,11 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
             ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE);
 
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua set uri jump to \"%V\"", &r->uri);
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua set uri jump to \"%*s\"", len, p);
 
             ngx_http_lua_check_if_abortable(L, ctx);
         }
-    }
-
-    p = (u_char *) luaL_checklstring(L, 1, &len);
-
-    if (len == 0) {
-        return luaL_error(L, "attempt to use zero-length uri");
     }
 
     r->uri.data = ngx_palloc(r->pool, len);

@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 no_root_location();
 
@@ -363,6 +363,9 @@ done
     GET /foo?world
 --- response_body
 hello
+--- error_log
+lua set uri jump to "/bar"
+--- log_level: debug
 
 
 
