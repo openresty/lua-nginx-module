@@ -221,6 +221,11 @@ struct ngx_http_lua_posted_thread_s {
 };
 
 
+enum {
+    NGX_HTTP_LUA_SUBREQ_TRUNCATED = 1
+};
+
+
 struct ngx_http_lua_co_ctx_s {
     void                    *data;      /* user state for cosockets */
 
@@ -239,6 +244,8 @@ struct ngx_http_lua_co_ctx_s {
     ngx_http_headers_out_t **sr_headers;
 
     ngx_str_t               *sr_bodies;   /* all captured subrequest bodies */
+
+    uint8_t                 *sr_flags;
 
     unsigned                 pending_subreqs; /* number of subrequests being
                                                  waited */
@@ -367,6 +374,7 @@ typedef struct ngx_http_lua_ctx_s {
                                     and etc */
 
     unsigned         seen_last_in_filter:1;  /* used by body_filter_by_lua* */
+    unsigned         seen_last_for_subreq:1; /* used by body capture filter */
 } ngx_http_lua_ctx_t;
 
 

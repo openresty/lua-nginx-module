@@ -800,17 +800,22 @@ ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in)
 
 ngx_int_t
 ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-    ngx_chain_t ***plast, ngx_chain_t *in)
+    ngx_chain_t ***plast, ngx_chain_t *in, ngx_int_t *eof)
 {
     ngx_chain_t     *cl;
     size_t           len;
     ngx_buf_t       *b;
 
     len = 0;
+    *eof = 0;
 
     for (cl = in; cl; cl = cl->next) {
         if (ngx_buf_in_memory(cl->buf)) {
             len += cl->buf->last - cl->buf->pos;
+        }
+
+        if (cl->buf->last_in_chain || cl->buf->last_buf) {
+            *eof = 1;
         }
     }
 
