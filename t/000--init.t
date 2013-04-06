@@ -5,7 +5,7 @@ use Test::Nginx::Socket;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() + 1 * 1);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -33,6 +33,8 @@ __DATA__
 GET /init
 --- error_code: 200
 --- timeout: 10
+--- no_error_log
+[error]
 
 
 
@@ -47,6 +49,8 @@ GET /init
 GET /init
 --- error_code: 200
 --- timeout: 10
+--- no_error_log
+[error]
 
 
 
@@ -61,6 +65,8 @@ GET /init
 GET /init
 --- error_code: 200
 --- timeout: 10
+--- no_error_log
+[error]
 
 
 
@@ -77,3 +83,6 @@ GET /flush
 "OK\r
 "
 --- timeout: 10
+--- no_error_log
+[error]
+
