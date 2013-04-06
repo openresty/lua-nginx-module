@@ -2088,7 +2088,7 @@ upstream timed out
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering on;
         proxy_http_version 1.1;
         proxy_pass http://127.0.0.1:19113;
@@ -2146,7 +2146,7 @@ truncated: false
     location /proxy {
         internal;
 
-        proxy_read_timeout 100ms;
+        #proxy_read_timeout 100ms;
         proxy_buffering off;
         proxy_http_version 1.1;
         proxy_pass http://127.0.0.1:19113;
