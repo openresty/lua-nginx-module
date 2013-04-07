@@ -1281,7 +1281,7 @@ F(ngx_http_finalize_request) {
 }
 */
 --- stap_out
-upstream fin req: error=0 eof=1 rc=-1
+upstream fin req: error=0 eof=1 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -1353,7 +1353,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=504, status=200
+post subreq: rc=-1, status=200
 
 --- response_body_like chop
 ^status: 200
@@ -1414,7 +1414,7 @@ F(ngx_http_finalize_request) {
 }
 */
 --- stap_out
-upstream fin req: error=0 eof=1 rc=-1
+upstream fin req: error=0 eof=1 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -1475,7 +1475,7 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 conn err: 110: upstream timed out
-upstream fin req: error=0 eof=0 rc=-1
+upstream fin req: error=0 eof=0 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -1597,7 +1597,7 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 conn err: 110: upstream timed out
-upstream fin req: error=0 eof=0 rc=-1
+upstream fin req: error=0 eof=0 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -1721,7 +1721,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=504, status=200
+post subreq: rc=-1, status=200
 
 --- response_body
 status: 200
@@ -1945,7 +1945,7 @@ F(ngx_http_finalize_request) {
 }
 */
 --- stap_out
-upstream fin req: error=0 eof=1 rc=-1
+upstream fin req: error=0 eof=1 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -2008,7 +2008,7 @@ F(ngx_http_finalize_request) {
 }
 */
 --- stap_out
-upstream fin req: error=0 eof=1 rc=-1
+upstream fin req: error=0 eof=1 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -2070,7 +2070,7 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 conn err: 110: upstream timed out
-upstream fin req: error=0 eof=0 rc=-1
+upstream fin req: error=0 eof=0 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
@@ -2248,7 +2248,7 @@ F(ngx_http_finalize_request) {
 }
 */
 --- stap_out
-upstream fin req: error=0 eof=1 rc=-1
+upstream fin req: error=0 eof=1 rc=502
 post subreq: rc=-1, status=200
 
 --- response_body
