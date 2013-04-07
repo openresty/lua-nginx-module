@@ -10,7 +10,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 11);
+plan tests => repeat_each() * (blocks() * 3 + 18);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -1239,6 +1239,7 @@ F(ngx_http_finalize_request) {
             res = ngx.location.capture("/memc")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1247,6 +1248,16 @@ GET /main
 --- tcp_query_len: 9
 --- tcp_reply eval
 "VALUE foo 0 1024\r\nhello world"
+
+--- stap2
+F(ngx_http_lua_capture_body_filter) {
+    if (pid() == target() && $r != $r->main) {
+        printf("lua capture body output: %s\n", ngx_chain_dump($in))
+        if ($in->buf->last_in_chain) {
+            print_ubacktrace()
+        }
+    }
+}
 
 --- stap
 F(ngx_http_upstream_finalize_request) {
@@ -1271,11 +1282,12 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=0, status=502
+post subreq: rc=-1, status=200
 
 --- response_body
-status: 502
+status: 200
 body: hello world
+truncated: true
 --- no_error_log
 [error]
 
@@ -1297,6 +1309,7 @@ body: hello world
             res = ngx.location.capture("/memc")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1305,6 +1318,16 @@ GET /main
 --- tcp_no_close
 --- tcp_reply eval
 "VALUE foo 0 1024\r\nhello world"
+
+--- stap2
+F(ngx_http_lua_capture_body_filter) {
+    if (pid() == target() && $r != $r->main) {
+        printf("lua capture body output: %s\n", ngx_chain_dump($in))
+        //if ($in->buf->last_in_chain) {
+            print_ubacktrace()
+        //}
+    }
+}
 
 --- stap
 F(ngx_http_upstream_finalize_request) {
@@ -1330,11 +1353,12 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=0, status=504
+post subreq: rc=-1, status=200
 
 --- response_body_like chop
-^status: 504
-body: 
+^status: 200
+body: [^\n]*
+truncated: true
 
 --- error_log
 upstream timed out
@@ -1358,6 +1382,7 @@ upstream timed out
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1390,11 +1415,13 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=0, status=502
+post subreq: rc=-1, status=200
 
 --- response_body
-status: 502
+status: 200
 body: hello world
+truncated: true
+
 --- no_error_log
 [error]
 
@@ -1415,6 +1442,7 @@ body: hello world
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1448,11 +1476,13 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=0, status=502
+post subreq: rc=-1, status=200
 
 --- response_body
-status: 502
+status: 200
 body: 
+truncated: true
+
 --- error_log
 upstream timed out
 
@@ -1474,6 +1504,7 @@ upstream timed out
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1511,6 +1542,8 @@ post subreq: rc=0, status=200
 --- response_body
 status: 200
 body: hello world
+truncated: false
+
 --- no_error_log
 [error]
 
@@ -1531,6 +1564,7 @@ body: hello world
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1564,11 +1598,13 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=0, status=502
+post subreq: rc=-1, status=200
 
 --- response_body
-status: 502
+status: 200
 body: 
+truncated: true
+
 --- error_log
 upstream timed out
 
@@ -1591,6 +1627,7 @@ upstream timed out
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1628,6 +1665,8 @@ post subreq: rc=0, status=200
 --- response_body
 status: 200
 body: hello world
+truncated: false
+
 --- no_error_log
 [error]
 
@@ -1648,6 +1687,7 @@ body: hello world
             res = ngx.location.capture("/proxy")
             ngx.say("status: ", res.status)
             ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
         ';
     }
 --- request
@@ -1681,11 +1721,13 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=0, status=504
+post subreq: rc=-1, status=200
 
 --- response_body
-status: 504
+status: 200
 body: hello world
+truncated: true
+
 --- error_log
 upstream timed out
 
@@ -1850,4 +1892,370 @@ F(ngx_pool_run_cleanup_file) {
 [error]
 --- error_log
 a client request body is buffered to a temporary file
+
+
+
+=== TEST 55: subrequests truncated in its response body due to premature connection close (buffered + chunked)
+--- config
+    server_tokens off;
+
+    location /proxy {
+        internal;
+
+        #proxy_read_timeout 100ms;
+        proxy_http_version 1.1;
+        proxy_buffering on;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_query_len: 65
+--- tcp_reply eval
+"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nb\r\nhello world\r"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=1 rc=502
+post subreq: rc=-1, status=200
+
+--- response_body
+status: 200
+body: hello world
+truncated: true
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 56: subrequests truncated in its response body due to premature connection close (nonbuffered + chunked)
+--- config
+    server_tokens off;
+
+    location /proxy {
+        internal;
+
+        #proxy_read_timeout 100ms;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_query_len: 65
+--- tcp_reply eval
+"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nb\r\nhello world\r"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=1 rc=502
+post subreq: rc=-1, status=200
+
+--- response_body
+status: 200
+body: hello world
+truncated: true
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 57: subrequests truncated in its response body due to read timeout (buffered + chunked)
+--- config
+    location /proxy {
+        internal;
+
+        proxy_read_timeout 100ms;
+        proxy_buffering on;
+        proxy_http_version 1.1;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_no_close
+--- tcp_reply eval
+"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nb\r\nhello world\r"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+conn err: 110: upstream timed out
+upstream fin req: error=0 eof=0 rc=502
+post subreq: rc=-1, status=200
+
+--- response_body
+status: 200
+body: 
+truncated: true
+
+--- error_log
+upstream timed out
+
+
+
+=== TEST 58: good chunked response (buffered)
+--- config
+    location /proxy {
+        internal;
+
+        #proxy_read_timeout 100ms;
+        proxy_buffering on;
+        proxy_http_version 1.1;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_no_close
+--- tcp_reply eval
+"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=0 rc=0
+post subreq: rc=0, status=200
+
+--- response_body
+status: 200
+body: hello
+truncated: false
+
+
+
+=== TEST 59: good chunked response (nonbuffered)
+--- config
+    location /proxy {
+        internal;
+
+        #proxy_read_timeout 100ms;
+        proxy_buffering off;
+        proxy_http_version 1.1;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_no_close
+--- tcp_reply eval
+"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=0 rc=0
+post subreq: rc=0, status=200
+
+--- response_body
+status: 200
+body: hello
+truncated: false
+
+
+
+=== TEST 60: subrequests truncated in its response body due to premature connection close (nonbuffered + proxy)
+--- config
+    server_tokens off;
+
+    location /proxy {
+        internal;
+
+        #proxy_read_timeout 100ms;
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:19113;
+    }
+
+    location /main {
+        content_by_lua '
+            res = ngx.location.capture("/proxy")
+            ngx.say("status: ", res.status)
+            ngx.say("body: ", res.body)
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /main
+--- tcp_listen: 19113
+--- tcp_query_len: 65
+--- tcp_reply eval
+"HTTP/1.0 200 OK\r\nContent-Length: 1024\r\n\r\nhello world"
+
+--- stap
+F(ngx_http_upstream_finalize_request) {
+    printf("upstream fin req: error=%d eof=%d rc=%d\n",
+        $r->upstream->peer->connection->read->error,
+        $r->upstream->peer->connection->read->eof,
+        $rc)
+    #print_ubacktrace()
+}
+F(ngx_connection_error) {
+    printf("conn err: %d: %s\n", $err, user_string($text))
+    #print_ubacktrace()
+}
+F(ngx_http_lua_post_subrequest) {
+    printf("post subreq: rc=%d, status=%d\n", $rc, $r->headers_out->status)
+    #print_ubacktrace()
+}
+/*
+F(ngx_http_finalize_request) {
+    printf("finalize: %d\n", $rc)
+}
+*/
+--- stap_out
+upstream fin req: error=0 eof=1 rc=502
+post subreq: rc=-1, status=200
+
+--- response_body
+status: 200
+body: hello world
+truncated: true
+
+--- no_error_log
+[error]
 

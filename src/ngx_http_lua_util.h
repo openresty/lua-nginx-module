@@ -102,7 +102,8 @@ ngx_int_t ngx_http_lua_send_chain_link(ngx_http_request_t *r,
 void ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in);
 
 ngx_int_t ngx_http_lua_add_copy_chain(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_chain_t ***plast, ngx_chain_t *in);
+    ngx_http_lua_ctx_t *ctx, ngx_chain_t ***plast, ngx_chain_t *in,
+    ngx_int_t *eof);
 
 void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
