@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.7.19](https://github.com/chaoslawful/lua-nginx-module/tags) released on 27 March 2013.
+This document describes ngx_lua [v0.7.20](https://github.com/chaoslawful/lua-nginx-module/tags) released on 9 April 2013.
 
 Synopsis
 ========
@@ -2828,6 +2828,8 @@ The `ngx.null` constant will yield the `"null"` string output.
 
 This is an asynchronous call and will return immediately without waiting for all the data to be written into the system send buffer. To run in synchronous mode, call `ngx.flush(true)` after calling `ngx.print`. This can be particularly useful for streaming output. See [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush) for more details.
 
+Please note that both `ngx.print` and [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) will always invoke the whole Nginx output body filter chain, which is an expensive operation. So be careful when calling either of these two in a tight loop; buffer the data yourself in Lua and save the calls.
+
 ngx.say
 -------
 **syntax:** *ngx.say(...)*
@@ -2948,6 +2950,8 @@ ngx.sleep
 Sleeps for the specified seconds without blocking. One can specify time resolution up to 0.001 seconds (i.e., one milliseconds).
 
 Behind the scene, this method makes use of the Nginx timers.
+
+Since the `0.7.20` release, The `0` time argument can also be specified.
 
 This method was introduced in the `0.5.0rc30` release.
 

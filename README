@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.7.19
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 27
-    March 2013.
+    This document describes ngx_lua v0.7.20
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 9
+    April 2013.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -3046,6 +3046,11 @@ Nginx API for Lua
     can be particularly useful for streaming output. See ngx.flush for more
     details.
 
+    Please note that both "ngx.print" and ngx.say will always invoke the
+    whole Nginx output body filter chain, which is an expensive operation.
+    So be careful when calling either of these two in a tight loop; buffer
+    the data yourself in Lua and save the calls.
+
   ngx.say
     syntax: *ngx.say(...)*
 
@@ -3193,6 +3198,8 @@ Nginx API for Lua
     resolution up to 0.001 seconds (i.e., one milliseconds).
 
     Behind the scene, this method makes use of the Nginx timers.
+
+    Since the 0.7.20 release, The 0 time argument can also be specified.
 
     This method was introduced in the "0.5.0rc30" release.
 
