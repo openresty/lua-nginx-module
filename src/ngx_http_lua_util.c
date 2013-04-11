@@ -2236,26 +2236,37 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             i = 0;
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                value = (u_char *) lua_tolstring(L, -1, &value_len);
+                if (lua_isboolean(L, -1)) {
+                    if (lua_toboolean(L, -1)) {
+                        len += key_len;
 
-                if (value == NULL) {
-                    luaL_error(L, "attempt to use %s as query arg value",
-                               luaL_typename(L, -1));
-                    return;
+                    } else {
+                        lua_pop(L, 1);
+                        continue;
+                    }
+
+                } else {
+                    value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+                    if (value == NULL) {
+                        luaL_error(L, "attempt to use %s as query arg value",
+                                   luaL_typename(L, -1));
+                        return;
+                    }
+
+                    total_escape +=
+                        2 * ngx_http_lua_escape_uri(NULL, value,
+                                                    value_len,
+                                                    NGX_ESCAPE_URI);
+
+                    len += key_len + value_len + (sizeof("=") - 1);
                 }
-
-                total_escape += 2 * ngx_http_lua_escape_uri(NULL, value,
-                                                            value_len,
-                                                            NGX_ESCAPE_URI);
-
-                len += key_len + value_len + (sizeof("=") - 1);
 
                 if (i++ > 0) {
                     total_escape += key_escape;
                 }
 
                 n++;
-
                 lua_pop(L, 1);
             }
 
@@ -2298,7 +2309,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
             if (total_escape) {
                 p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                        NGX_ESCAPE_URI);
+                                                       NGX_ESCAPE_URI);
 
             } else {
                 dd("shortcut: no escape required");
@@ -2312,7 +2323,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
             if (total_escape) {
                 p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                        NGX_ESCAPE_URI);
+                                                       NGX_ESCAPE_URI);
 
             } else {
                 p = ngx_copy(p, value, value_len);
@@ -2331,7 +2342,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             if (lua_toboolean(L, -1)) {
                 if (total_escape) {
                     p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                            NGX_ESCAPE_URI);
+                                                           NGX_ESCAPE_URI);
 
                 } else {
                     dd("shortcut: no escape required");
@@ -2354,26 +2365,51 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
 
-                if (total_escape) {
-                    p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                                                           NGX_ESCAPE_URI);
+                if (lua_isboolean(L, -1)) {
+                    if (lua_toboolean(L, -1)) {
+                        if (total_escape) {
+                            p = (u_char *) ngx_http_lua_escape_uri(p, key,
+    key_len,
+    NGX_ESCAPE_URI);
+
+                        } else {
+                            dd("shortcut: no escape required");
+
+                            p = ngx_copy(p, key, key_len);
+                        }
+
+                    } else {
+                        lua_pop(L, 1);
+                        continue;
+                    }
 
                 } else {
-                    dd("shortcut: no escape required");
 
-                    p = ngx_copy(p, key, key_len);
-                }
+                    if (total_escape) {
+                        p = (u_char *)
+                                ngx_http_lua_escape_uri(p, key,
+                                                        key_len,
+                                                        NGX_ESCAPE_URI);
 
-                *p++ = '=';
+                    } else {
+                        dd("shortcut: no escape required");
 
-                value = (u_char *) lua_tolstring(L, -1, &value_len);
+                        p = ngx_copy(p, key, key_len);
+                    }
 
-                if (total_escape) {
-                    p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                                                           NGX_ESCAPE_URI);
+                    *p++ = '=';
 
-                } else {
-                    p = ngx_copy(p, value, value_len);
+                    value = (u_char *) lua_tolstring(L, -1, &value_len);
+
+                    if (total_escape) {
+                        p = (u_char *)
+                                ngx_http_lua_escape_uri(p, value,
+                                                        value_len,
+                                                        NGX_ESCAPE_URI);
+
+                    } else {
+                        p = ngx_copy(p, value, value_len);
+                    }
                 }
 
                 if (i != n - 1) {
@@ -2382,7 +2418,6 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 }
 
                 i++;
-
                 lua_pop(L, 1);
             }
 

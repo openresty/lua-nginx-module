@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 11);
+plan tests => repeat_each() * (blocks() * 2 + 16);
 
 no_root_location();
 
@@ -684,19 +684,21 @@ args: foo=3
 
 
 
-=== TEST 30: ngx.encode_args (bad table value)
+=== TEST 30: boolean values in ngx.encode_args
 --- config
     location /lua {
-        content_by_lua '
+        set_by_lua $args_str '
             local t = {bar = {32, true}, foo = 3}
-            rc, err = pcall(ngx.encode_args, t)
-            ngx.say("rc: ", rc, ", err: ", err)
+            return ngx.encode_args(t)
         ';
+        echo $args_str;
     }
 --- request
 GET /lua
 --- response_body
-rc: false, err: attempt to use boolean as query arg value
+foo=3&bar=32&bar
+--- no_error_log
+[error]
 
 
 
@@ -1223,4 +1225,116 @@ GET /?jump
 rewrite or internal redirection cycle while processing "/jump"
 --- timeout: 10
 --- log_level: debug
+
+
+
+=== TEST 51: boolean values in ngx.encode_args (trailing arg)
+--- config
+    location /lua {
+        set_by_lua $args_str '
+            local t = {a = {32, true}, foo = 3, bar = 5}
+            return ngx.encode_args(t)
+        ';
+        echo $args_str;
+    }
+--- request
+GET /lua
+--- response_body
+foo=3&a=32&a&bar=5
+--- no_error_log
+[error]
+
+
+
+=== TEST 52: false boolean values in ngx.encode_args
+--- config
+    location /lua {
+        set_by_lua $args_str '
+            local t = {a = {32, false}, foo = 3, bar = 5}
+            return ngx.encode_args(t)
+        ';
+        echo $args_str;
+    }
+--- request
+GET /lua
+--- response_body
+foo=3&a=32&bar=5
+--- no_error_log
+[error]
+
+
+
+=== TEST 53: false boolean values in ngx.encode_args (escaping)
+--- config
+    location /lua {
+        set_by_lua $args_str '
+            local t = {["a b"] = {32, false}, foo = 3, bar = 5}
+            return ngx.encode_args(t)
+        ';
+        echo $args_str;
+    }
+--- request
+GET /lua
+--- response_body
+foo=3&a%20b=32&bar=5
+--- no_error_log
+[error]
+
+
+
+=== TEST 54: true boolean values in ngx.encode_args (escaping)
+--- config
+    location /lua {
+        set_by_lua $args_str '
+            local t = {["a b"] = {32, true}, foo = 3, bar = 5}
+            return ngx.encode_args(t)
+        ';
+        echo $args_str;
+    }
+--- request
+GET /lua
+--- response_body
+foo=3&a%20b=32&a%20b&bar=5
+--- no_error_log
+[error]
+
+
+
+=== TEST 55: rewrite uri and args (boolean in multi-value args)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        #rewrite ^ /bar?hello? break;
+        rewrite_by_lua '
+            ngx.req.set_uri_args({a = 3, b = {5, true, 6}})
+            ngx.req.set_uri("/bar")
+        ';
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+--- request
+    GET /foo?world
+--- response_body
+HTTP/1.0 a=3&b=5&b&b=6
+
+
+
+=== TEST 56: rewrite uri and args (boolean value)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        #rewrite ^ /bar?hello? break;
+        rewrite_by_lua '
+            ngx.req.set_uri_args({a = 3, b = true})
+            ngx.req.set_uri("/bar")
+        ';
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+--- request
+    GET /foo?world
+--- response_body
+HTTP/1.0 a=3&b
 
