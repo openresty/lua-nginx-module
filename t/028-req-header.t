@@ -1064,3 +1064,49 @@ Connection: Close
 --- no_error_log
 [error]
 
+=== TEST 35: raw_header (large header item)
+--- config
+    location /t {
+        content_by_lua '
+           ngx.header["Content-Type"]="text/plain"
+           local rbody = "false"
+           if #ngx.req.raw_header(true) > 1200 then
+              rbody = "true"
+           end
+           ngx.say(rbody)
+        ';
+    }
+--- request
+GET /t
+--- more_headers eval
+my $s = "User-Agent: curl\nBah: bah\n";
+$s .= "Accept: */*\n";
+$s .= "Cookie: " . "C" x 1200 . "\n";
+$s
+--- response_body
+true
+
+=== TEST 36: raw_header (more than 20 headers)
+--- config
+    location /t {
+        content_by_lua '
+           ngx.header["Content-Type"]="text/plain"
+           local rbody = "false"
+           if #ngx.req.raw_header(true) > 1200 + 20*5 then
+              rbody = "true"
+           end
+           ngx.say(rbody)
+        ';
+    }
+--- request
+GET /t
+--- more_headers eval
+my $s = "";
+for my $i ('a' .. 'r') {
+    $s .= uc($i) . ": " . "$i\n"
+}
+$s .= "Cookie: " . "C" x 1200 . "\n";
+$s
+--- response_body
+true
+

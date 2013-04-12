@@ -72,8 +72,11 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i;
+    ngx_uint_t                   iu;
     ngx_http_request_t          *r;
     ngx_http_connection_t       *hc;
+    ngx_list_part_t             *part;
+    ngx_table_elt_t             *header;
 
     n = lua_gettop(L);
     if (n > 0) {
@@ -118,6 +121,29 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             }
 
             size += b->pos - b->start;
+        }
+
+        if (first == NULL || size == 0) {
+            size += r->main->request_line.len + 2;
+
+            part = &r->main->headers_in.headers.part;
+            header = part->elts;
+            for (iu = 0; /* void */; iu++) {
+
+                if (iu >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
+
+                    part = part->next;
+                    header = part->elts;
+                    iu = 0;
+                }
+
+                size += header[iu].key.len;
+                size += header[iu].value.len;
+                size += 4; // ": " and CRLF
+            }
         }
 
     } else {
@@ -208,6 +234,41 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
             if (b == r->main->header_in) {
                 break;
+            }
+        }
+
+        if (!found) {
+            if (!no_req_line) {
+                last = ngx_copy(last,
+                       r->main->request_line.data,
+                       r->main->request_line.len + 2);
+
+            }
+
+            part = &r->main->headers_in.headers.part;
+            header = part->elts;
+            for (iu = 0; /* void */; iu++) {
+
+                if (iu >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
+
+                    part = part->next;
+                    header = part->elts;
+                    iu = 0;
+                }
+
+                last = ngx_copy(last,
+                       header[iu].key.data,
+                       header[iu].key.len);
+                *last++ = ':';
+                *last++ = ' ';
+                last = ngx_copy(last,
+                       header[iu].value.data,
+                       header[iu].value.len);
+                *last++ = CR;
+                *last++ = LF;
             }
         }
 
