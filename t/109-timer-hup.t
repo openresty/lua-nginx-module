@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 33;
+plan tests => repeat_each() * 45;
 
 #no_diff();
 no_long_string();
@@ -157,4 +157,60 @@ in callback: hello, 8!
 in callback: hello, 9!
 in callback: hello, 10!
 timer prematurely expired: true
+
+
+
+=== TEST 3: trying to add new timer after HUP reload
+--- config
+    location /t {
+        content_by_lua '
+            local f, err = io.open("t/servroot/logs/nginx.pid", "r")
+            if not f then
+                ngx.say("failed to open nginx.pid: ", err)
+                return
+            end
+
+            local pid = f:read()
+            -- ngx.say("master pid: [", pid, "]")
+
+            f:close()
+
+            local function f(premature)
+                print("timer prematurely expired: ", premature)
+                local ok, err = ngx.timer.at(0, f)
+                if not ok then
+                    print("failed to register a new timer after reload: ", err)
+                else
+                    print("registered a new timer after reload")
+                end
+            end
+            local ok, err = ngx.timer.at(3, f)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+            ngx.say("registered timer")
+            os.execute("kill -HUP " .. pid)
+        ';
+    }
+--- request
+GET /t
+
+--- response_body
+registered timer
+
+--- wait: 0.2
+--- no_error_log
+[error]
+[alert]
+[crit]
+in callback: hello, 2
+timer prematurely expired: false
+
+--- error_log
+lua abort pending timers
+lua ngx.timer expired
+http lua close fake http connection
+timer prematurely expired: true
+failed to register a new timer after reload: process exiting, context: ngx.timer
 
