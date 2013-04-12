@@ -157,3 +157,4 @@ Makefile
 tsubreq
 tthread
 addr2line
+hup

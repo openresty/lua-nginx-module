@@ -505,6 +505,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua_cpath = { 0, NULL };
      *      lmcf->pending_timers = 0;
      *      lmcf->running_timers = 0;
+     *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;

@@ -94,42 +94,44 @@ typedef struct {
 
 
 struct ngx_http_lua_main_conf_s {
-    lua_State       *lua;
+    lua_State           *lua;
 
-    ngx_str_t        lua_path;
-    ngx_str_t        lua_cpath;
+    ngx_str_t            lua_path;
+    ngx_str_t            lua_cpath;
 
-    ngx_pool_t      *pool;
+    ngx_pool_t          *pool;
 
-    ngx_int_t        max_pending_timers;
-    ngx_int_t        pending_timers;
+    ngx_int_t            max_pending_timers;
+    ngx_int_t            pending_timers;
 
-    ngx_int_t        max_running_timers;
-    ngx_int_t        running_timers;
+    ngx_int_t            max_running_timers;
+    ngx_int_t            running_timers;
+
+    ngx_connection_t    *watcher;  /* for watching the process exit event */
 
 #if (NGX_PCRE)
-    ngx_int_t        regex_cache_entries;
-    ngx_int_t        regex_cache_max_entries;
+    ngx_int_t            regex_cache_entries;
+    ngx_int_t            regex_cache_max_entries;
 #endif
 
-    ngx_array_t     *shm_zones;  /* of ngx_shm_zone_t* */
+    ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
 
-    ngx_array_t     *preload_hooks; /* of ngx_http_lua_preload_hook_t */
+    ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
-    ngx_flag_t       postponed_to_rewrite_phase_end;
-    ngx_flag_t       postponed_to_access_phase_end;
+    ngx_flag_t           postponed_to_rewrite_phase_end;
+    ngx_flag_t           postponed_to_access_phase_end;
 
     ngx_http_lua_conf_handler_pt    init_handler;
     ngx_str_t                       init_src;
     ngx_uint_t                      shm_zones_inited;
 
-    unsigned         requires_header_filter:1;
-    unsigned         requires_body_filter:1;
-    unsigned         requires_capture_filter:1;
-    unsigned         requires_rewrite:1;
-    unsigned         requires_access:1;
-    unsigned         requires_log:1;
-    unsigned         requires_shm:1;
+    unsigned             requires_header_filter:1;
+    unsigned             requires_body_filter:1;
+    unsigned             requires_capture_filter:1;
+    unsigned             requires_rewrite:1;
+    unsigned             requires_access:1;
+    unsigned             requires_log:1;
+    unsigned             requires_shm:1;
 };
 
 

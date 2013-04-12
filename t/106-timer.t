@@ -13,7 +13,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 67);
+plan tests => repeat_each() * (blocks() * 8 + 69);
 
 #no_diff();
 no_long_string();
@@ -33,8 +33,9 @@ __DATA__
     location /t {
         content_by_lua '
             local begin = ngx.now()
-            local function f()
+            local function f(premature)
                 print("elapsed: ", ngx.now() - begin)
+                print("timer prematurely expired: ", premature)
             end
             local ok, err = ngx.timer.at(0.05, f)
             if not ok then
@@ -64,12 +65,14 @@ registered timer
 [error]
 [alert]
 [crit]
+timer prematurely expired: true
 
 --- error_log eval
 [
 qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer/,
 "lua ngx.timer expired",
-"http lua close fake http connection"
+"http lua close fake http connection",
+"timer prematurely expired: false",
 ]
 
 
