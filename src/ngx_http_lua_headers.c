@@ -128,7 +128,18 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
             part = &r->main->headers_in.headers.part;
             header = part->elts;
-            for (iu = 0; iu < part->nelts; iu++) {
+            for (iu = 0; /* void */; iu++) {
+
+                if (iu >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
+
+                    part = part->next;
+                    header = part->elts;
+                    iu = 0;
+                }
+
                 size += header[iu].key.len;
                 size += header[iu].value.len;
                 size += 4; // ": " and CRLF
@@ -236,7 +247,18 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
             part = &r->main->headers_in.headers.part;
             header = part->elts;
-            for (iu = 0; iu < part->nelts; iu++) {
+            for (iu = 0; /* void */; iu++) {
+
+                if (iu >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
+
+                    part = part->next;
+                    header = part->elts;
+                    iu = 0;
+                }
+
                 last = ngx_copy(last,
                        header[iu].key.data,
                        header[iu].key.len);
