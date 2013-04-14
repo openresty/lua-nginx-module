@@ -52,7 +52,7 @@ ngx_http_lua_inject_timer_api(lua_State *L)
 static int
 ngx_http_lua_ngx_timer_at(lua_State *L)
 {
-    int                      co_ref;
+    int                      nargs, co_ref;
     u_char                  *p;
     lua_State               *mt;  /* the main thread */
     lua_State               *co;
@@ -70,9 +70,10 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     ngx_http_core_main_conf_t     *cmcf;
 #endif
 
-    if (lua_gettop(L) != 2) {
-        return luaL_error(L, "expecting 2 arguments but got %d",
-                          lua_gettop(L));
+    nargs = lua_gettop(L);
+    if (nargs < 2) {
+        return luaL_error(L, "expecting at least 2 arguments but got %d",
+                          nargs);
     }
 
     delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
@@ -134,7 +135,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     co = lua_newthread(mt);
 
-    /* stack: time func thread */
+    /* L stack: time func [args] thread */
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
@@ -157,36 +158,43 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
 
-    /* L stack: time func thread */
+    /* L stack: time func [args] thread */
     /* mt stack: empty */
 
     lua_pushvalue(L, 2);    /* copy entry function to top of L*/
 
-    /* L stack: time func thread func */
+    /* L stack: time func [args] thread func */
 
     lua_xmove(L, co, 1);    /* move entry function from L to co */
 
-    /* L stack: time func thread */
+    /* L stack: time func [args] thread */
     /* co stack: func */
 
     lua_pushvalue(co, LUA_GLOBALSINDEX);
     lua_setfenv(co, -2);
 
-    /* co stack: thread */
+    /* co stack: func */
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
 
-    /* L stack: time func thread corountines */
+    /* L stack: time func [args] thread corountines */
 
     lua_pushvalue(L, -2);
 
-    /* L stack: time func thread coroutines thread */
+    /* L stack: time func [args] thread coroutines thread */
 
     co_ref = luaL_ref(L, -2);
     lua_pop(L, 1);
 
-    /* L stack: time func thread */
+    /* L stack: time func [args] thread */
+
+    if (nargs > 2) {
+        lua_pop(L, 1);  /* L stack: time func [args] */
+        lua_xmove(L, co, nargs - 2);  /* L stack: time func */
+
+        /* co stack: func [args] */
+    }
 
     p = ngx_alloc(sizeof(ngx_event_t) + sizeof(ngx_http_lua_timer_ctx_t),
                   r->connection->log);
@@ -229,6 +237,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 static void
 ngx_http_lua_timer_handler(ngx_event_t *ev)
 {
+    int                      n;
     lua_State               *L;
     ngx_int_t                rc;
     ngx_log_t               *log;
@@ -450,7 +459,12 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     lua_pushboolean(tctx.co, tctx.premature);
 
-    rc = ngx_http_lua_run_thread(L, r, ctx, 1);
+    n = lua_gettop(tctx.co);
+    if (n > 2) {
+        lua_insert(tctx.co, 2);
+    }
+
+    rc = ngx_http_lua_run_thread(L, r, ctx, n - 1);
 
     dd("timer lua run thread: %d", (int) rc);
 

@@ -13,7 +13,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 69);
+plan tests => repeat_each() * (blocks() * 8 + 73);
 
 #no_diff();
 no_long_string();
@@ -2054,4 +2054,55 @@ registered timer
 --- error_log
 lua ngx.timer expired
 http lua close fake http connection
+
+
+
+=== TEST 30: user args
+--- config
+    location /t {
+        content_by_lua '
+            local begin = ngx.now()
+            local function f(premature, a, b, c)
+                print("elapsed: ", ngx.now() - begin)
+                print("timer prematurely expired: ", premature)
+                print("timer user args: ", a, " ", b, " ", c)
+            end
+            local ok, err = ngx.timer.at(0.05, f, 1, "hello", true)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+            ngx.say("registered timer")
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+terminate 1: ok
+delete thread 1
+terminate 2: ok
+delete thread 2
+
+--- response_body
+registered timer
+
+--- wait: 0.1
+--- no_error_log
+[error]
+[alert]
+[crit]
+timer prematurely expired: true
+
+--- error_log eval
+[
+qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer/,
+"lua ngx.timer expired",
+"http lua close fake http connection",
+"timer prematurely expired: false",
+"timer user args: 1 hello true",
+]
 
