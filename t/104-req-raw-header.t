@@ -542,3 +542,56 @@ Connection: Close\r
 [error]
 --- timeout: 5
 
+
+
+=== TEST 20: raw_header (the default header buffer can hold the request line, but not the header entries) - without request line)
+--- config
+    location /t {
+        content_by_lua '
+           ngx.print(ngx.req.raw_header(true))
+        ';
+    }
+--- request
+GET /t
+--- more_headers eval
+my $s = "User-Agent: curl\nBah: bah\n";
+$s .= "Accept: */*\n";
+$s .= "Cookie: " . "C" x 1200 . "\n";
+$s
+--- response_body eval
+"Host: localhost\r
+Connection: Close\r
+User-Agent: curl\r
+Bah: bah\r
+Accept: */*\r
+Cookie: " . ("C" x 1200) . "\r\n\r\n"
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: raw_header (the default header buffer can hold the request line, but not the header entries) - with request line)
+--- config
+    location /t {
+        content_by_lua '
+           ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+GET /t
+--- more_headers eval
+my $s = "User-Agent: curl\nBah: bah\n";
+$s .= "Accept: */*\n";
+$s .= "Cookie: " . "C" x 1200 . "\n";
+$s
+--- response_body eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+User-Agent: curl\r
+Bah: bah\r
+Accept: */*\r
+Cookie: " . ("C" x 1200) . "\r\n\r\n"
+--- no_error_log
+[error]
+

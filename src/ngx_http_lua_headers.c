@@ -74,7 +74,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i;
-    ngx_http_request_t          *r;
+    ngx_connection_t            *c;
+    ngx_http_request_t          *r, *mr;
     ngx_http_connection_t       *hc;
 
     n = lua_gettop(L);
@@ -95,18 +96,67 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    hc = r->main->http_connection;
+    mr = r->main;
+    hc = mr->http_connection;
+    c = mr->connection;
+
+#if 0
+    dd("hc->nbusy: %d", (int) hc->nbusy);
+
+    dd("hc->busy: %p %p %p %p", hc->busy[0]->start, hc->busy[0]->pos,
+       hc->busy[0]->last, hc->busy[0]->end);
+
+    dd("request line: %p %p", mr->request_line.data,
+       mr->request_line.data + mr->request_line.len);
+
+    dd("header in: %p %p %p %p", mr->header_in->start,
+       mr->header_in->pos, mr->header_in->last,
+       mr->header_in->end);
+
+    dd("c->buffer: %p %p %p %p", c->buffer->start,
+       c->buffer->pos, c->buffer->last,
+       c->buffer->end);
+#endif
+
+    size = 0;
+    b = c->buffer;
+
+    if (mr->request_line.data >= b->start
+        && mr->request_line.data + mr->request_line.len + 2 <= b->pos)
+    {
+        first = b;
+
+        if (mr->header_in == b) {
+            size += mr->header_end + 2 - mr->request_line.data;
+
+        } else {
+            /* the subsequent part of the header is in the large header
+             * buffers */
+#if 1
+            p = b->pos;
+            size += p - mr->request_line.data;
+
+            /* skip truncated header entries (if any) */
+            while (b->pos > b->start && b->pos[-1] != LF) {
+                b->pos--;
+                size--;
+            }
+#endif
+        }
+    }
 
     if (hc->nbusy) {
-        b = NULL;  /* to suppress a gcc warning */
-        size = 0;
+        b = NULL;
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
 
+            dd("busy buf: %d: [%.*s]", (int) i, (int) (b->pos - b->start),
+               b->start);
+
             if (first == NULL) {
-                if (r->main->request_line.data >= b->pos
-                    || r->main->request_line.data
-                       + r->main->request_line.len + 2
+                if (mr->request_line.data >= b->pos
+                    || mr->request_line.data
+                       + mr->request_line.len + 2
                        <= b->start)
                 {
                     continue;
@@ -116,35 +166,53 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 first = b;
             }
 
-            if (b == r->main->header_in) {
-                size += r->main->header_end + 2 - b->start;
+            if (b == mr->header_in) {
+                size += mr->header_end + 2 - b->start;
                 break;
             }
 
             size += b->pos - b->start;
         }
-
-    } else {
-        b = r->main->header_in;
-
-        if (b == NULL) {
-            lua_pushnil(L);
-            return 1;
-        }
-
-        if (b == r->main->header_in) {
-            size = r->main->header_end + 2 - r->main->request_line.data;
-
-        } else {
-            size = b->pos - r->main->request_line.data;
-        }
     }
 
     data = lua_newuserdata(L, size);
+    last = data;
+
+    b = c->buffer;
+    if (first == b) {
+        if (mr->header_in == b) {
+            pos = mr->header_end + 2;
+
+        } else {
+            pos = b->pos;
+        }
+
+        if (no_req_line) {
+            last = ngx_copy(data,
+                            mr->request_line.data
+                            + mr->request_line.len + 2,
+                            pos - mr->request_line.data
+                            - mr->request_line.len - 2);
+
+        } else {
+            last = ngx_copy(data, mr->request_line.data,
+                            pos - mr->request_line.data);
+        }
+
+        for (p = data; p != last; p++) {
+            if (*p == '\0') {
+                if (p + 1 != last && *(p + 1) == LF) {
+                    *p = CR;
+
+                } else {
+                    *p = ':';
+                }
+            }
+        }
+    }
 
     if (hc->nbusy) {
-        last = data;
-        found = 0;
+        found = (b == c->buffer);
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
 
@@ -159,28 +227,28 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
             p = last;
 
-            if (b == r->main->header_in) {
-                pos = r->main->header_end + 2;
+            if (b == mr->header_in) {
+                pos = mr->header_end + 2;
 
             } else {
                 pos = b->pos;
             }
 
             if (b == first) {
-                dd("request line: %.*s", (int) r->main->request_line.len,
-                   r->main->request_line.data);
+                dd("request line: %.*s", (int) mr->request_line.len,
+                   mr->request_line.data);
 
                 if (no_req_line) {
                     last = ngx_copy(last,
-                                    r->main->request_line.data
-                                    + r->main->request_line.len + 2,
-                                    pos - r->main->request_line.data
-                                    - r->main->request_line.len - 2);
+                                    mr->request_line.data
+                                    + mr->request_line.len + 2,
+                                    pos - mr->request_line.data
+                                    - mr->request_line.len - 2);
 
                 } else {
                     last = ngx_copy(last,
-                                    r->main->request_line.data,
-                                    pos - r->main->request_line.data);
+                                    mr->request_line.data,
+                                    pos - mr->request_line.data);
 
                 }
 
@@ -210,36 +278,14 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 }
             }
 
-            if (b == r->main->header_in) {
+            if (b == mr->header_in) {
                 break;
-            }
-        }
-
-    } else {
-        if (no_req_line) {
-            last = ngx_copy(data,
-                            r->main->request_line.data
-                            + r->main->request_line.len + 2,
-                            size - r->main->request_line.len - 2);
-
-        } else {
-            last = ngx_copy(data, r->main->request_line.data, size);
-        }
-
-        for (p = data; p != last; p++) {
-            if (*p == '\0') {
-                if (p + 1 != last && *(p + 1) == LF) {
-                    *p = CR;
-
-                } else {
-                    *p = ':';
-                }
             }
         }
     }
 
     if (last - data > (ssize_t) size) {
-        return luaL_error(L, "buffer error");
+        return luaL_error(L, "buffer error: %d", (int) (last - data - size));
     }
 
     lua_pushlstring(L, (char *) data, last - data);
