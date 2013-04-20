@@ -317,7 +317,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
 
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT);
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT
+                               | NGX_HTTP_LUA_CONTEXT_TIMER);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
@@ -377,6 +378,8 @@ ngx_http_lua_on_abort(lua_State *L)
     if (ctx == NULL) {
         return luaL_error(L, "no request ctx found");
     }
+
+    ngx_http_lua_check_fake_request2(L, r, ctx);
 
     if (ctx->on_abort_co_ctx) {
         lua_pushnil(L);

@@ -47,6 +47,8 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    ngx_http_lua_check_fake_request(L, r);
+
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
     if (len == 0) {

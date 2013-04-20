@@ -69,6 +69,8 @@ ngx_http_lua_var_get(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
 #if (NGX_PCRE)
     if (lua_type(L, -1) == LUA_TNUMBER) {
         /* it is a regex capturing variable */
@@ -156,6 +158,8 @@ ngx_http_lua_var_set(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     /* we skip the first argument that is the table */
 

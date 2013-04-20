@@ -1532,14 +1532,14 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        ngx_http_finalize_request(r, NGX_DONE);
+        ngx_http_lua_finalize_request(r, NGX_DONE);
         return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
     }
 
     /* rc == NGX_ERROR || rc >= NGX_OK */
 
     if (ctx->entered_content_phase) {
-        ngx_http_finalize_request(r, rc);
+        ngx_http_lua_finalize_request(r, rc);
         return NGX_DONE;
     }
 

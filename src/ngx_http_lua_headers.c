@@ -41,6 +41,8 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     switch (r->http_version) {
     case NGX_HTTP_VERSION_9:
         lua_pushnumber(L, 0.9);
@@ -91,6 +93,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     mr = r->main;
     hc = mr->http_connection;
@@ -327,6 +331,8 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L) {
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     lua_createtable(L, 0, 4);
 
     if (!raw) {
@@ -402,6 +408,8 @@ ngx_http_lua_ngx_header_get(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
@@ -457,6 +465,11 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx");
+    }
+
+    ngx_http_lua_check_fake_request2(L, r, ctx);
 
     if (ctx->headers_sent) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
@@ -611,6 +624,8 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
+
+    ngx_http_lua_check_fake_request(L, r);
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 

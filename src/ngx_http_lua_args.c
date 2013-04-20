@@ -42,6 +42,8 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     switch (lua_type(L, 1)) {
     case LUA_TNUMBER:
     case LUA_TSTRING:
@@ -113,6 +115,8 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     lua_createtable(L, 0, 4);
 
     /* we copy r->args over to buf to simplify
@@ -171,8 +175,10 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+    ngx_http_lua_check_fake_request(L, r);
+
     if (r->discard_body) {
-        lua_createtable(L, 0, 4);
+        lua_createtable(L, 0, 0);
         return 1;
     }
 

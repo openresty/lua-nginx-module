@@ -61,11 +61,25 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_CONTENT ? "content_by_lua*"               \
      : (c) == NGX_HTTP_LUA_CONTEXT_LOG ? "log_by_lua*"                       \
      : (c) == NGX_HTTP_LUA_CONTEXT_HEADER_FILTER ? "header_filter_by_lua*"   \
+     : (c) == NGX_HTTP_LUA_CONTEXT_TIMER ? "ngx.timer"   \
      : "(unknown)")
 
 
 #define ngx_http_lua_check_context(L, ctx, flags)                            \
     if (!((ctx)->context & (flags))) {                                       \
+        return luaL_error(L, "API disabled in the context of %s",            \
+                          ngx_http_lua_context_name((ctx)->context));        \
+    }
+
+
+#define ngx_http_lua_check_fake_request(L, r)                                \
+    if ((r)->connection->fd == -1) {                                         \
+        return luaL_error(L, "API disabled in the current context");         \
+    }
+
+
+#define ngx_http_lua_check_fake_request2(L, r, ctx)                          \
+    if ((r)->connection->fd == -1) {                                         \
         return luaL_error(L, "API disabled in the context of %s",            \
                           ngx_http_lua_context_name((ctx)->context));        \
     }
@@ -150,6 +164,13 @@ ngx_int_t ngx_http_lua_test_expect(ngx_http_request_t *r);
 
 ngx_int_t ngx_http_lua_check_broken_connection(ngx_http_request_t *r,
     ngx_event_t *ev);
+
+void ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc);
+
+void ngx_http_lua_finalize_fake_request(ngx_http_request_t *r,
+    ngx_int_t rc);
+
+void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \

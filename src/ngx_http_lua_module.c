@@ -47,6 +47,20 @@ static ngx_conf_post_t  ngx_http_lua_lowat_post =
 
 static ngx_command_t ngx_http_lua_cmds[] = {
 
+    { ngx_string("lua_max_running_timers"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, max_running_timers),
+      NULL },
+
+    { ngx_string("lua_max_pending_timers"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, max_pending_timers),
+      NULL },
+
     { ngx_string("lua_shared_dict"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_http_lua_shared_dict,
@@ -489,6 +503,9 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->lua = NULL;
      *      lmcf->lua_path = { 0, NULL };
      *      lmcf->lua_cpath = { 0, NULL };
+     *      lmcf->pending_timers = 0;
+     *      lmcf->running_timers = 0;
+     *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
@@ -505,6 +522,8 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      */
 
     lmcf->pool = cf->pool;
+    lmcf->max_pending_timers = NGX_CONF_UNSET;
+    lmcf->max_running_timers = NGX_CONF_UNSET;
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
 #endif
@@ -519,13 +538,21 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
-#if (NGX_PCRE)
     ngx_http_lua_main_conf_t *lmcf = conf;
 
+#if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
         lmcf->regex_cache_max_entries = 1024;
     }
 #endif
+
+    if (lmcf->max_pending_timers == NGX_CONF_UNSET) {
+        lmcf->max_pending_timers = 1024;
+    }
+
+    if (lmcf->max_running_timers == NGX_CONF_UNSET) {
+        lmcf->max_running_timers = 256;
+    }
 
     return NGX_CONF_OK;
 }

@@ -322,7 +322,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     if (rc == NGX_DONE) {
-        ngx_http_finalize_request(r, NGX_DONE);
+        ngx_http_lua_finalize_request(r, NGX_DONE);
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
 
         if (rc == NGX_OK) {
