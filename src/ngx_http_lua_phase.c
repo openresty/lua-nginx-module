@@ -71,6 +71,10 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "body_filter");
         break;
 
+    case NGX_HTTP_LUA_CONTEXT_TIMER:
+        lua_pushliteral(L, "timer");
+        break;
+
     default:
         return luaL_error(L, "unknown phase: %d", (int) ctx->context);
     }

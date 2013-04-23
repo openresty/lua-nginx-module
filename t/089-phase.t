@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 - 1);
+plan tests => repeat_each() * (blocks() * 2);
 
 #no_diff();
 #no_long_string();
@@ -136,4 +136,27 @@ body_filter
 GET /lua
 --- error_log
 log
+
+
+
+=== TEST 9: get_phase in ngx.timer callback
+--- config
+    location /lua {
+        echo "OK";
+        log_by_lua '
+            local function f()
+                ngx.log(ngx.WARN, "current phase: ", ngx.get_phase())
+            end
+            local ok, err = ngx.timer.at(0, f)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to add timer: ", err)
+            end
+        ';
+    }
+--- request
+GET /lua
+--- no_error_log
+[error]
+--- error_log
+current phase: timer
 
