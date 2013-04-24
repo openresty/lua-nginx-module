@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(5);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 our $HtmlDir = html_dir;
 
@@ -738,6 +738,76 @@ GET /t
 --- response_body_like chop
 error: pcre_exec\(\) failed: -10 on "你.*?"
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 28: UTF-8 mode without UTF-8 sequence checks
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("你好", ".", "U")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- stap
+probe process("$LIBPCRE_PATH").function("pcre_compile") {
+    printf("compile opts: %x\n", $options)
+}
+
+probe process("$LIBPCRE_PATH").function("pcre_exec") {
+    printf("exec opts: %x\n", $options)
+}
+
+--- stap_out
+compile opts: 800
+exec opts: 2000
+
+--- request
+    GET /re
+--- response_body
+你
+--- no_error_log
+[error]
+
+
+
+=== TEST 29: UTF-8 mode with UTF-8 sequence checks
+--- config
+    location /re {
+        content_by_lua '
+            local it = ngx.re.gmatch("你好", ".", "u")
+            local m = it()
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- stap
+probe process("$LIBPCRE_PATH").function("pcre_compile") {
+    printf("compile opts: %x\n", $options)
+}
+
+probe process("$LIBPCRE_PATH").function("pcre_exec") {
+    printf("exec opts: %x\n", $options)
+}
+
+--- stap_out
+compile opts: 800
+exec opts: 0
+
+--- request
+    GET /re
+--- response_body
+你
 --- no_error_log
 [error]
 

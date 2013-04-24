@@ -38,6 +38,7 @@
 #define NGX_LUA_RE_MODE_DFA          (1<<1)
 #define NGX_LUA_RE_MODE_JIT          (1<<2)
 #define NGX_LUA_RE_MODE_DUPNAMES     (1<<3)
+#define NGX_LUA_RE_NO_UTF8_CHECK     (1<<4)
 
 #define NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT (100)
 
@@ -93,14 +94,14 @@ static void ngx_http_lua_re_collect_named_captures(lua_State *L,
     unsigned flags, ngx_str_t *subj);
 
 
-#define ngx_http_lua_regex_exec(re, e, s, start, captures, size)             \
-    pcre_exec(re, e, (const char *) (s)->data, (s)->len, start, 0,           \
+#define ngx_http_lua_regex_exec(re, e, s, start, captures, size, opts)       \
+    pcre_exec(re, e, (const char *) (s)->data, (s)->len, start, opts,        \
               captures, size)
 
 
 #define ngx_http_lua_regex_dfa_exec(re, e, s, start, captures, size, ws,     \
-                                    wscount)                                 \
-    pcre_dfa_exec(re, e, (const char *) (s)->data, (s)->len, start, 0,       \
+                                    wscount, opts)                           \
+    pcre_dfa_exec(re, e, (const char *) (s)->data, (s)->len, start, opts,    \
                   captures, size, ws, wscount)
 
 
@@ -128,6 +129,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     pcre_extra                  *sd = NULL;
     int                          name_entry_size, name_count;
     u_char                      *name_table;
+    int                          exec_opts;
 
     ngx_http_lua_regex_compile_t      re_comp;
 
@@ -429,6 +431,13 @@ exec:
         }
     }
 
+    if (flags & NGX_LUA_RE_NO_UTF8_CHECK) {
+        exec_opts = PCRE_NO_UTF8_CHECK;
+
+    } else {
+        exec_opts = 0;
+    }
+
     if (flags & NGX_LUA_RE_MODE_DFA) {
 
 #if LUA_HAVE_PCRE_DFA
@@ -436,7 +445,7 @@ exec:
         int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
         rc = ngx_http_lua_regex_dfa_exec(re_comp.regex, sd, &subj,
                                          (int) pos, cap, ovecsize, ws,
-                                         sizeof(ws)/sizeof(ws[0]));
+                                         sizeof(ws)/sizeof(ws[0]), exec_opts);
 
 #else /* LUA_HAVE_PCRE_DFA */
 
@@ -447,7 +456,7 @@ exec:
 
     } else {
         rc = ngx_http_lua_regex_exec(re_comp.regex, sd, &subj, (int) pos, cap,
-                                     ovecsize);
+                                     ovecsize, exec_opts);
     }
 
     if (rc == NGX_REGEX_NO_MATCHED) {
@@ -894,6 +903,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     const char                  *msg = NULL;
     int                          name_entry_size, name_count;
     u_char                      *name_table;
+    int                          exec_opts;
 
     /* upvalues in order: subj ctx offset */
 
@@ -949,6 +959,13 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
         }
     }
 
+    if (ctx->flags & NGX_LUA_RE_NO_UTF8_CHECK) {
+        exec_opts = PCRE_NO_UTF8_CHECK;
+
+    } else {
+        exec_opts = 0;
+    }
+
     if (ctx->flags & NGX_LUA_RE_MODE_DFA) {
 
 #if LUA_HAVE_PCRE_DFA
@@ -957,7 +974,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
         rc = ngx_http_lua_regex_dfa_exec(ctx->regex, ctx->regex_sd, &subj,
                                          offset, cap, ctx->captures_len, ws,
-                                         sizeof(ws)/sizeof(ws[0]));
+                                         sizeof(ws)/sizeof(ws[0]), exec_opts);
 
 #else /* LUA_HAVE_PCRE_DFA */
         msg = "at least pcre 6.0 is required for the DFA mode";
@@ -967,7 +984,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
     } else {
         rc = ngx_http_lua_regex_exec(ctx->regex, ctx->regex_sd, &subj,
-                                     offset, cap, ctx->captures_len);
+                                     offset, cap, ctx->captures_len,
+                                     exec_opts);
     }
 
     if (rc == NGX_REGEX_NO_MATCHED) {
@@ -1099,6 +1117,11 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_http_lua_regex_compile_t *re,
                 re->options |= PCRE_UTF8;
                 break;
 
+            case 'U':
+                re->options |= PCRE_UTF8;
+                flags |= NGX_LUA_RE_NO_UTF8_CHECK;
+                break;
+
             case 'x':
                 re->options |= PCRE_EXTENDED;
                 break;
@@ -1193,6 +1216,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     pcre_extra                  *sd = NULL;
     int                          name_entry_size, name_count;
     u_char                      *name_table;
+    int                          exec_opts;
 
     ngx_http_lua_regex_compile_t               re_comp;
     ngx_http_lua_complex_value_t              *ctpl = NULL;
@@ -1572,6 +1596,13 @@ exec:
         }
     }
 
+    if (flags & NGX_LUA_RE_NO_UTF8_CHECK) {
+        exec_opts = PCRE_NO_UTF8_CHECK;
+
+    } else {
+        exec_opts = 0;
+    }
+
     for (;;) {
         if (flags & NGX_LUA_RE_MODE_DFA) {
 
@@ -1580,7 +1611,8 @@ exec:
             int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
             rc = ngx_http_lua_regex_dfa_exec(re_comp.regex, sd, &subj,
                                              offset, cap, ovecsize, ws,
-                                             sizeof(ws)/sizeof(ws[0]));
+                                             sizeof(ws)/sizeof(ws[0]),
+                                             exec_opts);
 
 #else /* LUA_HAVE_PCRE_DFA */
 
@@ -1591,7 +1623,7 @@ exec:
 
         } else {
             rc = ngx_http_lua_regex_exec(re_comp.regex, sd, &subj, offset, cap,
-                                         ovecsize);
+                                         ovecsize, exec_opts);
         }
 
         if (rc == NGX_REGEX_NO_MATCHED) {
