@@ -434,7 +434,7 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     hv.key = key;
 
     hv.offset = 0;
-    hv.no_override = ! override;
+    hv.no_override = !override;
     hv.handler = NULL;
 
     for (i = 0; handlers[i].name.len; i++) {
