@@ -25,6 +25,8 @@ static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_user_agent_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_connection_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
@@ -51,7 +53,7 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
 
     { ngx_string("Connection"),
                  offsetof(ngx_http_headers_in_t, connection),
-                 ngx_http_set_builtin_header },
+                 ngx_http_set_connection_header },
 
     { ngx_string("If-Modified-Since"),
                  offsetof(ngx_http_headers_in_t, if_modified_since),
@@ -263,6 +265,28 @@ ngx_http_set_host_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     dd("server new value len: %d", (int) value->len);
 
     r->headers_in.server = *value;
+
+    return ngx_http_set_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_set_connection_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value)
+{
+    r->headers_in.connection_type = 0;
+
+    if (value->len == 0) {
+        return ngx_http_set_builtin_header(r, hv, value);
+    }
+
+    if (ngx_strcasestrn(value->data, "close", 5 - 1)) {
+        r->headers_in.connection_type = NGX_HTTP_CONNECTION_CLOSE;
+        r->headers_in.keep_alive_n = -1;
+
+    } else if (ngx_strcasestrn(value->data, "keep-alive", 10 - 1)) {
+        r->headers_in.connection_type = NGX_HTTP_CONNECTION_KEEP_ALIVE;
+    }
 
     return ngx_http_set_builtin_header(r, hv, value);
 }
