@@ -3422,6 +3422,9 @@ Specify `options` to control how the match operation will be performed. The foll
     u             UTF-8 mode. this requires PCRE to be built with
                   the --enable-utf8 option or else a Lua exception will be thrown.
 
+    U             similar to "u" but disables PCRE's UTF-8 validity check on
+                  the subject string. first introduced in ngx_lua v0.8.1.
+
     x             extended mode (similar to Perl's /x modifier)
 
 
