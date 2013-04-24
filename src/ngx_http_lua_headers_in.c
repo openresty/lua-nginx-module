@@ -99,6 +99,12 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, content_length),
                  ngx_http_set_content_length_header },
 
+#if (NGX_HTTP_REALIP)
+    { ngx_string("X-Real-IP"),
+                 offsetof(ngx_http_headers_in_t, x_real_ip),
+                 ngx_http_set_builtin_header },
+#endif
+
     { ngx_null_string, 0, ngx_http_set_header }
 };
 

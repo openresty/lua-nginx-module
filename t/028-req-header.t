@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => (2 * blocks() + 6) * repeat_each();
+plan tests => repeat_each() * (2 * blocks() + 10);
 
 #no_diff();
 no_long_string();
@@ -1061,6 +1061,97 @@ Host: localhost
 Bar: baz
 My-Foo: bar
 Connection: Close
+--- no_error_log
+[error]
+
+
+
+=== TEST 35: clear X-Real-IP
+--- config
+    location /t {
+        rewrite_by_lua '
+           ngx.req.set_header("X-Real-IP", nil)
+        ';
+        echo "X-Real-IP: $http_x_real_ip";
+    }
+--- request
+GET /t
+--- more_headers
+X-Real-IP: 8.8.8.8
+
+--- stap
+F(ngx_http_lua_rewrite_by_chunk) {
+    if (@defined($r->headers_in->x_real_ip) && $r->headers_in->x_real_ip) {
+        printf("rewrite: x-real-ip: %s\n",
+               user_string_n($r->headers_in->x_real_ip->value->data,
+                             $r->headers_in->x_real_ip->value->len))
+    } else {
+        println("rewrite: no x-real-ip")
+    }
+}
+
+F(ngx_http_core_content_phase) {
+    if (@defined($r->headers_in->x_real_ip) && $r->headers_in->x_real_ip) {
+        printf("content: x-real-ip: %s\n",
+               user_string_n($r->headers_in->x_real_ip->value->data,
+                             $r->headers_in->x_real_ip->value->len))
+    } else {
+        println("content: no x-real-ip")
+    }
+}
+
+--- stap_out
+rewrite: x-real-ip: 8.8.8.8
+content: no x-real-ip
+
+--- response_body
+X-Real-IP: 
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 36: set custom X-Real-IP
+--- config
+    location /t {
+        rewrite_by_lua '
+           ngx.req.set_header("X-Real-IP", "8.8.4.4")
+        ';
+        echo "X-Real-IP: $http_x_real_ip";
+    }
+--- request
+GET /t
+
+--- stap
+F(ngx_http_lua_rewrite_by_chunk) {
+    if (@defined($r->headers_in->x_real_ip) && $r->headers_in->x_real_ip) {
+        printf("rewrite: x-real-ip: %s\n",
+               user_string_n($r->headers_in->x_real_ip->value->data,
+                             $r->headers_in->x_real_ip->value->len))
+    } else {
+        println("rewrite: no x-real-ip")
+    }
+
+}
+
+F(ngx_http_core_content_phase) {
+    if (@defined($r->headers_in->x_real_ip) && $r->headers_in->x_real_ip) {
+        printf("content: x-real-ip: %s\n",
+               user_string_n($r->headers_in->x_real_ip->value->data,
+                             $r->headers_in->x_real_ip->value->len))
+    } else {
+        println("content: no x-real-ip")
+    }
+}
+
+--- stap_out
+rewrite: no x-real-ip
+content: x-real-ip: 8.8.4.4
+
+--- response_body
+X-Real-IP: 8.8.4.4
+
 --- no_error_log
 [error]
 
