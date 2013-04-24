@@ -45,6 +45,10 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
     { ngx_string("Accept-Encoding"),
                  offsetof(ngx_http_headers_in_t, accept_encoding),
                  ngx_http_set_builtin_header },
+
+    { ngx_string("Via"),
+                 offsetof(ngx_http_headers_in_t, via),
+                 ngx_http_set_builtin_header },
 #endif
 
     { ngx_string("Host"),

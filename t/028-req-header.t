@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 10);
+plan tests => repeat_each() * (2 * blocks() + 14);
 
 #no_diff();
 no_long_string();
@@ -1151,6 +1151,97 @@ content: x-real-ip: 8.8.4.4
 
 --- response_body
 X-Real-IP: 8.8.4.4
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 37: clear Via
+--- config
+    location /t {
+        rewrite_by_lua '
+           ngx.req.set_header("Via", nil)
+        ';
+        echo "Via: $http_via";
+    }
+--- request
+GET /t
+--- more_headers
+Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
+
+--- stap
+F(ngx_http_lua_rewrite_by_chunk) {
+    if (@defined($r->headers_in->via) && $r->headers_in->via) {
+        printf("rewrite: via: %s\n",
+               user_string_n($r->headers_in->via->value->data,
+                             $r->headers_in->via->value->len))
+    } else {
+        println("rewrite: no via")
+    }
+}
+
+F(ngx_http_core_content_phase) {
+    if (@defined($r->headers_in->via) && $r->headers_in->via) {
+        printf("content: via: %s\n",
+               user_string_n($r->headers_in->via->value->data,
+                             $r->headers_in->via->value->len))
+    } else {
+        println("content: no via")
+    }
+}
+
+--- stap_out
+rewrite: via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
+content: no via
+
+--- response_body
+Via: 
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 38: set custom Via
+--- config
+    location /t {
+        rewrite_by_lua '
+           ngx.req.set_header("Via", "1.0 fred, 1.1 nowhere.com (Apache/1.1)")
+        ';
+        echo "Via: $http_via";
+    }
+--- request
+GET /t
+
+--- stap
+F(ngx_http_lua_rewrite_by_chunk) {
+    if (@defined($r->headers_in->via) && $r->headers_in->via) {
+        printf("rewrite: via: %s\n",
+               user_string_n($r->headers_in->via->value->data,
+                             $r->headers_in->via->value->len))
+    } else {
+        println("rewrite: no via")
+    }
+
+}
+
+F(ngx_http_core_content_phase) {
+    if (@defined($r->headers_in->via) && $r->headers_in->via) {
+        printf("content: via: %s\n",
+               user_string_n($r->headers_in->via->value->data,
+                             $r->headers_in->via->value->len))
+    } else {
+        println("content: no via")
+    }
+}
+
+--- stap_out
+rewrite: no via
+content: via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
+
+--- response_body
+Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
 
 --- no_error_log
 [error]
