@@ -213,7 +213,7 @@ Cookie: boo=123; foo=78
 
 
 
-=== TEST 6: set one custom cookie (without existing cookies)
+=== TEST 6: set multiple custom cookies (without existing cookies)
 --- config
     location /t {
         rewrite_by_lua '
