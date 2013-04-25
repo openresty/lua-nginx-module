@@ -20,7 +20,7 @@ static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value,
-    ngx_table_elt_t **output_header, unsigned no_create);
+    ngx_table_elt_t **output_header);
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_user_agent_header(ngx_http_request_t *r,
@@ -125,14 +125,13 @@ static ngx_int_t
 ngx_http_set_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     ngx_str_t *value)
 {
-    return ngx_http_set_header_helper(r, hv, value, NULL, 0);
+    return ngx_http_set_header_helper(r, hv, value, NULL);
 }
 
 
 static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
-    ngx_str_t *value, ngx_table_elt_t **output_header,
-    unsigned no_create)
+    ngx_str_t *value, ngx_table_elt_t **output_header)
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
@@ -255,7 +254,7 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
 
     if (old == NULL || *old == NULL) {
         dd("set normal header");
-        return ngx_http_set_header_helper(r, hv, value, old, 0);
+        return ngx_http_set_header_helper(r, hv, value, old);
     }
 
     h = *old;
@@ -264,7 +263,7 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
         h->hash = 0;
         h->value = *value;
 
-        return ngx_http_set_header_helper(r, hv, value, old, 0);
+        return ngx_http_set_header_helper(r, hv, value, old);
     }
 
     h->hash = hv->hash;
@@ -425,7 +424,7 @@ ngx_http_set_cookie_header(ngx_http_request_t *r,
         dd("clear headers in cookies: %d", (int) r->headers_in.cookies.nelts);
     }
 
-    if (ngx_http_set_header_helper(r, hv, value, &h, 0) == NGX_ERROR) {
+    if (ngx_http_set_header_helper(r, hv, value, &h) == NGX_ERROR) {
         return NGX_ERROR;
     }
 
