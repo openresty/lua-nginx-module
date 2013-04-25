@@ -11,7 +11,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -536,6 +536,26 @@ attempt to set status 403 via ngx.exit after sending out the response status 200
     }
 --- request
 GET /lua
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 16: throw 403 after sending out headers with 403 (HTTP 1.0 buffering)
+--- config
+    location /t {
+        rewrite_by_lua '
+            ngx.status = 403
+            ngx.say("Hello World")
+            ngx.exit(403)
+        ';
+    }
+--- request
+GET /t HTTP/1.0
 --- response_body
 Hello World
 --- error_code: 403

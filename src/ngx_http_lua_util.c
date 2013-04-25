@@ -2160,6 +2160,20 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 
     ngx_http_lua_request_cleanup(r);
 
+    if (ctx->buffering && r->headers_out.status) {
+        rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return rc;
+        }
+
+        if (ctx->exit_code >= NGX_HTTP_OK) {
+            return NGX_HTTP_OK;
+        }
+
+        return ctx->exit_code;
+    }
+
     if ((ctx->exit_code == NGX_OK
          && ctx->entered_content_phase)
         || (ctx->exit_code >= NGX_HTTP_OK
