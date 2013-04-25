@@ -198,7 +198,7 @@ new_header:
     h = ngx_list_push(&r->headers_in.headers);
 
     if (h == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     dd("created new header for %.*s", (int) hv->key.len, hv->key.data);
@@ -215,7 +215,7 @@ new_header:
 
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
