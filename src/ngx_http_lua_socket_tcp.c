@@ -2081,7 +2081,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
                 ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
                 if (ctx == NULL) {
                     ngx_http_lua_socket_handle_error(r, u,
-                                                 NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
                     return NGX_ERROR;
                 }
 
@@ -2098,7 +2098,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 
                 if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
                     ngx_http_lua_socket_handle_error(r, u,
-                                                 NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
                     return NGX_ERROR;
                 }
 
@@ -2129,7 +2129,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 
     if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {
         ngx_http_lua_socket_handle_error(r, u,
-                     NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                         NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
 
