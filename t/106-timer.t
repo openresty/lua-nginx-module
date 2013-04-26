@@ -1375,8 +1375,8 @@ F(ngx_http_lua_sleep_cleanup) {
 }
 _EOC_
 
---- stap_out
-create 2 in 1
+--- stap_out_like chop
+(?:create 2 in 1
 terminate 1: ok
 delete thread 1
 free request
@@ -1389,7 +1389,20 @@ terminate 3: ok
 lua sleep cleanup
 delete timer 1000
 delete thread 3
-delete thread 2
+delete thread 2|create 2 in 1
+terminate 1: ok
+delete thread 1
+create 3 in 2
+spawn user thread 3 in 2
+add timer 100
+add timer 1000
+free request
+expire timer 100
+terminate 3: ok
+lua sleep cleanup
+delete timer 1000
+delete thread 3
+delete thread 2)$
 
 --- response_body
 registered timer
