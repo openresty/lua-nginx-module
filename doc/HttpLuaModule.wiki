@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.0] released on 23 April 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.1] released on 26 April 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -306,7 +306,7 @@ When Nginx receives the <code>HUP</code> signal and starts reloading the config 
 Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
 
 <geshi lang="nginx">
-    init_by_lua 'require "cjson"';
+    init_by_lua 'cjson = require "cjson"';
 
     server {
         location = /api {
@@ -5026,7 +5026,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 The latest module is compatible with the following versions of Nginx:
 
 * 1.3.x (last tested: 1.3.11)
-* 1.2.x (last tested: 1.2.7)
+* 1.2.x (last tested: 1.2.8)
 * 1.1.x (last tested: 1.1.5)
 * 1.0.x (last tested: 1.0.15)
 * 0.9.x (last tested: 0.9.4)
@@ -5050,9 +5050,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.2.7.tar.gz'
-    tar -xzvf nginx-1.2.7.tar.gz
-    cd nginx-1.2.7/
+    wget 'http://nginx.org/download/nginx-1.2.8.tar.gz'
+    tar -xzvf nginx-1.2.8.tar.gz
+    cd nginx-1.2.8/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib
