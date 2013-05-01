@@ -111,16 +111,16 @@ ngx_http_lua_ngx_set(lua_State *L)
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
     if (len == sizeof("status") - 1
         && ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
     {
+        if (r == NULL) {
+            return luaL_error(L, "no request object found");
+        }
+
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
         if (ctx->headers_sent) {
@@ -141,10 +141,15 @@ ngx_http_lua_ngx_set(lua_State *L)
     if (len == sizeof("ctx") - 1
         && ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
     {
+        if (r == NULL) {
+            return luaL_error(L, "no request object found");
+        }
+
         return ngx_http_lua_ngx_set_ctx(L);
     }
 
-    return luaL_error(L, "attempt to write to ngx. with the key \"%s\"", p);
+    lua_rawset(L, -3);
+    return 0;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

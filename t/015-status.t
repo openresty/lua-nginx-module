@@ -10,7 +10,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -150,8 +150,10 @@ GET /201
     }
 --- request
 GET /201
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body
+created
+--- no_error_log
+[error]
 
 
 
