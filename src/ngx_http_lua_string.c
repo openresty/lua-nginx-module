@@ -694,14 +694,20 @@ ngx_http_lua_ffi_md5(const u_char *src, size_t len, u_char *dst)
 }
 
 
-void
+int
 ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
 {
+#if NGX_HAVE_SHA1
     ngx_sha1_t               sha;
 
     ngx_sha1_init(&sha);
     ngx_sha1_update(&sha, src, len);
     ngx_sha1_final(dst, &sha);
+
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 #endif
