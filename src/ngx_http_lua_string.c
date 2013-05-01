@@ -710,6 +710,42 @@ ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
 #endif
 }
 
+
+size_t
+ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst)
+{
+    ngx_str_t      in, out;
+
+    in.data = (u_char *) src;
+    in.len = slen;
+
+    out.data = dst;
+
+    ngx_encode_base64(&out, &in);
+
+    return out.len;
+}
+
+
+int
+ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
+                               size_t *dlen)
+{
+    ngx_int_t      rc;
+    ngx_str_t      in, out;
+
+    in.data = (u_char *) src;
+    in.len = slen;
+
+    out.data = dst;
+
+    rc = ngx_decode_base64(&out, &in);
+
+    *dlen = out.len;
+
+    return rc == NGX_OK;
+}
+
 #endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
