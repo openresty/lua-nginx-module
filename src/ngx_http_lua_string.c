@@ -136,10 +136,7 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
 
     dlen = escape + len;
 
-    dst = ngx_palloc(r->pool, dlen);
-    if (dst == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
+    dst = lua_newuserdata(L, dlen);
 
     if (escape == 0) {
         ngx_memcpy(dst, src, len);
@@ -180,10 +177,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
     /* the unescaped string can only be smaller */
     dlen = len;
 
-    p = ngx_palloc(r->pool, dlen);
-    if (p == NULL) {
-        return luaL_error(L, "memory allocation error");
-    }
+    p = lua_newuserdata(L, dlen);
 
     dst = p;
 
@@ -229,10 +223,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
     dlen = sizeof("''") - 1 + len + escape;
 
-    p = ngx_palloc(r->pool, dlen);
-    if (p == NULL) {
-        return luaL_error(L, "out of memory");
-    }
+    p = lua_newuserdata(L, dlen);
 
     dst = p;
 
@@ -471,10 +462,7 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
 
     p.len = ngx_base64_decoded_length(src.len);
 
-    p.data = ngx_palloc(r->pool, p.len);
-    if (p.data == NULL) {
-        return NGX_ERROR;
-    }
+    p.data = lua_newuserdata(L, p.len);
 
     if (ngx_decode_base64(&p, &src) == NGX_OK) {
         lua_pushlstring(L, (char *) p.data, p.len);
@@ -518,10 +506,7 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
 
     p.len = ngx_base64_encoded_length(src.len);
 
-    p.data = ngx_palloc(r->pool, p.len);
-    if (p.data == NULL) {
-        return NGX_ERROR;
-    }
+    p.data = lua_newuserdata(L, p.len);
 
     ngx_encode_base64(&p, &src);
 
