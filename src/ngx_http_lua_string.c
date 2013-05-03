@@ -354,9 +354,9 @@ ngx_http_lua_ngx_md5(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
-        src     = (u_char *) "";
-        slen    = 0;
+    if (lua_isnil(L, 1)) {
+        src = (u_char *) "";
+        slen = 0;
 
     } else {
         src = (u_char *) luaL_checklstring(L, 1, &slen);
@@ -461,9 +461,9 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
-        src.data     = (u_char *) "";
-        src.len      = 0;
+    if (lua_isnil(L, 1)) {
+        src.data = (u_char *) "";
+        src.len = 0;
 
     } else {
         src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
@@ -508,9 +508,9 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    if (strcmp(luaL_typename(L, 1), (char *) "nil") == 0) {
-        src.data     = (u_char *) "";
-        src.len      = 0;
+    if (lua_isnil(L, 1)) {
+        src.data = (u_char *) "";
+        src.len = 0;
 
     } else {
         src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
