@@ -128,24 +128,17 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
     src = (u_char *) luaL_checklstring(L, 1, &len);
 
     if (len == 0) {
-        lua_pushlstring(L, NULL, 0);
         return 1;
     }
 
     escape = 2 * ngx_http_lua_escape_uri(NULL, src, len, NGX_ESCAPE_URI);
 
-    dlen = escape + len;
-
-    dst = lua_newuserdata(L, dlen);
-
-    if (escape == 0) {
-        ngx_memcpy(dst, src, len);
-
-    } else {
+    if (escape) {
+        dlen = escape + len;
+        dst = lua_newuserdata(L, dlen);
         ngx_http_lua_escape_uri(dst, src, len, NGX_ESCAPE_URI);
+        lua_pushlstring(L, (char *) dst, dlen);
     }
-
-    lua_pushlstring(L, (char *) dst, dlen);
 
     return 1;
 }
