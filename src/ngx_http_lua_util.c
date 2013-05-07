@@ -984,10 +984,10 @@ ngx_http_lua_request_cleanup(void *data)
  */
 ngx_int_t
 ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, int nret)
+    ngx_http_lua_ctx_t *ctx, volatile int nrets)
 {
     ngx_http_lua_co_ctx_t   *next_coctx, *parent_coctx, *orig_coctx;
-    int                      rv, nrets, success = 1;
+    int                      rv, success = 1;
     lua_State               *next_co;
     lua_State               *old_co;
     const char              *err, *msg, *trace;
@@ -1012,15 +1012,12 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
             ctx->cur_co_ctx->thread_spawn_yielded = 0;
             nrets = 1;
-
-        } else {
-            nrets = nret;
         }
 
         for ( ;; ) {
 
             dd("calling lua_resume: vm %p, nret %d", ctx->cur_co_ctx->co,
-               (int) nret);
+               (int) nrets);
 
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
