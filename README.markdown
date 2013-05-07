@@ -1364,7 +1364,16 @@ HTTP method constants
       ngx.HTTP_PUT
       ngx.HTTP_POST
       ngx.HTTP_DELETE
-      ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
+      ngx.HTTP_OPTIONS   (added in the v0.5.0rc24 release)
+      ngx.HTTP_MKCOL     (added in the v0.8.2 release)
+      ngx.HTTP_COPY      (added in the v0.8.2 release)
+      ngx.HTTP_MOVE      (added in the v0.8.2 release)
+      ngx.HTTP_PROPFIND  (added in the v0.8.2 release)
+      ngx.HTTP_PROPPATCH (added in the v0.8.2 release)
+      ngx.HTTP_LOCK      (added in the v0.8.2 release)
+      ngx.HTTP_UNLOCK    (added in the v0.8.2 release)
+      ngx.HTTP_PATCH     (added in the v0.8.2 release)
+      ngx.HTTP_TRACE     (added in the v0.8.2 release)
 
 
 These constants are usually used in [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) method calls.
@@ -4808,7 +4817,7 @@ A lot of the Lua APIs for Nginx are enabled in the context of the timer
 callbacks, like stream/datagram cosockets ([ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.socket.udp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.udp)), shared
 memory dictionaries ([ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT)), user coroutines ([coroutine.*](http://wiki.nginx.org/HttpLuaModule#coroutine.create)),
 user "light threads" ([ngx.thread.*](http://wiki.nginx.org/HttpLuaModule#ngx.thread.spawn)), [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit), [ngx.now](http://wiki.nginx.org/HttpLuaModule#ngx.now)/[ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time),
-[ngx.md5](http://wiki.nginx.org/HttpLuaModule#ngx.md5)/[ngx.sha1](http://wiki.nginx.org/HttpLuaModule#ngx.sha1), are all allowed. But the subrequest API (like
+[ngx.md5](http://wiki.nginx.org/HttpLuaModule#ngx.md5)/[ngx.sha1_bin](http://wiki.nginx.org/HttpLuaModule#ngx.sha1_bin), are all allowed. But the subrequest API (like
 [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture)), the [ngx.req.*](http://wiki.nginx.org/HttpLuaModule#ngx.req.start_time) API, the downstream output API
 (like [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print), and [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush)) are explicitly disabled in
 this context.
