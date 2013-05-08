@@ -34,6 +34,21 @@ ngx_str_t  ngx_http_lua_delete_method =
         ngx_http_lua_method_name("DELETE");
 ngx_str_t  ngx_http_lua_options_method =
         ngx_http_lua_method_name("OPTIONS");
+ngx_str_t  ngx_http_lua_copy_method = ngx_http_lua_method_name("COPY");
+ngx_str_t  ngx_http_lua_move_method = ngx_http_lua_method_name("MOVE");
+ngx_str_t  ngx_http_lua_lock_method = ngx_http_lua_method_name("LOCK");
+ngx_str_t  ngx_http_lua_mkcol_method =
+        ngx_http_lua_method_name("MKCOL");
+ngx_str_t  ngx_http_lua_propfind_method =
+        ngx_http_lua_method_name("PROPFIND");
+ngx_str_t  ngx_http_lua_proppatch_method =
+        ngx_http_lua_method_name("PROPPATCH");
+ngx_str_t  ngx_http_lua_unlock_method =
+        ngx_http_lua_method_name("UNLOCK");
+ngx_str_t  ngx_http_lua_patch_method =
+        ngx_http_lua_method_name("PATCH");
+ngx_str_t  ngx_http_lua_trace_method =
+        ngx_http_lua_method_name("TRACE");
 
 
 static ngx_str_t  ngx_http_lua_content_length_header_key =
@@ -658,6 +673,42 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
         case NGX_HTTP_OPTIONS:
             sr->method_name = ngx_http_lua_options_method;
+            break;
+
+        case NGX_HTTP_MKCOL:
+            sr->method_name = ngx_http_lua_mkcol_method;
+            break;
+
+        case NGX_HTTP_COPY:
+            sr->method_name = ngx_http_lua_copy_method;
+            break;
+
+        case NGX_HTTP_MOVE:
+            sr->method_name = ngx_http_lua_move_method;
+            break;
+
+        case NGX_HTTP_PROPFIND:
+            sr->method_name = ngx_http_lua_propfind_method;
+            break;
+
+        case NGX_HTTP_PROPPATCH:
+            sr->method_name = ngx_http_lua_proppatch_method;
+            break;
+
+        case NGX_HTTP_LOCK:
+            sr->method_name = ngx_http_lua_lock_method;
+            break;
+
+        case NGX_HTTP_UNLOCK:
+            sr->method_name = ngx_http_lua_unlock_method;
+            break;
+
+        case NGX_HTTP_PATCH:
+            sr->method_name = ngx_http_lua_patch_method;
+            break;
+
+        case NGX_HTTP_TRACE:
+            sr->method_name = ngx_http_lua_trace_method;
             break;
 
         default:

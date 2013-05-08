@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 23 April 2013.
+This document describes ngx_lua [v0.8.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 26 April 2013.
 
 Synopsis
 ========
@@ -322,7 +322,7 @@ When Nginx receives the `HUP` signal and starts reloading the config file, the L
 Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
 
 
-    init_by_lua 'require "cjson"';
+    init_by_lua 'cjson = require "cjson"';
 
     server {
         location = /api {
@@ -1364,7 +1364,16 @@ HTTP method constants
       ngx.HTTP_PUT
       ngx.HTTP_POST
       ngx.HTTP_DELETE
-      ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
+      ngx.HTTP_OPTIONS   (added in the v0.5.0rc24 release)
+      ngx.HTTP_MKCOL     (added in the v0.8.2 release)
+      ngx.HTTP_COPY      (added in the v0.8.2 release)
+      ngx.HTTP_MOVE      (added in the v0.8.2 release)
+      ngx.HTTP_PROPFIND  (added in the v0.8.2 release)
+      ngx.HTTP_PROPPATCH (added in the v0.8.2 release)
+      ngx.HTTP_LOCK      (added in the v0.8.2 release)
+      ngx.HTTP_UNLOCK    (added in the v0.8.2 release)
+      ngx.HTTP_PATCH     (added in the v0.8.2 release)
+      ngx.HTTP_TRACE     (added in the v0.8.2 release)
 
 
 These constants are usually used in [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture) and [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi) method calls.
@@ -3422,6 +3431,9 @@ Specify `options` to control how the match operation will be performed. The foll
     u             UTF-8 mode. this requires PCRE to be built with
                   the --enable-utf8 option or else a Lua exception will be thrown.
 
+    U             similar to "u" but disables PCRE's UTF-8 validity check on
+                  the subject string. first introduced in ngx_lua v0.8.1.
+
     x             extended mode (similar to Perl's /x modifier)
 
 
@@ -4805,7 +4817,7 @@ A lot of the Lua APIs for Nginx are enabled in the context of the timer
 callbacks, like stream/datagram cosockets ([ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) and [ngx.socket.udp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.udp)), shared
 memory dictionaries ([ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT)), user coroutines ([coroutine.*](http://wiki.nginx.org/HttpLuaModule#coroutine.create)),
 user "light threads" ([ngx.thread.*](http://wiki.nginx.org/HttpLuaModule#ngx.thread.spawn)), [ngx.exit](http://wiki.nginx.org/HttpLuaModule#ngx.exit), [ngx.now](http://wiki.nginx.org/HttpLuaModule#ngx.now)/[ngx.time](http://wiki.nginx.org/HttpLuaModule#ngx.time),
-[ngx.md5](http://wiki.nginx.org/HttpLuaModule#ngx.md5)/[ngx.sha1](http://wiki.nginx.org/HttpLuaModule#ngx.sha1), are all allowed. But the subrequest API (like
+[ngx.md5](http://wiki.nginx.org/HttpLuaModule#ngx.md5)/[ngx.sha1_bin](http://wiki.nginx.org/HttpLuaModule#ngx.sha1_bin), are all allowed. But the subrequest API (like
 [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture)), the [ngx.req.*](http://wiki.nginx.org/HttpLuaModule#ngx.req.start_time) API, the downstream output API
 (like [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print), and [ngx.flush](http://wiki.nginx.org/HttpLuaModule#ngx.flush)) are explicitly disabled in
 this context.
@@ -5196,7 +5208,7 @@ Nginx Compatibility
 The latest module is compatible with the following versions of Nginx:
 
 * 1.3.x (last tested: 1.3.11)
-* 1.2.x (last tested: 1.2.7)
+* 1.2.x (last tested: 1.2.8)
 * 1.1.x (last tested: 1.1.5)
 * 1.0.x (last tested: 1.0.15)
 * 0.9.x (last tested: 0.9.4)
@@ -5222,9 +5234,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.2.7.tar.gz'
-    tar -xzvf nginx-1.2.7.tar.gz
-    cd nginx-1.2.7/
+    wget 'http://nginx.org/download/nginx-1.2.8.tar.gz'
+    tar -xzvf nginx-1.2.8.tar.gz
+    cd nginx-1.2.8/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

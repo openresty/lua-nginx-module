@@ -288,11 +288,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         dd("compile failed");
 
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 2;
     }
 
@@ -478,8 +474,7 @@ exec:
     }
 
     if (rc < 0) {
-        msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d on \"%s\" "
-                              "using \"%s\"", (int) rc, subj.data, pat.data);
+        msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d", (int) rc);
         goto error;
     }
 
@@ -711,11 +706,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         dd("compile failed");
 
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 2;
     }
 
@@ -1397,11 +1388,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         lua_pushnil(L);
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 3;
     }
 
@@ -1616,8 +1603,8 @@ exec:
 
 #else /* LUA_HAVE_PCRE_DFA */
 
-        msg = "at least pcre 6.0 is required for the DFA mode";
-        goto error;
+            msg = "at least pcre 6.0 is required for the DFA mode";
+            goto error;
 
 #endif /* LUA_HAVE_PCRE_DFA */
 
@@ -1631,9 +1618,8 @@ exec:
         }
 
         if (rc < 0) {
-            msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d on \"%s\" "
-                                  "using \"%s\"", (int) rc, subj.data,
-                                  pat.data);
+            msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d",
+                                  (int) rc);
             goto error;
         }
 

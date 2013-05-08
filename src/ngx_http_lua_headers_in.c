@@ -20,7 +20,7 @@ static ngx_int_t ngx_http_set_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_header_helper(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value,
-    ngx_table_elt_t **output_header, unsigned no_create);
+    ngx_table_elt_t **output_header);
 static ngx_int_t ngx_http_set_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_user_agent_header(ngx_http_request_t *r,
@@ -28,6 +28,8 @@ static ngx_int_t ngx_http_set_user_agent_header(ngx_http_request_t *r,
 static ngx_int_t ngx_http_set_connection_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_set_cookie_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
@@ -103,6 +105,10 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, content_length),
                  ngx_http_set_content_length_header },
 
+    { ngx_string("Cookie"),
+                 0,
+                 ngx_http_set_cookie_header },
+
 #if (NGX_HTTP_REALIP)
     { ngx_string("X-Real-IP"),
                  offsetof(ngx_http_headers_in_t, x_real_ip),
@@ -119,14 +125,13 @@ static ngx_int_t
 ngx_http_set_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     ngx_str_t *value)
 {
-    return ngx_http_set_header_helper(r, hv, value, NULL, 0);
+    return ngx_http_set_header_helper(r, hv, value, NULL);
 }
 
 
 static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
-    ngx_str_t *value, ngx_table_elt_t **output_header,
-    unsigned no_create)
+    ngx_str_t *value, ngx_table_elt_t **output_header)
 {
     ngx_table_elt_t             *h;
     ngx_list_part_t             *part;
@@ -192,7 +197,7 @@ new_header:
     h = ngx_list_push(&r->headers_in.headers);
 
     if (h == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     dd("created new header for %.*s", (int) hv->key.len, hv->key.data);
@@ -209,7 +214,7 @@ new_header:
 
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
@@ -249,7 +254,7 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
 
     if (old == NULL || *old == NULL) {
         dd("set normal header");
-        return ngx_http_set_header_helper(r, hv, value, old, 0);
+        return ngx_http_set_header_helper(r, hv, value, old);
     }
 
     h = *old;
@@ -258,7 +263,7 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
         h->hash = 0;
         h->value = *value;
 
-        return ngx_http_set_header_helper(r, hv, value, old, 0);
+        return ngx_http_set_header_helper(r, hv, value, old);
     }
 
     h->hash = hv->hash;
@@ -397,6 +402,45 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
     r->headers_in.content_length_n = len;
 
     return ngx_http_set_builtin_header(r, hv, value);
+}
+
+
+static ngx_int_t
+ngx_http_set_cookie_header(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value)
+{
+    ngx_table_elt_t  **cookie, *h;
+
+    if (!hv->no_override && r->headers_in.cookies.nelts > 0) {
+        ngx_array_destroy(&r->headers_in.cookies);
+
+        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+                           sizeof(ngx_table_elt_t *))
+            != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+
+        dd("clear headers in cookies: %d", (int) r->headers_in.cookies.nelts);
+    }
+
+    if (ngx_http_set_header_helper(r, hv, value, &h) == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    if (value->len == 0) {
+        return NGX_OK;
+    }
+
+    dd("new cookie header: %p", h);
+
+    cookie = ngx_array_push(&r->headers_in.cookies);
+    if (cookie == NULL) {
+        return NGX_ERROR;
+    }
+
+    *cookie = h;
+    return NGX_OK;
 }
 
 

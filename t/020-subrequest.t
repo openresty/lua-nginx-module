@@ -2259,3 +2259,48 @@ truncated: true
 --- no_error_log
 [error]
 
+
+
+=== TEST 61: WebDAV methods
+--- config
+    location /other {
+        echo "method: $echo_request_method";
+    }
+
+    location /lua {
+        content_by_lua '
+            local methods = {
+                ngx.HTTP_MKCOL,
+                ngx.HTTP_COPY,
+                ngx.HTTP_MOVE,
+                ngx.HTTP_PROPFIND,
+                ngx.HTTP_PROPPATCH,
+                ngx.HTTP_LOCK,
+                ngx.HTTP_UNLOCK,
+                ngx.HTTP_PATCH,
+                ngx.HTTP_TRACE,
+            }
+
+            for i, method in ipairs(methods) do
+                res = ngx.location.capture("/other",
+                    { method = method })
+                ngx.print(res.body)
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+method: MKCOL
+method: COPY
+method: MOVE
+method: PROPFIND
+method: PROPPATCH
+method: LOCK
+method: UNLOCK
+method: PATCH
+method: TRACE
+
+--- no_error_log
+[error]
+
