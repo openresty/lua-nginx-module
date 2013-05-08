@@ -13,7 +13,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 3);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -222,6 +222,45 @@ main: GET
     HEAD /t
 --- response_body
 method: GET
+--- no_error_log
+[error]
+
+
+
+=== TEST 11: set GET to WebDAV methods
+--- config
+    location /t {
+        content_by_lua '
+            local methods = {
+                ngx.HTTP_MKCOL,
+                ngx.HTTP_COPY,
+                ngx.HTTP_MOVE,
+                ngx.HTTP_PROPFIND,
+                ngx.HTTP_PROPPATCH,
+                ngx.HTTP_LOCK,
+                ngx.HTTP_UNLOCK,
+                ngx.HTTP_PATCH,
+                ngx.HTTP_TRACE,
+            }
+
+            for i, method in ipairs(methods) do
+                ngx.req.set_method(method)
+                ngx.say("method: ", ngx.var.echo_request_method)
+            end
+        ';
+    }
+--- request
+    HEAD /t
+--- response_body
+method: MKCOL
+method: COPY
+method: MOVE
+method: PROPFIND
+method: PROPPATCH
+method: LOCK
+method: UNLOCK
+method: PATCH
+method: TRACE
 --- no_error_log
 [error]
 

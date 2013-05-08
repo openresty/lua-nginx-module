@@ -4,11 +4,11 @@ use Test::Nginx::Socket;
 
 #worker_connections(1014);
 #master_process_enabled(1);
-#log_level('warn');
+log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 38);
+plan tests => repeat_each() * (blocks() * 4 + 35);
 
 #no_diff();
 no_long_string();
@@ -57,6 +57,7 @@ hello, world"
 --- error_code_like: ^(?:500)?$
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -81,6 +82,7 @@ hello, world
 sub: foo
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -105,6 +107,7 @@ hello, world
 sub: foo
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -133,6 +136,7 @@ hiya, world"]
 "body: hiya, world\n"]
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -162,6 +166,7 @@ qr/400 Bad Request/]
 [200, '']
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -180,6 +185,7 @@ hello, world
 hello, world
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -199,6 +205,7 @@ hello, world
 nil
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -217,6 +224,7 @@ hello, world
 --- response_body_like: client_body_temp/
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -235,6 +243,7 @@ hello, world
 nil
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -258,6 +267,7 @@ hiya, dear
 hiya, dear
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -281,6 +291,7 @@ hello, baby
 hello, baby
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -347,6 +358,7 @@ X-Old: \S+/client_body_temp/\d+\r
 Will you change this world?
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -385,6 +397,7 @@ X-Old: \S+/client_body_temp/\d+\r
 Will you change this world?
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -423,6 +436,7 @@ a.txt exists: no
 b.txt exists: yes
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -457,6 +471,8 @@ Will you change this world?
 qr/500 Internal Server Error/]
 --- error_code eval
 [200, 500]
+--- no_error_log
+[alert]
 
 
 
@@ -493,6 +509,7 @@ Will you change this world?
 [200, 200]
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -583,6 +600,7 @@ hello, world
 hiya, dear dear friend!
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -637,6 +655,7 @@ hello, world"]
 ["nil","nil"]
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -664,6 +683,7 @@ hello, world"]
 ["body: [nil]\n","body: [nil]\n"]
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -693,6 +713,7 @@ hello, world"]
 ["body: [nil]\n","body: [nil]\n"]
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -752,6 +773,7 @@ hello, world
 howdy, my dear little sister!
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -779,6 +801,7 @@ hello, world
 howdy, my dear little sister!
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -802,6 +825,7 @@ hello, world
 --- response_body chomp
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -830,6 +854,7 @@ world
 srcache_store: request body len: 55
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -865,6 +890,7 @@ content length: 4
 body: hell
 --- no_error_log
 [error]
+[alert]
 
 
 
@@ -923,6 +949,7 @@ body: nil
 body file: hello
 --- no_error_log
 [error]
+[alert]
 --- error_log
 a client request body is buffered to a temporary file
 
@@ -951,6 +978,8 @@ a client request body is buffered to a temporary file
 --- error_code: 500
 --- error_log
 lua entry thread aborted: runtime error: [string "content_by_lua"]:2: request body not read yet
+--- no_error_log
+[alert]
 
 
 
@@ -979,6 +1008,7 @@ content length: 4
 body: hell
 --- no_error_log
 [error]
+[alert]
 --- no_error_log
 a client request body is buffered to a temporary file
 
@@ -1024,6 +1054,7 @@ probe syscall.unlink {
 hello
 --- no_error_log
 [error]
+[alert]
 --- error_log
 a client request body is buffered to a temporary file
 
@@ -1054,6 +1085,7 @@ i do like the sky
 hell
 --- no_error_log
 [error]
+[alert]
 a client request body is buffered to a temporary file
 
 
@@ -1150,6 +1182,7 @@ body: nil
 body file: hello
 --- no_error_log
 [error]
+[alert]
 --- error_log
 a client request body is buffered to a temporary file
 
@@ -1199,6 +1232,7 @@ content length: 22
 body: hello, my dear friend!
 --- no_error_log
 [error]
+[alert]
 --- no_error_log
 a client request body is buffered to a temporary file
 
@@ -1253,6 +1287,7 @@ body: blah blah blah
 "]
 --- no_error_log
 [error]
+[alert]
 --- no_error_log
 a client request body is buffered to a temporary file
 
@@ -1308,6 +1343,7 @@ body: blah blah blah
 "]
 --- no_error_log
 [error]
+[alert]
 --- no_error_log
 a client request body is buffered to a temporary file
 
@@ -1337,6 +1373,7 @@ hello, my dear friend!
 failed to get req socket: request body already exists
 --- no_error_log
 [error]
+[alert]
 --- no_error_log
 a client request body is buffered to a temporary file
 
@@ -1395,4 +1432,51 @@ hello, world
 [error]
 [alert]
 --- skip_nginx: 4: <1.3.9
+
+
+
+=== TEST 44: zero size request body and reset it to a new file
+--- config
+    location = /test {
+        client_body_in_file_only on;
+        set $old '';
+        set $new '';
+        rewrite_by_lua '
+            ngx.req.read_body()
+            ngx.req.set_body_file(ngx.var.realpath_root .. "/a.txt")
+            ngx.var.new = ngx.req.get_body_file()
+        ';
+        #echo_request_body;
+        proxy_pass http://127.0.0.1:$server_port/echo;
+        #proxy_pass http://127.0.0.1:7890/echo;
+        add_header X-Old $old;
+        add_header X-New $new;
+    }
+    location /echo {
+        echo_read_request_body;
+        echo_request_body;
+    }
+--- request
+POST /test
+--- user_files
+>>> a.txt
+Will you change this world?
+
+--- stap
+probe syscall.fcntl {
+    O_DIRECT = 0x4000
+    if (pid() == target() && ($arg & O_DIRECT)) {
+        println("fcntl(O_DIRECT)")
+    }
+}
+--- stap_out_unlike
+fcntl\(O_DIRECT\)
+
+--- raw_response_headers_like
+.*?X-New: \S+/html/a\.txt\r
+--- response_body
+Will you change this world?
+--- no_error_log
+[error]
+[alert]
 

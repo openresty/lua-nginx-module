@@ -1311,7 +1311,16 @@ The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0r
   ngx.HTTP_PUT
   ngx.HTTP_POST
   ngx.HTTP_DELETE
-  ngx.HTTP_OPTIONS   (first introduced in the v0.5.0rc24 release)
+  ngx.HTTP_OPTIONS   (added in the v0.5.0rc24 release)
+  ngx.HTTP_MKCOL     (added in the v0.8.2 release)
+  ngx.HTTP_COPY      (added in the v0.8.2 release)
+  ngx.HTTP_MOVE      (added in the v0.8.2 release)
+  ngx.HTTP_PROPFIND  (added in the v0.8.2 release)
+  ngx.HTTP_PROPPATCH (added in the v0.8.2 release)
+  ngx.HTTP_LOCK      (added in the v0.8.2 release)
+  ngx.HTTP_UNLOCK    (added in the v0.8.2 release)
+  ngx.HTTP_PATCH     (added in the v0.8.2 release)
+  ngx.HTTP_TRACE     (added in the v0.8.2 release)
 </geshi>
 
 These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
@@ -4653,7 +4662,7 @@ A lot of the Lua APIs for Nginx are enabled in the context of the timer
 callbacks, like stream/datagram cosockets ([[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.socket.udp|ngx.socket.udp]]), shared
 memory dictionaries ([[#ngx.shared.DICT|ngx.shared.DICT]]), user coroutines ([[#coroutine.create|coroutine.*]]),
 user "light threads" ([[#ngx.thread.spawn|ngx.thread.*]]), [[#ngx.exit|ngx.exit]], [[#ngx.now|ngx.now]]/[[#ngx.time|ngx.time]],
-[[#ngx.md5|ngx.md5]]/[[#ngx.sha1|ngx.sha1]], are all allowed. But the subrequest API (like
+[[#ngx.md5|ngx.md5]]/[[#ngx.sha1_bin|ngx.sha1_bin]], are all allowed. But the subrequest API (like
 [[#ngx.location.capture|ngx.location.capture]]), the [[#ngx.req.start_time|ngx.req.*]] API, the downstream output API
 (like [[#ngx.say|ngx.say]], [[#ngx.print|ngx.print]], and [[#ngx.flush|ngx.flush]]) are explicitly disabled in
 this context.

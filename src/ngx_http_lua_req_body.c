@@ -904,6 +904,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         ngx_memzero(b, sizeof(ngx_buf_t));
 
         b->tag = tag;
+        rb->buf = NULL;
 
     } else {
 
@@ -923,7 +924,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
         b->tag = tag;
 
         rb->bufs->buf = b;
-        rb->buf = b;
+        rb->buf = NULL;
     }
 
     b->last_in_chain = 1;
@@ -963,6 +964,8 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
     ngx_memzero(&of, sizeof(ngx_open_file_info_t));
 
+    of.directio = NGX_OPEN_FILE_DIRECTIO_OFF;
+
     if (ngx_http_lua_open_and_stat_file(name.data, &of, r->connection->log)
         != NGX_OK)
     {
@@ -974,9 +977,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
     tf->file.fd = of.fd;
     tf->file.name = name;
     tf->file.log = r->connection->log;
-
-    /* FIXME we should not always set directio here */
-    tf->file.directio = 1;
+    tf->file.directio = 0;
 
     if (of.size == 0) {
         if (clean) {
