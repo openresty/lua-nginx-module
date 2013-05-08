@@ -44,10 +44,18 @@
 
 
 typedef struct {
-    pcre                         *regex;
-    pcre_extra                   *regex_sd;
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+    ngx_pool_t                   *pool;
+    u_char                       *name_table;
+    int                           name_count;
+    int                           name_entry_size;
+#endif
+
     int                           ncaptures;
     int                          *captures;
+
+    pcre                         *regex;
+    pcre_extra                   *regex_sd;
 
     ngx_http_lua_complex_value_t    *replace;
 } ngx_http_lua_regex_t;
@@ -1989,6 +1997,199 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
         dd("top 2: %d", lua_gettop(L));
     }
 }
+
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+ngx_http_lua_regex_t *
+ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
+                               int flags, int pcre_opts, u_char *errstr,
+                               size_t errstr_size)
+{
+    int                     *cap = NULL, ovecsize;
+    u_char                  *p;
+    ngx_int_t                rc;
+    const char              *msg;
+    ngx_pool_t              *pool, *old_pool;
+    pcre_extra              *sd = NULL;
+    ngx_http_lua_regex_t    *re;
+
+    ngx_http_lua_regex_compile_t      re_comp;
+
+    pool = ngx_create_pool(512, ngx_cycle->log);
+    if (pool == NULL) {
+        msg = "no memory";
+        goto error;
+    }
+
+    re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
+    if (re == NULL) {
+        ngx_destroy_pool(pool);
+        pool = NULL;
+        msg = "no memory";
+        goto error;
+    }
+
+    re->pool = pool;
+
+    re_comp.options      = pcre_opts;
+    re_comp.pattern.data = (u_char *) pat;
+    re_comp.pattern.len  = pat_len;
+    re_comp.err.len      = errstr_size;
+    re_comp.err.data     = errstr;
+    re_comp.pool         = pool;
+
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
+    rc = ngx_http_lua_regex_compile(&re_comp);
+    ngx_http_lua_pcre_malloc_done(old_pool);
+
+    if (rc != NGX_OK) {
+        re_comp.err.data[re_comp.err.len] = '\0';
+        return NULL;
+    }
+
+#if (LUA_HAVE_PCRE_JIT)
+
+    if (flags & NGX_LUA_RE_MODE_JIT) {
+
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
+        sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+        ngx_http_lua_pcre_malloc_done(old_pool);
+
+    } else {
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
+        sd = pcre_study(re_comp.regex, 0, &msg);
+        ngx_http_lua_pcre_malloc_done(old_pool);
+    }
+
+#endif /* LUA_HAVE_PCRE_JIT */
+
+    if (flags & NGX_LUA_RE_MODE_DFA) {
+        ovecsize = 2;
+
+    } else {
+        ovecsize = (re_comp.captures + 1) * 3;
+    }
+
+    dd("allocating cap with size: %d", (int) ovecsize);
+
+    cap = ngx_palloc(pool, ovecsize * sizeof(int));
+    if (cap == NULL) {
+        msg = "no memory";
+        goto error;
+    }
+
+    if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
+                      &re->name_count) != 0)
+    {
+        msg = "cannot acquire named subpattern count";
+        goto error;
+    }
+
+    if (re->name_count > 0) {
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                          &re->name_entry_size) != 0)
+        {
+            msg = "cannot acquire named subpattern entry size";
+            goto error;
+        }
+
+        if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMETABLE,
+                          &re->name_table) != 0)
+        {
+            msg = "cannot acquire named subpattern table";
+            goto error;
+        }
+    }
+
+    re->regex = re_comp.regex;
+    re->regex_sd = sd;
+    re->ncaptures = re_comp.captures;
+    re->captures = cap;
+    re->replace = NULL;
+
+    return re;
+
+error:
+    p = ngx_snprintf(errstr, errstr_size - 1, "%s", msg);
+    *p = '\0';
+
+    if (sd) {
+        ngx_http_lua_regex_free_study_data(pool, sd);
+    }
+
+    if (pool) {
+        ngx_destroy_pool(pool);
+    }
+
+    return NULL;
+}
+
+
+int
+ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
+    const u_char *s, size_t len, int pos)
+{
+    int             rc, ovecsize, exec_opts, *cap;
+    ngx_str_t       subj;
+    pcre_extra     *sd;
+
+    cap = re->captures;
+    sd = re->regex_sd;
+
+    if (flags & NGX_LUA_RE_MODE_DFA) {
+        ovecsize = 2;
+
+    } else {
+        ovecsize = (re->ncaptures + 1) * 3;
+    }
+
+    if (flags & NGX_LUA_RE_NO_UTF8_CHECK) {
+        exec_opts = PCRE_NO_UTF8_CHECK;
+
+    } else {
+        exec_opts = 0;
+    }
+
+    subj.data = (u_char *) s;
+    subj.len = len;
+
+    if (flags & NGX_LUA_RE_MODE_DFA) {
+
+#if LUA_HAVE_PCRE_DFA
+
+        int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
+        rc = ngx_http_lua_regex_dfa_exec(re->regex, sd, &subj,
+                                         (int) pos, cap, ovecsize, ws,
+                                         sizeof(ws)/sizeof(ws[0]), exec_opts);
+
+#else /* LUA_HAVE_PCRE_DFA */
+
+        return PCRE_ERROR_INTERNAL;
+
+#endif /* LUA_HAVE_PCRE_DFA */
+
+    } else {
+        rc = ngx_http_lua_regex_exec(re->regex, sd, &subj, (int) pos, cap,
+                                     ovecsize, exec_opts);
+    }
+
+    return rc;
+}
+
+
+void
+ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
+{
+    dd("destroy regex called");
+
+    if (re == NULL || re->pool == NULL) {
+        return;
+    }
+
+    ngx_destroy_pool(re->pool);
+}
+#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
 
 #endif /* NGX_PCRE */
 
