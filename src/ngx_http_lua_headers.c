@@ -643,8 +643,11 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     ngx_http_lua_check_fake_request(L, r);
 
     n = lua_gettop(L);
-    if (n >= 3) {
-        replace_underscores = lua_toboolean(L, 3);
+    if (n == 3) {
+        luaL_checktype(L, 3, LUA_TTABLE);
+        lua_getfield(L, 3, "replace_underscores");
+        replace_underscores = lua_toboolean(L, -1);
+        lua_pop(L, 1);
     } else {
         replace_underscores = 1;
     }
