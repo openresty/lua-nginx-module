@@ -17,7 +17,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 use t::StapThread;
 
 our $GCScript = $t::StapThread::GCScript;
