@@ -424,6 +424,17 @@ ngx_http_set_cookie_header(ngx_http_request_t *r,
         dd("clear headers in cookies: %d", (int) r->headers_in.cookies.nelts);
     }
 
+#if 1
+    if (r->headers_in.cookies.nalloc == 0) {
+        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+                           sizeof(ngx_table_elt_t *))
+            != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+    }
+#endif
+
     if (ngx_http_set_header_helper(r, hv, value, &h) == NGX_ERROR) {
         return NGX_ERROR;
     }
