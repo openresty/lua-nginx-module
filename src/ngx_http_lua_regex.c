@@ -1603,8 +1603,8 @@ exec:
 
 #else /* LUA_HAVE_PCRE_DFA */
 
-        msg = "at least pcre 6.0 is required for the DFA mode";
-        goto error;
+            msg = "at least pcre 6.0 is required for the DFA mode";
+            goto error;
 
 #endif /* LUA_HAVE_PCRE_DFA */
 
