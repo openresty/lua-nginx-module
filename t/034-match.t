@@ -386,8 +386,8 @@ error: pcre_compile() failed: missing ) in "(abc"
     }
 --- request
     GET /re
---- response_body
-error: bad argument #3 to '?' (unknown flag "H")
+--- response_body_like chop
+error: .*?unknown flag "H"
 
 
 
