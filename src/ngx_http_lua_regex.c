@@ -288,11 +288,7 @@ ngx_http_lua_ngx_re_match(lua_State *L)
         dd("compile failed");
 
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 2;
     }
 
@@ -711,11 +707,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         dd("compile failed");
 
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 2;
     }
 
@@ -1397,11 +1389,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
         lua_pushnil(L);
         lua_pushnil(L);
-
-        re_comp.err.data[re_comp.err.len] = '\0';
-        msg = lua_pushfstring(L, "failed to compile regex \"%s\": %s",
-                              pat.data, re_comp.err.data);
-
+        lua_pushlstring(L, (char *) re_comp.err.data, re_comp.err.len);
         return 3;
     }
 

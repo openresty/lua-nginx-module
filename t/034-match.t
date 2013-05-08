@@ -241,7 +241,7 @@ hello
 --- request
     GET /re
 --- response_body_like chop
-^(?:FAIL: bad argument \#2 to '\?' \(failed to compile regex "HELLO\.\{2\}": pcre_compile\(\) failed: this version of PCRE is not compiled with PCRE_UTF8 support in "HELLO\.\{2\}" at "HELLO\.\{2\}"\)|hello章亦)$
+^(?:FAIL: bad argument \#2 to '\?' \(pcre_compile\(\) failed: this version of PCRE is not compiled with PCRE_UTF8 support in "HELLO\.\{2\}" at "HELLO\.\{2\}"\)|hello章亦)$
 
 
 
@@ -362,7 +362,7 @@ he
 --- request
     GET /re
 --- response_body
-error: failed to compile regex "(abc": pcre_compile() failed: missing ) in "(abc"
+error: pcre_compile() failed: missing ) in "(abc"
 --- no_error_log
 [error]
 
@@ -649,7 +649,7 @@ regex: (?:>[\w\s]*</?\w{2,}>)
 --- request
     GET /re
 --- response_body
-error: failed to compile regex "([0-9]+": pcre_compile() failed: missing ) in "([0-9]+"
+error: pcre_compile() failed: missing ) in "([0-9]+"
 
 --- no_error_log
 [error]
