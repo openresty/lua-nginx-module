@@ -1619,9 +1619,8 @@ exec:
         }
 
         if (rc < 0) {
-            msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d on \"%s\" "
-                                  "using \"%s\"", (int) rc, subj.data,
-                                  pat.data);
+            msg = lua_pushfstring(L, ngx_regex_exec_n " failed: %d",
+                                  (int) rc);
             goto error;
         }
 
