@@ -589,15 +589,9 @@ ngx_http_lua_ngx_req_header_clear(lua_State *L)
     }
 
     if (n == 2) {
-        u_char  *p;
-        size_t   len;
-        int replace_underscores = 1;
-        p = (u_char *) luaL_checklstring(L, 1, &len);
-        replace_underscores = lua_toboolean(L, 2);
-        lua_pop(L, 2);
-        lua_pushlstring(L, (char *) p, len);
         lua_pushnil(L);
-        lua_pushboolean(L, replace_underscores);
+        /* Top element is now 3, replace it with element 3 */
+        lua_insert(L, 2);
     } else {
         lua_pushnil(L);
     }
