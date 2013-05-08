@@ -5,7 +5,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #master_on();
