@@ -631,12 +631,14 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
+#if 0
     /* replace "_" with "-" */
     for (i = 0; i < len; i++) {
         if (p[i] == '_') {
             p[i] = '-';
         }
     }
+#endif
 
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
