@@ -12,7 +12,7 @@ repeat_each(2);
 plan tests => repeat_each() * (2 * blocks() + 14);
 
 #no_diff();
-no_long_string();
+#no_long_string();
 
 run_tests();
 
@@ -120,7 +120,7 @@ Foo:
 --- config
     location /bar {
         rewrite_by_lua '
-            ngx.req.set_header("content_length", 2048)
+            ngx.req.set_header("content-length", 2048)
         ';
         echo_read_request_body;
         echo_request_body;
@@ -1245,4 +1245,27 @@ Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 39: set input header (with underscores in the header name)
+--- config
+    location /req-header {
+        rewrite_by_lua '
+            ngx.req.set_header("foo_bar", "some value");
+        ';
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+    location = /back {
+        echo -n $echo_client_request_headers;
+    }
+--- request
+GET /req-header
+--- response_body eval
+"GET /back HTTP/1.0\r
+Host: 127.0.0.1:1985\r
+Connection: close\r
+foo_bar: some value\r
+\r
+"
 
