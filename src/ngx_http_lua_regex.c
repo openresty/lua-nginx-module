@@ -1518,8 +1518,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
             lua_pushnil(L);
             lua_pushnil(L);
-            lua_pushfstring(L, "bad template for substitution: \"%s\"",
-                            lua_tostring(L, 3));
+            lua_pushliteral(L, "failed to compile the replacement template");
             return 3;
         }
     }
