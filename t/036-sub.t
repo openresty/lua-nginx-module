@@ -85,7 +85,7 @@ a [b c] [b] [c] [] [] d
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [$2] [$3] [$hello]"
+error: failed to compile the replacement template
 --- error_log
 attempt to use named capturing variable "hello" (named captures not supported yet)
 
@@ -107,7 +107,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [$2] [$3] [${hello}]"
+error: failed to compile the replacement template
 --- error_log
 attempt to use named capturing variable "hello" (named captures not supported yet)
 
@@ -145,7 +145,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${134]"
+error: failed to compile the replacement template
 --- error_log
 the closing bracket in "134" variable is missing
 
@@ -166,7 +166,7 @@ the closing bracket in "134" variable is missing
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${134"
+error: failed to compile the replacement template
 --- error_log
 the closing bracket in "134" variable is missing
 
@@ -187,7 +187,7 @@ the closing bracket in "134" variable is missing
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${"
+error: failed to compile the replacement template
 --- error_log
 lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [${"
 
@@ -208,7 +208,7 @@ lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [${"
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [$"
+error: failed to compile the replacement template
 --- error_log
 lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [$"
 
