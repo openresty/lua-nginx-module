@@ -8,10 +8,10 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
-no_long_string();
+#no_long_string();
 #master_on();
 #workers(2);
 run_tests();
@@ -102,4 +102,54 @@ foo
 GET /test
 --- response_body
 value: 32
+
+
+
+=== TEST 6: true $invalid_referer variable value in Lua
+github issue #239
+--- config
+    location = /t {
+        valid_referers www.foo.com;
+        content_by_lua '
+            ngx.say("invalid referer: ", ngx.var.invalid_referer)
+            ngx.exit(200)
+        ';
+        #echo $invalid_referer;
+    }
+
+--- request
+GET /t
+--- more_headers
+Referer: http://www.foo.com/
+
+--- response_body
+invalid referer: 
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 7: false $invalid_referer variable value in Lua
+github issue #239
+--- config
+    location = /t {
+        valid_referers www.foo.com;
+        content_by_lua '
+            ngx.say("invalid referer: ", ngx.var.invalid_referer)
+            ngx.exit(200)
+        ';
+        #echo $invalid_referer;
+    }
+
+--- request
+GET /t
+--- more_headers
+Referer: http://www.bar.com
+
+--- response_body
+invalid referer: 1
+
+--- no_error_log
+[error]
 
