@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 26 April 2013.
+This document describes ngx_lua [v0.8.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 23 May 2013.
 
 Synopsis
 ========
@@ -5208,7 +5208,7 @@ Nginx Compatibility
 The latest module is compatible with the following versions of Nginx:
 
 * 1.3.x (last tested: 1.3.11)
-* 1.2.x (last tested: 1.2.8)
+* 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
 * 1.0.x (last tested: 1.0.15)
 * 0.9.x (last tested: 0.9.4)
@@ -5226,7 +5226,7 @@ The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, n
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-1. Install LuaJIT 2.0 (Recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuajIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuajIT and/or Lua.
+1. Install LuaJIT 2.0 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuajIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuajIT and/or Lua.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
 1. Download the latest version of ngx_lua [HERE](http://github.com/chaoslawful/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](http://wiki.nginx.org/HttpLuaModule#Nginx_Compatibility))
@@ -5234,9 +5234,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.2.8.tar.gz'
-    tar -xzvf nginx-1.2.8.tar.gz
-    cd nginx-1.2.8/
+    wget 'http://nginx.org/download/nginx-1.2.9.tar.gz'
+    tar -xzvf nginx-1.2.9.tar.gz
+    cd nginx-1.2.9/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

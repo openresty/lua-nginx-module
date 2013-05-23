@@ -1261,11 +1261,11 @@ Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
     }
 --- request
 GET /req-header
---- response_body eval
-"GET /back HTTP/1.0\r
-Host: 127.0.0.1:1985\r
+--- response_body_like eval
+qr{^GET /back HTTP/1.0\r
+Host: 127.0.0.1:\d+\r
 Connection: close\r
 foo_bar: some value\r
 \r
-"
+$}
 
