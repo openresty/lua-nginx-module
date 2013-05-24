@@ -2187,6 +2187,111 @@ ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
 
     ngx_destroy_pool(re->pool);
 }
+
+
+int
+ngx_http_lua_ffi_compile_replace_template(ngx_http_lua_regex_t *re,
+    const u_char *replace_data, size_t replace_len)
+{
+    ngx_int_t                                rc;
+    ngx_str_t                                tpl;
+    ngx_http_lua_complex_value_t            *ctpl;
+    ngx_http_lua_compile_complex_value_t     ccv;
+
+    ctpl = ngx_palloc(re->pool, sizeof(ngx_http_lua_complex_value_t));
+    if (ctpl == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (replace_len != 0) {
+        /* copy the string buffer pointed to by tpl.data from Lua VM */
+        tpl.data = ngx_palloc(re->pool, replace_len + 1);
+        if (tpl.data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(tpl.data, replace_data, replace_len);
+        tpl.data[replace_len] = '\0';
+
+    } else {
+        tpl.data = (u_char *) replace_data;
+    }
+
+    tpl.len = replace_len;
+
+    ngx_memzero(&ccv, sizeof(ngx_http_lua_compile_complex_value_t));
+    ccv.pool = re->pool;
+    ccv.log = ngx_cycle->log;
+    ccv.value = &tpl;
+    ccv.complex_value = ctpl;
+
+    rc = ngx_http_lua_compile_complex_value(&ccv);
+
+    re->replace = ctpl;
+
+    return rc;
+}
+
+
+ngx_http_lua_script_engine_t *
+ngx_http_lua_ffi_create_script_engine(void)
+{
+    return ngx_calloc(sizeof(ngx_http_lua_script_engine_t), ngx_cycle->log);
+}
+
+
+void
+ngx_http_lua_ffi_init_script_engine(ngx_http_lua_script_engine_t *e,
+    const unsigned char *subj, ngx_http_lua_regex_t *compiled, int count)
+{
+    e->log = ngx_cycle->log;
+    e->ncaptures = count * 2;
+    e->captures = compiled->captures;
+    e->captures_data = (u_char *) subj;
+}
+
+
+void
+ngx_http_lua_ffi_destroy_script_engine(ngx_http_lua_script_engine_t *e)
+{
+    ngx_free(e);
+}
+
+
+size_t
+ngx_http_lua_ffi_script_eval_len(ngx_http_lua_script_engine_t *e,
+                                 ngx_http_lua_complex_value_t *val)
+{
+    size_t          len;
+
+    ngx_http_lua_script_len_code_pt   lcode;
+
+    e->ip = val->lengths;
+    len = 0;
+
+    while (*(uintptr_t *) e->ip) {
+        lcode = *(ngx_http_lua_script_len_code_pt *) e->ip;
+        len += lcode(e);
+    }
+
+    return len;
+}
+
+
+void
+ngx_http_lua_ffi_script_eval_data(ngx_http_lua_script_engine_t *e,
+    ngx_http_lua_complex_value_t *val, u_char *dst, size_t len)
+{
+    ngx_http_lua_script_code_pt       code;
+
+    e->ip = val->values;
+    e->pos = dst;
+
+    while (*(uintptr_t *) e->ip) {
+        code = *(ngx_http_lua_script_code_pt *) e->ip;
+        code(e);
+    }
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
