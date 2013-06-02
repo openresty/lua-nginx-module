@@ -16,6 +16,7 @@ force=$2
             #--without-http_autoindex_module \
             #--with-cc=gcc46 \
             #--with-cc=clang \
+            #--without-http_referer_module \
 
 time ngx-build $force $version \
             --with-cc-opt="-I$PCRE_INC" \
@@ -30,7 +31,6 @@ time ngx-build $force $version \
             --without-http_upstream_ip_hash_module \
             --without-http_empty_gif_module \
             --without-http_memcached_module \
-            --without-http_referer_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
                 --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
