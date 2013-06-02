@@ -303,6 +303,12 @@ ngx_http_lua_clear_package_loaded(lua_State *L)
             break;
 
         case 3:
+#if 1
+            if (ngx_strncmp(p, "ffi", sizeof("ffi") - 1) == 0) {
+                goto done;
+            }
+#endif
+
             if (ngx_strncmp(p, "bit", sizeof("bit") - 1) == 0) {
                 goto done;
             }

@@ -581,20 +581,12 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 static int
 ngx_http_lua_ngx_req_header_clear(lua_State *L)
 {
-    ngx_uint_t n;
-    n = lua_gettop(L);
-    if ((n != 1) && (n != 2)) {
-        return luaL_error(L, "expecting one or two arguments, but seen %d",
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one arguments, but seen %d",
                           lua_gettop(L));
     }
 
-    if (n == 2) {
-        lua_pushnil(L);
-        /* Top element is now 3, replace it with element 3 */
-        lua_insert(L, 2);
-    } else {
-        lua_pushnil(L);
-    }
+    lua_pushnil(L);
 
     return ngx_http_lua_ngx_req_header_set_helper(L);
 }
@@ -603,7 +595,7 @@ ngx_http_lua_ngx_req_header_clear(lua_State *L)
 static int
 ngx_http_lua_ngx_req_header_set(lua_State *L)
 {
-    if ((lua_gettop(L) != 2) && (lua_gettop(L) != 3)) {
+    if (lua_gettop(L) != 2) {
         return luaL_error(L, "expecting two arguments, but seen %d",
                           lua_gettop(L));
     }
@@ -623,7 +615,6 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     size_t                       len;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
-    int                          replace_underscores = 1;
 
     lua_pushlightuserdata(L, &ngx_http_lua_request_key);
     lua_rawget(L, LUA_GLOBALSINDEX);
@@ -636,29 +627,19 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    n = lua_gettop(L);
-    if (n == 3) {
-        luaL_checktype(L, 3, LUA_TTABLE);
-        lua_getfield(L, 3, "replace_underscores");
-        replace_underscores = lua_toboolean(L, -1);
-        lua_pop(L, 1);
-    } else {
-        replace_underscores = 1;
-    }
-
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    if (replace_underscores) {
+#if 0
     /* replace "_" with "-" */
-        for (i = 0; i < len; i++) {
-            if (p[i] == '_') {
-                p[i] = '-';
-            }
+    for (i = 0; i < len; i++) {
+        if (p[i] == '_') {
+            p[i] = '-';
         }
     }
-    
+#endif
+
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "out of memory");
