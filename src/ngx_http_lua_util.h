@@ -97,7 +97,7 @@ ngx_int_t ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
 ngx_int_t ngx_http_lua_send_chain_link(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_chain_t *cl);
+    ngx_http_lua_ctx_t *ctx, ngx_chain_t *cl, unsigned raw);
 
 void ngx_http_lua_discard_bufs(ngx_pool_t *pool, ngx_chain_t *in);
 

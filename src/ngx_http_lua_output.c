@@ -11,10 +11,12 @@
 
 static int ngx_http_lua_ngx_say(lua_State *L);
 static int ngx_http_lua_ngx_print(lua_State *L);
+static int ngx_http_lua_ngx_print_raw_header(lua_State *L);
+static int ngx_http_lua_ngx_print_raw(lua_State *L);
 static int ngx_http_lua_ngx_flush(lua_State *L);
 static int ngx_http_lua_ngx_eof(lua_State *L);
 static int ngx_http_lua_ngx_send_headers(lua_State *L);
-static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
+static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline, unsigned raw);
 static void ngx_http_lua_flush_cleanup(void *data);
 
 
@@ -22,7 +24,7 @@ static int
 ngx_http_lua_ngx_print(lua_State *L)
 {
     dd("calling lua print");
-    return ngx_http_lua_ngx_echo(L, 0);
+    return ngx_http_lua_ngx_echo(L, 0, 0);
 }
 
 
@@ -30,12 +32,49 @@ static int
 ngx_http_lua_ngx_say(lua_State *L)
 {
     dd("calling");
-    return ngx_http_lua_ngx_echo(L, 1);
+    return ngx_http_lua_ngx_echo(L, 1, 0);
 }
 
 
 static int
-ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
+ngx_http_lua_ngx_print_raw(lua_State *L)
+{
+    dd("calling lua print raw");
+    return ngx_http_lua_ngx_echo(L, 0, 1);
+}
+
+
+static int
+ngx_http_lua_ngx_print_raw_header(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+
+    dd("calling lua print raw header");
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    ctx->headers_sent = 1;
+    
+    return ngx_http_lua_ngx_echo(L, 0, 1);
+}
+
+
+static int
+ngx_http_lua_ngx_echo(lua_State *L, unsigned newline, unsigned raw)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
@@ -217,7 +256,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    newline ? "lua say response" : "lua print response");
 
-    rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+    rc = ngx_http_lua_send_chain_link(r, ctx, cl, raw);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send data through the output filters");
@@ -531,7 +570,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
         ctx->flush_buf = cl;
     }
 
-    rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+    rc = ngx_http_lua_send_chain_link(r, ctx, cl, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send chain link: %d", (int) rc);
@@ -622,7 +661,7 @@ ngx_http_lua_ngx_eof(lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua send eof");
 
-    rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
+    rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return luaL_error(L, "failed to send eof buf");
@@ -640,6 +679,12 @@ ngx_http_lua_inject_output_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_print);
     lua_setfield(L, -2, "print");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_print_raw);
+    lua_setfield(L, -2, "rawprint");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_print_raw_header);
+    lua_setfield(L, -2, "rawprint_headers");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_say);
     lua_setfield(L, -2, "say");

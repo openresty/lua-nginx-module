@@ -84,7 +84,7 @@ static int ngx_http_lua_param_set(lua_State *L);
 static void ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
 static ngx_int_t ngx_http_lua_output_filter(ngx_http_request_t *r,
-    ngx_chain_t *in);
+    ngx_chain_t *in, ngx_int_t raw);
 static ngx_int_t ngx_http_lua_send_special(ngx_http_request_t *r,
     ngx_uint_t flags);
 static void ngx_http_lua_finalize_coroutines(ngx_http_request_t *r,
@@ -494,7 +494,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-    ngx_chain_t *in)
+    ngx_chain_t *in, unsigned raw)
 {
     ngx_int_t                     rc;
     ngx_chain_t                  *cl;
@@ -548,7 +548,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
             if (ctx->out) {
 
-                rc = ngx_http_lua_output_filter(r, ctx->out);
+                rc = ngx_http_lua_output_filter(r, ctx->out, raw);
 
                 if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
                     return rc;
@@ -597,7 +597,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_OK;
     }
 
-    return ngx_http_lua_output_filter(r, in);
+    return ngx_http_lua_output_filter(r, in, raw);
 }
 
 
@@ -624,7 +624,7 @@ ngx_http_lua_send_special(ngx_http_request_t *r, ngx_uint_t flags)
 
 
 static ngx_int_t
-ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
+ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in, ngx_int_t raw)
 {
     ngx_int_t            rc;
     ngx_http_request_t  *ar; /* active request */
@@ -641,7 +641,11 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return rc;
     }
 
-    return ngx_http_output_filter(r, in);
+    if (raw) {
+        return ngx_http_write_filter(r, in);
+    } else {
+        return ngx_http_output_filter(r, in);
+    }
 }
 
 
@@ -1462,7 +1466,7 @@ no_parent:
 done:
     if (ctx->entered_content_phase && r->connection->fd != -1) {
         rc = ngx_http_lua_send_chain_link(r, ctx,
-                                          NULL /* last_buf */);
+                                          NULL /* last_buf */, 0);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
@@ -1537,7 +1541,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                        "lua wev handler flushing output: buffered 0x%uxd",
                        c->buffered);
 
-        rc = ngx_http_lua_output_filter(r, NULL);
+        rc = ngx_http_lua_output_filter(r, NULL, 0);
 
         if (rc == NGX_ERROR || rc > NGX_OK) {
             if (ctx->entered_content_phase) {
@@ -2158,7 +2162,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_request_cleanup(r);
 
     if (ctx->buffering && r->headers_out.status) {
-        rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+        rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */, 0);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
@@ -2176,7 +2180,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         || (ctx->exit_code >= NGX_HTTP_OK
             && ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
     {
-        rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+        rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */, 0);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
