@@ -745,7 +745,10 @@ ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     ctx->cur_co_ctx->cleanup = NULL;
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+    /* push the return value 1 */
+    lua_pushinteger(ctx->cur_co_ctx->co, 1);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 1);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
