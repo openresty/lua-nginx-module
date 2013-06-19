@@ -10,7 +10,7 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 15);
 
 #no_diff();
 #no_long_string();
@@ -23,12 +23,19 @@ __DATA__
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'ngx.print("Hello, Lua!\\n")';
+        content_by_lua '
+            local ok, err = ngx.print("Hello, Lua!\\n")
+            if not ok then
+                ngx.log(ngx.ERR, "print failed: ", err)
+            end
+        ';
     }
 --- request
 GET /lua
 --- response_body
 Hello, Lua!
+--- no_error_log
+[error]
 
 
 
@@ -38,14 +45,25 @@ Hello, Lua!
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
         content_by_lua '
-            ngx.say("Hello, Lua!")
-            ngx.say("Yay! ", 123)';
+            local ok, err = ngx.say("Hello, Lua!")
+            if not ok then
+                ngx.log(ngx.ERR, "say failed: ", err)
+                return
+            end
+            local ok, err = ngx.say("Yay! ", 123)
+            if not ok then
+                ngx.log(ngx.ERR, "say failed: ", err)
+                return
+            end
+        ';
     }
 --- request
 GET /say
 --- response_body
 Hello, Lua!
 Yay! 123
+--- no_error_log
+[error]
 
 
 
@@ -424,7 +442,11 @@ type: foo/bar
         #echo "hello, world";
         content_by_lua '
             ngx.header["Set-Cookie"] = {"a", "hello, world", "foo"}
-            ngx.eof()
+            local ok, err = ngx.eof()
+            if not ok then
+                ngx.log(ngx.ERR, "eof failed: ", err)
+                return
+            end
         ';
     }
 
@@ -442,6 +464,8 @@ GET /lua
 type: table
 len: 3
 value: a|hello, world|foo
+--- no_error_log
+[error]
 
 
 
@@ -521,14 +545,29 @@ hello, world
     location /lua {
         content_by_lua '
             ngx.say("Hi")
-            ngx.eof()
-            ngx.eof()
+
+            local ok, err = ngx.eof()
+            if not ok then
+                ngx.log(ngx.WARN, "eof failed: ", err)
+                return
+            end
+
+            ok, err = ngx.eof()
+            if not ok then
+                ngx.log(ngx.WARN, "eof failed: ", err)
+                return
+            end
+
         ';
     }
 --- request
 GET /lua
 --- response_body
 Hi
+--- no_error_log
+[error]
+--- error_log
+eof failed: seen eof
 
 
 
@@ -590,7 +629,9 @@ HEAD /lua
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        content_by_lua 'ngx.print("Hello, Lua!\\n")';
+        content_by_lua '
+            ngx.print("Hello, Lua!\\n")
+        ';
     }
 --- request
 HEAD /lua HTTP/1.0
@@ -605,17 +646,74 @@ HEAD /lua HTTP/1.0
     location /lua {
         content_by_lua '
             ngx.say(ngx.headers_sent)
-            ngx.flush()
+            local ok, err = ngx.flush()
+            if not ok then
+                ngx.log(ngx.WARN, "failed to flush: ", err)
+                return
+            end
             ngx.say(ngx.headers_sent)
         ';
     }
 --- request
 HEAD /lua
 --- response_body
+--- no_error_log
+[error]
+--- error_log
+failed to flush: header only
 
 
 
-=== TEST 34: headers_sent + GET
+=== TEST 34: HEAD & ngx.say
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.send_headers()
+            local ok, err = ngx.say(ngx.headers_sent)
+            if not ok then
+                ngx.log(ngx.WARN, "failed to say: ", err)
+                return
+            end
+        ';
+    }
+--- request
+HEAD /lua
+--- response_body
+--- no_error_log
+[error]
+--- error_log
+failed to say: header only
+
+
+
+=== TEST 35: ngx.eof before ngx.say
+--- config
+    location /lua {
+        content_by_lua '
+            local ok, err = ngx.eof()
+            if not ok then
+                ngx.log(ngx.ERR, "eof failed: ", err)
+                return
+            end
+
+            ok, err = ngx.say(ngx.headers_sent)
+            if not ok then
+                ngx.log(ngx.WARN, "failed to say: ", err)
+                return
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+--- no_error_log
+[error]
+--- error_log
+failed to say: seen eof
+
+
+
+=== TEST 36: headers_sent + GET
 --- config
     location /lua {
         content_by_lua '
@@ -635,7 +733,7 @@ true
 
 
 
-=== TEST 35: HTTP 1.0 response with Content-Length
+=== TEST 37: HTTP 1.0 response with Content-Length
 --- config
     location /lua {
         content_by_lua '
@@ -664,7 +762,7 @@ world
 
 
 
-=== TEST 36: ngx.print table arguments (github issue #54)
+=== TEST 38: ngx.print table arguments (github issue #54)
 --- config
     location /t {
         content_by_lua 'ngx.print({10, {0, 5}, 15}, 32)';
@@ -676,7 +774,7 @@ world
 
 
 
-=== TEST 37: ngx.say table arguments (github issue #54)
+=== TEST 39: ngx.say table arguments (github issue #54)
 --- config
     location /t {
         content_by_lua 'ngx.say({10, {0, "5"}, 15}, 32)';

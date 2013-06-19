@@ -14,7 +14,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 44;
+plan tests => repeat_each() * 45;
 
 #no_diff();
 no_long_string();
@@ -27,7 +27,11 @@ __DATA__
     location /test {
         content_by_lua '
             ngx.say("hello, world")
-            ngx.flush(true)
+            local ok, err = ngx.flush(true)
+            if not ok then
+                ngx.log(ngx.ERR, "flush failed: ", err)
+                return
+            end
             ngx.say("hiya")
         ';
     }
@@ -36,6 +40,8 @@ GET /test
 --- response_body
 hello, world
 hiya
+--- no_error_log
+[error]
 --- error_log
 lua reuse free buf memory 13 >= 5
 
@@ -47,7 +53,11 @@ lua reuse free buf memory 13 >= 5
     location /test {
         content_by_lua '
             ngx.say("hello, world")
-            ngx.flush(false)
+            local ok, err = ngx.flush(false)
+            if not ok then
+                ngx.log(ngx.ERR, "flush failed: ", err)
+                return
+            end
             ngx.say("hiya")
         ';
     }
