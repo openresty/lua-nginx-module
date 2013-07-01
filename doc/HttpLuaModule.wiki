@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.2] released on 23 May 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.3] released on 20 June 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -234,6 +234,11 @@ such as those specified by [[#set_by_lua|set_by_lua]], [[#content_by_lua|content
 cached because only the Nginx config file parser can correctly parse the <code>nginx.conf</code>
 file and the only ways to to reload the config file
 are to send a <code>HUP</code> signal or to restart Nginx.
+
+Also, Lua files which are loaded by <code>dofile</code> or <code>loadfile</code>
+in *_by_lua_file will never be cached. To ensure code caching, you can either use the [[#init_by_lua|init_by_lua]]
+or [[#init-by_lua_file|init_by_lua_file]] directives to load all such files or just make these Lua files true Lua modules
+and load them via <code>require</code>.
 
 The ngx_lua module does not currently support the <code>stat</code> mode available with the
 Apache <code>mod_lua</code> module but this is planned for implementation in the future.
@@ -2483,7 +2488,7 @@ If the request body has been read into disk files, try calling the [[#ngx.req.ge
 
 To force in-memory request bodies, try setting [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] to the same size value in [[HttpCoreModule#client_max_body_size|client_max_body_size]].
 
-Note that calling this function instead of using <code>ngx.var.request_body</code> or <code>ngx.var.echo_request-body</code> is more efficient because it can save one dynamic memory allocation and one data copy.
+Note that calling this function instead of using <code>ngx.var.request_body</code> or <code>ngx.var.echo_request_body</code> is more efficient because it can save one dynamic memory allocation and one data copy.
 
 This function was first introduced in the <code>v0.3.1rc17</code> release.
 
@@ -2733,11 +2738,13 @@ URI arguments can be specified as well, for example:
 This method call terminates the current request's processing and never returns. It is recommended to combine the <code>return</code> statement with this call, i.e., <code>return ngx.redirect(...)</code>, so as to be more explicit.
 
 == ngx.send_headers ==
-'''syntax:''' ''ngx.send_headers()''
+'''syntax:''' ''ok, err = ngx.send_headers()''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Explicitly send out the response headers.
+
+Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 Note that there is normally no need to manually send out response headers as ngx_lua will automatically send headers out
 before content is output with [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] or when [[#content_by_lua|content_by_lua]] exits normally.
@@ -2752,11 +2759,13 @@ Returns <code>true</code> if the response headers have been sent (by ngx_lua), a
 This API was first introduced in ngx_lua v0.3.1rc6.
 
 == ngx.print ==
-'''syntax:''' ''ngx.print(...)''
+'''syntax:''' ''ok, err = ngx.print(...)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Emits arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
+
+Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 Lua <code>nil</code> values will output <code>"nil"</code> strings and Lua boolean values will output <code>"true"</code> and <code>"false"</code> literal strings respectively.
 
@@ -2786,7 +2795,7 @@ This is an asynchronous call and will return immediately without waiting for all
 Please note that both <code>ngx.print</code> and [[#ngx.say|ngx.say]] will always invoke the whole Nginx output body filter chain, which is an expensive operation. So be careful when calling either of these two in a tight loop; buffer the data yourself in Lua and save the calls.
 
 == ngx.say ==
-'''syntax:''' ''ngx.say(...)''
+'''syntax:''' ''ok, err = ngx.say(...)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -2806,7 +2815,7 @@ The <code>log_level</code> argument can take constants like <code>ngx.ERR</code>
 There is a hard coded <code>2048</code> byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree.
 
 == ngx.flush ==
-'''syntax:''' ''ngx.flush(wait?)''
+'''syntax:''' ''ok, err = ngx.flush(wait?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -2819,6 +2828,8 @@ In synchronous mode, the function will not return until all output data has been
 When <code>ngx.flush(true)</code> is called immediately after [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]], it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
 Note that <code>ngx.flush</code> is non functional when in the HTTP 1.0 output buffering mode. See [[#HTTP 1.0 support|HTTP 1.0 support]].
+
+Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 == ngx.exit ==
 '''syntax:''' ''ngx.exit(status)''
@@ -2866,7 +2877,7 @@ Note that while this method accepts all [[#HTTP status constants|HTTP status con
 It is recommended, though not necessary, to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>, to give a visual hint to others reading the code.
 
 == ngx.eof ==
-'''syntax:''' ''ngx.eof()''
+'''syntax:''' ''ok, err = ngx.eof()''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -2890,6 +2901,8 @@ But if you create subrequests to access other locations configured by Nginx upst
 <geshi lang="nginx">
     proxy_ignore_client_abort on;
 </geshi>
+
+Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 == ngx.sleep ==
 '''syntax:''' ''ngx.sleep(seconds)''
@@ -5034,6 +5047,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 = Nginx Compatibility =
 The latest module is compatible with the following versions of Nginx:
 
+* 1.4.x (last tested: 1.4.1)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5059,9 +5073,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.2.9.tar.gz'
-    tar -xzvf nginx-1.2.9.tar.gz
-    cd nginx-1.2.9/
+    wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
+    tar -xzvf nginx-1.4.1.tar.gz
+    cd nginx-1.4.1/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

@@ -207,7 +207,7 @@ attempt to send data on a closed socket:
         content_by_lua '
             local sock = ngx.socket.tcp()
             local port = 80
-            local ok, err = sock:connect("direct.agentzh.org", port)
+            local ok, err = sock:connect("agentzh.org", port)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return

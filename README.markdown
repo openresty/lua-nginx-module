@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 23 May 2013.
+This document describes ngx_lua [v0.8.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 20 June 2013.
 
 Synopsis
 ========
@@ -246,6 +246,10 @@ such as those specified by [set_by_lua](http://wiki.nginx.org/HttpLuaModule#set_
 cached because only the Nginx config file parser can correctly parse the `nginx.conf`
 file and the only ways to to reload the config file
 are to send a `HUP` signal or to restart Nginx.
+
+Also, Lua files which are loaded by `dofile` or `loadfile` 
+in *_by_lua_file will never be cached. To ensure code caching, you can either use the [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua) 
+or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init-by_lua_file) directives to load all such files or just make these Lua files true Lua modules and load them via `require`.
 
 The ngx_lua module does not currently support the `stat` mode available with the
 Apache `mod_lua` module but this is planned for implementation in the future.
@@ -2559,7 +2563,7 @@ If the request body has been read into disk files, try calling the [ngx.req.get_
 
 To force in-memory request bodies, try setting [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) to the same size value in [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size).
 
-Note that calling this function instead of using `ngx.var.request_body` or `ngx.var.echo_request-body` is more efficient because it can save one dynamic memory allocation and one data copy.
+Note that calling this function instead of using `ngx.var.request_body` or `ngx.var.echo_request_body` is more efficient because it can save one dynamic memory allocation and one data copy.
 
 This function was first introduced in the `v0.3.1rc17` release.
 
@@ -2819,11 +2823,13 @@ This method call terminates the current request's processing and never returns. 
 
 ngx.send_headers
 ----------------
-**syntax:** *ngx.send_headers()*
+**syntax:** *ok, err = ngx.send_headers()*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Explicitly send out the response headers.
+
+Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
 Note that there is normally no need to manually send out response headers as ngx_lua will automatically send headers out
 before content is output with [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say) or [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or when [content_by_lua](http://wiki.nginx.org/HttpLuaModule#content_by_lua) exits normally.
@@ -2840,11 +2846,13 @@ This API was first introduced in ngx_lua v0.3.1rc6.
 
 ngx.print
 ---------
-**syntax:** *ngx.print(...)*
+**syntax:** *ok, err = ngx.print(...)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Emits arguments concatenated to the HTTP client (as response body). If response headers have not been sent, this function will send headers out first and then output body data.
+
+Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
 Lua `nil` values will output `"nil"` strings and Lua boolean values will output `"true"` and `"false"` literal strings respectively.
 
@@ -2875,7 +2883,7 @@ Please note that both `ngx.print` and [ngx.say](http://wiki.nginx.org/HttpLuaMod
 
 ngx.say
 -------
-**syntax:** *ngx.say(...)*
+**syntax:** *ok, err = ngx.say(...)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -2897,7 +2905,7 @@ There is a hard coded `2048` byte limitation on error message lengths in the Ngi
 
 ngx.flush
 ---------
-**syntax:** *ngx.flush(wait?)*
+**syntax:** *ok, err = ngx.flush(wait?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -2910,6 +2918,8 @@ In synchronous mode, the function will not return until all output data has been
 When `ngx.flush(true)` is called immediately after [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print) or [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
 Note that `ngx.flush` is non functional when in the HTTP 1.0 output buffering mode. See [HTTP 1.0 support](http://wiki.nginx.org/HttpLuaModule#HTTP_1.0_support).
+
+Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
 ngx.exit
 --------
@@ -2959,7 +2969,7 @@ It is recommended, though not necessary, to combine the `return` statement with 
 
 ngx.eof
 -------
-**syntax:** *ngx.eof()*
+**syntax:** *ok, err = ngx.eof()*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -2983,6 +2993,8 @@ But if you create subrequests to access other locations configured by Nginx upst
 
     proxy_ignore_client_abort on;
 
+
+Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
 ngx.sleep
 ---------
@@ -5207,6 +5219,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
+* 1.4.x (last tested: 1.4.1)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5234,9 +5247,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.2.9.tar.gz'
-    tar -xzvf nginx-1.2.9.tar.gz
-    cd nginx-1.2.9/
+    wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
+    tar -xzvf nginx-1.4.1.tar.gz
+    cd nginx-1.4.1/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

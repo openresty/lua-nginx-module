@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.8.2
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 23
-    May 2013.
+    This document describes ngx_lua v0.8.3
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 20
+    June 2013.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -256,6 +256,12 @@ Directives
     file parser can correctly parse the "nginx.conf" file and the only ways
     to to reload the config file are to send a "HUP" signal or to restart
     Nginx.
+
+    Also, Lua files which are loaded by "dofile" or "loadfile" in
+    *_by_lua_file will never be cached. To ensure code caching, you can
+    either use the init_by_lua or init_by_lua_file directives to load all
+    such files or just make these Lua files true Lua modules and load them
+    via "require".
 
     The ngx_lua module does not currently support the "stat" mode available
     with the Apache "mod_lua" module but this is planned for implementation
@@ -2741,7 +2747,7 @@ Nginx API for Lua
     to the same size value in client_max_body_size.
 
     Note that calling this function instead of using "ngx.var.request_body"
-    or "ngx.var.echo_request-body" is more efficient because it can save one
+    or "ngx.var.echo_request_body" is more efficient because it can save one
     dynamic memory allocation and one data copy.
 
     This function was first introduced in the "v0.3.1rc17" release.
@@ -3036,11 +3042,14 @@ Nginx API for Lua
     call, i.e., "return ngx.redirect(...)", so as to be more explicit.
 
   ngx.send_headers
-    syntax: *ngx.send_headers()*
+    syntax: *ok, err = ngx.send_headers()*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Explicitly send out the response headers.
+
+    Since "v0.8.3" this function returns 1 on success, or returns "nil" and
+    a string describing the error otherwise.
 
     Note that there is normally no need to manually send out response
     headers as ngx_lua will automatically send headers out before content is
@@ -3057,13 +3066,16 @@ Nginx API for Lua
     This API was first introduced in ngx_lua v0.3.1rc6.
 
   ngx.print
-    syntax: *ngx.print(...)*
+    syntax: *ok, err = ngx.print(...)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
     Emits arguments concatenated to the HTTP client (as response body). If
     response headers have not been sent, this function will send headers out
     first and then output body data.
+
+    Since "v0.8.3" this function returns 1 on success, or returns "nil" and
+    a string describing the error otherwise.
 
     Lua "nil" values will output "nil" strings and Lua boolean values will
     output "true" and "false" literal strings respectively.
@@ -3098,7 +3110,7 @@ Nginx API for Lua
     the data yourself in Lua and save the calls.
 
   ngx.say
-    syntax: *ngx.say(...)*
+    syntax: *ok, err = ngx.say(...)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -3128,7 +3140,7 @@ Nginx API for Lua
     file in the Nginx source tree.
 
   ngx.flush
-    syntax: *ngx.flush(wait?)*
+    syntax: *ok, err = ngx.flush(wait?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -3153,6 +3165,9 @@ Nginx API for Lua
 
     Note that "ngx.flush" is non functional when in the HTTP 1.0 output
     buffering mode. See HTTP 1.0 support.
+
+    Since "v0.8.3" this function returns 1 on success, or returns "nil" and
+    a string describing the error otherwise.
 
   ngx.exit
     syntax: *ngx.exit(status)*
@@ -3202,7 +3217,7 @@ Nginx API for Lua
     hint to others reading the code.
 
   ngx.eof
-    syntax: *ngx.eof()*
+    syntax: *ok, err = ngx.eof()*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
@@ -3234,6 +3249,9 @@ Nginx API for Lua
     directive in your location block configured by [[HttpProxyModule]]:
 
         proxy_ignore_client_abort on;
+
+    Since "v0.8.3" this function returns 1 on success, or returns "nil" and
+    a string describing the error otherwise.
 
   ngx.sleep
     syntax: *ngx.sleep(seconds)*
@@ -5854,6 +5872,8 @@ Typical Uses
 Nginx Compatibility
     The latest module is compatible with the following versions of Nginx:
 
+    *   1.4.x (last tested: 1.4.1)
+
     *   1.3.x (last tested: 1.3.11)
 
     *   1.2.x (last tested: 1.2.9)
@@ -5897,9 +5917,9 @@ Installation
 
     Build the source with this module:
 
-        wget 'http://nginx.org/download/nginx-1.2.9.tar.gz'
-        tar -xzvf nginx-1.2.9.tar.gz
-        cd nginx-1.2.9/
+        wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
+        tar -xzvf nginx-1.4.1.tar.gz
+        cd nginx-1.4.1/
 
         # tell nginx's build system where to find LuaJIT:
         export LUAJIT_LIB=/path/to/luajit/lib

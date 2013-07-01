@@ -71,11 +71,15 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     if (r->header_only) {
-        return 0;
+        lua_pushnil(L);
+        lua_pushliteral(L, "header only");
+        return 2;
     }
 
     if (ctx->eof) {
-        return luaL_error(L, "seen eof already");
+        lua_pushnil(L);
+        lua_pushliteral(L, "seen eof");
+        return 2;
     }
 
     nargs = lua_gettop(L);
@@ -142,7 +146,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
     if (size == 0) {
         /* do nothing for empty strings */
-        return 0;
+        lua_pushinteger(L, 1);
+        return 1;
     }
 
     tag = (ngx_buf_tag_t) &ngx_http_lua_module;
@@ -220,11 +225,13 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return luaL_error(L, "failed to send data through the output filters");
+        lua_pushnil(L);
+        lua_pushliteral(L, "nginx output filter error");
+        return 2;
     }
 
     dd("downstream write: %d, buf len: %d", (int) rc,
-            (int) (b->last - b->pos));
+       (int) (b->last - b->pos));
 
     if (!ctx->out) {
 #if nginx_version >= 1001004
@@ -235,11 +242,12 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                 &ctx->free_bufs, &ctx->busy_bufs, &cl, tag);
 
         dd("out lua buf tag: %p, buffered: %x, busy bufs: %p",
-            &ngx_http_lua_module, (int) r->connection->buffered,
-            ctx->busy_bufs);
+           &ngx_http_lua_module, (int) r->connection->buffered,
+           ctx->busy_bufs);
     }
 
-    return 0;
+    lua_pushinteger(L, 1);
+    return 1;
 }
 
 
@@ -493,18 +501,24 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 
     if (r->header_only) {
-        return 0;
+        lua_pushnil(L);
+        lua_pushliteral(L, "header only");
+        return 2;
     }
 
     if (ctx->eof) {
-        return luaL_error(L, "already seen eof");
+        lua_pushnil(L);
+        lua_pushliteral(L, "seen eof");
+        return 2;
     }
 
     if (ctx->buffering) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua http 1.0 buffering makes ngx.flush() a no-op");
 
-        return 0;
+        lua_pushnil(L);
+        lua_pushliteral(L, "buffering");
+        return 2;
     }
 
     if (ctx->flush_buf) {
@@ -514,7 +528,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
         dd("allocating new flush buf");
         buf = ngx_calloc_buf(r->pool);
         if (buf == NULL) {
-            return luaL_error(L, "memory allocation error");
+            return luaL_error(L, "out of memory");
         }
 
         buf->flush = 1;
@@ -533,8 +547,12 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
+    dd("send chain: %d", (int) rc);
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return luaL_error(L, "failed to send chain link: %d", (int) rc);
+        lua_pushnil(L);
+        lua_pushliteral(L, "nginx output filter error");
+        return 2;
     }
 
     dd("wait:%d, rc:%d, buffered:%d", wait, (int) rc, r->connection->buffered);
@@ -558,7 +576,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
         wev = r->connection->write;
 
         if (wev->ready && wev->delayed) {
-            return 0;
+            lua_pushnil(L);
+            lua_pushliteral(L, "delayed");
+            return 2;
         }
 
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
@@ -571,7 +591,10 @@ ngx_http_lua_ngx_flush(lua_State *L)
             if (wev->timer_set) {
                 ngx_del_timer(wev);
             }
-            return luaL_error(L, "connection broken");
+
+            lua_pushnil(L);
+            lua_pushliteral(L, "connection broken");
+            return 2;
         }
 
         coctx->cleanup = ngx_http_lua_flush_cleanup;
@@ -583,7 +606,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua flush asynchronously");
 
-    return 0;
+    lua_pushinteger(L, 1);
+    return 1;
 }
 
 
@@ -615,6 +639,12 @@ ngx_http_lua_ngx_eof(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
+    if (ctx->eof) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "seen eof");
+        return 2;
+    }
+
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
@@ -622,13 +652,18 @@ ngx_http_lua_ngx_eof(lua_State *L)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua send eof");
 
-    rc = ngx_http_lua_send_chain_link(r, ctx, NULL/*indicate last_buf*/);
+    rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
+
+    dd("send chain: %d", (int) rc);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return luaL_error(L, "failed to send eof buf");
+        lua_pushnil(L);
+        lua_pushliteral(L, "nginx output filter error");
+        return 2;
     }
 
-    return 0;
+    lua_pushinteger(L, 1);
+    return 1;
 }
 
 
@@ -658,6 +693,7 @@ ngx_http_lua_inject_output_api(lua_State *L)
 static int
 ngx_http_lua_ngx_send_headers(lua_State *L)
 {
+    ngx_int_t                rc;
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
 
@@ -683,10 +719,16 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua send headers");
 
-        ngx_http_lua_send_header_if_needed(r, ctx);
+        rc = ngx_http_lua_send_header_if_needed(r, ctx);
+        if (rc == NGX_ERROR || rc > NGX_OK) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "nginx output filter error");
+            return 2;
+        }
     }
 
-    return 0;
+    lua_pushinteger(L, 1);
+    return 1;
 }
 
 
@@ -703,7 +745,10 @@ ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     ctx->cur_co_ctx->cleanup = NULL;
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+    /* push the return value 1 */
+    lua_pushinteger(ctx->cur_co_ctx->co, 1);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 1);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);

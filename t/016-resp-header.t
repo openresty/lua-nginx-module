@@ -626,8 +626,8 @@ Cache-Control: private
     GET /lua
 --- response_headers
 Cache-Control: private, no-store
---- response_body
-Cache-Control: private; no-store
+--- response_body_like chop
+^Cache-Control: private[;,] no-store$
 
 
 
@@ -665,9 +665,9 @@ Cache-Control: no-cache
     GET /lua
 --- response_headers
 Cache-Control: no-cache, blah, foo
---- response_body
-Cache-Control: no-cache; blah; foo
-Cache-Control: no-cache; blah; foo
+--- response_body_like chop
+^Cache-Control: no-cache[;,] blah[;,] foo
+Cache-Control: no-cache[;,] blah[;,] foo$
 
 
 
