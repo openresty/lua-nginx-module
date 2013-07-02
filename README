@@ -1231,7 +1231,7 @@ Directives
     This directive controls the default maximal idle time of the connections
     in the cosocket built-in connection pool. When this timeout reaches,
     idle connections will be closed and removed from the pool. This setting
-    can be overridden by cosocket objects' setkeepalive method.
+    can be overridden by cosocket objects' gotopool method.
 
     The "<time>" argument can be an integer, with an optional time unit,
     like "s" (second), "ms" (millisecond), "m" (minute). The default time
@@ -4494,7 +4494,9 @@ Nginx API for Lua
 
     *   receiveuntil
 
-    *   setkeepalive
+    *   gotopool
+
+    *   setkeepalive (obsoleted)
 
     *   getreusedtimes
 
@@ -4801,7 +4803,7 @@ Nginx API for Lua
     otherwise.
 
     Note that there is no need to call this method on socket objects that
-    have invoked the setkeepalive method because the socket object is
+    have invoked the gotopool method because the socket object is
     already closed (and the current connection is saved into the built-in
     connection pool).
 
@@ -4825,7 +4827,7 @@ Nginx API for Lua
     and lua_socket_read_timeout.
 
     Note that this method does *not* affect the lua_socket_keepalive_timeout
-    setting; the "timeout" argument to the setkeepalive method should be
+    setting; the "timeout" argument to the gotopool method should be
     used for this purpose instead.
 
     This feature was first introduced in the "v0.5.0rc1" release.
@@ -4842,8 +4844,8 @@ Nginx API for Lua
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
-  tcpsock:setkeepalive
-    syntax: *ok, err = tcpsock:setkeepalive(timeout?, size?)*
+  tcpsock:gotopool
+    syntax: *ok, err = tcpsock:gotopool(timeout?, size?)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
 

@@ -79,7 +79,7 @@ static int ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L);
 static int ngx_http_lua_req_socket(lua_State *L);
 static void ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r);
 static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
-static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
+static int ngx_http_lua_socket_tcp_gotopool(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     lua_State *L, int key_index,
     ngx_http_lua_socket_tcp_upstream_t *u);
@@ -192,8 +192,11 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_getreusedtimes);
     lua_setfield(L, -2, "getreusedtimes");
 
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_setkeepalive);
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gotopool);
     lua_setfield(L, -2, "setkeepalive");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gotopool);
+    lua_setfield(L, -2, "gotopool");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -3198,7 +3201,7 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 }
 
 
-static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
+static int ngx_http_lua_socket_tcp_gotopool(lua_State *L)
 {
     ngx_http_lua_main_conf_t            *lmcf;
     ngx_http_lua_loc_conf_t             *llcf;
@@ -3269,7 +3272,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     b = &u->buffer;
 
     if (b->start && ngx_buf_size(b)) {
-        ngx_http_lua_probe_socket_tcp_setkeepalive_buf_unread(r, u, b->pos,
+        ngx_http_lua_probe_socket_tcp_gotopool_buf_unread(r, u, b->pos,
                                                               b->last - b->pos);
 
         lua_pushnil(L);
