@@ -42,10 +42,7 @@ ngx_http_lua_ngx_log(lua_State *L)
         log = r->connection->log;
 
     } else {
-        lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-        log = lua_touserdata(L, -1);
-        lua_pop(L, 1);
+        log = ngx_cycle->log;
     }
 
     int level = luaL_checkint(L, 1);
@@ -80,10 +77,7 @@ ngx_http_lua_print(lua_State *L)
         log = r->connection->log;
 
     } else {
-        lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-        log = lua_touserdata(L, -1);
-        lua_pop(L, 1);
+        log = ngx_cycle->log;
     }
 
     return log_wrapper(log, "[lua] ", NGX_LOG_NOTICE, L);

@@ -35,9 +35,6 @@ extern char ngx_http_lua_socket_pool_key;
 /* char whose address we use as the key for the nginx request pointer */
 extern char ngx_http_lua_request_key;
 
-/* char whose address we use as the key for the nginx config logger */
-extern char ngx_http_lua_cf_log_key;
-
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 

@@ -719,10 +719,6 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_newtable(L);
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
-
-    lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-    lua_pushlightuserdata(L, cf->log);
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
