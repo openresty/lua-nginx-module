@@ -155,11 +155,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "at least one subrequest should be specified");
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }

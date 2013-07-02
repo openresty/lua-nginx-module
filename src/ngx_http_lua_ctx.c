@@ -20,13 +20,9 @@ ngx_http_lua_ngx_get_ctx(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
-        return luaL_error(L, "no request object found");
+        return luaL_error(L, "no request found");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -64,13 +60,9 @@ ngx_http_lua_ngx_set_ctx(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
-        return luaL_error(L, "no request object found");
+        return luaL_error(L, "no request found");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);

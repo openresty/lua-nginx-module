@@ -69,11 +69,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
                           n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -225,11 +221,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -301,11 +293,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -365,11 +353,7 @@ ngx_http_lua_on_abort(lua_State *L)
     ngx_http_lua_co_ctx_t        *coctx = NULL;
     ngx_http_lua_loc_conf_t      *llcf;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }

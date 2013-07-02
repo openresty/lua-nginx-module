@@ -53,9 +53,7 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
         ngx_chain_t *in)
 {
     /*  set nginx request pointer to current lua thread's globals table */
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(L, r);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_req(L, r);
 
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_pushlightuserdata(L, in);

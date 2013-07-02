@@ -719,10 +719,6 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_newtable(L);
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
-
-    lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-    lua_pushlightuserdata(L, cf->log);
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
@@ -2300,10 +2296,15 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
     dd("len 1: %d", (int) len);
 
-    p = ngx_palloc(r->pool, len);
-    if (p == NULL) {
-        luaL_error(L, "out of memory");
-        return;
+    if (r) {
+        p = ngx_palloc(r->pool, len);
+        if (p == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+
+    } else {
+        p = lua_newuserdata(L, len);
     }
 
     args->data = p;
@@ -2797,11 +2798,7 @@ ngx_http_lua_param_get(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_request_t          *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return 0;
     }
@@ -2830,11 +2827,7 @@ ngx_http_lua_param_set(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_request_t          *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return 0;
     }

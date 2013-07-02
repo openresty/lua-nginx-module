@@ -33,11 +33,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
                           lua_gettop(L));
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -106,11 +102,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -131,7 +123,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
 
     last = buf + r->args.len;
 
-    retval = ngx_http_lua_parse_args(r, L, buf, last, max);
+    retval = ngx_http_lua_parse_args(L, buf, last, max);
 
     ngx_pfree(r->pool, buf);
 
@@ -166,11 +158,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
         max = NGX_HTTP_LUA_MAX_ARGS;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -221,7 +209,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
     last = buf + len;
 
-    retval = ngx_http_lua_parse_args(r, L, buf, last, max);
+    retval = ngx_http_lua_parse_args(L, buf, last, max);
 
     ngx_pfree(r->pool, buf);
 
@@ -230,8 +218,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
 
 int
-ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
-        u_char *last, int max)
+ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
 {
     u_char                      *p, *q;
     u_char                      *src, *dst;
@@ -309,7 +296,7 @@ ngx_http_lua_parse_args(ngx_http_request_t *r, lua_State *L, u_char *buf,
             }
 
             if (max > 0 && ++count == max) {
-                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                                "lua hit query args limit %d", max);
 
                 return 1;

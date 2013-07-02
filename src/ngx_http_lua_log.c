@@ -36,19 +36,13 @@ ngx_http_lua_ngx_log(lua_State *L)
     ngx_http_request_t          *r;
     const char                  *msg;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    r = ngx_http_lua_get_req(L);
 
     if (r && r->connection && r->connection->log) {
         log = r->connection->log;
 
     } else {
-        lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-        log = lua_touserdata(L, -1);
-        lua_pop(L, 1);
+        log = ngx_cycle->log;
     }
 
     int level = luaL_checkint(L, 1);
@@ -77,19 +71,13 @@ ngx_http_lua_print(lua_State *L)
     ngx_log_t                   *log;
     ngx_http_request_t          *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    r = ngx_http_lua_get_req(L);
 
     if (r && r->connection && r->connection->log) {
         log = r->connection->log;
 
     } else {
-        lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-        log = lua_touserdata(L, -1);
-        lua_pop(L, 1);
+        log = ngx_cycle->log;
     }
 
     return log_wrapper(log, "[lua] ", NGX_LOG_NOTICE, L);

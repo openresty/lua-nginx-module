@@ -41,11 +41,7 @@ ngx_http_lua_ngx_req_get_method(lua_State *L)
         return luaL_error(L, "only one argument expected but got %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -71,11 +67,7 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
 
     method = luaL_checkint(L, 1);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }

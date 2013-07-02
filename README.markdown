@@ -247,9 +247,10 @@ cached because only the Nginx config file parser can correctly parse the `nginx.
 file and the only ways to to reload the config file
 are to send a `HUP` signal or to restart Nginx.
 
-Also, Lua files which are loaded by `dofile` or `loadfile` 
-in *_by_lua_file will never be cached. To ensure code caching, you can either use the [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua) 
-or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init-by_lua_file) directives to load all such files or just make these Lua files true Lua modules and load them via `require`.
+Also, Lua files which are loaded by `dofile` or `loadfile`
+in *_by_lua_file will never be cached. To ensure code caching, you can either use the [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua)
+or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init-by_lua_file) directives to load all such files or just make these Lua files true Lua modules
+and load them via `require`.
 
 The ngx_lua module does not currently support the `stat` mode available with the
 Apache `mod_lua` module but this is planned for implementation in the future.
