@@ -493,7 +493,6 @@ ngx_http_lua_ngx_crc32_long(lua_State *L)
 
 static int
 ngx_http_lua_ngx_encode_args(lua_State *L) {
-    ngx_http_request_t          *r;
     ngx_str_t                    args;
 
     if (lua_gettop(L) != 1) {
@@ -501,19 +500,9 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
                           lua_gettop(L));
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
     luaL_checktype(L, 1, LUA_TTABLE);
-
-    ngx_http_lua_process_args_option(r, L, 1, &args);
-
+    ngx_http_lua_process_args_option(NULL, L, 1, &args);
     lua_pushlstring(L, (char *) args.data, args.len);
-
-    ngx_pfree(r->pool, args.data);
-
     return 1;
 }
 
