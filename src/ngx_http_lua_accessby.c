@@ -257,10 +257,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_setfenv(co, -2);
 
     /*  save nginx request in coroutine globals table */
-    lua_pushlightuserdata(co, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(co, r);
-    lua_rawset(co, LUA_GLOBALSINDEX);
-    /*  }}} */
+    ngx_http_lua_set_req(co, r);
 
     /*  {{{ initialize request context */
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);

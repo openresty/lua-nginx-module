@@ -203,6 +203,29 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
 }
 
 
+static ngx_inline ngx_http_request_t *
+ngx_http_lua_get_req(lua_State *L)
+{
+    ngx_http_request_t    *r;
+
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    return r;
+}
+
+
+static ngx_inline void
+ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
+{
+    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_pushlightuserdata(L, r);
+    lua_rawset(L, LUA_GLOBALSINDEX);
+}
+
+
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

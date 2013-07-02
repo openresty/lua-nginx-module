@@ -207,9 +207,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
     ngx_http_variable_value_t *args)
 {
     /*  set nginx request pointer to current lua thread's globals table */
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(L, r);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_req(L, r);
 
     lua_pushlightuserdata(L, &ngx_http_lua_setby_nargs_key);
     lua_pushinteger(L, nargs);
