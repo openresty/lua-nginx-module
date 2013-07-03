@@ -66,6 +66,25 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
     }
 
 
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+static ngx_inline ngx_int_t
+ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
+    u_char *err, size_t *errlen)
+{
+    if (!(ctx->context & flags)) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API disabled in the context of %s",
+                               ngx_http_lua_context_name((ctx)->context))
+                  - err;
+
+        return NGX_DECLINED;
+    }
+
+    return NGX_OK;
+}
+#endif
+
+
 #define ngx_http_lua_check_fake_request(L, r)                                \
     if ((r)->connection->fd == -1) {                                         \
         return luaL_error(L, "API disabled in the current context");         \
