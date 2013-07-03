@@ -58,7 +58,6 @@ char ngx_http_lua_code_cache_key;
 char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
-char ngx_http_lua_request_key;
 char ngx_http_lua_coroutines_key;
 char ngx_http_lua_req_get_headers_metatable_key;
 
