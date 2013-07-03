@@ -32,9 +32,6 @@ extern char ngx_http_lua_regex_cache_key;
  * socket connection pool table */
 extern char ngx_http_lua_socket_pool_key;
 
-/* char whose address we use as the key for the nginx request pointer */
-extern char ngx_http_lua_request_key;
-
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 
@@ -205,7 +202,7 @@ ngx_http_lua_get_req(lua_State *L)
 {
     ngx_http_request_t    *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_pushliteral(L, "__ngx_req");
     lua_rawget(L, LUA_GLOBALSINDEX);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
@@ -217,7 +214,7 @@ ngx_http_lua_get_req(lua_State *L)
 static ngx_inline void
 ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 {
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
+    lua_pushliteral(L, "__ngx_req");
     lua_pushlightuserdata(L, r);
     lua_rawset(L, LUA_GLOBALSINDEX);
 }
