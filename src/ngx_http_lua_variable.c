@@ -159,9 +159,10 @@ ngx_http_lua_var_set(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
-    lowcase = lua_newuserdata(L, len);
+    lowcase = lua_newuserdata(L, len + 1);
 
     hash = ngx_hash_strlow(lowcase, p, len);
+    lowcase[len] = '\0';
 
     name.len = len;
     name.data = lowcase;
