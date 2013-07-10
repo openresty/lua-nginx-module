@@ -1664,6 +1664,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
             return luaL_argerror(L, 2, msg);
     }
 
+    if (len == 0) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,

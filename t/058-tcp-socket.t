@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 95;
+plan tests => repeat_each() * 96;
 
 our $HtmlDir = html_dir;
 
@@ -1987,6 +1987,7 @@ send(""): 0
 close: 1 nil
 --- no_error_log
 [error]
+[alert]
 
 
 
