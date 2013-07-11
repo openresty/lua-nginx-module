@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 20 June 2013.
+This document describes ngx_lua [v0.8.4](https://github.com/chaoslawful/lua-nginx-module/tags) released on 10 July 2013.
 
 Synopsis
 ========
@@ -5422,8 +5422,5 @@ See Also
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
 * [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
-
-Translations
-============
-* [Chinese](http://wiki.nginx.org/HttpLuaModuleZh) (still in progress)
+* [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
 

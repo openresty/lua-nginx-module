@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.3] released on 20 June 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.4] released on 10 July 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -5235,7 +5235,5 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
-
-= Translations =
-* [[HttpLuaModuleZh|Chinese]] (still in progress)
+* [https://github.com/agentzh/nginx-systemtap-toolkit Nginx Systemtap Toolkit]
 
