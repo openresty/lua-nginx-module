@@ -127,7 +127,7 @@ lua tcp socket connect timed out
     server_tokens off;
     lua_socket_connect_timeout 102ms;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
