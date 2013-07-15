@@ -832,7 +832,7 @@ When the Lua code may change the length of the response body, then it is require
         # fastcgi_pass/proxy_pass/...
 
         header_filter_by_lua 'ngx.header.content_length = nil';
-        body_filter_by_lua 'ngx.arg[1] = {string.len(arg[1]), "\n"}'
+        body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\\n"';
     }
 
 
