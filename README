@@ -938,7 +938,7 @@ Directives
             # fastcgi_pass/proxy_pass/...
 
             header_filter_by_lua 'ngx.header.content_length = nil';
-            body_filter_by_lua 'ngx.arg[1] = {string.len(arg[1]), "\n"}'
+            body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\n"';
         }
 
     Note that the following API functions are currently disabled within this
