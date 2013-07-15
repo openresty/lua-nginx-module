@@ -306,7 +306,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             return NGX_ERROR;
         }
 
-        cln->handler = ngx_http_lua_request_cleanup;
+        cln->handler = ngx_http_lua_request_cleanup_handler;
         cln->data = r;
         ctx->cleanup = &cln->handler;
     }

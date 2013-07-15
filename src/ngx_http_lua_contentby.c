@@ -80,7 +80,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        cln->handler = ngx_http_lua_request_cleanup;
+        cln->handler = ngx_http_lua_request_cleanup_handler;
         cln->data = r;
         ctx->cleanup = &cln->handler;
     }
