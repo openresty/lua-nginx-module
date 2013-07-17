@@ -4274,7 +4274,9 @@ Nginx API for Lua
     content_by_lua*, header_filter_by_lua*, body_filter_by_lua*,
     log_by_lua*, ngx.timer.**
 
-    Flushes out all the items in the dictionary.
+    Flushes out all the items in the dictionary. This method does not
+    actuall free up all the memory blocks in the dictionary but just marks
+    all the existing items as expired.
 
     This feature was first introduced in the "v0.5.0rc17" release.
 
@@ -4291,6 +4293,9 @@ Nginx API for Lua
     number specified by the optional "max_count" argument. When the
     "max_count" argument is given 0 or not given at all, then it means
     unlimited. Returns the number of items that have actually been flushed.
+
+    Unlike the flush_all method, this method actually free up the memory
+    used by the expired items.
 
     This feature was first introduced in the "v0.6.3" release.
 
