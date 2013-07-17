@@ -299,6 +299,26 @@ Directives
     the fly* and give rise to infinite variations to avoid hitting the
     specified limit.
 
+  lua_regex_match_limit
+    syntax: *lua_regex_match_limit <num>*
+
+    default: *lua_regex_match_limit 0*
+
+    context: *http*
+
+    Specifies the "match limit" used by the PCRE library when executing the
+    ngx.re API. To quote the PCRE manpage, "the limit ... has the effect of
+    limiting the amount of backtracking that can take place."
+
+    When the limit is hit, the error string "pcre_exec() failed: -8" will be
+    returned by the ngx.re API functions on the Lua land.
+
+    When setting the limit to 0, the default "match limit" when compiling
+    the PCRE library is used. And this is the default value of this
+    directive.
+
+    This directive was first introduced in the "v0.8.5" release.
+
   lua_package_path
     syntax: *lua_package_path <lua-style-path-str>*
 
