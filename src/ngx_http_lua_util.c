@@ -1301,6 +1301,7 @@ user_co_done:
 
             case LUA_ERRMEM:
                 err = "memory allocation error";
+                ngx_quit = 1;
                 break;
 
             case LUA_ERRERR:
