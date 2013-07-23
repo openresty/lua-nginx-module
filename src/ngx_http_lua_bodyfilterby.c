@@ -359,7 +359,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
 
 ngx_int_t
-ngx_http_lua_body_filter_init()
+ngx_http_lua_body_filter_init(void)
 {
     dd("calling body filter init");
     ngx_http_next_body_filter = ngx_http_top_body_filter;
