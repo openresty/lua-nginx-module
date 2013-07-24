@@ -4106,8 +4106,8 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [setoption](http://wiki.nginx.org/HttpLuaModule#tcpsock:setoption)
 * [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil)
 * [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool)
-* [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive)
 * [getreusedtimes](http://wiki.nginx.org/HttpLuaModule#tcpsock:getreusedtimes)
+* [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) (obsolete)
 
 It is intended to be compatible with the TCP API of the [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) library but is 100% nonblocking out of the box. Also, we introduce some new APIs to provide more functionalities.
 
@@ -4384,7 +4384,7 @@ This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasock
 This feature was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:gotopool
---------------------
+----------------
 **syntax:** *ok, err = tcpsock:gotopool(timeout?, size?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
@@ -4406,6 +4406,10 @@ In case of success, this method returns `1`; otherwise, it returns `nil` and a s
 This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:setkeepalive
+--------------------
+This API is now obsolete, please use [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool) instead.
 
 tcpsock:getreusedtimes
 ----------------------

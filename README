@@ -4521,9 +4521,9 @@ Nginx API for Lua
 
     *   gotopool
 
-    *   setkeepalive (obsoleted)
-
     *   getreusedtimes
+
+    *   setkeepalive (obsolete)
 
     It is intended to be compatible with the TCP API of the LuaSocket
     (<http://w3.impa.br/~diego/software/luasocket/tcp.html>) library but is
@@ -4828,9 +4828,9 @@ Nginx API for Lua
     otherwise.
 
     Note that there is no need to call this method on socket objects that
-    have invoked the gotopool method because the socket object is
-    already closed (and the current connection is saved into the built-in
-    connection pool).
+    have invoked the gotopool method because the socket object is already
+    closed (and the current connection is saved into the built-in connection
+    pool).
 
     Socket objects that have not invoked this method (and associated
     connections) will be closed when the socket object is released by the
@@ -4852,8 +4852,8 @@ Nginx API for Lua
     and lua_socket_read_timeout.
 
     Note that this method does *not* affect the lua_socket_keepalive_timeout
-    setting; the "timeout" argument to the gotopool method should be
-    used for this purpose instead.
+    setting; the "timeout" argument to the gotopool method should be used
+    for this purpose instead.
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
@@ -4912,6 +4912,9 @@ Nginx API for Lua
     afterwards.
 
     This feature was first introduced in the "v0.5.0rc1" release.
+
+  tcpsock:setkeepalive
+    This API is now obsolete, please use gotopool instead.
 
   tcpsock:getreusedtimes
     syntax: *count, err = tcpsock:getreusedtimes()*

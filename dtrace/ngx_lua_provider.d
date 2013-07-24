@@ -31,7 +31,7 @@ provider nginx_lua {
             void *u, u_char *data, size_t len);
 
     /* ngx_http_lua_socket_tcp_upstream_t *u */
-    probe http__lua__socket__tcp__setkeepalive__buf__unread(
+    probe http__lua__socket__tcp__gotopool__buf__unread(
             ngx_http_request_t *r, void *u, u_char *data, size_t len);
 
     /* lua_State *creator, lua_State *newthread */
