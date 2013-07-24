@@ -58,7 +58,6 @@ char ngx_http_lua_code_cache_key;
 char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
-char ngx_http_lua_request_key;
 char ngx_http_lua_coroutines_key;
 char ngx_http_lua_req_get_headers_metatable_key;
 
@@ -719,10 +718,6 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_newtable(L);
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
-
-    lua_pushlightuserdata(L, &ngx_http_lua_cf_log_key);
-    lua_pushlightuserdata(L, cf->log);
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
@@ -914,16 +909,22 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
 
 void
-ngx_http_lua_request_cleanup(void *data)
+ngx_http_lua_request_cleanup_handler(void *data)
 {
-    ngx_http_request_t          *r = data;
+    ngx_http_lua_request_cleanup(data, 0 /* forcible */);
+}
+
+
+void
+ngx_http_lua_request_cleanup(ngx_http_request_t *r, int forcible)
+{
     lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua request cleanup");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua request cleanup: forcible=%d", forcible);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -956,9 +957,9 @@ ngx_http_lua_request_cleanup(void *data)
 
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-        if (llcf->log_handler == NULL) {
-            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua release ngx.ctx");
+        if (forcible || llcf->log_handler == NULL) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua release ngx.ctx at ref %d", ctx->ctx_ref);
 
             lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
             lua_rawget(L, LUA_REGISTRYINDEX);
@@ -1300,6 +1301,7 @@ user_co_done:
 
             case LUA_ERRMEM:
                 err = "memory allocation error";
+                ngx_quit = 1;
                 break;
 
             case LUA_ERRERR:
@@ -1394,7 +1396,7 @@ user_co_done:
                     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
                 }
 
-                ngx_http_lua_request_cleanup(r);
+                ngx_http_lua_request_cleanup(r, 0);
 
                 dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
@@ -1452,7 +1454,7 @@ no_parent:
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r);
+    ngx_http_lua_request_cleanup(r, 0);
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
                   "user coroutine has no parent");
@@ -2050,7 +2052,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r);
+    ngx_http_lua_request_cleanup(r, 1 /* forcible */);
 
     if (ctx->exec_uri.data[0] == '@') {
         if (ctx->exec_args.len > 0) {
@@ -2155,7 +2157,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r);
+    ngx_http_lua_request_cleanup(r, 0);
 
     if (ctx->buffering && r->headers_out.status) {
         rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
@@ -2300,10 +2302,15 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
     dd("len 1: %d", (int) len);
 
-    p = ngx_palloc(r->pool, len);
-    if (p == NULL) {
-        luaL_error(L, "out of memory");
-        return;
+    if (r) {
+        p = ngx_palloc(r->pool, len);
+        if (p == NULL) {
+            luaL_error(L, "out of memory");
+            return;
+        }
+
+    } else {
+        p = lua_newuserdata(L, len);
     }
 
     args->data = p;
@@ -2466,7 +2473,7 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r);
+    ngx_http_lua_request_cleanup(r, 1 /* forcible */);
     ngx_http_lua_init_ctx(ctx);
 
     return NGX_OK;
@@ -2797,11 +2804,7 @@ ngx_http_lua_param_get(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_request_t          *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return 0;
     }
@@ -2830,11 +2833,7 @@ ngx_http_lua_param_set(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_request_t          *r;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return 0;
     }
@@ -3212,7 +3211,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 
     if (ctx->on_abort_co_ctx == NULL) {
         r->connection->error = 1;
-        ngx_http_lua_request_cleanup(r);
+        ngx_http_lua_request_cleanup(r, 0);
         ngx_http_lua_finalize_request(r, rc);
         return;
     }
@@ -3225,7 +3224,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 
         if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && rev->active) {
             if (ngx_del_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
-                ngx_http_lua_request_cleanup(r);
+                ngx_http_lua_request_cleanup(r, 0);
                 ngx_http_lua_finalize_request(r,
                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;

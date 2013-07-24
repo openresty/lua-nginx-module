@@ -736,7 +736,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- request
 GET /t
 --- response_body_like chop
-error: pcre_exec\(\) failed: -10 on "你.*?"
+error: pcre_exec\(\) failed: -10
 
 --- no_error_log
 [error]
@@ -810,4 +810,96 @@ exec opts: 0
 你
 --- no_error_log
 [error]
+
+
+
+=== TEST 30: just hit match limit
+--- http_config
+    lua_regex_match_limit 5600;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+s = string.rep([[ABCDEFG]], 10)
+
+local start = ngx.now()
+
+local it, err = ngx.re.gmatch(s, re, "o")
+if not it then
+    ngx.say("failed to gen iterator: ", err)
+    return
+end
+
+local res, err = it()
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if not res then
+    if err then
+        ngx.say("error: ", err)
+        return
+    end
+    ngx.say("failed to match")
+    return
+end
+
+--- request
+    GET /re
+--- response_body
+error: pcre_exec() failed: -8
+
+
+
+=== TEST 31: just not hit match limit
+--- http_config
+    lua_regex_match_limit 5700;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+s = string.rep([[ABCDEFG]], 10)
+
+local start = ngx.now()
+
+local it, err = ngx.re.gmatch(s, re, "o")
+if not it then
+    ngx.say("failed to gen iterator: ", err)
+    return
+end
+
+res, err = it()
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if not res then
+    if err then
+        ngx.say("error: ", err)
+        return
+    end
+    ngx.say("failed to match")
+    return
+end
+
+--- request
+    GET /re
+--- response_body
+failed to match
 

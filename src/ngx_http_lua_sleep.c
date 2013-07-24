@@ -36,10 +36,10 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "attempt to pass %d arguments, but accepted 1", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
 
     delay = luaL_checknumber(L, 1) * 1000;
 

@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.3] released on 20 June 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.5] released on 18 July 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -267,6 +267,21 @@ The default number of entries allowed is 1024 and when this limit is reached, ne
 </geshi>
 
 Do not activate the <code>o</code> option for regular expressions (and/or <code>replace</code> string arguments for [[#ngx.re.sub|ngx.re.sub]] and [[#ngx.re.gsub|ngx.re.gsub]]) that are generated ''on the fly'' and give rise to infinite variations to avoid hitting the specified limit.
+
+== lua_regex_match_limit ==
+'''syntax:''' ''lua_regex_match_limit <num>''
+
+'''default:''' ''lua_regex_match_limit 0''
+
+'''context:''' ''http''
+
+Specifies the "match limit" used by the PCRE library when executing the [[#ngx.re.match|ngx.re API]]. To quote the PCRE manpage, "the limit ... has the effect of limiting the amount of backtracking that can take place."
+
+When the limit is hit, the error string "pcre_exec() failed: -8" will be returned by the [[#ngx.re.match|ngx.re API]] functions on the Lua land.
+
+When setting the limit to 0, the default "match limit" when compiling the PCRE library is used. And this is the default value of this directive.
+
+This directive was first introduced in the <code>v0.8.5</code> release.
 
 == lua_package_path ==
 
@@ -804,7 +819,7 @@ When the Lua code may change the length of the response body, then it is require
         # fastcgi_pass/proxy_pass/...
 
         header_filter_by_lua 'ngx.header.content_length = nil';
-        body_filter_by_lua 'ngx.arg[1] = {string.len(arg[1]), "\n"}'
+        body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\n"';
     }
 </geshi>
 
@@ -3763,7 +3778,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
-Flushes out all the items in the dictionary.
+Flushes out all the items in the dictionary. This method does not actuall free up all the memory blocks in the dictionary but just marks all the existing items as expired.
 
 This feature was first introduced in the <code>v0.5.0rc17</code> release.
 
@@ -3775,6 +3790,8 @@ See also [[#ngx.shared.DICT.flush_expired|ngx.shared.DICT.flush_expired]] and [[
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
 Flushes out the expired items in the dictionary, up to the maximal number specified by the optional <code>max_count</code> argument. When the <code>max_count</code> argument is given <code>0</code> or not given at all, then it means unlimited. Returns the number of items that have actually been flushed.
+
+Unlike the [[#ngx.shared.DICT.flush_all|flush_all]] method, this method actually free up the memory used by the expired items.
 
 This feature was first introduced in the <code>v0.6.3</code> release.
 
@@ -5235,7 +5252,5 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
-
-= Translations =
-* [[HttpLuaModuleZh|Chinese]] (still in progress)
+* [https://github.com/agentzh/nginx-systemtap-toolkit Nginx Systemtap Toolkit]
 

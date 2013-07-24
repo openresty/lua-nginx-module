@@ -81,11 +81,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     luaL_argcheck(L, lua_isfunction(L, 2) && !lua_iscfunction(L, 2), 2,
                  "Lua function expected");
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request");
     }
@@ -432,7 +428,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto abort;
     }
 
-    cln->handler = ngx_http_lua_request_cleanup;
+    cln->handler = ngx_http_lua_request_cleanup_handler;
     cln->data = r;
     ctx->cleanup = &cln->handler;
 
@@ -448,12 +444,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     dd("r connection: %p, log %p", r->connection, r->connection->log);
 
     /*  save the request in coroutine globals table */
-    lua_pushvalue(tctx.co, LUA_GLOBALSINDEX);
-    lua_pushlightuserdata(tctx.co, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(tctx.co, r);
-    lua_rawset(tctx.co, -3);
-    lua_pop(tctx.co, 1);
-    /*  }}} */
+    ngx_http_lua_set_req(tctx.co, r);
 
     lmcf->running_timers++;
 

@@ -53,9 +53,7 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
         ngx_chain_t *in)
 {
     /*  set nginx request pointer to current lua thread's globals table */
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(L, r);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_req(L, r);
 
     lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_pushlightuserdata(L, in);
@@ -308,7 +306,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             return NGX_ERROR;
         }
 
-        cln->handler = ngx_http_lua_request_cleanup;
+        cln->handler = ngx_http_lua_request_cleanup_handler;
         cln->data = r;
         ctx->cleanup = &cln->handler;
     }
@@ -361,7 +359,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
 
 ngx_int_t
-ngx_http_lua_body_filter_init()
+ngx_http_lua_body_filter_init(void)
 {
     dd("calling body filter init");
     ngx_http_next_body_filter = ngx_http_top_body_filter;

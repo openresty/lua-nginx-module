@@ -112,6 +112,7 @@ struct ngx_http_lua_main_conf_s {
 #if (NGX_PCRE)
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
+    ngx_int_t            regex_match_limit;
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
