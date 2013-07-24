@@ -1108,7 +1108,7 @@ lua_socket_keepalive_timeout
 
 **context:** *http, server, location*
 
-This directive controls the default maximal idle time of the connections in the cosocket built-in connection pool. When this timeout reaches, idle connections will be closed and removed from the pool. This setting can be overridden by cosocket objects' [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method.
+This directive controls the default maximal idle time of the connections in the cosocket built-in connection pool. When this timeout reaches, idle connections will be closed and removed from the pool. This setting can be overridden by cosocket objects' [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool) method.
 
 The `<time>` argument can be an integer, with an optional time unit, like `s` (second), `ms` (millisecond), `m` (minute). The default time unit is `s`, i.e., "second". The default setting is `60s`.
 
@@ -4105,8 +4105,9 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout)
 * [setoption](http://wiki.nginx.org/HttpLuaModule#tcpsock:setoption)
 * [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil)
-* [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive)
+* [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool)
 * [getreusedtimes](http://wiki.nginx.org/HttpLuaModule#tcpsock:getreusedtimes)
+* [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) (obsolete)
 
 It is intended to be compatible with the TCP API of the [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) library but is 100% nonblocking out of the box. Also, we introduce some new APIs to provide more functionalities.
 
@@ -4352,7 +4353,7 @@ tcpsock:close
 
 Closes the current TCP or stream unix domain socket. It returns the `1` in case of success and returns `nil` with a string describing the error otherwise.
 
-Note that there is no need to call this method on socket objects that have invoked the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method because the socket object is already closed (and the current connection is saved into the built-in connection pool).
+Note that there is no need to call this method on socket objects that have invoked the [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool) method because the socket object is already closed (and the current connection is saved into the built-in connection pool).
 
 Socket objects that have not invoked this method (and associated connections) will be closed when the socket object is released by the Lua GC (Garbage Collector) or the current client HTTP request finishes processing.
 
@@ -4368,7 +4369,7 @@ Set the timeout value in milliseconds for subsequent socket operations ([connect
 
 Settings done by this method takes priority over those config directives, i.e., [lua_socket_connect_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_connect_timeout), [lua_socket_send_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_send_timeout), and [lua_socket_read_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_read_timeout).
 
-Note that this method does *not* affect the [lua_socket_keepalive_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive) method should be used for this purpose instead.
+Note that this method does *not* affect the [lua_socket_keepalive_timeout](http://wiki.nginx.org/HttpLuaModule#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool) method should be used for this purpose instead.
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
@@ -4382,9 +4383,9 @@ This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasock
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-tcpsock:setkeepalive
---------------------
-**syntax:** *ok, err = tcpsock:setkeepalive(timeout?, size?)*
+tcpsock:gotopool
+----------------
+**syntax:** *ok, err = tcpsock:gotopool(timeout?, size?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
 
@@ -4405,6 +4406,10 @@ In case of success, this method returns `1`; otherwise, it returns `nil` and a s
 This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [close](http://wiki.nginx.org/HttpLuaModule#tcpsock:close) method on it afterwards.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:setkeepalive
+--------------------
+This API is now obsolete, please use [gotopool](http://wiki.nginx.org/HttpLuaModule#tcpsock:gotopool) instead.
 
 tcpsock:getreusedtimes
 ----------------------
