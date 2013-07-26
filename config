@@ -314,3 +314,83 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
 
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
