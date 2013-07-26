@@ -188,6 +188,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_string.c \
                 $ngx_addon_dir/src/ngx_http_lua_output.c \
                 $ngx_addon_dir/src/ngx_http_lua_headers.c \
+                $ngx_addon_dir/src/ngx_http_lua_cookies.c \
                 $ngx_addon_dir/src/ngx_http_lua_req_body.c \
                 $ngx_addon_dir/src/ngx_http_lua_uri.c \
                 $ngx_addon_dir/src/ngx_http_lua_args.c \
@@ -237,6 +238,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_variable.h \
                 $ngx_addon_dir/src/ngx_http_lua_output.h \
                 $ngx_addon_dir/src/ngx_http_lua_headers.h \
+                $ngx_addon_dir/src/ngx_http_lua_cookies.h \
                 $ngx_addon_dir/src/ngx_http_lua_uri.h \
                 $ngx_addon_dir/src/ngx_http_lua_req_body.h \
                 $ngx_addon_dir/src/ngx_http_lua_args.h \
