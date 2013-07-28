@@ -155,7 +155,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
                 *err = (char *) lua_tostring(L, -1);
 
             } else {
-                *err = "syntax error";
+                *err = "unknown error";
             }
         }
 
@@ -226,7 +226,7 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
                 *err = (char *) lua_tostring(L, -1);
 
             } else {
-                *err = "syntax error";
+                *err = "unknown error";
             }
         }
 
