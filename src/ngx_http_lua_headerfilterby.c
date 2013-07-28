@@ -302,7 +302,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_header_filter_init()
+ngx_http_lua_header_filter_init(void)
 {
     dd("calling header filter init");
     ngx_http_next_header_filter = ngx_http_top_header_filter;
