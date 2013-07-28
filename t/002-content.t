@@ -10,7 +10,7 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 16);
+plan tests => repeat_each() * (blocks() * 2 + 17);
 
 #no_diff();
 #no_long_string();
@@ -801,4 +801,23 @@ GET /lua?a=1&b=2
 --- error_code: 500
 --- error_log eval
 qr/failed to load external Lua file: cannot open .*? No such file or directory/
+
+
+
+=== TEST 41: .lua file with shebang
+--- config
+    location /lua {
+        content_by_lua_file html/test.lua;
+    }
+--- user_files
+>>> test.lua
+#!/bin/lua
+
+ngx.say("line ", debug.getinfo(1).currentline)
+--- request
+GET /lua?a=1&b=2
+--- response_body
+line 3
+--- no_error_log
+[error]
 
