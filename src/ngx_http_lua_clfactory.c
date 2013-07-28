@@ -650,13 +650,6 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 
 
 int
-ngx_http_lua_clfactory_loadstring(lua_State *L, const char *s)
-{
-    return ngx_http_lua_clfactory_loadbuffer(L, s, strlen(s), s);
-}
-
-
-int
 ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
         size_t size, const char *name)
 {
