@@ -504,9 +504,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L, clfactory_file_ctx_t *lf,
 
 error:
 
-    if (lf->f != stdin) {
-        fclose(lf->f);  /* close file (even in case of errors) */
-    }
+    fclose(lf->f);  /* close file (even in case of errors) */
 
     filename = lua_tostring(L, fname_index) + 1;
 
@@ -544,17 +542,11 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
     lf.end_code.ptr = CLFACTORY_END_CODE;
     lf.end_code_len = CLFACTORY_END_SIZE;
 
-    if (filename == NULL) {
-        lua_pushliteral(L, "=stdin");
-        lf.f = stdin;
+    lua_pushfstring(L, "@%s", filename);
 
-    } else {
-        lua_pushfstring(L, "@%s", filename);
-        lf.f = fopen(filename, "r");
-
-        if (lf.f == NULL) {
-            return clfactory_errfile(L, "open", fname_index);
-        }
+    lf.f = fopen(filename, "r");
+    if (lf.f == NULL) {
+        return clfactory_errfile(L, "open", fname_index);
     }
 
     c = getc(lf.f);
