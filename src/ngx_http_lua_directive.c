@@ -368,7 +368,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua file: %s", err);
+                      "failed to load external Lua file: %s", err);
 
         return NGX_ERROR;
     }

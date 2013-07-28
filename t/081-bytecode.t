@@ -82,7 +82,7 @@ hello
 --- response_body
 error
 --- error_log
-failed to load Lua inlined code: bad byte-code header in
+failed to load external Lua file: bad byte-code header in
 
 
 
