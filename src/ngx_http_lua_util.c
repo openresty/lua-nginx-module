@@ -956,21 +956,28 @@ ngx_http_lua_request_cleanup(ngx_http_request_t *r, int forcible)
     if (ctx->ctx_ref != LUA_NOREF) {
 
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
         if (forcible || llcf->log_handler == NULL) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua release ngx.ctx at ref %d", ctx->ctx_ref);
-
-            lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
-            lua_rawget(L, LUA_REGISTRYINDEX);
-            luaL_unref(L, -1, ctx->ctx_ref);
-            ctx->ctx_ref = LUA_NOREF;
-            lua_pop(L, 1);
+            ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
         }
     }
 
     ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_del_all_threads(r, L, ctx);
+}
+
+
+void
+ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
+                   "lua release ngx.ctx at ref %d", ctx->ctx_ref);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    luaL_unref(L, -1, ctx->ctx_ref);
+    ctx->ctx_ref = LUA_NOREF;
+    lua_pop(L, 1);
 }
 
 
