@@ -467,6 +467,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     } else if (rc == NGX_DONE) {
         rc = ngx_http_lua_content_run_posted_threads(L, r, ctx, 1);
+
     } else {
         rc = NGX_OK;
     }
