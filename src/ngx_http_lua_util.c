@@ -956,7 +956,10 @@ ngx_http_lua_request_cleanup(ngx_http_request_t *r, int forcible)
     if (ctx->ctx_ref != LUA_NOREF) {
 
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-        if (forcible || llcf->log_handler == NULL) {
+        if (forcible
+            || r->connection->fd == -1  /* being a fake request */
+            || llcf->log_handler == NULL)
+        {
             ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
         }
     }
