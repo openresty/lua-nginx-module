@@ -13,7 +13,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 73);
+plan tests => repeat_each() * (blocks() * 8 + 76);
 
 #no_diff();
 no_long_string();
@@ -2117,5 +2117,48 @@ qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, c
 "http lua close fake http connection",
 "timer prematurely expired: false",
 "timer user args: 1 hello true",
+]
+
+
+
+=== TEST 31: use of ngx.ctx
+--- config
+    location /t {
+        content_by_lua '
+            local begin = ngx.now()
+            local function f(premature)
+                ngx.ctx.s = "hello"
+                print("elapsed: ", ngx.now() - begin)
+                print("timer prematurely expired: ", premature)
+            end
+            local ok, err = ngx.timer.at(0, f)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+            ngx.say("registered timer")
+        ';
+        log_by_lua return;
+    }
+--- request
+GET /t
+
+--- response_body
+registered timer
+
+--- wait: 0.1
+--- no_error_log
+[error]
+[alert]
+[crit]
+timer prematurely expired: true
+
+--- error_log eval
+[
+qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: .*?, context: ngx\.timer/,
+"lua ngx.timer expired",
+"http lua close fake http connection",
+"timer prematurely expired: false",
+"lua release ngx.ctx at ref ",
 ]
 

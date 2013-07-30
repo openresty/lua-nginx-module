@@ -912,22 +912,25 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 void
 ngx_http_lua_request_cleanup_handler(void *data)
 {
-    ngx_http_lua_request_cleanup(data, 0 /* forcible */);
+    ngx_http_lua_ctx_t          *ctx = data;
+
+    ngx_http_lua_request_cleanup(ctx, 0 /* forcible */);
 }
 
 
 void
-ngx_http_lua_request_cleanup(ngx_http_request_t *r, int forcible)
+ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
 {
     lua_State                   *L;
-    ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_request_t          *r;
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_ctx_t          *cur_ctx;
+
+    r = ctx->request;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua request cleanup: forcible=%d", forcible);
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     /*  force coroutine handling the request quit */
     if (ctx == NULL) {
@@ -956,22 +959,46 @@ ngx_http_lua_request_cleanup(ngx_http_request_t *r, int forcible)
 
     if (ctx->ctx_ref != LUA_NOREF) {
 
-        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+        if (forcible || r->connection->fd == -1 /* being a fake request */) {
+            ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
 
-        if (forcible || llcf->log_handler == NULL) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua release ngx.ctx at ref %d", ctx->ctx_ref);
+        } else {
 
-            lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
-            lua_rawget(L, LUA_REGISTRYINDEX);
-            luaL_unref(L, -1, ctx->ctx_ref);
-            ctx->ctx_ref = LUA_NOREF;
-            lua_pop(L, 1);
+            cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+            if (cur_ctx != ctx) {
+                /* internal redirects happened */
+                ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
+
+            } else {
+
+                llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+                if (llcf->log_handler == NULL) {
+                    /* no log_by_lua* configured */
+                    ngx_http_lua_release_ngx_ctx_table(r->connection->log, L,
+                                                       ctx);
+                }
+            }
         }
     }
 
     ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_del_all_threads(r, L, ctx);
+}
+
+
+void
+ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
+                   "lua release ngx.ctx at ref %d", ctx->ctx_ref);
+
+    lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    luaL_unref(L, -1, ctx->ctx_ref);
+    ctx->ctx_ref = LUA_NOREF;
+    lua_pop(L, 1);
 }
 
 
@@ -1397,7 +1424,7 @@ user_co_done:
                     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
                 }
 
-                ngx_http_lua_request_cleanup(r, 0);
+                ngx_http_lua_request_cleanup(ctx, 0);
 
                 dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
 
@@ -1455,7 +1482,7 @@ no_parent:
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r, 0);
+    ngx_http_lua_request_cleanup(ctx, 0);
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
                   "user coroutine has no parent");
@@ -2054,7 +2081,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r, 1 /* forcible */);
+    ngx_http_lua_request_cleanup(ctx, 1 /* forcible */);
 
     if (ctx->exec_uri.data[0] == '@') {
         if (ctx->exec_args.len > 0) {
@@ -2159,7 +2186,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r, 0);
+    ngx_http_lua_request_cleanup(ctx, 0);
 
     if (ctx->buffering && r->headers_out.status) {
         rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
@@ -2475,8 +2502,8 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
         ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     }
 
-    ngx_http_lua_request_cleanup(r, 1 /* forcible */);
-    ngx_http_lua_init_ctx(ctx);
+    ngx_http_lua_request_cleanup(ctx, 1 /* forcible */);
+    ngx_http_lua_init_ctx(r, ctx);
 
     return NGX_OK;
 }
@@ -3213,7 +3240,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 
     if (ctx->on_abort_co_ctx == NULL) {
         r->connection->error = 1;
-        ngx_http_lua_request_cleanup(r, 0);
+        ngx_http_lua_request_cleanup(ctx, 0);
         ngx_http_lua_finalize_request(r, rc);
         return;
     }
@@ -3226,7 +3253,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 
         if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && rev->active) {
             if (ngx_del_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
-                ngx_http_lua_request_cleanup(r, 0);
+                ngx_http_lua_request_cleanup(ctx, 0);
                 ngx_http_lua_finalize_request(r,
                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;

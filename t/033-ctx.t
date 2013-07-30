@@ -10,7 +10,7 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #no_diff();
 #no_long_string();
@@ -317,4 +317,76 @@ GET /t
 ctx.foo = 32
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: set ngx.ctx before internal redirects performed by other nginx modules
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.ctx.foo = "hello world";
+        ';
+        echo_exec /foo;
+    }
+
+    location = /foo {
+        echo hello;
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- no_error_log
+[error]
+--- log_level: debug
+--- error_log
+lua release ngx.ctx at ref
+
+
+
+=== TEST 15: set ngx.ctx before internal redirects performed by other nginx modules (with log_by_lua)
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.ctx.foo = "hello world";
+        ';
+        echo_exec /foo;
+    }
+
+    location = /foo {
+        echo hello;
+        log_by_lua return;
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- no_error_log
+[error]
+--- log_level: debug
+--- error_log
+lua release ngx.ctx at ref
+
+
+
+=== TEST 16: set ngx.ctx before simple uri rewrite performed by other nginx modules
+--- config
+    location = /t {
+        set_by_lua $a 'ngx.ctx.foo = "hello world"; return 1';
+        rewrite ^ /foo last;
+        echo blah;
+    }
+
+    location = /foo {
+        echo foo;
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- no_error_log
+[error]
+--- log_level: debug
+--- error_log
+lua release ngx.ctx at ref
 

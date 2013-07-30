@@ -104,7 +104,7 @@ void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
 void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 
-void ngx_http_lua_request_cleanup(ngx_http_request_t *r, int foricible);
+void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
 
 void ngx_http_lua_request_cleanup_handler(void *data);
 
@@ -168,6 +168,9 @@ void ngx_http_lua_finalize_fake_request(ngx_http_request_t *r,
 
 void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 
+void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
+    ngx_http_lua_ctx_t *ctx);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
@@ -175,11 +178,15 @@ void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
     }
 
 
-#define ngx_http_lua_init_ctx(ctx)                                          \
-    ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));                           \
-    ctx->ctx_ref = LUA_NOREF;                                               \
-    ctx->entry_co_ctx.co_ref = LUA_NOREF;                                   \
+static ngx_inline void
+ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+{
+    ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));
+    ctx->ctx_ref = LUA_NOREF;
+    ctx->entry_co_ctx.co_ref = LUA_NOREF;
     ctx->resume_handler = ngx_http_lua_wev_handler;
+    ctx->request = r;
+}
 
 
 static ngx_inline ngx_http_lua_ctx_t *
@@ -192,7 +199,7 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
         return NULL;
     }
 
-    ngx_http_lua_init_ctx(ctx);
+    ngx_http_lua_init_ctx(r, ctx);
 
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     return ctx;

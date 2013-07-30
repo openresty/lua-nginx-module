@@ -221,7 +221,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua inlined code: %s", err);
+                      "failed to load external Lua file: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -280,7 +280,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
-        cln->data = r;
+        cln->data = ctx;
         ctx->cleanup = &cln->handler;
     }
 

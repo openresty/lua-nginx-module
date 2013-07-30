@@ -104,19 +104,9 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
      * before log phase handlers */
 
     if (ctx->ctx_ref != LUA_NOREF) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua release ngx.ctx");
-
         lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
         L = lmcf->lua;
-
-        lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-
-        luaL_unref(L, -1, ctx->ctx_ref);
-        ctx->ctx_ref = LUA_NOREF;
-        lua_pop(L, 1);
+        ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
     }
 
     return rc;
@@ -197,7 +187,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
         }
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua file code: %s", err);
+                      "failed to load external Lua file: %s", err);
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
