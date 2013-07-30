@@ -2,6 +2,7 @@
 /*
  * Copyright (C) Xiaozhe Wang (chaoslawful)
  * Copyright (C) Yichun Zhang (agentzh)
+ * Copyright (C) Guanlan Dai (guanlan)
  */
 
 
@@ -16,12 +17,16 @@
 
 
 static int ngx_http_lua_ngx_req_get_cookies(lua_State *L);
-static int ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start, u_char *end, int max, ngx_http_request_t *r);
-static int ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len, int max);
+static int ngx_http_lua_ngx_cookie_parser(lua_State *L,
+    u_char *start, u_char *end, int max, ngx_http_request_t *r);
+static int ngx_http_lua_ngx_cookie_process_value(lua_State *L,
+    u_char *value_start, int value_len, int max);
 
 
 static int
-ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len,  int max) {
+ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
+    int value_len,  int max) 
+{
     int                           contain_multi_value = 0;
     u_char                       *curr;
     u_char                       *elem_start;
@@ -83,7 +88,9 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int va
 
 
 static int
-ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int max,  ngx_http_request_t *r) {
+ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end,
+    int max,  ngx_http_request_t *r)
+{
     u_char                       *key_start, *value_start;
     u_char                       *curr;
     int                           value_len, key_len, total_len;
@@ -136,19 +143,21 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
                     ngx_http_lua_set_multi_value_table(L, -3);
 
                 } else {
-                    narray = ngx_http_lua_ngx_cookie_process_value(L, value_start, value_len, max - count);
+                    narray = ngx_http_lua_ngx_cookie_process_value(L,
+                                 value_start, value_len, max - count);
                     count += narray;
                 }
             }
             if (max > 0 && ++count >= max) {
-                        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                                       "lua hit request cookie limit %d", max);
-                        return count;
+                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                               "lua hit request cookie limit %d", max);
+                return count;
             }
             start++;
 
             /* trim leading spaces and semicolons*/
-            while (start < end && (*start == ' ' || *start  ==  ';' || *start  ==  ',')) {
+            while ((start < end) &&
+                   (*start == ' ' || *start  ==  ';' || *start  ==  ',')) {
                 start++;
             }
 
@@ -166,7 +175,8 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
 }
 
 static int
-ngx_http_lua_ngx_req_get_cookies(lua_State *L) {
+ngx_http_lua_ngx_req_get_cookies(lua_State *L)
+{
     ngx_array_t                  *cookies;
     ngx_table_elt_t              **cookie;
     int                           i;
