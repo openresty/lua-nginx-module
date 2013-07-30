@@ -2155,7 +2155,7 @@ timer prematurely expired: true
 
 --- error_log eval
 [
-qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\d*, context: ngx\.timer/,
+qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: .*?, context: ngx\.timer/,
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "timer prematurely expired: false",
