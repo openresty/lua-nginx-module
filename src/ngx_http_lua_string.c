@@ -212,8 +212,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
 
 
 static uintptr_t
-ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
-        size_t size)
+ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
 {
     ngx_uint_t               n;
 

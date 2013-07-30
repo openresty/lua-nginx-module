@@ -1080,7 +1080,7 @@ error:
 
 static ngx_uint_t
 ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_http_lua_regex_compile_t *re,
-        ngx_str_t *opts, int narg)
+    ngx_str_t *opts, int narg)
 {
     u_char          *p;
     const char      *msg;

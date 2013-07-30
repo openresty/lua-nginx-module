@@ -50,7 +50,7 @@ static char ngx_http_lua_body_filter_chain_key;
  * */
 static void
 ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
-        ngx_chain_t *in)
+    ngx_chain_t *in)
 {
     /*  set nginx request pointer to current lua thread's globals table */
     ngx_http_lua_set_req(L, r);
@@ -85,7 +85,7 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
-        ngx_chain_t *in)
+    ngx_chain_t *in)
 {
     ngx_int_t        rc;
     u_char          *err_msg;
@@ -451,7 +451,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
 int
 ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx)
+    ngx_http_lua_ctx_t *ctx)
 {
     int                      type;
     int                      idx;
