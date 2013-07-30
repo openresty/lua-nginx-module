@@ -329,7 +329,6 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     u_char                      *script_path;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
-    char                        *err;
     size_t                       nargs;
 
     ngx_http_lua_set_var_data_t     *filter_data = data;
@@ -360,16 +359,9 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, filter_data->key,
-                                     &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load external Lua file: %s", err);
-
         return NGX_ERROR;
     }
 

@@ -179,7 +179,6 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 {
-    char                      *err;
     u_char                    *script_path;
     ngx_int_t                  rc;
     ngx_str_t                  eval_src;
@@ -206,16 +205,9 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-                                     &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load external Lua file: %s", err);
-
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
