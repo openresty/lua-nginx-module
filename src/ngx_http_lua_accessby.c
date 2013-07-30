@@ -179,7 +179,6 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 {
-    char                      *err;
     u_char                    *script_path;
     ngx_int_t                  rc;
     ngx_str_t                  eval_src;
@@ -206,16 +205,9 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-                                     &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load lua inlined code: %s", err);
-
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -257,10 +249,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_setfenv(co, -2);
 
     /*  save nginx request in coroutine globals table */
-    lua_pushlightuserdata(co, &ngx_http_lua_request_key);
-    lua_pushlightuserdata(co, r);
-    lua_rawset(co, LUA_GLOBALSINDEX);
-    /*  }}} */
+    ngx_http_lua_set_req(co, r);
 
     /*  {{{ initialize request context */
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -288,8 +277,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        cln->handler = ngx_http_lua_request_cleanup;
-        cln->data = r;
+        cln->handler = ngx_http_lua_request_cleanup_handler;
+        cln->data = ctx;
         ctx->cleanup = &cln->handler;
     }
     /*  }}} */

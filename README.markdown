@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 20 June 2013.
+This document describes ngx_lua [v0.8.5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 18 July 2013.
 
 Synopsis
 ========
@@ -247,9 +247,10 @@ cached because only the Nginx config file parser can correctly parse the `nginx.
 file and the only ways to to reload the config file
 are to send a `HUP` signal or to restart Nginx.
 
-Also, Lua files which are loaded by `dofile` or `loadfile` 
-in *_by_lua_file will never be cached. To ensure code caching, you can either use the [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua) 
-or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init-by_lua_file) directives to load all such files or just make these Lua files true Lua modules and load them via `require`.
+Also, Lua files which are loaded by `dofile` or `loadfile`
+in *_by_lua_file will never be cached. To ensure code caching, you can either use the [init_by_lua](http://wiki.nginx.org/HttpLuaModule#init_by_lua)
+or [init_by_lua_file](http://wiki.nginx.org/HttpLuaModule#init-by_lua_file) directives to load all such files or just make these Lua files true Lua modules
+and load them via `require`.
 
 The ngx_lua module does not currently support the `stat` mode available with the
 Apache `mod_lua` module but this is planned for implementation in the future.
@@ -279,6 +280,22 @@ The default number of entries allowed is 1024 and when this limit is reached, ne
 
 
 Do not activate the `o` option for regular expressions (and/or `replace` string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations to avoid hitting the specified limit.
+
+lua_regex_match_limit
+---------------------
+**syntax:** *lua_regex_match_limit &lt;num&gt;*
+
+**default:** *lua_regex_match_limit 0*
+
+**context:** *http*
+
+Specifies the "match limit" used by the PCRE library when executing the [ngx.re API](http://wiki.nginx.org/HttpLuaModule#ngx.re.match). To quote the PCRE manpage, "the limit ... has the effect of limiting the amount of backtracking that can take place."
+
+When the limit is hit, the error string "pcre_exec() failed: -8" will be returned by the [ngx.re API](http://wiki.nginx.org/HttpLuaModule#ngx.re.match) functions on the Lua land.
+
+When setting the limit to 0, the default "match limit" when compiling the PCRE library is used. And this is the default value of this directive.
+
+This directive was first introduced in the `v0.8.5` release.
 
 lua_package_path
 ----------------
@@ -831,7 +848,7 @@ When the Lua code may change the length of the response body, then it is require
         # fastcgi_pass/proxy_pass/...
 
         header_filter_by_lua 'ngx.header.content_length = nil';
-        body_filter_by_lua 'ngx.arg[1] = {string.len(arg[1]), "\n"}'
+        body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\n"';
     }
 
 
@@ -3893,7 +3910,7 @@ ngx.shared.DICT.flush_all
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Flushes out all the items in the dictionary.
+Flushes out all the items in the dictionary. This method does not actuall free up all the memory blocks in the dictionary but just marks all the existing items as expired.
 
 This feature was first introduced in the `v0.5.0rc17` release.
 
@@ -3906,6 +3923,8 @@ ngx.shared.DICT.flush_expired
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Flushes out the expired items in the dictionary, up to the maximal number specified by the optional `max_count` argument. When the `max_count` argument is given `0` or not given at all, then it means unlimited. Returns the number of items that have actually been flushed.
+
+Unlike the [flush_all](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.flush_all) method, this method actually free up the memory used by the expired items.
 
 This feature was first introduced in the `v0.6.3` release.
 
@@ -5430,8 +5449,5 @@ See Also
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
 * [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
-
-Translations
-============
-* [Chinese](http://wiki.nginx.org/HttpLuaModuleZh) (still in progress)
+* [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
 

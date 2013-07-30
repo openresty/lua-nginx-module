@@ -155,7 +155,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
                 *err = (char *) lua_tostring(L, -1);
 
             } else {
-                *err = "syntax error";
+                *err = "unknown error";
             }
         }
 
@@ -177,11 +177,15 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
 ngx_int_t
 ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
-        const u_char *cache_key, char **err, unsigned enabled)
+    const u_char *cache_key, unsigned enabled)
 {
     int              rc;
     u_char          *p;
     u_char           buf[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
+    int              n;
+    const char      *err = NULL;
+
+    n = lua_gettop(L);
 
     /*  calculate digest of script file path */
     dd("code cache enabled: %d", (int) enabled);
@@ -219,18 +223,18 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */
         if (rc == LUA_ERRMEM) {
-            *err = "memory allocation error";
+            err = "memory allocation error";
 
         } else {
             if (lua_isstring(L, -1)) {
-                *err = (char *) lua_tostring(L, -1);
+                err = lua_tostring(L, -1);
 
             } else {
-                *err = "syntax error";
+                err = "unknown error";
             }
         }
 
-        return NGX_ERROR;
+        goto error;
     }
 
     if (enabled) {
@@ -239,22 +243,29 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
         rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
 
         if (rc != NGX_OK) {
-            *err = "fail to generate new closure from the closure factory";
-            return NGX_ERROR;
+            err = "fail to generate new closure from the closure factory";
+            goto error;
         }
 
     } else {
         /*  call closure factory to generate new closure */
         rc = lua_pcall(L, 0, 1, 0);
         if (rc != 0) {
-            dd("Error: failed to call closure factory!!");
-            return NGX_ERROR;
+            err = "failed to call closure factory";
+            goto error;
         }
 
         ngx_http_lua_clear_package_loaded(L);
     }
 
     return NGX_OK;
+
+error:
+    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                  "failed to load external Lua file: %s", err);
+
+    lua_settop(L, n);
+    return NGX_ERROR;
 }
 
 

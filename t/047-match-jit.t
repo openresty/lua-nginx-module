@@ -126,3 +126,83 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- no_error_log
 [error]
 
+
+
+=== TEST 6: just hit match limit
+--- http_config
+    lua_regex_match_limit 2940;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+s = string.rep([[ABCDEFG]], 21)
+
+local start = ngx.now()
+
+local res, err = ngx.re.match(s, re, "jo")
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if not res then
+    if err then
+        ngx.say("error: ", err)
+        return
+    end
+    ngx.say("failed to match")
+    return
+end
+
+--- request
+    GET /re
+--- response_body
+error: pcre_exec() failed: -8
+
+
+
+=== TEST 7: just not hit match limit
+--- http_config
+    lua_regex_match_limit 2950;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+s = string.rep([[ABCDEFG]], 21)
+
+local start = ngx.now()
+
+local res, err = ngx.re.match(s, re, "jo")
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if not res then
+    if err then
+        ngx.say("error: ", err)
+        return
+    end
+    ngx.say("failed to match")
+    return
+end
+
+--- request
+    GET /re
+--- response_body
+failed to match
+

@@ -41,11 +41,7 @@ ngx_http_lua_ngx_get(lua_State *L)
     size_t                       len;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -106,17 +102,13 @@ ngx_http_lua_ngx_set(lua_State *L)
     size_t                       len;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
     if (len == sizeof("status") - 1
         && ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
     {
+        r = ngx_http_lua_get_req(L);
         if (r == NULL) {
             return luaL_error(L, "no request object found");
         }
@@ -141,6 +133,7 @@ ngx_http_lua_ngx_set(lua_State *L)
     if (len == sizeof("ctx") - 1
         && ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
     {
+        r = ngx_http_lua_get_req(L);
         if (r == NULL) {
             return luaL_error(L, "no request object found");
         }

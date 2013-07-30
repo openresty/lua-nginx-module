@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #no_diff();
 no_long_string();
@@ -679,4 +679,22 @@ GET /
 <html><head><title>It works!</title></head><body>It works!</body></html>
 --- response_headers
 X-Foo: bar
+
+
+
+=== TEST 36: Lua file does not exist
+--- config
+    location /lua {
+        access_by_lua_file html/test2.lua;
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load external Lua file: cannot open .*? No such file or directory/
 

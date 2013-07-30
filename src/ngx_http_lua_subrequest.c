@@ -155,11 +155,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "at least one subrequest should be specified");
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -545,12 +541,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
          *      sr_ctx->body = NULL
          */
 
-        ngx_http_lua_init_ctx(sr_ctx);
-
-        sr_ctx->capture = 1;
-        sr_ctx->index = index;
-        sr_ctx->last_body = &sr_ctx->body;
-
         psr_data->ctx = sr_ctx;
         psr_data->pr_co_ctx = coctx;
 
@@ -562,6 +552,12 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         if (rc != NGX_OK) {
             return luaL_error(L, "failed to issue subrequest: %d", (int) rc);
         }
+
+        ngx_http_lua_init_ctx(sr, sr_ctx);
+
+        sr_ctx->capture = 1;
+        sr_ctx->index = index;
+        sr_ctx->last_body = &sr_ctx->body;
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
