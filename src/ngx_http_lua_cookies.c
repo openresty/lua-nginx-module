@@ -2,7 +2,7 @@
 /*
  * Copyright (C) Xiaozhe Wang (chaoslawful)
  * Copyright (C) Yichun Zhang (agentzh)
- * Copyright (C) Guanlan Dai (guanlan)
+ * Copyright (C) Guanlan Dai  (guanlan)
  */
 
 
@@ -25,7 +25,7 @@ static int ngx_http_lua_ngx_cookie_process_value(lua_State *L,
 
 static int
 ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
-    int value_len,  int max) 
+    int value_len,  int max)
 {
     int                           contain_multi_value = 0;
     u_char                       *curr;
@@ -56,8 +56,8 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
                 break;
             }
 
-            if (j == value_len - 1 && *curr  == '&') {
-                lua_pushliteral(L,  "");
+            if (j == value_len - 1 && *curr == '&') {
+                lua_pushliteral(L, "");
                 narray++;
                 break;
             }
@@ -100,7 +100,7 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end,
     key_start = start;
     total_len = 0;
     while (start < end) {
-        if ((start == end - 1) || ((*start == ';' || *start  == ','))) {
+        if ((start == end - 1) || ((*start == ';' || *start == ','))) {
             key_len = 0;
             curr = key_start;
             while (*curr != '=') {
@@ -157,7 +157,7 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end,
 
             /* trim leading spaces and semicolons*/
             while ((start < end) &&
-                   (*start == ' ' || *start  ==  ';' || *start  ==  ',')) {
+                   (*start == ' ' || *start == ';' || *start == ',')) {
                 start++;
             }
 
@@ -219,15 +219,19 @@ ngx_http_lua_ngx_req_get_cookies(lua_State *L)
 
         start = cookie[i]->value.data;
         end = cookie[i]->value.data + cookie[i]->value.len;
+
         /* trim leading spaces*/
         while (start < end && *start == ' ') {
             start++;
         }
+
         nread = ngx_http_lua_ngx_cookie_parser(L, start, end, max, r);
         max -= nread;
+
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua request cookie: \"%V: %V\"",
                         &cookie[i]->key, &cookie[i]->value);
+
         if (max <= 0) {
             break;
         }
