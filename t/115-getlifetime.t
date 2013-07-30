@@ -26,7 +26,7 @@ __DATA__
             local ok, err
             local port = 1984
             local epsilon = 30
-            local interval_time = 2
+            local interval_time = 1
 
             ok, err = tcpsock:connect("127.0.0.1", port)
             if not ok then
@@ -41,19 +41,15 @@ __DATA__
                 ngx.say("failed to getlifetime: ", err)
                 return
             end
-            if math.abs(lifetime - interval_time*1000) <  epsilon then
-               ngx.say("works")
-            else
-               ngx.say("error")
-            end
+            ngx.say(lifetime)
             tcpsock:close()
         ';
     }
 --- request
 GET /t
 
---- response_body
-works
+--- response_body_like chomp
+^9[5-9]\d$|^10[0-4]\d$
 
 === TEST 2: get lifetime after setkeepalive
 --- config
@@ -89,21 +85,15 @@ works
                return
             end
 
-            if math.abs(lifetime - interval_time*1000) <  epsilon then
-               ngx.say("works")
-            else
-               ngx.say("error")
-               ngx.say(lifetime)
-               ngx.say(interval_time)
-            end
+            ngx.say(lifetime)
             tcpsock:close()
         ';
     }
 --- request
 GET /t
 
---- response_body
-works
+--- response_body_like chomp
+^9[5-9]\d$|^10[0-4]\d$
 
 === TEST 3: sleep again after wake up from pool
 --- config
@@ -144,16 +134,12 @@ works
                 ngx.say("failed to getlifetime: ", err)
                 return
             end
-            if math.abs(lifetime - interval_time*2*1000) <  epsilon then
-               ngx.say("works")
-            else
-               ngx.say("error")
-            end
+            ngx.say(lifetime)
             tcpsock:close()
         ';
     }
 --- request
 GET /t
 
---- response_body
-works
+--- response_body_like chomp
+^19[5-9]\d$|^20[0-4]\d$
