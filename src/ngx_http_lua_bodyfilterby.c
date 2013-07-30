@@ -201,7 +201,6 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
     u_char                          *script_path;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf;
-    char                            *err;
     ngx_str_t                        eval_src;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
@@ -225,18 +224,11 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path,
-                                     llcf->body_filter_src_key, &err,
+                                     llcf->body_filter_src_key,
                                      llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load external Lua file: %s", err);
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     /*  make sure we have a valid code chunk */
