@@ -177,7 +177,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
 ngx_int_t
 ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
-        const u_char *cache_key, unsigned enabled)
+    const u_char *cache_key, unsigned enabled)
 {
     int              rc;
     u_char          *p;
