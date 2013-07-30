@@ -394,3 +394,4 @@ CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/
 ngx_lua_dquote='"'
 CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
 CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"
+ote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"

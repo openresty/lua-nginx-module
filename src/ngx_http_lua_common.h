@@ -70,7 +70,7 @@ typedef struct {
 #endif
 
 #ifndef NGX_HTTP_LUA_MAX_COOKIES
-#define NGX_HTTP_LUA_MAX_COOKIES 1000
+#define NGX_HTTP_LUA_MAX_COOKIES 100
 #endif
 
 #define NGX_HTTP_LUA_CONTEXT_SET            0x01

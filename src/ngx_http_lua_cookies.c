@@ -17,12 +17,11 @@
 
 static int ngx_http_lua_ngx_req_get_cookies(lua_State *L);
 static int ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start, u_char *end, int max, ngx_http_request_t *r);
-static int ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len);
-
+static int ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len, int max);
 
 
 static int
-ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len) {
+ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int value_len,  int max) {
     int                           contain_multi_value = 0;
     u_char                       *curr;
     u_char                       *elem_start;
@@ -35,17 +34,28 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int va
     narray = 1;
     elem_len = 0;
     while (j < value_len) {
-        if ((*curr == '&'  &&  j != value_len - 1) || j == value_len - 1) {
+        if (*curr == '&' || j == value_len - 1) {
             if (*curr == '&') {
                 contain_multi_value = 1;
             }
-            if (j == value_len - 1) {
+
+            if (j == value_len - 1  && *curr != '&') {
                 lua_pushlstring(L, (char *) elem_start, elem_len + 1);
 
             } else {
                 lua_pushlstring(L, (char *) elem_start, elem_len);
             }
             narray++;
+
+            if (max > 0 && narray - 1 >= max) {
+                break;
+            }
+
+            if (j == value_len - 1 && *curr  == '&') {
+                lua_pushliteral(L,  "");
+                narray++;
+                break;
+            }
             elem_start = curr + 1;
             elem_len = 0;
 
@@ -59,15 +69,16 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,  int va
         lua_createtable(L, narray, 0);
         table_idx = -narray;
         lua_insert(L, table_idx);
-        for (k = narray-1; k > 0 ; k--) {
+        for (k = narray - 1; k > 0 ; k--) {
             lua_rawseti(L, table_idx++, k);
         }
         lua_settable(L, -3);
+        return narray - 2;
 
     } else {
         ngx_http_lua_set_multi_value_table(L, -3);
+        return 0;
     }
-    return contain_multi_value;
 }
 
 
@@ -78,14 +89,12 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
     int                           value_len, key_len, total_len;
     int                           cookie_num;
     int                           count = 0;
+    int                           narray;
     key_start = start;
     total_len = 0;
     while (start < end) {
         if ((start == end - 1) || ((*start == ';' || *start  == ','))) {
             key_len = 0;
-            /* while (key_start < end && *key_start == ' ') {
-                key_start++;
-            } */
             curr = key_start;
             while (*curr != '=') {
                 key_len++;
@@ -103,6 +112,7 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
 
                 if (*start == '=')
                     lua_pushliteral(L,  "");
+
                 else
                     lua_pushboolean(L, 1);
 
@@ -111,12 +121,13 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
             } else {
                 lua_pushlstring(L, (char *) key_start, key_len);
                 value_start = curr + 1;
-                /* while (value_start < end && *value_start == ' ') {
+                while (value_start < end && *value_start == ' ') {
                     value_start++;
-                } */
+                    start++;
+                }
                 value_len = total_len - key_len - 1;
 
-                if (start == end - 1 && *start != ';'){
+                if (start == end - 1 && *start != ';' && *start != ','){
                     value_len += 1;
                 }
 
@@ -125,14 +136,22 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
                     ngx_http_lua_set_multi_value_table(L, -3);
 
                 } else {
-                    ngx_http_lua_ngx_cookie_process_value(L, value_start, value_len);
+                    narray = ngx_http_lua_ngx_cookie_process_value(L, value_start, value_len, max - count);
+                    count += narray;
                 }
             }
-
+            if (max > 0 && ++count >= max) {
+                        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                                       "lua hit request cookie limit %d", max);
+                        return count;
+            }
             start++;
-            while (start < end && *start == ' ') {
+
+            /* trim leading spaces and semicolons*/
+            while (start < end && (*start == ' ' || *start  ==  ';' || *start  ==  ',')) {
                 start++;
             }
+
             key_start = start;
             key_len = 0;
             value_len = 0;
@@ -142,14 +161,8 @@ ngx_http_lua_ngx_cookie_parser(lua_State *L, u_char *start,  u_char *end, int ma
             start++;
             total_len++;
         }
-
-        if (max > 0 && ++count == max) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua hit request cookie limit %d", max);
-            return 1;
-        }
     }
-    return 1;
+    return count;
 }
 
 static int
@@ -160,6 +173,7 @@ ngx_http_lua_ngx_req_get_cookies(lua_State *L) {
     int                           n;
     ngx_http_request_t           *r;
     int                           max;
+    int                           nread = 0;
     u_char                       *start, *end;
 
     n = lua_gettop(L);
@@ -170,6 +184,9 @@ ngx_http_lua_ngx_req_get_cookies(lua_State *L) {
 
         } else {
             max = luaL_checkinteger(L, 1);
+            if (max < 0) {
+                max = 0;
+            }
         }
 
     } else {
@@ -196,10 +213,14 @@ ngx_http_lua_ngx_req_get_cookies(lua_State *L) {
         while (start < end && *start == ' ') {
             start++;
         }
-        ngx_http_lua_ngx_cookie_parser(L, start, end, max, r);
+        nread = ngx_http_lua_ngx_cookie_parser(L, start, end, max, r);
+        max -= nread;
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua request cookie: \"%V: %V\"",
                         &cookie[i]->key, &cookie[i]->value);
+        if (max <= 0) {
+            break;
+        }
     }
 
     return 1;
