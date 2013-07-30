@@ -72,7 +72,7 @@ ngx_http_lua_set_by_chunk(lua_State *L, ngx_http_request_t *r, ngx_str_t *val,
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
-        cln->data = r;
+        cln->data = ctx;
         ctx->cleanup = &cln->handler;
     }
 

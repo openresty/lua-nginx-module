@@ -429,7 +429,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     }
 
     cln->handler = ngx_http_lua_request_cleanup_handler;
-    cln->data = r;
+    cln->data = ctx;
     ctx->cleanup = &cln->handler;
 
     ctx->entered_content_phase = 1;

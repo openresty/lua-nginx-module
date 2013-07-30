@@ -288,6 +288,7 @@ struct ngx_http_lua_co_ctx_s {
 
 
 typedef struct ngx_http_lua_ctx_s {
+    ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
