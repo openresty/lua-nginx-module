@@ -491,7 +491,8 @@ ngx_http_lua_ngx_crc32_long(lua_State *L)
 
 
 static int
-ngx_http_lua_ngx_encode_args(lua_State *L) {
+ngx_http_lua_ngx_encode_args(lua_State *L)
+{
     ngx_str_t                    args;
 
     if (lua_gettop(L) != 1) {
@@ -507,7 +508,8 @@ ngx_http_lua_ngx_encode_args(lua_State *L) {
 
 
 static int
-ngx_http_lua_ngx_decode_args(lua_State *L) {
+ngx_http_lua_ngx_decode_args(lua_State *L)
+{
     u_char                      *buf;
     u_char                      *tmp;
     size_t                       len = 0;

@@ -21,7 +21,8 @@ static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
 static int
-ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
+ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
+{
     ngx_http_request_t          *r;
     ngx_str_t                    args;
     const char                  *msg;
@@ -80,7 +81,8 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L) {
 
 
 static int
-ngx_http_lua_ngx_req_get_uri_args(lua_State *L) {
+ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
+{
     ngx_http_request_t          *r;
     u_char                      *buf;
     u_char                      *last;
