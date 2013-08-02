@@ -854,3 +854,105 @@ content_type: anything
 --- no_error_log
 [error]
 
+
+
+=== TEST 43: set multiple response header
+--- config
+    location /read {
+        content_by_lua '
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain-" .. i;
+            end
+
+            ngx.say(ngx.header["X-Direct-50"]);
+        ';
+    }
+--- request
+GET /read
+--- response_body
+text/my-plain-50
+--- no_error_log
+[error]
+
+
+
+=== TEST 44: set multiple response header and then reset and then clear
+--- config
+    location /read {
+        content_by_lua '
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain-" .. i;
+            end
+
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain"
+            end
+
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = nil
+            end
+
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_body
+ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 45: set response content-type header for multiple times
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.content_type = "text/my-plain";
+            ngx.header.content_type = "text/my-plain-2";
+            ngx.say("Hi");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Content-Type: text/my-plain-2
+--- response_body
+Hi
+
+
+
+=== TEST 46: set Last-Modified response header for multiple times
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.last_modified = ngx.http_time(1290079655)
+            ngx.header.last_modified = ngx.http_time(1290079654)
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Last-Modified: Thu, 18 Nov 2010 11:27:34 GMT
+--- response_body
+ok
+
+
+
+=== TEST 47: set Last-Modified response header and then clear
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.last_modified = ngx.http_time(1290079655)
+            ngx.header.last_modified = nil
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+!Last-Modified
+--- response_body
+ok
+
