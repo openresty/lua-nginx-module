@@ -283,7 +283,6 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
-    char                        *err = NULL;
 
     ngx_http_lua_set_var_data_t     *filter_data = data;
 
@@ -296,17 +295,10 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     /*  load Lua inline script (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, filter_data->script.data,
                                        filter_data->script.len,
-                                       filter_data->key, "set_by_lua", &err,
+                                       filter_data->key, "set_by_lua",
                                        llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "failed to load Lua inlined code: %s", err);
-
         return NGX_ERROR;
     }
 

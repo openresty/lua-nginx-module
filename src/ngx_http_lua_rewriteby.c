@@ -148,7 +148,6 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
-    char                        *err;
 
     dd("rewrite by lua inline");
 
@@ -161,17 +160,10 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.value.data,
                                        llcf->rewrite_src.value.len,
                                        llcf->rewrite_src_key,
-                                       "rewrite_by_lua", &err,
+                                       "rewrite_by_lua",
                                        llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua inlined code: %s", err);
-
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 

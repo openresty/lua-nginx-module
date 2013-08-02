@@ -156,7 +156,6 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
-    char                        *err;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
@@ -167,18 +166,11 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->body_filter_src.value.data,
                                        llcf->body_filter_src.value.len,
                                        llcf->body_filter_src_key,
-                                       "body_filter_by_lua", &err,
+                                       "body_filter_by_lua",
                                        llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "Failed to load Lua inlined code: %s", err);
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     rc = ngx_http_lua_body_filter_by_chunk(L, r, in);

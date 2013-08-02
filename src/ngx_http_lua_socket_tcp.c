@@ -45,7 +45,8 @@ static void ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_send(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
-static ngx_int_t ngx_http_lua_socket_test_connect(ngx_connection_t *c);
+static ngx_int_t ngx_http_lua_socket_test_connect(ngx_http_request_t *r,
+    ngx_connection_t *c);
 static void ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, ngx_uint_t ft_type);
 static void ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
@@ -2247,7 +2248,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
         ngx_del_timer(c->write);
     }
 
-    rc = ngx_http_lua_socket_test_connect(c);
+    rc = ngx_http_lua_socket_test_connect(r, c);
     if (rc != NGX_OK) {
         if (rc > 0) {
             u->socket_errno = (ngx_err_t) rc;
@@ -2380,10 +2381,12 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_socket_test_connect(ngx_connection_t *c)
+ngx_http_lua_socket_test_connect(ngx_http_request_t *r, ngx_connection_t *c)
 {
     int              err;
     socklen_t        len;
+
+    ngx_http_lua_loc_conf_t     *llcf;
 
 #if (NGX_HAVE_KQUEUE)
 
@@ -2404,9 +2407,12 @@ ngx_http_lua_socket_test_connect(ngx_connection_t *c)
         }
 
         if (ev) {
-            (void) ngx_connection_error(c, ev->kq_errno,
-                                        "kevent() reported that connect() "
-                                        "failed");
+            llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+            if (llcf->log_socket_errors) {
+                (void) ngx_connection_error(c, ev->kq_errno,
+                                            "kevent() reported that "
+                                            "connect() failed");
+            }
             return ev->kq_errno;
         }
 
@@ -2428,7 +2434,10 @@ ngx_http_lua_socket_test_connect(ngx_connection_t *c)
         }
 
         if (err) {
-            (void) ngx_connection_error(c, err, "connect() failed");
+            llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+            if (llcf->log_socket_errors) {
+                (void) ngx_connection_error(c, err, "connect() failed");
+            }
             return err;
         }
     }
