@@ -3696,6 +3696,7 @@ Fetching the shm-based Lua dictionary object for the shared memory zone named `D
 The resulting object `dict` has the following methods:
 
 * [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get)
+* [get_stale](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get_stale)
 * [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set)
 * [safe_set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.safe_set)
 * [add](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.add)
@@ -3779,6 +3780,22 @@ These two forms are fundamentally equivalent.
 If the user flags is `0` (the default), then no flags value will be returned.
 
 This feature was first introduced in the `v0.3.1rc22` release.
+
+See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
+ngx.shared.DICT.get_stale
+-------------------------
+**syntax:** *value, flags, stale = ngx.shared.DICT:get_stale(key)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Similar to the [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get) method but returns the value even if the key has already expired.
+
+Returns a 3rd value, `stale`, indicating whether the key has expired or not.
+
+Note that the value of an expired key is not guaranteed to be available so one should never rely on the availability of expired items.
+
+This method was first introduced in the `0.8.6` release.
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 

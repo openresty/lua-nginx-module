@@ -3573,6 +3573,7 @@ Fetching the shm-based Lua dictionary object for the shared memory zone named <c
 The resulting object <code>dict</code> has the following methods:
 
 * [[#ngx.shared.DICT.get|get]]
+* [[#ngx.shared.DICT.get_stale|get_stale]]
 * [[#ngx.shared.DICT.set|set]]
 * [[#ngx.shared.DICT.safe_set|safe_set]]
 * [[#ngx.shared.DICT.add|add]]
@@ -3655,6 +3656,21 @@ These two forms are fundamentally equivalent.
 If the user flags is <code>0</code> (the default), then no flags value will be returned.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.get_stale ==
+'''syntax:''' ''value, flags, stale = ngx.shared.DICT:get_stale(key)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+Similar to the [[#ngx.shared.DICT.get|get]] method but returns the value even if the key has already expired.
+
+Returns a 3rd value, <code>stale</code>, indicating whether the key has expired or not.
+
+Note that the value of an expired key is not guaranteed to be available so one should never rely on the availability of expired items.
+
+This method was first introduced in the <code>0.8.6</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
