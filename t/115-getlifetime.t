@@ -25,7 +25,6 @@ __DATA__
             tcpsock = ngx.socket.tcp()
             local ok, err
             local port = 1984
-            local epsilon = 30
             local interval_time = 1
 
             ok, err = tcpsock:connect("127.0.0.1", port)
@@ -58,7 +57,6 @@ GET /t
             tcpsock = ngx.socket.tcp()
             local port = 1984
             local interval_time = 1
-            local epsilon = 30
 
             local ok, err = tcpsock:connect("127.0.0.1", port)
             if not ok then
@@ -101,7 +99,6 @@ GET /t
         content_by_lua '
             tcpsock = ngx.socket.tcp()
             local port = 1984
-            local epsilon = 30
             local interval_time = 1
             local ok, err = tcpsock:connect("127.0.0.1", port)
             if not ok then
