@@ -62,6 +62,8 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_msec_t                       read_timeout;
     ngx_msec_t                       send_timeout;
     ngx_msec_t                       connect_timeout;
+    time_t                           start_sec;
+    ngx_msec_t                       start_msec;
 
     ngx_http_upstream_resolved_t    *resolved;
 
@@ -117,6 +119,8 @@ typedef struct {
 
     ngx_queue_t                      queue;
     ngx_connection_t                *connection;
+    time_t                           start_sec;
+    ngx_msec_t                       start_msec;
 
     socklen_t                        socklen;
     struct sockaddr_storage          sockaddr;

@@ -4130,6 +4130,7 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil)
 * [setkeepalive](http://wiki.nginx.org/HttpLuaModule#tcpsock:setkeepalive)
 * [getreusedtimes](http://wiki.nginx.org/HttpLuaModule#tcpsock:getreusedtimes)
+* [getlifetime](http://wiki.nginx.org/HttpLuaModule#tcpsock:getlifetime)
 
 It is intended to be compatible with the TCP API of the [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) library but is 100% nonblocking out of the box. Also, we introduce some new APIs to provide more functionalities.
 
@@ -4440,6 +4441,14 @@ This method returns the (successfully) reused times for the current connection. 
 If the current connection does not come from the built-in connection pool, then this method always returns `0`, that is, the connection has never been reused (yet). If the connection comes from the connection pool, then the return value is always non-zero. So this method can also be used to determine if the current connection comes from the pool.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+tcpsock:getlifetime
+----------------------
+**syntax:** *lifetime, err = tcpsock:getlifetime()*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+
+This method returns the (successfully) lifetime for the current connection. In case of error, it returns `nil` and a string describing the error.
 
 ngx.socket.connect
 ------------------

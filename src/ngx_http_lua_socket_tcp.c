@@ -80,6 +80,7 @@ static int ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L);
 static int ngx_http_lua_req_socket(lua_State *L);
 static void ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r);
 static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
+static int ngx_http_lua_socket_tcp_getlifetime(lua_State *L);
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     lua_State *L, int key_index,
@@ -192,6 +193,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_getreusedtimes);
     lua_setfield(L, -2, "getreusedtimes");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_getlifetime);
+    lua_setfield(L, -2, "getlifetime");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_setkeepalive);
     lua_setfield(L, -2, "setkeepalive");
@@ -2221,6 +2225,7 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_int_t                    rc;
+    ngx_time_t                  *tp;
     ngx_connection_t            *c;
     ngx_http_lua_loc_conf_t     *llcf;
 
@@ -2252,6 +2257,10 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
         ngx_http_lua_socket_handle_error(r, u, NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return;
     }
+
+    tp = ngx_timeofday();
+    u->start_sec = tp->sec;
+    u->start_msec = tp->msec;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket connected");
@@ -3201,6 +3210,40 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 }
 
 
+static int
+ngx_http_lua_socket_tcp_getlifetime(lua_State *L)
+{
+    ngx_http_lua_socket_tcp_upstream_t    *u;
+    ngx_time_t      *tp;
+    ngx_msec_int_t   ms;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument "
+                          "(including the object), but got %d", lua_gettop(L));
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+
+    if (u == NULL || u->peer.connection == NULL || u->ft_type || u->eof) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    tp = ngx_timeofday();
+    ms = (ngx_msec_int_t)
+             ((tp->sec - u->start_sec) * 1000 + (tp->msec - u->start_msec));
+    ms = ngx_max(ms, 0);
+
+    lua_pushinteger(L, ms);
+    return 1;
+}
+
+
+
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
     ngx_http_lua_main_conf_t            *lmcf;
@@ -3441,6 +3484,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     item->socklen = pc->socklen;
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
     item->reused = u->reused;
+    item->start_sec = u->start_sec;
+    item->start_msec = u->start_msec;
 
     if (c->read->ready) {
         rc = ngx_http_lua_socket_keepalive_close_handler(c->read);
@@ -3530,6 +3575,9 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
         pc->cached = 1;
 
         u->reused = item->reused + 1;
+
+        u->start_sec = item->start_sec;
+        u->start_msec = item->start_msec;
 
 #if 1
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
