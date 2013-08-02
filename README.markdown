@@ -1095,7 +1095,7 @@ Default to 30 connections for every pool.
 
 When the connection pool exceeds the available size limit, the least recently used (idle) connection already in the pool will be closed to make room for the current connection.
 
-Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so so size limit specified here also applies to every single nginx worker process.
+Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so size limit specified here also applies to every single nginx worker process.
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
@@ -1578,7 +1578,9 @@ Here is a basic example:
     res = ngx.location.capture(uri)
 
 
-Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
+Returns a Lua table with three slots (`res.status`, `res.header`, `res.body`, and `res.truncated`).
+
+`res.status` holds the response status code for the subrequest response.
 
 `res.header` holds all the response headers of the
 subrequest and it is a normal Lua table. For multi-value response headers,
@@ -1594,6 +1596,8 @@ lines:
 
 Then `res.header["Set-Cookie"]` will be evaluated to the table value
 `{"a=3", "foo=bar", "baz=blah"}`.
+
+`res.body` holds the subrequest's response body data, which might be truncated. You always need to check the `res.truncated` boolean flag to see if `res.body` contains truncated data.
 
 URI query strings can be concatenated to URI itself, for instance,
 
@@ -3682,6 +3686,8 @@ This feature was first introduced in the `v0.2.1rc15` release.
 ngx.shared.DICT
 ---------------
 **syntax:** *dict = ngx.shared.DICT*
+
+**syntax:** *dict = ngx.shared[name_var]*
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
