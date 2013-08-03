@@ -658,7 +658,7 @@ Cache-Control: no-cache
             ngx.header.cache_control = { "private", "no-store" }
             ngx.header.cache_control = { "no-cache", "blah", "foo" }
             ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
-            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, "; "))
+            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, ", "))
         ';
     }
 --- request
@@ -955,4 +955,44 @@ GET /read
 !Last-Modified
 --- response_body
 ok
+
+
+
+=== TEST 48: github #20: segfault caused by the nasty optimization in the nginx core (write)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            ngx.header.foo = 1
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 49: github #20: segfault caused by the nasty optimization in the nginx core (read)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            local v = ngx.header.foo
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
 
