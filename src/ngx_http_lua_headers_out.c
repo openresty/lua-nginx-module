@@ -154,6 +154,7 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
+
         if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
@@ -544,6 +545,7 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
+
         if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
