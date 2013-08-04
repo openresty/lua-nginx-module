@@ -429,7 +429,7 @@ GET /baz
 --- response_body_like: 302
 --- error_code: 302
 --- response_headers
-Location: http://localhost:1984/foo/bar
+Location: http://localhost:$ServerPort/foo/bar
 --- SKIP
 
 
