@@ -142,7 +142,11 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
          * for a nasty optimization purpose, and
          * we have to work-around it here */
 
-        r->headers_out.location->hash = 0;
+        r->headers_out.location->hash =
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+
+        ngx_str_set(&r->headers_out.location->key, "Location");
     }
 #endif
 
@@ -528,7 +532,11 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
          * for a nasty optimization purpose, and
          * we have to work-around it here */
 
-        r->headers_out.location->hash = 0;
+        r->headers_out.location->hash =
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+
+        ngx_str_set(&r->headers_out.location->key, "Location");
     }
 #endif
 
