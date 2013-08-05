@@ -30,21 +30,21 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
     int                           contain_multi_value = 0;
     u_char                       *curr;
     u_char                       *elem_start;
-    int                           j, k, elem_len;
+    int                           i, j, elem_len;
     int                           narray;
     int                           table_idx;
     curr = value_start;
     elem_start = value_start;
-    j = 0;
+    i = 0;
     narray = 1;
     elem_len = 0;
-    while (j < value_len) {
-        if (*curr == '&' || j == value_len - 1) {
+    while (i < value_len) {
+        if (*curr == '&' || i == value_len - 1) {
             if (*curr == '&') {
                 contain_multi_value = 1;
             }
 
-            if (j == value_len - 1  && *curr != '&') {
+            if (i == value_len - 1  && *curr != '&') {
                 lua_pushlstring(L, (char *) elem_start, elem_len + 1);
 
             } else {
@@ -56,7 +56,7 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
                 break;
             }
 
-            if (j == value_len - 1 && *curr == '&') {
+            if (i == value_len - 1 && *curr == '&') {
                 lua_pushliteral(L, "");
                 narray++;
                 break;
@@ -68,14 +68,15 @@ ngx_http_lua_ngx_cookie_process_value(lua_State *L, u_char *value_start,
             elem_len++;
         }
         curr++;
-        j++;
+        i++;
     }
+
     if (contain_multi_value) {
         lua_createtable(L, narray, 0);
         table_idx = -narray;
         lua_insert(L, table_idx);
-        for (k = narray - 1; k > 0 ; k--) {
-            lua_rawseti(L, table_idx++, k);
+        for (j = narray - 1; j > 0 ; j--) {
+            lua_rawseti(L, table_idx++, j);
         }
         lua_settable(L, -3);
         return narray - 2;

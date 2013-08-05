@@ -2567,6 +2567,65 @@ Nginx API for Lua
 
     Removing the "max_args" cap is strongly discouraged.
 
+  ngx.req.get_cookies
+    syntax: *cookies = ngx.req.get_cookies(max_cookies?)*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua*, body_filter_by_lua, log_by_lua**
+
+    Returns a Lua table holding all the current request cookies.
+
+        local c = ngx.req.get_cookies()
+        for k, v in pairs(c) do
+            if type(v) == 'table' then
+                ...
+            end
+            else
+                ...
+            end
+        end
+
+    To read an individual key:
+
+        ngx.say("Host: ", ngx.req.get_cookies()["foo"])
+
+    If a key-value pair contains multiple values, the values will parsed as
+    an array table, for example:
+
+    Cookie: foo=bar&123&hello
+
+    the value of "ngx.req.get_cookies()" will be a Lua (array) table such
+    as:
+
+        {["foo"] = {"bar", "123", "hello"}}
+
+    For multiple instances of cookies such as:
+
+        Cookie: foo=bar
+        Cookie: foo2=bar2
+        Cookie: foo3=bar3
+
+    the value of "ngx.req.get_cookies()" will be a Lua (array) table such
+    as:
+
+        {["foo"] = "bar", ["foo2"] = "bar2", ["foo3"] = "bar3"}
+
+    Note that a maximum of 100 cookies key-value pairs are parsed by default
+    and that additional request cookies are silently discarded to guard
+    against potential denial of service attacks.
+
+    However, the optional "max_cookies" function argument can be used to
+    override this limit:
+
+        local args = ngx.req.get_cookies(10)
+
+    This argument can be set to zero to remove the limit and to process all
+    request headers received:
+
+        local args = ngx.req.get_cookies(0)
+
+    Removing the "max_cookies" cap is strongly discouraged.
+
   ngx.req.get_headers
     syntax: *headers = ngx.req.get_headers(max_headers?, raw?)*
 

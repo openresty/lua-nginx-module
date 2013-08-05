@@ -352,7 +352,7 @@ key: foo value:
     table[3] = hello
     table[4] = 
 
-=== TEST 16: request with mutiple cookies 
+=== TEST 16: request with mutiple cookies
 --- config eval
 $::dump_cookie_conf_def
 --- request
