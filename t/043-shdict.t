@@ -1452,3 +1452,26 @@ cur value:  hello hello hello hello hello hello hello hello hello hello1
 --- no_error_log
 [error]
 
+
+
+=== TEST 60: get_stale: expired entries can still be fetched
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, 0.01)
+            dogs:set("blah", 33, 0.1)
+            ngx.sleep(0.02)
+            local val, flags, stale = dogs:get_stale("foo")
+            ngx.say(val, ", ", flags, ", ", stale)
+            local val, flags, stale = dogs:get_stale("blah")
+            ngx.say(val, ", ", flags, ", ", stale)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32, nil, true
+33, nil, false

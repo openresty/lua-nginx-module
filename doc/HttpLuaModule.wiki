@@ -1055,7 +1055,7 @@ Default to 30 connections for every pool.
 
 When the connection pool exceeds the available size limit, the least recently used (idle) connection already in the pool will be closed to make room for the current connection.
 
-Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so so size limit specified here also applies to every single nginx worker process.
+Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so size limit specified here also applies to every single nginx worker process.
 
 This directive was first introduced in the <code>v0.5.0rc1</code> release.
 
@@ -1519,7 +1519,9 @@ Here is a basic example:
     res = ngx.location.capture(uri)
 </geshi>
 
-Returns a Lua table with three slots (<code>res.status</code>, <code>res.header</code>, and <code>res.body</code>).
+Returns a Lua table with three slots (<code>res.status</code>, <code>res.header</code>, <code>res.body</code>, and <code>res.truncated</code>).
+
+<code>res.status</code> holds the response status code for the subrequest response.
 
 <code>res.header</code> holds all the response headers of the
 subrequest and it is a normal Lua table. For multi-value response headers,
@@ -1535,6 +1537,8 @@ lines:
 
 Then <code>res.header["Set-Cookie"]</code> will be evaluated to the table value
 <code>{"a=3", "foo=bar", "baz=blah"}</code>.
+
+<code>res.body</code> holds the subrequest's response body data, which might be truncated. You always need to check the <code>res.truncated</code> boolean flag to see if <code>res.body</code> contains truncated data.
 
 URI query strings can be concatenated to URI itself, for instance,
 
@@ -3627,6 +3631,8 @@ This feature was first introduced in the <code>v0.2.1rc15</code> release.
 == ngx.shared.DICT ==
 '''syntax:''' ''dict = ngx.shared.DICT''
 
+'''syntax:''' ''dict = ngx.shared[name_var]''
+
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named <code>DICT</code> defined by the [[#lua_shared_dict|lua_shared_dict]] directive.
@@ -3634,6 +3640,7 @@ Fetching the shm-based Lua dictionary object for the shared memory zone named <c
 The resulting object <code>dict</code> has the following methods:
 
 * [[#ngx.shared.DICT.get|get]]
+* [[#ngx.shared.DICT.get_stale|get_stale]]
 * [[#ngx.shared.DICT.set|set]]
 * [[#ngx.shared.DICT.safe_set|safe_set]]
 * [[#ngx.shared.DICT.add|add]]
@@ -3716,6 +3723,21 @@ These two forms are fundamentally equivalent.
 If the user flags is <code>0</code> (the default), then no flags value will be returned.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.get_stale ==
+'''syntax:''' ''value, flags, stale = ngx.shared.DICT:get_stale(key)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+Similar to the [[#ngx.shared.DICT.get|get]] method but returns the value even if the key has already expired.
+
+Returns a 3rd value, <code>stale</code>, indicating whether the key has expired or not.
+
+Note that the value of an expired key is not guaranteed to be available so one should never rely on the availability of expired items.
+
+This method was first introduced in the <code>0.8.6</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
