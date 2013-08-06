@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 14);
+plan tests => repeat_each() * (2 * blocks() + 18);
 
 #no_diff();
 #no_long_string();
@@ -1268,4 +1268,44 @@ Connection: close\r
 foo_bar: some value\r
 \r
 $}
+
+
+
+=== TEST 40: HTTP 0.9 (set & get)
+--- config
+    location /foo {
+        content_by_lua '
+            ngx.req.set_header("X-Foo", "howdy");
+            ngx.say("X-Foo: ", ngx.req.get_headers()["X-Foo"])
+        ';
+    }
+--- raw_request eval
+"GET /foo\r\n"
+--- response_headers
+! X-Foo
+--- response_body
+X-Foo: nil
+--- http09
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: HTTP 0.9 (clear)
+--- config
+    location /foo {
+        content_by_lua '
+            ngx.req.set_header("X-Foo", "howdy");
+            ngx.say("X-Foo: ", ngx.req.get_headers()["X-Foo"])
+        ';
+    }
+--- raw_request eval
+"GET /foo\r\n"
+--- response_headers
+! X-Foo
+--- response_body
+X-Foo: nil
+--- http09
+--- no_error_log
+[error]
 
