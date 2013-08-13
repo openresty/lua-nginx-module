@@ -604,6 +604,10 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
+    if (r->http_version < NGX_HTTP_VERSION_10) {
+        return 0;
+    }
+
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
