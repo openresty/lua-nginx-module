@@ -64,6 +64,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     lua_State                     *co;  /* new coroutine to be created */
     ngx_http_lua_main_conf_t      *lmcf;
     ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
+    int                            nargs;
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
                  "Lua function expected");
@@ -97,10 +98,16 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     lua_xmove(L, co, 1);
     lua_replace(co, LUA_GLOBALSINDEX);
 
-    lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
+    nargs = lua_gettop(L);
+
 
     lua_pushvalue(L, 1);    /* copy entry function to top of L*/
     lua_xmove(L, co, 1);    /* move entry function from L to co */
+
+    lua_xmove(L, co, nargs-1); /* L stack: func */
+    /* co stack: func [args] */
+
+    lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
 
     if (pcoctx) {
         *pcoctx = coctx;

@@ -5290,7 +5290,7 @@ Nginx API for Lua
     This API was first enabled in the "v0.7.0" release.
 
   ngx.on_abort
-    syntax: *ok, err = ngx.on_abort(callback)*
+    syntax: *ok, err = ngx.on_abort(callback, user_arg1, user_arg2, ...)*
 
     context: *rewrite_by_lua*, access_by_lua*, content_by_lua**
 

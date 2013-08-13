@@ -3287,6 +3287,7 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
+    int                          nargs;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -3306,7 +3307,9 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 
     c = r->connection;
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+    nargs = lua_gettop(ctx->cur_co_ctx->co);
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nargs - 1);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
