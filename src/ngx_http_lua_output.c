@@ -514,6 +514,14 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return 2;
     }
 
+#if 1
+    if (!ctx->headers_sent) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nothing to flush");
+        return 2;
+    }
+#endif
+
     if (ctx->flush_buf) {
         cl = ctx->flush_buf;
 
