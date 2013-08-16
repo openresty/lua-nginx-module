@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 16);
+plan tests => repeat_each() * (blocks() * 4 + 17);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -789,3 +789,44 @@ on abort called
 [error]
 [alert]
 
+=== TEST 18: abort callback function with args
+--- config
+    location /t {
+        lua_check_client_abort on;
+        content_by_lua '
+            function ab(a, b, c)
+                ngx.log(ngx.NOTICE, a .. b .. c .. " on abort called")
+            end
+            local ok, err = ngx.on_abort(ab, "foo", "bar", 3)
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.sleep(0.7)
+            ngx.log(ngx.NOTICE, "main handler done")
+        ';
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+lua check broken conn
+terminate 2: ok
+terminate 1: ok
+delete thread 2
+delete thread 1
+lua req cleanup
+
+--- timeout: 0.2
+--- abort
+--- wait: 0.7
+--- ignore_response
+--- no_error_log
+[error]
+--- error_log
+client prematurely closed connection
+foobar3 on abort called
+main handler done

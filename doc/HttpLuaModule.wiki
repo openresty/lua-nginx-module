@@ -4569,7 +4569,7 @@ And it will generate the following output:
 This API was first enabled in the <code>v0.7.0</code> release.
 
 == ngx.on_abort ==
-'''syntax:''' ''ok, err = ngx.on_abort(callback)''
+'''syntax:''' ''ok, err = ngx.on_abort(callback, user_arg1, user_arg2, ...)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
