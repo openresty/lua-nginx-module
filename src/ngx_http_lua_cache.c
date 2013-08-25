@@ -406,8 +406,10 @@ done:
     /* package loaded */
     lua_pop(L, 2);
 
+#if 0
     lua_newtable(L);
     lua_setglobal(L, "_G");
+#endif
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
