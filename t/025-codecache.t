@@ -590,7 +590,7 @@ _G.foo: 1
 
 
 
-=== TEST 1: github #257: globals cleared when code cache off
+=== TEST 18: github #257: globals cleared when code cache off
 --- http_config
     lua_code_cache off;
     init_by_lua '
