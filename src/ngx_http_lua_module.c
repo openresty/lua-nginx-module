@@ -382,6 +382,7 @@ static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
     ngx_int_t                   rc;
+    ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
@@ -422,9 +423,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
     dd("requires log: %d", (int) lmcf->requires_log);
 
     if (lmcf->requires_log) {
-        h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
+        arr = &cmcf->phases[NGX_HTTP_LOG_PHASE].handlers;
+        h = ngx_array_push(arr);
         if (h == NULL) {
             return NGX_ERROR;
+        }
+
+        if (arr->nelts > 1) {
+            h = arr->elts;
+            ngx_memmove(&h[1], h,
+                        (arr->nelts - 1) * sizeof(ngx_http_handler_pt));
         }
 
         *h = ngx_http_lua_log_handler;
