@@ -132,10 +132,29 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         goto new_header;
     }
 
+#if 1
+    if (r->headers_out.location
+        && r->headers_out.location->value.len
+        && r->headers_out.location->value.data[0] == '/')
+    {
+        /* XXX ngx_http_core_find_config_phase, for example,
+         * may not initialize the "key" and "hash" fields
+         * for a nasty optimization purpose, and
+         * we have to work-around it here */
+
+        r->headers_out.location->hash =
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+
+        ngx_str_set(&r->headers_out.location->key, "Location");
+    }
+#endif
+
     part = &r->headers_out.headers.part;
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
+
         if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
@@ -146,7 +165,8 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
             i = 0;
         }
 
-        if (h[i].key.len == hv->key.len
+        if (h[i].hash != 0
+            && h[i].key.len == hv->key.len
             && ngx_strncasecmp(hv->key.data, h[i].key.data, h[i].key.len) == 0)
         {
             dd("found out header %.*s", (int) h[i].key.len, h[i].key.data);
@@ -503,10 +523,29 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
 
     found = 0;
 
+#if 1
+    if (r->headers_out.location
+        && r->headers_out.location->value.len
+        && r->headers_out.location->value.data[0] == '/')
+    {
+        /* XXX ngx_http_core_find_config_phase, for example,
+         * may not initialize the "key" and "hash" fields
+         * for a nasty optimization purpose, and
+         * we have to work-around it here */
+
+        r->headers_out.location->hash =
+            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
+                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+
+        ngx_str_set(&r->headers_out.location->key, "Location");
+    }
+#endif
+
     part = &r->headers_out.headers.part;
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
+
         if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
@@ -521,7 +560,8 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
             continue;
         }
 
-        if (h[i].key.len == key->len
+        if (h[i].hash != 0
+            && h[i].key.len == key->len
             && ngx_strncasecmp(key->data, h[i].key.data, h[i].key.len) == 0)
          {
              if (!found) {

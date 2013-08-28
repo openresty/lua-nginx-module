@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 no_long_string();
@@ -658,7 +658,7 @@ Cache-Control: no-cache
             ngx.header.cache_control = { "private", "no-store" }
             ngx.header.cache_control = { "no-cache", "blah", "foo" }
             ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
-            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, "; "))
+            ngx.say("Cache-Control: ", table.concat(ngx.header.cache_control, ", "))
         ';
     }
 --- request
@@ -851,6 +851,199 @@ Content-Type: text/my-plain
 somehing_else: hi
 something: hello
 content_type: anything
+--- no_error_log
+[error]
+
+
+
+=== TEST 43: set multiple response header
+--- config
+    location /read {
+        content_by_lua '
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain-" .. i;
+            end
+
+            ngx.say(ngx.header["X-Direct-50"]);
+        ';
+    }
+--- request
+GET /read
+--- response_body
+text/my-plain-50
+--- no_error_log
+[error]
+
+
+
+=== TEST 44: set multiple response header and then reset and then clear
+--- config
+    location /read {
+        content_by_lua '
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain-" .. i;
+            end
+
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = "text/my-plain"
+            end
+
+            for i = 1, 50 do
+                ngx.header["X-Direct-" .. i] = nil
+            end
+
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_body
+ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 45: set response content-type header for multiple times
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.content_type = "text/my-plain";
+            ngx.header.content_type = "text/my-plain-2";
+            ngx.say("Hi");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Content-Type: text/my-plain-2
+--- response_body
+Hi
+
+
+
+=== TEST 46: set Last-Modified response header for multiple times
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.last_modified = ngx.http_time(1290079655)
+            ngx.header.last_modified = ngx.http_time(1290079654)
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Last-Modified: Thu, 18 Nov 2010 11:27:34 GMT
+--- response_body
+ok
+
+
+
+=== TEST 47: set Last-Modified response header and then clear
+--- config
+    location /read {
+        content_by_lua '
+            ngx.header.last_modified = ngx.http_time(1290079655)
+            ngx.header.last_modified = nil
+            ngx.say("ok");
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+!Last-Modified
+--- response_body
+ok
+
+
+
+=== TEST 48: github #20: segfault caused by the nasty optimization in the nginx core (write)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            ngx.header.foo = 1
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_headers
+Location: http://localhost:$ServerPort/t/
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 49: github #20: segfault caused by the nasty optimization in the nginx core (read)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            local v = ngx.header.foo
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_body_like: 301 Moved Permanently
+--- response_headers
+Location: http://localhost:$ServerPort/t/
+--- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 50: github #20: segfault caused by the nasty optimization in the nginx core (read Location)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            ngx.header.Foo = ngx.header.location
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_headers
+Location: http://localhost:$ServerPort/t/
+Foo: /t/
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 51: github #20: segfault caused by the nasty optimization in the nginx core (set Foo and read Location)
+--- config
+    location = /t/ {
+        header_filter_by_lua '
+            ngx.header.Foo = 3
+            ngx.header.Foo = ngx.header.location
+        ';
+        proxy_pass http://127.0.0.1:$server_port;
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+Bah: baz
+--- response_headers
+Location: http://localhost:$ServerPort/t/
+Foo: /t/
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
 --- no_error_log
 [error]
 

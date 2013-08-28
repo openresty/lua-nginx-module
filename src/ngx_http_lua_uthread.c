@@ -154,9 +154,9 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
             nrets = lua_gettop(sub_coctx->co);
 
-            dd("child retval count: %d, %s: %s", n,
-                    luaL_typename(sub_coctx->co, -1),
-                    lua_tostring(sub_coctx->co, -1));
+            dd("child retval count: %d, %s: %s", (int) nrets,
+               luaL_typename(sub_coctx->co, -1),
+               lua_tostring(sub_coctx->co, -1));
 
             if (nrets) {
                 lua_xmove(sub_coctx->co, L, nrets);

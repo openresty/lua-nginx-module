@@ -143,7 +143,6 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 {
-    char                      *err;
     ngx_int_t                  rc;
     lua_State                 *L;
     ngx_http_lua_loc_conf_t   *llcf;
@@ -158,17 +157,10 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
                                        llcf->access_src.value.len,
                                        llcf->access_src_key,
-                                       "access_by_lua", &err,
+                                       "access_by_lua",
                                        llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua inlined code: %s", err);
-
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -179,7 +171,6 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 {
-    char                      *err;
     u_char                    *script_path;
     ngx_int_t                  rc;
     ngx_str_t                  eval_src;
@@ -206,16 +197,9 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-                                     &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load lua inlined code: %s", err);
-
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -285,8 +269,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        cln->handler = ngx_http_lua_request_cleanup;
-        cln->data = r;
+        cln->handler = ngx_http_lua_request_cleanup_handler;
+        cln->data = ctx;
         ctx->cleanup = &cln->handler;
     }
     /*  }}} */

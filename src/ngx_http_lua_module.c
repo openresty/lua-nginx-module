@@ -75,6 +75,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_MAIN_CONF_OFFSET,
       offsetof(ngx_http_lua_main_conf_t, regex_cache_max_entries),
       NULL },
+
+    { ngx_string("lua_regex_match_limit"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, regex_match_limit),
+      NULL },
 #endif
 
     { ngx_string("lua_package_cpath"),
@@ -375,6 +382,7 @@ static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
     ngx_int_t                   rc;
+    ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
@@ -415,9 +423,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
     dd("requires log: %d", (int) lmcf->requires_log);
 
     if (lmcf->requires_log) {
-        h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
+        arr = &cmcf->phases[NGX_HTTP_LOG_PHASE].handlers;
+        h = ngx_array_push(arr);
         if (h == NULL) {
             return NGX_ERROR;
+        }
+
+        if (arr->nelts > 1) {
+            h = arr->elts;
+            ngx_memmove(&h[1], h,
+                        (arr->nelts - 1) * sizeof(ngx_http_handler_pt));
         }
 
         *h = ngx_http_lua_log_handler;
@@ -526,6 +541,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->max_running_timers = NGX_CONF_UNSET;
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
+    lmcf->regex_match_limit = NGX_CONF_UNSET;
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
 
@@ -543,6 +559,10 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 #if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
         lmcf->regex_cache_max_entries = 1024;
+    }
+
+    if (lmcf->regex_match_limit == NGX_CONF_UNSET) {
+        lmcf->regex_match_limit = 0;
     }
 #endif
 

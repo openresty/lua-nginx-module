@@ -43,6 +43,7 @@ ngx_http_lua_atpanic(lua_State *L)
     }
 
     ngx_log_stderr(0, "lua atpanic: Lua VM crashed, reason: %*s", len, s);
+    ngx_quit = 1;
 
     /*  restore nginx execution */
     NGX_LUA_EXCEPTION_THROW(1);

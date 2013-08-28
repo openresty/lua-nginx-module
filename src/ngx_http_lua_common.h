@@ -112,6 +112,7 @@ struct ngx_http_lua_main_conf_s {
 #if (NGX_PCRE)
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
+    ngx_int_t            regex_match_limit;
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
@@ -287,6 +288,7 @@ struct ngx_http_lua_co_ctx_s {
 
 
 typedef struct ngx_http_lua_ctx_s {
+    ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */

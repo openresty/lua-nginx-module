@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 8);
+plan tests => repeat_each() * (blocks() * 3 + 9);
 
 #no_diff();
 #no_long_string();
@@ -517,4 +517,50 @@ stack traceback:
 in function 'error'
 in function 'bar'
 in function 'foo'
+
+
+
+=== TEST 29: Lua file does not exist
+--- config
+    location /lua {
+        echo ok;
+        log_by_lua_file html/test2.lua;
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- response_body
+ok
+--- error_log eval
+qr/failed to load external Lua file: cannot open .*? No such file or directory/
+
+
+
+=== TEST 30: log_by_lua runs before access logging (github issue #254)
+--- config
+    location /lua {
+        echo ok;
+        access_log logs/foo.log;
+        log_by_lua 'print("hello")';
+    }
+--- request
+GET /lua
+--- stap
+F(ngx_http_log_handler) {
+    println("log handler")
+}
+F(ngx_http_lua_log_handler) {
+    println("lua log handler")
+}
+--- stap_out
+lua log handler
+log handler
+
+--- response_body
+ok
+--- no_error_log
+[error]
 

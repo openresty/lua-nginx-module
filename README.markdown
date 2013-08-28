@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 20 June 2013.
+This document describes ngx_lua [v0.8.6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 August 2013.
 
 Synopsis
 ========
@@ -280,6 +280,22 @@ The default number of entries allowed is 1024 and when this limit is reached, ne
 
 
 Do not activate the `o` option for regular expressions (and/or `replace` string arguments for [ngx.re.sub](http://wiki.nginx.org/HttpLuaModule#ngx.re.sub) and [ngx.re.gsub](http://wiki.nginx.org/HttpLuaModule#ngx.re.gsub)) that are generated *on the fly* and give rise to infinite variations to avoid hitting the specified limit.
+
+lua_regex_match_limit
+---------------------
+**syntax:** *lua_regex_match_limit &lt;num&gt;*
+
+**default:** *lua_regex_match_limit 0*
+
+**context:** *http*
+
+Specifies the "match limit" used by the PCRE library when executing the [ngx.re API](http://wiki.nginx.org/HttpLuaModule#ngx.re.match). To quote the PCRE manpage, "the limit ... has the effect of limiting the amount of backtracking that can take place."
+
+When the limit is hit, the error string "pcre_exec() failed: -8" will be returned by the [ngx.re API](http://wiki.nginx.org/HttpLuaModule#ngx.re.match) functions on the Lua land.
+
+When setting the limit to 0, the default "match limit" when compiling the PCRE library is used. And this is the default value of this directive.
+
+This directive was first introduced in the `v0.8.5` release.
 
 lua_package_path
 ----------------
@@ -832,7 +848,7 @@ When the Lua code may change the length of the response body, then it is require
         # fastcgi_pass/proxy_pass/...
 
         header_filter_by_lua 'ngx.header.content_length = nil';
-        body_filter_by_lua 'ngx.arg[1] = {string.len(arg[1]), "\n"}'
+        body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\n"';
     }
 
 
@@ -1079,7 +1095,7 @@ Default to 30 connections for every pool.
 
 When the connection pool exceeds the available size limit, the least recently used (idle) connection already in the pool will be closed to make room for the current connection.
 
-Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so so size limit specified here also applies to every single nginx worker process.
+Note that the cosocket connection pool is per nginx worker process rather than per nginx server instance, so size limit specified here also applies to every single nginx worker process.
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
@@ -1562,7 +1578,9 @@ Here is a basic example:
     res = ngx.location.capture(uri)
 
 
-Returns a Lua table with three slots (`res.status`, `res.header`, and `res.body`).
+Returns a Lua table with three slots (`res.status`, `res.header`, `res.body`, and `res.truncated`).
+
+`res.status` holds the response status code for the subrequest response.
 
 `res.header` holds all the response headers of the
 subrequest and it is a normal Lua table. For multi-value response headers,
@@ -1578,6 +1596,8 @@ lines:
 
 Then `res.header["Set-Cookie"]` will be evaluated to the table value
 `{"a=3", "foo=bar", "baz=blah"}`.
+
+`res.body` holds the subrequest's response body data, which might be truncated. You always need to check the `res.truncated` boolean flag to see if `res.body` contains truncated data.
 
 URI query strings can be concatenated to URI itself, for instance,
 
@@ -3667,6 +3687,8 @@ ngx.shared.DICT
 ---------------
 **syntax:** *dict = ngx.shared.DICT*
 
+**syntax:** *dict = ngx.shared[name_var]*
+
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named `DICT` defined by the [lua_shared_dict](http://wiki.nginx.org/HttpLuaModule#lua_shared_dict) directive.
@@ -3674,6 +3696,7 @@ Fetching the shm-based Lua dictionary object for the shared memory zone named `D
 The resulting object `dict` has the following methods:
 
 * [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get)
+* [get_stale](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get_stale)
 * [set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.set)
 * [safe_set](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.safe_set)
 * [add](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.add)
@@ -3757,6 +3780,22 @@ These two forms are fundamentally equivalent.
 If the user flags is `0` (the default), then no flags value will be returned.
 
 This feature was first introduced in the `v0.3.1rc22` release.
+
+See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
+
+ngx.shared.DICT.get_stale
+-------------------------
+**syntax:** *value, flags, stale = ngx.shared.DICT:get_stale(key)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Similar to the [get](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.get) method but returns the value even if the key has already expired.
+
+Returns a 3rd value, `stale`, indicating whether the key has expired or not.
+
+Note that the value of an expired key is not guaranteed to be available so one should never rely on the availability of expired items.
+
+This method was first introduced in the `0.8.6` release.
 
 See also [ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT).
 
@@ -3894,7 +3933,7 @@ ngx.shared.DICT.flush_all
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Flushes out all the items in the dictionary.
+Flushes out all the items in the dictionary. This method does not actuall free up all the memory blocks in the dictionary but just marks all the existing items as expired.
 
 This feature was first introduced in the `v0.5.0rc17` release.
 
@@ -3907,6 +3946,8 @@ ngx.shared.DICT.flush_expired
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Flushes out the expired items in the dictionary, up to the maximal number specified by the optional `max_count` argument. When the `max_count` argument is given `0` or not given at all, then it means unlimited. Returns the number of items that have actually been flushed.
+
+Unlike the [flush_all](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT.flush_all) method, this method actually free up the memory used by the expired items.
 
 This feature was first introduced in the `v0.6.3` release.
 
@@ -5422,8 +5463,5 @@ See Also
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
 * [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
 * [The ngx_openresty bundle](http://openresty.org)
-
-Translations
-============
-* [Chinese](http://wiki.nginx.org/HttpLuaModuleZh) (still in progress)
+* [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
 

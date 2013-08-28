@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 #no_diff();
 #no_long_string();
@@ -506,4 +506,22 @@ GET /t
 hello worldhello world
 --- no_error_log
 [error]
+
+
+
+=== TEST 19: Lua file does not exist
+--- config
+    location /lua {
+        echo ok;
+        body_filter_by_lua_file html/test2.lua;
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- ignore_response
+--- error_log eval
+qr/failed to load external Lua file: cannot open .*? No such file or directory/
 

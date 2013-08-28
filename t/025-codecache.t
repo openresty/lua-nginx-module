@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 1);
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -587,4 +587,31 @@ found
     GET /t
 --- response_body
 _G.foo: 1
+
+
+
+=== TEST 18: github #257: globals cleared when code cache off
+--- http_config
+    lua_code_cache off;
+    init_by_lua '
+      test = setfenv(
+        function()
+          ngx.say(tostring(table))
+        end,
+        setmetatable({},
+        {
+          __index = function(self, key)
+          return rawget(self, key) or _G[key]
+        end
+      }))';
+--- config
+    location = /t {
+        content_by_lua 'test()';
+    }
+--- request
+GET /t
+--- response_body_like chop
+^table: 0x[1-9a-fA-F]
+--- no_error_log
+[error]
 

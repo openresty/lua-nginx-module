@@ -286,7 +286,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 
 static int
-ngx_http_lua_ngx_req_get_headers(lua_State *L) {
+ngx_http_lua_ngx_req_get_headers(lua_State *L)
+{
     ngx_list_part_t              *part;
     ngx_table_elt_t              *header;
     ngx_http_request_t           *r;
@@ -602,6 +603,10 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 
     ngx_http_lua_check_fake_request(L, r);
+
+    if (r->http_version < NGX_HTTP_VERSION_10) {
+        return 0;
+    }
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 

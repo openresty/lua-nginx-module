@@ -18,6 +18,8 @@
 static int ngx_http_lua_shdict_set(lua_State *L);
 static int ngx_http_lua_shdict_safe_set(lua_State *L);
 static int ngx_http_lua_shdict_get(lua_State *L);
+static int ngx_http_lua_shdict_get_stale(lua_State *L);
+static int ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale);
 static int ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx,
     ngx_uint_t n);
 static ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone,
@@ -291,10 +293,13 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 12 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 13 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_get_stale);
+        lua_setfield(L, -2, "get_stale");
 
         lua_pushcfunction(L, ngx_http_lua_shdict_set);
         lua_setfield(L, -2, "set");
@@ -356,6 +361,20 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
+  return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
+}
+
+
+static int
+ngx_http_lua_shdict_get_stale(lua_State *L)
+{
+  return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
+}
+
+
+static int
+ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
+{
     int                          n;
     ngx_str_t                    name;
     ngx_str_t                    key;
@@ -411,20 +430,22 @@ ngx_http_lua_shdict_get(lua_State *L)
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
 #if 1
-    ngx_http_lua_shdict_expire(ctx, 1);
+    if (!get_stale) {
+        ngx_http_lua_shdict_expire(ctx, 1);
+    }
 #endif
 
     rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len, &sd);
 
     dd("shdict lookup returns %d", (int) rc);
 
-    if (rc == NGX_DECLINED || rc == NGX_DONE) {
+    if (rc == NGX_DECLINED || (rc == NGX_DONE && !get_stale)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnil(L);
         return 1;
     }
 
-    /* rc == NGX_OK */
+    /* rc == NGX_OK || (rc == NGX_DONE && get_stale) */
 
     value_type = sd->value_type;
 
@@ -484,6 +505,21 @@ ngx_http_lua_shdict_get(lua_State *L)
     user_flags = sd->user_flags;
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    if (get_stale) {
+
+        /* always return value, flags, stale */
+
+        if (user_flags) {
+            lua_pushinteger(L, (lua_Integer) user_flags);
+
+        } else {
+            lua_pushnil(L);
+        }
+
+        lua_pushboolean(L, rc == NGX_DONE);
+        return 3;
+    }
 
     if (user_flags) {
         lua_pushinteger(L, (lua_Integer) user_flags);

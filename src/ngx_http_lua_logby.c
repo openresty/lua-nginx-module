@@ -104,19 +104,9 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
      * before log phase handlers */
 
     if (ctx->ctx_ref != LUA_NOREF) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua release ngx.ctx");
-
         lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
         L = lmcf->lua;
-
-        lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
-        lua_rawget(L, LUA_REGISTRYINDEX);
-
-        luaL_unref(L, -1, ctx->ctx_ref);
-        ctx->ctx_ref = LUA_NOREF;
-        lua_pop(L, 1);
+        ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
     }
 
     return rc;
@@ -130,7 +120,6 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
-    char                        *err;
 
     dd("log by lua inline");
 
@@ -143,17 +132,10 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->log_src.value.data,
                                        llcf->log_src.value.len,
                                        llcf->log_src_key, "log_by_lua",
-                                       &err, llcf->enable_code_cache ? 1 : 0);
+                                       llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua inlined code: %s", err);
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     return ngx_http_lua_log_by_chunk(L, r);
@@ -168,7 +150,6 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
     u_char                          *script_path;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf;
-    char                            *err;
     ngx_str_t                        eval_src;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
@@ -189,17 +170,10 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->log_src_key,
-                                     &err, llcf->enable_code_cache ? 1 : 0);
+                                     llcf->enable_code_cache ? 1 : 0);
 
     if (rc != NGX_OK) {
-        if (err == NULL) {
-            err = "unknown error";
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to load Lua file code: %s", err);
-
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        return NGX_ERROR;
     }
 
     return ngx_http_lua_log_by_chunk(L, r);
