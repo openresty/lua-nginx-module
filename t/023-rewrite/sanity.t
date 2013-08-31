@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 9);
 
 #no_diff();
 #no_long_string();
@@ -646,13 +646,15 @@ bah
 
 === TEST 33: server rewrite_by_lua
 --- config
-    rewrite_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
+    rewrite_by_lua 'ngx.header["X-Foo"] = "bar" -- ngx.send_headers()';
 --- request
 GET /
 --- response_body chop
 <html><head><title>It works!</title></head><body>It works!</body></html>
 --- response_headers
 X-Foo: bar
+--- no_error_log
+[error]
 
 
 
@@ -661,7 +663,7 @@ X-Foo: bar
     rewrite_by_lua_file html/foo.lua;
 --- user_files
 >>> foo.lua
-ngx.header["X-Foo"] = "bar" ngx.send_headers()
+ngx.header["X-Foo"] = "bar" -- ngx.send_headers()
 --- request
 GET /
 --- response_body chop

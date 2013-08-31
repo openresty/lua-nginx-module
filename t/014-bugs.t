@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 23);
+plan tests => repeat_each() * (blocks() * 2 + 24);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -813,4 +813,18 @@ Hello, 502
 --- error_log
 not-exist.agentzh.org could not be resolved
 --- timeout: 3
+
+
+
+=== TEST 36: line comments in the last line of the inlined Lua code
+--- config
+    location /lua {
+        content_by_lua 'ngx.say("ok") -- blah';
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- no_error_log
+[error]
 

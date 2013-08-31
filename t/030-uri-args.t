@@ -437,7 +437,9 @@ foo: /bar?hello
             local res, err = pcall(ngx.req.set_uri, "")
             ngx.say("err: ", err)
         ';
-        echo "foo: $uri?$args";
+        content_by_lua '
+            ngx.say("foo: ", ngx.var.uri, "?", ngx.var.args)
+        ';
     }
 --- request
     GET /foo?world

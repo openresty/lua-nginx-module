@@ -611,7 +611,7 @@ _G.foo: 1
 --- request
 GET /t
 --- response_body_like chop
-^table: 0x[1-9a-fA-F]
+^table: 0x\d*?[1-9a-fA-F]
 --- no_error_log
 [error]
 
