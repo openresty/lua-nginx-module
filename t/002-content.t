@@ -828,12 +828,8 @@ line 3
     location /lua {
         content_by_lua 'for end';
     }
---- user_files
->>> test.lua
-v = ngx.var["request_uri"]
-ngx.print("request_uri: ", v, "\n")
 --- request
-GET /lua?a=1&b=2
+GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
