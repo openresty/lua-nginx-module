@@ -177,7 +177,7 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
 
 error:
     ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                  "failed to load external Lua file: %s", err);
+                  "failed to load inlined Lua code: %s", err);
     lua_settop(L, n);
     return NGX_ERROR;
 }

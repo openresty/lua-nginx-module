@@ -10,7 +10,7 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 17);
+plan tests => repeat_each() * (blocks() * 2 + 18);
 
 #no_diff();
 #no_long_string();
@@ -820,4 +820,22 @@ GET /lua?a=1&b=2
 line 3
 --- no_error_log
 [error]
+
+
+
+=== TEST 42: syntax error in inlined Lua code
+--- config
+    location /lua {
+        content_by_lua 'for end';
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load inlined Lua code: /
 
