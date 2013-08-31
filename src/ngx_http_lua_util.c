@@ -2203,7 +2203,8 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     if ((ctx->exit_code == NGX_OK
          && ctx->entered_content_phase)
         || (ctx->exit_code >= NGX_HTTP_OK
-            && ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE))
+            && ctx->exit_code < NGX_HTTP_SPECIAL_RESPONSE
+            && ctx->exit_code != NGX_HTTP_NO_CONTENT))
     {
         rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
 
