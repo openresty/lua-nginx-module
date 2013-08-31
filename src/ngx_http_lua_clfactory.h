@@ -15,7 +15,7 @@
 #define CLFACTORY_BEGIN_CODE "return function() "
 #define CLFACTORY_BEGIN_SIZE (sizeof(CLFACTORY_BEGIN_CODE)-1)
 
-#define CLFACTORY_END_CODE " end"
+#define CLFACTORY_END_CODE "\nend"
 #define CLFACTORY_END_SIZE (sizeof(CLFACTORY_END_CODE)-1)
 
 
