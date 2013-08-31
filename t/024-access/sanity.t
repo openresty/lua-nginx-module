@@ -657,7 +657,7 @@ GET /main
 
 === TEST 34: server access_by_lua
 --- config
-    access_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
+    access_by_lua 'ngx.header["X-Foo"] = "bar" -- ngx.send_headers()';
 --- request
 GET /
 --- response_body chop
@@ -672,7 +672,7 @@ X-Foo: bar
     access_by_lua_file html/foo.lua;
 --- user_files
 >>> foo.lua
-ngx.header["X-Foo"] = "bar" ngx.send_headers()
+ngx.header["X-Foo"] = "bar" -- ngx.send_headers()
 --- request
 GET /
 --- response_body chop
