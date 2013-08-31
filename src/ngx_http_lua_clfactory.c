@@ -15,6 +15,13 @@
 #include "ngx_http_lua_clfactory.h"
 
 
+#define CLFACTORY_BEGIN_CODE "return function() "
+#define CLFACTORY_BEGIN_SIZE (sizeof(CLFACTORY_BEGIN_CODE) - 1)
+
+#define CLFACTORY_END_CODE "\nend"
+#define CLFACTORY_END_SIZE (sizeof(CLFACTORY_END_CODE) - 1)
+
+
 /*
  * taken from chaoslawful:
  * Lua bytecode header        Luajit bytecode header
