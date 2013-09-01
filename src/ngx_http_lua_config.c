@@ -18,7 +18,7 @@ ngx_http_lua_inject_config_api(lua_State *L)
 {
     /* ngx.config */
 
-    lua_newtable(L);    /* .config */
+    lua_createtable(L, 0, 1 /* nrec */);    /* .config */
 
 #if (NGX_DEBUG)
     lua_pushboolean(L, 1);
