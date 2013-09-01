@@ -2045,7 +2045,8 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
 
     if (rc != NGX_OK) {
         re_comp.err.data[re_comp.err.len] = '\0';
-        return NULL;
+        msg = (char *) re_comp.err.data;
+        goto error;
     }
 
 #if (LUA_HAVE_PCRE_JIT)
