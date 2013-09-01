@@ -2056,6 +2056,27 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
         ngx_http_lua_pcre_malloc_done(old_pool);
 
+#   if (NGX_DEBUG)
+        if (msg != NULL) {
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                           "pcre study failed with PCRE_STUDY_JIT_COMPILE: "
+                           "%s (%p)", msg, sd);
+        }
+
+        if (sd != NULL) {
+            int         jitted;
+
+            old_pool = ngx_http_lua_pcre_malloc_init(pool);
+
+            pcre_fullinfo(re_comp.regex, sd, PCRE_INFO_JIT, &jitted);
+
+            ngx_http_lua_pcre_malloc_done(old_pool);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                           "pcre JIT compiling result: %d", jitted);
+        }
+#   endif /* !(NGX_DEBUG) */
+
     } else {
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
         sd = pcre_study(re_comp.regex, 0, &msg);
