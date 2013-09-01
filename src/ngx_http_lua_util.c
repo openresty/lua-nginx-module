@@ -46,6 +46,7 @@
 #include "ngx_http_lua_uthread.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_timer.h"
+#include "ngx_http_lua_config.h"
 
 
 #if 1
@@ -742,7 +743,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 95 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 96 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -770,6 +771,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_socket_udp_api(cf->log, L);
     ngx_http_lua_inject_uthread_api(cf->log, L);
     ngx_http_lua_inject_timer_api(L);
+    ngx_http_lua_inject_config_api(L);
 
     ngx_http_lua_inject_misc_api(L);
 

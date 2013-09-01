@@ -1815,7 +1815,7 @@ ngx_http_lua_inject_regex_api(lua_State *L)
 {
     /* ngx.re */
 
-    lua_newtable(L);    /* .re */
+    lua_createtable(L, 0, 4 /* nrec */);    /* .re */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_re_match);
     lua_setfield(L, -2, "match");
