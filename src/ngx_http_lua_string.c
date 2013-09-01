@@ -631,7 +631,7 @@ ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst)
 
 int
 ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
-                               size_t *dlen)
+    size_t *dlen)
 {
     ngx_int_t      rc;
     ngx_str_t      in, out;

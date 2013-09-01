@@ -2002,8 +2002,8 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
 #ifndef NGX_HTTP_LUA_NO_FFI_API
 ngx_http_lua_regex_t *
 ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
-                               int flags, int pcre_opts, u_char *errstr,
-                               size_t errstr_size)
+    int flags, int pcre_opts, u_char *errstr,
+    size_t errstr_size)
 {
     int                     *cap = NULL, ovecsize;
     u_char                  *p;
@@ -2292,7 +2292,7 @@ ngx_http_lua_ffi_destroy_script_engine(ngx_http_lua_script_engine_t *e)
 
 size_t
 ngx_http_lua_ffi_script_eval_len(ngx_http_lua_script_engine_t *e,
-                                 ngx_http_lua_complex_value_t *val)
+    ngx_http_lua_complex_value_t *val)
 {
     size_t          len;
 
