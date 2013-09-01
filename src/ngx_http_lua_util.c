@@ -46,6 +46,7 @@
 #include "ngx_http_lua_uthread.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_timer.h"
+#include "ngx_http_lua_config.h"
 
 
 #if 1
@@ -770,6 +771,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_socket_udp_api(cf->log, L);
     ngx_http_lua_inject_uthread_api(cf->log, L);
     ngx_http_lua_inject_timer_api(L);
+    ngx_http_lua_inject_config_api(L);
 
     ngx_http_lua_inject_misc_api(L);
 
