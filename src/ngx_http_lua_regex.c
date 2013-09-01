@@ -2013,6 +2013,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     pcre_extra              *sd = NULL;
     ngx_http_lua_regex_t    *re;
 
+    ngx_http_lua_main_conf_t         *lmcf;
     ngx_http_lua_regex_compile_t      re_comp;
 
     pool = ngx_create_pool(512, ngx_cycle->log);
@@ -2062,6 +2063,14 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     }
 
 #endif /* LUA_HAVE_PCRE_JIT */
+
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+
+    if (sd && lmcf && lmcf->regex_match_limit > 0) {
+        sd->flags |= PCRE_EXTRA_MATCH_LIMIT;
+        sd->match_limit = lmcf->regex_match_limit;
+    }
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
