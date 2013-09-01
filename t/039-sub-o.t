@@ -312,6 +312,7 @@ hello, 34
 
 
 === TEST 16: bad repl arg type
+--- SKIP
 --- config
     location /re {
         content_by_lua '
@@ -350,6 +351,7 @@ hello, 724
 
 
 === TEST 18: bad function return value type
+--- SKIP
 --- config
     location /re {
         content_by_lua '
