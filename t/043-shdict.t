@@ -8,7 +8,7 @@ use t::TestNginxLua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 15);
+plan tests => repeat_each() * (blocks() * 2 + 16);
 
 #no_diff();
 no_long_string();
@@ -114,6 +114,8 @@ truenilfalse
 dog
 dog
 bird string
+--- no_error_log
+[error]
 
 
 
@@ -334,6 +336,7 @@ nil
 
 
 === TEST 13: not feed the object into the call
+--- SKIP
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
