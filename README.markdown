@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 August 2013.
+This document describes ngx_lua [v0.8.7](https://github.com/chaoslawful/lua-nginx-module/tags) released on 2 September 2013.
 
 Synopsis
 ========
@@ -4878,6 +4878,16 @@ this context.
 
 This API was first introduced in the `v0.8.0` release.
 
+ngx.config.debug
+----------------
+**syntax:** *debug = ngx.config.debug*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the `./configure` option `--with-debug`.
+
+This field was first introduced in the `0.8.7`.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
@@ -5261,7 +5271,8 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.4.x (last tested: 1.4.1)
+* 1.5.x (last tested: 1.5.4)
+* 1.4.x (last tested: 1.4.2)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5289,9 +5300,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
-    tar -xzvf nginx-1.4.1.tar.gz
-    cd nginx-1.4.1/
+    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
+    tar -xzvf nginx-1.4.2.tar.gz
+    cd nginx-1.4.2/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib
