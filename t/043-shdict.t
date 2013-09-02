@@ -8,7 +8,7 @@ use t::TestNginxLua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 16);
+plan tests => repeat_each() * (blocks() * 2 + 17);
 
 #no_diff();
 no_long_string();
@@ -893,6 +893,8 @@ GET /test
 --- response_body
 incr: nil not found
 foo = nil
+--- no_error_log
+[error]
 
 
 

@@ -1476,6 +1476,64 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
 }
 
 
+int
+ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
+    size_t key_len, double *value, char **err)
+{
+    uint32_t                     hash;
+    ngx_int_t                    rc;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_http_lua_shdict_node_t  *sd;
+    double                       num;
+    u_char                      *p;
+
+    ctx = zone->data;
+    hash = ngx_crc32_short(key, key_len);
+
+    dd("looking up key %.*s in shared dict %.*s", (int) key_len, key,
+       (int) ctx->name.len, ctx->name.data);
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+#if 1
+    ngx_http_lua_shdict_expire(ctx, 1);
+#endif
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key, key_len, &sd);
+
+    dd("shdict lookup returned %d", (int) rc);
+
+    if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        *err = "not found";
+        return NGX_ERROR;
+    }
+
+    /* rc == NGX_OK */
+
+    if (sd->value_type != LUA_TNUMBER || sd->value_len != sizeof(double)) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        *err = "not a number";
+        return NGX_ERROR;
+    }
+
+    ngx_queue_remove(&sd->queue);
+    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+
+    dd("setting value type to %d", (int) sd->value_type);
+
+    p = sd->data + key_len;
+
+    num = *(double *) p;
+    num += *value;
+
+    ngx_memcpy(p, (double *) &num, sizeof(double));
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    *value = num;
+    return NGX_OK;
+}
+
+
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
