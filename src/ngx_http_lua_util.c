@@ -98,6 +98,9 @@ static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
 static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
+static ngx_int_t
+    ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
 
 
 #ifndef LUA_PATH_SEP
@@ -1510,13 +1513,10 @@ ngx_int_t
 ngx_http_lua_wev_handler(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
-    ngx_list_part_t             *part;
     ngx_http_lua_ctx_t          *ctx;
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
-    ngx_http_lua_co_ctx_t       *coctx;
-    ngx_uint_t                   i;
 
     c = r->connection;
 
@@ -1572,67 +1572,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     if (ctx->flushing_coros) {
-
-        coctx = &ctx->entry_co_ctx;
-
-        if (coctx->flushing) {
-            coctx->flushing = 0;
-
-            ctx->flushing_coros--;
-            ctx->cur_co_ctx = coctx;
-
-            rc = ngx_http_lua_flush_resume_helper(r, ctx);
-            if (rc == NGX_ERROR || rc >= NGX_OK) {
-                return rc;
-            }
-
-            /* rc == NGX_DONE */
-        }
-
-        if (ctx->flushing_coros) {
-
-            if (ctx->user_co_ctx == NULL) {
-                return NGX_ERROR;
-            }
-
-            part = &ctx->user_co_ctx->part;
-            coctx = part->elts;
-
-            for (i = 0; /* void */; i++) {
-
-                if (i >= part->nelts) {
-                    if (part->next == NULL) {
-                        break;
-                    }
-
-                    part = part->next;
-                    coctx = part->elts;
-                    i = 0;
-                }
-
-                if (coctx[i].flushing) {
-                    coctx[i].flushing = 0;
-                    ctx->cur_co_ctx = &coctx[i];
-
-                    rc = ngx_http_lua_flush_resume_helper(r, ctx);
-                    if (rc == NGX_ERROR || rc >= NGX_OK) {
-                        return rc;
-                    }
-
-                    /* rc == NGX_DONE */
-
-                    if (--ctx->flushing_coros == 0) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (ctx->flushing_coros) {
-            return NGX_ERROR;
-        }
-
-        return NGX_DONE;
+        return ngx_http_lua_process_flushing_coroutines(r, ctx);
     }
 
     /* ctx->flushing_coros == 0 */
@@ -1643,6 +1583,78 @@ useless:
 
     if (ctx->entered_content_phase) {
         return NGX_OK;
+    }
+
+    return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_int_t                    rc;
+    ngx_uint_t                   i;
+    ngx_list_part_t             *part;
+    ngx_http_lua_co_ctx_t       *coctx;
+
+    coctx = &ctx->entry_co_ctx;
+
+    if (coctx->flushing) {
+        coctx->flushing = 0;
+
+        ctx->flushing_coros--;
+        ctx->cur_co_ctx = coctx;
+
+        rc = ngx_http_lua_flush_resume_helper(r, ctx);
+        if (rc == NGX_ERROR || rc >= NGX_OK) {
+            return rc;
+        }
+
+        /* rc == NGX_DONE */
+    }
+
+    if (ctx->flushing_coros) {
+
+        if (ctx->user_co_ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        part = &ctx->user_co_ctx->part;
+        coctx = part->elts;
+
+        for (i = 0; /* void */; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                coctx = part->elts;
+                i = 0;
+            }
+
+            if (coctx[i].flushing) {
+                coctx[i].flushing = 0;
+                ctx->cur_co_ctx = &coctx[i];
+
+                rc = ngx_http_lua_flush_resume_helper(r, ctx);
+                if (rc == NGX_ERROR || rc >= NGX_OK) {
+                    return rc;
+                }
+
+                /* rc == NGX_DONE */
+
+                if (--ctx->flushing_coros == 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (ctx->flushing_coros) {
+        return NGX_ERROR;
     }
 
     return NGX_DONE;
