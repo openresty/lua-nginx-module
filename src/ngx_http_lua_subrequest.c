@@ -58,7 +58,8 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
     off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
-    ngx_uint_t method, ngx_http_request_body_t *body, unsigned vars_action,
+    ngx_uint_t method, int forward_body,
+    ngx_http_request_body_t *body, unsigned vars_action,
     ngx_array_t *extra_vars);
 static int ngx_http_lua_ngx_location_capture(lua_State *L);
 static int ngx_http_lua_ngx_location_capture_multi(lua_State *L);
@@ -127,6 +128,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     size_t                           nargs;
     int                              rc;
     int                              n;
+    int                              always_forward_body = 0;
     ngx_uint_t                       method;
     ngx_http_request_body_t         *body;
     int                              type;
@@ -364,6 +366,14 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             dd("queries query uri opts: %d", lua_gettop(L));
 
+            /* check the "forward_body" option */
+
+            lua_getfield(L, 4, "always_forward_body");
+            always_forward_body = lua_toboolean(L, -1);
+            lua_pop(L, 1);
+
+            dd("always foward body: %d", always_forward_body);
+
             /* check the "method" option */
 
             lua_getfield(L, 4, "method");
@@ -561,8 +571,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-        rc = ngx_http_lua_adjust_subrequest(sr, method, body, vars_action,
-                                            extra_vars);
+        rc = ngx_http_lua_adjust_subrequest(sr, method, always_forward_body,
+                                            body, vars_action, extra_vars);
 
         if (rc != NGX_OK) {
             ngx_http_lua_cancel_subreq(sr);
@@ -597,8 +607,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-    ngx_http_request_body_t *body, unsigned vars_action,
-    ngx_array_t *extra_vars)
+    int always_forward_body, ngx_http_request_body_t *body,
+    unsigned vars_action, ngx_array_t *extra_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
@@ -621,7 +631,9 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
             return NGX_ERROR;
         }
 
-    } else if (method != NGX_HTTP_PUT && method != NGX_HTTP_POST
+    } else if (!always_forward_body
+               && method != NGX_HTTP_PUT
+               && method != NGX_HTTP_POST
                && r->headers_in.content_length_n > 0)
     {
         rc = ngx_http_lua_set_content_length_header(sr, 0);
