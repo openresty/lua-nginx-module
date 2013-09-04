@@ -558,7 +558,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     dd("wait:%d, rc:%d, buffered:%d", wait, (int) rc, r->connection->buffered);
 
-    if (wait && (r->connection->buffered & NGX_LOWLEVEL_BUFFERED)) {
+    if (wait && r->connection->buffered) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                 "lua flush requires waiting: buffered 0x%uxd",
                 (int) r->connection->buffered);

@@ -1563,7 +1563,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         goto useless;
     }
 
-    if (c->buffered & NGX_LOWLEVEL_BUFFERED) {
+    if (c->buffered) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "lua wev handler flushing output: buffered 0x%uxd",
                        c->buffered);
@@ -1595,7 +1595,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                 &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
         }
 
-        if (c->buffered & NGX_LOWLEVEL_BUFFERED) {
+        if (c->buffered) {
 
             if (!wev->delayed) {
                 ngx_add_timer(wev, clcf->send_timeout);
