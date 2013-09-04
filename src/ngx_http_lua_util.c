@@ -96,6 +96,8 @@ static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
 static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
 static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
 
 
 #ifndef LUA_PATH_SEP
@@ -1513,7 +1515,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
-    ngx_chain_t                 *cl;
     ngx_http_lua_co_ctx_t       *coctx;
     ngx_uint_t                   i;
 
@@ -1564,65 +1565,9 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     if (c->buffered) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua wev handler flushing output: buffered 0x%uxd",
-                       c->buffered);
-
-        rc = ngx_http_lua_output_filter(r, NULL);
-
-        if (rc == NGX_ERROR || rc > NGX_OK) {
-            if (ctx->entered_content_phase) {
-                ngx_http_lua_finalize_request(r, rc);
-            }
-
+        rc = ngx_http_lua_flush_pending_output(r, ctx);
+        if (rc != NGX_OK) {
             return rc;
-        }
-
-        if (ctx->busy_bufs) {
-            cl = NULL;
-
-            dd("updating chains...");
-
-#if nginx_version >= 1001004
-            ngx_chain_update_chains(r->pool,
-#else
-            ngx_chain_update_chains(
-#endif
-                                    &ctx->free_bufs, &ctx->busy_bufs, &cl,
-                                    (ngx_buf_tag_t) &ngx_http_lua_module);
-
-            dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
-                &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
-        }
-
-        if (c->buffered) {
-
-            if (!wev->delayed) {
-                ngx_add_timer(wev, clcf->send_timeout);
-            }
-
-            if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
-                if (ctx->entered_content_phase) {
-                    ngx_http_lua_finalize_request(r, NGX_ERROR);
-                }
-
-                return NGX_ERROR;
-            }
-
-            if (ctx->flushing_coros) {
-                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                               "lua flush still waiting: buffered 0x%uxd",
-                               c->buffered);
-
-                return NGX_DONE;
-            }
-
-        } else {
-#if 1
-            if (wev->timer_set) {
-                ngx_del_timer(wev);
-            }
-#endif
         }
     }
 
@@ -1701,6 +1646,87 @@ useless:
     }
 
     return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_int_t           rc;
+    ngx_chain_t        *cl;
+    ngx_event_t        *wev;
+    ngx_connection_t   *c;
+
+    ngx_http_core_loc_conf_t    *clcf;
+
+    c = r->connection;
+    wev = c->write;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "lua flushing output: buffered 0x%uxd",
+                   c->buffered);
+
+    rc = ngx_http_lua_output_filter(r, NULL);
+
+    if (rc == NGX_ERROR || rc > NGX_OK) {
+        if (ctx->entered_content_phase) {
+            ngx_http_lua_finalize_request(r, rc);
+        }
+
+        return rc;
+    }
+
+    if (ctx->busy_bufs) {
+        cl = NULL;
+
+        dd("updating chains...");
+
+#if nginx_version >= 1001004
+        ngx_chain_update_chains(r->pool,
+#else
+        ngx_chain_update_chains(
+#endif
+                                &ctx->free_bufs, &ctx->busy_bufs, &cl,
+                                (ngx_buf_tag_t) &ngx_http_lua_module);
+
+        dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
+            &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
+    }
+
+    if (c->buffered) {
+
+        clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+        if (!wev->delayed) {
+            ngx_add_timer(wev, clcf->send_timeout);
+        }
+
+        if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+            if (ctx->entered_content_phase) {
+                ngx_http_lua_finalize_request(r, NGX_ERROR);
+            }
+
+            return NGX_ERROR;
+        }
+
+        if (ctx->flushing_coros) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                           "lua flush still waiting: buffered 0x%uxd",
+                           c->buffered);
+
+            return NGX_DONE;
+        }
+
+    } else {
+#if 1
+        if (wev->timer_set) {
+            ngx_del_timer(wev);
+        }
+#endif
+    }
+
+    return NGX_OK;
 }
 
 
