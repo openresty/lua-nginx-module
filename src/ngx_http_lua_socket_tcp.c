@@ -3146,8 +3146,7 @@ ngx_http_lua_req_socket(lua_State *L)
     }
 
     lua_settop(L, 1);
-    lua_pushnil(L);
-    return 2;
+    return 1;
 }
 
 
