@@ -673,3 +673,40 @@ after
 --- no_error_log
 [error]
 
+
+
+=== TEST 17: re-connect after timed out
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 100ms;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("1: failed to connect: ", err)
+
+                local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+                if not ok then
+                    ngx.say("2: failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("2: connected: ", ok)
+                return
+            end
+
+            ngx.say("1: connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+1: failed to connect: timeout
+2: connected: 1
+--- error_log
+lua tcp socket connect timeout: 100
+lua tcp socket connect timed out
+
