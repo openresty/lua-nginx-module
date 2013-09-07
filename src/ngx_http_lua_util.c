@@ -55,8 +55,13 @@
 #endif
 
 
-#ifndef NGX_HTTP_LUA_BACKTRACE_DEPTH
-#define NGX_HTTP_LUA_BACKTRACE_DEPTH  22
+#ifndef NGX_HTTP_LUA_BT_DEPTH
+#define NGX_HTTP_LUA_BT_DEPTH  22
+#endif
+
+
+#ifndef NGX_HTTP_LUA_BT_MAX_COROS
+#define NGX_HTTP_LUA_BT_MAX_COROS  5
 #endif
 
 
@@ -2741,22 +2746,26 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     ngx_http_lua_co_ctx_t *coctx)
 {
     int         base;
-    int         level, count = 0;
+    int         level, coid;
     lua_Debug   ar;
 
     base = lua_gettop(L);
-
     lua_pushliteral(L, "stack traceback:");
+    coid = 0;
 
     while (co) {
 
-        lua_pushfstring(L, "\ncoroutine %d:", count++);
+        if (coid >= NGX_HTTP_LUA_BT_MAX_COROS) {
+            break;
+        }
+
+        lua_pushfstring(L, "\ncoroutine %d:", coid++);
 
         level = 0;
 
         while (lua_getstack(co, level++, &ar)) {
 
-            if (level > NGX_HTTP_LUA_BACKTRACE_DEPTH) {
+            if (level > NGX_HTTP_LUA_BT_DEPTH) {
                 lua_pushliteral(L, "\n\t...");
                 break;
             }
