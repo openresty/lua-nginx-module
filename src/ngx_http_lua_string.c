@@ -224,6 +224,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
              * is always 1 */
             if ((*src & 0x80) == 0) {
                 switch (*src) {
+                    case '\0':
                     case '\r':
                     case '\n':
                     case '\\':
@@ -246,6 +247,11 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
     while (size) {
         if ((*src & 0x80) == 0) {
             switch (*src) {
+                case '\0':
+                    *dst++ = '\\';
+                    *dst++ = '0';
+                    break;
+
                 case '\r':
                     *dst++ = '\\';
                     *dst++ = 'r';
