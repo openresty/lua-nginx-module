@@ -10,10 +10,10 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * 10;
+plan tests => repeat_each() * 51;
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -65,4 +65,125 @@ stack traceback:
 : in function 'bar'
 :5: in function 'foo'
 :7: in function <[string "content_by_lua"]:1>
+
+
+
+=== TEST 3: deep backtrace in a single coroutine (more than 15)
+--- config eval
+my $s = "
+    location /lua {
+        content_by_lua '
+";
+my $prev;
+for my $i (1..18) {
+    if (!defined $prev) {
+        $s .= "
+            local function func$i()
+                return error([[blah]])
+            end";
+    } else {
+        $s .= "
+            local function func$i()
+                local v = func$prev()
+                return v
+            end";
+    }
+    $prev = $i;
+}
+$s .= "
+            func$prev()
+        ';
+    }
+";
+--- request
+GET /lua
+--- stap2
+probe process("$LIBLUA_PATH").function("lua_concat") {
+    println("lua concat")
+    //print_ubacktrace()
+}
+--- stap_out2
+--- ignore_response
+--- error_log
+: blah
+: in function 'func1'
+:7: in function 'func2'
+:11: in function 'func3'
+:15: in function 'func4'
+:19: in function 'func5'
+:23: in function 'func6'
+:27: in function 'func7'
+:31: in function 'func8'
+:35: in function 'func9'
+:39: in function 'func10'
+:43: in function 'func11'
+:47: in function 'func12'
+:51: in function 'func13'
+:55: in function 'func14'
+:59: in function 'func15'
+:63: in function 'func16'
+:67: in function 'func17'
+:71: in function 'func18'
+:74: in function
+
+
+
+=== TEST 4: deep backtrace in a single coroutine (more than 22)
+--- config eval
+my $s = "
+    location /lua {
+        content_by_lua '
+";
+my $prev;
+for my $i (1..23) {
+    if (!defined $prev) {
+        $s .= "
+            local function func$i()
+                return error([[blah]])
+            end";
+    } else {
+        $s .= "
+            local function func$i()
+                local v = func$prev()
+                return v
+            end";
+    }
+    $prev = $i;
+}
+$s .= "
+            func$prev()
+        ';
+    }
+";
+--- request
+GET /lua
+--- stap2
+probe process("$LIBLUA_PATH").function("lua_concat") {
+    println("lua concat")
+    //print_ubacktrace()
+}
+--- stap_out2
+--- ignore_response
+--- error_log
+: blah
+: in function 'func1'
+:7: in function 'func2'
+:11: in function 'func3'
+:15: in function 'func4'
+:19: in function 'func5'
+:23: in function 'func6'
+:27: in function 'func7'
+:31: in function 'func8'
+:35: in function 'func9'
+:39: in function 'func10'
+:43: in function 'func11'
+:47: in function 'func12'
+:59: in function 'func15'
+:63: in function 'func16'
+:67: in function 'func17'
+:71: in function 'func18'
+:75: in function 'func19'
+:79: in function 'func20'
+:83: in function 'func21'
+...
 

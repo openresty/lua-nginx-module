@@ -55,6 +55,11 @@
 #endif
 
 
+#ifndef NGX_HTTP_LUA_BACKTRACE_DEPTH
+#define NGX_HTTP_LUA_BACKTRACE_DEPTH  22
+#endif
+
+
 char ngx_http_lua_code_cache_key;
 char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
@@ -108,12 +113,6 @@ static ngx_int_t
 #endif
 
 #define AUX_MARK "\1"
-
-
-enum {
-    LEVELS1 = 12,       /* size of the first part of the stack */
-    LEVELS2 = 10        /* size of the second part of the stack */
-};
 
 
 static void
@@ -2742,8 +2741,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     ngx_http_lua_co_ctx_t *coctx)
 {
     int         base;
-    int         level = 0, count = 0;
-    int         firstpart = 1;  /* still before eventual `...' */
+    int         level, count = 0;
     lua_Debug   ar;
 
     base = lua_gettop(L);
@@ -2754,25 +2752,13 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
 
         lua_pushfstring(L, "\ncoroutine %d:", count++);
 
+        level = 0;
+
         while (lua_getstack(co, level++, &ar)) {
 
-            if (level > LEVELS1 && firstpart) {
-                /* no more than `LEVELS2' more levels? */
-                if (!lua_getstack(co, level + LEVELS2, &ar)) {
-                    level--;  /* keep going */
-
-                } else {
-                    lua_pushliteral(L, "\n\t...");  /* too many levels */
-                    /*
-                     * This only works with LuaJIT 2.x.
-                     * Avoids O(n^2) behaviour.
-                     */
-                    lua_getstack(co, -10, &ar);
-                    level = ar.i_ci - LEVELS2;
-                }
-
-                firstpart = 0;
-                continue;
+            if (level > NGX_HTTP_LUA_BACKTRACE_DEPTH) {
+                lua_pushliteral(L, "\n\t...");
+                break;
             }
 
             lua_pushliteral(L, "\n\t");
@@ -2800,10 +2786,9 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
             }
         }
 
-        lua_concat(L, lua_gettop(L) - base);
-
-        level = 0;
-        firstpart = 1;
+        if (lua_gettop(L) - base >= 15) {
+            lua_concat(L, lua_gettop(L) - base);
+        }
 
         /* check if the coroutine has a parent coroutine*/
         coctx = coctx->parent_co_ctx;
@@ -2814,6 +2799,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
         co = coctx->co;
     }
 
+    lua_concat(L, lua_gettop(L) - base);
     return 1;
 }
 
