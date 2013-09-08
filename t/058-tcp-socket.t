@@ -2197,7 +2197,7 @@ lua tcp socket read timed out
                 return
             end
 
-            sock:settimeout(10)
+            sock:settimeout(100)
 
             local data, err, partial = sock:receive(100)
             if data then
@@ -2228,7 +2228,7 @@ lua tcp socket read timed out
         content_by_lua '
             ngx.print("hi")
             ngx.flush(true)
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
             ngx.print("world")
         ';
     }
@@ -2274,7 +2274,7 @@ lua tcp socket read timed out
                 return
             end
 
-            sock:settimeout(10)
+            sock:settimeout(100)
 
             local data, err, partial = sock:receive(100)
             if data then
@@ -2308,7 +2308,7 @@ lua tcp socket read timed out
         content_by_lua '
             ngx.print("hi")
             ngx.flush(true)
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
             ngx.print("world")
         ';
     }
@@ -2354,7 +2354,7 @@ lua tcp socket read timed out
                 return
             end
 
-            sock:settimeout(10)
+            sock:settimeout(100)
 
             local reader = sock:receiveuntil("no-such-terminator")
             local data, err, partial = reader()
@@ -2390,7 +2390,7 @@ lua tcp socket read timed out
         content_by_lua '
             ngx.print("hi")
             ngx.flush(true)
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
             ngx.print("world")
         ';
     }
@@ -2436,7 +2436,7 @@ lua tcp socket read timed out
                 return
             end
 
-            sock:settimeout(10)
+            sock:settimeout(100)
 
             local reader = sock:receiveuntil("no-such-terminator")
             local data, err, partial = reader()
@@ -2470,7 +2470,7 @@ lua tcp socket read timed out
         content_by_lua '
             ngx.print("hi")
             ngx.flush(true)
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
             ngx.print("world")
         ';
     }

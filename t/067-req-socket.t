@@ -765,7 +765,7 @@ failed to get socket: no body
                return nil
             end
 
-            sock:settimeout(10);
+            sock:settimeout(100);
 
             local data, err, partial = sock:receive(4096)
             if err then
@@ -813,7 +813,7 @@ lua tcp socket read timed out
                 ngx.say("sent: ", bytes)
             end
 
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
 
             local bytes, err = sock:send("hello world")
             if not bytes then
@@ -852,7 +852,7 @@ lua tcp socket read timed out
                return nil
             end
 
-            sock:settimeout(20);
+            sock:settimeout(100);
 
             local data, err, partial = sock:receive(4096)
             if err then
@@ -903,7 +903,7 @@ lua tcp socket read timed out
                 ngx.say("sent: ", bytes)
             end
 
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
 
             local bytes, err = sock:send("hello world\\n")
             if not bytes then
@@ -942,7 +942,7 @@ lua tcp socket read timed out
                return nil
             end
 
-            sock:settimeout(20);
+            sock:settimeout(100);
 
             local data, err, partial = sock:receive(4096)
             if err then
@@ -994,7 +994,7 @@ lua tcp socket read timed out
                 ngx.say("sent: ", bytes)
             end
 
-            ngx.sleep(0.1)
+            ngx.sleep(0.2)
 
             local bytes, err = sock:send("hello world\\n")
             if not bytes then
@@ -1033,7 +1033,7 @@ lua tcp socket read timed out
                return nil
             end
 
-            sock:settimeout(20);
+            sock:settimeout(100);
 
             local reader = sock:receiveuntil("no-such-terminator")
             local data, err, partial = reader()
