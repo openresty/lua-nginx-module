@@ -8,8 +8,8 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.8.7
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 2
+    This document describes ngx_lua v0.8.8
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 8
     September 2013.
 
 Synopsis
@@ -4677,6 +4677,9 @@ Nginx API for Lua
     It is important here to call the settimeout method *before* calling this
     method.
 
+    In case of any connection errors, this method always automatically
+    closes the current connection.
+
     This feature was first introduced in the "v0.5.0rc1" release.
 
   tcpsock:receive
@@ -4729,6 +4732,11 @@ Nginx API for Lua
 
     It is important here to call the settimeout method *before* calling this
     method.
+
+    Since the "v0.8.8" release, this method no longer automatically closes
+    the current connection when the read timeout error happens. For other
+    connection errors, this method always automatically closes the
+    connection.
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
@@ -4842,6 +4850,11 @@ Nginx API for Lua
     Then for the input data stream "hello world _END_ blah blah blah", then
     the example above will output "hello world _END_", including the pattern
     string "_END_" itself.
+
+    Since the "v0.8.8" release, this method no longer automatically closes
+    the current connection when the read timeout error happens. For other
+    connection errors, this method always automatically closes the
+    connection.
 
     This method was first introduced in the "v0.5.0rc1" release.
 

@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.7] released on 2 September 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.8] released on 8 September 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -4091,6 +4091,8 @@ Timeout for the sending operation is controlled by the [[#lua_socket_send_timeou
 
 It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling this method.
 
+In case of any connection errors, this method always automatically closes the current connection.
+
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:receive ==
@@ -4128,6 +4130,8 @@ Timeout for the reading operation is controlled by the [[#lua_socket_read_timeou
 </geshi>
 
 It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling this method.
+
+Since the <code>v0.8.8</code> release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
@@ -4218,6 +4222,8 @@ The <code>inclusive</code> takes a boolean value to control whether to include t
 </geshi>
 
 Then for the input data stream <code>"hello world _END_ blah blah blah"</code>, then the example above will output <code>hello world _END_</code>, including the pattern string <code>_END_</code> itself.
+
+Since the <code>v0.8.8</code> release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This method was first introduced in the <code>v0.5.0rc1</code> release.
 
