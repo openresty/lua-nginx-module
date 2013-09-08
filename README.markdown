@@ -1626,6 +1626,8 @@ argument, which supports the options:
 	specify whether to copy over all the Nginx variable values of the current request to the subrequest in question. modifications of the nginx variables in the subrequest will not affect the current (parent) request. This option was first introduced in the `v0.3.1rc31` release.
 * `share_all_vars`
 	specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
+* `always_forward_body`
+	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. By default, this option is false and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
 
 Issuing a POST subrequest, for example, can be done as follows
 
@@ -1816,7 +1818,7 @@ subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
 
-When the `body` option is not specified, the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
+When the `body` option is not specified and the `always_forward_body` option is false (the default value), the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
 
 There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was `50` concurrent subrequests and in more recent versions, Nginx `1.1.x` onwards, this was increased to `200` concurrent subrequests. When this limit is exceeded, the following error message is added to the `error.log` file:
 

@@ -1803,34 +1803,40 @@ Nginx API for Lua
     supports the options:
 
     *   "method" specify the subrequest's request method, which only accepts
-        constants like "ngx.HTTP_POST". =item *
+        constants like "ngx.HTTP_POST".
 
-        "body" specify the subrequest's request body (string value only).
-        =item *
+    *   "body" specify the subrequest's request body (string value only).
 
-        "args" specify the subrequest's URI query arguments (both string
-        value and Lua tables are accepted) =item *
+    *   "args" specify the subrequest's URI query arguments (both string
+        value and Lua tables are accepted)
 
-        "ctx" specify a Lua table to be the ngx.ctx table for the
+    *   "ctx" specify a Lua table to be the ngx.ctx table for the
         subrequest. It can be the current request's ngx.ctx table, which
         effectively makes the parent and its subrequest to share exactly the
         same context table. This option was first introduced in the
-        "v0.3.1rc25" release. =item *
+        "v0.3.1rc25" release.
 
-        "vars" take a Lua table which holds the values to set the specified
+    *   "vars" take a Lua table which holds the values to set the specified
         Nginx variables in the subrequest as this option's value. This
-        option was first introduced in the "v0.3.1rc31" release. =item *
+        option was first introduced in the "v0.3.1rc31" release.
 
-        "copy_all_vars" specify whether to copy over all the Nginx variable
+    *   "copy_all_vars" specify whether to copy over all the Nginx variable
         values of the current request to the subrequest in question.
         modifications of the nginx variables in the subrequest will not
         affect the current (parent) request. This option was first
-        introduced in the "v0.3.1rc31" release. =item *
+        introduced in the "v0.3.1rc31" release.
 
-        "share_all_vars" specify whether to share all the Nginx variables of
+    *   "share_all_vars" specify whether to share all the Nginx variables of
         the subrequest with the current (parent) request. modifications of
         the Nginx variables in the subrequest will affect the current
         (parent) request.
+
+    *   "always_forward_body" when set to true, the current (parent)
+        request's request body will always be forwarded to the subrequest
+        being created if the "body" option is not specified. By default,
+        this option is false and when the "body" option is not specified,
+        the request body of the current (parent) request is only forwarded
+        when the subrequest takes the "PUT" or "POST" request method.
 
     Issuing a POST subrequest, for example, can be done as follows
 
@@ -2008,9 +2014,9 @@ Nginx API for Lua
     headers should be ignored by setting proxy_pass_request_headers to "off"
     in subrequest locations.
 
-    When the "body" option is not specified, the "POST" and "PUT"
-    subrequests will inherit the request bodies of the parent request (if
-    any).
+    When the "body" option is not specified and the "always_forward_body"
+    option is false (the default value), the "POST" and "PUT" subrequests
+    will inherit the request bodies of the parent request (if any).
 
     There is a hard-coded upper limit on the number of concurrent
     subrequests possible for every main request. In older versions of Nginx,
@@ -5004,28 +5010,25 @@ Nginx API for Lua
 
     Retrieves the current running phase name. Possible return values are
 
-    *   "init" for the context of init_by_lua or init_by_lua_file. =item *
+    *   "init" for the context of init_by_lua or init_by_lua_file.
 
-        "set" for the context of set_by_lua or set_by_lua_file. =item *
+    *   "set" for the context of set_by_lua or set_by_lua_file.
 
-        "rewrite" for the context of rewrite_by_lua or rewrite_by_lua_file.
-        =item *
+    *   "rewrite" for the context of rewrite_by_lua or rewrite_by_lua_file.
 
-        "access" for the context of access_by_lua or access_by_lua_file.
-        =item *
+    *   "access" for the context of access_by_lua or access_by_lua_file.
 
-        "content" for the context of content_by_lua or content_by_lua_file.
-        =item *
+    *   "content" for the context of content_by_lua or content_by_lua_file.
 
-        "header_filter" for the context of header_filter_by_lua or
-        header_filter_by_lua_file. =item *
+    *   "header_filter" for the context of header_filter_by_lua or
+        header_filter_by_lua_file.
 
-        "body_filter" for the context of body_filter_by_lua or
-        body_filter_by_lua_file. =item *
+    *   "body_filter" for the context of body_filter_by_lua or
+        body_filter_by_lua_file.
 
-        "log" for the context of log_by_lua or log_by_lua_file. =item *
+    *   "log" for the context of log_by_lua or log_by_lua_file.
 
-        "timer" for the context of user callback functions for ngx.timer.*.
+    *   "timer" for the context of user callback functions for ngx.timer.*.
 
     This API was first introduced in the "v0.5.10" release.
 
