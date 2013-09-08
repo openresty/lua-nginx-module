@@ -253,6 +253,7 @@ first line received: HTTP/1.1 200 OK
 second line received: Server: ngx_openresty
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
@@ -2092,6 +2093,7 @@ run posted requests
 
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
