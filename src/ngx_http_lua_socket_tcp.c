@@ -3071,7 +3071,7 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
 static int
 ngx_http_lua_req_socket(lua_State *L)
 {
-    int                              n, raw;
+    int                              n, raw, tcp_nodelay;
     ngx_peer_connection_t           *pc;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_connection_t                *c;
@@ -3080,6 +3080,7 @@ ngx_http_lua_req_socket(lua_State *L)
     ngx_http_request_body_t         *rb;
     ngx_http_cleanup_t              *cln;
     ngx_http_lua_co_ctx_t           *coctx;
+    ngx_http_core_loc_conf_t        *clcf;
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
@@ -3120,6 +3121,8 @@ ngx_http_lua_req_socket(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
+    c = r->connection;
+
     if (raw) {
 #if !defined(nginx_version) || nginx_version < 1003013
         lua_pushnil(L);
@@ -3132,7 +3135,7 @@ ngx_http_lua_req_socket(lua_State *L)
             return 2;
         }
 
-        if (r->connection->buffered) {
+        if (c->buffered) {
             lua_pushnil(L);
             lua_pushliteral(L, "pending data to write");
             return 2;
@@ -3156,6 +3159,35 @@ ngx_http_lua_req_socket(lua_State *L)
             lua_pushnil(L);
             lua_pushliteral(L, "duplicate call");
             return 2;
+        }
+
+        clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+        if (clcf->tcp_nodelay) {
+            tcp_nodelay = 1;
+
+            if (c->tcp_nodelay == NGX_TCP_NODELAY_UNSET) {
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                               "lua raw req socket tcp_nodelay");
+
+                if (setsockopt(c->fd, IPPROTO_TCP, TCP_NODELAY,
+                               (const void *) &tcp_nodelay, sizeof(int))
+                    == -1)
+                {
+                    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+                    if (llcf->log_socket_errors) {
+                        ngx_connection_error(c, ngx_socket_errno,
+                                             "setsockopt(TCP_NODELAY) "
+                                             "failed");
+                    }
+
+                    lua_pushnil(L);
+                    lua_pushliteral(L, "setsocketopt tcp_nodelay failed");
+                    return 2;
+                }
+
+                c->tcp_nodelay = NGX_TCP_NODELAY_SET;
+            }
         }
 
         ctx->acquired_raw_req_socket = 1;
@@ -3264,10 +3296,9 @@ ngx_http_lua_req_socket(lua_State *L)
 
     pc = &u->peer;
 
-    pc->log = r->connection->log;
+    pc->log = c->log;
     pc->log_error = NGX_ERROR_ERR;
 
-    c = r->connection;
     pc->connection = c;
 
     dd("setting data to %p", u);

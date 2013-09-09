@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 25;
+plan tests => repeat_each() * 26;
 
 our $HtmlDir = html_dir;
 
@@ -100,6 +100,8 @@ __DATA__
 GET /t
 --- response_body
 msg: 1: received: hello
+--- error_log
+lua raw req socket tcp_nodelay
 --- no_error_log
 [error]
 
