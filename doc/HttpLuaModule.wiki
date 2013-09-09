@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.7] released on 2 September 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.8.8] released on 8 September 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -1567,6 +1567,8 @@ argument, which supports the options:
 : specify whether to copy over all the Nginx variable values of the current request to the subrequest in question. modifications of the nginx variables in the subrequest will not affect the current (parent) request. This option was first introduced in the <code>v0.3.1rc31</code> release.
 * <code>share_all_vars</code>
 : specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
+* <code>always_forward_body</code>
+: when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the <code>body</code> option is not specified. By default, this option is false and when the <code>body</code> option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the <code>PUT</code> or <code>POST</code> request method.
 
 Issuing a POST subrequest, for example, can be done as follows
 
@@ -1757,7 +1759,7 @@ subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [[HttpProxyModule#proxy_pass_request_headers|proxy_pass_request_headers]] to <code>off</code> in subrequest locations.
 
-When the <code>body</code> option is not specified, the <code>POST</code> and <code>PUT</code> subrequests will inherit the request bodies of the parent request (if any).
+When the <code>body</code> option is not specified and the <code>always_forward_body</code> option is false (the default value), the <code>POST</code> and <code>PUT</code> subrequests will inherit the request bodies of the parent request (if any).
 
 There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was <code>50</code> concurrent subrequests and in more recent versions, Nginx <code>1.1.x</code> onwards, this was increased to <code>200</code> concurrent subrequests. When this limit is exceeded, the following error message is added to the <code>error.log</code> file:
 
@@ -4091,6 +4093,8 @@ Timeout for the sending operation is controlled by the [[#lua_socket_send_timeou
 
 It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling this method.
 
+In case of any connection errors, this method always automatically closes the current connection.
+
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:receive ==
@@ -4128,6 +4132,8 @@ Timeout for the reading operation is controlled by the [[#lua_socket_read_timeou
 </geshi>
 
 It is important here to call the [[#tcpsock:settimeout|settimeout]] method ''before'' calling this method.
+
+Since the <code>v0.8.8</code> release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
@@ -4218,6 +4224,8 @@ The <code>inclusive</code> takes a boolean value to control whether to include t
 </geshi>
 
 Then for the input data stream <code>"hello world _END_ blah blah blah"</code>, then the example above will output <code>hello world _END_</code>, including the pattern string <code>_END_</code> itself.
+
+Since the <code>v0.8.8</code> release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This method was first introduced in the <code>v0.5.0rc1</code> release.
 
