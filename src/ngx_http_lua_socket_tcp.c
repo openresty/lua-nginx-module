@@ -1095,6 +1095,13 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
                 return luaL_argerror(L, 2, "bad pattern argument");
             }
 
+#if 1
+            if (bytes == 0) {
+                lua_pushliteral(L, "");
+                return 1;
+            }
+#endif
+
             u->input_filter = ngx_http_lua_socket_read_chunk;
             u->length = (size_t) bytes;
             u->rest = u->length;

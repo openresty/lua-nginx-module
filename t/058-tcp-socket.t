@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 120;
+plan tests => repeat_each() * 123;
 
 our $HtmlDir = html_dir;
 
@@ -2489,4 +2489,51 @@ received: world
 lua tcp socket read timed out
 --- no_error_log
 [alert]
+
+
+
+=== TEST 41: receive(0)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local data, err = sock:receive(0)
+            if not data then
+                ngx.say("failed to receive: ", err)
+                return
+            end
+
+            ngx.say("received: ", data)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+received: 
+close: 1 nil
+--- no_error_log
+[error]
 
