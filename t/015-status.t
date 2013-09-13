@@ -10,7 +10,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 5);
 
 #no_diff();
 #no_long_string();
@@ -215,6 +215,23 @@ Range: bytes=0-4
 <html
 
 --- error_code: 200
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: 101 response has a complete status line
+--- config
+    location /t {
+        content_by_lua '
+            ngx.status = 101
+            ngx.send_headers()
+        ';
+    }
+--- request
+GET /t
+--- raw_response_headers_like: ^HTTP/1.1 101 Switching Protocols\r\n
+--- error_code: 101
 --- no_error_log
 [error]
 

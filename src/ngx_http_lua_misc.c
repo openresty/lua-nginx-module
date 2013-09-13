@@ -126,7 +126,19 @@ ngx_http_lua_ngx_set(lua_State *L)
 
         /* get the value */
         r->headers_out.status = (ngx_uint_t) luaL_checknumber(L, 3);
-        r->headers_out.status_line.len = 0;
+
+        if (r->headers_out.status == 101) {
+            /*
+             * XXX work-around a bug in the Nginx core that 101 does
+             * not have a default status line
+             */
+
+            ngx_str_set(&r->headers_out.status_line, "101 Switching Protocols");
+
+        } else {
+            r->headers_out.status_line.len = 0;
+        }
+
         return 0;
     }
 
