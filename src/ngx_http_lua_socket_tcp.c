@@ -3048,6 +3048,12 @@ ngx_http_lua_req_socket(lua_State *L)
                           "subrequest");
     }
 
+#if (NGX_HTTP_SPDY)
+    if (r->spdy_stream) {
+        return luaL_error(L, "spdy not supported yet");
+    }
+#endif
+
 #if nginx_version >= 1003009
     if (r->headers_in.chunked) {
         lua_pushnil(L);
