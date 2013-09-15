@@ -331,6 +331,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
             break;
 
+        case LUA_TNIL:
+            lua_pop(L, 2);
+            break;
+
         default:
             msg = lua_pushfstring(L, "bad \"pool\" option type: %s",
                                   luaL_typename(L, -1));
