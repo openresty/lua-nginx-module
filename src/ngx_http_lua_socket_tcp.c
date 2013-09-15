@@ -354,6 +354,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
             break;
 
+        case LUA_TNIL:
+            lua_pop(L, 2);
+            break;
+
         default:
             msg = lua_pushfstring(L, "bad \"pool\" option type: %s",
                                   luaL_typename(L, -1));
@@ -3110,6 +3114,12 @@ ngx_http_lua_req_socket(lua_State *L)
         return luaL_error(L, "attempt to read the request body in a "
                           "subrequest");
     }
+
+#if (NGX_HTTP_SPDY)
+    if (r->spdy_stream) {
+        return luaL_error(L, "spdy not supported yet");
+    }
+#endif
 
 #if nginx_version >= 1003009
     if (r->headers_in.chunked) {
