@@ -452,7 +452,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
     ngx_http_lua_check_fake_request2(L, r, ctx);
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
                       "set ngx.header.HEADER after sending out "
                       "response headers");

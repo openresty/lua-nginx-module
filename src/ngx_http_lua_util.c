@@ -475,7 +475,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 {
     ngx_int_t            rc;
 
-    if (!ctx->headers_sent) {
+    if (!r->header_sent) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
@@ -492,7 +492,6 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         if (!ctx->buffering) {
             dd("sending headers");
             rc = ngx_http_send_header(r);
-            ctx->headers_sent = 1;
             return rc;
         }
     }
@@ -525,7 +524,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     if (llcf->http10_buffering
         && !ctx->buffering
-        && !ctx->headers_sent
+        && !r->header_sent
         && r->http_version < NGX_HTTP_VERSION_11
         && r->headers_out.content_length_n < 0)
     {
@@ -662,7 +661,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_chain_t         *cl;
     ngx_int_t            rc;
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return NGX_OK;
     }
 
@@ -687,7 +686,6 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
 
 send:
     rc = ngx_http_send_header(r);
-    ctx->headers_sent = 1;
     return rc;
 }
 
@@ -1436,15 +1434,15 @@ user_co_done:
 
                 ngx_http_lua_request_cleanup(ctx, 0);
 
-                dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+                dd("headers sent? %d", r->header_sent ? 1 : 0);
 
                 if (ctx->no_abort) {
                     ctx->no_abort = 0;
                     return NGX_ERROR;
                 }
 
-                return ctx->headers_sent ? NGX_ERROR :
-                            NGX_HTTP_INTERNAL_SERVER_ERROR;
+                return r->header_sent ? NGX_ERROR :
+                       NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
 
             /* being a user coroutine that has a parent */
@@ -1497,7 +1495,7 @@ no_parent:
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
                   "user coroutine has no parent");
 
-    return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
+    return r->header_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
     if (ctx->entered_content_phase && r->connection->fd != -1) {
@@ -2212,7 +2210,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    ctx->exit_code);
 
 #if 1
-    if (!ctx->headers_sent
+    if (!r->header_sent
         && r->headers_out.status == 0
         && ctx->exit_code >= NGX_HTTP_OK)
     {
