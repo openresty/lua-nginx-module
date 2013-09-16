@@ -108,7 +108,6 @@ ngx_http_lua_ngx_exec(lua_State *L)
     if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
         != NGX_OK)
     {
-        ctx->headers_sent = 1;
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -173,7 +172,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         }
     }
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return luaL_error(L, "attempt to call ngx.exec after "
                           "sending out response headers");
     }
@@ -237,7 +236,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
                           "the headers");
     }
@@ -319,7 +318,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "attempt to abort with pending subrequests");
     }
 
-    if (ctx->headers_sent
+    if (r->header_sent
         && rc >= NGX_HTTP_SPECIAL_RESPONSE
         && rc != NGX_HTTP_REQUEST_TIME_OUT
         && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST

@@ -355,9 +355,6 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         exited:1;
 
-    unsigned         headers_sent:1;    /*  1: response header has been sent;
-                                            0: header not sent yet */
-
     unsigned         eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
 
