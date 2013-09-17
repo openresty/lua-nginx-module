@@ -436,7 +436,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
         return NGX_ERROR;
     }
 
-    if (ctx->headers_sent
+    if (r->header_sent
         && status >= NGX_HTTP_SPECIAL_RESPONSE
         && status != NGX_HTTP_REQUEST_TIME_OUT
         && status != NGX_HTTP_CLIENT_CLOSED_REQUEST
