@@ -1256,10 +1256,12 @@ function go(port, pool)
 end
 --- request
 GET /t
---- response_body_like: 500 Internal Server Error
---- error_code: 500
---- error_log
-bad argument #3 to 'connect' (bad "pool" option type: nil)
+--- response_body
+connected: 1, reused: 0
+connected: 1, reused: 0
+--- error_code: 200
+--- no_error_log
+[error]
 
 
 

@@ -85,6 +85,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 
     ngx_uint_t                       reused;
 
+    unsigned                         no_close:1;
     unsigned                         waiting:1;
     unsigned                         eof:1;
     unsigned                         is_downstream:1;

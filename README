@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.8.6
-    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 6
-    August 2013.
+    This document describes ngx_lua v0.8.9
+    (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 15
+    September 2013.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -1803,34 +1803,40 @@ Nginx API for Lua
     supports the options:
 
     *   "method" specify the subrequest's request method, which only accepts
-        constants like "ngx.HTTP_POST". =item *
+        constants like "ngx.HTTP_POST".
 
-        "body" specify the subrequest's request body (string value only).
-        =item *
+    *   "body" specify the subrequest's request body (string value only).
 
-        "args" specify the subrequest's URI query arguments (both string
-        value and Lua tables are accepted) =item *
+    *   "args" specify the subrequest's URI query arguments (both string
+        value and Lua tables are accepted)
 
-        "ctx" specify a Lua table to be the ngx.ctx table for the
+    *   "ctx" specify a Lua table to be the ngx.ctx table for the
         subrequest. It can be the current request's ngx.ctx table, which
         effectively makes the parent and its subrequest to share exactly the
         same context table. This option was first introduced in the
-        "v0.3.1rc25" release. =item *
+        "v0.3.1rc25" release.
 
-        "vars" take a Lua table which holds the values to set the specified
+    *   "vars" take a Lua table which holds the values to set the specified
         Nginx variables in the subrequest as this option's value. This
-        option was first introduced in the "v0.3.1rc31" release. =item *
+        option was first introduced in the "v0.3.1rc31" release.
 
-        "copy_all_vars" specify whether to copy over all the Nginx variable
+    *   "copy_all_vars" specify whether to copy over all the Nginx variable
         values of the current request to the subrequest in question.
         modifications of the nginx variables in the subrequest will not
         affect the current (parent) request. This option was first
-        introduced in the "v0.3.1rc31" release. =item *
+        introduced in the "v0.3.1rc31" release.
 
-        "share_all_vars" specify whether to share all the Nginx variables of
+    *   "share_all_vars" specify whether to share all the Nginx variables of
         the subrequest with the current (parent) request. modifications of
         the Nginx variables in the subrequest will affect the current
         (parent) request.
+
+    *   "always_forward_body" when set to true, the current (parent)
+        request's request body will always be forwarded to the subrequest
+        being created if the "body" option is not specified. By default,
+        this option is false and when the "body" option is not specified,
+        the request body of the current (parent) request is only forwarded
+        when the subrequest takes the "PUT" or "POST" request method.
 
     Issuing a POST subrequest, for example, can be done as follows
 
@@ -2008,9 +2014,9 @@ Nginx API for Lua
     headers should be ignored by setting proxy_pass_request_headers to "off"
     in subrequest locations.
 
-    When the "body" option is not specified, the "POST" and "PUT"
-    subrequests will inherit the request bodies of the parent request (if
-    any).
+    When the "body" option is not specified and the "always_forward_body"
+    option is false (the default value), the "POST" and "PUT" subrequests
+    will inherit the request bodies of the parent request (if any).
 
     There is a hard-coded upper limit on the number of concurrent
     subrequests possible for every main request. In older versions of Nginx,
@@ -4677,6 +4683,9 @@ Nginx API for Lua
     It is important here to call the settimeout method *before* calling this
     method.
 
+    In case of any connection errors, this method always automatically
+    closes the current connection.
+
     This feature was first introduced in the "v0.5.0rc1" release.
 
   tcpsock:receive
@@ -4729,6 +4738,11 @@ Nginx API for Lua
 
     It is important here to call the settimeout method *before* calling this
     method.
+
+    Since the "v0.8.8" release, this method no longer automatically closes
+    the current connection when the read timeout error happens. For other
+    connection errors, this method always automatically closes the
+    connection.
 
     This feature was first introduced in the "v0.5.0rc1" release.
 
@@ -4842,6 +4856,11 @@ Nginx API for Lua
     Then for the input data stream "hello world _END_ blah blah blah", then
     the example above will output "hello world _END_", including the pattern
     string "_END_" itself.
+
+    Since the "v0.8.8" release, this method no longer automatically closes
+    the current connection when the read timeout error happens. For other
+    connection errors, this method always automatically closes the
+    connection.
 
     This method was first introduced in the "v0.5.0rc1" release.
 
@@ -4991,28 +5010,25 @@ Nginx API for Lua
 
     Retrieves the current running phase name. Possible return values are
 
-    *   "init" for the context of init_by_lua or init_by_lua_file. =item *
+    *   "init" for the context of init_by_lua or init_by_lua_file.
 
-        "set" for the context of set_by_lua or set_by_lua_file. =item *
+    *   "set" for the context of set_by_lua or set_by_lua_file.
 
-        "rewrite" for the context of rewrite_by_lua or rewrite_by_lua_file.
-        =item *
+    *   "rewrite" for the context of rewrite_by_lua or rewrite_by_lua_file.
 
-        "access" for the context of access_by_lua or access_by_lua_file.
-        =item *
+    *   "access" for the context of access_by_lua or access_by_lua_file.
 
-        "content" for the context of content_by_lua or content_by_lua_file.
-        =item *
+    *   "content" for the context of content_by_lua or content_by_lua_file.
 
-        "header_filter" for the context of header_filter_by_lua or
-        header_filter_by_lua_file. =item *
+    *   "header_filter" for the context of header_filter_by_lua or
+        header_filter_by_lua_file.
 
-        "body_filter" for the context of body_filter_by_lua or
-        body_filter_by_lua_file. =item *
+    *   "body_filter" for the context of body_filter_by_lua or
+        body_filter_by_lua_file.
 
-        "log" for the context of log_by_lua or log_by_lua_file. =item *
+    *   "log" for the context of log_by_lua or log_by_lua_file.
 
-        "timer" for the context of user callback functions for ngx.timer.*.
+    *   "timer" for the context of user callback functions for ngx.timer.*.
 
     This API was first introduced in the "v0.5.10" release.
 
@@ -5449,6 +5465,18 @@ Nginx API for Lua
     explicitly disabled in this context.
 
     This API was first introduced in the "v0.8.0" release.
+
+  ngx.config.debug
+    syntax: *debug = ngx.config.debug*
+
+    context: *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*,
+    header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*,
+    init_by_lua**
+
+    This boolean field indicates whether the current Nginx is a debug build,
+    i.e., being built by the "./configure" option "--with-debug".
+
+    This field was first introduced in the 0.8.7.
 
   ndk.set_var.DIRECTIVE
     syntax: *res = ndk.set_var.DIRECTIVE_NAME*
@@ -5926,7 +5954,9 @@ Typical Uses
 Nginx Compatibility
     The latest module is compatible with the following versions of Nginx:
 
-    *   1.4.x (last tested: 1.4.1)
+    *   1.5.x (last tested: 1.5.4)
+
+    *   1.4.x (last tested: 1.4.2)
 
     *   1.3.x (last tested: 1.3.11)
 
@@ -5971,9 +6001,9 @@ Installation
 
     Build the source with this module:
 
-        wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
-        tar -xzvf nginx-1.4.1.tar.gz
-        cd nginx-1.4.1/
+        wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
+        tar -xzvf nginx-1.4.2.tar.gz
+        cd nginx-1.4.2/
 
         # tell nginx's build system where to find LuaJIT:
         export LUAJIT_LIB=/path/to/luajit/lib

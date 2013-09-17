@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.6](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 August 2013.
+This document describes ngx_lua [v0.8.9](https://github.com/chaoslawful/lua-nginx-module/tags) released on 15 September 2013.
 
 Synopsis
 ========
@@ -1626,6 +1626,8 @@ argument, which supports the options:
 	specify whether to copy over all the Nginx variable values of the current request to the subrequest in question. modifications of the nginx variables in the subrequest will not affect the current (parent) request. This option was first introduced in the `v0.3.1rc31` release.
 * `share_all_vars`
 	specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
+* `always_forward_body`
+	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. By default, this option is false and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
 
 Issuing a POST subrequest, for example, can be done as follows
 
@@ -1816,7 +1818,7 @@ subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
 [proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
 
-When the `body` option is not specified, the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
+When the `body` option is not specified and the `always_forward_body` option is false (the default value), the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
 
 There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was `50` concurrent subrequests and in more recent versions, Nginx `1.1.x` onwards, this was increased to `200` concurrent subrequests. When this limit is exceeded, the following error message is added to the `error.log` file:
 
@@ -4235,6 +4237,8 @@ Timeout for the sending operation is controlled by the [lua_socket_send_timeout]
 
 It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling this method.
 
+In case of any connection errors, this method always automatically closes the current connection.
+
 This feature was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:receive
@@ -4273,6 +4277,8 @@ Timeout for the reading operation is controlled by the [lua_socket_read_timeout]
 
 
 It is important here to call the [settimeout](http://wiki.nginx.org/HttpLuaModule#tcpsock:settimeout) method *before* calling this method.
+
+Since the `v0.8.8` release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
@@ -4364,6 +4370,8 @@ The `inclusive` takes a boolean value to control whether to include the pattern 
 
 
 Then for the input data stream `"hello world _END_ blah blah blah"`, then the example above will output `hello world _END_`, including the pattern string `_END_` itself.
+
+Since the `v0.8.8` release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This method was first introduced in the `v0.5.0rc1` release.
 
@@ -4878,6 +4886,16 @@ this context.
 
 This API was first introduced in the `v0.8.0` release.
 
+ngx.config.debug
+----------------
+**syntax:** *debug = ngx.config.debug*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the `./configure` option `--with-debug`.
+
+This field was first introduced in the `0.8.7`.
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
@@ -5261,7 +5279,8 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.4.x (last tested: 1.4.1)
+* 1.5.x (last tested: 1.5.4)
+* 1.4.x (last tested: 1.4.2)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5289,9 +5308,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 
-    wget 'http://nginx.org/download/nginx-1.4.1.tar.gz'
-    tar -xzvf nginx-1.4.1.tar.gz
-    cd nginx-1.4.1/
+    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
+    tar -xzvf nginx-1.4.2.tar.gz
+    cd nginx-1.4.2/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

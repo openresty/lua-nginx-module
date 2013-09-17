@@ -224,12 +224,15 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
              * is always 1 */
             if ((*src & 0x80) == 0) {
                 switch (*src) {
-                    case '\r':
+                    case '\0':
+                    case '\b':
                     case '\n':
+                    case '\r':
+                    case '\t':
+                    case 26:  /* \z */
                     case '\\':
                     case '\'':
                     case '"':
-                    case '\032':
                         n++;
                         break;
                     default:
@@ -246,14 +249,34 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
     while (size) {
         if ((*src & 0x80) == 0) {
             switch (*src) {
-                case '\r':
+                case '\0':
                     *dst++ = '\\';
-                    *dst++ = 'r';
+                    *dst++ = '0';
+                    break;
+
+                case '\b':
+                    *dst++ = '\\';
+                    *dst++ = 'b';
                     break;
 
                 case '\n':
                     *dst++ = '\\';
                     *dst++ = 'n';
+                    break;
+
+                case '\r':
+                    *dst++ = '\\';
+                    *dst++ = 'r';
+                    break;
+
+                case '\t':
+                    *dst++ = '\\';
+                    *dst++ = 't';
+                    break;
+
+                case 26:
+                    *dst++ = '\\';
+                    *dst++ = 'z';
                     break;
 
                 case '\\':
@@ -269,11 +292,6 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
                 case '"':
                     *dst++ = '\\';
                     *dst++ = '"';
-                    break;
-
-                case '\032':
-                    *dst++ = '\\';
-                    *dst++ = *src;
                     break;
 
                 default:

@@ -55,6 +55,16 @@
 #endif
 
 
+#ifndef NGX_HTTP_LUA_BT_DEPTH
+#define NGX_HTTP_LUA_BT_DEPTH  22
+#endif
+
+
+#ifndef NGX_HTTP_LUA_BT_MAX_COROS
+#define NGX_HTTP_LUA_BT_MAX_COROS  5
+#endif
+
+
 char ngx_http_lua_code_cache_key;
 char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
@@ -96,6 +106,11 @@ static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
 static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
 static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
+static ngx_int_t
+    ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx);
 
 
 #ifndef LUA_PATH_SEP
@@ -103,12 +118,6 @@ static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 #endif
 
 #define AUX_MARK "\1"
-
-
-enum {
-    LEVELS1 = 12,       /* size of the first part of the stack */
-    LEVELS2 = 10        /* size of the second part of the stack */
-};
 
 
 static void
@@ -466,7 +475,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
 {
     ngx_int_t            rc;
 
-    if (!ctx->headers_sent) {
+    if (!r->header_sent) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
@@ -483,7 +492,6 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         if (!ctx->buffering) {
             dd("sending headers");
             rc = ngx_http_send_header(r);
-            ctx->headers_sent = 1;
             return rc;
         }
     }
@@ -516,7 +524,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     if (llcf->http10_buffering
         && !ctx->buffering
-        && !ctx->headers_sent
+        && !r->header_sent
         && r->http_version < NGX_HTTP_VERSION_11
         && r->headers_out.content_length_n < 0)
     {
@@ -653,7 +661,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_chain_t         *cl;
     ngx_int_t            rc;
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return NGX_OK;
     }
 
@@ -678,7 +686,6 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
 
 send:
     rc = ngx_http_send_header(r);
-    ctx->headers_sent = 1;
     return rc;
 }
 
@@ -1427,15 +1434,15 @@ user_co_done:
 
                 ngx_http_lua_request_cleanup(ctx, 0);
 
-                dd("headers sent? %d", ctx->headers_sent ? 1 : 0);
+                dd("headers sent? %d", r->header_sent ? 1 : 0);
 
                 if (ctx->no_abort) {
                     ctx->no_abort = 0;
                     return NGX_ERROR;
                 }
 
-                return ctx->headers_sent ? NGX_ERROR :
-                            NGX_HTTP_INTERNAL_SERVER_ERROR;
+                return r->header_sent ? NGX_ERROR :
+                       NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
 
             /* being a user coroutine that has a parent */
@@ -1488,7 +1495,7 @@ no_parent:
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua handler aborted: "
                   "user coroutine has no parent");
 
-    return ctx->headers_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
+    return r->header_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
     if (ctx->entered_content_phase && r->connection->fd != -1) {
@@ -1508,14 +1515,10 @@ ngx_int_t
 ngx_http_lua_wev_handler(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
-    ngx_list_part_t             *part;
     ngx_http_lua_ctx_t          *ctx;
     ngx_connection_t            *c;
     ngx_event_t                 *wev;
     ngx_http_core_loc_conf_t    *clcf;
-    ngx_chain_t                 *cl;
-    ngx_http_lua_co_ctx_t       *coctx;
-    ngx_uint_t                   i;
 
     c = r->connection;
 
@@ -1564,130 +1567,14 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     }
 
     if (c->buffered) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua wev handler flushing output: buffered 0x%uxd",
-                       c->buffered);
-
-        rc = ngx_http_lua_output_filter(r, NULL);
-
-        if (rc == NGX_ERROR || rc > NGX_OK) {
-            if (ctx->entered_content_phase) {
-                ngx_http_lua_finalize_request(r, rc);
-            }
-
+        rc = ngx_http_lua_flush_pending_output(r, ctx);
+        if (rc != NGX_OK) {
             return rc;
-        }
-
-        if (ctx->busy_bufs) {
-            cl = NULL;
-
-            dd("updating chains...");
-
-#if nginx_version >= 1001004
-            ngx_chain_update_chains(r->pool,
-#else
-            ngx_chain_update_chains(
-#endif
-                                    &ctx->free_bufs, &ctx->busy_bufs, &cl,
-                                    (ngx_buf_tag_t) &ngx_http_lua_module);
-
-            dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
-                &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
-        }
-
-        if (c->buffered) {
-
-            if (!wev->delayed) {
-                ngx_add_timer(wev, clcf->send_timeout);
-            }
-
-            if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
-                if (ctx->entered_content_phase) {
-                    ngx_http_lua_finalize_request(r, NGX_ERROR);
-                }
-
-                return NGX_ERROR;
-            }
-
-            if (ctx->flushing_coros) {
-                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                               "lua flush still waiting: buffered 0x%uxd",
-                               c->buffered);
-
-                return NGX_DONE;
-            }
-
-        } else {
-#if 1
-            if (wev->timer_set) {
-                ngx_del_timer(wev);
-            }
-#endif
         }
     }
 
     if (ctx->flushing_coros) {
-
-        coctx = &ctx->entry_co_ctx;
-
-        if (coctx->flushing) {
-            coctx->flushing = 0;
-
-            ctx->flushing_coros--;
-            ctx->cur_co_ctx = coctx;
-
-            rc = ngx_http_lua_flush_resume_helper(r, ctx);
-            if (rc == NGX_ERROR || rc >= NGX_OK) {
-                return rc;
-            }
-
-            /* rc == NGX_DONE */
-        }
-
-        if (ctx->flushing_coros) {
-
-            if (ctx->user_co_ctx == NULL) {
-                return NGX_ERROR;
-            }
-
-            part = &ctx->user_co_ctx->part;
-            coctx = part->elts;
-
-            for (i = 0; /* void */; i++) {
-
-                if (i >= part->nelts) {
-                    if (part->next == NULL) {
-                        break;
-                    }
-
-                    part = part->next;
-                    coctx = part->elts;
-                    i = 0;
-                }
-
-                if (coctx[i].flushing) {
-                    coctx[i].flushing = 0;
-                    ctx->cur_co_ctx = &coctx[i];
-
-                    rc = ngx_http_lua_flush_resume_helper(r, ctx);
-                    if (rc == NGX_ERROR || rc >= NGX_OK) {
-                        return rc;
-                    }
-
-                    /* rc == NGX_DONE */
-
-                    if (--ctx->flushing_coros == 0) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (ctx->flushing_coros) {
-            return NGX_ERROR;
-        }
-
-        return NGX_DONE;
+        return ngx_http_lua_process_flushing_coroutines(r, ctx);
     }
 
     /* ctx->flushing_coros == 0 */
@@ -1701,6 +1588,159 @@ useless:
     }
 
     return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_int_t                    rc;
+    ngx_uint_t                   i;
+    ngx_list_part_t             *part;
+    ngx_http_lua_co_ctx_t       *coctx;
+
+    coctx = &ctx->entry_co_ctx;
+
+    if (coctx->flushing) {
+        coctx->flushing = 0;
+
+        ctx->flushing_coros--;
+        ctx->cur_co_ctx = coctx;
+
+        rc = ngx_http_lua_flush_resume_helper(r, ctx);
+        if (rc == NGX_ERROR || rc >= NGX_OK) {
+            return rc;
+        }
+
+        /* rc == NGX_DONE */
+    }
+
+    if (ctx->flushing_coros) {
+
+        if (ctx->user_co_ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        part = &ctx->user_co_ctx->part;
+        coctx = part->elts;
+
+        for (i = 0; /* void */; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                coctx = part->elts;
+                i = 0;
+            }
+
+            if (coctx[i].flushing) {
+                coctx[i].flushing = 0;
+                ctx->cur_co_ctx = &coctx[i];
+
+                rc = ngx_http_lua_flush_resume_helper(r, ctx);
+                if (rc == NGX_ERROR || rc >= NGX_OK) {
+                    return rc;
+                }
+
+                /* rc == NGX_DONE */
+
+                if (--ctx->flushing_coros == 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (ctx->flushing_coros) {
+        return NGX_ERROR;
+    }
+
+    return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_int_t           rc;
+    ngx_chain_t        *cl;
+    ngx_event_t        *wev;
+    ngx_connection_t   *c;
+
+    ngx_http_core_loc_conf_t    *clcf;
+
+    c = r->connection;
+    wev = c->write;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "lua flushing output: buffered 0x%uxd",
+                   c->buffered);
+
+    rc = ngx_http_lua_output_filter(r, NULL);
+
+    if (rc == NGX_ERROR || rc > NGX_OK) {
+        if (ctx->entered_content_phase) {
+            ngx_http_lua_finalize_request(r, rc);
+        }
+
+        return rc;
+    }
+
+    if (ctx->busy_bufs) {
+        cl = NULL;
+
+        dd("updating chains...");
+
+#if nginx_version >= 1001004
+        ngx_chain_update_chains(r->pool,
+#else
+        ngx_chain_update_chains(
+#endif
+                                &ctx->free_bufs, &ctx->busy_bufs, &cl,
+                                (ngx_buf_tag_t) &ngx_http_lua_module);
+
+        dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
+            &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
+    }
+
+    if (c->buffered) {
+
+        clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+        if (!wev->delayed) {
+            ngx_add_timer(wev, clcf->send_timeout);
+        }
+
+        if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+            if (ctx->entered_content_phase) {
+                ngx_http_lua_finalize_request(r, NGX_ERROR);
+            }
+
+            return NGX_ERROR;
+        }
+
+        if (ctx->flushing_coros) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                           "lua flush still waiting: buffered 0x%uxd",
+                           c->buffered);
+
+            return NGX_DONE;
+        }
+
+    } else {
+#if 1
+        if (wev->timer_set) {
+            ngx_del_timer(wev);
+        }
+#endif
+    }
+
+    return NGX_OK;
 }
 
 
@@ -2170,7 +2210,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    ctx->exit_code);
 
 #if 1
-    if (!ctx->headers_sent
+    if (!r->header_sent
         && r->headers_out.status == 0
         && ctx->exit_code >= NGX_HTTP_OK)
     {
@@ -2704,37 +2744,28 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     ngx_http_lua_co_ctx_t *coctx)
 {
     int         base;
-    int         level = 0, count = 0;
-    int         firstpart = 1;  /* still before eventual `...' */
+    int         level, coid;
     lua_Debug   ar;
 
     base = lua_gettop(L);
-
     lua_pushliteral(L, "stack traceback:");
+    coid = 0;
 
     while (co) {
 
-        lua_pushfstring(L, "\ncoroutine %d:", count++);
+        if (coid >= NGX_HTTP_LUA_BT_MAX_COROS) {
+            break;
+        }
+
+        lua_pushfstring(L, "\ncoroutine %d:", coid++);
+
+        level = 0;
 
         while (lua_getstack(co, level++, &ar)) {
 
-            if (level > LEVELS1 && firstpart) {
-                /* no more than `LEVELS2' more levels? */
-                if (!lua_getstack(co, level + LEVELS2, &ar)) {
-                    level--;  /* keep going */
-
-                } else {
-                    lua_pushliteral(L, "\n\t...");  /* too many levels */
-                    /*
-                     * This only works with LuaJIT 2.x.
-                     * Avoids O(n^2) behaviour.
-                     */
-                    lua_getstack(co, -10, &ar);
-                    level = ar.i_ci - LEVELS2;
-                }
-
-                firstpart = 0;
-                continue;
+            if (level > NGX_HTTP_LUA_BT_DEPTH) {
+                lua_pushliteral(L, "\n\t...");
+                break;
             }
 
             lua_pushliteral(L, "\n\t");
@@ -2762,10 +2793,9 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
             }
         }
 
-        lua_concat(L, lua_gettop(L) - base);
-
-        level = 0;
-        firstpart = 1;
+        if (lua_gettop(L) - base >= 15) {
+            lua_concat(L, lua_gettop(L) - base);
+        }
 
         /* check if the coroutine has a parent coroutine*/
         coctx = coctx->parent_co_ctx;
@@ -2776,6 +2806,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
         co = coctx->co;
     }
 
+    lua_concat(L, lua_gettop(L) - base);
     return 1;
 }
 

@@ -9,7 +9,12 @@ BEGIN {
         $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
     }
 
-    $ENV{MOCKEAGAIN} = 'w';
+    if ($ENV{MOCKEAGAIN} eq 'r') {
+        $ENV{MOCKEAGAIN} = 'rw';
+
+    } else {
+        $ENV{MOCKEAGAIN} = 'w';
+    }
 
     $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
     $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'get helloworld';
@@ -24,7 +29,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 10);
+plan tests => repeat_each() * (blocks() * 4 + 11);
 
 our $HtmlDir = html_dir;
 
@@ -672,4 +677,97 @@ hello in thread
 after
 --- no_error_log
 [error]
+
+
+
+=== TEST 17: re-connect after timed out
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 100ms;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("1: failed to connect: ", err)
+
+                local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+                if not ok then
+                    ngx.say("2: failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("2: connected: ", ok)
+                return
+            end
+
+            ngx.say("1: connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+1: failed to connect: timeout
+2: connected: 1
+--- error_log
+lua tcp socket connect timeout: 100
+lua tcp socket connect timed out
+
+
+
+=== TEST 18: re-send on the same object after a send timeout happens
+--- config
+    server_tokens off;
+    lua_socket_send_timeout 100ms;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+                bytes, err = sock:send("blah")
+                if not bytes then
+                    ngx.say("failed to send again: ", err)
+                end
+            end
+        ';
+    }
+--- request
+GET /t
+--- stap2
+global active = 0
+F(ngx_http_lua_socket_send) {
+    active = 1
+    println(probefunc())
+}
+probe syscall.send,
+    syscall.sendto,
+    syscall.writev
+{
+    if (active && pid() == target()) {
+        println(probefunc())
+    }
+}
+--- response_body
+connected: 1
+failed to send: timeout
+failed to send again: closed
+--- error_log
+lua tcp socket send timeout: 100
+lua tcp socket connect timeout: 60000
+lua tcp socket write timed out
 

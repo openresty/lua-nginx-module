@@ -752,3 +752,316 @@ failed to get socket: no body
 --- no_error_log
 [error]
 
+
+
+=== TEST 13: failing reread after reading timeout happens
+--- config
+    location = /t {
+        content_by_lua '
+            local sock, err = ngx.req.socket()
+
+            if not sock then
+               ngx.say("failed to get socket: ", err)
+               return nil
+            end
+
+            sock:settimeout(100);
+
+            local data, err, partial = sock:receive(4096)
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            end
+
+            local data, err, partial = sock:receive(4096)
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+               return
+            end
+        ';
+    }
+
+--- raw_request eval
+"POST /t HTTP/1.0\r
+Host: localhost\r
+Content-Length: 10245\r
+\r
+hello"
+--- response_body
+err: timeout, partial: hello
+err: timeout, partial: 
+
+--- error_log
+lua tcp socket read timed out
+
+
+
+=== TEST 14: successful reread after reading timeout happens (receive -> receive)
+--- config
+    location = /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send("POST /back HTTP/1.0\\r\\nHost: localhost\\r\\nContent-Length: 1024\\r\\n\\r\\nabc")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            ngx.sleep(0.2)
+
+            local bytes, err = sock:send("hello world")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            local reader = sock:receiveuntil("\\r\\n\\r\\n")
+            local header, err = reader()
+            if not header then
+                ngx.say("failed to receive header: ", err)
+                return
+            end
+
+            for i = 1, 2 do
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive line: ", err)
+                    return
+                end
+                ngx.say("received: ", line)
+            end
+        ';
+    }
+
+    location = /back {
+        content_by_lua '
+            ngx.send_headers()
+            ngx.flush(true)
+
+            local sock, err = ngx.req.socket()
+
+            if not sock then
+               ngx.say("failed to get socket: ", err)
+               return nil
+            end
+
+            sock:settimeout(100);
+
+            local data, err, partial = sock:receive(4096)
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+
+            ngx.sleep(0.1)
+
+            local data, err, partial = sock:receive(11)
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+sent: 65
+sent: 11
+received: err: timeout, partial: abc
+received: received: hello world
+
+--- error_log
+lua tcp socket read timed out
+
+
+
+=== TEST 15: successful reread after reading timeout happens (receive -> receiveuntil)
+--- config
+    location = /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send("POST /back HTTP/1.0\\r\\nHost: localhost\\r\\nContent-Length: 1024\\r\\n\\r\\nabc")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            ngx.sleep(0.2)
+
+            local bytes, err = sock:send("hello world\\n")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            local reader = sock:receiveuntil("\\r\\n\\r\\n")
+            local header, err = reader()
+            if not header then
+                ngx.say("failed to receive header: ", err)
+                return
+            end
+
+            for i = 1, 2 do
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive line: ", err)
+                    return
+                end
+                ngx.say("received: ", line)
+            end
+        ';
+    }
+
+    location = /back {
+        content_by_lua '
+            ngx.send_headers()
+            ngx.flush(true)
+
+            local sock, err = ngx.req.socket()
+
+            if not sock then
+               ngx.say("failed to get socket: ", err)
+               return nil
+            end
+
+            sock:settimeout(100);
+
+            local data, err, partial = sock:receive(4096)
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+
+            ngx.sleep(0.1)
+
+            local reader = sock:receiveuntil("\\n")
+            local data, err, partial = reader()
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+sent: 65
+sent: 12
+received: err: timeout, partial: abc
+received: received: hello world
+
+--- error_log
+lua tcp socket read timed out
+
+
+
+=== TEST 16: successful reread after reading timeout happens (receiveuntil -> receive)
+--- config
+    location = /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send("POST /back HTTP/1.0\\r\\nHost: localhost\\r\\nContent-Length: 1024\\r\\n\\r\\nabc")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            ngx.sleep(0.2)
+
+            local bytes, err = sock:send("hello world\\n")
+            if not bytes then
+                ngx.say("failed to send: ", err)
+            else
+                ngx.say("sent: ", bytes)
+            end
+
+            local reader = sock:receiveuntil("\\r\\n\\r\\n")
+            local header, err = reader()
+            if not header then
+                ngx.say("failed to receive header: ", err)
+                return
+            end
+
+            for i = 1, 2 do
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive line: ", err)
+                    return
+                end
+                ngx.say("received: ", line)
+            end
+        ';
+    }
+
+    location = /back {
+        content_by_lua '
+            ngx.send_headers()
+            ngx.flush(true)
+
+            local sock, err = ngx.req.socket()
+
+            if not sock then
+               ngx.say("failed to get socket: ", err)
+               return nil
+            end
+
+            sock:settimeout(100);
+
+            local reader = sock:receiveuntil("no-such-terminator")
+            local data, err, partial = reader()
+            if not data then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+
+            ngx.sleep(0.1)
+
+            local data, err, partial = sock:receive()
+            if err then
+               ngx.say("err: ", err, ", partial: ", partial)
+            else
+                ngx.say("received: ", data)
+            end
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+sent: 65
+sent: 12
+received: err: timeout, partial: abc
+received: received: hello world
+
+--- error_log
+lua tcp socket read timed out
+

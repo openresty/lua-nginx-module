@@ -25,6 +25,7 @@ time ngx-build $force $version \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
             --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:$LUAJIT_LIB:/usr/local/lib" \
+            --with-http_spdy_module \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --without-mail_smtp_module \
