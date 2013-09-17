@@ -71,6 +71,7 @@ M(http-lua-user-coroutine-create) {
 F(ngx_http_lua_ngx_exec) { println("exec") }
 
 F(ngx_http_lua_ngx_exit) { println("exit") }
+F(ngx_http_lua_ffi_exit) { println("exit") }
 _EOC_
 
 no_shuffle();

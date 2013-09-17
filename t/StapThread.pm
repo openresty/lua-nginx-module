@@ -225,6 +225,7 @@ M(http-lua-user-coroutine-create) {
 F(ngx_http_lua_ngx_exec) { println("exec") }
 
 F(ngx_http_lua_ngx_exit) { println("exit") }
+F(ngx_http_lua_ffi_exit) { println("exit") }
 
 F(ngx_http_lua_req_body_cleanup) {
     println("lua req body cleanup")
@@ -239,6 +240,10 @@ F(ngx_http_lua_finalize_coroutines) {
 }
 
 F(ngx_http_lua_ngx_exit) {
+    println("ngx.exit() called")
+}
+
+F(ngx_http_lua_ffi_exit) {
     println("ngx.exit() called")
 }
 
