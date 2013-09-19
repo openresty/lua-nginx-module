@@ -2720,6 +2720,8 @@ The socket object returned by this method is usually used to read the current re
 
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
 
+Chunked request bodies are not yet supported in this API.
+
 This function was first introduced in the `v0.5.0rc1` release.
 
 ngx.exec
@@ -5262,6 +5264,16 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
     if m then ngx.say(m[0]) else ngx.say("not matched!") end
     -- evaluates to "1234"
 
+
+Mixing with SSI Not Supported
+-----------------------------
+
+Mixing SSI with ngx_lua in the same Nginx request is not supported at all. Just use ngx_lua exclusively. Everything you can do with SSI can be done atop ngx_lua anyway and it can be more efficient when using ngx_lua.
+
+SPDY Mode Not Fully Supported
+-----------------------------
+
+Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [ngx.location.capture](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture), [ngx.location.capture_multi](http://wiki.nginx.org/HttpLuaModule#ngx.location.capture_multi), and [ngx.req.socket](http://wiki.nginx.org/HttpLuaModule#ngx.req.socket).
 
 Typical Uses
 ============

@@ -2964,6 +2964,8 @@ Nginx API for Lua
     header buffer, the resulting cosocket object will take care of this to
     avoid potential data loss resulting from such pre-reading.
 
+    Chunked request bodies are not yet supported in this API.
+
     This function was first introduced in the "v0.5.0rc1" release.
 
   ngx.exec
@@ -5927,6 +5929,17 @@ Known Issues
         local m = ngx.re.match("hello, 1234", regex)
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
         -- evaluates to "1234"
+
+  Mixing with SSI Not Supported
+    Mixing SSI with ngx_lua in the same Nginx request is not supported at
+    all. Just use ngx_lua exclusively. Everything you can do with SSI can be
+    done atop ngx_lua anyway and it can be more efficient when using
+    ngx_lua.
+
+  SPDY Mode Not Fully Supported
+    Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode
+    yet: ngx.location.capture, ngx.location.capture_multi, and
+    ngx.req.socket.
 
 Typical Uses
     Just to name a few:
