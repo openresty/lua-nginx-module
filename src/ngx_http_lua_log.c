@@ -35,6 +35,7 @@ ngx_http_lua_ngx_log(lua_State *L)
     ngx_log_t                   *log;
     ngx_http_request_t          *r;
     const char                  *msg;
+    int                          level;
 
     r = ngx_http_lua_get_req(L);
 
@@ -45,7 +46,7 @@ ngx_http_lua_ngx_log(lua_State *L)
         log = ngx_cycle->log;
     }
 
-    int level = luaL_checkint(L, 1);
+    level = luaL_checkint(L, 1);
     if (level < NGX_LOG_STDERR || level > NGX_LOG_DEBUG) {
         msg = lua_pushfstring(L, "bad log level: %d", level);
         return luaL_argerror(L, 1, msg);
