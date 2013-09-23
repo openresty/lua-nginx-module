@@ -125,7 +125,7 @@ lua raw req socket tcp_nodelay
 --- raw_request eval
 "GET /t HTTP/1.0\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- ignore_response
@@ -152,7 +152,7 @@ server: failed to get raw req socket: response header not sent yet
 --- raw_request eval
 "GET /t HTTP/1.0\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- stap2
@@ -193,7 +193,7 @@ server: failed to get raw req socket: http 1.0 buffering
 --- raw_request eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- stap2
@@ -233,7 +233,7 @@ server: failed to get raw req socket2: duplicate call
 --- raw_request eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- ignore_response
@@ -266,7 +266,7 @@ failed to say: raw request socket acquired
 --- raw_request eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- ignore_response
@@ -299,7 +299,7 @@ failed to print: raw request socket acquired
 --- raw_request eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- ignore_response
@@ -332,7 +332,7 @@ failed to eof: raw request socket acquired
 --- raw_request eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Upgrade: mysocket
+Upgrade: mysocket\r
 \r
 hello"
 --- ignore_response
