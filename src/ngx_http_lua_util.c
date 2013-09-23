@@ -1616,17 +1616,21 @@ static ngx_int_t
 ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)
 {
-    ngx_int_t                    rc;
+    ngx_int_t                    rc, n;
     ngx_uint_t                   i;
     ngx_list_part_t             *part;
     ngx_http_lua_co_ctx_t       *coctx;
 
+    dd("processing flushing coroutines");
+
     coctx = &ctx->entry_co_ctx;
+    n = ctx->flushing_coros;
 
     if (coctx->flushing) {
         coctx->flushing = 0;
 
         ctx->flushing_coros--;
+        n--;
         ctx->cur_co_ctx = coctx;
 
         rc = ngx_http_lua_flush_resume_helper(r, ctx);
@@ -1637,7 +1641,7 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
         /* rc == NGX_DONE */
     }
 
-    if (ctx->flushing_coros) {
+    if (n) {
 
         if (ctx->user_co_ctx == NULL) {
             return NGX_ERROR;
@@ -1669,14 +1673,16 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
 
                 /* rc == NGX_DONE */
 
-                if (--ctx->flushing_coros == 0) {
-                    break;
+                ctx->flushing_coros--;
+                n--;
+                if (n == 0) {
+                    return NGX_DONE;
                 }
             }
         }
     }
 
-    if (ctx->flushing_coros) {
+    if (n) {
         return NGX_ERROR;
     }
 
