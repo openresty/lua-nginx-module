@@ -229,6 +229,30 @@ ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 }
 
 
+#define ngx_http_lua_hash_literal(s)                                        \
+    ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
+
+
+static ngx_inline ngx_uint_t
+ngx_http_lua_hash_str(u_char *src, size_t n)
+{
+    ngx_uint_t  key;
+
+    key = 0;
+
+    while (n--) {
+        key = ngx_hash(key, *src);
+        src++;
+    }
+
+    return key;
+}
+
+
+extern ngx_uint_t  ngx_http_lua_location_hash;
+extern ngx_uint_t  ngx_http_lua_content_length_hash;
+
+
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

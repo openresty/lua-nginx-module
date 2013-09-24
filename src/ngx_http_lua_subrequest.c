@@ -1153,10 +1153,7 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 
     h->value.len = ngx_sprintf(h->value.data, "%O", len) - h->value.data;
 
-    h->hash = ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-            ngx_hash('c', 'o'), 'n'), 't'), 'e'), 'n'), 't'), '-'), 'l'), 'e'),
-            'n'), 'g'), 't'), 'h');
+    h->hash = ngx_http_lua_content_length_hash;
 
 #if 0
     dd("content length hash: %lu == %lu", (unsigned long) h->hash,

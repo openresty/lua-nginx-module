@@ -73,6 +73,10 @@ char ngx_http_lua_coroutines_key;
 char ngx_http_lua_req_get_headers_metatable_key;
 
 
+ngx_uint_t  ngx_http_lua_location_hash = 0;
+ngx_uint_t  ngx_http_lua_content_length_hash = 0;
+
+
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static void ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L);

@@ -392,7 +392,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
     while (lua_next(L, index) != 0) { /* stack: table key value */
         key = lua_tonumber(L, -2);
         if (key > max) {
-            max = key;
+            max = (int) key;
         }
 
         lua_pop(L, 1); /* stack: table key */

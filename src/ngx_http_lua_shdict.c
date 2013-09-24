@@ -969,7 +969,7 @@ replace:
             ngx_queue_remove(&sd->queue);
             ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-            sd->key_len = (ushort) key.len;
+            sd->key_len = (u_short) key.len;
 
             if (exptime > 0) {
                 tp = ngx_timeofday();
@@ -1076,7 +1076,7 @@ allocated:
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
-    sd->key_len = (ushort) key.len;
+    sd->key_len = (u_short) key.len;
 
     if (exptime > 0) {
         tp = ngx_timeofday();

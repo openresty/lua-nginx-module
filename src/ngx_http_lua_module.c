@@ -731,6 +731,11 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     lua_State                       *L;
     ngx_uint_t                       i;
 
+    ngx_http_lua_content_length_hash =
+        ngx_http_lua_hash_literal("content-length");
+
+    ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
+
     /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
