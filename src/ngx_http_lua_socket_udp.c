@@ -285,7 +285,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     url.url.len = host.len;
     url.url.data = host.data;
-    url.default_port = port;
+    url.default_port = (in_port_t) port;
     url.no_resolve = 1;
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {

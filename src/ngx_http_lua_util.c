@@ -657,7 +657,7 @@ static ngx_int_t
 ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)
 {
-    size_t               size;
+    off_t                size;
     ngx_chain_t         *cl;
     ngx_int_t            rc;
 
@@ -677,7 +677,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
             size += ngx_buf_size(cl->buf);
         }
 
-        r->headers_out.content_length_n = (off_t) size;
+        r->headers_out.content_length_n = size;
 
         if (r->headers_out.content_length) {
             r->headers_out.content_length->hash = 0;
@@ -3053,7 +3053,7 @@ ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
         return rc;
     }
 
-    return NGX_DONE;
+    /* impossible to reach here */
 }
 
 
@@ -3575,7 +3575,7 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
 
     ngx_free_connection(c);
 
-    c->fd = -1;
+    c->fd = (ngx_socket_t) -1;
 
     if (ngx_cycle->files) {
         ngx_cycle->files[0] = saved_c;

@@ -272,7 +272,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 waited_by_parent:1;  /* whether being waited by
                                                      a parent coroutine */
 
-    ngx_http_lua_co_status_t co_status:3;  /* the current coroutine's status */
+    unsigned                 co_status:3;  /* the current coroutine's status */
 
     unsigned                 flushing:1; /* indicates whether the current
                                             coroutine is waiting for
@@ -351,7 +351,7 @@ typedef struct ngx_http_lua_ctx_s {
                                                        request body data;
                                                        0: no need to wait */
 
-    ngx_http_lua_user_coro_op_t   co_op:2; /*  coroutine API operation */
+    unsigned         co_op:2; /*  coroutine API operation */
 
     unsigned         exited:1;
 

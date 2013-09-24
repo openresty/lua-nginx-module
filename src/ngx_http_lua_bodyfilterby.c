@@ -242,7 +242,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
-    uint8_t                      old_context;
+    uint16_t                     old_context;
     ngx_http_cleanup_t          *cln;
     ngx_http_lua_main_conf_t    *lmcf;
     lua_State                   *L;

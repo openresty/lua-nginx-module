@@ -488,7 +488,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     url.url.len = host.len;
     url.url.data = host.data;
-    url.default_port = port;
+    url.default_port = (in_port_t) port;
     url.no_resolve = 1;
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
@@ -1377,7 +1377,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
     size_t                       size;
     ssize_t                      n;
     unsigned                     read;
-    size_t                       preread = 0;
+    off_t                        preread = 0;
     ngx_http_lua_loc_conf_t     *llcf;
 
     c = u->peer.connection;
@@ -1479,7 +1479,7 @@ success:
             }
 
             b = &u->buffer;
-            size = b->end - b->last;
+            size = (size_t) (b->end - b->last);
         }
 
         if (u->raw_downstream) {
@@ -1487,8 +1487,8 @@ success:
 
             if (preread) {
 
-                if (size > preread) {
-                    size = preread;
+                if ((off_t) size > preread) {
+                    size = (size_t) preread;
                 }
 
                 ngx_http_lua_probe_req_socket_consume_preread(r,
@@ -1523,14 +1523,14 @@ success:
                 /* there is the pre-read part of the request body */
 
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                               "http client request body preread %uz", preread);
+                               "http client request body preread %O", preread);
 
-                if ((off_t) preread >= r->request_body->rest) {
+                if (preread >= r->request_body->rest) {
                     preread = r->request_body->rest;
                 }
 
-                if (size > preread) {
-                    size = preread;
+                if ((off_t) size > preread) {
+                    size = (size_t) preread;
                 }
 
                 ngx_http_lua_probe_req_socket_consume_preread(r,
@@ -2780,7 +2780,7 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
     int                 cur_state, new_state;
 
     ngx_http_lua_dfa_edge_t         *edge;
-    ngx_http_lua_dfa_edge_t        **last;
+    ngx_http_lua_dfa_edge_t        **last = NULL;
 
     cp->pattern.len = len;
 

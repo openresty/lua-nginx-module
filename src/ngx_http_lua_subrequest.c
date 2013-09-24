@@ -1368,7 +1368,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         {
             lua_pushliteral(co, "Content-Length"); /* header key */
 
-            lua_pushnumber(co, sr_headers->content_length_n);
+            lua_pushnumber(co, (lua_Number) sr_headers->content_length_n);
                 /* head key value */
 
             lua_rawset(co, -3); /* head */

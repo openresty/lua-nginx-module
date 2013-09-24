@@ -127,8 +127,8 @@ ngx_http_lua_ngx_re_match(lua_State *L)
     ngx_http_lua_main_conf_t    *lmcf;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
-    int                          name_entry_size, name_count;
-    u_char                      *name_table;
+    int                          name_entry_size = 0, name_count;
+    u_char                      *name_table = NULL;
     int                          exec_opts;
 
     ngx_http_lua_regex_compile_t      re_comp;
@@ -896,8 +896,8 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     ngx_str_t                    subj;
     int                          offset;
     const char                  *msg = NULL;
-    int                          name_entry_size, name_count;
-    u_char                      *name_table;
+    int                          name_entry_size = 0, name_count;
+    u_char                      *name_table = NULL;
     int                          exec_opts;
 
     /* upvalues in order: subj ctx offset */
@@ -1204,8 +1204,8 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     u_char                      *p;
     u_char                       errstr[NGX_MAX_CONF_ERRSTR + 1];
     pcre_extra                  *sd = NULL;
-    int                          name_entry_size, name_count;
-    u_char                      *name_table;
+    int                          name_entry_size = 0, name_count;
+    u_char                      *name_table = NULL;
     int                          exec_opts;
 
     ngx_http_lua_regex_compile_t               re_comp;

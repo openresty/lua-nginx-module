@@ -109,7 +109,7 @@ void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
 void ngx_http_lua_request_cleanup_handler(void *data);
 
 ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, int nret);
+    ngx_http_lua_ctx_t *ctx, volatile int nret);
 
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 

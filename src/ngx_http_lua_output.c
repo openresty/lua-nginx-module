@@ -285,7 +285,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
             if (floor(key) == key && key >= 1) {
                 if (key > max) {
-                    max = key;
+                    max = (int) key;
                 }
 
                 lua_pop(L, 1); /* stack: table key */
