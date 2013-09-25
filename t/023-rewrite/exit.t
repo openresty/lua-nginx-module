@@ -356,7 +356,7 @@ Logged in 56
 
     upstream memc_a {
         server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
-        keepalive 300 single;
+        keepalive 300;
     }
 
     #upstream_list memc_cluster memc_a memc_b;
