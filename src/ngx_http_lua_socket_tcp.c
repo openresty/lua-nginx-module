@@ -3168,9 +3168,9 @@ ngx_http_lua_req_socket(lua_State *L)
         }
 
         if (!r->header_sent) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "response header not sent yet");
-            return 2;
+            /* prevent other parts of nginx from sending out
+             * the response header */
+            r->header_sent = 1;
         }
 
         dd("ctx acquired raw req socket: %d", ctx->acquired_raw_req_socket);
@@ -3212,6 +3212,7 @@ ngx_http_lua_req_socket(lua_State *L)
 
         ctx->acquired_raw_req_socket = 1;
         r->keepalive = 0;
+        r->lingering_close = 1;
 #endif
 
     } else {
