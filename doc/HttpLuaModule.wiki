@@ -5235,45 +5235,55 @@ http://openresty.org/#Changes
 
 The following dependencies are required to run the test suite:
 
-* Nginx version >= 0.8.54
+* Nginx version >= 1.4.2
 
 * Perl modules:
-** test-nginx: http://github.com/agentzh/test-nginx 
+** Test::Nginx: http://github.com/agentzh/test-nginx 
 
 * Nginx modules:
-** echo-nginx-module: http://github.com/agentzh/echo-nginx-module 
-** drizzle-nginx-module: http://github.com/chaoslawful/drizzle-nginx-module 
-** rds-json-nginx-module: http://github.com/agentzh/rds-json-nginx-module 
-** set-misc-nginx-module: http://github.com/agentzh/set-misc-nginx-module 
-** headers-more-nginx-module: http://github.com/agentzh/headers-more-nginx-module 
-** memc-nginx-module: http://github.com/agentzh/memc-nginx-module 
-** srcache-nginx-module: http://github.com/agentzh/srcache-nginx-module 
-** ngx_auth_request: http://mdounin.ru/hg/ngx_http_auth_request_module/ 
+** [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+** [http://github.com/agentzh/set-misc-nginx-module ngx_set_misc]
+** [http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz ngx_auth_request] (this is not needed if you're using Nginx 1.5.4+.
+** [http://github.com/agentzh/echo-nginx-module ngx_echo]
+** [http://github.com/agentzh/memc-nginx-module ngx_memc]
+** [http://github.com/agentzh/srcache-nginx-module ngx_srcache]
+** ngx_lua (i.e., this module)
+** [http://github.com/agentzh/headers-more-nginx-module ngx_headers_more]
+** [http://github.com/chaoslawful/drizzle-nginx-module ngx_drizzle]
+** [http://github.com/agentzh/rds-json-nginx-module ngx_rds_json]
+** [https://github.com/FRiCKLE/ngx_coolkit ngx_coolkit]
+** [http://github.com/agentzh/redis2-nginx-module ngx_redis2]
 
-* C libraries:
-** yajl: https://github.com/lloyd/yajl 
+The order in which these modules are added during configuration is important because the position of any filter module in the
+filtering chain determines the final output, for example. The correct adding order is shown above.
 
-* Lua modules:
-** lua-yajl: https://github.com/brimworks/lua-yajl 
-*** Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
+* 3rd-party Lua libraries:
+** [http://www.kyne.com.au/~mark/software/lua-cjson.php lua-cjson]
 
 * Applications:
 ** mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
-** memcached
+** memcached: listening on the default port, 11211.
+** redis: listening on the default port, 6379.
 
-The order in which these modules are added during configuration is important as the position of any filter module in the
-filtering chain determines the final output. The correct adding order is:
+See also the [https://github.com/chaoslawful/lua-nginx-module/blob/master/util/build2.sh developer build script] for more details on setting up the testing environment.
 
-# ngx_devel_kit
-# set-misc-nginx-module
-# ngx_http_auth_request_module
-# echo-nginx-module
-# memc-nginx-module
-# lua-nginx-module (i.e. this module)
-# headers-more-nginx-module
-# srcache-nginx-module
-# drizzle-nginx-module
-# rds-json-nginx-module
+To run the whole test suite in the default testing mode:
+<geshi lang="text">
+    cd /path/to/lua-nginx-module
+    export PATH=/path/to/your/nginx/sbin:$PATH
+    prove -I/path/to/test-nginx/lib -r t
+</geshi>
+
+To run specific test files:
+<geshi lang="text">
+    cd /path/to/lua-nginx-module
+    export PATH=/path/to/your/nginx/sbin:$PATH
+    prove -I/path/to/test-nginx/lib t/002-content.t t/003-errors.t
+</geshi>
+
+To run a specific test block in a particular test file, add the line <code>--- ONLY</code> to the test block you want to run, and then use the `prove` utility to run that <code>.t</code> file.
+
+There are also various testing modes based on mockeagain, valgrind, and etc. Refer to the [http://search.cpan.org/perldoc?Test::Nginx Test::Nginx documentation] for more details for various advanced testing modes. See also the test reports for the Nginx test cluster running on Amazon EC2: http://qa.openresty.org.
 
 = Copyright and License =
 
