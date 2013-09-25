@@ -295,16 +295,37 @@ static const char *ngx_http_lua_clfactory_getS(lua_State *L, void *ud,
     size_t *size);
 
 
+long
+ngx_http_lua_clfactory_file_size(FILE *f)
+{
+    long              cur_pos, length;
+
+    cur_pos = ftell(f);
+
+    if (fseek(f, 0, SEEK_END) != 0) {
+        return -1;
+    }
+
+    length = ftell(f);
+
+    if (fseek(f, cur_pos, SEEK_SET) != 0) {
+        return -1;
+    }
+
+    return length;
+}
+
+
 int
 ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
     ngx_http_lua_clfactory_file_ctx_t *lf, int fname_index)
 {
     int                 x = 1, size_of_int, size_of_size_t, little_endian,
                         size_of_inst, version, stripped;
+    long                file_size;
+    size_t              size, bytecode_len;
     static int          num_of_inst = 3, num_of_inter_func = 1;
     const char         *filename, *emsg, *serr, *bytecode;
-    size_t              size, bytecode_len;
-    ngx_file_info_t     fi;
 
     serr = NULL;
 
@@ -365,13 +386,14 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
             lf->end_code_len = LJ_CODE_LEN;
         }
 
-        if (ngx_fd_info(fileno(lf->f), &fi) == NGX_FILE_ERROR) {
+        file_size = ngx_http_lua_clfactory_file_size(lf->f);
+        if (file_size < 0) {
             serr = strerror(errno);
-            emsg = "cannot fstat";
+            emsg = "cannot fseek";
             goto error;
         }
 
-        lf->rest_len = ngx_file_size(&fi) - LJ_HEADERSIZE;
+        lf->rest_len = file_size - LJ_HEADERSIZE;
 
 #if defined(DDEBUG) && (DDEBUG)
         {

@@ -3082,7 +3082,7 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
 static int
 ngx_http_lua_req_socket(lua_State *L)
 {
-    int                              n, raw, tcp_nodelay;
+    int                              n, raw;
     ngx_peer_connection_t           *pc;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_connection_t                *c;
@@ -3091,7 +3091,6 @@ ngx_http_lua_req_socket(lua_State *L)
     ngx_http_request_body_t         *rb;
     ngx_http_cleanup_t              *cln;
     ngx_http_lua_co_ctx_t           *coctx;
-    ngx_http_core_loc_conf_t        *clcf;
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
