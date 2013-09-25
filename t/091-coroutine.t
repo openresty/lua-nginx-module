@@ -980,3 +980,114 @@ test10
 --- no_error_log
 [error]
 
+
+
+=== TEST 24: init_by_lua + our own coroutines in content_by_lua
+--- http_config
+    init_by_lua return;
+--- config
+    resolver $TEST_NGINX_RESOLVER;
+    location /lua {
+        content_by_lua '
+            function worker(url)
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect(url, 80)
+                coroutine.yield()
+                if not ok then
+                    ngx.say("failed to connect to: ", url, " error: ", err)
+                    return
+                end
+                coroutine.yield()
+                ngx.say("successfully connected to: ", url)
+                sock:close()
+            end
+
+            local urls = {
+                "agentzh.org",
+            }
+
+            local ccs = {}
+            for i, url in ipairs(urls) do
+                local cc = coroutine.create(function() worker(url) end)
+                ccs[#ccs+1] = cc
+            end
+
+            while true do
+                if #ccs == 0 then break end
+                local cc = table.remove(ccs, 1)
+                local ok = coroutine.resume(cc)
+                if ok then
+                    ccs[#ccs+1] = cc
+                end
+            end
+
+            ngx.say("*** All Done ***")
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+successfully connected to: agentzh.org
+*** All Done ***
+--- no_error_log
+[error]
+--- timeout: 10
+
+
+
+=== TEST 25: init_by_lua_file + our own coroutines in content_by_lua
+--- http_config
+    init_by_lua_file html/init.lua;
+
+--- config
+    resolver $TEST_NGINX_RESOLVER;
+    location /lua {
+        content_by_lua '
+            function worker(url)
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect(url, 80)
+                coroutine.yield()
+                if not ok then
+                    ngx.say("failed to connect to: ", url, " error: ", err)
+                    return
+                end
+                coroutine.yield()
+                ngx.say("successfully connected to: ", url)
+                sock:close()
+            end
+
+            local urls = {
+                "agentzh.org"
+            }
+
+            local ccs = {}
+            for i, url in ipairs(urls) do
+                local cc = coroutine.create(function() worker(url) end)
+                ccs[#ccs+1] = cc
+            end
+
+            while true do
+                if #ccs == 0 then break end
+                local cc = table.remove(ccs, 1)
+                local ok = coroutine.resume(cc)
+                if ok then
+                    ccs[#ccs+1] = cc
+                end
+            end
+
+            ngx.say("*** All Done ***")
+        ';
+    }
+--- user_files
+>>> init.lua
+return
+
+--- request
+GET /lua
+--- response_body
+successfully connected to: agentzh.org
+*** All Done ***
+--- no_error_log
+[error]
+--- timeout: 10
+

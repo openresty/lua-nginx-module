@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 #no_diff();
 #no_long_string();
@@ -196,4 +196,81 @@ GET /lua
 hello, blah
 --- no_error_log
 [error]
+
+
+
+=== TEST 9: coroutine API (inlined init_by_lua)
+--- http_config
+    init_by_lua '
+        local function f()
+            foo = 32
+            coroutine.yield(78)
+            bar = coroutine.status(coroutine.running())
+        end
+        local co = coroutine.create(f)
+        local ok, err = coroutine.resume(co)
+        if not ok then
+            print("Failed to resume our co: ", err)
+            return
+        end
+        baz = err
+        coroutine.resume(co)
+    ';
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("foo = ", foo)
+            ngx.say("bar = ", bar)
+            ngx.say("baz = ", baz)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+foo = 32
+bar = running
+baz = 78
+--- no_error_log
+[error]
+Failed to resume our co: 
+
+
+
+=== TEST 10: coroutine API (init_by_lua_file)
+--- http_config
+    init_by_lua_file html/init.lua;
+
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("foo = ", foo)
+            ngx.say("bar = ", bar)
+            ngx.say("baz = ", baz)
+        ';
+    }
+--- request
+GET /lua
+--- user_files
+>>> init.lua
+local function f()
+    foo = 32
+    coroutine.yield(78)
+    bar = coroutine.status(coroutine.running())
+end
+local co = coroutine.create(f)
+local ok, err = coroutine.resume(co)
+if not ok then
+    print("Failed to resume our co: ", err)
+    return
+end
+baz = err
+coroutine.resume(co)
+
+--- response_body
+foo = 32
+bar = running
+baz = 78
+--- no_error_log
+[error]
+Failed to resume our co: 
 
