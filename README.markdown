@@ -2710,6 +2710,8 @@ ngx.req.socket
 --------------
 **syntax:** *tcpsock, err = ngx.req.socket()*
 
+**syntax:** *tcpsock, err = ngx.req.socket(raw)*
+
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns a read-only cosocket object that wraps the downstream connection. Only [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive) and [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil) methods are supported on this object.
@@ -2719,8 +2721,13 @@ In case of error, `nil` will be returned as well as a string describing the erro
 The socket object returned by this method is usually used to read the current request's body in a streaming fashion. Do not turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, and do not mix this call with [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) and [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body).
 
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
-
 Chunked request bodies are not yet supported in this API.
+
+Since the `v0.9.0` release, this function accepts an optional boolean `raw` argument. When this argument is `true`, this function returns a full duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive), [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil), and [send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) methods.
+
+When the `raw` argument is `true`, it is required that no pending data from any previous [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print), or [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) calls exists. So if you have these downstream output calls previously, you should call [ngx.flush(true)](http://wiki.nginx.org/HttpLuaModule#ngx.flush) before calling `ngx.req.socket(true)` to ensure that there is no pending output data. Another requirement for this case is that the request body must have already been read completely.
+
+You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/agentzh/lua-resty-websocket) for a real world example.
 
 This function was first introduced in the `v0.5.0rc1` release.
 
