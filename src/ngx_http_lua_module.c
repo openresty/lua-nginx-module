@@ -343,6 +343,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, check_client_abort),
       NULL },
 
+    { ngx_string("lua_enforce_content_type"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, enforce_content_type),
+      NULL },
+
     ngx_null_command
 };
 
@@ -616,6 +624,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->enable_code_cache  = NGX_CONF_UNSET;
     conf->http10_buffering   = NGX_CONF_UNSET;
     conf->check_client_abort = NGX_CONF_UNSET;
+    conf->enforce_content_type = NGX_CONF_UNSET;
 
     conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
@@ -679,6 +688,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
     ngx_conf_merge_value(conf->http10_buffering, prev->http10_buffering, 1);
     ngx_conf_merge_value(conf->check_client_abort, prev->check_client_abort, 0);
+    ngx_conf_merge_value(conf->enforce_content_type, prev->enforce_content_type, 1);
 
     ngx_conf_merge_msec_value(conf->keepalive_timeout,
                               prev->keepalive_timeout, 60000);

@@ -477,14 +477,19 @@ ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)
 {
-    ngx_int_t            rc;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_int_t                    rc;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (!r->header_sent) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (!ctx->headers_set && ngx_http_set_content_type(r) != NGX_OK) {
+        if (!ctx->headers_set
+            && llcf->enforce_content_type
+            && ngx_http_set_content_type(r) != NGX_OK) {
             return NGX_ERROR;
         }
 
