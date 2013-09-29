@@ -434,6 +434,9 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
     ngx_uint_t                        i;
+    ngx_http_lua_loc_conf_t          *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
@@ -453,6 +456,17 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
                hv.key.data);
 
             continue;
+        }
+
+        if (!llcf->correct_location_header
+            && ngx_strncasecmp(hv.key.data,
+                               (u_char *) "Location",
+                               sizeof("Location"))
+            == 0) {
+            /* XXX The best way to get the index of the last of the structure */
+            i = (sizeof(ngx_http_lua_set_handlers) /
+                 sizeof(ngx_http_lua_set_handlers[0])) - 1;
+            break;
         }
 
         dd("Matched handler: %s %s", handlers[i].name.data, hv.key.data);
