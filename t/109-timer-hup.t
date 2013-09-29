@@ -13,7 +13,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use Test::Nginx::Socket $SkipReason ? (skip_all => $SkipReason) : ();
+use t::TestNginxLua $SkipReason ? (skip_all => $SkipReason) : ();
 
 
 use t::StapThread;

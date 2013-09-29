@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -9,10 +9,10 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 14);
+plan tests => repeat_each() * (2 * blocks() + 18);
 
 #no_diff();
-no_long_string();
+#no_long_string();
 
 run_tests();
 
@@ -120,7 +120,7 @@ Foo:
 --- config
     location /bar {
         rewrite_by_lua '
-            ngx.req.set_header("content_length", 2048)
+            ngx.req.set_header("content-length", 2048)
         ';
         echo_read_request_body;
         echo_request_body;
@@ -1243,6 +1243,69 @@ content: via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
 --- response_body
 Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 39: set input header (with underscores in the header name)
+--- config
+    location /req-header {
+        rewrite_by_lua '
+            ngx.req.set_header("foo_bar", "some value");
+        ';
+        proxy_pass http://127.0.0.1:$server_port/back;
+    }
+    location = /back {
+        echo -n $echo_client_request_headers;
+    }
+--- request
+GET /req-header
+--- response_body_like eval
+qr{^GET /back HTTP/1.0\r
+Host: 127.0.0.1:\d+\r
+Connection: close\r
+foo_bar: some value\r
+\r
+$}
+
+
+
+=== TEST 40: HTTP 0.9 (set & get)
+--- config
+    location /foo {
+        content_by_lua '
+            ngx.req.set_header("X-Foo", "howdy");
+            ngx.say("X-Foo: ", ngx.req.get_headers()["X-Foo"])
+        ';
+    }
+--- raw_request eval
+"GET /foo\r\n"
+--- response_headers
+! X-Foo
+--- response_body
+X-Foo: nil
+--- http09
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: HTTP 0.9 (clear)
+--- config
+    location /foo {
+        content_by_lua '
+            ngx.req.set_header("X-Foo", "howdy");
+            ngx.say("X-Foo: ", ngx.req.get_headers()["X-Foo"])
+        ';
+    }
+--- raw_request eval
+"GET /foo\r\n"
+--- response_headers
+! X-Foo
+--- response_body
+X-Foo: nil
+--- http09
 --- no_error_log
 [error]
 

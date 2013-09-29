@@ -42,11 +42,7 @@ ngx_http_lua_coroutine_create(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
@@ -127,11 +123,7 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
     luaL_argcheck(L, co, 1, "coroutine expected");
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
@@ -190,11 +182,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_co_ctx_t       *coctx;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
@@ -245,6 +233,18 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     /* set running to the old one */
     lua_getfield(L, -1, "running");
     lua_setfield(L, -3, "running");
+
+    lua_getfield(L, -1, "create");
+    lua_setfield(L, -3, "_create");
+
+    lua_getfield(L, -1, "resume");
+    lua_setfield(L, -3, "_resume");
+
+    lua_getfield(L, -1, "yield");
+    lua_setfield(L, -3, "_yield");
+
+    lua_getfield(L, -1, "status");
+    lua_setfield(L, -3, "_status");
 
     /* pop the old coroutine */
     lua_pop(L, 1);
@@ -310,11 +310,7 @@ ngx_http_lua_coroutine_status(lua_State *L)
 
     luaL_argcheck(L, co, 1, "coroutine expected");
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }

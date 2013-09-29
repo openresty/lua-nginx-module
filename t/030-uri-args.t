@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #master_on();
@@ -437,7 +437,9 @@ foo: /bar?hello
             local res, err = pcall(ngx.req.set_uri, "")
             ngx.say("err: ", err)
         ';
-        echo "foo: $uri?$args";
+        content_by_lua '
+            ngx.say("foo: ", ngx.var.uri, "?", ngx.var.args)
+        ';
     }
 --- request
     GET /foo?world

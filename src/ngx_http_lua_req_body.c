@@ -80,11 +80,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "expecting 0 arguments but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -146,7 +142,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
                        "interruptions");
 
         ctx->waiting_more_body = 1;
-        ctx->req_body_reader_co_ctx = coctx;
+        ctx->downstream_co_ctx = coctx;
 
         coctx->cleanup = ngx_http_lua_req_body_cleanup;
         coctx->data = r;
@@ -179,7 +175,7 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
 
-        coctx = ctx->req_body_reader_co_ctx;
+        coctx = ctx->downstream_co_ctx;
         ctx->cur_co_ctx = coctx;
 
         coctx->cleanup = NULL;
@@ -217,11 +213,7 @@ ngx_http_lua_ngx_req_discard_body(lua_State *L)
         return luaL_error(L, "expecting 0 arguments but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -254,11 +246,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
         return luaL_error(L, "expecting 0 arguments but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -325,11 +313,7 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
         return luaL_error(L, "expecting 0 arguments but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -379,11 +363,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
     body.data = (u_char *) luaL_checklstring(L, 1, &body.len);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
@@ -546,10 +526,10 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
         return luaL_error(L, "expecting 0 or 1 argument but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
 
     ngx_http_lua_check_fake_request(L, r);
 
@@ -578,7 +558,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
 
         /* avoid allocating an unnecessary large buffer */
         if (size > (size_t) r->headers_in.content_length_n) {
-            size = r->headers_in.content_length_n;
+            size = (size_t) r->headers_in.content_length_n;
         }
     }
 
@@ -646,10 +626,10 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
 
     body.data = (u_char *) luaL_checklstring(L, 1, &body.len);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
 
     ngx_http_lua_check_fake_request(L, r);
 
@@ -709,13 +689,9 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         return luaL_error(L, "expecting 0 argument but seen %d", n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
-        return luaL_error(L, "no request");
+        return luaL_error(L, "no request found");
     }
 
     ngx_http_lua_check_fake_request(L, r);
@@ -762,7 +738,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    size = r->headers_in.content_length_n;
+    size = (size_t) r->headers_in.content_length_n;
 
     value.len = ngx_sprintf(value.data, "%uz", size) - value.data;
     value.data[value.len] = '\0';
@@ -841,13 +817,9 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 1, &name.len);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
-        return luaL_error(L, "request object not found");
+        return luaL_error(L, "no request found");
     }
 
     ngx_http_lua_check_fake_request(L, r);

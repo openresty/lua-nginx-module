@@ -222,6 +222,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_phase.c \
                 $ngx_addon_dir/src/ngx_http_lua_uthread.c \
                 $ngx_addon_dir/src/ngx_http_lua_timer.c \
+                $ngx_addon_dir/src/ngx_http_lua_config.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -272,6 +273,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_probe.h \
                 $ngx_addon_dir/src/ngx_http_lua_uthread.h \
                 $ngx_addon_dir/src/ngx_http_lua_timer.h \
+                $ngx_addon_dir/src/ngx_http_lua_config.h \
                 "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"

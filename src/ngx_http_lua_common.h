@@ -112,6 +112,7 @@ struct ngx_http_lua_main_conf_s {
 #if (NGX_PCRE)
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
+    ngx_int_t            regex_match_limit;
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
@@ -271,7 +272,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 waited_by_parent:1;  /* whether being waited by
                                                      a parent coroutine */
 
-    ngx_http_lua_co_status_t co_status:3;  /* the current coroutine's status */
+    unsigned                 co_status:3;  /* the current coroutine's status */
 
     unsigned                 flushing:1; /* indicates whether the current
                                             coroutine is waiting for
@@ -287,6 +288,7 @@ struct ngx_http_lua_co_ctx_s {
 
 
 typedef struct ngx_http_lua_ctx_s {
+    ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
@@ -328,9 +330,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_int_t                exit_code;
 
-    ngx_http_lua_co_ctx_t   *req_body_reader_co_ctx; /* co ctx for the coroutine
-                                                        reading the request
-                                                        body */
+    ngx_http_lua_co_ctx_t   *downstream_co_ctx; /* co ctx for the coroutine
+                                                   reading the request body */
 
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
@@ -350,12 +351,9 @@ typedef struct ngx_http_lua_ctx_s {
                                                        request body data;
                                                        0: no need to wait */
 
-    ngx_http_lua_user_coro_op_t   co_op:2; /*  coroutine API operation */
+    unsigned         co_op:2; /*  coroutine API operation */
 
     unsigned         exited:1;
-
-    unsigned         headers_sent:1;    /*  1: response header has been sent;
-                                            0: header not sent yet */
 
     unsigned         eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
@@ -384,6 +382,10 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         seen_last_in_filter:1;  /* used by body_filter_by_lua* */
     unsigned         seen_last_for_subreq:1; /* used by body capture filter */
+    unsigned         writing_raw_req_socket:1; /* used by raw downstream
+                                                  socket */
+    unsigned         acquired_raw_req_socket:1;  /* whether a raw req socket
+                                                    is acquired */
 } ngx_http_lua_ctx_t;
 
 

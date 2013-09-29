@@ -32,12 +32,6 @@ extern char ngx_http_lua_regex_cache_key;
  * socket connection pool table */
 extern char ngx_http_lua_socket_pool_key;
 
-/* char whose address we use as the key for the nginx request pointer */
-extern char ngx_http_lua_request_key;
-
-/* char whose address we use as the key for the nginx config logger */
-extern char ngx_http_lua_cf_log_key;
-
 /* char whose address we use as the key for the coroutine parent relationship */
 extern char ngx_http_lua_coroutine_parents_key;
 
@@ -110,10 +104,12 @@ void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
 void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 
-void ngx_http_lua_request_cleanup(void *data);
+void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
+
+void ngx_http_lua_request_cleanup_handler(void *data);
 
 ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, int nret);
+    ngx_http_lua_ctx_t *ctx, volatile int nret);
 
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 
@@ -172,6 +168,9 @@ void ngx_http_lua_finalize_fake_request(ngx_http_request_t *r,
 
 void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 
+void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
+    ngx_http_lua_ctx_t *ctx);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
@@ -179,11 +178,15 @@ void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
     }
 
 
-#define ngx_http_lua_init_ctx(ctx)                                          \
-    ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));                           \
-    ctx->ctx_ref = LUA_NOREF;                                               \
-    ctx->entry_co_ctx.co_ref = LUA_NOREF;                                   \
+static ngx_inline void
+ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+{
+    ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));
+    ctx->ctx_ref = LUA_NOREF;
+    ctx->entry_co_ctx.co_ref = LUA_NOREF;
     ctx->resume_handler = ngx_http_lua_wev_handler;
+    ctx->request = r;
+}
 
 
 static ngx_inline ngx_http_lua_ctx_t *
@@ -196,11 +199,58 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
         return NULL;
     }
 
-    ngx_http_lua_init_ctx(ctx);
+    ngx_http_lua_init_ctx(r, ctx);
 
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
     return ctx;
 }
+
+
+static ngx_inline ngx_http_request_t *
+ngx_http_lua_get_req(lua_State *L)
+{
+    ngx_http_request_t    *r;
+
+    lua_pushliteral(L, "__ngx_req");
+    lua_rawget(L, LUA_GLOBALSINDEX);
+    r = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    return r;
+}
+
+
+static ngx_inline void
+ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
+{
+    lua_pushliteral(L, "__ngx_req");
+    lua_pushlightuserdata(L, r);
+    lua_rawset(L, LUA_GLOBALSINDEX);
+}
+
+
+#define ngx_http_lua_hash_literal(s)                                        \
+    ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
+
+
+static ngx_inline ngx_uint_t
+ngx_http_lua_hash_str(u_char *src, size_t n)
+{
+    ngx_uint_t  key;
+
+    key = 0;
+
+    while (n--) {
+        key = ngx_hash(key, *src);
+        src++;
+    }
+
+    return key;
+}
+
+
+extern ngx_uint_t  ngx_http_lua_location_hash;
+extern ngx_uint_t  ngx_http_lua_content_length_hash;
 
 
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */

@@ -3,7 +3,7 @@
 # this file is mostly meant to be used by the author himself.
 
 root=`pwd`
-version=${1:-1.2.1}
+version=${1:-1.4.1}
 home=~
 force=$2
 
@@ -16,6 +16,7 @@ force=$2
             #--without-http_autoindex_module \
             #--with-cc=gcc46 \
             #--with-cc=clang \
+            #--without-http_referer_module \
 
 time ngx-build $force $version \
             --with-cc-opt="-I$PCRE_INC" \
@@ -24,13 +25,13 @@ time ngx-build $force $version \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
             --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:$LUAJIT_LIB:/usr/local/lib" \
+            --with-http_spdy_module \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --without-mail_smtp_module \
             --without-http_upstream_ip_hash_module \
             --without-http_empty_gif_module \
             --without-http_memcached_module \
-            --without-http_referer_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
                 --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
@@ -40,7 +41,6 @@ time ngx-build $force $version \
                 --add-module=$root \
               --add-module=$root/../headers-more-nginx-module \
                 --add-module=$root/../drizzle-nginx-module \
-                --add-module=$home/work/nginx/ngx_http_upstream_keepalive-0.7 \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \

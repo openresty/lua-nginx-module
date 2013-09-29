@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #master_on();
@@ -82,7 +82,7 @@ hello
 --- response_body
 error
 --- error_log
-failed to load Lua inlined code: bad byte-code header in
+failed to load external Lua file: bad byte-code header in
 
 
 

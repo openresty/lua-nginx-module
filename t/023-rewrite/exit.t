@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #repeat_each(20000);
 
@@ -13,7 +13,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -356,7 +356,7 @@ Logged in 56
 
     upstream memc_a {
         server 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
-        keepalive 300 single;
+        keepalive 300;
     }
 
     #upstream_list memc_cluster memc_a memc_b;
@@ -426,7 +426,7 @@ GET /baz
 --- response_body_like: 302
 --- error_code: 302
 --- response_headers
-Location: http://localhost:1984/foo/bar
+Location: http://localhost:$ServerPort/foo/bar
 --- SKIP
 
 
@@ -543,7 +543,7 @@ This is our own content
 
 
 
-=== TEST 17: encode args table with a multi-value arg.
+=== TEST 17: exit with 204 (HTTP 1.1)
 --- config
     location = /t {
         rewrite_by_lua '
@@ -559,6 +559,39 @@ This is our own content
 --- request
 GET /t
 --- more_headers2
+--- stap2
+F(ngx_http_send_header) {
+    printf("send header\n")
+    print_ubacktrace()
+}
+--- response_body
+--- error_code: 204
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: exit with 204 (HTTP 1.0)
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.exit(204)
+        ';
+
+        proxy_pass http://127.0.0.1:$server_port/blah;
+    }
+
+    location = /blah {
+        echo blah;
+    }
+--- request
+GET /t HTTP/1.0
+--- more_headers2
+--- stap2
+F(ngx_http_send_header) {
+    printf("send header\n")
+    print_ubacktrace()
+}
 --- response_body
 --- error_code: 204
 --- no_error_log

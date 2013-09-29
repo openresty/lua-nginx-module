@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #no_nginx_manager();
@@ -9,7 +9,7 @@ use Test::Nginx::Socket;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 9);
 
 #no_diff();
 #no_long_string();
@@ -646,13 +646,15 @@ bah
 
 === TEST 33: server rewrite_by_lua
 --- config
-    rewrite_by_lua 'ngx.header["X-Foo"] = "bar" ngx.send_headers()';
+    rewrite_by_lua 'ngx.header["X-Foo"] = "bar" -- ngx.send_headers()';
 --- request
 GET /
 --- response_body chop
 <html><head><title>It works!</title></head><body>It works!</body></html>
 --- response_headers
 X-Foo: bar
+--- no_error_log
+[error]
 
 
 
@@ -661,7 +663,7 @@ X-Foo: bar
     rewrite_by_lua_file html/foo.lua;
 --- user_files
 >>> foo.lua
-ngx.header["X-Foo"] = "bar" ngx.send_headers()
+ngx.header["X-Foo"] = "bar" -- ngx.send_headers()
 --- request
 GET /
 --- response_body chop
@@ -735,4 +737,22 @@ abc
     GET /main/xyz.html
 --- response_body_like: 503 Service Temporarily Unavailable
 --- error_code: 503
+
+
+
+=== TEST 39: Lua file does not exist
+--- config
+    location /lua {
+        rewrite_by_lua_file html/test2.lua;
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load external Lua file: cannot open .*? No such file or directory/
 

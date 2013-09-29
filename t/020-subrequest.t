@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #master_on();
 #workers(1);
@@ -2301,6 +2301,92 @@ method: UNLOCK
 method: PATCH
 method: TRACE
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 62: by default DELETE subrequests don't forward request bodies
+--- config
+    location /other {
+        default_type 'foo/bar';
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_DELETE });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+DELETE /lua
+hello world
+--- response_body
+nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 63: DELETE subrequests do forward request bodies when always_forward_body == true
+--- config
+    location = /other {
+        default_type 'foo/bar';
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_DELETE, always_forward_body = true });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+DELETE /lua
+hello world
+--- response_body
+hello world
+--- no_error_log
+[error]
+
+
+
+=== TEST 64: DELETE subrequests do forward request bodies when always_forward_body == true (on disk)
+--- config
+    location = /other {
+        default_type 'foo/bar';
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        ';
+    }
+
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body()
+            res = ngx.location.capture("/other",
+                { method = ngx.HTTP_DELETE, always_forward_body = true });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+DELETE /lua
+hello world
+--- response_body
+hello world
 --- no_error_log
 [error]
 

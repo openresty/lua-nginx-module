@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 repeat_each(2);
 
@@ -778,4 +778,22 @@ stack traceback:
 in function 'error'
 in function 'bar'
 in function 'foo'
+
+
+
+=== TEST 46: Lua file does not exist
+--- config
+    location /lua {
+        set_by_lua_file $a html/test2.lua;
+    }
+--- user_files
+>>> test.lua
+v = ngx.var["request_uri"]
+ngx.print("request_uri: ", v, "\n")
+--- request
+GET /lua?a=1&b=2
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load external Lua file: cannot open .*? No such file or directory/
 

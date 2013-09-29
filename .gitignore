@@ -128,7 +128,7 @@ src/logby.[ch]
 src/sleep.[ch]
 a.patch
 all
-build1[0-3]
+build1[0-9]
 g
 buildroot/
 src/headerfilterby.[ch]

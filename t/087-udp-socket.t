@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 repeat_each(2);
 
@@ -700,6 +700,7 @@ resolve name done
 === TEST 13: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
     resolver 8.8.8.8;
+    resolver_timeout 3s;
 
     location = /sub {
         content_by_lua '
@@ -735,6 +736,7 @@ successfully connected to xxx!
 
 --- no_error_log
 [error]
+--- timeout: 5
 
 
 

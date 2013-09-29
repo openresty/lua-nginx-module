@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use Test::Nginx::Socket;
+use t::TestNginxLua;
 
 #worker_connections(1014);
 #master_on();
@@ -85,7 +85,7 @@ a [b c] [b] [c] [] [] d
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [$2] [$3] [$hello]"
+error: failed to compile the replacement template
 --- error_log
 attempt to use named capturing variable "hello" (named captures not supported yet)
 
@@ -107,7 +107,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [$2] [$3] [${hello}]"
+error: failed to compile the replacement template
 --- error_log
 attempt to use named capturing variable "hello" (named captures not supported yet)
 
@@ -145,7 +145,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${134]"
+error: failed to compile the replacement template
 --- error_log
 the closing bracket in "134" variable is missing
 
@@ -166,7 +166,7 @@ the closing bracket in "134" variable is missing
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${134"
+error: failed to compile the replacement template
 --- error_log
 the closing bracket in "134" variable is missing
 
@@ -187,7 +187,7 @@ the closing bracket in "134" variable is missing
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [${"
+error: failed to compile the replacement template
 --- error_log
 lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [${"
 
@@ -208,7 +208,7 @@ lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [${"
 --- request
     GET /re
 --- response_body
-error: bad template for substitution: "[$0] [$1] [${2}] [$3] [$"
+error: failed to compile the replacement template
 --- error_log
 lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [$"
 
@@ -570,4 +570,78 @@ exec opts: 0
 s: a好
 --- no_error_log
 [error]
+
+
+
+=== TEST 28: just hit match limit
+--- http_config
+    lua_regex_match_limit 5600;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+s = string.rep([[ABCDEFG]], 10)
+
+local start = ngx.now()
+
+local res, cnt, err = ngx.re.sub(s, re, "", "o")
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if err then
+    ngx.say("error: ", err)
+    return
+end
+ngx.say("sub: ", cnt)
+
+--- request
+    GET /re
+--- response_body
+error: pcre_exec() failed: -8
+
+
+
+=== TEST 29: just not hit match limit
+--- http_config
+    lua_regex_match_limit 5700;
+--- config
+    location /re {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files
+>>> a.lua
+local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
+
+local s = string.rep([[ABCDEFG]], 10)
+
+local start = ngx.now()
+
+local res, cnt, err = ngx.re.sub(s, re, "", "o")
+
+--[[
+ngx.update_time()
+local elapsed = ngx.now() - start
+ngx.say(elapsed, " sec elapsed.")
+]]
+
+if err then
+    ngx.say("error: ", err)
+    return
+end
+ngx.say("sub: ", cnt)
+
+--- request
+    GET /re
+--- response_body
+sub: 0
 

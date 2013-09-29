@@ -69,11 +69,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
                           n);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -112,7 +108,6 @@ ngx_http_lua_ngx_exec(lua_State *L)
     if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
         != NGX_OK)
     {
-        ctx->headers_sent = 1;
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -177,7 +172,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         }
     }
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return luaL_error(L, "attempt to call ngx.exec after "
                           "sending out response headers");
     }
@@ -225,11 +220,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -245,7 +236,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (ctx->headers_sent) {
+    if (r->header_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
                           "the headers");
     }
@@ -262,9 +253,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    r->headers_out.location->hash =
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-                     ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+    r->headers_out.location->hash = ngx_http_lua_location_hash;
 
 #if 0
     dd("location hash: %lu == %lu",
@@ -301,11 +290,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
@@ -331,7 +316,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "attempt to abort with pending subrequests");
     }
 
-    if (ctx->headers_sent
+    if (r->header_sent
         && rc >= NGX_HTTP_SPECIAL_RESPONSE
         && rc != NGX_HTTP_REQUEST_TIME_OUT
         && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST
@@ -365,11 +350,7 @@ ngx_http_lua_on_abort(lua_State *L)
     ngx_http_lua_co_ctx_t        *coctx = NULL;
     ngx_http_lua_loc_conf_t      *llcf;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_request_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
-    r = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
