@@ -83,6 +83,7 @@ static int ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
 static ngx_int_t ngx_http_lua_socket_read_all(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_until(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
+static ngx_int_t ngx_http_lua_socket_read_exact_chunk(void *data, ssize_t bytes);
 static int ngx_http_lua_socket_tcp_receiveuntil(lua_State *L);
 static int ngx_http_lua_socket_receiveuntil_iterator(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
@@ -1215,10 +1216,11 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     int                                  typ;
     ngx_http_lua_loc_conf_t             *llcf;
     ngx_http_lua_co_ctx_t               *coctx;
+    int                                  bsd_read;
 
     n = lua_gettop(L);
-    if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 or 2 arguments "
+    if (n != 1 && n != 2 && n != 3) {
+        return luaL_error(L, "expecting 1, 2 or 3 arguments "
                           "(including the object), but got %d", n);
     }
 
@@ -1311,7 +1313,37 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
             }
 #endif
 
-            u->input_filter = ngx_http_lua_socket_read_chunk;
+            bsd_read = 0;
+
+            /* Check if the options table is given. */
+            if (n == 3) {
+                luaL_checktype(L, 3, LUA_TTABLE);
+                lua_getfield(L, 3, "bsd_read");
+
+                switch (lua_type(L, -1)) {
+                case LUA_TNIL:
+                    /* use default value - false */
+                    break;
+
+                case LUA_TBOOLEAN:
+                    bsd_read = lua_toboolean(L, -1);
+                    break;
+
+                default:
+                    return luaL_error(L, "bad \"bsd_read\" option value type: %s",
+                                      luaL_typename(L, -1));
+
+                }
+
+                lua_pop(L, 1);
+            }
+
+            if (bsd_read) {
+                u->input_filter = ngx_http_lua_socket_read_exact_chunk;
+            } else {
+                u->input_filter = ngx_http_lua_socket_read_chunk;
+            }
+            
             u->length = (size_t) bytes;
             u->rest = u->length;
 
@@ -1442,6 +1474,48 @@ ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes)
     u->rest -= bytes;
 
     return NGX_AGAIN;
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_read_exact_chunk(void *data, ssize_t bytes)
+{
+    ngx_http_lua_socket_tcp_upstream_t      *u = data;
+
+    ngx_buf_t                   *b;
+#if (NGX_DEBUG)
+    ngx_http_request_t          *r;
+
+    r = u->request;
+#endif
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket read max chunk %z", bytes);
+
+    if (bytes == 0) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
+        return NGX_ERROR;
+    }
+
+    b = &u->buffer;
+
+    if (bytes >= (ssize_t) u->rest) {
+
+        u->buf_in->buf->last += u->rest;
+        b->pos += u->rest;
+        u->rest = 0;
+
+        return NGX_OK;
+    }
+
+    /* bytes < u->rest */
+
+    u->buf_in->buf->last += bytes;
+    b->pos += bytes;
+    
+    u->rest = 0;
+
+    return NGX_OK;
 }
 
 
@@ -3689,8 +3763,8 @@ ngx_http_lua_req_socket(lua_State *L)
         }
 
         dd("req content length: %d", (int) r->headers_in.content_length_n);
-
-        if (r->headers_in.content_length_n <= 0) {
+        
+        if (r->headers_in.content_length_n == 0) {
             lua_pushnil(L);
             lua_pushliteral(L, "no body");
             return 2;
