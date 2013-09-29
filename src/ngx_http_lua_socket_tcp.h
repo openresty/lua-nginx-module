@@ -88,6 +88,9 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     unsigned                         no_close:1;
     unsigned                         waiting:1;
     unsigned                         eof:1;
+#if (NGX_HTTP_SSL)
+    unsigned                         ssl:1;
+#endif
     unsigned                         body_downstream:1;
     unsigned                         raw_downstream:1;
 };
