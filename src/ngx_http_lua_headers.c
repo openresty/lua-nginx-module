@@ -604,7 +604,6 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     size_t                       len;
     ngx_int_t                    rc;
     ngx_uint_t                   n;
-    int                          replace_underscores = 1;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
