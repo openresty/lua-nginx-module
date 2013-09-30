@@ -203,6 +203,7 @@ typedef struct {
     ngx_flag_t                       check_client_abort;
 
     ngx_flag_t                       enforce_content_type;
+    ngx_flag_t                       correct_location_header;
 } ngx_http_lua_loc_conf_t;
 
 
