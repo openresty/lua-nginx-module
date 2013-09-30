@@ -40,6 +40,8 @@ typedef struct ngx_http_lua_post_subrequest_data_s {
 
 } ngx_http_lua_post_subrequest_data_t;
 
+ngx_int_t ngx_http_lua_ngx_capture_buffer_handler(ngx_http_request_t *r);
+ngx_int_t ngx_http_lua_subrequest_resume(ngx_http_request_t *r);
 
 #endif /* _NGX_HTTP_LUA_SUBREQUEST_H_INCLUDED_ */
 
