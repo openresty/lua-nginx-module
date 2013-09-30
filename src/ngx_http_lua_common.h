@@ -204,6 +204,13 @@ typedef struct {
 
     ngx_flag_t                       enforce_content_type;
     ngx_flag_t                       correct_location_header;
+    
+#if (NGX_HTTP_SSL)
+    ngx_ssl_t                       *ssl;
+    ngx_flag_t                       ssl_verify;
+    ngx_uint_t                       ssl_verify_depth;
+    ngx_str_t                        ssl_trusted_certificate;
+#endif
 } ngx_http_lua_loc_conf_t;
 
 
