@@ -210,6 +210,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_fake_close);
+    lua_setfield(L, -2, "fake_close");
+
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
