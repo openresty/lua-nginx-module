@@ -20,6 +20,12 @@
 
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+static ngx_int_t _is_chain_valid(ngx_chain_t * cl);
+static ngx_int_t _is_last_chain_link(ngx_chain_t * cl);
+static ngx_int_t _post_request_if_not_posted(ngx_http_request_t *r,
+    ngx_http_posted_request_t *pr);
+#endif
 
 ngx_int_t
 ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
@@ -115,17 +121,67 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+static ngx_int_t
+_post_request_if_not_posted(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
+{
+    ngx_http_posted_request_t  *p;
+
+    /* Search request in the posted requests list, so that it would not be posted twice. */
+    for (p = r->main->posted_requests; p; p = p->next) {
+        if (p->request == r) {
+            return NGX_OK;
+        }
+    }
+    
+    return ngx_http_post_request(r, pr);
+}
+
+static ngx_int_t
+_is_chain_valid(ngx_chain_t * cl)
+{
+    /* For some reason, sometimes when cl->buf is cleaned, 1 is assigned to it. */
+    return ((cl != NULL) && (cl->buf != NULL) && (cl->buf != (void *) 1));
+}
+static ngx_int_t
+_is_last_chain_link(ngx_chain_t * cl)
+{
+    /* last_in_chain is for subrequests. */
+    return cl->buf->last_in_chain || cl->buf->last_buf;
+}
+#endif
+
 void
 ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t rc;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return;
     }
 
-    (void) ctx->resume_handler(r);
+    rc = ctx->resume_handler(r);
+
+    if (rc == NGX_DONE) {
+        return;
+    }
+
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+    if (ctx->current_subrequest && ctx->wakeup_subrequest) {
+        /* Make sure that the subrequest continues */
+        if (_post_request_if_not_posted(ctx->current_subrequest, NULL) != NGX_OK) {
+            ngx_http_lua_finalize_request(r, NGX_ERROR);
+        }
+        /* Don't try to discard the last buffer, as it will cause a NULL dereference... */
+        if (_is_chain_valid(ctx->current_subrequest_buffer) && (!_is_last_chain_link(ctx->current_subrequest_buffer))) {
+            ngx_http_lua_discard_bufs(ctx->current_subrequest->pool, ctx->current_subrequest_buffer);
+        }
+        ctx->current_subrequest_buffer = NULL;
+        ctx->wakeup_subrequest = 0;
+    }
+#endif
 }
 
 
