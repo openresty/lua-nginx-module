@@ -2337,6 +2337,73 @@ This argument can be set to zero to remove the limit and to process all request 
 
 Removing the <code>max_args</code> cap is strongly discouraged.
 
+== ngx.req.get_cookies ==
+'''syntax:''' ''cookies = ngx.req.get_cookies(max_cookies?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+
+Returns a Lua table holding all the current request cookies.
+
+<geshi lang="lua">
+    local c = ngx.req.get_cookies()
+    for k, v in pairs(c) do
+        if type(v) == 'table' then
+            ...
+        end
+        else
+            ...
+        end
+    end
+</geshi>
+
+To read an individual key:
+
+<geshi lang="lua">
+    ngx.say("Host: ", ngx.req.get_cookies()["foo"])
+</geshi>
+
+If a key-value pair contains multiple values, the values will parsed as an array table, for example:
+
+<geshi lang="bash">
+Cookie: foo=bar&123&hello
+</geshi>
+
+the value of <code>ngx.req.get_cookies()</code> will be a Lua (array) table such as:
+
+<geshi lang="lua">
+    {["foo"] = {"bar", "123", "hello"}}
+</geshi>
+
+For multiple instances of cookies such as:
+
+<geshi lang="bash">
+    Cookie: foo=bar
+    Cookie: foo2=bar2
+    Cookie: foo3=bar3
+</geshi>
+
+the value of <code>ngx.req.get_cookies()</code> will be a Lua (array) table such as:
+
+<geshi lang="lua">
+    {["foo"] = "bar", ["foo2"] = "bar2", ["foo3"] = "bar3"}
+</geshi>
+
+Note that a maximum of 100 cookies key-value pairs are parsed by default and that additional request cookies are silently discarded to guard against potential denial of service attacks.  
+
+However, the optional <code>max_cookies</code> function argument can be used to override this limit:
+
+<geshi lang="lua">
+    local args = ngx.req.get_cookies(10)
+</geshi>
+
+This argument can be set to zero to remove the limit and to process all request headers received:
+
+<geshi lang="lua">
+    local args = ngx.req.get_cookies(0)
+</geshi>
+
+Removing the <code>max_cookies</code> cap is strongly discouraged.
+
 == ngx.req.get_headers ==
 '''syntax:''' ''headers = ngx.req.get_headers(max_headers?, raw?)''
 

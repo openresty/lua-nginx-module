@@ -21,6 +21,7 @@
 #include "ngx_http_lua_uri.h"
 #include "ngx_http_lua_req_body.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_cookies.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_time.h"
 #include "ngx_http_lua_control.h"
@@ -2123,6 +2124,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     lua_createtable(L, 0 /* narr */, 23 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(log, L);
+    ngx_http_lua_inject_req_cookie_api(log, L);
     ngx_http_lua_inject_req_uri_api(log, L);
     ngx_http_lua_inject_req_args_api(L);
     ngx_http_lua_inject_req_body_api(L);
