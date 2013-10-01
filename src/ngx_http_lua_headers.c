@@ -531,6 +531,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                 }
             }
 
+            ctx->headers_set = 1;
             return 0;
         }
 
@@ -555,6 +556,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                           key.data, (int) rc);
     }
 
+    ctx->headers_set = 1;
     return 0;
 }
 
