@@ -201,6 +201,7 @@ typedef struct {
     ngx_flag_t                       transform_underscores_in_resp_headers;
     ngx_flag_t                       log_socket_errors;
     ngx_flag_t                       check_client_abort;
+    ngx_flag_t                       use_default_type;
 } ngx_http_lua_loc_conf_t;
 
 

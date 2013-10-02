@@ -497,7 +497,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     }
 
     if (!ctx->headers_set) {
-        rc = ngx_http_set_content_type(r);
+        rc = ngx_http_lua_set_content_type(r);
         if (rc != NGX_OK) {
             return luaL_error(L,
                               "failed to set default content type: %d",

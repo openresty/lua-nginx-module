@@ -249,6 +249,20 @@ ngx_http_lua_hash_str(u_char *src, size_t n)
 }
 
 
+static ngx_inline ngx_int_t
+ngx_http_lua_set_content_type(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t     *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->use_default_type) {
+        return ngx_http_set_content_type(r);
+    }
+
+    return NGX_OK;
+}
+
+
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
 
