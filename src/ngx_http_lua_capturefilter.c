@@ -16,7 +16,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_subrequest.h"
-
+#include "ngx_http_lua_contentby.h"
 
 ngx_http_output_header_filter_pt ngx_http_lua_next_header_filter;
 ngx_http_output_body_filter_pt ngx_http_lua_next_body_filter;
@@ -104,6 +104,15 @@ ngx_http_lua_capture_header_filter(ngx_http_request_t *r)
 }
 
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+static ngx_int_t
+_should_store_chain_link(ngx_chain_t *in)
+{
+    return ((in != NULL) && ((in->buf->pos != in->buf->last)));
+}
+#endif
+
+
 static ngx_int_t
 ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
@@ -162,6 +171,40 @@ ngx_http_lua_capture_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ctx->seen_last_for_subreq = 1;
     }
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+    if (pr_ctx->async_capture) {
+        /* In order to wake the parent up, we should call post and not discard
+           the buffer */
+        pr_ctx->current_subrequest = r;       /* Required for wake up (?) */
+        pr_ctx->current_subrequest_ctx = ctx; /* Required for the buffer */
+        
+        /* XXX: In some cases, pr_ctx->current_subrequest_buffer is being
+                cleaned by Nginx and buf gets the value 0x1... */
+        if (((pr_ctx->current_subrequest_buffer == NULL)
+             || (pr_ctx->current_subrequest_buffer->buf == (void *) 1))
+            && (_should_store_chain_link(in))) {
+            pr_ctx->current_subrequest_buffer = in;
+        }
+
+        /* TODO: Is this line needed? */
+        r->parent->write_event_handler = ngx_http_lua_content_wev_handler;
+
+        if (!eof) {
+            pr_ctx->wakeup_subrequest = 1;
+            /* On EOF, the post subrequest callback is called, and it handles
+               the setting of the resume handler. The parent request would be
+               woken up anyway by Nginx.
+             */
+            if (ngx_http_post_request(r->parent, NULL) != NGX_OK) {
+                return NGX_ERROR;
+            }
+            return NGX_OK;
+        } else {
+            pr_ctx->wakeup_subrequest = 0;
+        }
+    }
+#endif
+    
     ngx_http_lua_discard_bufs(r->pool, in);
 
     return NGX_OK;

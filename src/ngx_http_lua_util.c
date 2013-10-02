@@ -32,6 +32,7 @@
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
 #include "ngx_http_lua_req_method.h"
+#include "ngx_http_lua_req_keepalive.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_coroutine.h"
 #include "ngx_http_lua_socket_tcp.h"
@@ -334,6 +335,10 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     coctx->co_ref = LUA_NOREF;
     coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
+    if (coctx->sleep.timer_set) {
+        ngx_del_timer(&coctx->sleep);
+    }
+
     lua_pop(L, 1);
 }
 
@@ -477,14 +482,19 @@ ngx_int_t
 ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)
 {
-    ngx_int_t            rc;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_int_t                    rc;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (!r->header_sent) {
         if (r->headers_out.status == 0) {
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (!ctx->headers_set && ngx_http_set_content_type(r) != NGX_OK) {
+        if (!ctx->headers_set
+            && llcf->enforce_content_type
+            && ngx_http_set_content_type(r) != NGX_OK) {
             return NGX_ERROR;
         }
 
@@ -2128,6 +2138,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_body_api(L);
     ngx_http_lua_inject_req_socket_api(L);
     ngx_http_lua_inject_req_method_api(L);
+    ngx_http_lua_inject_req_keepalive_api(L);
     ngx_http_lua_inject_req_time_api(L);
 
     lua_setfield(L, -2, "req");

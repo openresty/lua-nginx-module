@@ -496,7 +496,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
         }
     }
 
-    if (!ctx->headers_set) {
+    if (!ctx->headers_set && llcf->enforce_content_type) {
         rc = ngx_http_set_content_type(r);
         if (rc != NGX_OK) {
             return luaL_error(L,
@@ -542,6 +542,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                 }
             }
 
+            ctx->headers_set = 1;
             return 0;
         }
 
@@ -566,6 +567,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                           key.data, (int) rc);
     }
 
+    ctx->headers_set = 1;
     return 0;
 }
 
@@ -573,12 +575,20 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 static int
 ngx_http_lua_ngx_req_header_clear(lua_State *L)
 {
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one arguments, but seen %d",
+    ngx_uint_t n;
+    n = lua_gettop(L);
+    if ((n != 1) && (n != 2)) {
+        return luaL_error(L, "expecting one or two arguments, but seen %d",
                           lua_gettop(L));
     }
 
-    lua_pushnil(L);
+    if (n == 2) {
+        lua_pushnil(L);
+        /* Top element is now 3, replace it with element 3 */
+        lua_insert(L, 2);
+    } else {
+        lua_pushnil(L);
+    }
 
     return ngx_http_lua_ngx_req_header_set_helper(L);
 }
@@ -587,7 +597,7 @@ ngx_http_lua_ngx_req_header_clear(lua_State *L)
 static int
 ngx_http_lua_ngx_req_header_set(lua_State *L)
 {
-    if (lua_gettop(L) != 2) {
+    if ((lua_gettop(L) != 2) && (lua_gettop(L) != 3)) {
         return luaL_error(L, "expecting two arguments, but seen %d",
                           lua_gettop(L));
     }
@@ -625,9 +635,10 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
 #if 0
     /* replace "_" with "-" */
-    for (i = 0; i < len; i++) {
-        if (p[i] == '_') {
-            p[i] = '-';
+        for (i = 0; i < len; i++) {
+            if (p[i] == '_') {
+                p[i] = '-';
+            }
         }
     }
 #endif
