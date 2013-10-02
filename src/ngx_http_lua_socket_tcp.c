@@ -210,6 +210,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
+    lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_send_timeout);
+    lua_setfield(L, -2, "set_send_timeout"); /* ngx socket mt */
+
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_fake_close);
     lua_setfield(L, -2, "fake_close");
 
@@ -1740,25 +1746,7 @@ success:
             size = (size_t) (b->end - b->last);
         }
 
-        if (u->raw_downstream) {
-            preread = r->header_in->last - r->header_in->pos;
-
-            if (preread) {
-
-                if ((off_t) size > preread) {
-                    size = (size_t) preread;
-                }
-
-                ngx_http_lua_probe_req_socket_consume_preread(r,
-                                                              r->header_in->pos,
-                                                              size);
-
-                b->last = ngx_copy(b->last, r->header_in->pos, size);
-                r->header_in->pos += size;
-                continue;
-            }
-
-        } else if (u->body_downstream) {
+        if (u->body_downstream || u->raw_downstream) {
 
             if (r->request_body->rest == 0) {
 
@@ -1800,7 +1788,7 @@ success:
                 r->header_in->pos += size;
                 r->request_length += size;
 
-                if (r->request_body->rest) {
+                if (r->request_body->rest >= 0) {
                     r->request_body->rest -= size;
                 }
 
@@ -3685,9 +3673,14 @@ ngx_http_lua_req_socket(lua_State *L)
         return 2;
 #else
         if (!r->request_body) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "requesty body not read yet");
-            return 2;
+            rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+            if (rb == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+
+            rb->rest = r->headers_in.content_length_n;
+
+            r->request_body = rb;
         }
 
         if (c->buffered) {
