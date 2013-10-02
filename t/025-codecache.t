@@ -118,7 +118,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
-
 === TEST 4: code cache explicitly off (server level)
 --- config
     lua_code_cache off;
@@ -151,7 +150,6 @@ updated
 101
 --- error_log eval
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
-
 
 
 
@@ -441,7 +439,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
-
 === TEST 13: no clear builtin lib "string"
 --- config
     location /lua {
@@ -464,7 +461,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 1, 2, 3
 --- error_log eval
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
-
 
 
 
@@ -501,7 +497,6 @@ OK
 OK
 --- error_log eval
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
-
 
 
 
@@ -555,7 +550,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
-
 === TEST 16: skip luarocks*
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';
@@ -606,7 +600,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
-
 === TEST 17: clear _G table
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
@@ -628,7 +621,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 _G.foo: 1
 --- error_log eval
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
-
 
 
 
