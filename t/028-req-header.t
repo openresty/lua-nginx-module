@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 18);
+plan tests => repeat_each() * (2 * blocks() + 19);
 
 #no_diff();
 #no_long_string();
@@ -34,6 +34,9 @@ Bar: baz
 --- response_body
 Foo: bar
 Bar: baz
+--- log_level: debug
+--- no_error_log
+lua exceeding request header limit
 
 
 
@@ -427,7 +430,7 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 --- error_log
-lua hit request header limit 100
+lua exceeding request header limit 100
 
 
 
@@ -475,7 +478,7 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 --- error_log
-lua hit request header limit 102
+lua exceeding request header limit 102
 
 
 

@@ -331,6 +331,8 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
 
     if (max > 0 && count > max) {
         count = max;
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding request header limit %d", max);
     }
 
     lua_createtable(L, 0, count);
@@ -378,9 +380,6 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
                        &header[i].key, &header[i].value);
 
         if (--count == 0) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua hit request header limit %d", max);
-
             return 1;
         }
     }
