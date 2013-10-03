@@ -36,8 +36,6 @@ static int ngx_http_lua_socket_tcp_set_send_timeout(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc,
     void *data);
-static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
