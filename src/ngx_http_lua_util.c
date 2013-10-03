@@ -334,10 +334,6 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     coctx->co_ref = LUA_NOREF;
     coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
-    if (coctx->sleep.timer_set) {
-        ngx_del_timer(&coctx->sleep);
-    }
-
     lua_pop(L, 1);
 }
 
