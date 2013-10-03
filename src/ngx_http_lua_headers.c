@@ -572,15 +572,13 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 static int
 ngx_http_lua_ngx_req_header_clear(lua_State *L)
 {
-    ngx_uint_t n;
-    n = lua_gettop(L);
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one arguments, but seen %d",
                           lua_gettop(L));
     }
 
     lua_pushnil(L);
-    
+
     return ngx_http_lua_ngx_req_header_set_helper(L);
 }
 
