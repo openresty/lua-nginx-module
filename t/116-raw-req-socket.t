@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 29;
+plan tests => repeat_each() * 33;
 
 our $HtmlDir = html_dir;
 
@@ -692,6 +692,46 @@ failed to receive a line: client aborted
 GET /t
 --- response_body
 msg: 1: received: hello, wo
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: request body not read yet
+--- config
+    server_tokens off;
+    location = /t {
+        content_by_lua '
+            local sock, err = ngx.req.socket(true)
+            if not sock then
+                ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
+                return
+            end
+
+            local data, err = sock:receive(5)
+            if not data then
+                ngx.log(ngx.ERR, "failed to receive: ", err)
+                return
+            end
+
+            local ok, err = sock:send("HTTP/1.1 200 OK\\r\\nContent-Length: 5\\r\\n\\r\\n" .. data)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to send: ", err)
+                return
+            end
+        ';
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.0\r
+Host: localhost\r
+Content-Length: 5\r
+\r
+hello"
+--- response_headers
+Content-Length: 5
+--- response_body chop
+hello
 --- no_error_log
 [error]
 
