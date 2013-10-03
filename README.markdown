@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.10](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 September 2013.
+This document describes ngx_lua [v0.9.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 September 2013.
 
 Synopsis
 ========
@@ -5509,7 +5509,9 @@ See Also
 * [lua-resty-mysql](http://github.com/agentzh/lua-resty-mysql) library based on ngx_lua cosocket.
 * [lua-resty-upload](http://github.com/agentzh/lua-resty-upload) library based on ngx_lua cosocket.
 * [lua-resty-dns](http://github.com/agentzh/lua-resty-dns) library based on ngx_lua cosocket.
+* [lua-resty-websocket](http://github.com/agentzh/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
 * [lua-resty-string](http://github.com/agentzh/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
+* [lua-resty-lock](http://github.com/agentzh/lua-resty-lock) library for a nonblocking simple lock API.
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)

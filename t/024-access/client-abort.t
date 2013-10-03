@@ -734,6 +734,7 @@ delete thread 2
 lua req cleanup
 
 --- shutdown: 1
+--- wait: 0.1
 --- ignore_response
 --- no_error_log
 [error]

@@ -3149,10 +3149,20 @@ ngx_http_lua_req_socket(lua_State *L)
         lua_pushliteral(L, "nginx version too old");
         return 2;
 #else
-        if (!r->request_body) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "requesty body not read yet");
-            return 2;
+        if (r->request_body) {
+            if (r->request_body->rest > 0) {
+                lua_pushnil(L);
+                lua_pushliteral(L, "pending request body reading in some "
+                                "other thread");
+                return 2;
+            }
+
+        } else {
+            rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+            if (rb == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+            r->request_body = rb;
         }
 
         if (c->buffered) {
