@@ -668,6 +668,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 }
 
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
 static void
 _create_headers_table(lua_State *L, ngx_http_request_t *request)
 {
@@ -810,7 +811,6 @@ _create_headers_table(lua_State *L, ngx_http_request_t *request)
 }
 
 
-#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
 static int
 ngx_http_lua_ngx_location_get_subrequest_buffer(lua_State *L)
 {
@@ -1364,14 +1364,19 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         dd("all subrequests are done");
 
         pr_ctx->no_abort = 0;
-        if (!pr_ctx->async_capture) {
-            pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
-        } else {
+        pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
+        pr_ctx->cur_co_ctx = pr_coctx;
+
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+
+        if (pr_ctx->async_capture) {
             /* XXX: Make sure that the parent request has the correct context. */
             pr_ctx->current_subrequest = r;
             pr_ctx->current_subrequest_ctx = ctx;
         }
-        pr_ctx->cur_co_ctx = pr_coctx;
+        
+#endif
+        
     }
 
     if (pr_ctx->entered_content_phase) {
@@ -1427,9 +1432,11 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     body_str->len = len;
-
+    
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
     /* If we're in capture streaming mode, we want to keep the buffer, and to free it from the resume handler's context. */
     if (!pr_ctx->async_capture) {
+#endif
         if (len == 0) {
             body_str->data = NULL;
 
@@ -1467,7 +1474,9 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
                                     dd("free bufs: %p", pr_ctx->free_bufs);
         }
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
     }
+#endif
         
     ngx_http_post_request_to_head(pr);
 
@@ -1976,6 +1985,8 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
 
     dd("nsubreqs: %d", (int) coctx->nsubreqs);
 
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
+    
     if (ctx->async_capture) {
         if (!ctx->returned_headers) {
             _create_headers_table(coctx->co, ctx->current_subrequest);
@@ -1987,9 +1998,15 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
         }
         lua_pushnil(coctx->co);
     } else {
+        
+#endif
+        
         ngx_http_lua_handle_subreq_responses(r, ctx);
         returned_values = coctx->nsubreqs;
+        
+#ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
     }
+#endif
 
     dd("free sr_statues/headers/bodies memory ASAP");
 
