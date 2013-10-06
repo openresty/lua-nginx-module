@@ -1574,6 +1574,8 @@ Also note that subrequests just mimic the HTTP interface but there is *no* extra
 
 Subrequests are completely different from HTTP 301/302 redirection (via [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect)) and internal redirection (via [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec)).
 
+You should always read the request body (by either calling [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or configuring [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) on) before initiating a subrequest.
+
 Here is a basic example:
 
 
@@ -1629,7 +1631,7 @@ argument, which supports the options:
 * `share_all_vars`
 	specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
 * `always_forward_body`
-	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. By default, this option is false and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
+	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. The request body read by either [ngx.req.read_body()](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or [lua_need_request_body on](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) will be directly forwarded to the subrequest without copying the whole request body data when creating the subrequest (no matter the request body data is buffered in memory buffers or temporary files). By default, this option is `false` and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
 
 Issuing a POST subrequest, for example, can be done as follows
 
