@@ -231,6 +231,13 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_cleanup_t          *cln;
     uint16_t                     old_context;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    if (!lmcf->requires_header_filter) {
+        return ngx_http_next_header_filter(r);
+    }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua header filter for user lua code, uri \"%V\"", &r->uri);

@@ -249,6 +249,12 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_chain_t                 *out;
     ngx_buf_tag_t                tag;
 
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    if (!lmcf->requires_body_filter) {
+        return ngx_http_next_body_filter(r, in);
+    }
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua body filter for user lua code, uri \"%V\"", &r->uri);
 
@@ -308,8 +314,6 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     L = lmcf->lua;
 

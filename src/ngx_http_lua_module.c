@@ -397,11 +397,9 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    if (lmcf->requires_capture_filter) {
-        rc = ngx_http_lua_capture_filter_init(cf);
-        if (rc != NGX_OK) {
-            return rc;
-        }
+    rc = ngx_http_lua_capture_filter_init(cf);
+    if (rc != NGX_OK) {
+        return rc;
     }
 
     if (lmcf->postponed_to_rewrite_phase_end == NGX_CONF_UNSET) {
@@ -446,18 +444,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_log_handler;
     }
 
-    if (lmcf->requires_header_filter) {
-        rc = ngx_http_lua_header_filter_init();
-        if (rc != NGX_OK) {
-            return rc;
-        }
+    rc = ngx_http_lua_header_filter_init();
+    if (rc != NGX_OK) {
+        return rc;
     }
 
-    if (lmcf->requires_body_filter) {
-        rc = ngx_http_lua_body_filter_init();
-        if (rc != NGX_OK) {
-            return rc;
-        }
+    rc = ngx_http_lua_body_filter_init();
+    if (rc != NGX_OK) {
+        return rc;
     }
 
     if (lmcf->lua == NULL) {
