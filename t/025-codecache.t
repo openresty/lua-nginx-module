@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -45,6 +45,8 @@ GET /main
 32
 updated
 32
+--- no_error_log
+[alert]
 
 
 
@@ -77,6 +79,8 @@ GET /main
 32
 updated
 32
+--- no_error_log
+[alert]
 
 
 
@@ -109,6 +113,8 @@ GET /main
 32
 updated
 101
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -142,6 +148,8 @@ GET /main
 32
 updated
 101
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -176,6 +184,8 @@ GET /main
 32
 updated
 32
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -212,6 +222,8 @@ GET /main
 32
 updated
 102
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -248,6 +260,8 @@ GET /main
 32
 updated
 102
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -285,6 +299,8 @@ GET /main
 32
 updated
 102
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -322,6 +338,8 @@ GET /main
 32
 updated
 32
+--- no_error_log
+[alert]
 
 
 
@@ -355,6 +373,8 @@ GET /main
 32
 updated
 101
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -388,6 +408,8 @@ GET /main
 32
 updated
 32
+--- no_error_log
+[alert]
 
 
 
@@ -412,6 +434,8 @@ ngx.say(table.concat({1,2,3}, ", "))
 1, 2, 3
 5
 1, 2, 3
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -435,6 +459,8 @@ ngx.say(table.concat({1,2,3}, ", "))
 1, 2, 3
 5
 1, 2, 3
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -469,6 +495,8 @@ ngx.say("OK")
 --- response_body
 OK
 OK
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -517,6 +545,8 @@ loading
 hello, foo
 found
 found
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -565,6 +595,8 @@ loading
 hello, foo
 found
 found
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -587,6 +619,8 @@ found
     GET /t
 --- response_body
 _G.foo: 1
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 
 
@@ -614,4 +648,7 @@ GET /t
 ^table: 0x\d*?[1-9a-fA-F]
 --- no_error_log
 [error]
+--- error_log eval
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
+
 

@@ -120,8 +120,9 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
             return luaL_error(L, "no memory");
         }
 
-        lmcf->watcher->fd = -2;  /* to work around the -1 check in
-                                    ngx_worker_process_cycle */
+        /* to work around the -1 check in ngx_worker_process_cycle: */
+        lmcf->watcher->fd = (ngx_socket_t) -2;
+
         lmcf->watcher->idle = 1;
         lmcf->watcher->read->handler = ngx_http_lua_abort_pending_timers;
         lmcf->watcher->data = lmcf;
@@ -282,7 +283,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto abort;
     }
 
-    c->fd = -1;
+    c->fd = (ngx_socket_t) -1;
 
     c->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
     if (c->pool == NULL) {
@@ -543,7 +544,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
 
     ngx_free_connection(c);
 
-    c->fd = -1;
+    c->fd = (ngx_socket_t) -1;
 
     if (ngx_cycle->files) {
         ngx_cycle->files[0] = saved_c;

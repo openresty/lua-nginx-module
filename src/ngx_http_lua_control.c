@@ -253,9 +253,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    r->headers_out.location->hash =
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-                     ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
+    r->headers_out.location->hash = ngx_http_lua_location_hash;
 
 #if 0
     dd("location hash: %lu == %lu",

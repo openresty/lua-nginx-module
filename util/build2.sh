@@ -41,7 +41,6 @@ time ngx-build $force $version \
                 --add-module=$root \
               --add-module=$root/../headers-more-nginx-module \
                 --add-module=$root/../drizzle-nginx-module \
-                --add-module=$home/work/nginx/ngx_http_upstream_keepalive-0.7 \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \

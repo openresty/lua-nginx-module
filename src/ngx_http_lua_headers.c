@@ -322,7 +322,20 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    lua_createtable(L, 0, 4);
+    part = &r->headers_in.headers.part;
+    count = part->nelts;
+    while (part->next) {
+        part = part->next;
+        count += part->nelts;
+    }
+
+    if (max > 0 && count > max) {
+        count = max;
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding request header limit %d", max);
+    }
+
+    lua_createtable(L, 0, count);
 
     if (!raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_req_get_headers_metatable_key);
@@ -366,10 +379,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
                        "lua request header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
 
-        if (max > 0 && ++count == max) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua hit request header limit %d", max);
-
+        if (--count == 0) {
             return 1;
         }
     }
@@ -486,7 +496,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     }
 
     if (!ctx->headers_set) {
-        rc = ngx_http_set_content_type(r);
+        rc = ngx_http_lua_set_content_type(r);
         if (rc != NGX_OK) {
             return luaL_error(L,
                               "failed to set default content type: %d",

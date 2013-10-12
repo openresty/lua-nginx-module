@@ -142,10 +142,7 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
          * for a nasty optimization purpose, and
          * we have to work-around it here */
 
-        r->headers_out.location->hash =
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
-
+        r->headers_out.location->hash = ngx_http_lua_location_hash;
         ngx_str_set(&r->headers_out.location->key, "Location");
     }
 #endif
@@ -340,8 +337,15 @@ create:
     }
 
     ho->value = *value;
-    ho->hash = hv->hash;
-    ngx_str_set(&ho->key, "Cache-Control");
+
+    if (value->len == 0) {
+        ho->hash = 0;
+
+    } else {
+        ho->hash = hv->hash;
+    }
+
+    ho->key = hv->key;
     *ph = ho;
 
     return NGX_OK;
@@ -533,10 +537,7 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
          * for a nasty optimization purpose, and
          * we have to work-around it here */
 
-        r->headers_out.location->hash =
-            ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(ngx_hash(
-                       ngx_hash('l', 'o'), 'c'), 'a'), 't'), 'i'), 'o'), 'n');
-
+        r->headers_out.location->hash = ngx_http_lua_location_hash;
         ngx_str_set(&r->headers_out.location->key, "Location");
     }
 #endif

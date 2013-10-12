@@ -45,6 +45,9 @@ static ngx_conf_post_t  ngx_http_lua_lowat_post =
     { ngx_http_lua_lowat_check };
 
 
+static volatile ngx_cycle_t  *ngx_http_lua_prev_cycle = NULL;
+
+
 static ngx_command_t ngx_http_lua_cmds[] = {
 
     { ngx_string("lua_max_running_timers"),
@@ -135,14 +138,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_init_by_lua,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
-      ngx_http_lua_init_by_inline },
+      (void *) ngx_http_lua_init_by_inline },
 
     { ngx_string("init_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_lua_init_by_lua,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
-      ngx_http_lua_init_by_file },
+      (void *) ngx_http_lua_init_by_file },
 
 #if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
@@ -152,7 +155,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_set_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_filter_set_by_lua_inline },
+      (void *) ngx_http_lua_filter_set_by_lua_inline },
 
     /* set_by_lua_file $res rel/or/abs/path/to/script [$arg1 [$arg2 [..]]] */
     { ngx_string("set_by_lua_file"),
@@ -161,7 +164,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_set_by_lua_file,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_filter_set_by_lua_file },
+      (void *) ngx_http_lua_filter_set_by_lua_file },
 #endif
 
     /* rewrite_by_lua <inline script> */
@@ -171,7 +174,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_rewrite_handler_inline },
+      (void *) ngx_http_lua_rewrite_handler_inline },
 
     /* access_by_lua <inline script> */
     { ngx_string("access_by_lua"),
@@ -180,7 +183,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_access_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_access_handler_inline },
+      (void *) ngx_http_lua_access_handler_inline },
 
     /* content_by_lua <inline script> */
     { ngx_string("content_by_lua"),
@@ -188,7 +191,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_content_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_content_handler_inline },
+      (void *) ngx_http_lua_content_handler_inline },
 
     /* log_by_lua <inline script> */
     { ngx_string("log_by_lua"),
@@ -197,7 +200,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_log_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_log_handler_inline },
+      (void *) ngx_http_lua_log_handler_inline },
 
     { ngx_string("rewrite_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -205,7 +208,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_rewrite_handler_file },
+      (void *) ngx_http_lua_rewrite_handler_file },
 
     { ngx_string("rewrite_by_lua_no_postpone"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_FLAG,
@@ -220,7 +223,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_access_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_access_handler_file },
+      (void *) ngx_http_lua_access_handler_file },
 
     /* content_by_lua_file rel/or/abs/path/to/script */
     { ngx_string("content_by_lua_file"),
@@ -228,7 +231,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_content_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_content_handler_file },
+      (void *) ngx_http_lua_content_handler_file },
 
     { ngx_string("log_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -236,7 +239,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_log_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_log_handler_file },
+      (void *) ngx_http_lua_log_handler_file },
 
     /* header_filter_by_lua <inline script> */
     { ngx_string("header_filter_by_lua"),
@@ -245,7 +248,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_header_filter_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_header_filter_inline },
+      (void *) ngx_http_lua_header_filter_inline },
 
     { ngx_string("header_filter_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -253,7 +256,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_header_filter_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_header_filter_file },
+      (void *) ngx_http_lua_header_filter_file },
 
     { ngx_string("body_filter_by_lua"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -261,7 +264,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_body_filter_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_body_filter_inline },
+      (void *) ngx_http_lua_body_filter_inline },
 
     { ngx_string("body_filter_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
@@ -269,7 +272,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_body_filter_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      ngx_http_lua_body_filter_file },
+      (void *) ngx_http_lua_body_filter_file },
 
     { ngx_string("lua_socket_keepalive_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -343,6 +346,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, check_client_abort),
       NULL },
 
+    { ngx_string("lua_use_default_type"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, use_default_type),
+      NULL },
+
     ngx_null_command
 };
 
@@ -381,6 +392,7 @@ ngx_module_t ngx_http_lua_module = {
 static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
+    int                         multi_http_blocks;
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
@@ -389,7 +401,15 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    if (lmcf->requires_capture_filter) {
+    if (ngx_http_lua_prev_cycle != ngx_cycle) {
+        ngx_http_lua_prev_cycle = ngx_cycle;
+        multi_http_blocks = 0;
+
+    } else {
+        multi_http_blocks = 1;
+    }
+
+    if (multi_http_blocks || lmcf->requires_capture_filter) {
         rc = ngx_http_lua_capture_filter_init(cf);
         if (rc != NGX_OK) {
             return rc;
@@ -438,14 +458,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_log_handler;
     }
 
-    if (lmcf->requires_header_filter) {
+    if (multi_http_blocks || lmcf->requires_header_filter) {
         rc = ngx_http_lua_header_filter_init();
         if (rc != NGX_OK) {
             return rc;
         }
     }
 
-    if (lmcf->requires_body_filter) {
+    if (multi_http_blocks || lmcf->requires_body_filter) {
         rc = ngx_http_lua_body_filter_init();
         if (rc != NGX_OK) {
             return rc;
@@ -616,6 +636,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->enable_code_cache  = NGX_CONF_UNSET;
     conf->http10_buffering   = NGX_CONF_UNSET;
     conf->check_client_abort = NGX_CONF_UNSET;
+    conf->use_default_type   = NGX_CONF_UNSET;
 
     conf->keepalive_timeout = NGX_CONF_UNSET_MSEC;
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
@@ -679,6 +700,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
     ngx_conf_merge_value(conf->http10_buffering, prev->http10_buffering, 1);
     ngx_conf_merge_value(conf->check_client_abort, prev->check_client_abort, 0);
+    ngx_conf_merge_value(conf->use_default_type, prev->use_default_type, 1);
 
     ngx_conf_merge_msec_value(conf->keepalive_timeout,
                               prev->keepalive_timeout, 60000);
@@ -730,6 +752,11 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     ngx_http_lua_preload_hook_t     *hook;
     lua_State                       *L;
     ngx_uint_t                       i;
+
+    ngx_http_lua_content_length_hash =
+        ngx_http_lua_hash_literal("content-length");
+
+    ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
 
     /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(cf->pool, 0);

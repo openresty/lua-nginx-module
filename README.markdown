@@ -18,7 +18,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.8.10](https://github.com/chaoslawful/lua-nginx-module/tags) released on 22 September 2013.
+This document describes ngx_lua [v0.9.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 September 2013.
 
 Synopsis
 ========
@@ -1574,6 +1574,8 @@ Also note that subrequests just mimic the HTTP interface but there is *no* extra
 
 Subrequests are completely different from HTTP 301/302 redirection (via [ngx.redirect](http://wiki.nginx.org/HttpLuaModule#ngx.redirect)) and internal redirection (via [ngx.exec](http://wiki.nginx.org/HttpLuaModule#ngx.exec)).
 
+You should always read the request body (by either calling [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or configuring [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) on) before initiating a subrequest.
+
 Here is a basic example:
 
 
@@ -1629,7 +1631,7 @@ argument, which supports the options:
 * `share_all_vars`
 	specify whether to share all the Nginx variables of the subrequest with the current (parent) request. modifications of the Nginx variables in the subrequest will affect the current (parent) request.
 * `always_forward_body`
-	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. By default, this option is false and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
+	when set to true, the current (parent) request's request body will always be forwarded to the subrequest being created if the `body` option is not specified. The request body read by either [ngx.req.read_body()](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) or [lua_need_request_body on](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) will be directly forwarded to the subrequest without copying the whole request body data when creating the subrequest (no matter the request body data is buffered in memory buffers or temporary files). By default, this option is `false` and when the `body` option is not specified, the request body of the current (parent) request is only forwarded when the subrequest takes the `PUT` or `POST` request method.
 
 Issuing a POST subrequest, for example, can be done as follows
 
@@ -2710,6 +2712,8 @@ ngx.req.socket
 --------------
 **syntax:** *tcpsock, err = ngx.req.socket()*
 
+**syntax:** *tcpsock, err = ngx.req.socket(raw)*
+
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
 Returns a read-only cosocket object that wraps the downstream connection. Only [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive) and [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil) methods are supported on this object.
@@ -2719,8 +2723,13 @@ In case of error, `nil` will be returned as well as a string describing the erro
 The socket object returned by this method is usually used to read the current request's body in a streaming fashion. Do not turn on the [lua_need_request_body](http://wiki.nginx.org/HttpLuaModule#lua_need_request_body) directive, and do not mix this call with [ngx.req.read_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.read_body) and [ngx.req.discard_body](http://wiki.nginx.org/HttpLuaModule#ngx.req.discard_body).
 
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
-
 Chunked request bodies are not yet supported in this API.
+
+Since the `v0.9.0` release, this function accepts an optional boolean `raw` argument. When this argument is `true`, this function returns a full duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [receive](http://wiki.nginx.org/HttpLuaModule#tcpsock:receive), [receiveuntil](http://wiki.nginx.org/HttpLuaModule#tcpsock:receiveuntil), and [send](http://wiki.nginx.org/HttpLuaModule#tcpsock:send) methods.
+
+When the `raw` argument is `true`, it is required that no pending data from any previous [ngx.say](http://wiki.nginx.org/HttpLuaModule#ngx.say), [ngx.print](http://wiki.nginx.org/HttpLuaModule#ngx.print), or [ngx.send_headers](http://wiki.nginx.org/HttpLuaModule#ngx.send_headers) calls exists. So if you have these downstream output calls previously, you should call [ngx.flush(true)](http://wiki.nginx.org/HttpLuaModule#ngx.flush) before calling `ngx.req.socket(true)` to ensure that there is no pending output data. Another requirement for this case is that the request body must have already been read completely.
+
+You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/agentzh/lua-resty-websocket) for a real world example.
 
 This function was first introduced in the `v0.5.0rc1` release.
 
@@ -5425,45 +5434,55 @@ Test Suite
 
 The following dependencies are required to run the test suite:
 
-* Nginx version >= 0.8.54
+* Nginx version >= 1.4.2
 
 * Perl modules:
-	* test-nginx: <http://github.com/agentzh/test-nginx> 
+	* Test::Nginx: <http://github.com/agentzh/test-nginx> 
 
 * Nginx modules:
-	* echo-nginx-module: <http://github.com/agentzh/echo-nginx-module> 
-	* drizzle-nginx-module: <http://github.com/chaoslawful/drizzle-nginx-module> 
-	* rds-json-nginx-module: <http://github.com/agentzh/rds-json-nginx-module> 
-	* set-misc-nginx-module: <http://github.com/agentzh/set-misc-nginx-module> 
-	* headers-more-nginx-module: <http://github.com/agentzh/headers-more-nginx-module> 
-	* memc-nginx-module: <http://github.com/agentzh/memc-nginx-module> 
-	* srcache-nginx-module: <http://github.com/agentzh/srcache-nginx-module> 
-	* ngx_auth_request: <http://mdounin.ru/hg/ngx_http_auth_request_module/> 
+	* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
+	* [ngx_set_misc](http://github.com/agentzh/set-misc-nginx-module)
+	* [ngx_auth_request](http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz) (this is not needed if you're using Nginx 1.5.4+.
+	* [ngx_echo](http://github.com/agentzh/echo-nginx-module)
+	* [ngx_memc](http://github.com/agentzh/memc-nginx-module)
+	* [ngx_srcache](http://github.com/agentzh/srcache-nginx-module)
+	* ngx_lua (i.e., this module)
+	* [ngx_headers_more](http://github.com/agentzh/headers-more-nginx-module)
+	* [ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module)
+	* [ngx_rds_json](http://github.com/agentzh/rds-json-nginx-module)
+	* [ngx_coolkit](https://github.com/FRiCKLE/ngx_coolkit)
+	* [ngx_redis2](http://github.com/agentzh/redis2-nginx-module)
 
-* C libraries:
-	* yajl: <https://github.com/lloyd/yajl> 
+The order in which these modules are added during configuration is important because the position of any filter module in the
+filtering chain determines the final output, for example. The correct adding order is shown above.
 
-* Lua modules:
-	* lua-yajl: <https://github.com/brimworks/lua-yajl> 
-		* Note: the compiled module has to be placed in '/usr/local/lib/lua/5.1/'
+* 3rd-party Lua libraries:
+	* [lua-cjson](http://www.kyne.com.au/~mark/software/lua-cjson.php)
 
 * Applications:
 	* mysql: create database 'ngx_test', grant all privileges to user 'ngx_test', password is 'ngx_test'
-	* memcached
+	* memcached: listening on the default port, 11211.
+	* redis: listening on the default port, 6379.
 
-The order in which these modules are added during configuration is important as the position of any filter module in the
-filtering chain determines the final output. The correct adding order is:
+See also the [developer build script](https://github.com/chaoslawful/lua-nginx-module/blob/master/util/build2.sh) for more details on setting up the testing environment.
 
-1. ngx_devel_kit
-1. set-misc-nginx-module
-1. ngx_http_auth_request_module
-1. echo-nginx-module
-1. memc-nginx-module
-1. lua-nginx-module (i.e. this module)
-1. headers-more-nginx-module
-1. srcache-nginx-module
-1. drizzle-nginx-module
-1. rds-json-nginx-module
+To run the whole test suite in the default testing mode:
+
+    cd /path/to/lua-nginx-module
+    export PATH=/path/to/your/nginx/sbin:$PATH
+    prove -I/path/to/test-nginx/lib -r t
+
+
+To run specific test files:
+
+    cd /path/to/lua-nginx-module
+    export PATH=/path/to/your/nginx/sbin:$PATH
+    prove -I/path/to/test-nginx/lib t/002-content.t t/003-errors.t
+
+
+To run a specific test block in a particular test file, add the line `--- ONLY` to the test block you want to run, and then use the `prove` utility to run that `.t` file.
+
+There are also various testing modes based on mockeagain, valgrind, and etc. Refer to the [Test::Nginx documentation](http://search.cpan.org/perldoc?Test::Nginx) for more details for various advanced testing modes. See also the test reports for the Nginx test cluster running on Amazon EC2: <http://qa.openresty.org.>
 
 Copyright and License
 =====================
@@ -5492,7 +5511,9 @@ See Also
 * [lua-resty-mysql](http://github.com/agentzh/lua-resty-mysql) library based on ngx_lua cosocket.
 * [lua-resty-upload](http://github.com/agentzh/lua-resty-upload) library based on ngx_lua cosocket.
 * [lua-resty-dns](http://github.com/agentzh/lua-resty-dns) library based on ngx_lua cosocket.
+* [lua-resty-websocket](http://github.com/agentzh/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
 * [lua-resty-string](http://github.com/agentzh/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
+* [lua-resty-lock](http://github.com/agentzh/lua-resty-lock) library for a nonblocking simple lock API.
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)

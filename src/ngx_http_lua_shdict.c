@@ -618,7 +618,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     }
 
     if (n == 2) {
-        attempts = luaL_checknumber(L, 2);
+        attempts = luaL_checkint(L, 2);
     }
 
     ctx = zone->data;
@@ -699,7 +699,7 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
     }
 
     if (n == 2) {
-        attempts = luaL_checknumber(L, 2);
+        attempts = luaL_checkint(L, 2);
     }
 
     ctx = zone->data;
@@ -969,12 +969,12 @@ replace:
             ngx_queue_remove(&sd->queue);
             ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-            sd->key_len = key.len;
+            sd->key_len = (u_short) key.len;
 
             if (exptime > 0) {
                 tp = ngx_timeofday();
                 sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
-                              + exptime * 1000;
+                              + (uint64_t) (exptime * 1000);
 
             } else {
                 sd->expires = 0;
@@ -986,7 +986,7 @@ replace:
 
             dd("setting value type to %d", value_type);
 
-            sd->value_type = value_type;
+            sd->value_type = (uint8_t) value_type;
 
             p = ngx_copy(sd->data, key.data, key.len);
             ngx_memcpy(p, value.data, value.len);
@@ -1076,12 +1076,12 @@ allocated:
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
-    sd->key_len = key.len;
+    sd->key_len = (u_short) key.len;
 
     if (exptime > 0) {
         tp = ngx_timeofday();
         sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
-                      + exptime * 1000;
+                      + (uint64_t) (exptime * 1000);
 
     } else {
         sd->expires = 0;
@@ -1093,7 +1093,7 @@ allocated:
 
     dd("setting value type to %d", value_type);
 
-    sd->value_type = value_type;
+    sd->value_type = (uint8_t) value_type;
 
     p = ngx_copy(sd->data, key.data, key.len);
     ngx_memcpy(p, value.data, value.len);

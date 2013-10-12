@@ -41,7 +41,7 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no request found");
     }
 
-    delay = luaL_checknumber(L, 1) * 1000;
+    delay = (ngx_int_t) (luaL_checknumber(L, 1) * 1000);
 
     if (delay < 0) {
         return luaL_error(L, "invalid sleep duration \"%d\"", delay);

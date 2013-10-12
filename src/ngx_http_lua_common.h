@@ -201,6 +201,7 @@ typedef struct {
     ngx_flag_t                       transform_underscores_in_resp_headers;
     ngx_flag_t                       log_socket_errors;
     ngx_flag_t                       check_client_abort;
+    ngx_flag_t                       use_default_type;
 } ngx_http_lua_loc_conf_t;
 
 
@@ -272,7 +273,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 waited_by_parent:1;  /* whether being waited by
                                                      a parent coroutine */
 
-    ngx_http_lua_co_status_t co_status:3;  /* the current coroutine's status */
+    unsigned                 co_status:3;  /* the current coroutine's status */
 
     unsigned                 flushing:1; /* indicates whether the current
                                             coroutine is waiting for
@@ -330,9 +331,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_int_t                exit_code;
 
-    ngx_http_lua_co_ctx_t   *req_body_reader_co_ctx; /* co ctx for the coroutine
-                                                        reading the request
-                                                        body */
+    ngx_http_lua_co_ctx_t   *downstream_co_ctx; /* co ctx for the coroutine
+                                                   reading the request body */
 
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
@@ -352,7 +352,7 @@ typedef struct ngx_http_lua_ctx_s {
                                                        request body data;
                                                        0: no need to wait */
 
-    ngx_http_lua_user_coro_op_t   co_op:2; /*  coroutine API operation */
+    unsigned         co_op:2; /*  coroutine API operation */
 
     unsigned         exited:1;
 
@@ -383,6 +383,10 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         seen_last_in_filter:1;  /* used by body_filter_by_lua* */
     unsigned         seen_last_for_subreq:1; /* used by body capture filter */
+    unsigned         writing_raw_req_socket:1; /* used by raw downstream
+                                                  socket */
+    unsigned         acquired_raw_req_socket:1;  /* whether a raw req socket
+                                                    is acquired */
 } ngx_http_lua_ctx_t;
 
 

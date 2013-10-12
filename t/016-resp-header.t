@@ -1047,3 +1047,37 @@ Foo: /t/
 --- no_error_log
 [error]
 
+
+
+=== TEST 52: case sensitive cache-control header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["cache-Control"] = "private"
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_like chop
+cache-Control: private
+--- response_body
+Cache-Control: private
+
+
+
+=== TEST 53: clear Cache-Control when there was no Cache-Control
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Cache-Control"] = nil
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_unlike eval
+qr/Cache-Control/i
+--- response_body
+Cache-Control: nil
+

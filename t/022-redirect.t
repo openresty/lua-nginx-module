@@ -7,7 +7,7 @@ use t::TestNginxLua;
 #master_process_enabled(1);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 #repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 3 + 1);

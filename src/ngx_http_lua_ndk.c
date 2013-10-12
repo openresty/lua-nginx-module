@@ -44,7 +44,7 @@ ngx_http_lua_ndk_set_var_get(lua_State *L)
 
     lua_pushvalue(L, -1); /* table key key */
     lua_pushvalue(L, -1); /* table key key key */
-    lua_pushlightuserdata(L, func); /* table key key key func */
+    lua_pushlightuserdata(L, (void *) func); /* table key key key func */
     lua_pushcclosure(L, ngx_http_lua_run_set_var_directive, 2);
         /* table key key closure */
     lua_rawset(L, 1); /* table key */

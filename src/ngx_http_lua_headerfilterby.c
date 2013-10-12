@@ -230,7 +230,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     ngx_http_cleanup_t          *cln;
-    uint8_t                      old_context;
+    uint16_t                     old_context;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua header filter for user lua code, uri \"%V\"", &r->uri);

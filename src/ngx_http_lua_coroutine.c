@@ -234,8 +234,20 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     lua_getfield(L, -1, "running");
     lua_setfield(L, -3, "running");
 
+    lua_getfield(L, -1, "create");
+    lua_setfield(L, -3, "_create");
+
+    lua_getfield(L, -1, "resume");
+    lua_setfield(L, -3, "_resume");
+
     lua_getfield(L, -1, "yield");
     lua_setfield(L, -3, "_yield");
+
+    lua_getfield(L, -1, "yield");
+    lua_setfield(L, -3, "__yield");
+
+    lua_getfield(L, -1, "status");
+    lua_setfield(L, -3, "_status");
 
     /* pop the old coroutine */
     lua_pop(L, 1);

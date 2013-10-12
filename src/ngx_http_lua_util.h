@@ -128,7 +128,7 @@ void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
 void ngx_http_lua_request_cleanup_handler(void *data);
 
 ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, int nret);
+    ngx_http_lua_ctx_t *ctx, volatile int nret);
 
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 
@@ -246,6 +246,44 @@ ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
     lua_pushlightuserdata(L, r);
     lua_rawset(L, LUA_GLOBALSINDEX);
 }
+
+
+#define ngx_http_lua_hash_literal(s)                                        \
+    ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
+
+
+static ngx_inline ngx_uint_t
+ngx_http_lua_hash_str(u_char *src, size_t n)
+{
+    ngx_uint_t  key;
+
+    key = 0;
+
+    while (n--) {
+        key = ngx_hash(key, *src);
+        src++;
+    }
+
+    return key;
+}
+
+
+static ngx_inline ngx_int_t
+ngx_http_lua_set_content_type(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t     *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->use_default_type) {
+        return ngx_http_set_content_type(r);
+    }
+
+    return NGX_OK;
+}
+
+
+extern ngx_uint_t  ngx_http_lua_location_hash;
+extern ngx_uint_t  ngx_http_lua_content_length_hash;
 
 
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */

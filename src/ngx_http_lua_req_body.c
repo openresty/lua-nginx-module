@@ -142,7 +142,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
                        "interruptions");
 
         ctx->waiting_more_body = 1;
-        ctx->req_body_reader_co_ctx = coctx;
+        ctx->downstream_co_ctx = coctx;
 
         coctx->cleanup = ngx_http_lua_req_body_cleanup;
         coctx->data = r;
@@ -175,7 +175,7 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
 
-        coctx = ctx->req_body_reader_co_ctx;
+        coctx = ctx->downstream_co_ctx;
         ctx->cur_co_ctx = coctx;
 
         coctx->cleanup = NULL;
@@ -558,7 +558,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
 
         /* avoid allocating an unnecessary large buffer */
         if (size > (size_t) r->headers_in.content_length_n) {
-            size = r->headers_in.content_length_n;
+            size = (size_t) r->headers_in.content_length_n;
         }
     }
 
@@ -738,7 +738,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    size = r->headers_in.content_length_n;
+    size = (size_t) r->headers_in.content_length_n;
 
     value.len = ngx_sprintf(value.data, "%uz", size) - value.data;
     value.data[value.len] = '\0';

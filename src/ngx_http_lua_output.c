@@ -66,6 +66,12 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
+    if (ctx->acquired_raw_req_socket) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "raw request socket acquired");
+        return 2;
+    }
+
     if (r->header_only) {
         lua_pushnil(L);
         lua_pushliteral(L, "header only");
@@ -279,7 +285,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
             if (floor(key) == key && key >= 1) {
                 if (key > max) {
-                    max = key;
+                    max = (int) key;
                 }
 
                 lua_pop(L, 1); /* stack: table key */
@@ -386,7 +392,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
     while (lua_next(L, index) != 0) { /* stack: table key value */
         key = lua_tonumber(L, -2);
         if (key > max) {
-            max = key;
+            max = (int) key;
         }
 
         lua_pop(L, 1); /* stack: table key */
@@ -487,6 +493,12 @@ ngx_http_lua_ngx_flush(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+    if (ctx->acquired_raw_req_socket) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "raw request socket acquired");
+        return 2;
+    }
 
     coctx = ctx->cur_co_ctx;
     if (coctx == NULL) {
@@ -634,6 +646,12 @@ ngx_http_lua_ngx_eof(lua_State *L)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
+    }
+
+    if (ctx->acquired_raw_req_socket) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "raw request socket acquired");
+        return 2;
     }
 
     if (ctx->eof) {

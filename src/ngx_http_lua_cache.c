@@ -406,6 +406,9 @@ done:
     /* package loaded */
     lua_pop(L, 2);
 
+    /* force a full GC cycle */
+    lua_gc(L, LUA_GCCOLLECT, 0);
+
 #if 0
     lua_newtable(L);
     lua_setglobal(L, "_G");
