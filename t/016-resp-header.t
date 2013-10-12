@@ -1064,3 +1064,20 @@ cache-Control: private
 --- response_body
 Cache-Control: private
 
+
+
+=== TEST 53: clear Cache-Control when there was no Cache-Control
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Cache-Control"] = nil
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_unlike eval
+qr/Cache-Control/i
+--- response_body
+Cache-Control: nil
+
