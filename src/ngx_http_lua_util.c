@@ -703,31 +703,31 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
-    lua_newtable(L);
+    lua_createtable(L, 0, 32 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
     /* create the registry entry for the Lua request ctx data table */
     lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
-    lua_newtable(L);
+    lua_createtable(L, 0, 32 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
 
     /* create the registry entry for the Lua socket connection pool table */
     lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
-    lua_newtable(L);
+    lua_createtable(L, 0, 8 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
 
 #if (NGX_PCRE)
     /* create the registry entry for the Lua precompiled regex object cache */
     lua_pushlightuserdata(L, &ngx_http_lua_regex_cache_key);
-    lua_newtable(L);
+    lua_createtable(L, 0, 16 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
 #endif
 
     /* {{{ register table to cache user code:
      * { [(string)cache_key] = <code closure> } */
     lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
-    lua_newtable(L);
+    lua_createtable(L, 0, 8 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 }
