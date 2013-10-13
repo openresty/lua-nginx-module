@@ -1364,19 +1364,20 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
         dd("all subrequests are done");
 
         pr_ctx->no_abort = 0;
-        pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
-        pr_ctx->cur_co_ctx = pr_coctx;
-
+        
 #ifdef NGX_LUA_CAPTURE_DOWN_STREAMING
-
-        if (pr_ctx->async_capture) {
+        if (!pr_ctx->async_capture) {
+            pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
+        } else {
             /* XXX: Make sure that the parent request has the correct context. */
             pr_ctx->current_subrequest = r;
             pr_ctx->current_subrequest_ctx = ctx;
         }
-        
+#else
+        pr_ctx->resume_handler = ngx_http_lua_subrequest_resume;
 #endif
         
+        pr_ctx->cur_co_ctx = pr_coctx;
     }
 
     if (pr_ctx->entered_content_phase) {
