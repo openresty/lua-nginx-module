@@ -2385,6 +2385,14 @@ hello world
 --- request
 DELETE /lua
 hello world
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    //print_ubacktrace()
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
 --- response_body
 hello world
 --- no_error_log

@@ -1214,7 +1214,7 @@ static void
 ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)
 {
-    ngx_uint_t                   i;
+    ngx_uint_t                   i, count;
     ngx_uint_t                   index;
     lua_State                   *co;
     ngx_str_t                   *body_str;
@@ -1239,7 +1239,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
            (int) r->uri.len, r->uri.data);
 
         /*  {{{ construct ret value */
-        lua_newtable(co);
+        lua_createtable(co, 0 /* narr */, 4 /* nrec */);
 
         /*  copy captured status */
         lua_pushinteger(co, coctx->sr_statuses[index]);
@@ -1271,9 +1271,16 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
         /* copy captured headers */
 
-        lua_newtable(co); /* res.header */
-
         sr_headers = coctx->sr_headers[index];
+
+        part = &sr_headers->headers.part;
+        count = part->nelts;
+        while (part->next) {
+            part = part->next;
+            count += part->nelts;
+        }
+
+        lua_createtable(co, 0, count + 5); /* res.header */
 
         dd("saving subrequest response headers");
 
