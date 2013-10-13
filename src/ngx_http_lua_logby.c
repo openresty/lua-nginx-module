@@ -54,7 +54,7 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
-    lua_newtable(L);    /*  the metatable for the new env */
+    lua_createtable(L, 0, 1);    /*  the metatable for the new env */
     lua_pushvalue(L, LUA_GLOBALSINDEX);
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
