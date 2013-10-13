@@ -363,3 +363,58 @@ n = 4
 --- no_error_log
 [error]
 
+
+
+=== TEST 17: entries under coroutine. (content by lua)
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(coroutine) do
+                    n = n + 1
+                end
+                ngx.say("coroutine: ", n)
+            ';
+        }
+--- request
+GET /test
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
+3
+--- response_body
+coroutine: 10
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: entries under ngx.thread. (content by lua)
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx.thread) do
+                    n = n + 1
+                end
+                ngx.say("thread: ", n)
+            ';
+        }
+--- request
+GET /test
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
+--- response_body
+thread: 2
+--- no_error_log
+[error]
+

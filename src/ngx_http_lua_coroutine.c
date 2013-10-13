@@ -225,7 +225,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     int         rc;
 
     /* new coroutine table */
-    lua_newtable(L);
+    lua_createtable(L, 0 /* narr */, 10 /* nrec */);
 
     /* get old coroutine table */
     lua_getglobal(L, "coroutine");

@@ -36,7 +36,7 @@ ngx_http_lua_ngx_get_ctx(lua_State *L)
 
         lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
         lua_rawget(L, LUA_REGISTRYINDEX);
-        lua_newtable(L);
+        lua_createtable(L, 0 /* narr */, 4 /* nrec */);
         lua_pushvalue(L, -1);
         ctx->ctx_ref = luaL_ref(L, -3);
         return 1;

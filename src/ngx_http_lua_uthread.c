@@ -30,7 +30,7 @@ void
 ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
 {
     /* new thread table */
-    lua_newtable(L);
+    lua_createtable(L, 0 /* narr */, 2 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_uthread_spawn);
     lua_setfield(L, -2, "spawn");
