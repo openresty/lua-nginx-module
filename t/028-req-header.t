@@ -1312,3 +1312,37 @@ X-Foo: nil
 --- no_error_log
 [error]
 
+
+
+=== TEST 42: Host header with port and $host (github issue #292)
+--- config
+    location /bar {
+        rewrite_by_lua '
+            ngx.req.set_header("Host", "agentzh.org:1984")
+        ';
+        echo "host var: $host";
+        echo "http_host var: $http_host";
+    }
+--- request
+GET /bar
+--- response_body
+host var: agentzh.org
+http_host var: agentzh.org:1984
+
+
+
+=== TEST 43: Host header with upper case letters and $host (github issue #292)
+--- config
+    location /bar {
+        rewrite_by_lua '
+            ngx.req.set_header("Host", "agentZH.org:1984")
+        ';
+        echo "host var: $host";
+        echo "http_host var: $http_host";
+    }
+--- request
+GET /bar
+--- response_body
+host var: agentzh.org
+http_host var: agentZH.org:1984
+

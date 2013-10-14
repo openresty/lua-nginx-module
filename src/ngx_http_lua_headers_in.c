@@ -35,6 +35,8 @@ static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
+static ngx_int_t ngx_http_lua_validate_host(ngx_str_t *host, ngx_pool_t *pool,
+    ngx_uint_t alloc);
 static ngx_int_t ngx_http_set_host_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_lua_rm_header_helper(ngx_list_t *l,
@@ -274,12 +276,116 @@ ngx_http_set_builtin_header(ngx_http_request_t *r,
 
 
 static ngx_int_t
+ngx_http_lua_validate_host(ngx_str_t *host, ngx_pool_t *pool, ngx_uint_t alloc)
+{
+    u_char  *h, ch;
+    size_t   i, dot_pos, host_len;
+
+    enum {
+        sw_usual = 0,
+        sw_literal,
+        sw_rest
+    } state;
+
+    dot_pos = host->len;
+    host_len = host->len;
+
+    h = host->data;
+
+    state = sw_usual;
+
+    for (i = 0; i < host->len; i++) {
+        ch = h[i];
+
+        switch (ch) {
+
+        case '.':
+            if (dot_pos == i - 1) {
+                return NGX_DECLINED;
+            }
+            dot_pos = i;
+            break;
+
+        case ':':
+            if (state == sw_usual) {
+                host_len = i;
+                state = sw_rest;
+            }
+            break;
+
+        case '[':
+            if (i == 0) {
+                state = sw_literal;
+            }
+            break;
+
+        case ']':
+            if (state == sw_literal) {
+                host_len = i + 1;
+                state = sw_rest;
+            }
+            break;
+
+        case '\0':
+            return NGX_DECLINED;
+
+        default:
+
+            if (ngx_path_separator(ch)) {
+                return NGX_DECLINED;
+            }
+
+            if (ch >= 'A' && ch <= 'Z') {
+                alloc = 1;
+            }
+
+            break;
+        }
+    }
+
+    if (dot_pos == host_len - 1) {
+        host_len--;
+    }
+
+    if (host_len == 0) {
+        return NGX_DECLINED;
+    }
+
+    if (alloc) {
+        host->data = ngx_pnalloc(pool, host_len);
+        if (host->data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_strlow(host->data, h, host_len);
+    }
+
+    host->len = host_len;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
 ngx_http_set_host_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     ngx_str_t *value)
 {
+    ngx_str_t host;
+
     dd("server new value len: %d", (int) value->len);
 
-    r->headers_in.server = *value;
+    if (value->len) {
+        host= *value;
+
+        if (ngx_http_lua_validate_host(&host, r->pool, 0) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+        r->headers_in.server = host;
+
+    } else {
+        r->headers_in.server = *value;
+    }
 
     return ngx_http_set_builtin_header(r, hv, value);
 }
