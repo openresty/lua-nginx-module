@@ -660,7 +660,7 @@ access_by_lua
 Acts as an access phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Note that this handler always runs *after* the standard [HttpAccessModule](http://wiki.nginx.org/HttpAccessModule). So the following will work as expected:
+Note that this handler always runs *after* the standard [HttpAccessModule](http://nginx.org/en/docs/http/ngx_http_access_module.html). So the following will work as expected:
 
 
     location / {
@@ -2023,7 +2023,7 @@ ngx.req.start_time
 
 Returns a floating-point number representing the timestamp (including milliseconds as the decimal part) when the current request was created.
 
-The following example emulates the `$request_time` variable value (provided by [HttpLogModule](http://wiki.nginx.org/HttpLogModule)) in pure Lua:
+The following example emulates the `$request_time` variable value (provided by [HttpLogModule](http://nginx.org/en/docs/http/ngx_http_log_module.html)) in pure Lua:
 
 
     local request_time = ngx.now() - ngx.req.start_time()
@@ -4881,9 +4881,9 @@ directive. The maximal number of running timers is controlled by the
 
 According to the current implementation, each "running timer" will
 take one (fake) connection record from the global connection record
-list configured by the standard [worker_connections](http://wiki.nginx.org/EventsModule#worker_connections) directive in
+list configured by the standard [worker_connections](http://nginx.org/en/docs/ngx_core_module.html#worker_connections) directive in
 `nginx.conf`. So ensure that the
-[worker_connections](http://wiki.nginx.org/EventsModule#worker_connections) directive is set to
+[worker_connections](http://nginx.org/en/docs/ngx_core_module.html#worker_connections) directive is set to
 a large enough value that takes into account both the real connections
 and fake connections required by timer callbacks (as limited by the
 [lua_max_running_timers](#lua_max_running_timers) directive).
@@ -5520,7 +5520,7 @@ See Also
 * [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
 * [HttpEchoModule](http://github.com/agentzh/echo-nginx-module)
-* [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule)
+* [HttpDrizzleModule](http://github.com/chaoslawful/drizzle-nginx-module)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
 * [HttpMemcModule](http://github.com/agentzh/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
