@@ -446,7 +446,7 @@ a time. However, a workaround is possible using the [ngx.var.VARIABLE](#ngxvarva
     }
 
 
-This directive can be freely mixed with all directives of the [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html), [HttpSetMiscModule](http://github.com/agentzh/set-misc-nginx-module), and [HttpArrayVarModule](http://github.com/agentzh/array-var-nginx-module) modules. All of these directives will run in the same order as they appear in the config file.
+This directive can be freely mixed with all directives of the [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html), [set-misc-nginx-module](http://github.com/agentzh/set-misc-nginx-module), and [array-var-nginx-module](http://github.com/agentzh/array-var-nginx-module) modules. All of these directives will run in the same order as they appear in the config file.
 
 
     set $foo 32;
@@ -525,7 +525,7 @@ rewrite_by_lua
 Acts as a rewrite phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Note that this handler always runs *after* the standard [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html). So the following will work as expected:
+Note that this handler always runs *after* the standard [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html). So the following will work as expected:
 
 
        location /foo {
@@ -613,7 +613,7 @@ Just as any other rewrite phase handlers, [rewrite_by_lua](#rewrite_by_lua) also
 
 Note that when calling `ngx.exit(ngx.OK)` within a [rewrite_by_lua](#rewrite_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [rewrite_by_lua](#rewrite_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
-If the [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive is used to change the URI and initiate location re-lookups (internal redirections), then any [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) code sequences within the current location will not be executed. For example,
+If the [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive is used to change the URI and initiate location re-lookups (internal redirections), then any [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) code sequences within the current location will not be executed. For example,
 
 
     location /foo {
@@ -660,7 +660,7 @@ access_by_lua
 Acts as an access phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Note that this handler always runs *after* the standard [HttpAccessModule](http://nginx.org/en/docs/http/ngx_http_access_module.html). So the following will work as expected:
+Note that this handler always runs *after* the standard [ngx_http_access_module](http://nginx.org/en/docs/http/ngx_http_access_module.html). So the following will work as expected:
 
 
     location / {
@@ -2023,7 +2023,7 @@ ngx.req.start_time
 
 Returns a floating-point number representing the timestamp (including milliseconds as the decimal part) when the current request was created.
 
-The following example emulates the `$request_time` variable value (provided by [HttpLogModule](http://nginx.org/en/docs/http/ngx_http_log_module.html)) in pure Lua:
+The following example emulates the `$request_time` variable value (provided by [ngx_http_log_module](http://nginx.org/en/docs/http/ngx_http_log_module.html)) in pure Lua:
 
 
     local request_time = ngx.now() - ngx.req.start_time()
@@ -2123,7 +2123,7 @@ ngx.req.set_uri
 
 Rewrite the current request's (parsed) URI by the `uri` argument. The `uri` argument must be a Lua string and cannot be of zero length, or a Lua exception will be thrown.
 
-The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location.
+The optional boolean `jump` argument can trigger location rematch (or location jump) as [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location.
 
 Location jump will not be triggered otherwise, and only the current request's URI will be modified, which is also the default behavior. This function will return but with no returned values when the `jump` argument is `false` or absent altogether.
 
@@ -2672,7 +2672,7 @@ The usage of this function is often like this:
     ngx.req.finish_body()
 
 
-This function can be used with [ngx.req.append_body](#ngxreqappend_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
+This function can be used with [ngx.req.append_body](#ngxreqappend_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [ngx_http_proxy_module](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [ngx_http_fastcgi_module](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2688,7 +2688,7 @@ When the data can no longer be hold in the memory buffer for the request body, t
 
 It is important to always call the [ngx.req.finish_body](#ngxreqfinish_body) after all the data has been appended onto the current request body.
 
-This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
+This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [ngx_http_proxy_module](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [ngx_http_fastcgi_module](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2702,7 +2702,7 @@ ngx.req.finish_body
 
 Completes the construction process of the new request body created by the [ngx.req.init_body](#ngxreqinit_body) and [ngx.req.append_body](#ngxreqappend_body) calls.
 
-This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.append_body](#ngxreqappend_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
+This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.append_body](#ngxreqappend_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [ngx_http_proxy_module](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [ngx_http_fastcgi_module](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2785,7 +2785,7 @@ outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
 
 It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
 
-This method is similar to the [echo_exec](http://github.com/agentzh/echo-nginx-module#echo_exec) directive of the [HttpEchoModule](http://github.com/agentzh/echo-nginx-module).
+This method is similar to the [echo_exec](http://github.com/agentzh/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/agentzh/echo-nginx-module).
 
 ngx.redirect
 ------------
@@ -3024,7 +3024,7 @@ When you disable the HTTP 1.1 keep-alive feature for your downstream connections
     }
 
 
-But if you create subrequests to access other locations configured by Nginx upstream modules, then you should configure those upstream modules to ignore client connection abortions if they are not by default. For example, by default the standard [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) will terminate both the subrequest and the main request as soon as the client closes the connection, so it is important to turn on the [proxy_ignore_client_abort](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ignore_client_abort) directive in your location block configured by [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html):
+But if you create subrequests to access other locations configured by Nginx upstream modules, then you should configure those upstream modules to ignore client connection abortions if they are not by default. For example, by default the standard [ngx_http_proxy_module](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) will terminate both the subrequest and the main request as soon as the client closes the connection, so it is important to turn on the [proxy_ignore_client_abort](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ignore_client_abort) directive in your location block configured by [ngx_http_proxy_module](http://nginx.org/en/docs/http/ngx_http_proxy_module.html):
 
 
     proxy_ignore_client_abort on;
@@ -4917,7 +4917,7 @@ ndk.set_var.DIRECTIVE
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
-For example, the following [HttpSetMiscModule](http://github.com/agentzh/set-misc-nginx-module) directives can be invoked this way:
+For example, the following [set-misc-nginx-module](http://github.com/agentzh/set-misc-nginx-module) directives can be invoked this way:
 
 * [set_quote_sql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_sql_str)
 * [set_quote_pgsql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_pgsql_str)
@@ -4940,7 +4940,7 @@ For instance,
     -- now res == 'a%2fb'
 
 
-Similarly, the following directives provided by [HttpEncryptedSessionModule](http://github.com/agentzh/encrypted-session-nginx-module) can be invoked from within Lua too:
+Similarly, the following directives provided by [encrypted-session-nginx-module](http://github.com/agentzh/encrypted-session-nginx-module) can be invoked from within Lua too:
 
 * [set_encrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_encrypt_session)
 * [set_decrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_decrypt_session)
@@ -5519,10 +5519,10 @@ See Also
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [HttpEchoModule](http://github.com/agentzh/echo-nginx-module)
-* [HttpDrizzleModule](http://github.com/chaoslawful/drizzle-nginx-module)
+* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
+* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [HttpMemcModule](http://github.com/agentzh/memc-nginx-module)
+* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
 
