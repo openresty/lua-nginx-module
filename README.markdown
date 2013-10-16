@@ -205,12 +205,12 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [lua-resty-redis](https://github.com/agentzh/lua-resty-redis)
 * [lua-resty-dns](https://github.com/agentzh/lua-resty-dns)
 * [lua-resty-upload](https://github.com/agentzh/lua-resty-upload)
-* [ngx_memc](http://wiki.nginx.org/HttpMemcModule)
+* [ngx_memc](http://github.com/agentzh/memc-nginx-module)
 * [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
-* [ngx_redis2](http://wiki.nginx.org/HttpRedis2Module)
+* [ngx_redis2](http://github.com/agentzh/redis2-nginx-module)
 * [ngx_redis](http://wiki.nginx.org/HttpRedisModule)
-* [ngx_proxy](http://wiki.nginx.org/HttpProxyModule)
-* [ngx_fastcgi](http://wiki.nginx.org/HttpFastcgiModule)
+* [ngx_proxy](http://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+* [ngx_fastcgi](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html)
 
 Almost all the Nginx modules can be used with this ngx_lua module by means of [ngx.location.capture](#ngxlocationcapture) or [ngx.location.capture_multi](#ngxlocationcapture_multi) but it is recommended to use those `lua-resty-*` libraries instead of creating subrequests to access the Nginx upstream modules because the former is usually much more flexible and memory-efficient.
 
@@ -446,7 +446,7 @@ a time. However, a workaround is possible using the [ngx.var.VARIABLE](#ngxvarva
     }
 
 
-This directive can be freely mixed with all directives of the [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule), [HttpSetMiscModule](http://wiki.nginx.org/HttpSetMiscModule), and [HttpArrayVarModule](http://wiki.nginx.org/HttpArrayVarModule) modules. All of these directives will run in the same order as they appear in the config file.
+This directive can be freely mixed with all directives of the [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html), [HttpSetMiscModule](http://github.com/agentzh/set-misc-nginx-module), and [HttpArrayVarModule](http://github.com/agentzh/array-var-nginx-module) modules. All of these directives will run in the same order as they appear in the config file.
 
 
     set $foo 32;
@@ -491,7 +491,7 @@ content_by_lua
 Acts as a "content handler" and executes Lua code string specified in `<lua-script-str>` for every request. 
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://wiki.nginx.org/HttpProxyModule#proxy_pass) directive should not be used in the same location.
+Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass) directive should not be used in the same location.
 
 content_by_lua_file
 -------------------
@@ -525,7 +525,7 @@ rewrite_by_lua
 Acts as a rewrite phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
-Note that this handler always runs *after* the standard [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule). So the following will work as expected:
+Note that this handler always runs *after* the standard [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html). So the following will work as expected:
 
 
        location /foo {
@@ -613,7 +613,7 @@ Just as any other rewrite phase handlers, [rewrite_by_lua](#rewrite_by_lua) also
 
 Note that when calling `ngx.exit(ngx.OK)` within a [rewrite_by_lua](#rewrite_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [rewrite_by_lua](#rewrite_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
-If the [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive is used to change the URI and initiate location re-lookups (internal redirections), then any [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) code sequences within the current location will not be executed. For example,
+If the [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive is used to change the URI and initiate location re-lookups (internal redirections), then any [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) code sequences within the current location will not be executed. For example,
 
 
     location /foo {
@@ -896,7 +896,7 @@ Note that the following API functions are currently disabled within this context
 * Subrequest API functions (e.g., [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi))
 * Cosocket API functions (e.g., [ngx.socket.tcp](#ngxsockettcp) and [ngx.req.socket](#ngxreqsocket)).
 
-Here is an example of gathering average data for [$upstream_response_time](http://wiki.nginx.org/HttpUpstreamModule#.24upstream_response_time):
+Here is an example of gathering average data for [$upstream_response_time](http://nginx.org/en/docs/http/ngx_http_upstream_module.html#var_upstream_response_time):
 
 
     lua_shared_dict log_dict 5M;
@@ -968,8 +968,8 @@ lua_need_request_body
 
 Determines whether to force the request body data to be read before running rewrite/access/access_by_lua* or not. The Nginx core does not read the client request body by default and if request body data is required, then this directive should be turned `on` or the [ngx.req.read_body](#ngxreqread_body) function should be called within the Lua code.
 
-To read the request body data within the [$request_body](http://wiki.nginx.org/HttpCoreModule#.24request_body) variable, 
-[client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) must have the same value as [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size). Because when the content length exceeds [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) but less than [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size), Nginx will buffer the data into a temporary file on the disk, which will lead to empty value in the [$request_body](http://wiki.nginx.org/HttpCoreModule#.24request_body) variable.
+To read the request body data within the [$request_body](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_request_body) variable, 
+[client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size) must have the same value as [client_max_body_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size). Because when the content length exceeds [client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size) but less than [client_max_body_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size), Nginx will buffer the data into a temporary file on the disk, which will lead to empty value in the [$request_body](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_request_body) variable.
 
 If the current location includes [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) directives,
 then the request body will be read just before the [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file) code is run (and also at the
@@ -1189,7 +1189,7 @@ According to the current implementation, however, if the client closes the conne
 
 When TCP keepalive is disabled, it is relying on the client side to close the socket gracefully (by sending a `FIN` packet or something like that). For (soft) real-time web applications, it is highly recommended to configure the [TCP keepalive](http://tldp.org/HOWTO/TCP-Keepalive-HOWTO/overview.html) support in your system's TCP stack implementation in order to detect "half-open" TCP connections in time.
 
-For example, on Linux, you can configure the standard [listen](http://wiki.nginx.org/HttpCoreModule#listen) directive in your `nginx.conf` file like this:
+For example, on Linux, you can configure the standard [listen](http://nginx.org/en/docs/http/ngx_http_core_module.html#listen) directive in your `nginx.conf` file like this:
 
 
     listen 80 so_keepalive=2s:2s:8;
@@ -1820,7 +1820,7 @@ request headers of the current request by default and that this may have unexpec
 subrequest responses. For example, when using the standard `ngx_proxy` module to serve
 subrequests, an "Accept-Encoding: gzip" header in the main request may result
 in gzipped responses that cannot be handled properly in Lua code. Original request headers should be ignored by setting 
-[proxy_pass_request_headers](http://wiki.nginx.org/HttpProxyModule#proxy_pass_request_headers) to `off` in subrequest locations.
+[proxy_pass_request_headers](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass_request_headers) to `off` in subrequest locations.
 
 When the `body` option is not specified and the `always_forward_body` option is false (the default value), the `POST` and `PUT` subrequests will inherit the request bodies of the parent request (if any).
 
@@ -2123,7 +2123,7 @@ ngx.req.set_uri
 
 Rewrite the current request's (parsed) URI by the `uri` argument. The `uri` argument must be a Lua string and cannot be of zero length, or a Lua exception will be thrown.
 
-The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule)'s [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location.
+The optional boolean `jump` argument can trigger location rematch (or location jump) as [HttpRewriteModule](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive, that is, when `jump` is `true` (default to `false`), this function will never return and it will tell Nginx to try re-searching locations with the new URI value at the later `post-rewrite` phase and jumping to the new location.
 
 Location jump will not be triggered otherwise, and only the current request's URI will be modified, which is also the default behavior. This function will return but with no returned values when the `jump` argument is `false` or absent altogether.
 
@@ -2431,7 +2431,7 @@ To read an individual header:
     ngx.say("Host: ", ngx.req.get_headers()["Host"])
 
 
-Note that the [ngx.var.HEADER](#ngxvarvariable) API call, which uses core [$http_HEADER](http://wiki.nginx.org/HttpCoreModule#.24http_HEADER) variables, may be more preferable for reading individual request headers.
+Note that the [ngx.var.HEADER](#ngxvarvariable) API call, which uses core [$http_HEADER](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_http_) variables, may be more preferable for reading individual request headers.
 
 For multiple instances of request headers such as:
 
@@ -2548,8 +2548,8 @@ In case of errors, such as connection errors while reading the data, this method
 
 The request body data read using this function can be retrieved later via [ngx.req.get_body_data](#ngxreqget_body_data) or, alternatively, the temporary file name for the body data cached to disk using [ngx.req.get_body_file](#ngxreqget_body_file). This depends on
 
-1. whether the current request body is already larger than the [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size),
-1. and whether [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only) has been switched on.
+1. whether the current request body is already larger than the [client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size),
+1. and whether [client_body_in_file_only](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_in_file_only) has been switched on.
 
 In cases where current request may have a request body and the request body data is not required, The [ngx.req.discard_body](#ngxreqdiscard_body) function must be used to explicitly discard the request body to avoid breaking things under HTTP 1.1 keepalive or HTTP 1.1 pipelining.
 
@@ -2588,7 +2588,7 @@ If the request body has not been read yet, call [ngx.req.read_body](#ngxreqread_
 
 If the request body has been read into disk files, try calling the [ngx.req.get_body_file](#ngxreqget_body_file) function instead.
 
-To force in-memory request bodies, try setting [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) to the same size value in [client_max_body_size](http://wiki.nginx.org/HttpCoreModule#client_max_body_size).
+To force in-memory request bodies, try setting [client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size) to the same size value in [client_max_body_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size).
 
 Note that calling this function instead of using `ngx.var.request_body` or `ngx.var.echo_request_body` is more efficient because it can save one dynamic memory allocation and one data copy.
 
@@ -2610,7 +2610,7 @@ If the request body has not been read yet, call [ngx.req.read_body](#ngxreqread_
 
 If the request body has been read into memory, try calling the [ngx.req.get_body_data](#ngxreqget_body_data) function instead.
 
-To force in-file request bodies, try turning on [client_body_in_file_only](http://wiki.nginx.org/HttpCoreModule#client_body_in_file_only).
+To force in-file request bodies, try turning on [client_body_in_file_only](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_in_file_only).
 
 This function was first introduced in the `v0.3.1rc17` release.
 
@@ -2656,7 +2656,7 @@ ngx.req.init_body
 
 Creates a new blank request body for the current request and inializes the buffer for later request body data writing via the [ngx.req.append_body](#ngxreqappend_body) and [ngx.req.finish_body](#ngxreqfinish_body) APIs.
 
-If the `buffer_size` argument is specified, then its value will be used for the size of the memory buffer for body writing with [ngx.req.append_body](#ngxreqappend_body). If the argument is omitted, then the value specified by the standard [client_body_buffer_size](http://wiki.nginx.org/HttpCoreModule#client_body_buffer_size) directive will be used instead.
+If the `buffer_size` argument is specified, then its value will be used for the size of the memory buffer for body writing with [ngx.req.append_body](#ngxreqappend_body). If the argument is omitted, then the value specified by the standard [client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size) directive will be used instead.
 
 When the data can no longer be hold in the memory buffer for the request body, then the data will be flushed onto a temporary file just like the standard request body reader in the Nginx core.
 
@@ -2672,7 +2672,7 @@ The usage of this function is often like this:
     ngx.req.finish_body()
 
 
-This function can be used with [ngx.req.append_body](#ngxreqappend_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
+This function can be used with [ngx.req.append_body](#ngxreqappend_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2688,7 +2688,7 @@ When the data can no longer be hold in the memory buffer for the request body, t
 
 It is important to always call the [ngx.req.finish_body](#ngxreqfinish_body) after all the data has been appended onto the current request body.
 
-This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
+This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.finish_body](#ngxreqfinish_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2702,7 +2702,7 @@ ngx.req.finish_body
 
 Completes the construction process of the new request body created by the [ngx.req.init_body](#ngxreqinit_body) and [ngx.req.append_body](#ngxreqappend_body) calls.
 
-This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.append_body](#ngxreqappend_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) and [HttpFastcgiModule](http://wiki.nginx.org/HttpFastcgiModule).
+This function can be used with [ngx.req.init_body](#ngxreqinit_body), [ngx.req.append_body](#ngxreqappend_body), and [ngx.req.socket](#ngxreqsocket) to implement efficient input filters in pure Lua (in the context of [rewrite_by_lua](#rewrite_by_lua)* or [access_by_lua](#access_by_lua)*), which can be used with other Nginx content handler or upstream modules like [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [HttpFastcgiModule](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
 
 This function was first introduced in the `v0.5.11` release.
 
@@ -2785,7 +2785,7 @@ outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
 
 It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
 
-This method is similar to the [echo_exec](http://wiki.nginx.org/HttpEchoModule#echo_exec) directive of the [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule).
+This method is similar to the [echo_exec](http://github.com/agentzh/echo-nginx-module#echo_exec) directive of the [HttpEchoModule](http://github.com/agentzh/echo-nginx-module).
 
 ngx.redirect
 ------------
@@ -2824,8 +2824,8 @@ We can also use the numerical code directly as the second `status` argument:
 
 This method *must* be called before [ngx.send_headers](#ngxsend_headers) or explicit response body outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
 
-This method is very much like the [rewrite](http://wiki.nginx.org/HttpRewriteModule#rewrite) directive with the `redirect` modifier in the standard
-[HttpRewriteModule](http://wiki.nginx.org/HttpRewriteModule), for example, this `nginx.conf` snippet
+This method is very much like the [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive with the `redirect` modifier in the standard
+[[HttpRewriteModule]], for example, this `nginx.conf` snippet
 
 
     rewrite ^ /foo? redirect;  # nginx config
@@ -2949,7 +2949,7 @@ Flushes response output to the client.
 
 `ngx.flush` accepts an optional boolean `wait` argument (Default: `false`) first introduced in the `v0.3.1rc34` release. When called with the default argument, it issues an asynchronous call (Returns immediately without waiting for output data to be written into the system send buffer). Calling the function with the `wait` argument set to `true` switches to synchronous mode. 
 
-In synchronous mode, the function will not return until all output data has been written into the system send buffer or until the [send_timeout](http://wiki.nginx.org/HttpCoreModule#send_timeout) setting has expired. Note that using the Lua coroutine mechanism means that this function does not block the Nginx event loop even in the synchronous mode.
+In synchronous mode, the function will not return until all output data has been written into the system send buffer or until the [send_timeout](http://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout) setting has expired. Note that using the Lua coroutine mechanism means that this function does not block the Nginx event loop even in the synchronous mode.
 
 When `ngx.flush(true)` is called immediately after [ngx.print](#ngxprint) or [ngx.say](#ngxsay), it causes the latter functions to run in synchronous mode. This can be particularly useful for streaming output.
 
@@ -3024,7 +3024,7 @@ When you disable the HTTP 1.1 keep-alive feature for your downstream connections
     }
 
 
-But if you create subrequests to access other locations configured by Nginx upstream modules, then you should configure those upstream modules to ignore client connection abortions if they are not by default. For example, by default the standard [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule) will terminate both the subrequest and the main request as soon as the client closes the connection, so it is important to turn on the [proxy_ignore_client_abort](http://wiki.nginx.org/HttpProxyModule#proxy_ignore_client_abort) directive in your location block configured by [HttpProxyModule](http://wiki.nginx.org/HttpProxyModule):
+But if you create subrequests to access other locations configured by Nginx upstream modules, then you should configure those upstream modules to ignore client connection abortions if they are not by default. For example, by default the standard [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) will terminate both the subrequest and the main request as soon as the client closes the connection, so it is important to turn on the [proxy_ignore_client_abort](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ignore_client_abort) directive in your location block configured by [HttpProxyModule](http://nginx.org/en/docs/http/ngx_http_proxy_module.html):
 
 
     proxy_ignore_client_abort on;
@@ -4012,7 +4012,7 @@ udpsock:setpeername
 
 Attempts to connect a UDP socket object to a remote server or to a datagram unix domain socket file. Because the datagram protocol is actually connection-less, this method does not really establish a "connection", but only just set the name of the remote peer for subsequent read/write operations.
 
-Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name without blocking and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in the `nginx.conf` file like this:
+Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name without blocking and it is required to configure the [resolver](http://nginx.org/en/docs/http/ngx_http_core_module.html#resolver) directive in the `nginx.conf` file like this:
 
 
     resolver 8.8.8.8;  # use Google's public DNS nameserver
@@ -4164,7 +4164,7 @@ Attempts to connect a TCP socket object to a remote server or to a stream unix d
 
 Before actually resolving the host name and connecting to the remote backend, this method will always look up the connection pool for matched idle connections created by previous calls of this method (or the [ngx.socket.connect](#ngxsocketconnect) function).
 
-Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name without blocking and it is required to configure the [resolver](http://wiki.nginx.org/HttpCoreModule#resolver) directive in the `nginx.conf` file like this:
+Both IP addresses and domain names can be specified as the `host` argument. In case of domain names, this method will use Nginx core's dynamic resolver to parse the domain name without blocking and it is required to configure the [resolver](http://nginx.org/en/docs/http/ngx_http_core_module.html#resolver) directive in the `nginx.conf` file like this:
 
 
     resolver 8.8.8.8;  # use Google's public DNS nameserver
@@ -4917,21 +4917,21 @@ ndk.set_var.DIRECTIVE
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
-For example, the following [HttpSetMiscModule](http://wiki.nginx.org/HttpSetMiscModule) directives can be invoked this way:
+For example, the following [HttpSetMiscModule](http://github.com/agentzh/set-misc-nginx-module) directives can be invoked this way:
 
-* [set_quote_sql_str](http://wiki.nginx.org/HttpSetMiscModule#set_quote_sql_str)
-* [set_quote_pgsql_str](http://wiki.nginx.org/HttpSetMiscModule#set_quote_pgsql_str)
-* [set_quote_json_str](http://wiki.nginx.org/HttpSetMiscModule#set_quote_json_str)
-* [set_unescape_uri](http://wiki.nginx.org/HttpSetMiscModule#set_unescape_uri)
-* [set_escape_uri](http://wiki.nginx.org/HttpSetMiscModule#set_escape_uri)
-* [set_encode_base32](http://wiki.nginx.org/HttpSetMiscModule#set_encode_base32)
-* [set_decode_base32](http://wiki.nginx.org/HttpSetMiscModule#set_decode_base32)
-* [set_encode_base64](http://wiki.nginx.org/HttpSetMiscModule#set_encode_base64)
-* [set_decode_base64](http://wiki.nginx.org/HttpSetMiscModule#set_decode_base64)
-* [set_encode_hex](http://wiki.nginx.org/HttpSetMiscModule#set_encode_base64)
-* [set_decode_hex](http://wiki.nginx.org/HttpSetMiscModule#set_decode_base64)
-* [set_sha1](http://wiki.nginx.org/HttpSetMiscModule#set_encode_base64)
-* [set_md5](http://wiki.nginx.org/HttpSetMiscModule#set_decode_base64)
+* [set_quote_sql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_sql_str)
+* [set_quote_pgsql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_pgsql_str)
+* [set_quote_json_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_json_str)
+* [set_unescape_uri](http://github.com/agentzh/set-misc-nginx-module#set_unescape_uri)
+* [set_escape_uri](http://github.com/agentzh/set-misc-nginx-module#set_escape_uri)
+* [set_encode_base32](http://github.com/agentzh/set-misc-nginx-module#set_encode_base32)
+* [set_decode_base32](http://github.com/agentzh/set-misc-nginx-module#set_decode_base32)
+* [set_encode_base64](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
+* [set_decode_base64](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
+* [set_encode_hex](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
+* [set_decode_hex](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
+* [set_sha1](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
+* [set_md5](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
 
 For instance,
 
@@ -4940,10 +4940,10 @@ For instance,
     -- now res == 'a%2fb'
 
 
-Similarly, the following directives provided by [HttpEncryptedSessionModule](http://wiki.nginx.org/HttpEncryptedSessionModule) can be invoked from within Lua too:
+Similarly, the following directives provided by [HttpEncryptedSessionModule](http://github.com/agentzh/encrypted-session-nginx-module) can be invoked from within Lua too:
 
-* [set_encrypt_session](http://wiki.nginx.org/HttpEncryptedSessionModule#set_encrypt_session)
-* [set_decrypt_session](http://wiki.nginx.org/HttpEncryptedSessionModule#set_decrypt_session)
+* [set_encrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_encrypt_session)
+* [set_decrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_decrypt_session)
 
 This feature requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
@@ -5168,7 +5168,7 @@ This tool will guarantee that local variables in the Lua module functions are al
 
 Locations Configured by Subrequest Directives of Other Modules
 --------------------------------------------------------------
-The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [echo_location](http://wiki.nginx.org/HttpEchoModule#echo_location), [echo_location_async](http://wiki.nginx.org/HttpEchoModule#echo_location_async), [echo_subrequest](http://wiki.nginx.org/HttpEchoModule#echo_subrequest), or [echo_subrequest_async](http://wiki.nginx.org/HttpEchoModule#echo_subrequest_async) directives.
+The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [echo_location](http://github.com/agentzh/echo-nginx-module#echo_location), [echo_location_async](http://github.com/agentzh/echo-nginx-module#echo_location_async), [echo_subrequest](http://github.com/agentzh/echo-nginx-module#echo_subrequest), or [echo_subrequest_async](http://github.com/agentzh/echo-nginx-module#echo_subrequest_async) directives.
 
 
     location /foo {
@@ -5519,10 +5519,10 @@ See Also
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [HttpEchoModule](http://wiki.nginx.org/HttpEchoModule)
+* [HttpEchoModule](http://github.com/agentzh/echo-nginx-module)
 * [HttpDrizzleModule](http://wiki.nginx.org/HttpDrizzleModule)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [HttpMemcModule](http://wiki.nginx.org/HttpMemcModule)
+* [HttpMemcModule](http://github.com/agentzh/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
 
