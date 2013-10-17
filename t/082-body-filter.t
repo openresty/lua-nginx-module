@@ -554,3 +554,22 @@ truncated: true
 [error]
 [alert]
 
+
+
+=== TEST 21: zero-size bufs
+--- config
+    location = /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = ""
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- no_error_log
+[error]
+[alert]
+

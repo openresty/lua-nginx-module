@@ -568,6 +568,15 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             } else {
                 in->buf->last_in_chain = 1;
             }
+
+        } else {
+            for (cl = in; cl; cl = cl->next) {
+                cl->buf->sync = 1;
+                cl->buf->temporary = 0;
+                cl->buf->memory = 0;
+                cl->buf->mmap = 0;
+                cl->buf->in_file = 0;
+            }
         }
 
         return 0;
