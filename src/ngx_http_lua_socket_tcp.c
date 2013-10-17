@@ -2937,6 +2937,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         }
 
         u->peer.connection = NULL;
+        ctx->writing_raw_req_socket = 0;
         return;
     }
 
