@@ -169,8 +169,23 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
             return nrets;
 
+        case NGX_HTTP_LUA_CO_DEAD:
+            dd("uthread already waited: %p (parent %p)", sub_coctx,
+               coctx);
+
+            if (i < nargs) {
+                /* just ignore it if it is not the last one */
+                continue;
+            }
+
+            /* being the last one */
+            lua_pushnil(L);
+            lua_pushliteral(L, "already waited");
+            return 2;
+
         default:
-            /* still alive */
+            dd("uthread %p still alive, status: %d, parent %p", sub_coctx,
+               sub_coctx->co_status, coctx);
             break;
         }
 
