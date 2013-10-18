@@ -506,7 +506,7 @@ lua_package_path
 
 **default:** *The content of LUA_PATH environ variable or Lua's compiled-in defaults.*
 
-**context:** *main*
+**context:** *http*
 
 Sets the Lua module search path used by scripts specified by [set_by_lua](#set_by_lua),
 [content_by_lua](#content_by_lua) and others. The path string is in standard Lua path form, and `;;`
@@ -523,7 +523,7 @@ lua_package_cpath
 
 **default:** *The content of LUA_CPATH environment variable or Lua's compiled-in defaults.*
 
-**context:** *main*
+**context:** *http*
 
 Sets the Lua C-module search path used by scripts specified by [set_by_lua](#set_by_lua),
 [content_by_lua](#content_by_lua) and others. The cpath string is in standard Lua cpath form, and `;;`
