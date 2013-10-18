@@ -327,7 +327,8 @@ ngx_http_lua_coroutine_status(lua_State *L)
 
     coctx = ngx_http_lua_get_co_ctx(co, ctx);
     if (coctx == NULL) {
-        return luaL_error(L, "no co ctx found");
+        lua_pushstring(L, ngx_http_lua_co_status_names[NGX_HTTP_LUA_CO_DEAD]);
+        return 1;
     }
 
     dd("co status: %d", coctx->co_status);

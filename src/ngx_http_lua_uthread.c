@@ -133,8 +133,7 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
         sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
         if (sub_coctx == NULL) {
-            return luaL_error(L, "no co ctx found for the ngx.thread "
-                              "instance given");
+            goto found_dead;
         }
 
         if (!sub_coctx->is_uthread) {
@@ -173,6 +172,7 @@ ngx_http_lua_uthread_wait(lua_State *L)
             dd("uthread already waited: %p (parent %p)", sub_coctx,
                coctx);
 
+found_dead:
             if (i < nargs) {
                 /* just ignore it if it is not the last one */
                 continue;
