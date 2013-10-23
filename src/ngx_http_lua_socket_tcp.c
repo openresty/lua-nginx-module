@@ -2650,6 +2650,7 @@ ngx_http_lua_socket_handle_read_success(ngx_http_request_t *r,
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = u->co_ctx_read;
+        u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -2689,6 +2690,7 @@ ngx_http_lua_socket_handle_write_success(ngx_http_request_t *r,
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = u->co_ctx_write;
+        u->prepare_retvals = ngx_http_lua_socket_tcp_send_retval_handler;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -2770,6 +2772,7 @@ ngx_http_lua_socket_handle_read_error(ngx_http_request_t *r,
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = u->co_ctx_read;
+        u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -2810,6 +2813,7 @@ ngx_http_lua_socket_handle_write_error(ngx_http_request_t *r,
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = u->co_ctx_write;
+        u->prepare_retvals = ngx_http_lua_socket_tcp_send_retval_handler;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
