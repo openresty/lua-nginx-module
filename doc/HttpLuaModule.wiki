@@ -1,4 +1,4 @@
-﻿= Name =
+= Name =
 
 ngx_lua - Embed the power of Lua into Nginx
 
@@ -3157,6 +3157,25 @@ Returns the binary form of the SHA-1 digest of the <code>str</code> argument.
 This function requires SHA-1 support in the Nginx build. (This usually just means OpenSSL should be installed while building Nginx).
 
 This function was first introduced in the <code>v0.5.0rc6</code>.
+
+== ngx.url_hash ==
+'''syntax:''' ''digest = ngx.url_hash(str,count_num)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+
+Here is a small example to demonstrate its basic usage:
+
+<geshi lang="lua">
+    local test_servers = {
+        "127.0.0.1:11211",
+        "127.0.0.1:11221"
+    }
+    local test_url = "/s/blog_xxxxxxxx.html"
+    local hash_key = ngx.url_hash(test_url,#(test_servers))
+    local url_server = test_servers[hash_key]
+</geshi>
+    This is the url hash function. 
 
 == ngx.quote_sql_str ==
 '''syntax:''' ''quoted_value = ngx.quote_sql_str(raw_value)''

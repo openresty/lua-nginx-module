@@ -54,6 +54,7 @@ static int ngx_http_lua_ngx_decode_args(lua_State *L);
 #if (NGX_OPENSSL)
 static int ngx_http_lua_ngx_hmac_sha1(lua_State *L);
 #endif
+static int ngx_http_lua_ngx_url_hash(lua_State *L);
 
 
 void
@@ -101,6 +102,9 @@ ngx_http_lua_inject_string_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_hmac_sha1);
     lua_setfield(L, -2, "hmac_sha1");
 #endif
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_url_hash);
+    lua_setfield(L, -2, "url_hash");
 }
 
 
@@ -586,5 +590,23 @@ ngx_http_lua_ngx_hmac_sha1(lua_State *L)
     return 1;
 }
 #endif
+
+static int
+ngx_http_lua_ngx_url_hash(lua_State *L)
+{
+    u_char    *data;
+    size_t     lsec;
+    unsigned int i,key,count;
+
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "expecting one argument, but got %d",
+                          lua_gettop(L));
+    }
+    data = (u_char *) luaL_checklstring(L, 1, &lsec);
+    count = luaL_checkint(L,2);
+    key = ngx_hash_key(data,lsec);
+    lua_pushnumber(L,key%count);
+    return 1;
+}
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
