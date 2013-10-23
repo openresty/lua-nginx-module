@@ -14,7 +14,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 50;
+plan tests => repeat_each() * 54;
 
 #no_diff();
 no_long_string();
@@ -424,6 +424,35 @@ GET /test
 --- response_body
 not found
 --- error_code: 404
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: flush wait - gzip
+--- config
+    gzip             on;
+    gzip_min_length  1;
+    gzip_types       text/plain;
+
+    location /test {
+        content_by_lua '
+            ngx.say("hello, world")
+            local ok, err = ngx.flush(true)
+            if not ok then
+                ngx.log(ngx.ERR, "flush failed: ", err)
+                return
+            end
+            ngx.say("hiya")
+        ';
+    }
+--- request
+GET /test
+--- more_headers
+Accept-Encoding: gzip
+--- response_body_like: .{15}
+--- response_headers
+Content-Encoding: gzip
 --- no_error_log
 [error]
 

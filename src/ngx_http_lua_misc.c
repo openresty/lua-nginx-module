@@ -36,6 +36,7 @@ ngx_http_lua_inject_misc_api(lua_State *L)
 static int
 ngx_http_lua_ngx_get(lua_State *L)
 {
+    int                          status;
     ngx_http_request_t          *r;
     u_char                      *p;
     size_t                       len;
@@ -54,7 +55,21 @@ ngx_http_lua_ngx_get(lua_State *L)
         && ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
     {
         ngx_http_lua_check_fake_request(L, r);
-        lua_pushnumber(L, (lua_Number) r->headers_out.status);
+
+        if (r->err_status) {
+            status = r->err_status;
+
+        } else if (r->headers_out.status) {
+            status = r->headers_out.status;
+
+        } else if (r->http_version == NGX_HTTP_VERSION_9) {
+            status = 9;
+
+        } else {
+            status = 0;
+        }
+
+        lua_pushinteger(L, status);
         return 1;
     }
 

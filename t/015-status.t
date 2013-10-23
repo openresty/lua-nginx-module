@@ -235,3 +235,16 @@ GET /t
 --- no_error_log
 [error]
 
+
+
+=== TEST 14: reading error status code
+--- config
+    location = /t {
+        content_by_lua 'ngx.say("status = ", ngx.status)';
+    }
+--- raw_request eval
+"GET /t\r\n"
+--- http09
+--- response_body
+status = 9
+
