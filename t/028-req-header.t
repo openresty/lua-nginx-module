@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 19);
+plan tests => repeat_each() * (2 * blocks() + 20);
 
 #no_diff();
 #no_long_string();
@@ -1345,4 +1345,61 @@ GET /bar
 --- response_body
 host var: agentzh.org
 http_host var: agentZH.org:1984
+
+
+
+=== TEST 44: clear all and re-insert
+--- config
+    location = /t {
+        content_by_lua '
+            local headers = ngx.req.get_headers(100, true)
+            local n = 0
+            for header, _ in pairs(headers) do
+                n = n + 1
+                ngx.req.clear_header(header)
+            end
+            ngx.say("got ", n, " headers")
+            local i = 0
+            for header, value in pairs(headers) do
+                i = i + 1
+                print("1: reinsert header ", header, ": ", i)
+                ngx.req.set_header(header, value)
+            end
+            local headers = ngx.req.get_headers(100, true)
+            n = 0
+            for header, _ in pairs(headers) do
+                n = n + 1
+                ngx.req.clear_header(header)
+            end
+            ngx.say("got ", n, " headers")
+            -- do return end
+            local i = 0
+            for header, value in pairs(headers) do
+                i = i + 1
+                if i > 8 then
+                    break
+                end
+                print("2: reinsert header ", header, ": ", i)
+                ngx.req.set_header(header, value)
+            end
+        ';
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: close\r
+Cache-Control: max-age=0\r
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36\r
+Accept-Encoding: gzip,deflate,sdch\r
+Accept-Language: en-US,en;q=0.8\r
+Cookie: test=cookie;\r
+\r
+"
+--- response_body
+got 8 headers
+got 8 headers
+--- no_error_log
+[error]
 

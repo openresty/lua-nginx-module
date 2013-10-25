@@ -30,6 +30,8 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
+#define ngx_http_lua_assert(a)  assert(a)
+
 /* Nginx HTTP Lua Inline tag prefix */
 
 #define NGX_HTTP_LUA_INLINE_TAG "nhli_"

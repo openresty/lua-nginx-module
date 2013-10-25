@@ -171,13 +171,22 @@ retry:
                 rc = ngx_http_lua_rm_header_helper(&r->headers_in.headers,
                                                    part, i);
 
+                ngx_http_lua_assert(!(r->headers_in.headers.part.next == NULL
+                                      && r->headers_in.headers.last
+                                         != &r->headers_in.headers.part));
+
+                dd("rm header: rc=%d", (int) rc);
+
                 if (rc == NGX_OK) {
+
                     if (output_header) {
                         *output_header = NULL;
                     }
 
                     goto retry;
                 }
+
+                return NGX_ERROR;
             }
 
             h[i].value = *value;
@@ -651,13 +660,67 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
        (int) data[i].value.len, data[i].value.data);
 
     if (i == 0) {
+        dd("first entry in the part");
         cur->elts = (char *) cur->elts + l->size;
         cur->nelts--;
 
         if (cur == l->last) {
+            dd("being the last part");
             if (cur->nelts == 0) {
 #if 1
                 part = &l->part;
+                dd("cur=%p, part=%p, part next=%p, last=%p",
+                   cur, part, part->next, l->last);
+
+                if (part == cur) {
+                    cur->elts = (char *) cur->elts - l->size;
+                    /* do nothing */
+
+                } else {
+                    while (part->next != cur) {
+                        if (part->next == NULL) {
+                            return NGX_ERROR;
+                        }
+                        part = part->next;
+                    }
+
+                    l->last = part;
+                    part->next = NULL;
+                    dd("part nelts: %d", (int) part->nelts);
+                    l->nalloc = part->nelts;
+                }
+#endif
+
+            } else {
+                l->nalloc--;
+                dd("nalloc decreased: %d", (int) l->nalloc);
+            }
+
+            return NGX_OK;
+        }
+
+        if (cur->nelts == 0) {
+            dd("current part is empty");
+            part = &l->part;
+            if (part == cur) {
+                ngx_http_lua_assert(cur->next != NULL);
+
+                dd("remove 'cur' from the list by rewriting 'cur': "
+                   "l->last: %p, cur: %p, cur->next: %p, part: %p",
+                   l->last, cur, cur->next, part);
+
+                if (l->last == cur->next) {
+                    dd("last is cur->next");
+                    l->part = *(cur->next);
+                    l->last = part;
+                    l->nalloc = part->nelts;
+
+                } else {
+                    l->part = *(cur->next);
+                }
+
+            } else {
+                dd("remove 'cur' from the list");
                 while (part->next != cur) {
                     if (part->next == NULL) {
                         return NGX_ERROR;
@@ -665,28 +728,8 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
                     part = part->next;
                 }
 
-                l->last = part;
-                part->next = NULL;
-                l->nalloc = part->nelts;
-#endif
-
-            } else {
-                l->nalloc = cur->nelts;
+                part->next = cur->next;
             }
-
-            return NGX_OK;
-        }
-
-        if (cur->nelts == 0) {
-            part = &l->part;
-            while (part->next != cur) {
-                if (part->next == NULL) {
-                    return NGX_ERROR;
-                }
-                part = part->next;
-            }
-
-            part->next = cur->next;
 
             return NGX_OK;
         }
@@ -700,7 +743,7 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
         cur->nelts--;
 
         if (cur == l->last) {
-            l->nalloc = cur->nelts;
+            l->nalloc--;
         }
 
         return NGX_OK;
