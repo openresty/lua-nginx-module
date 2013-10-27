@@ -8,7 +8,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -150,6 +150,31 @@ Referer: http://www.bar.com
 --- response_body
 invalid referer: 1
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 8: $proxy_host & $proxy_port
+--- config
+    location = /t {
+        proxy_pass http://127.0.0.1:$server_port/back;
+        header_filter_by_lua '
+            ngx.header["Proxy-Host"] = ngx.var.proxy_host
+            ngx.header["Proxy-Port"] = ngx.var.proxy_port
+        ';
+    }
+
+    location = /back {
+        echo hello;
+    }
+--- request
+GET /t
+--- raw_response_headers_like
+Proxy-Host: 127.0.0.1\:\d+\r
+Proxy-Port: \d+\r
+--- response_body
+hello
 --- no_error_log
 [error]
 
