@@ -206,3 +206,12 @@ fun:ngx_http_lua_ngx_echo
    fun:ngx_alloc
    fun:ngx_event_process_init
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   sendmsg(msg.msg_iov[0])
+   fun:__sendmsg_nocancel
+   fun:ngx_write_channel
+   fun:ngx_pass_open_channel
+   fun:ngx_start_cache_manager_processes
+}
