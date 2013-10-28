@@ -333,6 +333,7 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     luaL_unref(L, -1, coctx->co_ref);
     coctx->co_ref = LUA_NOREF;
     coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+    coctx->co = NULL;
 
     lua_pop(L, 1);
 }
@@ -365,6 +366,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
                 ctx->uthreads--;
             }
 
+            cc->co = NULL;
             cc->co_status = NGX_HTTP_LUA_CO_DEAD;
         }
 
@@ -403,6 +405,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
                 luaL_unref(L, -1, ref);
                 cc[i].co_ref = LUA_NOREF;
                 cc[i].co_status = NGX_HTTP_LUA_CO_DEAD;
+                cc[i].co = NULL;
                 ctx->uthreads--;
 
                 if (ctx->uthreads == 0) {
@@ -428,6 +431,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
         luaL_unref(L, -1, entry_coctx->co_ref);
         entry_coctx->co_ref = LUA_NOREF;
         entry_coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+        entry_coctx->co = NULL;
     }
 
     if (inited) {

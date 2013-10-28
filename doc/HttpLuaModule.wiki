@@ -289,7 +289,7 @@ This directive was first introduced in the <code>v0.8.5</code> release.
 
 '''default:''' ''The content of LUA_PATH environ variable or Lua's compiled-in defaults.''
 
-'''context:''' ''main''
+'''context:''' ''http''
 
 Sets the Lua module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The path string is in standard Lua path form, and <code>;;</code>
@@ -303,7 +303,7 @@ As from the <code>v0.5.0rc29</code> release, the special notation <code>$prefix<
 
 '''default:''' ''The content of LUA_CPATH environment variable or Lua's compiled-in defaults.''
 
-'''context:''' ''main''
+'''context:''' ''http''
 
 Sets the Lua C-module search path used by scripts specified by [[#set_by_lua|set_by_lua]],
 [[#content_by_lua|content_by_lua]] and others. The cpath string is in standard Lua cpath form, and <code>;;</code>

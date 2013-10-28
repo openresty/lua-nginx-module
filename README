@@ -325,7 +325,7 @@ Directives
     default: *The content of LUA_PATH environ variable or Lua's compiled-in
     defaults.*
 
-    context: *main*
+    context: *http*
 
     Sets the Lua module search path used by scripts specified by set_by_lua,
     content_by_lua and others. The path string is in standard Lua path form,
@@ -342,7 +342,7 @@ Directives
     default: *The content of LUA_CPATH environment variable or Lua's
     compiled-in defaults.*
 
-    context: *main*
+    context: *http*
 
     Sets the Lua C-module search path used by scripts specified by
     set_by_lua, content_by_lua and others. The cpath string is in standard

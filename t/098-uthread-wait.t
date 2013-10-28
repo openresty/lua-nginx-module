@@ -1223,3 +1223,103 @@ ok
 --- error_log
 lua user thread aborted: runtime error: [string "content_by_lua"]:5: f done
 
+
+
+=== TEST 21: waiting on a dead coroutine
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                ngx.say("hello in thread")
+                return "done"
+            end
+
+            local t, err = ngx.thread.spawn(f)
+            if not t then
+                ngx.say("failed to spawn thread: ", err)
+                return
+            end
+
+            ngx.say("thread created: ", coroutine.status(t))
+
+            collectgarbage()
+
+            local ok, res = ngx.thread.wait(t)
+            if not ok then
+                ngx.say("failed to run thread: ", res)
+                return
+            end
+
+            local ok, res = ngx.thread.wait(t)
+            if not ok then
+                ngx.say("failed to run thread: ", res)
+                return
+            end
+
+            ngx.say(res)
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+spawn user thread 2 in 1
+terminate 2: ok
+delete thread 2
+terminate 1: ok
+delete thread 1
+
+--- response_body
+hello in thread
+thread created: zombie
+failed to run thread: already waited
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: spawn and wait uthreads for many times
+--- config
+    location /lua {
+        content_by_lua '
+            function f()
+                -- ngx.say("hello in thread")
+                return "done"
+            end
+
+            for i = 1, 100 do
+                local t, err = ngx.thread.spawn(f)
+                if not t then
+                    ngx.say("failed to spawn thread: ", err)
+                    break
+                end
+
+                -- ngx.say("thread created: ", coroutine.status(t))
+
+                collectgarbage()
+
+                local ok, res = ngx.thread.wait(t)
+                if not ok then
+                    ngx.say("failed to run thread: ", res)
+                    break
+                end
+
+                ngx.say(i, ": ", res)
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body eval
+my $s = '';
+for my $i (1..100) {
+    $s .= "$i: done\n";
+}
+$s;
+
+--- no_error_log
+[error]
+[alert]
+

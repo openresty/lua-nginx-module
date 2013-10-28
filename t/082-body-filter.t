@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #no_diff();
 #no_long_string();
@@ -524,4 +524,52 @@ GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
 qr/failed to load external Lua file: cannot open .*? No such file or directory/
+
+
+
+=== TEST 20: overwrite eof
+--- config
+    location /read {
+        return 200 "hello world";
+
+        body_filter_by_lua '
+            local chunk, eof = ngx.arg[1], ngx.arg[2]
+            if eof then
+                ngx.arg[2] = false
+            end
+        ';
+    }
+
+    location = /t {
+        content_by_lua '
+            local res = ngx.location.capture("/read")
+            ngx.say("truncated: ", res.truncated)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+truncated: true
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 21: zero-size bufs
+--- config
+    location = /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = ""
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- no_error_log
+[error]
+[alert]
 

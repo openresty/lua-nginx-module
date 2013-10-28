@@ -1795,7 +1795,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     /* rc == NGX_AGAIN */
 
     ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
-    ctx->writing_raw_req_socket = 1;
+    if (u->raw_downstream) {
+        ctx->writing_raw_req_socket = 1;
+    }
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
