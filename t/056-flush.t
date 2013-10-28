@@ -14,7 +14,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 54;
+plan tests => repeat_each() * 55;
 
 #no_diff();
 no_long_string();
@@ -453,6 +453,37 @@ Accept-Encoding: gzip
 --- response_body_like: .{15}
 --- response_headers
 Content-Encoding: gzip
+--- no_error_log
+[error]
+
+
+
+=== TEST 16: flush wait - gunzip
+--- config
+    location /test {
+        gunzip on;
+        content_by_lua '
+            local f, err = io.open(ngx.var.document_root .. "/gzip.bin", "r")
+            if not f then
+                ngx.say("failed to open file: ", err)
+                return
+            end
+            local data = f:read(100)
+            ngx.header.content_encoding = "gzip"
+            ngx.print(data)
+            local ok, err = ngx.flush(true)
+            if not ok then
+                ngx.log(ngx.ERR, "flush failed: ", err)
+                return
+            end
+        ';
+    }
+--- user_files eval
+">>> gzip.bin
+\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x03\xb5\x19\xdb\x6e\x1b\xc7\xf5\x9d\x5f\x31\x5d\xa3\xa0\x84\x68\x2f\xbc\xc8\xb2\x28\x92\x85\x2d\x19\x8e\x01\x4b\x11\x6a\xa5\x69\x60\x18\xc2\x70\x77\xb8\x1c\x6b\xb9\xb3\x9e\x99\x25\xc5\x24\x06\x12\xe4\xa1\xcf\x45\x81\x16\x05\x8a\x3e\x14\x28\x5a\x04\x6d\x9f\xd3\xa2\x7d\xca\x0f\xd8\x4f\xfe\x81\xc0\xed\x67\xf4\x9c\xd9\x5d\x72\x79\x91\x25\x32\x91\x04\x51\x7b\xe6\x5c"
+--- request
+GET /test
+--- ignore_response
 --- no_error_log
 [error]
 
