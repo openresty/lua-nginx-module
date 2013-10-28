@@ -492,7 +492,7 @@ exec:
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
+    lua_createtable(L, rc /* narr */, 0 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -1013,7 +1013,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
+    lua_createtable(L, rc /* narr */, 0 /* nrec */);
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
