@@ -11,7 +11,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -562,4 +562,58 @@ Hello World
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 17: throw 444 after sending out responses (HTTP 1.0)
+--- config
+    location /lua {
+        content_by_lua "
+            ngx.say('ok');
+            return ngx.exit(444)
+        ";
+    }
+--- request
+GET /lua HTTP/1.0
+--- ignore_response
+--- log_level: debug
+--- no_error_log
+lua sending HTTP 1.0 response headers
+[error]
+
+
+
+=== TEST 18: throw 499 after sending out responses (HTTP 1.0)
+--- config
+    location /lua {
+        content_by_lua "
+            ngx.say('ok');
+            return ngx.exit(499)
+        ";
+    }
+--- request
+GET /lua HTTP/1.0
+--- ignore_response
+--- log_level: debug
+--- no_error_log
+lua sending HTTP 1.0 response headers
+[error]
+
+
+
+=== TEST 19: throw 408 after sending out responses (HTTP 1.0)
+--- config
+    location /lua {
+        content_by_lua "
+            ngx.say('ok');
+            return ngx.exit(408)
+        ";
+    }
+--- request
+GET /lua HTTP/1.0
+--- ignore_response
+--- log_level: debug
+--- no_error_log
+lua sending HTTP 1.0 response headers
+[error]
 

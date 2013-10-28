@@ -2263,7 +2263,13 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 
     ngx_http_lua_request_cleanup(ctx, 0);
 
-    if (ctx->buffering && r->headers_out.status) {
+    if (ctx->buffering
+        && r->headers_out.status
+        && ctx->exit_code != NGX_ERROR
+        && ctx->exit_code != NGX_HTTP_REQUEST_TIME_OUT
+        && ctx->exit_code != NGX_HTTP_CLIENT_CLOSED_REQUEST
+        && ctx->exit_code != NGX_HTTP_CLOSE)
+    {
         rc = ngx_http_lua_send_chain_link(r, ctx, NULL /* indicate last_buf */);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
