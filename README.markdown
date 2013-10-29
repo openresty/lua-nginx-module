@@ -18,6 +18,7 @@ Table of Contents
 * [Synopsis](#synopsis)
 * [Description](#description)
 * [Directives](#directives)
+    * [lua_use_default_type](#lua_use_default_type)
     * [lua_code_cache](#lua_code_cache)
     * [lua_regex_cache_max_entries](#lua_regex_cache_max_entries)
     * [lua_regex_match_limit](#lua_regex_match_limit)
@@ -419,13 +420,29 @@ Directives
 
 [Back to TOC](#table-of-contents)
 
+lua_use_default_type
+--------------------
+**syntax:** *lua_use_default_type on | off*
+
+**default:** *lua_use_default_type on*
+
+**context:** *http, server, location, location if*
+
+Specifies whether to use the MIME type specified by the [default_type](http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type) directive for the default value of the `Content-Type` response header. If you do not want a default `Content-Type` response header for your Lua request handlers, then turn this directive off.
+
+This directive is turned on by default.
+
+This directive was first introduced in the `v0.9.1` release.
+
+[Back to TOC](#table-of-contents)
+
 lua_code_cache
 --------------
 **syntax:** *lua_code_cache on | off*
 
 **default:** *lua_code_cache on*
 
-**context:** *main, server, location, location if*
+**context:** *http, server, location, location if*
 
 Enables or disables the Lua code cache for [set_by_lua_file](#set_by_lua_file),
 [content_by_lua_file](#content_by_lua_file), [rewrite_by_lua_file](#rewrite_by_lua_file), and

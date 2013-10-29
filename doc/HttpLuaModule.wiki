@@ -210,12 +210,25 @@ Loaded Lua modules persist in the nginx worker process level resulting in a smal
 
 = Directives =
 
+== lua_use_default_type ==
+'''syntax:''' ''lua_use_default_type on | off''
+
+'''default:''' ''lua_use_default_type on''
+
+'''context:''' ''http, server, location, location if''
+
+Specifies whether to use the MIME type specified by the [http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type default_type] directive for the default value of the <code>Content-Type</code> response header. If you do not want a default <code>Content-Type</code> response header for your Lua request handlers, then turn this directive off.
+
+This directive is turned on by default.
+
+This directive was first introduced in the <code>v0.9.1</code> release.
+
 == lua_code_cache ==
 '''syntax:''' ''lua_code_cache on | off''
 
 '''default:''' ''lua_code_cache on''
 
-'''context:''' ''main, server, location, location if''
+'''context:''' ''http, server, location, location if''
 
 Enables or disables the Lua code cache for [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#rewrite_by_lua_file|rewrite_by_lua_file]], and
