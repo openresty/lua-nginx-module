@@ -173,6 +173,7 @@ Table of Contents
     * [coroutine.running](#coroutinerunning)
     * [coroutine.status](#coroutinestatus)
 * [Lua/LuaJIT bytecode support](#lualuajit-bytecode-support)
+* [System Environment Variable Support](#system-environment-variable-support)
 * [HTTP 1.0 support](#http-10-support)
 * [Data Sharing within an Nginx Worker](#data-sharing-within-an-nginx-worker)
 * [Known Issues](#known-issues)
@@ -208,7 +209,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 September 2013.
+This document describes ngx_lua [v0.9.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 October 2013.
 
 Synopsis
 ========
@@ -5754,6 +5755,18 @@ Loading bytecode files via the Lua primitives like `require` and `dofile` should
 
 [Back to TOC](#table-of-contents)
 
+System Environment Variable Support
+===================================
+
+If you want to access the system environment variable, say, `foo`, in Lua via the standard Lua API [os.getenv](http://www.lua.org/manual/5.1/manual.html#pdf-os.getenv), then you should also list this environment variable name in your `nginx.conf` file via the [env directive](http://nginx.org/en/docs/ngx_core_module.html#env). For example,
+
+```nginx
+
+    env foo;
+```
+
+[Back to TOC](#table-of-contents)
+
 HTTP 1.0 support
 ================
 
@@ -6044,7 +6057,7 @@ Nginx Compatibility
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.2)
+* 1.4.x (last tested: 1.4.3)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -6077,9 +6090,9 @@ Build the source with this module:
 
 ```bash
 
-    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
-    tar -xzvf nginx-1.4.2.tar.gz
-    cd nginx-1.4.2/
+    wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
+    tar -xzvf nginx-1.4.3.tar.gz
+    cd nginx-1.4.3/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

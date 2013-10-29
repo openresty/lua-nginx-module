@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.0] released on 29 September 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.1] released on 29 October 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -4888,6 +4888,14 @@ Attempts to load standard Lua 5.1 bytecode files into ngx_lua instances linked t
 
 Loading bytecode files via the Lua primitives like <code>require</code> and <code>dofile</code> should always work as expected.
 
+= System Environment Variable Support =
+
+If you want to access the system environment variable, say, <code>foo</code>, in Lua via the standard Lua API [http://www.lua.org/manual/5.1/manual.html#pdf-os.getenv os.getenv], then you should also list this environment variable name in your <code>nginx.conf</code> file via the [http://nginx.org/en/docs/ngx_core_module.html#env env directive]. For example,
+
+<geshi lang="nginx">
+    env foo;
+</geshi>
+
 = HTTP 1.0 support =
 
 The HTTP 1.0 protocol does not support chunked output and requires an explicit <code>Content-Length</code> header when the response body is not empty in order to support the HTTP 1.0 keep-alive.
@@ -5132,7 +5140,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.2)
+* 1.4.x (last tested: 1.4.3)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5158,9 +5166,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
-    tar -xzvf nginx-1.4.2.tar.gz
-    cd nginx-1.4.2/
+    wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
+    tar -xzvf nginx-1.4.3.tar.gz
+    cd nginx-1.4.3/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib
