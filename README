@@ -2986,8 +2986,8 @@ Nginx API for Lua
     from any previous ngx.say, ngx.print, or ngx.send_headers calls exists.
     So if you have these downstream output calls previously, you should call
     ngx.flush(true) before calling "ngx.req.socket(true)" to ensure that
-    there is no pending output data. Another requirement for this case is
-    that the request body must have already been read completely.
+    there is no pending output data. If the request body has not been read
+    yet, then this "raw socket" can also be used to read the request body.
 
     You can use the "raw request socket" returned by "ngx.req.socket(true)"
     to implement fancy protocols like WebSocket
