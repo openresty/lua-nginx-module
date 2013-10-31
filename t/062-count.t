@@ -339,7 +339,7 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 1
+n = 2
 --- no_error_log
 [error]
 
