@@ -225,7 +225,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     int         rc;
 
     /* new coroutine table */
-    lua_createtable(L, 0 /* narr */, 10 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 14 /* nrec */);
 
     /* get old coroutine table */
     lua_getglobal(L, "coroutine");
@@ -250,27 +250,40 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     lua_pop(L, 1);
 
     lua_pushcfunction(L, ngx_http_lua_coroutine_create);
-    lua_setfield(L, -2, "create");
+    lua_setfield(L, -2, "__create");
 
     lua_pushcfunction(L, ngx_http_lua_coroutine_resume);
-    lua_setfield(L, -2, "resume");
+    lua_setfield(L, -2, "__resume");
 
     lua_pushcfunction(L, ngx_http_lua_coroutine_yield);
-    lua_setfield(L, -2, "yield");
+    lua_setfield(L, -2, "__yield");
 
     lua_pushcfunction(L, ngx_http_lua_coroutine_status);
-    lua_setfield(L, -2, "status");
+    lua_setfield(L, -2, "__status");
 
     lua_setglobal(L, "coroutine");
 
-    /* inject wrap */
+    /* inject coroutine APIs */
     {
         const char buf[] =
+            "local keys = {'create', 'yield', 'resume', 'status'}\n"
+            "local getfenv = getfenv\n"
+            "for _, key in ipairs(keys) do\n"
+               "local std = coroutine['_' .. key]\n"
+               "local ours = coroutine['__' .. key]\n"
+               "coroutine[key] = function (...)\n"
+                    "if getfenv(0).__ngx_req then\n"
+                        "return ours(...)\n"
+                    "end\n"
+                    "return std(...)\n"
+                "end\n"
+            "end\n"
             "local create, resume = coroutine.create, coroutine.resume\n"
             "coroutine.wrap = function(f)\n"
                "local co = create(f)\n"
                "return function(...) return select(2, resume(co, ...)) end\n"
-            "end\n"
+            "end";
+
 #if 0
             "debug.sethook(function () collectgarbage() end, 'rl', 1)"
 #endif
