@@ -10,7 +10,7 @@ use t::TestNginxLua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 18);
+plan tests => repeat_each() * (blocks() * 3);
 
 #no_diff();
 #no_long_string();
