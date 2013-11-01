@@ -44,6 +44,7 @@ time ngx-build $force $version \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \
+                --with-http_gunzip_module \
           --with-select_module \
           --with-poll_module \
           --with-rtsig_module \

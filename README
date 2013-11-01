@@ -8,9 +8,9 @@ Status
     This module is under active development and is production ready.
 
 Version
-    This document describes ngx_lua v0.9.0
+    This document describes ngx_lua v0.9.1
     (<https://github.com/chaoslawful/lua-nginx-module/tags>) released on 29
-    September 2013.
+    October 2013.
 
 Synopsis
         # set search paths for pure Lua external libraries (';;' is the default path):
@@ -233,12 +233,29 @@ Description
     in a small memory footprint in Lua even when under heavy loads.
 
 Directives
+  lua_use_default_type
+    syntax: *lua_use_default_type on | off*
+
+    default: *lua_use_default_type on*
+
+    context: *http, server, location, location if*
+
+    Specifies whether to use the MIME type specified by the default_type
+    (<http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type>)
+    directive for the default value of the "Content-Type" response header.
+    If you do not want a default "Content-Type" response header for your Lua
+    request handlers, then turn this directive off.
+
+    This directive is turned on by default.
+
+    This directive was first introduced in the "v0.9.1" release.
+
   lua_code_cache
     syntax: *lua_code_cache on | off*
 
     default: *lua_code_cache on*
 
-    context: *main, server, location, location if*
+    context: *http, server, location, location if*
 
     Enables or disables the Lua code cache for set_by_lua_file,
     content_by_lua_file, rewrite_by_lua_file, and access_by_lua_file, and
@@ -2986,8 +3003,8 @@ Nginx API for Lua
     from any previous ngx.say, ngx.print, or ngx.send_headers calls exists.
     So if you have these downstream output calls previously, you should call
     ngx.flush(true) before calling "ngx.req.socket(true)" to ensure that
-    there is no pending output data. Another requirement for this case is
-    that the request body must have already been read completely.
+    there is no pending output data. If the request body has not been read
+    yet, then this "raw socket" can also be used to read the request body.
 
     You can use the "raw request socket" returned by "ngx.req.socket(true)"
     to implement fancy protocols like WebSocket
@@ -5683,6 +5700,16 @@ Lua/LuaJIT bytecode support
     Loading bytecode files via the Lua primitives like "require" and
     "dofile" should always work as expected.
 
+System Environment Variable Support
+    If you want to access the system environment variable, say, "foo", in
+    Lua via the standard Lua API os.getenv
+    (<http://www.lua.org/manual/5.1/manual.html#pdf-os.getenv>), then you
+    should also list this environment variable name in your "nginx.conf"
+    file via the env directive
+    (<http://nginx.org/en/docs/ngx_core_module.html#env>). For example,
+
+        env foo;
+
 HTTP 1.0 support
     The HTTP 1.0 protocol does not support chunked output and requires an
     explicit "Content-Length" header when the response body is not empty in
@@ -6020,7 +6047,7 @@ Nginx Compatibility
 
     *   1.5.x (last tested: 1.5.4)
 
-    *   1.4.x (last tested: 1.4.2)
+    *   1.4.x (last tested: 1.4.3)
 
     *   1.3.x (last tested: 1.3.11)
 
@@ -6065,9 +6092,9 @@ Installation
 
     Build the source with this module:
 
-        wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
-        tar -xzvf nginx-1.4.2.tar.gz
-        cd nginx-1.4.2/
+        wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
+        tar -xzvf nginx-1.4.3.tar.gz
+        cd nginx-1.4.3/
 
         # tell nginx's build system where to find LuaJIT:
         export LUAJIT_LIB=/path/to/luajit/lib

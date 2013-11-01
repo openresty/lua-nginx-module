@@ -1092,3 +1092,69 @@ successfully connected to: agentzh.org
 [error]
 --- timeout: 10
 
+
+
+=== TEST 26: mixing coroutine.* API between init_by_lua and other contexts (github #304) - init_by_lua
+--- http_config
+    init_by_lua '
+          co_wrap = coroutine.wrap
+          co_yield = coroutine.yield
+    ';
+
+--- config
+    location /cotest {
+        content_by_lua '
+            function generator()
+                return co_wrap(function()
+                    co_yield("data")
+                end)
+            end
+
+            local co = generator()
+            local data = co()
+            ngx.say(data)
+        ';
+    }
+
+--- request
+GET /cotest
+--- stap2 eval: $::StapScript
+--- response_body
+data
+--- no_error_log
+[error]
+
+
+
+=== TEST 27: mixing coroutine.* API between init_by_lua and other contexts (github #304) - init_by_lua_file
+--- http_config
+    init_by_lua_file html/init.lua;
+
+--- config
+    location /cotest {
+        content_by_lua '
+            function generator()
+                return co_wrap(function()
+                    co_yield("data")
+                end)
+            end
+
+            local co = generator()
+            local data = co()
+            ngx.say(data)
+        ';
+    }
+
+--- user_files
+>>> init.lua
+co_wrap = coroutine.wrap
+co_yield = coroutine.yield
+
+--- request
+GET /cotest
+--- stap2 eval: $::StapScript
+--- response_body
+data
+--- no_error_log
+[error]
+

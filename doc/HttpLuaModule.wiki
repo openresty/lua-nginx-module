@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.0] released on 29 September 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.1] released on 29 October 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -210,12 +210,25 @@ Loaded Lua modules persist in the nginx worker process level resulting in a smal
 
 = Directives =
 
+== lua_use_default_type ==
+'''syntax:''' ''lua_use_default_type on | off''
+
+'''default:''' ''lua_use_default_type on''
+
+'''context:''' ''http, server, location, location if''
+
+Specifies whether to use the MIME type specified by the [http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type default_type] directive for the default value of the <code>Content-Type</code> response header. If you do not want a default <code>Content-Type</code> response header for your Lua request handlers, then turn this directive off.
+
+This directive is turned on by default.
+
+This directive was first introduced in the <code>v0.9.1</code> release.
+
 == lua_code_cache ==
 '''syntax:''' ''lua_code_cache on | off''
 
 '''default:''' ''lua_code_cache on''
 
-'''context:''' ''main, server, location, location if''
+'''context:''' ''http, server, location, location if''
 
 Enables or disables the Lua code cache for [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#rewrite_by_lua_file|rewrite_by_lua_file]], and
@@ -2643,7 +2656,7 @@ Chunked request bodies are not yet supported in this API.
 
 Since the <code>v0.9.0</code> release, this function accepts an optional boolean <code>raw</code> argument. When this argument is <code>true</code>, this function returns a full duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [[#tcpsock:receive|receive]], [[#tcpsock:receiveuntil|receiveuntil]], and [[#tcpsock:send|send]] methods.
 
-When the <code>raw</code> argument is <code>true</code>, it is required that no pending data from any previous [[#ngx.say|ngx.say]], [[#ngx.print|ngx.print]], or [[#ngx.send_headers|ngx.send_headers]] calls exists. So if you have these downstream output calls previously, you should call [[#ngx.flush|ngx.flush(true)]] before calling <code>ngx.req.socket(true)</code> to ensure that there is no pending output data. Another requirement for this case is that the request body must have already been read completely.
+When the <code>raw</code> argument is <code>true</code>, it is required that no pending data from any previous [[#ngx.say|ngx.say]], [[#ngx.print|ngx.print]], or [[#ngx.send_headers|ngx.send_headers]] calls exists. So if you have these downstream output calls previously, you should call [[#ngx.flush|ngx.flush(true)]] before calling <code>ngx.req.socket(true)</code> to ensure that there is no pending output data. If the request body has not been read yet, then this "raw socket" can also be used to read the request body.
 
 You can use the "raw request socket" returned by <code>ngx.req.socket(true)</code> to implement fancy protocols like [http://en.wikipedia.org/wiki/WebSocket WebSocket], or just emit your own raw HTTP response header or body data. You can refer to the [https://github.com/agentzh/lua-resty-websocket lua-resty-websocket library] for a real world example.
 
@@ -4888,6 +4901,14 @@ Attempts to load standard Lua 5.1 bytecode files into ngx_lua instances linked t
 
 Loading bytecode files via the Lua primitives like <code>require</code> and <code>dofile</code> should always work as expected.
 
+= System Environment Variable Support =
+
+If you want to access the system environment variable, say, <code>foo</code>, in Lua via the standard Lua API [http://www.lua.org/manual/5.1/manual.html#pdf-os.getenv os.getenv], then you should also list this environment variable name in your <code>nginx.conf</code> file via the [http://nginx.org/en/docs/ngx_core_module.html#env env directive]. For example,
+
+<geshi lang="nginx">
+    env foo;
+</geshi>
+
 = HTTP 1.0 support =
 
 The HTTP 1.0 protocol does not support chunked output and requires an explicit <code>Content-Length</code> header when the response body is not empty in order to support the HTTP 1.0 keep-alive.
@@ -5132,7 +5153,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.2)
+* 1.4.x (last tested: 1.4.3)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5158,9 +5179,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
-    tar -xzvf nginx-1.4.2.tar.gz
-    cd nginx-1.4.2/
+    wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
+    tar -xzvf nginx-1.4.3.tar.gz
+    cd nginx-1.4.3/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib

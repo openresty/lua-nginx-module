@@ -18,6 +18,7 @@ Table of Contents
 * [Synopsis](#synopsis)
 * [Description](#description)
 * [Directives](#directives)
+    * [lua_use_default_type](#lua_use_default_type)
     * [lua_code_cache](#lua_code_cache)
     * [lua_regex_cache_max_entries](#lua_regex_cache_max_entries)
     * [lua_regex_match_limit](#lua_regex_match_limit)
@@ -173,6 +174,7 @@ Table of Contents
     * [coroutine.running](#coroutinerunning)
     * [coroutine.status](#coroutinestatus)
 * [Lua/LuaJIT bytecode support](#lualuajit-bytecode-support)
+* [System Environment Variable Support](#system-environment-variable-support)
 * [HTTP 1.0 support](#http-10-support)
 * [Data Sharing within an Nginx Worker](#data-sharing-within-an-nginx-worker)
 * [Known Issues](#known-issues)
@@ -208,7 +210,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.0](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 September 2013.
+This document describes ngx_lua [v0.9.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 October 2013.
 
 Synopsis
 ========
@@ -418,13 +420,29 @@ Directives
 
 [Back to TOC](#table-of-contents)
 
+lua_use_default_type
+--------------------
+**syntax:** *lua_use_default_type on | off*
+
+**default:** *lua_use_default_type on*
+
+**context:** *http, server, location, location if*
+
+Specifies whether to use the MIME type specified by the [default_type](http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type) directive for the default value of the `Content-Type` response header. If you do not want a default `Content-Type` response header for your Lua request handlers, then turn this directive off.
+
+This directive is turned on by default.
+
+This directive was first introduced in the `v0.9.1` release.
+
+[Back to TOC](#table-of-contents)
+
 lua_code_cache
 --------------
 **syntax:** *lua_code_cache on | off*
 
 **default:** *lua_code_cache on*
 
-**context:** *main, server, location, location if*
+**context:** *http, server, location, location if*
 
 Enables or disables the Lua code cache for [set_by_lua_file](#set_by_lua_file),
 [content_by_lua_file](#content_by_lua_file), [rewrite_by_lua_file](#rewrite_by_lua_file), and
@@ -3182,7 +3200,7 @@ Chunked request bodies are not yet supported in this API.
 
 Since the `v0.9.0` release, this function accepts an optional boolean `raw` argument. When this argument is `true`, this function returns a full duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [receive](#tcpsockreceive), [receiveuntil](#tcpsockreceiveuntil), and [send](#tcpsocksend) methods.
 
-When the `raw` argument is `true`, it is required that no pending data from any previous [ngx.say](#ngxsay), [ngx.print](#ngxprint), or [ngx.send_headers](#ngxsend_headers) calls exists. So if you have these downstream output calls previously, you should call [ngx.flush(true)](#ngxflush) before calling `ngx.req.socket(true)` to ensure that there is no pending output data. Another requirement for this case is that the request body must have already been read completely.
+When the `raw` argument is `true`, it is required that no pending data from any previous [ngx.say](#ngxsay), [ngx.print](#ngxprint), or [ngx.send_headers](#ngxsend_headers) calls exists. So if you have these downstream output calls previously, you should call [ngx.flush(true)](#ngxflush) before calling `ngx.req.socket(true)` to ensure that there is no pending output data. If the request body has not been read yet, then this "raw socket" can also be used to read the request body.
 
 You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/agentzh/lua-resty-websocket) for a real world example.
 
@@ -5754,6 +5772,18 @@ Loading bytecode files via the Lua primitives like `require` and `dofile` should
 
 [Back to TOC](#table-of-contents)
 
+System Environment Variable Support
+===================================
+
+If you want to access the system environment variable, say, `foo`, in Lua via the standard Lua API [os.getenv](http://www.lua.org/manual/5.1/manual.html#pdf-os.getenv), then you should also list this environment variable name in your `nginx.conf` file via the [env directive](http://nginx.org/en/docs/ngx_core_module.html#env). For example,
+
+```nginx
+
+    env foo;
+```
+
+[Back to TOC](#table-of-contents)
+
 HTTP 1.0 support
 ================
 
@@ -6044,7 +6074,7 @@ Nginx Compatibility
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.2)
+* 1.4.x (last tested: 1.4.3)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -6077,9 +6107,9 @@ Build the source with this module:
 
 ```bash
 
-    wget 'http://nginx.org/download/nginx-1.4.2.tar.gz'
-    tar -xzvf nginx-1.4.2.tar.gz
-    cd nginx-1.4.2/
+    wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
+    tar -xzvf nginx-1.4.3.tar.gz
+    cd nginx-1.4.3/
 
     # tell nginx's build system where to find LuaJIT:
     export LUAJIT_LIB=/path/to/luajit/lib
