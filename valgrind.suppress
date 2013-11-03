@@ -215,3 +215,8 @@ fun:ngx_http_lua_ngx_echo
    fun:ngx_pass_open_channel
    fun:ngx_start_cache_manager_processes
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:lj_str_new
+}
