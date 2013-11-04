@@ -158,8 +158,11 @@ ngx_http_lua_ngx_re_match(lua_State *L)
             lua_getfield(L, 4, "pos");
             if (lua_isnumber(L, -1)) {
                 pos = (ngx_int_t) lua_tointeger(L, -1);
-                if (pos < 0) {
+                if (pos <= 0) {
                     pos = 0;
+
+                } else {
+                    pos--;  /* 1-based on the Lua land */
                 }
 
             } else if (lua_isnil(L, -1)) {
@@ -516,7 +519,7 @@ exec:
 
     if (nargs == 4) { /* having ctx table */
         pos = cap[1];
-        lua_pushinteger(L, (lua_Integer) pos);
+        lua_pushinteger(L, (lua_Integer) (pos + 1));
         lua_setfield(L, 4, "pos");
     }
 
