@@ -202,7 +202,7 @@ not matched: nil
 
 
 
-=== TEST 10: case sensitive by default
+=== TEST 10: case insensitive
 --- config
     location /re {
         content_by_lua '
