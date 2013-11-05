@@ -3436,7 +3436,7 @@ Similar to [[#ngx.re.match|ngx.re.match]] but only returns the begining index (<
 
 In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two <code>nil</code> values followed by a string describing the error.
 
-If no match is found, this function just returns <code>nil</code> values.
+If no match is found, this function just returns a <code>nil</code> value.
 
 Below is an example:
 

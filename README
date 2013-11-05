@@ -3881,7 +3881,7 @@ Nginx API for Lua
     API function returns two "nil" values followed by a string describing
     the error.
 
-    If no match is found, this function just returns "nil" values.
+    If no match is found, this function just returns a "nil" value.
 
     Below is an example:
 

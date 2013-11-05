@@ -4127,7 +4127,7 @@ Similar to [ngx.re.match](#ngxrematch) but only returns the begining index (`fro
 
 In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two `nil` values followed by a string describing the error.
 
-If no match is found, this function just returns `nil` values.
+If no match is found, this function just returns a `nil` value.
 
 Below is an example:
 
