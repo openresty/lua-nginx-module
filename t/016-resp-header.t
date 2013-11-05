@@ -1081,3 +1081,22 @@ qr/Cache-Control/i
 --- response_body
 Cache-Control: nil
 
+
+
+=== TEST 54: set response content-type header
+--- config
+    location /read {
+        content_by_lua '
+            local s = "content_type"
+            local v = ngx.header[s]
+            ngx.say("s = ", s)
+        ';
+    }
+--- request
+GET /read
+--- response_body
+s = content_type
+
+--- no_error_log
+[error]
+
