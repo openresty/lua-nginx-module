@@ -127,6 +127,7 @@ Table of Contents
     * [ngx.parse_http_time](#ngxparse_http_time)
     * [ngx.is_subrequest](#ngxis_subrequest)
     * [ngx.re.match](#ngxrematch)
+    * [ngx.re.find](#ngxrefind)
     * [ngx.re.gmatch](#ngxregmatch)
     * [ngx.re.sub](#ngxresub)
     * [ngx.re.gsub](#ngxregsub)
@@ -4113,6 +4114,49 @@ To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the 
 
 
 This feature was introduced in the `v0.2.1rc11` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.re.find
+-----------
+**syntax:** *from, to, err = ngx.re.find(subject, regex, options?, ctx?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Similar to [ngx.re.match](#ngxrematch) but only returns the begining index (`from`) and end index (`to`) of the matched substring. The returned indexes are 1-based and can be fed directly into the [string.sub](http://www.lua.org/manual/5.1/manual.html#pdf-string.sub) API function to obtain the matched substring.
+
+In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two `nil` values followed by a string describing the error.
+
+If no match is found, this function just returns `nil` values.
+
+Below is an example:
+
+```lua
+
+    local s = "hello, 1234"
+    local from, to, err = ngx.re.find(s, "([0-9]+)", "jo")
+    if from then
+        ngx.say("from: ", from)
+        ngx.say("to: ", to)
+        ngx.say("matched: ", string.sub(s, from, to))
+    else
+        if err then
+            ngx.say("error: ", err)
+            return
+        end
+        ngx.say("not matched!")
+    end
+```
+
+This example produces the output
+
+    from: 8
+    to: 11
+    matched: 1234
+
+Because this API function does not create new Lua strings nor new Lua tables, it is much faster than [ngx.re.match](#ngxrematch). It should be used wherever possible.
+
+This API function was first introduced in the `v0.9.2` release.
 
 [Back to TOC](#table-of-contents)
 
