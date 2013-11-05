@@ -195,6 +195,9 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [https://github.com/agentzh/lua-resty-redis lua-resty-redis]
 * [https://github.com/agentzh/lua-resty-dns lua-resty-dns]
 * [https://github.com/agentzh/lua-resty-upload lua-resty-upload]
+* [https://github.com/agentzh/lua-resty-websocket lua-resty-websocket]
+* [https://github.com/agentzh/lua-resty-lock lua-resty-lock]
+* [https://github.com/agentzh/lua-resty-string lua-resty-string]
 * [[HttpMemcModule|ngx_memc]]
 * [https://github.com/FRiCKLE/ngx_postgres ngx_postgres]
 * [[HttpRedis2Module|ngx_redis2]]
@@ -3394,20 +3397,20 @@ These options can be combined:
 
 The <code>o</code> option is useful for performance tuning, because the regex pattern in question will only be compiled once, cached in the worker-process level, and shared among all requests in the current Nginx worker process. The upper limit of the regex cache can be tuned via the [[#lua_regex_cache_max_entries|lua_regex_cache_max_entries]] directive.
 
-The optional fourth argument, <code>ctx</code>, can be a Lua table holding an optional <code>pos</code> field. When the <code>pos</code> field in the <code>ctx</code> table argument is specified, <code>ngx.re.match</code> will start matching from that offset. Regardless of the presence of the <code>pos</code> field in the <code>ctx</code> table, <code>ngx.re.match</code> will always set this <code>pos</code> field to the position ''after'' the substring matched by the whole pattern in case of a successful match. When match fails, the <code>ctx</code> table will be left intact.
+The optional fourth argument, <code>ctx</code>, can be a Lua table holding an optional <code>pos</code> field. When the <code>pos</code> field in the <code>ctx</code> table argument is specified, <code>ngx.re.match</code> will start matching from that offset (starting from 1). Regardless of the presence of the <code>pos</code> field in the <code>ctx</code> table, <code>ngx.re.match</code> will always set this <code>pos</code> field to the position ''after'' the substring matched by the whole pattern in case of a successful match. When match fails, the <code>ctx</code> table will be left intact.
 
 <geshi lang="lua">
     local ctx = {}
     local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "1234"
-         -- ctx.pos == 4
+         -- ctx.pos == 5
 </geshi>
 
 <geshi lang="lua">
     local ctx = { pos = 2 }
     local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "34"
-         -- ctx.pos == 4
+         -- ctx.pos == 5
 </geshi>
 
 The <code>ctx</code> table argument combined with the <code>a</code> regex modifier can be used to construct a lexer atop <code>ngx.re.match</code>.

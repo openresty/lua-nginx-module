@@ -400,6 +400,9 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [lua-resty-redis](https://github.com/agentzh/lua-resty-redis)
 * [lua-resty-dns](https://github.com/agentzh/lua-resty-dns)
 * [lua-resty-upload](https://github.com/agentzh/lua-resty-upload)
+* [lua-resty-websocket](https://github.com/agentzh/lua-resty-websocket)
+* [lua-resty-lock](https://github.com/agentzh/lua-resty-lock)
+* [lua-resty-string](https://github.com/agentzh/lua-resty-string)
 * [ngx_memc](http://github.com/agentzh/memc-nginx-module)
 * [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
 * [ngx_redis2](http://github.com/agentzh/redis2-nginx-module)
@@ -4079,14 +4082,14 @@ These options can be combined:
 
 The `o` option is useful for performance tuning, because the regex pattern in question will only be compiled once, cached in the worker-process level, and shared among all requests in the current Nginx worker process. The upper limit of the regex cache can be tuned via the [lua_regex_cache_max_entries](#lua_regex_cache_max_entries) directive.
 
-The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos` field. When the `pos` field in the `ctx` table argument is specified, `ngx.re.match` will start matching from that offset. Regardless of the presence of the `pos` field in the `ctx` table, `ngx.re.match` will always set this `pos` field to the position *after* the substring matched by the whole pattern in case of a successful match. When match fails, the `ctx` table will be left intact.
+The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos` field. When the `pos` field in the `ctx` table argument is specified, `ngx.re.match` will start matching from that offset (starting from 1). Regardless of the presence of the `pos` field in the `ctx` table, `ngx.re.match` will always set this `pos` field to the position *after* the substring matched by the whole pattern in case of a successful match. When match fails, the `ctx` table will be left intact.
 
 ```lua
 
     local ctx = {}
     local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "1234"
-         -- ctx.pos == 4
+         -- ctx.pos == 5
 ```
 
 ```lua
@@ -4094,7 +4097,7 @@ The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos
     local ctx = { pos = 2 }
     local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
          -- m[0] = "34"
-         -- ctx.pos == 4
+         -- ctx.pos == 5
 ```
 
 The `ctx` table argument combined with the `a` regex modifier can be used to construct a lexer atop `ngx.re.match`.

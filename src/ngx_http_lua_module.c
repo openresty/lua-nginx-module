@@ -738,9 +738,9 @@ ngx_http_lua_cleanup_vm(void *data)
     lua_State *L = data;
 
     if (L != NULL) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "lua close the "
+                       "global Lua VM");
         lua_close(L);
-
-        dd("Lua VM closed!");
     }
 }
 
@@ -753,8 +753,11 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     lua_State                       *L;
     ngx_uint_t                       i;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0, "lua initialize the "
+                   "global Lua VM");
+
     ngx_http_lua_content_length_hash =
-        ngx_http_lua_hash_literal("content-length");
+                                  ngx_http_lua_hash_literal("content-length");
 
     ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
 
