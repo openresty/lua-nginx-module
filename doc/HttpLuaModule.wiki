@@ -4806,6 +4806,16 @@ This boolean field indicates whether the current Nginx is a debug build, i.e., b
 
 This field was first introduced in the <code>0.8.7</code>.
 
+== ngx.config.prefix ==
+
+'''syntax:''' ''prefix = ngx.config.prefix()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the Nginx server "prefix" path, as determined by the <code>-p</code> command-line option when running the nginx executable, or the path specified by the <code>--prefix</code> command-line option when building Nginx with the <code>./configure</code> script.
+
+This function was first introduced in the <code>0.9.2</code>.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 

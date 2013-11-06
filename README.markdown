@@ -167,6 +167,7 @@ Table of Contents
     * [ngx.on_abort](#ngxon_abort)
     * [ngx.timer.at](#ngxtimerat)
     * [ngx.config.debug](#ngxconfigdebug)
+    * [ngx.config.prefix](#ngxconfigprefix)
     * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
     * [coroutine.create](#coroutinecreate)
     * [coroutine.resume](#coroutineresume)
@@ -5650,6 +5651,19 @@ ngx.config.debug
 This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the `./configure` option `--with-debug`.
 
 This field was first introduced in the `0.8.7`.
+
+[Back to TOC](#table-of-contents)
+
+ngx.config.prefix
+-----------------
+
+**syntax:** *prefix = ngx.config.prefix()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the Nginx server "prefix" path, as determined by the `-p` command-line option when running the nginx executable, or the path specified by the `--prefix` command-line option when building Nginx with the `./configure` script.
+
+This function was first introduced in the `0.9.2`.
 
 [Back to TOC](#table-of-contents)
 
