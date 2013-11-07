@@ -127,6 +127,7 @@ Table of Contents
     * [ngx.parse_http_time](#ngxparse_http_time)
     * [ngx.is_subrequest](#ngxis_subrequest)
     * [ngx.re.match](#ngxrematch)
+    * [ngx.re.find](#ngxrefind)
     * [ngx.re.gmatch](#ngxregmatch)
     * [ngx.re.sub](#ngxresub)
     * [ngx.re.gsub](#ngxregsub)
@@ -166,6 +167,7 @@ Table of Contents
     * [ngx.on_abort](#ngxon_abort)
     * [ngx.timer.at](#ngxtimerat)
     * [ngx.config.debug](#ngxconfigdebug)
+    * [ngx.config.prefix](#ngxconfigprefix)
     * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
     * [coroutine.create](#coroutinecreate)
     * [coroutine.resume](#coroutineresume)
@@ -210,7 +212,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.1](https://github.com/chaoslawful/lua-nginx-module/tags) released on 29 October 2013.
+This document describes ngx_lua [v0.9.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 November 2013.
 
 Synopsis
 ========
@@ -4116,6 +4118,49 @@ This feature was introduced in the `v0.2.1rc11` release.
 
 [Back to TOC](#table-of-contents)
 
+ngx.re.find
+-----------
+**syntax:** *from, to, err = ngx.re.find(subject, regex, options?, ctx?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Similar to [ngx.re.match](#ngxrematch) but only returns the begining index (`from`) and end index (`to`) of the matched substring. The returned indexes are 1-based and can be fed directly into the [string.sub](http://www.lua.org/manual/5.1/manual.html#pdf-string.sub) API function to obtain the matched substring.
+
+In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two `nil` values followed by a string describing the error.
+
+If no match is found, this function just returns a `nil` value.
+
+Below is an example:
+
+```lua
+
+    local s = "hello, 1234"
+    local from, to, err = ngx.re.find(s, "([0-9]+)", "jo")
+    if from then
+        ngx.say("from: ", from)
+        ngx.say("to: ", to)
+        ngx.say("matched: ", string.sub(s, from, to))
+    else
+        if err then
+            ngx.say("error: ", err)
+            return
+        end
+        ngx.say("not matched!")
+    end
+```
+
+This example produces the output
+
+    from: 8
+    to: 11
+    matched: 1234
+
+Because this API function does not create new Lua strings nor new Lua tables, it is much faster than [ngx.re.match](#ngxrematch). It should be used wherever possible.
+
+This API function was first introduced in the `v0.9.2` release.
+
+[Back to TOC](#table-of-contents)
+
 ngx.re.gmatch
 -------------
 **syntax:** *iterator, err = ngx.re.gmatch(subject, regex, options?)*
@@ -5606,6 +5651,19 @@ ngx.config.debug
 This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the `./configure` option `--with-debug`.
 
 This field was first introduced in the `0.8.7`.
+
+[Back to TOC](#table-of-contents)
+
+ngx.config.prefix
+-----------------
+
+**syntax:** *prefix = ngx.config.prefix()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the Nginx server "prefix" path, as determined by the `-p` command-line option when running the nginx executable, or the path specified by the `--prefix` command-line option when building Nginx with the `./configure` script.
+
+This function was first introduced in the `0.9.2`.
 
 [Back to TOC](#table-of-contents)
 

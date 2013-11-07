@@ -502,10 +502,7 @@ exec:
         }
 
         lua_pushnil(L);
-        if (!wantcaps) {
-            lua_pushnil(L);
-        }
-        return wantcaps ? 1 : 2;
+        return 1;
     }
 
     if (rc < 0) {

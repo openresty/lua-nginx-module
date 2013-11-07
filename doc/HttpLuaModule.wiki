@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.1] released on 29 October 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.2] released on 6 November 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3427,6 +3427,45 @@ To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the 
 
 This feature was introduced in the <code>v0.2.1rc11</code> release.
 
+== ngx.re.find ==
+'''syntax:''' ''from, to, err = ngx.re.find(subject, regex, options?, ctx?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+Similar to [[#ngx.re.match|ngx.re.match]] but only returns the begining index (<code>from</code>) and end index (<code>to</code>) of the matched substring. The returned indexes are 1-based and can be fed directly into the [http://www.lua.org/manual/5.1/manual.html#pdf-string.sub string.sub] API function to obtain the matched substring.
+
+In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two <code>nil</code> values followed by a string describing the error.
+
+If no match is found, this function just returns a <code>nil</code> value.
+
+Below is an example:
+
+<geshi lang="lua">
+    local s = "hello, 1234"
+    local from, to, err = ngx.re.find(s, "([0-9]+)", "jo")
+    if from then
+        ngx.say("from: ", from)
+        ngx.say("to: ", to)
+        ngx.say("matched: ", string.sub(s, from, to))
+    else
+        if err then
+            ngx.say("error: ", err)
+            return
+        end
+        ngx.say("not matched!")
+    end
+</geshi>
+
+This example produces the output
+
+    from: 8
+    to: 11
+    matched: 1234
+
+Because this API function does not create new Lua strings nor new Lua tables, it is much faster than [[#ngx.re.match|ngx.re.match]]. It should be used wherever possible.
+
+This API function was first introduced in the <code>v0.9.2</code> release.
+
 == ngx.re.gmatch ==
 '''syntax:''' ''iterator, err = ngx.re.gmatch(subject, regex, options?)''
 
@@ -4766,6 +4805,16 @@ This API was first introduced in the <code>v0.8.0</code> release.
 This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the <code>./configure</code> option <code>--with-debug</code>.
 
 This field was first introduced in the <code>0.8.7</code>.
+
+== ngx.config.prefix ==
+
+'''syntax:''' ''prefix = ngx.config.prefix()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the Nginx server "prefix" path, as determined by the <code>-p</code> command-line option when running the nginx executable, or the path specified by the <code>--prefix</code> command-line option when building Nginx with the <code>./configure</code> script.
+
+This function was first introduced in the <code>0.9.2</code>.
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''

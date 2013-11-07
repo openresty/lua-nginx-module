@@ -410,23 +410,23 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
-    if (llcf->transform_underscores_in_resp_headers) {
-        /* replace "_" with "-" */
-        for (i = 0; i < len; i++) {
-            if (p[i] == '_') {
-                p[i] = '-';
-            }
-        }
-    }
-
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "out of memory");
     }
 
     ngx_memcpy(key.data, p, len);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (llcf->transform_underscores_in_resp_headers) {
+        /* replace "_" with "-" */
+        for (i = 0; i < len; i++) {
+            if (key.data[i] == '_') {
+                key.data[i] = '-';
+            }
+        }
+    }
 
     key.data[len] = '\0';
 
