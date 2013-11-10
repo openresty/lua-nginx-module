@@ -20,9 +20,10 @@
  * user code cache table */
 extern char ngx_http_lua_code_cache_key;
 
-/* char whose address we use as the key in Lua vm registry for
- * all the "ngx.ctx" tables */
-extern char ngx_http_lua_ctx_tables_key;
+
+/* key in Lua vm registry for all the "ngx.ctx" tables */
+#define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
+
 
 /* char whose address we use as the key in Lua vm registry for
  * regex cache table  */

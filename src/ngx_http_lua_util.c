@@ -66,7 +66,6 @@
 
 
 char ngx_http_lua_code_cache_key;
-char ngx_http_lua_ctx_tables_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_coroutines_key;
@@ -712,7 +711,7 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     /* }}} */
 
     /* create the registry entry for the Lua request ctx data table */
-    lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
+    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
     lua_createtable(L, 0, 32 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
 
@@ -1010,7 +1009,7 @@ ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua release ngx.ctx at ref %d", ctx->ctx_ref);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_ctx_tables_key);
+    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     luaL_unref(L, -1, ctx->ctx_ref);
     ctx->ctx_ref = LUA_NOREF;
