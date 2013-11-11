@@ -234,6 +234,24 @@ ngx_http_lua_ffi_is_subrequest(ngx_http_request_t *r)
 
     return r != r->main;
 }
+
+
+int
+ngx_http_lua_ffi_headers_sent(ngx_http_request_t *r)
+{
+    ngx_http_lua_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
+    }
+
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    return r->header_sent ? 1 : 0;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
