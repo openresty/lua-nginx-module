@@ -223,6 +223,17 @@ ngx_http_lua_ffi_set_resp_status(ngx_http_request_t *r, int status)
 
     return NGX_OK;
 }
+
+
+int
+ngx_http_lua_ffi_is_subrequest(ngx_http_request_t *r)
+{
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    return r != r->main;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
