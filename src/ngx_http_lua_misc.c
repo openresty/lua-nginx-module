@@ -40,7 +40,6 @@ ngx_http_lua_ngx_get(lua_State *L)
     ngx_http_request_t          *r;
     u_char                      *p;
     size_t                       len;
-    ngx_http_lua_ctx_t          *ctx;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
@@ -89,12 +88,7 @@ ngx_http_lua_ngx_get(lua_State *L)
     if (len == sizeof("headers_sent") - 1
         && ngx_strncmp(p, "headers_sent", sizeof("headers_sent") - 1) == 0)
     {
-        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if (ctx == NULL) {
-            return luaL_error(L, "no ctx");
-        }
-
-        ngx_http_lua_check_fake_request2(L, r, ctx);
+        ngx_http_lua_check_fake_request(L, r);
 
         dd("headers sent: %d", r->header_sent);
 
