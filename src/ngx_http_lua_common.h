@@ -82,6 +82,12 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x80
 
 
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+#define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -1
+#define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -2
+#endif
+
+
 typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
 
 
