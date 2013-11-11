@@ -351,6 +351,118 @@ ngx_http_lua_ffi_var_get(ngx_http_request_t *r, u_char *name_data,
     *value_len = vv->len;
     return NGX_OK;
 }
+
+
+int
+ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
+    size_t name_len, u_char *lowcase_buf, u_char *value, size_t value_len,
+    u_char *errbuf, size_t errlen)
+{
+    ngx_uint_t                   hash;
+    ngx_http_variable_t         *v;
+    ngx_http_variable_value_t   *vv;
+    ngx_http_core_main_conf_t   *cmcf;
+
+    if (r == NULL) {
+        ngx_snprintf(errbuf, errlen, "no request object found");
+        return NGX_ERROR;
+    }
+
+    if ((r)->connection->fd == -1) {
+        ngx_snprintf(errbuf, errlen, "API disabled in the current context");
+        return NGX_ERROR;
+    }
+
+    hash = ngx_hash_strlow(lowcase_buf, name_data, name_len);
+
+    dd("variable name: %.*s", (int) name_len, lowcase_buf);
+
+    /* we fetch the variable itself */
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    v = ngx_hash_find(&cmcf->variables_hash, hash, lowcase_buf, name_len);
+
+    if (v) {
+        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+            dd("variable not changeable");
+            ngx_snprintf(errbuf, errlen, "variable \"%*s\" not changeable",
+                         name_len, lowcase_buf);
+            return NGX_ERROR;
+        }
+
+        if (v->set_handler) {
+
+            dd("set variables with set_handler");
+
+            vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
+            if (vv == NULL) {
+                dd("no memory");
+                ngx_snprintf(errbuf, errlen, "no memory");
+                return NGX_ERROR;
+            }
+
+            if (value == NULL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+                vv->data = NULL;
+                vv->len = 0;
+
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = value;
+                vv->len = value_len;
+            }
+
+            v->set_handler(r, vv, v->data);
+
+            return NGX_OK;
+        }
+
+        if (v->flags & NGX_HTTP_VAR_INDEXED) {
+            vv = &r->variables[v->index];
+
+            dd("set indexed variable");
+
+            if (value == NULL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+
+                vv->data = NULL;
+                vv->len = 0;
+
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = value;
+                vv->len = value_len;
+            }
+
+            return NGX_OK;
+        }
+
+        ngx_snprintf(errbuf, errlen, "variable \"%*s\" cannot be assigned "
+                     "a value", name_len, lowcase_buf);
+        return NGX_ERROR;
+    }
+
+    /* variable not found */
+
+    ngx_snprintf(errbuf, errlen, "variable \"%*s\" not found for writing; "
+                 "maybe it is a built-in variable that is not changeable "
+                 "or you forgot to use \"set $%*s '';\" "
+                 "in the config file to define it first",
+                 name_len, lowcase_buf, name_len, lowcase_buf);
+    return NGX_ERROR;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
