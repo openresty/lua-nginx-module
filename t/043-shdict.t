@@ -423,7 +423,7 @@ false the key argument is more than 65535 bytes: 65536
 --- request
 GET /test
 --- response_body
-false unsupported value type for key "foo" in shared_dict "dogs": userdata
+false unsupported value type for key "foo" in shared_dict: userdata
 
 
 
@@ -1410,7 +1410,7 @@ GET /t
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+my $a = "false no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
 [qr/$a/, qr/$a/]
 --- no_error_log
 [error]
@@ -1447,7 +1447,7 @@ my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" he
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+my $a = "false no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
 [qr/$a/,
 q{false exists
 abort at 1
