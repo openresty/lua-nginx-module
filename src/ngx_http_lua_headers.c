@@ -27,6 +27,14 @@ static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 
 
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+typedef struct {
+    ngx_str_t   key;
+    ngx_str_t   value;
+} ngx_http_lua_ffi_table_elt_t;
+#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
+
 static int
 ngx_http_lua_ngx_req_http_version(lua_State *L)
 {
@@ -778,5 +786,87 @@ ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "__index");
     lua_rawset(L, LUA_REGISTRYINDEX);
 }
+
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+int
+ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max)
+{
+    int                           count;
+    ngx_list_part_t              *part;
+
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    if (max < 0) {
+        max = NGX_HTTP_LUA_MAX_HEADERS;
+    }
+
+    part = &r->headers_in.headers.part;
+    count = part->nelts;
+    while (part->next) {
+        part = part->next;
+        count += part->nelts;
+    }
+
+    if (max > 0 && count > max) {
+        count = max;
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding request header limit %d", max);
+    }
+
+    return count;
+}
+
+
+int
+ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
+    ngx_http_lua_ffi_table_elt_t *out, int count, int raw)
+{
+    int                           n;
+    ngx_uint_t                    i;
+    ngx_list_part_t              *part;
+    ngx_table_elt_t              *header;
+
+    if (count <= 0) {
+        return NGX_OK;
+    }
+
+    n = 0;
+    part = &r->headers_in.headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        if (raw) {
+            out[n].key = header[i].key;
+
+        } else {
+            out[n].key.data = header[i].lowcase_key;
+            out[n].key.len = header[i].key.len;
+        }
+
+        out[n].value = header[i].value;
+
+        if (++n == count) {
+            return NGX_OK;
+        }
+    }
+
+    return NGX_OK;
+}
+#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
