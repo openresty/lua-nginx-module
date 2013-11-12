@@ -358,6 +358,7 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
     size_t name_len, u_char *lowcase_buf, u_char *value, size_t value_len,
     u_char *errbuf, size_t errlen)
 {
+    u_char                      *p;
     ngx_uint_t                   hash;
     ngx_http_variable_t         *v;
     ngx_http_variable_value_t   *vv;
@@ -395,11 +396,22 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
 
             dd("set variables with set_handler");
 
-            vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
-            if (vv == NULL) {
-                dd("no memory");
-                ngx_snprintf(errbuf, errlen, "no memory");
-                return NGX_ERROR;
+            if (value != NULL && value_len) {
+                vv = ngx_pnalloc(r->pool, sizeof(ngx_http_variable_value_t)
+                                 + value_len);
+                if (vv == NULL) {
+                    goto nomem;
+                }
+
+                p = (u_char *) vv + sizeof(ngx_http_variable_value_t);
+                ngx_memcpy(p, value, value_len);
+                value = p;
+
+            } else {
+                vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
+                if (vv == NULL) {
+                    goto nomem;
+                }
             }
 
             if (value == NULL) {
@@ -419,7 +431,6 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
             }
 
             v->set_handler(r, vv, v->data);
-
             return NGX_OK;
         }
 
@@ -437,6 +448,13 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
                 vv->len = 0;
 
             } else {
+                p = ngx_palloc(r->pool, value_len);
+                if (p == NULL) {
+                    goto nomem;
+                }
+                ngx_memcpy(p, value, value_len);
+                value = p;
+
                 vv->valid = 1;
                 vv->not_found = 0;
                 vv->no_cacheable = 0;
@@ -460,6 +478,11 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
                  "or you forgot to use \"set $%*s '';\" "
                  "in the config file to define it first",
                  name_len, lowcase_buf, name_len, lowcase_buf);
+    return NGX_ERROR;
+
+nomem:
+
+    ngx_snprintf(errbuf, errlen, "no memory");
     return NGX_ERROR;
 }
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
