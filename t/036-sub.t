@@ -323,6 +323,7 @@ hello, 34
 false
 bad argument #3 to '?' (string, number, or function expected, got boolean)
 nil
+--- SKIP
 
 
 
@@ -346,6 +347,7 @@ hello, 724
 
 
 === TEST 18: bad function return value type
+--- SKIP
 --- config
     location /re {
         content_by_lua '

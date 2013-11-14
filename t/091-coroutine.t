@@ -71,6 +71,7 @@ M(http-lua-user-coroutine-create) {
 F(ngx_http_lua_ngx_exec) { println("exec") }
 
 F(ngx_http_lua_ngx_exit) { println("exit") }
+F(ngx_http_lua_ffi_exit) { println("exit") }
 _EOC_
 
 no_shuffle();
@@ -984,7 +985,7 @@ test10
 
 === TEST 24: init_by_lua + our own coroutines in content_by_lua
 --- http_config
-    init_by_lua return;
+    init_by_lua 'return';
 --- config
     resolver $TEST_NGINX_RESOLVER;
     location /lua {

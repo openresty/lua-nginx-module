@@ -20,9 +20,10 @@
  * user code cache table */
 extern char ngx_http_lua_code_cache_key;
 
-/* char whose address we use as the key in Lua vm registry for
- * all the "ngx.ctx" tables */
-extern char ngx_http_lua_ctx_tables_key;
+
+/* key in Lua vm registry for all the "ngx.ctx" tables */
+#define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
+
 
 /* char whose address we use as the key in Lua vm registry for
  * regex cache table  */
@@ -69,6 +70,25 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
         return luaL_error(L, "API disabled in the context of %s",            \
                           ngx_http_lua_context_name((ctx)->context));        \
     }
+
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+static ngx_inline ngx_int_t
+ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
+    u_char *err, size_t *errlen)
+{
+    if (!(ctx->context & flags)) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API disabled in the context of %s",
+                               ngx_http_lua_context_name((ctx)->context))
+                  - err;
+
+        return NGX_DECLINED;
+    }
+
+    return NGX_OK;
+}
+#endif
 
 
 #define ngx_http_lua_check_fake_request(L, r)                                \
