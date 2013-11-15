@@ -520,7 +520,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
     ngx_http_lua_main_conf_t    *lmcf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                   "lua abort pending timers HERE");
+                   "lua abort pending timers");
 
     c = ev->data;
     lmcf = c->data;
