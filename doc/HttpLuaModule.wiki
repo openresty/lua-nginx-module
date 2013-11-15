@@ -4816,6 +4816,26 @@ Returns the Nginx server "prefix" path, as determined by the <code>-p</code> com
 
 This function was first introduced in the <code>0.9.2</code>.
 
+== ngx.config.nginx_version ==
+
+'''syntax:''' ''ver = ngx.config.nginx_version''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+This field take an integral value indicating the version number of the current Nginx core being used. For example, the version number <code>1.4.3</code> results in the Lua number 1004003.
+
+This API was first introduced in the <code>0.9.3</code> release.
+
+== ngx.config.ngx_lua_version ==
+
+'''syntax:''' ''ver = ngx.config.ngx_lua_version''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+This field take an integral value indicating the version number of the current <code>ngx_lua</code> module being used. For example, the version number <code>0.9.3</code> results in the Lua number 9003.
+
+This API was first introduced in the <code>0.9.3</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 

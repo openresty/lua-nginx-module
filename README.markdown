@@ -168,6 +168,8 @@ Table of Contents
     * [ngx.timer.at](#ngxtimerat)
     * [ngx.config.debug](#ngxconfigdebug)
     * [ngx.config.prefix](#ngxconfigprefix)
+    * [ngx.config.nginx_version](#ngxconfignginx_version)
+    * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
     * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
     * [coroutine.create](#coroutinecreate)
     * [coroutine.resume](#coroutineresume)
@@ -5664,6 +5666,32 @@ ngx.config.prefix
 Returns the Nginx server "prefix" path, as determined by the `-p` command-line option when running the nginx executable, or the path specified by the `--prefix` command-line option when building Nginx with the `./configure` script.
 
 This function was first introduced in the `0.9.2`.
+
+[Back to TOC](#table-of-contents)
+
+ngx.config.nginx_version
+------------------------
+
+**syntax:** *ver = ngx.config.nginx_version*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+This field take an integral value indicating the version number of the current Nginx core being used. For example, the version number `1.4.3` results in the Lua number 1004003.
+
+This API was first introduced in the `0.9.3` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.config.ngx_lua_version
+--------------------------
+
+**syntax:** *ver = ngx.config.ngx_lua_version*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+This field take an integral value indicating the version number of the current `ngx_lua` module being used. For example, the version number `0.9.3` results in the Lua number 9003.
+
+This API was first introduced in the `0.9.3` release.
 
 [Back to TOC](#table-of-contents)
 
