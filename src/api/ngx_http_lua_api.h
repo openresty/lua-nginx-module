@@ -14,8 +14,10 @@
 
 #include <lua.h>
 
-
 /* Public API for other Nginx modules */
+
+#define ngx_lua_version  9003
+#define NGX_LUA_VERSION  "0.9.3"
 
 typedef struct {
     uint8_t         type;
