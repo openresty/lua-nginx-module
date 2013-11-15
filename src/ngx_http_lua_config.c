@@ -11,6 +11,7 @@
 
 
 #include "ngx_http_lua_config.h"
+#include "api/ngx_http_lua_api.h"
 
 
 static int ngx_http_lua_config_prefix(lua_State *L);
@@ -32,6 +33,12 @@ ngx_http_lua_inject_config_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_config_prefix);
     lua_setfield(L, -2, "prefix");
+
+    lua_pushinteger(L, nginx_version);
+    lua_setfield(L, -2, "nginx_version");
+
+    lua_pushinteger(L, ngx_http_lua_version);
+    lua_setfield(L, -2, "ngx_lua_version");
 
     lua_setfield(L, -2, "config");
 }
