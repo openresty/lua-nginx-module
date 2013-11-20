@@ -4996,6 +4996,56 @@ For large streaming output responses, it is important to disable the [[#lua_http
 Note that common HTTP benchmark tools such as <code>ab</code> and <code>http_load</code> issue HTTP 1.0 requests by default.
 To force <code>curl</code> to send HTTP 1.0 requests, use the <code>-0</code> option.
 
+= Statically Linking Pure Lua Modules =
+
+When LuaJIT 2.x is used, it is possible to statically link the bytecode of pure Lua modules into the Nginx executable.
+
+Basically you use the <code>luajit</code> executable to compile <code>.lua</code> Lua module files to <code>.o</code> object files containing the exported bytecode data, and then link the <code>.o</code> files directly in your Nginx build.
+
+Below is a trivial example to demonstrate this. Consider that we have the following <code>.lua</code> file named <code>foo.lua</code>:
+
+<geshi lang="lua">
+    -- foo.lua
+    local _M = {}
+
+    function _M.go()
+        print("Hello from foo")
+    end
+
+    return _M
+</geshi>
+
+And then we compile this <code>.lua</code> file to <code>foo.o</code> file:
+
+    /path/to/luajit/bin/luajit -bg foo.lua foo.o
+
+What matters here is the name of the <code>.lua</code> file, which determines how you use this module later on the Lua land. The file name <code>foo.o</code> does not matter at all except the <code>.o</code> file extension (which tells <code>luajit</code> what output format is used). If you want to strip the Lua debug information from the resulting bytecode, you can just specify the <code>-b</code> option above instead of <code>-bg</code>.
+
+Then when building Nginx or OpenResty, pass the <code>--with-ld-opt="foo.o"</code> option to the <code>./configure</code> script:
+
+<geshi lang="bash">
+    ./configure --with-ld-opt="foo.o" ...
+</geshi>
+
+assuming that the <code>foo.o</code> file has been copied to the current working directory. Finally, you can just do the following in any Lua code run by ngx_lua:
+
+<geshi lang="lua">
+    local foo = require "foo"
+    foo.go()
+</geshi>
+
+And this piece of code no longer depends on the external <code>foo.lua</code> file any more because it has already been compiled into the <code>nginx</code> executable.
+
+If you want to use dot in the Lua module name when calling <code>require</code>, as in
+
+<geshi lang="lua">
+    local foo = require "resty.foo"
+</geshi>
+
+then you need to rename the <code>foo.lua</code> file to <code>resty_foo.lua</code> before compiling it down to a <code>.o</code> file with the <code>luajit</code> command-line utility.
+
+It is important to use exactly the same version of LuaJIT when compiling <code>.lua</code> files to <code>.o</code> files as building nginx + ngx_lua. This is because the LuaJIT bytecode format may be incompatible between different LuaJIT versions. When the bytecode format is incompatible, you will see a Lua runtime error saying that the Lua module is not found.
+
 = Data Sharing within an Nginx Worker =
 
 To globally share data among all the requests handled by the same nginx worker process, encapsulate the shared data into a Lua module, use the Lua <code>require</code> builtin to import the module, and then manipulate the shared data in Lua. This works because required Lua modules are loaded only once and all coroutines will share the same copy of the module (both its code and data). Note however that Lua global variables (note, not module-level variables) WILL NOT persist between requests because of the one-coroutine-per-request isolation design.

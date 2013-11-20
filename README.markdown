@@ -180,6 +180,7 @@ Table of Contents
 * [Lua/LuaJIT bytecode support](#lualuajit-bytecode-support)
 * [System Environment Variable Support](#system-environment-variable-support)
 * [HTTP 1.0 support](#http-10-support)
+* [Statically Linking Pure Lua Modules](#statically-linking-pure-lua-modules)
 * [Data Sharing within an Nginx Worker](#data-sharing-within-an-nginx-worker)
 * [Known Issues](#known-issues)
     * [TCP socket connect operation issues](#tcp-socket-connect-operation-issues)
@@ -5888,6 +5889,63 @@ For large streaming output responses, it is important to disable the [lua_http10
 
 Note that common HTTP benchmark tools such as `ab` and `http_load` issue HTTP 1.0 requests by default.
 To force `curl` to send HTTP 1.0 requests, use the `-0` option.
+
+[Back to TOC](#table-of-contents)
+
+Statically Linking Pure Lua Modules
+===================================
+
+When LuaJIT 2.x is used, it is possible to statically link the bytecode of pure Lua modules into the Nginx executable.
+
+Basically you use the `luajit` executable to compile `.lua` Lua module files to `.o` object files containing the exported bytecode data, and then link the `.o` files directly in your Nginx build.
+
+Below is a trivial example to demonstrate this. Consider that we have the following `.lua` file named `foo.lua`:
+
+```lua
+
+    -- foo.lua
+    local _M = {}
+
+    function _M.go()
+        print("Hello from foo")
+    end
+
+    return _M
+```
+
+And then we compile this `.lua` file to `foo.o` file:
+
+    /path/to/luajit/bin/luajit -bg foo.lua foo.o
+
+What matters here is the name of the `.lua` file, which determines how you use this module later on the Lua land. The file name `foo.o` does not matter at all except the `.o` file extension (which tells `luajit` what output format is used). If you want to strip the Lua debug information from the resulting bytecode, you can just specify the `-b` option above instead of `-bg`.
+
+Then when building Nginx or OpenResty, pass the `--with-ld-opt="foo.o"` option to the `./configure` script:
+
+```bash
+
+    ./configure --with-ld-opt="foo.o" ...
+```
+
+assuming that the `foo.o` file has been copied to the current working directory. Finally, you can just do the following in any Lua code run by ngx_lua:
+
+```lua
+
+    local foo = require "foo"
+    foo.go()
+```
+
+And this piece of code no longer depends on the external `foo.lua` file any more because it has already been compiled into the `nginx` executable.
+
+If you want to use dot in the Lua module name when calling `require`, as in
+
+```lua
+
+    local foo = require "resty.foo"
+```
+
+then you need to rename the `foo.lua` file to `resty_foo.lua` before compiling it down to a `.o` file with the `luajit` command-line utility.
+
+It is important to use exactly the same version of LuaJIT when compiling `.lua` files to `.o` files as building nginx + ngx_lua. This is because the LuaJIT bytecode format may be incompatible between different LuaJIT versions. When the bytecode format is incompatible, you will see a Lua runtime error saying that the Lua module is not found.
 
 [Back to TOC](#table-of-contents)
 
