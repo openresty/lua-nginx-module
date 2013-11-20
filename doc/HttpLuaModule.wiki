@@ -183,7 +183,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
 
 = Description =
 
-This module embeds Lua, via the standard Lua 5.1 interpreter or [http://luajit.org/luajit.html LuaJIT 2.0], into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
+This module embeds Lua, via the standard Lua 5.1 interpreter or [http://luajit.org/luajit.html LuaJIT 2.0/2.1], into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
 Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
 requests to upstream services such as MySQL, PostgreSQL, Memcached, Redis, or upstream HTTP web services.
@@ -4935,7 +4935,7 @@ This API was first enabled in the <code>v0.6.0</code> release.
 
 = Lua/LuaJIT bytecode support =
 
-As from the <code>v0.5.0rc32</code> release, all <code>*_by_lua_file</code> configure directives (such as [[#content_by_lua_file|content_by_lua_file]]) support loading Lua 5.1 and LuaJIT 2.0 raw bytecode files directly.
+As from the <code>v0.5.0rc32</code> release, all <code>*_by_lua_file</code> configure directives (such as [[#content_by_lua_file|content_by_lua_file]]) support loading Lua 5.1 and LuaJIT 2.0/2.1 raw bytecode files directly.
 
 Please note that the bytecode format used by LuaJIT 2.0/2.1 is not compatible with that used by the standard Lua 5.1 interpreter. So if using LuaJIT 2.0/2.1 with ngx_lua, LuaJIT compatible bytecode files must be generated as shown:
 
@@ -5052,8 +5052,8 @@ However, later attempts to manipulate the cosocket object will fail and return t
 This issue is due to limitations in the Nginx event model and only appears to affect Mac OS X.
 
 == Lua Coroutine Yielding/Resuming ==
-* Lua's <code>dofile</code> builtin is implemented as a C function in both Lua 5.1 and LuaJIT 2.0 and when [[#ngx.location.capture|ngx.location.capture]] is called, [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]] or [[#ngx.req.read_body|ngx.req.read_body]] or similar in the file to be loaded by <code>dofile</code>, a coroutine yield across the C function boundary will be initiated. This however is not normally allowed within ngx_lua and will usually result in error messages like <code>lua handler aborted: runtime error: attempt to yield across C-call boundary</code>. To avoid this, define a real Lua module and use the Lua <code>require</code> builtin instead.
-* As the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] or even the first line of the <code>for ... in ...</code> statement when the standard Lua 5.1 interpreter is used and the <code>attempt to yield across metamethod/C-call boundary</code> error will be produced. Please use LuaJIT 2.0, which supports a fully resumable VM, to avoid this.
+* Lua's <code>dofile</code> builtin is implemented as a C function in both Lua 5.1 and LuaJIT 2.0/2.1 and when [[#ngx.location.capture|ngx.location.capture]] is called, [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]] or [[#ngx.req.read_body|ngx.req.read_body]] or similar in the file to be loaded by <code>dofile</code>, a coroutine yield across the C function boundary will be initiated. This however is not normally allowed within ngx_lua and will usually result in error messages like <code>lua handler aborted: runtime error: attempt to yield across C-call boundary</code>. To avoid this, define a real Lua module and use the Lua <code>require</code> builtin instead.
+* As the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] or even the first line of the <code>for ... in ...</code> statement when the standard Lua 5.1 interpreter is used and the <code>attempt to yield across metamethod/C-call boundary</code> error will be produced. Please use LuaJIT 2.x, which supports a fully resumable VM, to avoid this.
 
 == Lua Variable Scope ==
 Care must be taken when importing modules and this form should be used:
@@ -5215,7 +5215,7 @@ Just to name a few:
 * doing very complex URL dispatch in Lua at rewrite phase,
 * using Lua to implement advanced caching mechanism for Nginx's subrequests and arbitrary locations.
 
-The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.0 is enabled. 
+The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.x is enabled.
 
 Other scripting language implementations typically struggle to match this performance level.
 
@@ -5241,11 +5241,11 @@ The code repository of this project is hosted on github at [http://github.com/ch
 
 = Installation =
 
-The [http://openresty.org ngx_openresty bundle] can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0, as well as a package of powerful companion Nginx modules. The basic installation step is a simple <code>./configure --with-luajit && make && make install</code>.
+The [http://openresty.org ngx_openresty bundle] can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0/2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple <code>./configure --with-luajit && make && make install</code>.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-# Install LuaJIT 2.0 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuajIT can be downloaded from the [http://luajit.org/download.html the LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuajIT and/or Lua.
+# Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuajIT can be downloaded from the [http://luajit.org/download.html the LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuajIT and/or Lua.
 # Download the latest version of the ngx_devel_kit (NDK) module [http://github.com/simpl/ngx_devel_kit/tags HERE].
 # Download the latest version of ngx_lua [http://github.com/chaoslawful/lua-nginx-module/tags HERE].
 # Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
@@ -5257,9 +5257,13 @@ Build the source with this module:
     tar -xzvf nginx-1.4.3.tar.gz
     cd nginx-1.4.3/
 
-    # tell nginx's build system where to find LuaJIT:
+    # tell nginx's build system where to find LuaJIT 2.0:
     export LUAJIT_LIB=/path/to/luajit/lib
     export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+
+    # tell nginx's build system where to find LuaJIT 2.1:
+    export LUAJIT_LIB=/path/to/luajit/lib
+    export LUAJIT_INC=/path/to/luajit/include/luajit-2.1
  
     # or tell where to find Lua if using Lua instead:
     #export LUA_LIB=/path/to/lua/lib
@@ -5276,7 +5280,7 @@ Build the source with this module:
 
 == Installation on Ubuntu 11.10 ==
 
-Note that it is recommended to use LuaJIT 2.0 instead of the standard Lua 5.1 interpreter where possible. 
+Note that it is recommended to use LuaJIT 2.0 or LuaJIT 2.1 instead of the standard Lua 5.1 interpreter wherever possible.
 
 If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
 
@@ -5284,7 +5288,7 @@ If the standard Lua 5.1 interpreter is required however, run the following comma
 apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
 </geshi>
 
-Everything should be installed correctly, except for one small tweak. 
+Everything should be installed correctly, except for one small tweak.
 
 Library name <code>liblua.so</code> has been changed in liblua5.1 package, it only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
 
