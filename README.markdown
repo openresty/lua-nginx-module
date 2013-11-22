@@ -778,12 +778,12 @@ Note that this handler always runs *after* the standard [ngx_http_rewrite_module
 
 ```nginx
 
-   location /foo {
-       set $a 12; # create and initialize $a
-       set $b ""; # create and initialize $b
-       rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
-       echo "res = $b";
-   }
+location /foo {
+    set $a 12; # create and initialize $a
+    set $b ""; # create and initialize $b
+    rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
+    echo "res = $b";
+}
 ```
 
 because `set $a 12` and `set $b ""` run *before* [rewrite_by_lua](#rewrite_by_lua).
@@ -5965,7 +5965,8 @@ then you can link the `myluafiles` archive as a whole to your nginx executable:
 
 ```bash
 
-./configure --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
+./configure \
+    --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
 ```
 
 where `/path/to/lib` is the path of the directory containing the `libmyluafiles.a` file. It should be noted that the linker option `--while-archive` is required here because otherwise our archive will be skipped because no symbols in our archive are mentioned in the main parts of the nginx executable.

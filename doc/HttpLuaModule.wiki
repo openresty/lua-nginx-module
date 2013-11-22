@@ -521,12 +521,12 @@ The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new 
 Note that this handler always runs ''after'' the standard [[HttpRewriteModule]]. So the following will work as expected:
 
 <geshi lang="nginx">
-   location /foo {
-       set $a 12; # create and initialize $a
-       set $b ""; # create and initialize $b
-       rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
-       echo "res = $b";
-   }
+    location /foo {
+        set $a 12; # create and initialize $a
+        set $b ""; # create and initialize $b
+        rewrite_by_lua 'ngx.var.b = tonumber(ngx.var.a) + 1';
+        echo "res = $b";
+    }
 </geshi>
 
 because <code>set $a 12</code> and <code>set $b ""</code> run ''before'' [[#rewrite_by_lua|rewrite_by_lua]].
@@ -5061,7 +5061,8 @@ If you have just too many <code>.o</code> files, then it might not be feasible t
 then you can link the <code>myluafiles</code> archive as a whole to your nginx executable:
 
 <geshi lang="bash">
-    ./configure --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
+    ./configure \
+        --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
 </geshi>
 
 where <code>/path/to/lib</code> is the path of the directory containing the <code>libmyluafiles.a</code> file. It should be noted that the linker option <code>--while-archive</code> is required here because otherwise our archive will be skipped because no symbols in our archive are mentioned in the main parts of the nginx executable.
