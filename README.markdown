@@ -221,10 +221,10 @@ Synopsis
 ========
 ```nginx
 
-1. set search paths for pure Lua external libraries (';;' is the default path):
+# set search paths for pure Lua external libraries (';;' is the default path):
 lua_package_path '/foo/bar/?.lua;/blah/?.lua;;';
  
-1. set search paths for Lua external libraries written in C (can also use ';;'):
+# set search paths for Lua external libraries written in C (can also use ';;'):
 lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
  
 server {
@@ -2784,7 +2784,7 @@ Then
 
 ```bash
 
-1. Post request with the body 'foo=bar&bar=baz&bar=blah'
+# Post request with the body 'foo=bar&bar=baz&bar=blah'
 $ curl --data 'foo=bar&bar=baz&bar=blah' localhost/test
 ```
 
@@ -2804,7 +2804,7 @@ With the settings above,
 
 ```bash
 
-1. POST request with body 'a%20b=1%61+2'
+# POST request with body 'a%20b=1%61+2'
 $ curl -d 'a%20b=1%61+2' localhost/test
 ```
 
@@ -3298,14 +3298,14 @@ which is equivalent to
 
 ```lua
 
-return ngx.redirect("<http://localhost:1984/foo",> ngx.HTTP_MOVED_TEMPORARILY)
+return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
 ```
 
 Redirecting arbitrary external URLs is also supported, for example:
 
 ```lua
 
-return ngx.redirect("<http://www.google.com">)
+return ngx.redirect("http://www.google.com")
 ```
 
 We can also use the numerical code directly as the second `status` argument:
@@ -3498,7 +3498,7 @@ The effect in action:
 
 ```bash
 
-$ curl -i <http://localhost/test>
+$ curl -i http://localhost/test
 HTTP/1.1 410 Gone
 Server: nginx/1.0.6
 Date: Thu, 15 Sep 2011 00:51:48 GMT
@@ -6105,7 +6105,7 @@ location /blah {
 
 ```nginx
 
-$ curl -i <http://example.com/foo>
+$ curl -i http://example.com/foo
 ```
 
 will not work as expected.
@@ -6118,7 +6118,7 @@ PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in
 
 ```nginx
 
-1. nginx.conf
+# nginx.conf
 ? location /test {
 ?     content_by_lua '
 ?         local regex = "\d+"  -- THIS IS WRONG!!
@@ -6126,14 +6126,14 @@ PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in
 ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
 ?     ';
 ? }
-1. evaluates to "not matched!"
+# evaluates to "not matched!"
 ```
 
 To avoid this, *double* escape the backslash:
 
 ```nginx
 
-1. nginx.conf
+# nginx.conf
 location /test {
     content_by_lua '
         local regex = "\\\\d+"
@@ -6141,7 +6141,7 @@ location /test {
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
     ';
 }
-1. evaluates to "1234"
+# evaluates to "1234"
 ```
 
 Here, `\\\\d+` is stripped down to `\\d+` by the Nginx config file parser and this is further stripped down to `\d+` by the Lua language parser before running.
@@ -6150,7 +6150,7 @@ Alternatively, the regex pattern can be presented as a long-bracketed Lua string
 
 ```nginx
 
-1. nginx.conf
+# nginx.conf
 location /test {
     content_by_lua '
         local regex = [[\\d+]]
@@ -6158,7 +6158,7 @@ location /test {
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
     ';
 }
-1. evaluates to "1234"
+# evaluates to "1234"
 ```
 
 Here, `[[\\d+]]` is stripped down to `[[\d+]]` by the Nginx config file parser and this is processed correctly.
@@ -6168,7 +6168,7 @@ The `[=[...]=]` form may be used as the default form if desired.
 
 ```nginx
 
-1. nginx.conf
+# nginx.conf
 location /test {
     content_by_lua '
         local regex = [=[[0-9]+]=]
@@ -6176,7 +6176,7 @@ location /test {
         if m then ngx.say(m[0]) else ngx.say("not matched!") end
     ';
 }
-1. evaluates to "1234"
+# evaluates to "1234"
 ```
 
 An alternative approach to escaping PCRE sequences is to ensure that Lua code is placed in external script files and executed using the various `*_by_lua_file` directives. 
@@ -6279,23 +6279,23 @@ Build the source with this module:
 
 ```bash
 
-wget '<http://nginx.org/download/nginx-1.4.3.tar.gz'>
+wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
 tar -xzvf nginx-1.4.3.tar.gz
 cd nginx-1.4.3/
 
-1. tell nginx's build system where to find LuaJIT 2.0:
+# tell nginx's build system where to find LuaJIT 2.0:
 export LUAJIT_LIB=/path/to/luajit/lib
 export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
 
-1. tell nginx's build system where to find LuaJIT 2.1:
+# tell nginx's build system where to find LuaJIT 2.1:
 export LUAJIT_LIB=/path/to/luajit/lib
 export LUAJIT_INC=/path/to/luajit/include/luajit-2.1
  
-1. or tell where to find Lua if using Lua instead:
+# or tell where to find Lua if using Lua instead:
 #export LUA_LIB=/path/to/lua/lib
 #export LUA_INC=/path/to/lua/include
  
-1. Here we assume Nginx is to be installed under /opt/nginx/.
+# Here we assume Nginx is to be installed under /opt/nginx/.
 ./configure --prefix=/opt/nginx \
         --add-module=/path/to/ngx_devel_kit \
         --add-module=/path/to/lua-nginx-module
