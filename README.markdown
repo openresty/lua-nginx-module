@@ -5923,10 +5923,10 @@ Then when building Nginx or OpenResty, pass the `--with-ld-opt="foo.o"` option t
 
 ```bash
 
-    ./configure --with-ld-opt="foo.o" ...
+    ./configure --with-ld-opt="/path/to/foo.o" ...
 ```
 
-assuming that the `foo.o` file has been copied to the current working directory. Finally, you can just do the following in any Lua code run by ngx_lua:
+Finally, you can just do the following in any Lua code run by ngx_lua:
 
 ```lua
 
@@ -5946,6 +5946,29 @@ If you want to use dot in the Lua module name when calling `require`, as in
 then you need to rename the `foo.lua` file to `resty_foo.lua` before compiling it down to a `.o` file with the `luajit` command-line utility.
 
 It is important to use exactly the same version of LuaJIT when compiling `.lua` files to `.o` files as building nginx + ngx_lua. This is because the LuaJIT bytecode format may be incompatible between different LuaJIT versions. When the bytecode format is incompatible, you will see a Lua runtime error saying that the Lua module is not found.
+
+When you have multiple `.lua` files to compile and link, then just specify their `.o` files at the same time in the value of the `--with-ld-opt` option. For instance,
+
+```bash
+
+    ./configure --with-ld-opt="/path/to/foo.o /path/to/bar.o" ...
+```
+
+If you have just too many `.o` files, then it might not be feasible to name them all in a single command. In this case, you can build a static library (or archive) for your `.o` files, as in
+
+```bash
+
+    ar rcus libmyluafiles.a *.o
+```
+
+then you can link the `myluafiles` archive as a whole to your nginx executable:
+
+```bash
+
+    ./configure --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
+```
+
+where `/path/to/lib` is the path of the directory containing the `libmyluafiles.a` file. It should be noted that the linker option `--while-archive` is required here because otherwise our archive will be skipped because no symbols in our archive are mentioned in the main parts of the nginx executable.
 
 [Back to TOC](#table-of-contents)
 

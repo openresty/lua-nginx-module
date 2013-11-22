@@ -5024,10 +5024,10 @@ What matters here is the name of the <code>.lua</code> file, which determines ho
 Then when building Nginx or OpenResty, pass the <code>--with-ld-opt="foo.o"</code> option to the <code>./configure</code> script:
 
 <geshi lang="bash">
-    ./configure --with-ld-opt="foo.o" ...
+    ./configure --with-ld-opt="/path/to/foo.o" ...
 </geshi>
 
-assuming that the <code>foo.o</code> file has been copied to the current working directory. Finally, you can just do the following in any Lua code run by ngx_lua:
+Finally, you can just do the following in any Lua code run by ngx_lua:
 
 <geshi lang="lua">
     local foo = require "foo"
@@ -5045,6 +5045,26 @@ If you want to use dot in the Lua module name when calling <code>require</code>,
 then you need to rename the <code>foo.lua</code> file to <code>resty_foo.lua</code> before compiling it down to a <code>.o</code> file with the <code>luajit</code> command-line utility.
 
 It is important to use exactly the same version of LuaJIT when compiling <code>.lua</code> files to <code>.o</code> files as building nginx + ngx_lua. This is because the LuaJIT bytecode format may be incompatible between different LuaJIT versions. When the bytecode format is incompatible, you will see a Lua runtime error saying that the Lua module is not found.
+
+When you have multiple <code>.lua</code> files to compile and link, then just specify their <code>.o</code> files at the same time in the value of the <code>--with-ld-opt</code> option. For instance,
+
+<geshi lang="bash">
+    ./configure --with-ld-opt="/path/to/foo.o /path/to/bar.o" ...
+</geshi>
+
+If you have just too many <code>.o</code> files, then it might not be feasible to name them all in a single command. In this case, you can build a static library (or archive) for your <code>.o</code> files, as in
+
+<geshi lang="bash">
+    ar rcus libmyluafiles.a *.o
+</geshi>
+
+then you can link the <code>myluafiles</code> archive as a whole to your nginx executable:
+
+<geshi lang="bash">
+    ./configure --with-ld-opt="-L/path/to/lib -Wl,--whole-archive -lmyluafiles -Wl,--no-whole-archive"
+</geshi>
+
+where <code>/path/to/lib</code> is the path of the directory containing the <code>libmyluafiles.a</code> file. It should be noted that the linker option <code>--while-archive</code> is required here because otherwise our archive will be skipped because no symbols in our archive are mentioned in the main parts of the nginx executable.
 
 = Data Sharing within an Nginx Worker =
 
