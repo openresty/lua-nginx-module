@@ -210,7 +210,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     tctx = (ngx_http_lua_timer_ctx_t *) p;
 
-    tctx->premature = ngx_exiting ? 1 : 0;
+    tctx->premature = 0;
     tctx->co_ref = co_ref;
     tctx->co = co;
     tctx->main_conf = r->main_conf;

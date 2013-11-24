@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 61;
+plan tests => repeat_each() * 60;
 
 #no_diff();
 no_long_string();
@@ -267,7 +267,6 @@ registered timer
 [alert]
 [crit]
 in callback: hello, 2
-timer prematurely expired: false
 failed to register a new timer after reload
 
 --- error_log
@@ -277,6 +276,6 @@ http lua close fake http connection
 f: timer prematurely expired: true
 f: registered a new timer after reload
 f: exiting=true
-g: timer prematurely expired: true
+g: timer prematurely expired: false
 g: exiting=true
 
