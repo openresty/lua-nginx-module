@@ -86,7 +86,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         return luaL_error(L, "no request");
     }
 
-    if (ngx_exiting) {
+    if (ngx_exiting && delay > 0) {
         lua_pushnil(L);
         lua_pushliteral(L, "process exiting");
         return 2;
@@ -210,7 +210,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     tctx = (ngx_http_lua_timer_ctx_t *) p;
 
-    tctx->premature = 0;
+    tctx->premature = ngx_exiting ? 1 : 0;
     tctx->co_ref = co_ref;
     tctx->co = co;
     tctx->main_conf = r->main_conf;
@@ -636,11 +636,13 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
         ev->handler(ev);
     }
 
-    if (lmcf->pending_timers) {
+#if 0
+    if (pending_timers) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                       "lua pending timer counter got out of sync: %i",
-                      lmcf->pending_timers);
+                      pending_timers);
     }
+#endif
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
