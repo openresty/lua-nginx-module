@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 59;
+plan tests => repeat_each() * 61;
 
 #no_diff();
 no_long_string();
@@ -233,10 +233,12 @@ failed to register a new timer after reload: process exiting, context: ngx.timer
 
             local function g(premature)
                 print("g: timer prematurely expired: ", premature)
+                print("g: exiting=", ngx.worker.exiting())
             end
 
             local function f(premature)
                 print("f: timer prematurely expired: ", premature)
+                print("f: exiting=", ngx.worker.exiting())
                 local ok, err = ngx.timer.at(0, g)
                 if not ok then
                     print("f: failed to register a new timer after reload: ", err)
@@ -274,5 +276,7 @@ lua ngx.timer expired
 http lua close fake http connection
 f: timer prematurely expired: true
 f: registered a new timer after reload
+f: exiting=true
 g: timer prematurely expired: true
+g: exiting=true
 
