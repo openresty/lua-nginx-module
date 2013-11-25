@@ -698,8 +698,8 @@ Content-Type: application/json; charset=utf-8
 === TEST 32: hang on upstream_next (from kindy)
 --- http_config
     upstream xx {
-        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
-        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT max_fails=5;
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT max_fails=5;
     }
 
     server {
@@ -710,11 +710,8 @@ Content-Type: application/json; charset=utf-8
     }
 --- config
     location = /t {
+        proxy_next_upstream off;
         proxy_pass http://xx;
-    }
-
-    location = /bad {
-        return 444;
     }
 --- request
     GET /t
