@@ -366,7 +366,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.3
+--- wait: 0.4
 --- ignore_response
 --- no_error_log
 [error]

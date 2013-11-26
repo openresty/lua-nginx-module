@@ -123,8 +123,12 @@ pcre JIT compiling result: 1
 --- response_body
 hello
 world
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 
@@ -149,8 +153,12 @@ pcre JIT compiling result: 1
 nil
 nil
 nil
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 
@@ -166,8 +174,12 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 done
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 
@@ -188,8 +200,12 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 hello
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 

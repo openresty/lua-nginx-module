@@ -13,6 +13,7 @@ no_long_string();
 
 our $HtmlDir = html_dir;
 
+check_accum_error_log();
 run_tests();
 
 __DATA__

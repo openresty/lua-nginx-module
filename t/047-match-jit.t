@@ -75,8 +75,12 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 1234
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 
@@ -96,8 +100,12 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 not matched!
---- error_log
-pcre JIT compiling result: 1
+
+--- grep_error_log eval
+qr/pcre JIT compiling result: \d+/
+
+--- grep_error_log_out eval
+["pcre JIT compiling result: 1\n", ""]
 
 
 

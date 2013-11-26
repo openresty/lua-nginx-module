@@ -17,7 +17,7 @@ log_level 'warn';
 no_long_string();
 #no_diff();
 #no_shuffle();
-
+check_accum_error_log();
 run_tests();
 
 __DATA__

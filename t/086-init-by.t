@@ -147,8 +147,10 @@ Jim: 6
 GET /lua
 --- response_body
 ok
---- error_log
+--- grep_error_log chop
 log from init_by_lua
+--- grep_error_log_out eval
+["log from init_by_lua\n", ""]
 
 
 
@@ -167,8 +169,10 @@ log from init_by_lua
 GET /lua
 --- response_body
 ok
---- error_log
+--- grep_error_log chop
 log from init_by_lua
+--- grep_error_log_out eval
+["log from init_by_lua\n", ""]
 
 
 
