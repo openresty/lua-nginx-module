@@ -154,13 +154,14 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     int                          name_entry_size = 0, name_count;
     u_char                      *name_table = NULL;
     int                          exec_opts;
+    int                          group_id = 0;
 
     ngx_http_lua_regex_compile_t      re_comp;
 
     nargs = lua_gettop(L);
 
-    if (nargs != 2 && nargs != 3 && nargs != 4) {
-        return luaL_error(L, "expecting two or three or four arguments, "
+    if (nargs != 2 && nargs != 3 && nargs != 4 && nargs != 5) {
+        return luaL_error(L, "expecting 2, 3, 4 or 5 arguments, "
                           "but got %d", nargs);
     }
 
@@ -205,6 +206,13 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     } else {
         opts.data = (u_char *) "";
         opts.len = 0;
+    }
+
+    if (!wantcaps && nargs == 5) {
+        group_id =  luaL_checkint(L, 5);
+        if (group_id < 0) {
+            group_id = 0;
+        }
     }
 
     re_comp.options = 0;
@@ -529,8 +537,15 @@ exec:
     }
 
     if (!wantcaps) {
-        lua_pushinteger(L, cap[0] + 1);
-        lua_pushinteger(L, cap[1]);
+        if (group_id >= rc) {
+            lua_pushnil(L);
+            lua_pushnil(L);
+
+        } else {
+            lua_pushinteger(L, cap[group_id * 2] + 1);
+            lua_pushinteger(L, cap[group_id * 2 + 1]);
+        }
+
         return 2;
     }
 

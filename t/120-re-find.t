@@ -692,3 +692,144 @@ failed to match
 --- no_error_log
 [error]
 
+
+
+=== TEST 24: specify the group (1)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])([0-9]+)", "jo", nil, 1)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+from: 8
+to: 8
+matched: 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 25: specify the group (0)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])([0-9]+)", "jo", nil, 0)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+from: 8
+to: 11
+matched: 1234
+--- no_error_log
+[error]
+
+
+
+=== TEST 26: specify the group (2)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])([0-9]+)", "jo", nil, 2)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+from: 9
+to: 11
+matched: 234
+--- no_error_log
+[error]
+
+
+
+=== TEST 27: specify the group (3)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])([0-9]+)", "jo", nil, 3)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+--- no_error_log
+[error]
+
+
+
+=== TEST 28: specify the group (4)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])([0-9]+)", "jo", nil, 4)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+--- no_error_log
+[error]
+
