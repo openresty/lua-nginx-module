@@ -758,7 +758,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lua_createtable(L, 0 /* narr */, 96 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 97 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
