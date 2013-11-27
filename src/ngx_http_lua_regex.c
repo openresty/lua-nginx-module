@@ -542,7 +542,12 @@ exec:
             lua_pushnil(L);
             lua_pushliteral(L, "nth out of bound");
             return 3;
+        }
 
+        if (group_id >= rc) {
+            lua_pushnil(L);
+            lua_pushnil(L);
+            return 2;
         }
 
         {
