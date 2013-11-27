@@ -835,3 +835,59 @@ error: nth out of bound
 --- no_error_log
 [error]
 
+
+
+=== TEST 29: nil submatch (2nd)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "([0-9])|(hello world)", "jo", nil, 2)
+            if from or to then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                    return
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+--- no_error_log
+[error]
+
+
+
+=== TEST 30: nil submatch (1st)
+--- config
+    location /re {
+        content_by_lua '
+            local s = "hello, 1234"
+            local from, to, err = ngx.re.find(s, "(hello world)|([0-9])", "jo", nil, 1)
+            if from or to then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("matched: ", string.sub(s, from, to))
+            else
+                if err then
+                    ngx.say("error: ", err)
+                    return
+                end
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+--- no_error_log
+[error]
+
