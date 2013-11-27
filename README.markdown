@@ -4123,7 +4123,7 @@ This feature was introduced in the `v0.2.1rc11` release.
 
 ngx.re.find
 -----------
-**syntax:** *from, to, err = ngx.re.find(subject, regex, options?, ctx?)*
+**syntax:** *from, to, err = ngx.re.find(subject, regex, options?, ctx?, nth?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
@@ -4159,6 +4159,17 @@ This example produces the output
     matched: 1234
 
 Because this API function does not create new Lua strings nor new Lua tables, it is much faster than [ngx.re.match](#ngxrematch). It should be used wherever possible.
+
+Since the `0.9.3` release, an optional 5th argument, `nth`, is supported to specify which (submatch) capture's indexes to return. When `nth` is 0 (which is the default), the indexes for the whole matched substring is returned; when `nth` is 1, then the 1st submatch capture's indexes are returned; when `nth` is 2, then the 2nd submatch capture is returned, and so on. When the specified submatch does not have a match, then two `nil` values will be returned. Below is an example for this:
+
+```lua
+
+local str = "hello, 1234"
+local from, to = ngx.re.find(str, "([0-9])([0-9]+)", "jo", nil, 2)
+if from then
+    ngx.say("matched 2nd submatch: ", string.sub(str, from, to))  -- yields "234"
+end
+```
 
 This API function was first introduced in the `v0.9.2` release.
 
