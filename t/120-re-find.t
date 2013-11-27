@@ -794,6 +794,7 @@ matched: 234
             else
                 if err then
                     ngx.say("error: ", err)
+                    return
                 end
                 ngx.say("not matched!")
             end
@@ -802,7 +803,7 @@ matched: 234
 --- request
     GET /re
 --- response_body
-not matched!
+error: nth out of bound
 --- no_error_log
 [error]
 
@@ -821,6 +822,7 @@ not matched!
             else
                 if err then
                     ngx.say("error: ", err)
+                    return
                 end
                 ngx.say("not matched!")
             end
@@ -829,7 +831,7 @@ not matched!
 --- request
     GET /re
 --- response_body
-not matched!
+error: nth out of bound
 --- no_error_log
 [error]
 

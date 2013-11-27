@@ -540,12 +540,13 @@ exec:
         if (group_id >= rc) {
             lua_pushnil(L);
             lua_pushnil(L);
+            lua_pushliteral(L, "nth out of bound");
+            return 3;
 
-        } else {
-            lua_pushinteger(L, cap[group_id * 2] + 1);
-            lua_pushinteger(L, cap[group_id * 2 + 1]);
         }
 
+        lua_pushinteger(L, cap[group_id * 2] + 1);
+        lua_pushinteger(L, cap[group_id * 2 + 1]);
         return 2;
     }
 
