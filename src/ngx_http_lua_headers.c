@@ -27,14 +27,6 @@ static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
-typedef struct {
-    ngx_str_t   key;
-    ngx_str_t   value;
-} ngx_http_lua_ffi_table_elt_t;
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
-
-
 static int
 ngx_http_lua_ngx_req_http_version(lua_State *L)
 {

@@ -16,6 +16,15 @@
 #define NGX_UNESCAPE_URI_COMPONENT  0
 #endif
 
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+typedef struct {
+    ngx_str_t   key;
+    ngx_str_t   value;
+} ngx_http_lua_ffi_table_elt_t;
+#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
+
 /* char whose address we use as the key in Lua vm registry for
  * user code cache table */
 extern char ngx_http_lua_code_cache_key;
