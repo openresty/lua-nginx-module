@@ -292,22 +292,21 @@ ngx_feature_test='printf("hello");'
 
 if [ $ngx_found = yes ]; then
     CORE_LIBS="-Wl,-E $CORE_LIBS"
+fi
 
-else
-    # for Cygwin
-    ngx_feature="export symbols by default (--export-all-symbols)"
-    ngx_feature_libs="-Wl,--export-all-symbols"
-    ngx_feature_name=
-    ngx_feature_run=no
-    ngx_feature_incs="#include <stdio.h>"
-    ngx_feature_path=
-    ngx_feature_test='printf("hello");'
+# for Cygwin
+ngx_feature="export symbols by default (--export-all-symbols)"
+ngx_feature_libs="-Wl,--export-all-symbols"
+ngx_feature_name=
+ngx_feature_run=no
+ngx_feature_incs="#include <stdio.h>"
+ngx_feature_path=
+ngx_feature_test='printf("hello");'
 
-    . auto/feature
+. auto/feature
 
-    if [ $ngx_found = yes ]; then
-        CORE_LIBS="-Wl,--export-all-symbols $CORE_LIBS"
-    fi
+if [ $ngx_found = yes ]; then
+    CORE_LIBS="-Wl,--export-all-symbols $CORE_LIBS"
 fi
 
 NGX_DTRACE_PROVIDERS="$NGX_DTRACE_PROVIDERS $ngx_addon_dir/dtrace/ngx_lua_provider.d"
