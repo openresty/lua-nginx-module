@@ -898,8 +898,6 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         user_flags = (uint32_t) luaL_checkinteger(L, 5);
     }
 
-    dd("looking up key %s in shared dict %s", key.data, name.data);
-
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
 #if 1

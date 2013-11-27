@@ -485,7 +485,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
                 if (dst - q) {
                     out[i].key.data = q;
                     out[i].key.len = dst - q;
-                    out[i].value.len = -1;
+                    out[i].value.len = (size_t) -1;
                     i++;
                 }
             }
@@ -523,7 +523,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
             if (dst - q) {
                 out[i].key.data = q;
                 out[i].key.len = dst - q;
-                out[i].value.len = -1;
+                out[i].value.len = (size_t) -1;
                 i++;
             }
         }
