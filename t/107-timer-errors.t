@@ -790,7 +790,7 @@ registered timer
 
 --- error_log eval
 [
-qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the context of ngx\.timer/,
+qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the current context/,
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]

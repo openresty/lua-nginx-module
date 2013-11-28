@@ -83,8 +83,8 @@ typedef struct {
 
 
 #ifndef NGX_HTTP_LUA_NO_FFI_API
-#define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -1
-#define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -2
+#define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
+#define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
 #endif
 
 
