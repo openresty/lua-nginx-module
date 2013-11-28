@@ -113,8 +113,8 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     }
 
 
-lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
-    ngx_http_lua_main_conf_t *lmcf);
+lua_State * ngx_http_lua_new_state(ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);

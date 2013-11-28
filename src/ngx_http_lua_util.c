@@ -79,10 +79,12 @@ ngx_uint_t  ngx_http_lua_content_length_hash = 0;
 
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
-static void ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L);
-static void ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L);
-static void ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
-    const char *fieldname, const char *path, const char *default_path);
+static void ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log);
+static void ngx_http_lua_init_globals(lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
+static void ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
+    const char *fieldname, const char *path, const char *default_path,
+    ngx_log_t *log);
 static ngx_int_t ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
@@ -91,7 +93,8 @@ static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx);
 static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     ngx_http_lua_co_ctx_t *coctx);
-static void ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L);
+static void ngx_http_lua_inject_ngx_api(lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
 static int ngx_http_lua_param_get(lua_State *L);
 static int ngx_http_lua_param_set(lua_State *L);
@@ -125,8 +128,9 @@ static ngx_int_t
 
 
 static void
-ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
-    const char *fieldname, const char *path, const char *default_path)
+ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
+    const char *fieldname, const char *path, const char *default_path,
+    ngx_log_t *log)
 {
     const char          *tmp_path;
     const char          *prefix;
@@ -135,7 +139,7 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
     tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
             LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
 
-    lua_pushlstring(L, (char *) cf->cycle->prefix.data, cf->cycle->prefix.len);
+    lua_pushlstring(L, (char *) cycle->prefix.data, cycle->prefix.len);
     prefix = lua_tostring(L, -1);
     tmp_path = luaL_gsub(L, tmp_path, "$prefix", prefix);
     tmp_path = luaL_gsub(L, tmp_path, "${prefix}", prefix);
@@ -151,7 +155,7 @@ ngx_http_lua_set_path(ngx_conf_t *cf, lua_State *L, int tab_idx,
         luaL_gsub(L, tmp_path, AUX_MARK, default_path);
 
 #if (NGX_DEBUG)
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua setting lua package.%s to \"%s\"", fieldname, tmp_path);
 #endif
 
@@ -180,7 +184,8 @@ ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
 
 
 lua_State *
-ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
+ngx_http_lua_new_state(ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf,
+    ngx_log_t *log)
 {
     lua_State       *L;
     const char      *old_path;
@@ -190,7 +195,7 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     const char      *new_cpath;
     size_t           old_cpath_len;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0, "lua creating new vm state");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "lua creating new vm state");
 
     L = luaL_newstate();
     if (L == NULL) {
@@ -202,14 +207,14 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
     lua_getglobal(L, "package");
 
     if (!lua_istable(L, -1)) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "the \"package\" table does not exist");
+        ngx_log_error(NGX_LOG_EMERG, log, 0,
+                      "the \"package\" table does not exist");
         return NULL;
     }
 
 #ifdef LUA_DEFAULT_PATH
 #   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua prepending default package.path with %s",
                    LUA_DEFAULT_PATH);
 
@@ -222,7 +227,7 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
 #ifdef LUA_DEFAULT_CPATH
 #   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua prepending default package.cpath with %s",
                    LUA_DEFAULT_CPATH);
 
@@ -242,7 +247,8 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
         new_path = lua_tostring(L, -1);
 
-        ngx_http_lua_set_path(cf, L, -3, "path", new_path, old_path);
+        ngx_http_lua_set_path(cycle, L, -3, "path", new_path, old_path,
+                              log);
 
         lua_pop(L, 2);
     }
@@ -256,7 +262,8 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
         new_cpath = lua_tostring(L, -1);
 
-        ngx_http_lua_set_path(cf, L, -3, "cpath", new_cpath, old_cpath);
+        ngx_http_lua_set_path(cycle, L, -3, "cpath", new_cpath, old_cpath,
+                              log);
 
 
         lua_pop(L, 2);
@@ -264,8 +271,8 @@ ngx_http_lua_new_state(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 
     lua_remove(L, -1); /* remove the "package" table */
 
-    ngx_http_lua_init_registry(cf, L);
-    ngx_http_lua_init_globals(cf, L);
+    ngx_http_lua_init_registry(L, log);
+    ngx_http_lua_init_globals(L, lmcf, log);
 
     return L;
 }
@@ -699,9 +706,9 @@ send:
 
 
 static void
-ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
 {
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua initializing lua registry");
 
     /* {{{ register a table to anchor lua coroutines reliably:
@@ -738,26 +745,24 @@ ngx_http_lua_init_registry(ngx_conf_t *cf, lua_State *L)
 
 
 static void
-ngx_http_lua_init_globals(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_init_globals(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
+    ngx_log_t *log)
 {
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua initializing lua globals");
 
 #if defined(NDK) && NDK
     ngx_http_lua_inject_ndk_api(L);
 #endif /* defined(NDK) && NDK */
 
-    ngx_http_lua_inject_ngx_api(cf, L);
+    ngx_http_lua_inject_ngx_api(L, lmcf, log);
 }
 
 
 static void
-ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
+ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
+    ngx_log_t *log)
 {
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-
     lua_createtable(L, 0 /* narr */, 97 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
@@ -769,7 +774,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_output_api(L);
     ngx_http_lua_inject_time_api(L);
     ngx_http_lua_inject_string_api(L);
-    ngx_http_lua_inject_control_api(cf->log, L);
+    ngx_http_lua_inject_control_api(log, L);
     ngx_http_lua_inject_subrequest_api(L);
     ngx_http_lua_inject_sleep_api(L);
     ngx_http_lua_inject_phase_api(L);
@@ -778,13 +783,13 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_http_lua_inject_regex_api(L);
 #endif
 
-    ngx_http_lua_inject_req_api(cf->log, L);
+    ngx_http_lua_inject_req_api(log, L);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_socket_tcp_api(cf->log, L);
-    ngx_http_lua_inject_socket_udp_api(cf->log, L);
-    ngx_http_lua_inject_uthread_api(cf->log, L);
+    ngx_http_lua_inject_socket_tcp_api(log, L);
+    ngx_http_lua_inject_socket_udp_api(log, L);
+    ngx_http_lua_inject_uthread_api(log, L);
     ngx_http_lua_inject_timer_api(L);
     ngx_http_lua_inject_config_api(L);
     ngx_http_lua_inject_worker_api(L);
@@ -799,7 +804,7 @@ ngx_http_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
     lua_setglobal(L, "ngx");
 
-    ngx_http_lua_inject_coroutine_api(cf->log, L);
+    ngx_http_lua_inject_coroutine_api(log, L);
 }
 
 

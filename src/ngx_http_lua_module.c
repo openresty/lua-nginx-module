@@ -34,8 +34,8 @@ static char *ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_http_lua_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
-static char *ngx_http_lua_init_vm(ngx_conf_t *cf,
-    ngx_http_lua_main_conf_t *lmcf);
+static lua_State * ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_cleanup_vm(void *data);
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
@@ -475,14 +475,19 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
-        if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
+        ngx_http_lua_content_length_hash =
+                                  ngx_http_lua_hash_literal("content-length");
+        ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
+
+        lmcf->lua = ngx_http_lua_init_vm(cf->cycle, cf->pool, lmcf, cf->log);
+        if (lmcf->lua == NULL) {
             ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                                "failed to initialize Lua VM");
             return NGX_ERROR;
         }
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
-            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != 0) {
+            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != NGX_OK) {
                 /* an error happened */
                 return NGX_ERROR;
             }
@@ -745,43 +750,37 @@ ngx_http_lua_cleanup_vm(void *data)
 }
 
 
-static char *
-ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
+static lua_State *
+ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log)
 {
     ngx_pool_cleanup_t              *cln;
     ngx_http_lua_preload_hook_t     *hook;
     lua_State                       *L;
     ngx_uint_t                       i;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0, "lua initialize the "
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "lua initialize the "
                    "global Lua VM");
 
-    ngx_http_lua_content_length_hash =
-                                  ngx_http_lua_hash_literal("content-length");
-
-    ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
-
     /* add new cleanup handler to config mem pool */
-    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    cln = ngx_pool_cleanup_add(pool, 0);
     if (cln == NULL) {
-        return NGX_CONF_ERROR;
+        return NULL;
     }
 
     /* create new Lua VM instance */
-    lmcf->lua = ngx_http_lua_new_state(cf, lmcf);
-    if (lmcf->lua == NULL) {
-        return NGX_CONF_ERROR;
+    L = ngx_http_lua_new_state(cycle, lmcf, log);
+    if (L == NULL) {
+        return NULL;
     }
 
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
-    cln->data = lmcf->lua;
+    cln->data = L;
 
     if (lmcf->preload_hooks) {
 
         /* register the 3rd-party module's preload hooks */
-
-        L = lmcf->lua;
 
         lua_getglobal(L, "package");
         lua_getfield(L, -1, "preload");
@@ -799,7 +798,7 @@ ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
         lua_pop(L, 2);
     }
 
-    return NGX_CONF_OK;
+    return L;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
