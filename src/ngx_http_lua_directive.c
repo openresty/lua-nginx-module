@@ -281,14 +281,11 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
 {
     lua_State                   *L;
     ngx_int_t                    rc;
-    ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
 
     ngx_http_lua_set_var_data_t     *filter_data = data;
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    L = lmcf->lua;
+    L = ngx_http_lua_get_main_lua_state(r);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -319,7 +316,6 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     lua_State                   *L;
     ngx_int_t                    rc;
     u_char                      *script_path;
-    ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
     size_t                       nargs;
 
@@ -343,9 +339,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
         return NGX_ERROR;
     }
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    L = lmcf->lua;
+    L = ngx_http_lua_get_main_lua_state(r);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 

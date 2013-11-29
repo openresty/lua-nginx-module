@@ -146,12 +146,10 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     ngx_int_t                  rc;
     lua_State                 *L;
     ngx_http_lua_loc_conf_t   *llcf;
-    ngx_http_lua_main_conf_t  *lmcf;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    L = lmcf->lua;
+    L = ngx_http_lua_get_main_lua_state(r);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
@@ -176,7 +174,6 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
     ngx_str_t                  eval_src;
     lua_State                 *L;
     ngx_http_lua_loc_conf_t   *llcf;
-    ngx_http_lua_main_conf_t  *lmcf;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -192,8 +189,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    L = lmcf->lua;
+    L = ngx_http_lua_get_main_lua_state(r);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,

@@ -128,7 +128,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         lmcf->watcher->data = lmcf;
     }
 
-    mt = lmcf->lua;
+    mt = ngx_http_lua_get_main_lua_state(r);
 
     co = lua_newthread(mt);
 
@@ -422,7 +422,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
 
-    L = lmcf->lua;
+    L = ngx_http_lua_get_main_lua_state(r);
 
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {

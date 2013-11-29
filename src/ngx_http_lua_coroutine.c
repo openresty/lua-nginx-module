@@ -62,7 +62,6 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 {
     lua_State                     *mt;  /* the main thread */
     lua_State                     *co;  /* new coroutine to be created */
-    ngx_http_lua_main_conf_t      *lmcf;
     ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
@@ -73,8 +72,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER);
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    mt = lmcf->lua;
+    mt = ngx_http_lua_get_main_lua_state(r);
 
     /* create new coroutine on root Lua state, so it always yields
      * to main Lua thread

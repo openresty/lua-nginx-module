@@ -81,6 +81,16 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
     }
 
 
+static ngx_inline lua_State *
+ngx_http_lua_get_main_lua_state(ngx_http_request_t *r)
+{
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    return lmcf->lua;
+}
+
+
 #ifndef NGX_HTTP_LUA_NO_FFI_API
 static ngx_inline ngx_int_t
 ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
