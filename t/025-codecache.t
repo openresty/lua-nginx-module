@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 108;
+plan tests => repeat_each() * 131;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -832,24 +832,14 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 --- request
 GET /t
 
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-terminate 1: ok
-delete thread 1
-create 3 in 2
-terminate 2: ok
-delete thread 2
-terminate 3: ok
-delete thread 3
-
 --- response_body
 registered timer
 
 --- wait: 0.1
 --- no_error_log
 [error]
+lua global VM reference count: 3
+
 --- error_log eval
 [
 "lua ngx.timer expired",
@@ -857,6 +847,8 @@ registered timer
 "trace: [m][f][g]",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
+"lua global VM reference count: 2",
+"lua global VM reference count: 1",
 ]
 
 
@@ -885,11 +877,6 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
     }
 --- request
 GET /t
---- stap2
-F(ngx_http_lua_timer_handler) {
-    println("lua timer handler")
-}
-
 --- response_body
 registered timer
 foo = 3
@@ -897,6 +884,7 @@ foo = 3
 --- wait: 0.1
 --- no_error_log
 [error]
+lua global VM reference count: 3
 
 --- error_log eval
 [
@@ -905,6 +893,8 @@ qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])/,
 "http lua close fake http connection",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
+"lua global VM reference count: 2",
+"lua global VM reference count: 1",
 ]
 
 
@@ -948,30 +938,23 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 --- request
 GET /t
 
---- stap2 eval: $::StapScript
---- stap eval: $::GCScript
---- stap_out
-create 2 in 1
-create 3 in 1
-terminate 1: ok
-delete thread 1
-terminate 2: ok
-delete thread 2
-
 --- response_body
 registered timer
 
 --- wait: 0.1
 --- no_error_log
-[crit]
 [error]
+lua global VM reference count: 3
 
 --- error_log eval
 [
 "1 lua_max_running_timers are not enough",
 "lua ngx.timer expired",
 "http lua close fake http connection",
-qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"lua global VM reference count: 2",
+"lua global VM reference count: 1",
+"lua close the global Lua VM",
 ]
 
 
@@ -995,6 +978,69 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 --- ignore_response
 --- no_error_log
 [error]
+lua global VM reference count: 2
+lua global VM reference count: 3
 --- error_log eval
-qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
+["lua global VM reference count: 1",
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"lua close the global Lua VM",
+]
+
+
+
+=== TEST 28: multiple parallel timers
+--- config
+    lua_code_cache off;
+    location /t {
+        content_by_lua '
+            local s = ""
+
+            local function fail(...)
+                ngx.log(ngx.ERR, ...)
+            end
+
+            local function g()
+                s = s .. "[g]"
+                print("trace: ", s)
+            end
+
+            local function f()
+                s = s .. "[f]"
+            end
+            local ok, err = ngx.timer.at(0.01, f)
+            if not ok then
+                fail("failed to set timer: ", err)
+                return
+            end
+            local ok, err = ngx.timer.at(0.01, g)
+            if not ok then
+                fail("failed to set timer: ", err)
+                return
+            end
+            ngx.say("registered timer")
+            s = "[m]"
+        ';
+    }
+--- request
+GET /t
+
+--- response_body
+registered timer
+
+--- wait: 0.1
+--- no_error_log
+[error]
+lua global VM reference count: 4
+
+--- error_log eval
+[
+"lua ngx.timer expired",
+"http lua close fake http connection",
+"trace: [m][f][g]",
+"lua global VM reference count: 3",
+"lua global VM reference count: 2",
+"lua global VM reference count: 1",
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"lua close the global Lua VM",
+]
 
