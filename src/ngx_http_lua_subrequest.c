@@ -574,6 +574,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         sr_ctx->capture = 1;
         sr_ctx->index = index;
         sr_ctx->last_body = &sr_ctx->body;
+        sr_ctx->vm_cleanup_data = ctx->vm_cleanup_data;
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 

@@ -81,16 +81,6 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
     }
 
 
-static ngx_inline lua_State *
-ngx_http_lua_get_main_lua_state(ngx_http_request_t *r)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    return lmcf->lua;
-}
-
-
 #ifndef NGX_HTTP_LUA_NO_FFI_API
 static ngx_inline ngx_int_t
 ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
@@ -123,8 +113,9 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     }
 
 
-lua_State * ngx_http_lua_new_state(ngx_cycle_t *cycle,
-    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
+lua_State * ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
+    ngx_pool_cleanup_t **pcln);
 
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
@@ -215,6 +206,8 @@ void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
 
+void ngx_http_lua_cleanup_vm(void *data);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
@@ -236,7 +229,11 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 static ngx_inline ngx_http_lua_ctx_t *
 ngx_http_lua_create_ctx(ngx_http_request_t *r)
 {
-    ngx_http_lua_ctx_t      *ctx;
+    lua_State                   *L;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_pool_cleanup_t          *cln;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_main_conf_t    *lmcf;
 
     ctx = ngx_palloc(r->pool, sizeof(ngx_http_lua_ctx_t));
     if (ctx == NULL) {
@@ -244,9 +241,53 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     }
 
     ngx_http_lua_init_ctx(r, ctx);
-
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (!llcf->enable_code_cache && r->connection->fd != -1) {
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        dd("lmcf: %p", lmcf);
+
+        L = ngx_http_lua_init_vm(lmcf->cycle, r->pool, lmcf,
+                                 r->connection->log, &cln);
+        if (L == NULL) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "failed to initialize Lua VM");
+            return NULL;
+        }
+
+        if (lmcf->init_handler) {
+            if (lmcf->init_handler(r->connection->log, lmcf, L) != NGX_OK) {
+                /* an error happened */
+                return NULL;
+            }
+        }
+
+        ctx->vm_cleanup_data = cln->data;
+
+    } else {
+        ctx->vm_cleanup_data = NULL;
+    }
+
     return ctx;
+}
+
+
+static ngx_inline lua_State *
+ngx_http_lua_get_main_lua_state(ngx_http_request_t *r)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx && ctx->vm_cleanup_data) {
+        return ctx->vm_cleanup_data->state;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    dd("lmcf->lua: %p", lmcf->lua);
+    return lmcf->lua;
 }
 
 

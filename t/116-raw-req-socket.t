@@ -493,7 +493,7 @@ msg: 1: received: hello
 mysock handler aborted
 --- no_error_log
 [error]
---- wait: 0.1
+--- wait: 1.1
 
 
 

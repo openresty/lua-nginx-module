@@ -107,6 +107,7 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t            lua_path;
     ngx_str_t            lua_cpath;
 
+    ngx_cycle_t         *cycle;
     ngx_pool_t          *pool;
 
     ngx_int_t            max_pending_timers;
@@ -296,7 +297,16 @@ struct ngx_http_lua_co_ctx_s {
 };
 
 
+typedef struct {
+    lua_State       *state;
+    ngx_int_t        count;
+} ngx_http_lua_vm_cleanup_data_t;
+
+
 typedef struct ngx_http_lua_ctx_s {
+    /* for lua_coce_cache off: */
+    ngx_http_lua_vm_cleanup_data_t  *vm_cleanup_data;
+
     ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
 

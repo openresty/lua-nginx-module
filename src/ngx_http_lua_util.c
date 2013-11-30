@@ -118,6 +118,8 @@ static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 static ngx_int_t
     ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
+static lua_State * ngx_http_lua_new_state(ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 
 
 #ifndef LUA_PATH_SEP
@@ -183,7 +185,7 @@ ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
 }
 
 
-lua_State *
+static lua_State *
 ngx_http_lua_new_state(ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
@@ -974,7 +976,14 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     }
 #endif
 
-    L = ngx_http_lua_get_main_lua_state(r);
+    cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (cur_ctx != ctx && ctx->vm_cleanup_data) {
+        /* internal redirect happens and code cache is off */
+        L = ctx->vm_cleanup_data->state;
+
+    } else {
+        L = ngx_http_lua_get_main_lua_state(r);
+    }
 
     /* we cannot release the ngx.ctx table if we have log_by_lua* hooks
      * because request cleanup runs before log phase handlers */
@@ -985,8 +994,6 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
             ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
 
         } else {
-
-            cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
             if (cur_ctx != ctx) {
                 /* internal redirects happened */
@@ -3602,6 +3609,94 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
 
     if (pool) {
         ngx_destroy_pool(pool);
+    }
+}
+
+
+lua_State *
+ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
+    ngx_pool_cleanup_t **pcln)
+{
+    lua_State                       *L;
+    ngx_uint_t                       i;
+    ngx_pool_cleanup_t              *cln;
+    ngx_http_lua_preload_hook_t     *hook;
+    ngx_http_lua_vm_cleanup_data_t  *data;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "lua initialize the "
+                   "global Lua VM");
+
+    /* add new cleanup handler to config mem pool */
+    cln = ngx_pool_cleanup_add(pool, sizeof(ngx_http_lua_vm_cleanup_data_t));
+    if (cln == NULL) {
+        return NULL;
+    }
+
+    /* create new Lua VM instance */
+    L = ngx_http_lua_new_state(cycle, lmcf, log);
+    if (L == NULL) {
+        return NULL;
+    }
+
+    /* register cleanup handler for Lua VM */
+    cln->handler = ngx_http_lua_cleanup_vm;
+
+    data = ngx_alloc(sizeof(ngx_http_lua_vm_cleanup_data_t), log);
+    if (data == NULL) {
+        return NULL;
+    }
+    data->state = L;
+    data->count = 1;
+
+    cln->data = data;
+
+    if (pcln) {
+        *pcln = cln;
+    }
+
+    if (lmcf->preload_hooks) {
+
+        /* register the 3rd-party module's preload hooks */
+
+        lua_getglobal(L, "package");
+        lua_getfield(L, -1, "preload");
+
+        hook = lmcf->preload_hooks->elts;
+
+        for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
+
+            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
+
+            lua_pushcfunction(L, hook[i].loader);
+            lua_setfield(L, -2, (char *) hook[i].package);
+        }
+
+        lua_pop(L, 2);
+    }
+
+    return L;
+}
+
+
+void
+ngx_http_lua_cleanup_vm(void *data)
+{
+    lua_State                       *L;
+    ngx_http_lua_vm_cleanup_data_t  *cln_data = data;
+
+#if (DDEBUG)
+    if (cln_data) {
+        dd("cleanup VM: c:%d, s:%p", (int) cln_data->count, cln_data->state);
+    }
+#endif
+
+    if (cln_data && --cln_data->count == 0) {
+        L = cln_data->state;
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "lua close the "
+                       "global Lua VM");
+        lua_close(L);
+        ngx_free(cln_data);
     }
 }
 

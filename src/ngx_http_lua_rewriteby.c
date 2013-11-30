@@ -157,9 +157,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.value.data,
                                        llcf->rewrite_src.value.len,
                                        llcf->rewrite_src_key,
-                                       "rewrite_by_lua",
-                                       llcf->enable_code_cache ? 1 : 0);
-
+                                       "rewrite_by_lua");
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -193,9 +191,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_main_lua_state(r);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->rewrite_src_key,
-                                     llcf->enable_code_cache ? 1 : 0);
-
+    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->rewrite_src_key);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

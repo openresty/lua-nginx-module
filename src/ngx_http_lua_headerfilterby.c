@@ -151,9 +151,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->header_filter_src.value.data,
                                        llcf->header_filter_src.value.len,
                                        llcf->header_filter_src_key,
-                                       "header_filter_by_lua",
-                                       llcf->enable_code_cache ? 1 : 0);
-
+                                       "header_filter_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -199,9 +197,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path,
-                                     llcf->header_filter_src_key,
-                                     llcf->enable_code_cache ? 1 : 0);
-
+                                     llcf->header_filter_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

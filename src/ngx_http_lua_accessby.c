@@ -155,8 +155,7 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
                                        llcf->access_src.value.len,
                                        llcf->access_src_key,
-                                       "access_by_lua",
-                                       llcf->enable_code_cache ? 1 : 0);
+                                       "access_by_lua");
 
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -192,9 +191,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_main_lua_state(r);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key,
-                                     llcf->enable_code_cache ? 1 : 0);
-
+    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->access_src_key);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

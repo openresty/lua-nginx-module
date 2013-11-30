@@ -17,7 +17,7 @@ our $HtmlDir = html_dir;
 #$ENV{LUA_PATH} = "$html_dir/?.lua";
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -45,10 +45,10 @@ __DATA__
             local foo = package.loaded.foo
             if foo then
                 ngx.say("found")
+                foo.hi()
             else
                 ngx.say("not found")
             end
-            foo.hi()
         ';
     }
 --- request
