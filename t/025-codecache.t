@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 131;
+plan tests => repeat_each() * 130;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -888,7 +888,6 @@ lua global VM reference count: 3
 
 --- error_log eval
 [
-qr/\[lua\] \[string "content_by_lua"\]:\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])/,
 "lua ngx.timer expired",
 "http lua close fake http connection",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
