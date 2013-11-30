@@ -235,35 +235,30 @@ This directive was first introduced in the <code>v0.9.1</code> release.
 
 Enables or disables the Lua code cache for [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#rewrite_by_lua_file|rewrite_by_lua_file]], and
-[[#access_by_lua_file|access_by_lua_file]], and also force Lua module reloading on a per-request basis.
+[[#access_by_lua_file|access_by_lua_file]].
 
-The Lua files referenced in [[#set_by_lua_file|set_by_lua_file]],
+When turning off, every request served by ngx_lua will run in a separate Lua VM instance, starting from the <code>0.9.3</code> release. So the Lua files referenced in [[#set_by_lua_file|set_by_lua_file]],
 [[#content_by_lua_file|content_by_lua_file]], [[#access_by_lua_file|access_by_lua_file]],
-and [[#rewrite_by_lua_file|rewrite_by_lua_file]] will not be cached
-and the Lua <code>package.loaded</code> table will be cleared
-at the entry point of every request (such that Lua modules
-will not be cached either). With this in place, developers can adopt an edit-and-refresh approach.
+and etc will not be cached
+and all Lua modules used will be loaded from scratch. With this in place, developers can adopt an edit-and-refresh approach.
 
 Please note however, that Lua code written inlined within nginx.conf
 such as those specified by [[#set_by_lua|set_by_lua]], [[#content_by_lua|content_by_lua]],
-[[#access_by_lua|access_by_lua]], and [[#rewrite_by_lua|rewrite_by_lua]] will ''always'' be
-cached because only the Nginx config file parser can correctly parse the <code>nginx.conf</code>
-file and the only ways to to reload the config file
-are to send a <code>HUP</code> signal or to restart Nginx.
+[[#access_by_lua|access_by_lua]], and [[#rewrite_by_lua|rewrite_by_lua]] will not be updated when you edit the inlined Lua code in your <code>nginx.conf</code> file because only the Nginx config file parser can correctly parse the <code>nginx.conf</code>
+file and the only way is to reload the config file
+by sending a <code>HUP</code> signal or just to restart Nginx.
 
-Also, Lua files which are loaded by <code>dofile</code> or <code>loadfile</code>
-in *_by_lua_file will never be cached. To ensure code caching, you can either use the [[#init_by_lua|init_by_lua]]
+Even when the code cache is enabled, Lua files which are loaded by <code>dofile</code> or <code>loadfile</code>
+in *_by_lua_file cannot be cached (unless you cache the results yourself). Usually you can either use the [[#init_by_lua|init_by_lua]]
 or [[#init-by_lua_file|init_by_lua_file]] directives to load all such files or just make these Lua files true Lua modules
 and load them via <code>require</code>.
 
-The ngx_lua module does not currently support the <code>stat</code> mode available with the
-Apache <code>mod_lua</code> module but this is planned for implementation in the future.
+The ngx_lua module does not support the <code>stat</code> mode available with the
+Apache <code>mod_lua</code> module (yet).
 
 Disabling the Lua code cache is strongly
 discouraged for production use and should only be used during 
-development as it has a significant negative impact on overall performance.
-In addition, race conditions when reloading Lua modules are common for concurrent requests
-when the code cache is disabled.
+development as it has a significant negative impact on overall performance. For example, the performance a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
 
 == lua_regex_cache_max_entries ==
 '''syntax:''' ''lua_regex_cache_max_entries <num>''
