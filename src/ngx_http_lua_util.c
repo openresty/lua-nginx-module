@@ -3624,9 +3624,6 @@ ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
     ngx_http_lua_preload_hook_t     *hook;
     ngx_http_lua_vm_cleanup_data_t  *data;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "lua initialize the "
-                   "global Lua VM");
-
     /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(pool, sizeof(ngx_http_lua_vm_cleanup_data_t));
     if (cln == NULL) {
@@ -3638,6 +3635,9 @@ ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
     if (L == NULL) {
         return NULL;
     }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0, "lua initialize the "
+                   "global Lua VM %p", L);
 
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
@@ -3691,12 +3691,17 @@ ngx_http_lua_cleanup_vm(void *data)
     }
 #endif
 
-    if (cln_data && --cln_data->count == 0) {
-        L = cln_data->state;
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "lua close the "
-                       "global Lua VM");
-        lua_close(L);
-        ngx_free(cln_data);
+    if (cln_data) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "lua global "
+                       "VM reference count: %i", cln_data->count);
+
+        if (--cln_data->count == 0) {
+            L = cln_data->state;
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                           "lua close the global Lua VM %p", L);
+            lua_close(L);
+            ngx_free(cln_data);
+        }
     }
 }
 
