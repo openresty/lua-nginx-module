@@ -452,9 +452,8 @@ lua_code_cache
 
 **context:** *http, server, location, location if*
 
-Enables or disables the Lua code cache for [set_by_lua_file](#set_by_lua_file),
-[content_by_lua_file](#content_by_lua_file), [rewrite_by_lua_file](#rewrite_by_lua_file), and
-[access_by_lua_file](#access_by_lua_file).
+Enables or disables the Lua code cache for Lua code in `*_by_lua_file` directives (like [set_by_lua_file](#set_by_lua_file) and
+[content_by_lua_file](#content_by_lua_file)) and Lua modules.
 
 When turning off, every request served by ngx_lua will run in a separate Lua VM instance, starting from the `0.9.3` release. So the Lua files referenced in [set_by_lua_file](#set_by_lua_file),
 [content_by_lua_file](#content_by_lua_file), [access_by_lua_file](#access_by_lua_file),
