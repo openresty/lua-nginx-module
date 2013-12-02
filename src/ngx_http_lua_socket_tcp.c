@@ -3552,6 +3552,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         spool->conf = lmcf;
         spool->active_connections = 0;
+        spool->lua_vm = ngx_http_lua_get_main_lua_state(r);
 
         ngx_queue_init(&spool->cache);
         ngx_queue_init(&spool->free);
@@ -3855,7 +3856,7 @@ ngx_http_lua_socket_free_pool(ngx_log_t *log, ngx_http_lua_socket_pool_t *spool)
                    "lua tcp socket keepalive: free connection pool for \"%s\"",
                    spool->key);
 
-    L = spool->conf->lua;
+    L = spool->lua_vm;
 
     lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
     lua_rawget(L, LUA_REGISTRYINDEX);

@@ -5,13 +5,15 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 130;
+plan tests => repeat_each() * 144;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
 no_long_string();
 
 our $HtmlDir = html_dir;
+
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
 check_accum_error_log();
 run_tests();
@@ -1041,5 +1043,141 @@ decrementing the reference count for Lua VM: 4
 "decrementing the reference count for Lua VM: 1",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
+]
+
+
+
+=== TEST 29: cosocket connection pool timeout (after Lua VM destroys)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    lua_code_cache off;
+    location = /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("127.0.0.1", port)
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+
+    local ok, err = sock:setkeepalive(1)
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+request sent: 11
+received: OK
+--- no_error_log
+[error]
+lua tcp socket keepalive max idle timeout
+
+--- error_log eval
+[
+qq{lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"},
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"lua tcp socket keepalive: free connection pool for ",
+]
+
+
+
+=== TEST 30: cosocket connection pool timeout (before Lua VM destroys)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    lua_code_cache off;
+    location = /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port)
+    local sock = ngx.socket.tcp()
+    local ok, err = sock:connect("127.0.0.1", port)
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+
+    local req = "flush_all\r\n"
+
+    local bytes, err = sock:send(req)
+    if not bytes then
+        ngx.say("failed to send request: ", err)
+        return
+    end
+    ngx.say("request sent: ", bytes)
+
+    local line, err, part = sock:receive()
+    if line then
+        ngx.say("received: ", line)
+
+    else
+        ngx.say("failed to receive a line: ", err, " [", part, "]")
+    end
+
+    local ok, err = sock:setkeepalive(1)
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+    ngx.sleep(0.01)
+end
+--- request
+GET /t
+--- response_body
+connected: 1, reused: 0
+request sent: 11
+received: OK
+--- no_error_log
+[error]
+--- error_log eval
+[
+qq{lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"},
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive max idle timeout",
 ]
 

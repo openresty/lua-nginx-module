@@ -35,6 +35,7 @@ typedef void (*ngx_http_lua_socket_tcp_upstream_handler_pt)(
 
 
 typedef struct {
+    lua_State                         *lua_vm;
     ngx_http_lua_main_conf_t          *conf;
 
     /* active connections == out-of-pool reused connections
