@@ -3692,8 +3692,8 @@ ngx_http_lua_cleanup_vm(void *data)
 #endif
 
     if (cln_data) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "lua global "
-                       "VM reference count: %i", cln_data->count);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
+                       "the reference count for Lua VM: %i", cln_data->count);
 
         if (--cln_data->count == 0) {
             L = cln_data->state;

@@ -838,7 +838,7 @@ registered timer
 --- wait: 0.1
 --- no_error_log
 [error]
-lua global VM reference count: 3
+decrementing the reference count for Lua VM: 3
 
 --- error_log eval
 [
@@ -847,8 +847,8 @@ lua global VM reference count: 3
 "trace: [m][f][g]",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
-"lua global VM reference count: 2",
-"lua global VM reference count: 1",
+"decrementing the reference count for Lua VM: 2",
+"decrementing the reference count for Lua VM: 1",
 ]
 
 
@@ -884,7 +884,7 @@ foo = 3
 --- wait: 0.1
 --- no_error_log
 [error]
-lua global VM reference count: 3
+decrementing the reference count for Lua VM: 3
 
 --- error_log eval
 [
@@ -892,8 +892,8 @@ lua global VM reference count: 3
 "http lua close fake http connection",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
-"lua global VM reference count: 2",
-"lua global VM reference count: 1",
+"decrementing the reference count for Lua VM: 2",
+"decrementing the reference count for Lua VM: 1",
 ]
 
 
@@ -943,7 +943,6 @@ registered timer
 --- wait: 0.1
 --- no_error_log
 [error]
-lua global VM reference count: 3
 
 --- error_log eval
 [
@@ -951,8 +950,9 @@ lua global VM reference count: 3
 "lua ngx.timer expired",
 "http lua close fake http connection",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
-"lua global VM reference count: 2",
-"lua global VM reference count: 1",
+"decrementing the reference count for Lua VM: 3",
+"decrementing the reference count for Lua VM: 2",
+"decrementing the reference count for Lua VM: 1",
 "lua close the global Lua VM",
 ]
 
@@ -977,10 +977,10 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 --- ignore_response
 --- no_error_log
 [error]
-lua global VM reference count: 2
-lua global VM reference count: 3
+decrementing the reference count for Lua VM: 2
+decrementing the reference count for Lua VM: 3
 --- error_log eval
-["lua global VM reference count: 1",
+["decrementing the reference count for Lua VM: 1",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
 ]
@@ -1029,16 +1029,16 @@ registered timer
 --- wait: 0.1
 --- no_error_log
 [error]
-lua global VM reference count: 4
+decrementing the reference count for Lua VM: 4
 
 --- error_log eval
 [
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "trace: [m][f][g]",
-"lua global VM reference count: 3",
-"lua global VM reference count: 2",
-"lua global VM reference count: 1",
+"decrementing the reference count for Lua VM: 3",
+"decrementing the reference count for Lua VM: 2",
+"decrementing the reference count for Lua VM: 1",
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
 ]

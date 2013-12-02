@@ -513,6 +513,10 @@ abort:
     }
 
     if (tctx.vm_cleanup_data) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
+                       "the reference count for Lua VM: %i",
+                       tctx.vm_cleanup_data->count);
+
         tctx.vm_cleanup_data->count--;
     }
 
