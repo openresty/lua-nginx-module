@@ -3406,7 +3406,6 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
-    ngx_http_lua_main_conf_t            *lmcf;
     ngx_http_lua_loc_conf_t             *llcf;
     ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
@@ -3548,9 +3547,6 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         lua_rawset(L, -3);
 
-        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-        spool->conf = lmcf;
         spool->active_connections = 0;
         spool->lua_vm = ngx_http_lua_get_lua_vm(r, NULL);
 
