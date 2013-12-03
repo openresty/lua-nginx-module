@@ -76,6 +76,8 @@ static void ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 static void ngx_http_lua_cancel_subreq(ngx_http_request_t *r);
 static ngx_int_t ngx_http_post_request_to_head(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r);
+static ngx_int_t ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
+    ngx_http_request_t *r);
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -652,13 +654,19 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         sr->request_body = NULL;
 #endif
 
-    } else if (sr->request_body) {
+    } else {
+        if (ngx_http_lua_copy_request_headers(sr, r) != NGX_OK) {
+            return NGX_ERROR;
+        }
 
-        /* deep-copy the request body */
+        if (sr->request_body) {
 
-        if (sr->request_body->temp_file) {
-            if (ngx_http_lua_copy_in_file_request_body(sr) != NGX_OK) {
-                return NGX_ERROR;
+            /* deep-copy the request body */
+
+            if (sr->request_body->temp_file) {
+                if (ngx_http_lua_copy_in_file_request_body(sr) != NGX_OK) {
+                    return NGX_ERROR;
+                }
             }
         }
     }
@@ -1688,6 +1696,49 @@ ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r)
     dd("file fd: %d", body->temp_file->file.fd);
 
     r->request_body = body;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_copy_request_headers(ngx_http_request_t *sr, ngx_http_request_t *r)
+{
+    ngx_table_elt_t                 *h, *header;
+    ngx_list_part_t                 *part;
+    ngx_uint_t                       i;
+
+    if (ngx_list_init(&sr->headers_in.headers, sr->pool, 20,
+                      sizeof(ngx_table_elt_t)) != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+
+    part = &r->headers_in.headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = ngx_list_push(&sr->headers_in.headers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = header[i];
+    }
+
+    /* XXX we should set those built-in header slot in
+     * ngx_http_headers_in_t too. */
 
     return NGX_OK;
 }

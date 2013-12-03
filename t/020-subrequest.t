@@ -10,7 +10,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 19);
+plan tests => repeat_each() * (blocks() * 3 + 21);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -2436,4 +2436,155 @@ capture body filter
 capture body filter
 --- no_error_log
 [error]
+
+
+
+=== TEST 66: leafo test case 1 for assertion failures
+--- config
+    location = /t {
+        echo hello;
+    }
+
+    location /proxy {
+        internal;
+        rewrite_by_lua "
+          local req = ngx.req
+          print(ngx.var._url)
+
+          for k,v in pairs(req.get_headers()) do
+            if k ~= 'content-length' then
+              req.clear_header(k)
+            end
+          end
+
+          if ngx.ctx.headers then
+            for k,v in pairs(ngx.ctx.headers) do
+              req.set_header(k, v)
+            end
+          end
+        ";
+
+        resolver 8.8.8.8;
+        proxy_http_version 1.1;
+        proxy_pass $_url;
+    }
+
+    location /first {
+      set $_url "";
+      content_by_lua '
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["Content-type"] = "application/x-www-form-urlencoded"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["x-some-date"] = "Sun, 01 Dec 2013 11:47:41 GMT",
+              ["x-hello-world-header"] = "123412341234",
+              ["Authorization"] = "Hello"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+      ';
+    }
+--- request
+GET /first
+--- response_body
+hello
+hello
+--- no_error_log eval
+[
+"[error]",
+qr/Assertion .*? failed/
+]
+
+
+
+=== TEST 67: leafo test case 2 for assertion failures
+--- config
+    location = /t {
+        echo hello;
+    }
+
+    location /proxy {
+        internal;
+        rewrite_by_lua "
+          local req = ngx.req
+          print(ngx.var._url)
+
+          for k,v in pairs(req.get_headers()) do
+            if k ~= 'content-length' then
+              req.clear_header(k)
+            end
+          end
+
+          if ngx.ctx.headers then
+            for k,v in pairs(ngx.ctx.headers) do
+              req.set_header(k, v)
+            end
+          end
+        ";
+
+        resolver 8.8.8.8;
+        proxy_http_version 1.1;
+        proxy_pass $_url;
+    }
+
+    location /second {
+      set $_url "";
+      content_by_lua '
+        local res = ngx.location.capture("/proxy", {
+          method = ngx.HTTP_POST,
+          body = ("x"):rep(600),
+          ctx = {
+            headers = {
+              ["Content-type"] = "application/x-www-form-urlencoded"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["x-some-date"] = "Sun, 01 Dec 2013 11:47:41 GMT",
+              ["x-hello-world-header"] = "123412341234",
+              ["Authorization"] = "Hello"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+      ';
+    }
+--- request
+GET /second
+--- response_body
+hello
+hello
+hello
+--- no_error_log eval
+[
+"[error]",
+qr/Assertion .*? failed/
+]
 
