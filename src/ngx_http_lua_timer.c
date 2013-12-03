@@ -27,7 +27,7 @@ typedef struct {
     void        **loc_conf;
 
     ngx_http_lua_main_conf_t          *lmcf;
-    ngx_http_lua_vm_cleanup_data_t    *vm_cleanup_data;
+    ngx_http_lua_vm_state_t           *vm_state;
 
 } ngx_http_lua_timer_ctx_t;
 
@@ -56,7 +56,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 {
     int                      nargs, co_ref;
     u_char                  *p;
-    lua_State               *mt;  /* the main thread */
+    lua_State               *vm;  /* the main thread */
     lua_State               *co;
     ngx_msec_t               delay;
     ngx_event_t             *ev;
@@ -133,9 +133,9 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         lmcf->watcher->data = lmcf;
     }
 
-    mt = ngx_http_lua_get_main_lua_state(r);
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    co = lua_newthread(mt);
+    co = lua_newthread(vm);
 
     /* L stack: time func [args] thread */
 
@@ -158,10 +158,10 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     dd("stack top: %d", lua_gettop(L));
 
-    lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
+    lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
 
     /* L stack: time func [args] thread */
-    /* mt stack: empty */
+    /* vm stack: empty */
 
     lua_pushvalue(L, 2);    /* copy entry function to top of L*/
 
@@ -223,12 +223,12 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     tctx->loc_conf = r->loc_conf;
     tctx->lmcf = lmcf;
 
-    if (ctx && ctx->vm_cleanup_data) {
-        tctx->vm_cleanup_data = ctx->vm_cleanup_data;
-        tctx->vm_cleanup_data->count++;
+    if (ctx && ctx->vm_state) {
+        tctx->vm_state = ctx->vm_state;
+        tctx->vm_state->count++;
 
     } else {
-        tctx->vm_cleanup_data = NULL;
+        tctx->vm_state = NULL;
     }
 
     ev->handler = ngx_http_lua_timer_handler;
@@ -409,8 +409,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto abort;
     }
 
-    if (tctx.vm_cleanup_data) {
-        ctx->vm_cleanup_data = tctx.vm_cleanup_data;
+    if (tctx.vm_state) {
+        ctx->vm_state = tctx.vm_state;
 
         pcln = ngx_pool_cleanup_add(r->pool, 0);
         if (pcln == NULL) {
@@ -418,7 +418,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         }
 
         pcln->handler = ngx_http_lua_cleanup_vm;
-        pcln->data = tctx.vm_cleanup_data;
+        pcln->data = tctx.vm_state;
     }
 
     r->headers_in.content_length_n = 0;
@@ -450,7 +450,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
 
-    L = ngx_http_lua_get_main_lua_state(r);
+    L = ngx_http_lua_get_lua_vm(r, ctx);
 
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
@@ -512,12 +512,12 @@ abort:
         lua_settop(tctx.co, 0);
     }
 
-    if (tctx.vm_cleanup_data) {
+    if (tctx.vm_state) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
                        "the reference count for Lua VM: %i",
-                       tctx.vm_cleanup_data->count);
+                       tctx.vm_state->count);
 
-        tctx.vm_cleanup_data->count--;
+        tctx.vm_state->count--;
     }
 
     if (r && r->pool) {

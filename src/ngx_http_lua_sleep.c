@@ -148,7 +148,7 @@ ngx_http_lua_sleep_cleanup(void *data)
 static ngx_int_t
 ngx_http_lua_sleep_resume(ngx_http_request_t *r)
 {
-    lua_State                   *mL;
+    lua_State                   *vm;
     ngx_connection_t            *c;
     ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
@@ -161,20 +161,20 @@ ngx_http_lua_sleep_resume(ngx_http_request_t *r)
     ctx->resume_handler = ngx_http_lua_wev_handler;
 
     c = r->connection;
-    mL = ngx_http_lua_get_main_lua_state(r);
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    rc = ngx_http_lua_run_thread(mL, r, ctx, 0);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, 0);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (ctx->entered_content_phase) {

@@ -264,10 +264,10 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
             }
         }
 
-        ctx->vm_cleanup_data = cln->data;
+        ctx->vm_state = cln->data;
 
     } else {
-        ctx->vm_cleanup_data = NULL;
+        ctx->vm_state = NULL;
     }
 
     return ctx;
@@ -275,14 +275,16 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
 
 
 static ngx_inline lua_State *
-ngx_http_lua_get_main_lua_state(ngx_http_request_t *r)
+ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
-    ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx && ctx->vm_cleanup_data) {
-        return ctx->vm_cleanup_data->state;
+    if (ctx == NULL) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    }
+
+    if (ctx && ctx->vm_state) {
+        return ctx->vm_state->vm;
     }
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);

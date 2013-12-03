@@ -60,7 +60,7 @@ int
 ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t **pcoctx)
 {
-    lua_State                     *mt;  /* the main thread */
+    lua_State                     *vm;  /* the Lua VM */
     lua_State                     *co;  /* new coroutine to be created */
     ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
 
@@ -72,12 +72,12 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER);
 
-    mt = ngx_http_lua_get_main_lua_state(r);
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
     /* create new coroutine on root Lua state, so it always yields
      * to main Lua thread
      */
-    co = lua_newthread(mt);
+    co = lua_newthread(vm);
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
@@ -95,7 +95,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     lua_xmove(L, co, 1);
     lua_replace(co, LUA_GLOBALSINDEX);
 
-    lua_xmove(mt, L, 1);    /* move coroutine from main thread to L */
+    lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
 
     lua_pushvalue(L, 1);    /* copy entry function to top of L*/
     lua_xmove(L, co, 1);    /* move entry function from L to co */

@@ -298,14 +298,14 @@ struct ngx_http_lua_co_ctx_s {
 
 
 typedef struct {
-    lua_State       *state;
+    lua_State       *vm;
     ngx_int_t        count;
-} ngx_http_lua_vm_cleanup_data_t;
+} ngx_http_lua_vm_state_t;
 
 
 typedef struct ngx_http_lua_ctx_s {
     /* for lua_coce_cache off: */
-    ngx_http_lua_vm_cleanup_data_t  *vm_cleanup_data;
+    ngx_http_lua_vm_state_t  *vm_state;
 
     ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;

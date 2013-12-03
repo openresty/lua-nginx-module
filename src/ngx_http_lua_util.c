@@ -977,14 +977,7 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     }
 #endif
 
-    cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (cur_ctx != ctx && ctx->vm_cleanup_data) {
-        /* internal redirect happens and code cache is off */
-        L = ctx->vm_cleanup_data->state;
-
-    } else {
-        L = ngx_http_lua_get_main_lua_state(r);
-    }
+    L = ngx_http_lua_get_lua_vm(r, ctx);
 
     /* we cannot release the ngx.ctx table if we have log_by_lua* hooks
      * because request cleanup runs before log phase handlers */
@@ -996,6 +989,7 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
 
         } else {
 
+            cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
             if (cur_ctx != ctx) {
                 /* internal redirects happened */
                 ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
@@ -3372,7 +3366,7 @@ ngx_http_lua_rd_check_broken_connection(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 {
-    lua_State                   *mL;
+    lua_State                   *vm;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
@@ -3392,20 +3386,20 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 #endif
 
     c = r->connection;
-    mL = ngx_http_lua_get_main_lua_state(r);
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    rc = ngx_http_lua_run_thread(mL, r, ctx, 0);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, 0);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (ctx->entered_content_phase) {
@@ -3623,10 +3617,10 @@ ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
     ngx_uint_t                       i;
     ngx_pool_cleanup_t              *cln;
     ngx_http_lua_preload_hook_t     *hook;
-    ngx_http_lua_vm_cleanup_data_t  *data;
+    ngx_http_lua_vm_state_t         *state;
 
     /* add new cleanup handler to config mem pool */
-    cln = ngx_pool_cleanup_add(pool, sizeof(ngx_http_lua_vm_cleanup_data_t));
+    cln = ngx_pool_cleanup_add(pool, 0);
     if (cln == NULL) {
         return NULL;
     }
@@ -3643,14 +3637,14 @@ ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
     /* register cleanup handler for Lua VM */
     cln->handler = ngx_http_lua_cleanup_vm;
 
-    data = ngx_alloc(sizeof(ngx_http_lua_vm_cleanup_data_t), log);
-    if (data == NULL) {
+    state = ngx_alloc(sizeof(ngx_http_lua_vm_state_t), log);
+    if (state == NULL) {
         return NULL;
     }
-    data->state = L;
-    data->count = 1;
+    state->vm = L;
+    state->count = 1;
 
-    cln->data = data;
+    cln->data = state;
 
     if (pcln) {
         *pcln = cln;
@@ -3684,25 +3678,25 @@ void
 ngx_http_lua_cleanup_vm(void *data)
 {
     lua_State                       *L;
-    ngx_http_lua_vm_cleanup_data_t  *cln_data = data;
+    ngx_http_lua_vm_state_t         *state = data;
 
 #if (DDEBUG)
-    if (cln_data) {
-        dd("cleanup VM: c:%d, s:%p", (int) cln_data->count, cln_data->state);
+    if (state) {
+        dd("cleanup VM: c:%d, s:%p", (int) state->count, state->state);
     }
 #endif
 
-    if (cln_data) {
+    if (state) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
-                       "the reference count for Lua VM: %i", cln_data->count);
+                       "the reference count for Lua VM: %i", state->count);
 
-        if (--cln_data->count == 0) {
-            L = cln_data->state;
+        if (--state->count == 0) {
+            L = state->vm;
             ngx_http_lua_cleanup_conn_pools(L);
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                            "lua close the global Lua VM %p", L);
             lua_close(L);
-            ngx_free(cln_data);
+            ngx_free(state);
         }
     }
 }

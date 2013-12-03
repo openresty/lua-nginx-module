@@ -103,7 +103,7 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
      * before log phase handlers */
 
     if (ctx->ctx_ref != LUA_NOREF) {
-        L = ngx_http_lua_get_main_lua_state(r);
+        L = ngx_http_lua_get_lua_vm(r, ctx);
         ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
     }
 
@@ -122,7 +122,7 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    L = ngx_http_lua_get_main_lua_state(r);
+    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->log_src.value.data,
@@ -158,7 +158,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    L = ngx_http_lua_get_main_lua_state(r);
+    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->log_src_key);

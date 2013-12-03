@@ -574,7 +574,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         sr_ctx->capture = 1;
         sr_ctx->index = index;
         sr_ctx->last_body = &sr_ctx->body;
-        sr_ctx->vm_cleanup_data = ctx->vm_cleanup_data;
+        sr_ctx->vm_state = ctx->vm_state;
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
@@ -1555,7 +1555,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 static ngx_int_t
 ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
 {
-    lua_State                   *mL;
+    lua_State                   *vm;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
@@ -1589,20 +1589,20 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
 #endif
 
     c = r->connection;
-    mL = ngx_http_lua_get_main_lua_state(r);
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    rc = ngx_http_lua_run_thread(mL, r, ctx, coctx->nsubreqs);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, coctx->nsubreqs);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, mL, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     /* rc == NGX_ERROR || rc >= NGX_OK */
