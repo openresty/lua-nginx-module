@@ -118,8 +118,8 @@ static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 static ngx_int_t
     ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
-static lua_State * ngx_http_lua_new_state(ngx_cycle_t *cycle,
-    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
+static lua_State * ngx_http_lua_new_state(lua_State *parent_vm,
+    ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_cleanup_conn_pools(lua_State *L);
 
 
@@ -187,8 +187,8 @@ ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
 
 
 static lua_State *
-ngx_http_lua_new_state(ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf,
-    ngx_log_t *log)
+ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log)
 {
     lua_State       *L;
     const char      *old_path;
@@ -215,64 +215,84 @@ ngx_http_lua_new_state(ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf,
         return NULL;
     }
 
+    if (parent_vm) {
+        lua_getglobal(parent_vm, "package");
+        lua_getfield(parent_vm, -1, "path");
+        old_path = lua_tolstring(parent_vm, -1, &old_path_len);
+        lua_pop(parent_vm, 1);
+
+        lua_pushlstring(L, old_path, old_path_len);
+        lua_setfield(L, -2, "path");
+
+        lua_getfield(parent_vm, -1, "cpath");
+        old_path = lua_tolstring(parent_vm, -1, &old_path_len);
+        lua_pop(parent_vm, 2);
+
+        lua_pushlstring(L, old_path, old_path_len);
+        lua_setfield(L, -2, "cpath");
+
+    } else {
 #ifdef LUA_DEFAULT_PATH
 #   define LUA_DEFAULT_PATH_LEN (sizeof(LUA_DEFAULT_PATH) - 1)
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
-                   "lua prepending default package.path with %s",
-                   LUA_DEFAULT_PATH);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
+                       "lua prepending default package.path with %s",
+                       LUA_DEFAULT_PATH);
 
-    lua_pushliteral(L, LUA_DEFAULT_PATH ";"); /* package default */
-    lua_getfield(L, -2, "path"); /* package default old */
-    old_path = lua_tolstring(L, -1, &old_path_len);
-    lua_concat(L, 2); /* package new */
-    lua_setfield(L, -2, "path"); /* package */
+        lua_pushliteral(L, LUA_DEFAULT_PATH ";"); /* package default */
+        lua_getfield(L, -2, "path"); /* package default old */
+        old_path = lua_tolstring(L, -1, &old_path_len);
+        lua_concat(L, 2); /* package new */
+        lua_setfield(L, -2, "path"); /* package */
 #endif
 
 #ifdef LUA_DEFAULT_CPATH
 #   define LUA_DEFAULT_CPATH_LEN (sizeof(LUA_DEFAULT_CPATH) - 1)
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
-                   "lua prepending default package.cpath with %s",
-                   LUA_DEFAULT_CPATH);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
+                       "lua prepending default package.cpath with %s",
+                       LUA_DEFAULT_CPATH);
 
-    lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
-    lua_getfield(L, -2, "cpath"); /* package default old */
-    old_cpath = lua_tolstring(L, -1, &old_cpath_len);
-    lua_concat(L, 2); /* package new */
-    lua_setfield(L, -2, "cpath"); /* package */
+        lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
+        lua_getfield(L, -2, "cpath"); /* package default old */
+        old_cpath = lua_tolstring(L, -1, &old_cpath_len);
+        lua_concat(L, 2); /* package new */
+        lua_setfield(L, -2, "cpath"); /* package */
 #endif
 
-    if (lmcf->lua_path.len != 0) {
-        lua_getfield(L, -1, "path"); /* get original package.path */
-        old_path = lua_tolstring(L, -1, &old_path_len);
+        if (lmcf->lua_path.len != 0) {
+            lua_getfield(L, -1, "path"); /* get original package.path */
+            old_path = lua_tolstring(L, -1, &old_path_len);
 
-        dd("old path: %s", old_path);
+            dd("old path: %s", old_path);
 
-        lua_pushlstring(L, (char *) lmcf->lua_path.data, lmcf->lua_path.len);
-        new_path = lua_tostring(L, -1);
+            lua_pushlstring(L, (char *) lmcf->lua_path.data,
+                            lmcf->lua_path.len);
+            new_path = lua_tostring(L, -1);
 
-        ngx_http_lua_set_path(cycle, L, -3, "path", new_path, old_path,
-                              log);
+            ngx_http_lua_set_path(cycle, L, -3, "path", new_path, old_path,
+                                  log);
 
-        lua_pop(L, 2);
+            lua_pop(L, 2);
+        }
+
+        if (lmcf->lua_cpath.len != 0) {
+            lua_getfield(L, -1, "cpath"); /* get original package.cpath */
+            old_cpath = lua_tolstring(L, -1, &old_cpath_len);
+
+            dd("old cpath: %s", old_cpath);
+
+            lua_pushlstring(L, (char *) lmcf->lua_cpath.data,
+                            lmcf->lua_cpath.len);
+            new_cpath = lua_tostring(L, -1);
+
+            ngx_http_lua_set_path(cycle, L, -3, "cpath", new_cpath, old_cpath,
+                                  log);
+
+
+            lua_pop(L, 2);
+        }
     }
 
-    if (lmcf->lua_cpath.len != 0) {
-        lua_getfield(L, -1, "cpath"); /* get original package.cpath */
-        old_cpath = lua_tolstring(L, -1, &old_cpath_len);
-
-        dd("old cpath: %s", old_cpath);
-
-        lua_pushlstring(L, (char *) lmcf->lua_cpath.data, lmcf->lua_cpath.len);
-        new_cpath = lua_tostring(L, -1);
-
-        ngx_http_lua_set_path(cycle, L, -3, "cpath", new_cpath, old_cpath,
-                              log);
-
-
-        lua_pop(L, 2);
-    }
-
-    lua_remove(L, -1); /* remove the "package" table */
+    lua_pop(L, 1); /* remove the "package" table */
 
     ngx_http_lua_init_registry(L, log);
     ngx_http_lua_init_globals(L, lmcf, log);
@@ -3609,8 +3629,8 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
 
 
 lua_State *
-ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
-    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
+ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
+    ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln)
 {
     lua_State                       *L;
@@ -3626,7 +3646,7 @@ ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
     }
 
     /* create new Lua VM instance */
-    L = ngx_http_lua_new_state(cycle, lmcf, log);
+    L = ngx_http_lua_new_state(parent_vm, cycle, lmcf, log);
     if (L == NULL) {
         return NULL;
     }

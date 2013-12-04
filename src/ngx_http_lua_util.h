@@ -119,8 +119,8 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     }
 
 
-lua_State * ngx_http_lua_init_vm(ngx_cycle_t *cycle, ngx_pool_t *pool,
-    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
+lua_State * ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
+    ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln);
 
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
@@ -255,7 +255,7 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
 
         dd("lmcf: %p", lmcf);
 
-        L = ngx_http_lua_init_vm(lmcf->cycle, r->pool, lmcf,
+        L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
                                  r->connection->log, &cln);
         if (L == NULL) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,

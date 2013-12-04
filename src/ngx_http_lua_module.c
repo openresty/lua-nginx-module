@@ -476,8 +476,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
                                   ngx_http_lua_hash_literal("content-length");
         ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
 
-        lmcf->lua = ngx_http_lua_init_vm(cf->cycle, cf->pool, lmcf, cf->log,
-                                         NULL);
+        lmcf->lua = ngx_http_lua_init_vm(NULL, cf->cycle, cf->pool, lmcf,
+                                         cf->log, NULL);
         if (lmcf->lua == NULL) {
             ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                                "failed to initialize Lua VM");
