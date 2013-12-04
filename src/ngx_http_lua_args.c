@@ -450,7 +450,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
             dd("saving key %.*s", (int) (dst - q), q);
 
             out[i].key.data = q;
-            out[i].key.len = dst - q;
+            out[i].key.len = (int) (dst - q);
 
             /* skip the current '=' char */
             p++;
@@ -473,7 +473,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 
                 if (out[i].key.len) {
                     out[i].value.data = q;
-                    out[i].value.len = dst - q;
+                    out[i].value.len = (int) (dst - q);
                     i++;
                 }
 
@@ -484,8 +484,8 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 
                 if (dst - q) {
                     out[i].key.data = q;
-                    out[i].key.len = dst - q;
-                    out[i].value.len = (size_t) -1;
+                    out[i].key.len = (int) (dst - q);
+                    out[i].value.len = -1;
                     i++;
                 }
             }
@@ -515,15 +515,15 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
         if (parsing_value) {
             if (out[i].key.len) {
                 out[i].value.data = q;
-                out[i].value.len = dst - q;
+                out[i].value.len = (int) (dst - q);
                 i++;
             }
 
         } else {
             if (dst - q) {
                 out[i].key.data = q;
-                out[i].key.len = dst - q;
-                out[i].value.len = (size_t) -1;
+                out[i].key.len = (int) (dst - q);
+                out[i].value.len = (int) -1;
                 i++;
             }
         }

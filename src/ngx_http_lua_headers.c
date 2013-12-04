@@ -842,14 +842,16 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
         }
 
         if (raw) {
-            out[n].key = header[i].key;
+            out[n].key.data = header[i].key.data;
+            out[n].key.len = (int) header[i].key.len;
 
         } else {
             out[n].key.data = header[i].lowcase_key;
-            out[n].key.len = header[i].key.len;
+            out[n].key.len = (int) header[i].key.len;
         }
 
-        out[n].value = header[i].value;
+        out[n].value.data = header[i].value.data;
+        out[n].value.len = (int) header[i].value.len;
 
         if (++n == count) {
             return NGX_OK;

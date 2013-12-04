@@ -19,8 +19,14 @@
 
 #ifndef NGX_HTTP_LUA_NO_FFI_API
 typedef struct {
-    ngx_str_t   key;
-    ngx_str_t   value;
+    int          len;
+    u_char      *data;
+} ngx_http_lua_ffi_str_t;
+
+
+typedef struct {
+    ngx_http_lua_ffi_str_t   key;
+    ngx_http_lua_ffi_str_t   value;
 } ngx_http_lua_ffi_table_elt_t;
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
