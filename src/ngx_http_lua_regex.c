@@ -2284,6 +2284,14 @@ ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
         return;
     }
 
+    if (re->regex_sd) {
+#if LUA_HAVE_PCRE_JIT
+        pcre_free_study(re->regex_sd);
+#else
+        pcre_free(re->regex_sd);
+#endif
+    }
+
     ngx_destroy_pool(re->pool);
 }
 
