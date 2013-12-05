@@ -917,10 +917,12 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 
             g = function ()
                 ngx.sleep(0.01)
+                collectgarbage()
             end
 
             f = function ()
                 ngx.sleep(0.01)
+                collectgarbage()
             end
             local ok, err = ngx.timer.at(0, f)
             if not ok then
@@ -1179,5 +1181,68 @@ qq{lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua tcp socket keepalive: free connection pool for ",
 "lua tcp socket keepalive max idle timeout",
+]
+
+
+
+=== TEST 31: lua_max_running_timers (just not enough, also low lua_max_pending_timers)
+--- http_config
+    lua_max_running_timers 1;
+    lua_max_pending_timers 10;
+--- config
+    lua_code_cache off;
+    location /t {
+        content_by_lua '
+            local s = ""
+
+            local function fail(...)
+                ngx.log(ngx.ERR, ...)
+            end
+
+            local f, g
+
+            g = function ()
+                ngx.sleep(0.01)
+                collectgarbage()
+            end
+
+            f = function ()
+                ngx.sleep(0.01)
+                collectgarbage()
+            end
+            local ok, err = ngx.timer.at(0, f)
+            if not ok then
+                ngx.say("failed to set timer f: ", err)
+                return
+            end
+            local ok, err = ngx.timer.at(0, g)
+            if not ok then
+                ngx.say("failed to set timer g: ", err)
+                return
+            end
+            ngx.say("registered timer")
+            s = "[m]"
+        ';
+    }
+--- request
+GET /t
+
+--- response_body
+registered timer
+
+--- wait: 0.1
+--- no_error_log
+[error]
+
+--- error_log eval
+[
+"1 lua_max_running_timers are not enough",
+"lua ngx.timer expired",
+"http lua close fake http connection",
+qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
+"decrementing the reference count for Lua VM: 3",
+"decrementing the reference count for Lua VM: 2",
+"decrementing the reference count for Lua VM: 1",
+"lua close the global Lua VM",
 ]
 
