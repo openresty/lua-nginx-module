@@ -5,7 +5,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 144;
+plan tests => repeat_each() * 155;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
