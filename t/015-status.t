@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -234,4 +234,17 @@ GET /t
 --- error_code: 101
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: reading error status code
+--- config
+    location = /t {
+        content_by_lua 'ngx.say("status = ", ngx.status)';
+    }
+--- raw_request eval
+"GET /t\r\n"
+--- http09
+--- response_body
+status = 9
 

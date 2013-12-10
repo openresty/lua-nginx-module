@@ -34,15 +34,15 @@ static char *ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_http_lua_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
-static char *ngx_http_lua_init_vm(ngx_conf_t *cf,
-    ngx_http_lua_main_conf_t *lmcf);
-static void ngx_http_lua_cleanup_vm(void *data);
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 
 
 static ngx_conf_post_t  ngx_http_lua_lowat_post =
     { ngx_http_lua_lowat_check };
+
+
+static volatile ngx_cycle_t  *ngx_http_lua_prev_cycle = NULL;
 
 
 static ngx_command_t ngx_http_lua_cmds[] = {
@@ -389,6 +389,7 @@ ngx_module_t ngx_http_lua_module = {
 static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
+    int                         multi_http_blocks;
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
@@ -397,7 +398,15 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    if (lmcf->requires_capture_filter) {
+    if (ngx_http_lua_prev_cycle != ngx_cycle) {
+        ngx_http_lua_prev_cycle = ngx_cycle;
+        multi_http_blocks = 0;
+
+    } else {
+        multi_http_blocks = 1;
+    }
+
+    if (multi_http_blocks || lmcf->requires_capture_filter) {
         rc = ngx_http_lua_capture_filter_init(cf);
         if (rc != NGX_OK) {
             return rc;
@@ -446,14 +455,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_log_handler;
     }
 
-    if (lmcf->requires_header_filter) {
+    if (multi_http_blocks || lmcf->requires_header_filter) {
         rc = ngx_http_lua_header_filter_init();
         if (rc != NGX_OK) {
             return rc;
         }
     }
 
-    if (lmcf->requires_body_filter) {
+    if (multi_http_blocks || lmcf->requires_body_filter) {
         rc = ngx_http_lua_body_filter_init();
         if (rc != NGX_OK) {
             return rc;
@@ -463,14 +472,20 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
-        if (ngx_http_lua_init_vm(cf, lmcf) != NGX_CONF_OK) {
+        ngx_http_lua_content_length_hash =
+                                  ngx_http_lua_hash_literal("content-length");
+        ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
+
+        lmcf->lua = ngx_http_lua_init_vm(NULL, cf->cycle, cf->pool, lmcf,
+                                         cf->log, NULL);
+        if (lmcf->lua == NULL) {
             ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                                "failed to initialize Lua VM");
             return NGX_ERROR;
         }
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
-            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != 0) {
+            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != NGX_OK) {
                 /* an error happened */
                 return NGX_ERROR;
             }
@@ -581,6 +596,8 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
     if (lmcf->max_running_timers == NGX_CONF_UNSET) {
         lmcf->max_running_timers = 256;
     }
+
+    lmcf->cycle = cf->cycle;
 
     return NGX_CONF_OK;
 }
@@ -715,74 +732,6 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                          prev->transform_underscores_in_resp_headers, 1);
 
     ngx_conf_merge_value(conf->log_socket_errors, prev->log_socket_errors, 1);
-
-    return NGX_CONF_OK;
-}
-
-
-static void
-ngx_http_lua_cleanup_vm(void *data)
-{
-    lua_State *L = data;
-
-    if (L != NULL) {
-        lua_close(L);
-
-        dd("Lua VM closed!");
-    }
-}
-
-
-static char *
-ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
-{
-    ngx_pool_cleanup_t              *cln;
-    ngx_http_lua_preload_hook_t     *hook;
-    lua_State                       *L;
-    ngx_uint_t                       i;
-
-    ngx_http_lua_content_length_hash =
-        ngx_http_lua_hash_literal("content-length");
-
-    ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
-
-    /* add new cleanup handler to config mem pool */
-    cln = ngx_pool_cleanup_add(cf->pool, 0);
-    if (cln == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    /* create new Lua VM instance */
-    lmcf->lua = ngx_http_lua_new_state(cf, lmcf);
-    if (lmcf->lua == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    /* register cleanup handler for Lua VM */
-    cln->handler = ngx_http_lua_cleanup_vm;
-    cln->data = lmcf->lua;
-
-    if (lmcf->preload_hooks) {
-
-        /* register the 3rd-party module's preload hooks */
-
-        L = lmcf->lua;
-
-        lua_getglobal(L, "package");
-        lua_getfield(L, -1, "preload");
-
-        hook = lmcf->preload_hooks->elts;
-
-        for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
-
-            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
-
-            lua_pushcfunction(L, hook[i].loader);
-            lua_setfield(L, -2, (char *) hook[i].package);
-        }
-
-        lua_pop(L, 2);
-    }
 
     return NGX_CONF_OK;
 }

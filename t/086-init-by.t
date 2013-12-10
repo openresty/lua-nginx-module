@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
@@ -147,8 +147,10 @@ Jim: 6
 GET /lua
 --- response_body
 ok
---- error_log
+--- grep_error_log chop
 log from init_by_lua
+--- grep_error_log_out eval
+["log from init_by_lua\n", ""]
 
 
 
@@ -167,8 +169,10 @@ log from init_by_lua
 GET /lua
 --- response_body
 ok
---- error_log
+--- grep_error_log chop
 log from init_by_lua
+--- grep_error_log_out eval
+["log from init_by_lua\n", ""]
 
 
 

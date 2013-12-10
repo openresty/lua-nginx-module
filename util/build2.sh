@@ -24,7 +24,7 @@ time ngx-build $force $version \
         --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:$LUAJIT_LIB:/usr/local/lib" \
+            --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:/usr/local/lib" \
             --with-http_spdy_module \
             --without-mail_pop3_module \
             --without-mail_imap_module \
@@ -44,6 +44,7 @@ time ngx-build $force $version \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \
+                --with-http_gunzip_module \
           --with-select_module \
           --with-poll_module \
           --with-rtsig_module \

@@ -13,7 +13,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use t::TestNginxLua $SkipReason ? (skip_all => $SkipReason) : ();
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);
 #master_process_enabled(1);

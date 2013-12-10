@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
@@ -493,7 +493,7 @@ msg: 1: received: hello
 mysock handler aborted
 --- no_error_log
 [error]
---- wait: 0.1
+--- wait: 1.1
 
 
 
