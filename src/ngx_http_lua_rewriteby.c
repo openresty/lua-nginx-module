@@ -146,23 +146,18 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
-    ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf;
 
     dd("rewrite by lua inline");
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    L = lmcf->lua;
+    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->rewrite_src.value.data,
                                        llcf->rewrite_src.value.len,
                                        llcf->rewrite_src_key,
-                                       "rewrite_by_lua",
-                                       llcf->enable_code_cache ? 1 : 0);
-
+                                       "rewrite_by_lua");
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -177,7 +172,6 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     lua_State                       *L;
     ngx_int_t                        rc;
     u_char                          *script_path;
-    ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_str_t                        eval_src;
 
@@ -194,13 +188,10 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    L = lmcf->lua;
+    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->rewrite_src_key,
-                                     llcf->enable_code_cache ? 1 : 0);
-
+    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->rewrite_src_key);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

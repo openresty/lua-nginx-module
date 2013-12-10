@@ -13,7 +13,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use t::TestNginxLua $SkipReason ? (skip_all => $SkipReason) : ();
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 
 use t::StapThread;
@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 45;
+plan tests => repeat_each() * 60;
 
 #no_diff();
 no_long_string();
@@ -177,7 +177,7 @@ timer prematurely expired: true
 
             local function f(premature)
                 print("timer prematurely expired: ", premature)
-                local ok, err = ngx.timer.at(0, f)
+                local ok, err = ngx.timer.at(3, f)
                 if not ok then
                     print("failed to register a new timer after reload: ", err)
                 else
@@ -213,4 +213,69 @@ lua ngx.timer expired
 http lua close fake http connection
 timer prematurely expired: true
 failed to register a new timer after reload: process exiting, context: ngx.timer
+
+
+
+=== TEST 4: trying to add new timer after HUP reload
+--- config
+    location /t {
+        content_by_lua '
+            local f, err = io.open("t/servroot/logs/nginx.pid", "r")
+            if not f then
+                ngx.say("failed to open nginx.pid: ", err)
+                return
+            end
+
+            local pid = f:read()
+            -- ngx.say("master pid: [", pid, "]")
+
+            f:close()
+
+            local function g(premature)
+                print("g: timer prematurely expired: ", premature)
+                print("g: exiting=", ngx.worker.exiting())
+            end
+
+            local function f(premature)
+                print("f: timer prematurely expired: ", premature)
+                print("f: exiting=", ngx.worker.exiting())
+                local ok, err = ngx.timer.at(0, g)
+                if not ok then
+                    print("f: failed to register a new timer after reload: ", err)
+                else
+                    print("f: registered a new timer after reload")
+                end
+            end
+            local ok, err = ngx.timer.at(3, f)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+            ngx.say("registered timer")
+            os.execute("kill -HUP " .. pid)
+        ';
+    }
+--- request
+GET /t
+
+--- response_body
+registered timer
+
+--- wait: 0.2
+--- no_error_log
+[error]
+[alert]
+[crit]
+in callback: hello, 2
+failed to register a new timer after reload
+
+--- error_log
+lua abort pending timers
+lua ngx.timer expired
+http lua close fake http connection
+f: timer prematurely expired: true
+f: registered a new timer after reload
+f: exiting=true
+g: timer prematurely expired: false
+g: exiting=true
 

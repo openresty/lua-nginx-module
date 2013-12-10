@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #log_level('warn');
@@ -17,7 +17,7 @@ our $HtmlDir = html_dir;
 #$ENV{LUA_PATH} = "$html_dir/?.lua";
 
 #no_diff();
-#no_long_string();
+no_long_string();
 run_tests();
 
 __DATA__
@@ -45,10 +45,10 @@ __DATA__
             local foo = package.loaded.foo
             if foo then
                 ngx.say("found")
+                foo.hi()
             else
                 ngx.say("not found")
             end
-            foo.hi()
         ';
     }
 --- request

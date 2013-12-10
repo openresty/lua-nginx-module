@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -1044,6 +1044,59 @@ Location: http://localhost:$ServerPort/t/
 Foo: /t/
 --- response_body_like: 301 Moved Permanently
 --- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 52: case sensitive cache-control header
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["cache-Control"] = "private"
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_like chop
+cache-Control: private
+--- response_body
+Cache-Control: private
+
+
+
+=== TEST 53: clear Cache-Control when there was no Cache-Control
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header["Cache-Control"] = nil
+            ngx.say("Cache-Control: ", ngx.var.sent_http_cache_control)
+        ';
+    }
+--- request
+    GET /lua
+--- raw_response_headers_unlike eval
+qr/Cache-Control/i
+--- response_body
+Cache-Control: nil
+
+
+
+=== TEST 54: set response content-type header
+--- config
+    location /read {
+        content_by_lua '
+            local s = "content_type"
+            local v = ngx.header[s]
+            ngx.say("s = ", s)
+        ';
+    }
+--- request
+GET /read
+--- response_body
+s = content_type
+
 --- no_error_log
 [error]
 
