@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(10);
 
@@ -711,4 +711,39 @@ access B: B
 content d: d
 content e: e
 content f: f
+
+
+
+=== TEST 13: proxy_cache_lock in subrequests
+--- http_config
+proxy_cache_lock on;
+proxy_cache_lock_timeout 100ms;
+proxy_connect_timeout 300ms;
+
+proxy_cache_path conf/cache levels=1:2 keys_zone=STATIC:10m inactive=10m max_size=1m;
+
+--- config
+    location /foo {
+        content_by_lua '
+            local res1, res2 = ngx.location.capture_multi{
+                { "/proxy" },
+                { "/proxy" },
+                { "/proxy" },
+                { "/proxy" },
+            }
+            ngx.say("ok")
+        ';
+    }
+
+    location = /proxy {
+            proxy_cache STATIC;
+            proxy_pass http://agentzh.org:12345;
+            proxy_cache_key $proxy_host$uri$args;
+            proxy_cache_valid any 1s;
+            #proxy_http_version 1.1;
+    }
+--- request
+    GET /foo
+--- response_body
+ok
 

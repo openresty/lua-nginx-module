@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
@@ -71,6 +71,7 @@ M(http-lua-user-coroutine-create) {
 F(ngx_http_lua_ngx_exec) { println("exec") }
 
 F(ngx_http_lua_ngx_exit) { println("exit") }
+F(ngx_http_lua_ffi_exit) { println("exit") }
 _EOC_
 
 no_shuffle();
@@ -984,7 +985,7 @@ test10
 
 === TEST 24: init_by_lua + our own coroutines in content_by_lua
 --- http_config
-    init_by_lua return;
+    init_by_lua 'return';
 --- config
     resolver $TEST_NGINX_RESOLVER;
     location /lua {
@@ -1090,4 +1091,70 @@ successfully connected to: agentzh.org
 --- no_error_log
 [error]
 --- timeout: 10
+
+
+
+=== TEST 26: mixing coroutine.* API between init_by_lua and other contexts (github #304) - init_by_lua
+--- http_config
+    init_by_lua '
+          co_wrap = coroutine.wrap
+          co_yield = coroutine.yield
+    ';
+
+--- config
+    location /cotest {
+        content_by_lua '
+            function generator()
+                return co_wrap(function()
+                    co_yield("data")
+                end)
+            end
+
+            local co = generator()
+            local data = co()
+            ngx.say(data)
+        ';
+    }
+
+--- request
+GET /cotest
+--- stap2 eval: $::StapScript
+--- response_body
+data
+--- no_error_log
+[error]
+
+
+
+=== TEST 27: mixing coroutine.* API between init_by_lua and other contexts (github #304) - init_by_lua_file
+--- http_config
+    init_by_lua_file html/init.lua;
+
+--- config
+    location /cotest {
+        content_by_lua '
+            function generator()
+                return co_wrap(function()
+                    co_yield("data")
+                end)
+            end
+
+            local co = generator()
+            local data = co()
+            ngx.say(data)
+        ';
+    }
+
+--- user_files
+>>> init.lua
+co_wrap = coroutine.wrap
+co_yield = coroutine.yield
+
+--- request
+GET /cotest
+--- stap2 eval: $::StapScript
+--- response_body
+data
+--- no_error_log
+[error]
 

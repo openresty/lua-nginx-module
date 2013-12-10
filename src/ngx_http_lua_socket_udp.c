@@ -1435,11 +1435,11 @@ static ngx_int_t
 ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
 {
     int                          nret;
+    lua_State                   *vm;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_co_ctx_t       *coctx;
-    ngx_http_lua_main_conf_t    *lmcf;
 
     ngx_http_lua_socket_udp_upstream_t      *u;
 
@@ -1449,8 +1449,6 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
     }
 
     ctx->resume_handler = ngx_http_lua_wev_handler;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp operation done, resuming lua thread");
@@ -1473,19 +1471,20 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
     }
 
     c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, nret);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (ctx->entered_content_phase) {

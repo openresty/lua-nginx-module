@@ -1,11 +1,11 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 8);
+plan tests => repeat_each() * (blocks() * 5 + 4);
 
 our $HtmlDir = html_dir;
 
@@ -89,10 +89,17 @@ received: OK
 --- no_error_log eval
 ["[error]",
 "lua tcp socket keepalive: free connection pool for "]
---- error_log eval
-qq{lua tcp socket get keepalive peer: using connection
-lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
-}
+--- grep_error_log eval
+qr/lua tcp socket get keepalive peer: using connection|lua tcp socket keepalive create connection pool for key "[^"]+"/
+
+--- grep_error_log_out eval
+[
+qq{lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_NGINX_MEMCACHED_PORT}"
+lua tcp socket get keepalive peer: using connection
+},
+"lua tcp socket get keepalive peer: using connection
+lua tcp socket get keepalive peer: using connection
+"]
 
 
 
@@ -552,9 +559,14 @@ received response of 156 bytes
 done
 --- no_error_log
 [error]
---- error_log eval
-["lua tcp socket keepalive timeout: unlimited",
-qr/lua tcp socket connection pool size: 30\b/]
+--- grep_error_log eval
+qr/lua tcp socket keepalive timeout: unlimited|lua tcp socket connection pool size: \d+/
+--- grep_error_log_out eval
+["lua tcp socket connection pool size: 30
+lua tcp socket keepalive timeout: unlimited
+",
+"lua tcp socket keepalive timeout: unlimited
+"]
 --- timeout: 4
 
 
@@ -788,9 +800,15 @@ received response of 156 bytes
 done
 --- no_error_log
 [error]
---- error_log eval
-["lua tcp socket keepalive timeout: unlimited",
-qr/lua tcp socket connection pool size: 30\b/]
+--- grep_error_log eval
+qr/lua tcp socket keepalive timeout: unlimited|lua tcp socket connection pool size: \d+/
+--- grep_error_log_out eval
+["lua tcp socket connection pool size: 30
+lua tcp socket keepalive timeout: unlimited
+",
+"lua tcp socket keepalive timeout: unlimited
+"
+]
 --- timeout: 4
 
 
@@ -873,9 +891,16 @@ received response of 119 bytes
 --- no_error_log eval
 ["[error]",
 "lua tcp socket keepalive: free connection pool for "]
---- error_log eval
-["lua tcp socket get keepalive peer: using connection",
-'lua tcp socket keepalive create connection pool for key "unix:']
+--- grep_error_log eval
+qr/lua tcp socket get keepalive peer: using connection|lua tcp socket keepalive create connection pool for key "unix:/
+--- grep_error_log_out eval
+[qq{lua tcp socket keepalive create connection pool for key "unix:
+lua tcp socket get keepalive peer: using connection
+},
+"lua tcp socket get keepalive peer: using connection
+lua tcp socket get keepalive peer: using connection
+"
+]
 
 
 

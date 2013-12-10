@@ -150,6 +150,7 @@ src/phase.[ch]
 src/probe.h
 src/uthread.[ch]
 src/timer.[ch]
+src/config.[ch]
 *.plist
 lua
 ttimer

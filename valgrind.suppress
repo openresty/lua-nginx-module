@@ -12,27 +12,6 @@ fun:ngx_init_cycle
 fun:ngx_master_process_cycle
 fun:main
 }
-
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-}
-{
-<insert_a_suppression_name_here>
-Memcheck:Cond
-fun:lj_str_new
-fun:countint
-fun:index2adr
-fun:lua_type
-fun:ngx_http_lua_ngx_echo
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-   obj:*
-}
 {
    <insert_a_suppression_name_here>
    Memcheck:Cond
@@ -64,31 +43,7 @@ fun:ngx_http_lua_ngx_echo
 {
    <insert_a_suppression_name_here>
    exp-sgcheck:SorG
-   fun:lj_str_new
-   fun:lua_pushlstring
-}
-{
-   <insert_a_suppression_name_here>
-   exp-sgcheck:SorG
-   fun:lj_str_new
-   fun:lua_pushlstring
-}
-{
-   <insert_a_suppression_name_here>
-   exp-sgcheck:SorG
    fun:ngx_http_lua_ndk_set_var_get
-}
-{
-   <insert_a_suppression_name_here>
-   exp-sgcheck:SorG
-   fun:lj_str_new
-   fun:lua_getfield
-}
-{
-   <insert_a_suppression_name_here>
-   exp-sgcheck:SorG
-   fun:lj_str_new
-   fun:lua_setfield
 }
 {
    <insert_a_suppression_name_here>
@@ -106,18 +61,6 @@ fun:ngx_http_lua_ngx_echo
    exp-sgcheck:SorG
    fun:ngx_vslprintf
    fun:ngx_log_error_core
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Addr4
-   fun:lj_str_new
-   fun:lua_setfield
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Addr4
-   fun:lj_str_new
-   fun:lua_getfield
 }
 {
    <insert_a_suppression_name_here>
@@ -141,52 +84,6 @@ fun:ngx_http_lua_ngx_echo
 }
 {
    <insert_a_suppression_name_here>
-   Memcheck:Addr4
-   fun:lj_str_new
-   fun:lua_pushlstring
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-   fun:lj_str_fromnum
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-   fun:lua_pushlstring
-}
-{
-   <false_alarm_due_to_u32_alignment_in_luajit2>
-   Memcheck:Addr4
-   fun:lj_str_new
-   fun:lua_setfield
-   fun:ngx_http_lua_cache_store_code
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-   fun:lua_getfield
-   fun:ngx_http_lua_cache_load_code
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:lj_str_new
-   fun:lua_setfield
-   fun:ngx_http_lua_cache_store_code
-}
-{
-   <false_alarm_due_to_u32_alignment_in_luajit2>
-   Memcheck:Addr4
-   fun:lj_str_new
-   fun:lua_getfield
-   fun:ngx_http_lua_cache_load_code
-}
-{
-   <insert_a_suppression_name_here>
    Memcheck:Param
    socketcall.setsockopt(optval)
    fun:setsockopt
@@ -205,4 +102,20 @@ fun:ngx_http_lua_ngx_echo
    fun:malloc
    fun:ngx_alloc
    fun:ngx_event_process_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   sendmsg(msg.msg_iov[0])
+   fun:__sendmsg_nocancel
+   fun:ngx_write_channel
+   fun:ngx_pass_open_channel
+   fun:ngx_start_cache_manager_processes
+}
+{
+    <insert_a_suppression_name_here>
+    Memcheck:Cond
+    fun:ngx_init_cycle
+    fun:ngx_master_process_cycle
+    fun:main
 }

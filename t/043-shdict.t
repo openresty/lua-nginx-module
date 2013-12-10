@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -8,7 +8,7 @@ use t::TestNginxLua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 15);
+plan tests => repeat_each() * (blocks() * 2 + 17);
 
 #no_diff();
 no_long_string();
@@ -114,6 +114,8 @@ truenilfalse
 dog
 dog
 bird string
+--- no_error_log
+[error]
 
 
 
@@ -334,6 +336,7 @@ nil
 
 
 === TEST 13: not feed the object into the call
+--- SKIP
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -420,7 +423,7 @@ false the key argument is more than 65535 bytes: 65536
 --- request
 GET /test
 --- response_body
-false unsupported value type for key "foo" in shared_dict "dogs": userdata
+false unsupported value type for key "foo" in shared_dict: userdata
 
 
 
@@ -890,6 +893,8 @@ GET /test
 --- response_body
 incr: nil not found
 foo = nil
+--- no_error_log
+[error]
 
 
 
@@ -1405,7 +1410,7 @@ GET /t
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+my $a = "false no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
 [qr/$a/, qr/$a/]
 --- no_error_log
 [error]
@@ -1442,7 +1447,7 @@ my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" he
 --- pipelined_requests eval
 ["GET /test", "GET /test"]
 --- response_body eval
-my $a = "nil no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
+my $a = "false no memory\nabort at (353|705)\ncur value: nil\n1st value: " . (" hello" x 10) . "1\n2nd value: " . (" hello" x 10) . "2\n";
 [qr/$a/,
 q{false exists
 abort at 1
