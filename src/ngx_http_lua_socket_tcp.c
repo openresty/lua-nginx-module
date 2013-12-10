@@ -3898,7 +3898,7 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
     coctx = ctx->downstream_co_ctx;
     u = coctx->data;
 
-    if (u) {
+    if (u && u->peer.connection) {
         u->read_event_handler(r, u);
     }
 }
