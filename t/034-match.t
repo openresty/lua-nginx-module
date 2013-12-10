@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
@@ -202,7 +202,7 @@ not matched: nil
 
 
 
-=== TEST 10: case sensitive by default
+=== TEST 10: case insensitive
 --- config
     location /re {
         content_by_lua '
@@ -495,7 +495,7 @@ not matched!
     GET /re
 --- response_body
 1234
-4
+5
 
 
 
@@ -503,7 +503,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            local ctx = { pos = 2 }
+            local ctx = { pos = 3 }
             m = ngx.re.match("1234, hello", "([0-9]+)", "", ctx)
             if m then
                 ngx.say(m[0])
@@ -518,7 +518,7 @@ not matched!
     GET /re
 --- response_body
 34
-4
+5
 
 
 
@@ -732,7 +732,7 @@ done
 --- request
     GET /re
 --- response_body
-pos: 0
+pos: 1
 m: 
 --- no_error_log
 [error]

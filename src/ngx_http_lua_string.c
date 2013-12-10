@@ -587,4 +587,111 @@ ngx_http_lua_ngx_hmac_sha1(lua_State *L)
 }
 #endif
 
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+void
+ngx_http_lua_ffi_md5_bin(const u_char *src, size_t len, u_char *dst)
+{
+    ngx_md5_t     md5;
+
+    ngx_md5_init(&md5);
+    ngx_md5_update(&md5, src, len);
+    ngx_md5_final(dst, &md5);
+}
+
+
+void
+ngx_http_lua_ffi_md5(const u_char *src, size_t len, u_char *dst)
+{
+    ngx_md5_t           md5;
+    u_char              md5_buf[MD5_DIGEST_LENGTH];
+
+    ngx_md5_init(&md5);
+    ngx_md5_update(&md5, src, len);
+    ngx_md5_final(md5_buf, &md5);
+
+    ngx_hex_dump(dst, md5_buf, sizeof(md5_buf));
+}
+
+
+int
+ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
+{
+#if NGX_HAVE_SHA1
+    ngx_sha1_t               sha;
+
+    ngx_sha1_init(&sha);
+    ngx_sha1_update(&sha, src, len);
+    ngx_sha1_final(dst, &sha);
+
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+
+size_t
+ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst)
+{
+    ngx_str_t      in, out;
+
+    in.data = (u_char *) src;
+    in.len = slen;
+
+    out.data = dst;
+
+    ngx_encode_base64(&out, &in);
+
+    return out.len;
+}
+
+
+int
+ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
+    size_t *dlen)
+{
+    ngx_int_t      rc;
+    ngx_str_t      in, out;
+
+    in.data = (u_char *) src;
+    in.len = slen;
+
+    out.data = dst;
+
+    rc = ngx_decode_base64(&out, &in);
+
+    *dlen = out.len;
+
+    return rc == NGX_OK;
+}
+
+
+size_t
+ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len, u_char *dst)
+{
+    u_char      *p = dst;
+
+    ngx_http_lua_unescape_uri(&p, (u_char **) &src, len,
+                              NGX_UNESCAPE_URI_COMPONENT);
+    return p - dst;
+}
+
+
+size_t
+ngx_http_lua_ffi_uri_escaped_length(const u_char *src, size_t len)
+{
+    return len + 2 * ngx_http_lua_escape_uri(NULL, (u_char *) src, len,
+                                             NGX_ESCAPE_URI);
+}
+
+
+void
+ngx_http_lua_ffi_escape_uri(const u_char *src, size_t len, u_char *dst)
+{
+    ngx_http_lua_escape_uri(dst, (u_char *) src, len, NGX_ESCAPE_URI);
+}
+
+#endif
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

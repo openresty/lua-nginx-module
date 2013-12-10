@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
 our $GCScript = <<_EOC_;
@@ -366,7 +366,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.3
+--- wait: 0.4
 --- ignore_response
 --- no_error_log
 [error]
