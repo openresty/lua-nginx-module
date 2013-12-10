@@ -967,7 +967,9 @@ ngx_http_lua_ngx_capture_buffer_handler(ngx_http_request_t *r)
            If we need waiting, we shall keep it.
            Anyway, if the subrequest isn't over, we should try to wake it up.
          */
-        if (!ctx->current_subrequest_ctx || !ctx->current_subrequest_ctx->seen_last_for_subreq) {
+        if ((!ctx->current_subrequest_ctx || !ctx->current_subrequest_ctx->seen_last_for_subreq)
+            && (!ctx->current_subrequest || !ctx->current_subrequest->done))
+        {
             ctx->wakeup_subrequest = 1;
         } else {
             ctx->wakeup_subrequest = 0;
