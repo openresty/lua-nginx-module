@@ -2051,7 +2051,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     /* rc == NGX_AGAIN */
 
     ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
-    ctx->writing_raw_req_socket = 1;
+    if (u->raw_downstream) {
+        ctx->writing_raw_req_socket = 1;
+    }
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -3687,10 +3689,20 @@ ngx_http_lua_req_socket(lua_State *L)
         lua_pushliteral(L, "nginx version too old");
         return 2;
 #else
-        if (!r->request_body) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "requesty body not read yet");
-            return 2;
+        if (r->request_body) {
+            if (r->request_body->rest > 0) {
+                lua_pushnil(L);
+                lua_pushliteral(L, "pending request body reading in some "
+                                "other thread");
+                return 2;
+            }
+
+        } else {
+            rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+            if (rb == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+            r->request_body = rb;
         }
 
         if (c->buffered) {
@@ -3932,7 +3944,6 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
-    ngx_http_lua_main_conf_t            *lmcf;
     ngx_http_lua_loc_conf_t             *llcf;
     ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
@@ -4074,10 +4085,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         lua_rawset(L, -3);
 
-        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-        spool->conf = lmcf;
         spool->active_connections = 0;
+        spool->lua_vm = ngx_http_lua_get_lua_vm(r, NULL);
 
         ngx_queue_init(&spool->cache);
         ngx_queue_init(&spool->free);
@@ -4381,7 +4390,7 @@ ngx_http_lua_socket_free_pool(ngx_log_t *log, ngx_http_lua_socket_pool_t *spool)
                    "lua tcp socket keepalive: free connection pool for \"%s\"",
                    spool->key);
 
-    L = spool->conf->lua;
+    L = spool->lua_vm;
 
     lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
@@ -4688,11 +4697,11 @@ static ngx_int_t
 ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
 {
     int                          nret;
+    lua_State                   *vm;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_co_ctx_t       *coctx;
-    ngx_http_lua_main_conf_t    *lmcf;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
@@ -4702,8 +4711,6 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
     }
 
     ctx->resume_handler = ngx_http_lua_wev_handler;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp operation done, resuming lua thread");
@@ -4728,19 +4735,20 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
     }
 
     c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, nret);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, nret);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, lmcf->lua, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c,lmcf->lua, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
 
     if (ctx->entered_content_phase) {

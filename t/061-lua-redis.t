@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
@@ -63,7 +63,7 @@ qq{
             package.loaded["socket"] = ngx.socket
             local Redis = require "Redis"
 
-            local cjson = require "cjson"
+            local ljson = require "ljson"
 
             local r1 = Redis.connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
 
@@ -75,14 +75,14 @@ qq{
             ngx.say("abort: ", type(abort))
 
             if msg then
-                ngx.say("msg: ", cjson.encode(msg))
+                ngx.say("msg: ", ljson.encode(msg))
             end
 
             for i = 1, 3 do
                 r1:publish("foo", "test " .. i)
                 msg, abort = loop()
                 if msg then
-                    ngx.say("msg: ", cjson.encode(msg))
+                    ngx.say("msg: ", ljson.encode(msg))
                 end
                 ngx.say("abort: ", type(abort))
             end
@@ -173,12 +173,12 @@ F(ngx_http_lua_ngx_exit) { println("exit") }
 --- response_body
 msg type: table
 abort: function
-msg: {"payload":1,"channel":"foo","kind":"subscribe"}
-msg: {"payload":"test 1","channel":"foo","kind":"message"}
+msg: {"channel":"foo","kind":"subscribe","payload":1}
+msg: {"channel":"foo","kind":"message","payload":"test 1"}
 abort: function
-msg: {"payload":"test 2","channel":"foo","kind":"message"}
+msg: {"channel":"foo","kind":"message","payload":"test 2"}
 abort: function
-msg: {"payload":"test 3","channel":"foo","kind":"message"}
+msg: {"channel":"foo","kind":"message","payload":"test 3"}
 abort: function
 msg type: nil
 --- no_error_log

@@ -30,6 +30,8 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
+#define ngx_http_lua_assert(a)  assert(a)
+
 /* Nginx HTTP Lua Inline tag prefix */
 
 #define NGX_HTTP_LUA_INLINE_TAG "nhli_"
@@ -80,6 +82,12 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x80
 
 
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+#define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
+#define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
+#endif
+
+
 typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
 
 
@@ -99,6 +107,7 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t            lua_path;
     ngx_str_t            lua_cpath;
 
+    ngx_cycle_t         *cycle;
     ngx_pool_t          *pool;
 
     ngx_int_t            max_pending_timers;
@@ -208,6 +217,8 @@ typedef struct {
     ngx_uint_t                       ssl_verify_depth;
     ngx_str_t                        ssl_trusted_certificate;
 #endif
+
+    ngx_flag_t                       use_default_type;
 } ngx_http_lua_loc_conf_t;
 
 
@@ -294,7 +305,16 @@ struct ngx_http_lua_co_ctx_s {
 };
 
 
+typedef struct {
+    lua_State       *vm;
+    ngx_int_t        count;
+} ngx_http_lua_vm_state_t;
+
+
 typedef struct ngx_http_lua_ctx_s {
+    /* for lua_coce_cache off: */
+    ngx_http_lua_vm_state_t  *vm_state;
+
     ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
 

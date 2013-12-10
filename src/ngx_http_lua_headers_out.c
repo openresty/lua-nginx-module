@@ -337,8 +337,15 @@ create:
     }
 
     ho->value = *value;
-    ho->hash = hv->hash;
-    ngx_str_set(&ho->key, "Cache-Control");
+
+    if (value->len == 0) {
+        ho->hash = 0;
+
+    } else {
+        ho->hash = hv->hash;
+    }
+
+    ho->key = hv->key;
     *ph = ho;
 
     return NGX_OK;

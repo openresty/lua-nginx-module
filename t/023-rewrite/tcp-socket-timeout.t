@@ -21,7 +21,7 @@ BEGIN {
 }
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 

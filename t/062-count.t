@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
@@ -35,7 +35,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 96
+ngx: 97
 --- no_error_log
 [error]
 
@@ -56,7 +56,7 @@ ngx: 96
 --- request
 GET /test
 --- response_body
-96
+97
 --- no_error_log
 [error]
 
@@ -84,7 +84,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 96
+n = 97
 --- no_error_log
 [error]
 
@@ -301,7 +301,7 @@ GET /t
 --- response_body_like: 404 Not Found
 --- error_code: 404
 --- error_log
-ngx. entry count: 96
+ngx. entry count: 97
 
 
 
@@ -339,7 +339,7 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 1
+n = 4
 --- no_error_log
 [error]
 
@@ -359,7 +359,62 @@ n = 1
 --- request
 GET /test
 --- response_body
-n = 4
+n = 5
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: entries under coroutine. (content by lua)
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(coroutine) do
+                    n = n + 1
+                end
+                ngx.say("coroutine: ", n)
+            ';
+        }
+--- request
+GET /test
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
+3
+--- response_body
+coroutine: 14
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: entries under ngx.thread. (content by lua)
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx.thread) do
+                    n = n + 1
+                end
+                ngx.say("thread: ", n)
+            ';
+        }
+--- request
+GET /test
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
+--- response_body
+thread: 2
 --- no_error_log
 [error]
 

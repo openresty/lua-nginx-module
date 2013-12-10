@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
@@ -127,7 +127,7 @@ registered timer
 
 --- error_log eval
 [
-qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the context of ngx\.timer/,
+qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the current context/,
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]
@@ -790,7 +790,7 @@ registered timer
 
 --- error_log eval
 [
-qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the context of ngx\.timer/,
+qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the current context/,
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]
@@ -1336,7 +1336,7 @@ registered timer
 
 --- error_log eval
 [
-qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the context of ngx\.timer/,
+qr/\[error\] .*? runtime error: \[string "content_by_lua"\]:3: API disabled in the current context/,
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]

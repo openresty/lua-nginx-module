@@ -16,13 +16,29 @@
 #define NGX_UNESCAPE_URI_COMPONENT  0
 #endif
 
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+typedef struct {
+    int          len;
+    u_char      *data;
+} ngx_http_lua_ffi_str_t;
+
+
+typedef struct {
+    ngx_http_lua_ffi_str_t   key;
+    ngx_http_lua_ffi_str_t   value;
+} ngx_http_lua_ffi_table_elt_t;
+#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
+
 /* char whose address we use as the key in Lua vm registry for
  * user code cache table */
 extern char ngx_http_lua_code_cache_key;
 
-/* char whose address we use as the key in Lua vm registry for
- * all the "ngx.ctx" tables */
-extern char ngx_http_lua_ctx_tables_key;
+
+/* key in Lua vm registry for all the "ngx.ctx" tables */
+#define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
+
 
 /* char whose address we use as the key in Lua vm registry for
  * regex cache table  */
@@ -48,6 +64,11 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
 #endif
 
 
+#if defined(nginx_version) && nginx_version < 1000000
+#define ngx_memmove(dst, src, n)   (void) memmove(dst, src, n)
+#endif
+
+
 #define ngx_http_lua_context_name(c)                                         \
     ((c) == NGX_HTTP_LUA_CONTEXT_SET ? "set_by_lua*"                         \
      : (c) == NGX_HTTP_LUA_CONTEXT_REWRITE ? "rewrite_by_lua*"               \
@@ -66,6 +87,25 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
     }
 
 
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+static ngx_inline ngx_int_t
+ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
+    u_char *err, size_t *errlen)
+{
+    if (!(ctx->context & flags)) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API disabled in the context of %s",
+                               ngx_http_lua_context_name((ctx)->context))
+                  - err;
+
+        return NGX_DECLINED;
+    }
+
+    return NGX_OK;
+}
+#endif
+
+
 #define ngx_http_lua_check_fake_request(L, r)                                \
     if ((r)->connection->fd == -1) {                                         \
         return luaL_error(L, "API disabled in the current context");         \
@@ -79,8 +119,9 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
     }
 
 
-lua_State * ngx_http_lua_new_state(ngx_conf_t *cf,
-    ngx_http_lua_main_conf_t *lmcf);
+lua_State * ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
+    ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
+    ngx_pool_cleanup_t **pcln);
 
 lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
@@ -171,6 +212,8 @@ void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
 
+void ngx_http_lua_cleanup_vm(void *data);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
@@ -192,7 +235,11 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 static ngx_inline ngx_http_lua_ctx_t *
 ngx_http_lua_create_ctx(ngx_http_request_t *r)
 {
-    ngx_http_lua_ctx_t      *ctx;
+    lua_State                   *L;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_pool_cleanup_t          *cln;
+    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_main_conf_t    *lmcf;
 
     ctx = ngx_palloc(r->pool, sizeof(ngx_http_lua_ctx_t));
     if (ctx == NULL) {
@@ -200,9 +247,55 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     }
 
     ngx_http_lua_init_ctx(r, ctx);
-
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (!llcf->enable_code_cache && r->connection->fd != -1) {
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        dd("lmcf: %p", lmcf);
+
+        L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
+                                 r->connection->log, &cln);
+        if (L == NULL) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "failed to initialize Lua VM");
+            return NULL;
+        }
+
+        if (lmcf->init_handler) {
+            if (lmcf->init_handler(r->connection->log, lmcf, L) != NGX_OK) {
+                /* an error happened */
+                return NULL;
+            }
+        }
+
+        ctx->vm_state = cln->data;
+
+    } else {
+        ctx->vm_state = NULL;
+    }
+
     return ctx;
+}
+
+
+static ngx_inline lua_State *
+ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+{
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    if (ctx == NULL) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    }
+
+    if (ctx && ctx->vm_state) {
+        return ctx->vm_state->vm;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    dd("lmcf->lua: %p", lmcf->lua);
+    return lmcf->lua;
 }
 
 
@@ -246,6 +339,20 @@ ngx_http_lua_hash_str(u_char *src, size_t n)
     }
 
     return key;
+}
+
+
+static ngx_inline ngx_int_t
+ngx_http_lua_set_content_type(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t     *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->use_default_type) {
+        return ngx_http_set_content_type(r);
+    }
+
+    return NGX_OK;
 }
 
 
