@@ -204,6 +204,7 @@ static int
 ngx_http_lua_uthread_kill(lua_State *L)
 {
     int                          i, nargs;
+    int                          killed;
     lua_State                   *sub_co;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
@@ -228,6 +229,7 @@ ngx_http_lua_uthread_kill(lua_State *L)
 
     nargs = lua_gettop(L);
 
+    killed = 0;
     for (i = 1; i <= nargs; i++) {
         sub_co = lua_tothread(L, i);
 
@@ -235,8 +237,11 @@ ngx_http_lua_uthread_kill(lua_State *L)
 
         sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
         if (sub_coctx == NULL) {
-            return luaL_error(L, "no co ctx found for the ngx.thread "
-                              "instance given");
+            /* XXX The thread is dead, consider it a success and continue. */
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                          "attempt to kill an already dead thread");
+            killed++;
+            continue;
         }
 
         if (!sub_coctx->is_uthread) {
@@ -249,18 +254,27 @@ ngx_http_lua_uthread_kill(lua_State *L)
                               "thread");
         }
 
+        if (sub_coctx->nsubreqs) {
+            /* XXX Don't kill threads with pending subrequests. */
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "attempt to kill thread with pending subrequests");
+            continue;
+        }
+
         if (sub_coctx->cleanup) {
             sub_coctx->cleanup(sub_coctx);
             sub_coctx->cleanup = NULL;
         }
         
-        sub_coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-        ngx_http_lua_del_thread(r, L, ctx, sub_coctx);
-        
-        ctx->uthreads--;
+        if (ngx_http_lua_del_thread(r, L, ctx, sub_coctx) == NGX_OK) {
+            killed++;
+            ctx->uthreads--;
+        }
+
     }
 
-    return 0;
+    lua_pushinteger(L, killed);
+    return 1;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
