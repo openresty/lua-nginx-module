@@ -135,7 +135,7 @@ static ngx_int_t
 ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     ngx_str_t *value, ngx_table_elt_t **output_header)
 {
-    ngx_table_elt_t             *h;
+    ngx_table_elt_t             *h, *matched;
     ngx_list_part_t             *part;
     ngx_uint_t                   i;
     ngx_uint_t                   rc;
@@ -143,6 +143,8 @@ ngx_http_set_header_helper(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
     if (hv->no_override) {
         goto new_header;
     }
+
+    matched = NULL;
 
 retry:
     part = &r->headers_in.headers.part;
@@ -165,8 +167,11 @@ retry:
             && ngx_strncasecmp(h[i].key.data, hv->key.data, h[i].key.len)
                == 0)
         {
-            if (value->len == 0) {
+            if (value->len == 0 || (matched && matched != &h[i])) {
                 h[i].hash = 0;
+
+                dd("rm header %.*s: %.*s", (int) h[i].key.len, h[i].key.data,
+                   (int) h[i].value.len, h[i].value.data);
 
                 rc = ngx_http_lua_rm_header_helper(&r->headers_in.headers,
                                                    part, i);
@@ -196,8 +201,14 @@ retry:
                 dd("setting existing builtin input header");
             }
 
-            return NGX_OK;
+            if (matched == NULL) {
+                matched = &h[i];
+            }
         }
+    }
+
+    if (matched){
+        return NGX_OK;
     }
 
     if (value->len == 0) {
