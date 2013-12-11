@@ -4436,6 +4436,7 @@ After <code>ngx.thread.spawn</code> returns, the newly-created "light thread" wi
 All the Lua code chunks running by [[#rewrite_by_lua|rewrite_by_lua]], [[#access_by_lua|access_by_lua]], and [[#content_by_lua|content_by_lua]] are in a boilerplate "light thread" created automatically by ngx_lua. Such boilerplate "light thread" are also called "entry threads".
 
 By default, the corresponding Nginx handler (e.g., [[#rewrite_by_lua|rewrite_by_lua]] handler) will not terminate until
+
 # both the "entry thread" and all the user "light threads" terminates,
 # a "light thread" (either the "entry thread" or a user "light thread" aborts by calling [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]], or
 # the "entry thread" terminates with a Lua error.
@@ -4445,6 +4446,7 @@ When the user "light thread" terminates with a Lua error, however, it will not a
 Due to the limitation in the Nginx subrequest model, it is not allowed to abort a running Nginx subrequest in general. So it is also prohibited to abort a running "light thread" that is pending on one ore more Nginx subrequests. You must call [[#ngx.thread.wait|ngx.thread.wait]] to wait for those "light thread" to terminate before quitting the "world". A notable exception here is that you can abort pending subrequests by calling [[#ngx.exit|ngx.exit]] with and only with the status code <code>ngx.ERROR</code> (-1), <code>408</code>, <code>444</code>, or <code>499</code>.
 
 The "light threads" are not scheduled in a pre-emptive way. In other words, no time-slicing is performed automatically. A "light thread" will keep running exclusively on the CPU until
+
 # a (nonblocking) I/O operation cannot be completed in a single run,
 # it calls [[#coroutine.yield|coroutine.yield]] to actively give up execution, or
 # it is aborted by a Lua error or an invocation of [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]].
@@ -4458,6 +4460,7 @@ The "parent coroutine" can call [[#ngx.thread.wait|ngx.thread.wait]] to wait on 
 You can call coroutine.status() and coroutine.yield() on the "light thread" coroutines.
 
 The status of the "light thread" coroutine can be "zombie" if
+
 # the current "light thread" already terminates (either successfully or with an error),
 # its parent coroutine is still alive, and
 # its parent coroutine is not waiting on it with [[#ngx.thread.wait|ngx.thread.wait]].
