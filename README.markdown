@@ -170,6 +170,7 @@ Table of Contents
     * [ngx.config.prefix](#ngxconfigprefix)
     * [ngx.config.nginx_version](#ngxconfignginx_version)
     * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
+    * [ngx.worker.exiting](#ngxworkerexiting)
     * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
     * [coroutine.create](#coroutinecreate)
     * [coroutine.resume](#coroutineresume)
@@ -5699,6 +5700,19 @@ ngx.config.ngx_lua_version
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
 
 This field take an integral value indicating the version number of the current `ngx_lua` module being used. For example, the version number `0.9.3` results in the Lua number 9003.
+
+This API was first introduced in the `0.9.3` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.worker.exiting
+------------------
+
+**syntax:** *exiting = ngx.worker.exiting()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+This function returns a boolean value indicating whether the current Nginx worker process already starts exiting. Nginx worker process exiting happens on Nginx server quit or configuration reload (aka HUP reload).
 
 This API was first introduced in the `0.9.3` release.
 
