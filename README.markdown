@@ -216,7 +216,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.2](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 November 2013.
+This document describes ngx_lua [v0.9.3](https://github.com/chaoslawful/lua-nginx-module/tags) released on 14 December 2013.
 
 Synopsis
 ========
@@ -6271,7 +6271,7 @@ Nginx Compatibility
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.3)
+* 1.4.x (last tested: 1.4.4)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -6304,9 +6304,9 @@ Build the source with this module:
 
 ```bash
 
-wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
-tar -xzvf nginx-1.4.3.tar.gz
-cd nginx-1.4.3/
+wget 'http://nginx.org/download/nginx-1.4.4.tar.gz'
+tar -xzvf nginx-1.4.4.tar.gz
+cd nginx-1.4.4/
 
 # tell nginx's build system where to find LuaJIT 2.0:
 export LUAJIT_LIB=/path/to/luajit/lib
