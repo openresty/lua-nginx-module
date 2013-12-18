@@ -1185,8 +1185,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
             ngx_http_clear_accept_ranges(r);
             ngx_http_clear_last_modified(r);
 
-            rc = ngx_http_send_header(r);
-
+            rc = ngx_http_lua_send_header_if_needed(r, ctx);
             if (rc == NGX_ERROR) {
                 return NGX_ERROR;
             }

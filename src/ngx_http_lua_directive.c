@@ -24,12 +24,13 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_shdict.h"
 
+
 #if defined(NDK) && NDK
 #include "ngx_http_lua_setby.h"
-#endif
 
 
 static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
+#endif
 
 
 char *
@@ -911,6 +912,7 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+#if defined(NDK) && NDK
 static ngx_int_t
 ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
 {
@@ -944,5 +946,6 @@ ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
     ctx->context = NGX_HTTP_LUA_CONTEXT_SET;
     return NGX_OK;
 }
+#endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

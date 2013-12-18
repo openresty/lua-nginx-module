@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.2] released on 6 November 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.3] released on 14 December 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -4436,6 +4436,7 @@ After <code>ngx.thread.spawn</code> returns, the newly-created "light thread" wi
 All the Lua code chunks running by [[#rewrite_by_lua|rewrite_by_lua]], [[#access_by_lua|access_by_lua]], and [[#content_by_lua|content_by_lua]] are in a boilerplate "light thread" created automatically by ngx_lua. Such boilerplate "light thread" are also called "entry threads".
 
 By default, the corresponding Nginx handler (e.g., [[#rewrite_by_lua|rewrite_by_lua]] handler) will not terminate until
+
 # both the "entry thread" and all the user "light threads" terminates,
 # a "light thread" (either the "entry thread" or a user "light thread" aborts by calling [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]], or
 # the "entry thread" terminates with a Lua error.
@@ -4445,6 +4446,7 @@ When the user "light thread" terminates with a Lua error, however, it will not a
 Due to the limitation in the Nginx subrequest model, it is not allowed to abort a running Nginx subrequest in general. So it is also prohibited to abort a running "light thread" that is pending on one ore more Nginx subrequests. You must call [[#ngx.thread.wait|ngx.thread.wait]] to wait for those "light thread" to terminate before quitting the "world". A notable exception here is that you can abort pending subrequests by calling [[#ngx.exit|ngx.exit]] with and only with the status code <code>ngx.ERROR</code> (-1), <code>408</code>, <code>444</code>, or <code>499</code>.
 
 The "light threads" are not scheduled in a pre-emptive way. In other words, no time-slicing is performed automatically. A "light thread" will keep running exclusively on the CPU until
+
 # a (nonblocking) I/O operation cannot be completed in a single run,
 # it calls [[#coroutine.yield|coroutine.yield]] to actively give up execution, or
 # it is aborted by a Lua error or an invocation of [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]].
@@ -4458,6 +4460,7 @@ The "parent coroutine" can call [[#ngx.thread.wait|ngx.thread.wait]] to wait on 
 You can call coroutine.status() and coroutine.yield() on the "light thread" coroutines.
 
 The status of the "light thread" coroutine can be "zombie" if
+
 # the current "light thread" already terminates (either successfully or with an error),
 # its parent coroutine is still alive, and
 # its parent coroutine is not waiting on it with [[#ngx.thread.wait|ngx.thread.wait]].
@@ -4711,8 +4714,10 @@ Premature timer expiration happens when the Nginx worker process is
 trying to shut down, as in an Nginx configuration reload triggered by
 the <code>HUP</code> signal or in an Nginx server shutdown. When the Nginx worker
 is trying to shut down, one can no longer call <code>ngx.timer.at</code> to
-create new timers and in that case <code>ngx.timer.at</code> will return <code>nil</code> and
+create new timers with nonzero delays and in that case <code>ngx.timer.at</code> will return <code>nil</code> and
 a string describing the error, that is, "process exiting".
+
+Starting from the <code>v0.9.3</code> release, it is allowed to create zero-delay timers even when the Nginx worker process starts shutting down.
 
 When a timer expires, the user Lua code in the timer callback is
 running in a "light thread" detached completely from the original
@@ -4837,6 +4842,16 @@ This API was first introduced in the <code>0.9.3</code> release.
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
 
 This field take an integral value indicating the version number of the current <code>ngx_lua</code> module being used. For example, the version number <code>0.9.3</code> results in the Lua number 9003.
+
+This API was first introduced in the <code>0.9.3</code> release.
+
+== ngx.worker.exiting ==
+
+'''syntax:''' ''exiting = ngx.worker.exiting()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+This function returns a boolean value indicating whether the current Nginx worker process already starts exiting. Nginx worker process exiting happens on Nginx server quit or configuration reload (aka HUP reload).
 
 This API was first introduced in the <code>0.9.3</code> release.
 
@@ -5302,7 +5317,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 The latest module is compatible with the following versions of Nginx:
 
 * 1.5.x (last tested: 1.5.4)
-* 1.4.x (last tested: 1.4.3)
+* 1.4.x (last tested: 1.4.4)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
 * 1.1.x (last tested: 1.1.5)
@@ -5328,9 +5343,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.4.3.tar.gz'
-    tar -xzvf nginx-1.4.3.tar.gz
-    cd nginx-1.4.3/
+    wget 'http://nginx.org/download/nginx-1.4.4.tar.gz'
+    tar -xzvf nginx-1.4.4.tar.gz
+    cd nginx-1.4.4/
 
     # tell nginx's build system where to find LuaJIT 2.0:
     export LUAJIT_LIB=/path/to/luajit/lib
