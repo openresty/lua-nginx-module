@@ -1282,14 +1282,14 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -1353,7 +1353,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body_like chop
 ^status: 200
@@ -1415,15 +1415,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -1476,7 +1476,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1598,7 +1598,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1721,7 +1721,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1946,15 +1946,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -2009,15 +2009,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -2071,7 +2071,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -2249,15 +2249,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
