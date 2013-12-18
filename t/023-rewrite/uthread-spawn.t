@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
 our $GCScript = $t::StapThread::GCScript;
@@ -1384,6 +1384,13 @@ status: 404
 --- request
     GET /t
 --- stap2 eval: $::StapScript
+--- stap3
+F(ngx_http_send_header) {
+    printf("send header main_req=%d, r=%p\n", $r == $r->main, $r)
+    print_ubacktrace()
+    printf("========================================")
+}
+--- stap_out3
 --- stap eval
 "$::GCScript"
 .

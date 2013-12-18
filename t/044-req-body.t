@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -163,7 +163,7 @@ hiya, world"]
 ["body: nil\n",
 qr/400 Bad Request/]
 --- error_code eval
-[200, '']
+[200, 400]
 --- no_error_log
 [error]
 [alert]

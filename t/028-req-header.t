@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -9,7 +9,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 18);
+plan tests => repeat_each() * (2 * blocks() + 21);
 
 #no_diff();
 #no_long_string();
@@ -34,6 +34,9 @@ Bar: baz
 --- response_body
 Foo: bar
 Bar: baz
+--- log_level: debug
+--- no_error_log
+lua exceeding request header limit
 
 
 
@@ -427,7 +430,7 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 --- error_log
-lua hit request header limit 100
+lua exceeding request header limit 100
 
 
 
@@ -475,7 +478,7 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 --- error_log
-lua hit request header limit 102
+lua exceeding request header limit 102
 
 
 
@@ -1306,6 +1309,121 @@ X-Foo: nil
 --- response_body
 X-Foo: nil
 --- http09
+--- no_error_log
+[error]
+
+
+
+=== TEST 42: Host header with port and $host (github issue #292)
+--- config
+    location /bar {
+        rewrite_by_lua '
+            ngx.req.set_header("Host", "agentzh.org:1984")
+        ';
+        echo "host var: $host";
+        echo "http_host var: $http_host";
+    }
+--- request
+GET /bar
+--- response_body
+host var: agentzh.org
+http_host var: agentzh.org:1984
+
+
+
+=== TEST 43: Host header with upper case letters and $host (github issue #292)
+--- config
+    location /bar {
+        rewrite_by_lua '
+            ngx.req.set_header("Host", "agentZH.org:1984")
+        ';
+        echo "host var: $host";
+        echo "http_host var: $http_host";
+    }
+--- request
+GET /bar
+--- response_body
+host var: agentzh.org
+http_host var: agentZH.org:1984
+
+
+
+=== TEST 44: clear all and re-insert
+--- config
+    location = /t {
+        content_by_lua '
+            local headers = ngx.req.get_headers(100, true)
+            local n = 0
+            for header, _ in pairs(headers) do
+                n = n + 1
+                ngx.req.clear_header(header)
+            end
+            ngx.say("got ", n, " headers")
+            local i = 0
+            for header, value in pairs(headers) do
+                i = i + 1
+                print("1: reinsert header ", header, ": ", i)
+                ngx.req.set_header(header, value)
+            end
+            local headers = ngx.req.get_headers(100, true)
+            n = 0
+            for header, _ in pairs(headers) do
+                n = n + 1
+                ngx.req.clear_header(header)
+            end
+            ngx.say("got ", n, " headers")
+            -- do return end
+            local i = 0
+            for header, value in pairs(headers) do
+                i = i + 1
+                if i > 8 then
+                    break
+                end
+                print("2: reinsert header ", header, ": ", i)
+                ngx.req.set_header(header, value)
+            end
+        ';
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: close\r
+Cache-Control: max-age=0\r
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36\r
+Accept-Encoding: gzip,deflate,sdch\r
+Accept-Language: en-US,en;q=0.8\r
+Cookie: test=cookie;\r
+\r
+"
+--- response_body
+got 8 headers
+got 8 headers
+--- no_error_log
+[error]
+
+
+
+=== TEST 45: github issue #314: ngx.req.set_header does not override request headers with multiple values
+--- config
+    #lua_code_cache off;
+    location = /t {
+        content_by_lua '
+            ngx.req.set_header("AAA", "111")
+            local headers = ngx.req.get_headers()
+            ngx.say(headers["AAA"])
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+AAA: 123
+AAA: 456
+AAA: 678
+
+--- response_body
+111
 --- no_error_log
 [error]
 

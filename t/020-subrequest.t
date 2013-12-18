@@ -1,6 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #master_on();
 #workers(1);
@@ -10,7 +10,7 @@ use t::TestNginxLua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 18);
+plan tests => repeat_each() * (blocks() * 3 + 21);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -1282,14 +1282,14 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -1353,7 +1353,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body_like chop
 ^status: 200
@@ -1415,15 +1415,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -1476,7 +1476,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1598,7 +1598,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1721,7 +1721,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=504
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -1946,15 +1946,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -2009,15 +2009,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -2071,7 +2071,7 @@ F(ngx_http_finalize_request) {
 --- stap_out
 conn err: 110: upstream timed out
 upstream fin req: error=0 eof=0 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
@@ -2249,15 +2249,15 @@ F(ngx_http_finalize_request) {
 */
 --- stap_out
 upstream fin req: error=0 eof=1 rc=502
-post subreq: rc=-1, status=200
+post subreq: rc=0, status=200
 
 --- response_body
 status: 200
 body: hello world
 truncated: true
 
---- no_error_log
-[error]
+--- error_log
+upstream prematurely closed connection
 
 
 
@@ -2385,8 +2385,206 @@ hello world
 --- request
 DELETE /lua
 hello world
+--- stap2
+global c
+probe process("$LIBLUA_PATH").function("rehashtab") {
+    c++
+    //print_ubacktrace()
+    printf("rehash: %d\n", c)
+}
+--- stap_out2
 --- response_body
 hello world
 --- no_error_log
 [error]
+
+
+
+=== TEST 65: DELETE
+--- config
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+        ';
+    }
+    location = /sub {
+        echo hello;
+        echo world;
+    }
+--- request
+GET /t
+--- response_body
+hello
+world
+--- stap
+F(ngx_http_lua_capture_header_filter) {
+    println("capture header filter")
+}
+
+F(ngx_http_lua_capture_body_filter) {
+    println("capture body filter")
+}
+
+--- stap_out
+capture header filter
+capture body filter
+capture body filter
+capture body filter
+capture header filter
+capture body filter
+capture body filter
+--- no_error_log
+[error]
+
+
+
+=== TEST 66: leafo test case 1 for assertion failures
+--- config
+    location = /t {
+        echo hello;
+    }
+
+    location /proxy {
+        internal;
+        rewrite_by_lua "
+          local req = ngx.req
+          print(ngx.var._url)
+
+          for k,v in pairs(req.get_headers()) do
+            if k ~= 'content-length' then
+              req.clear_header(k)
+            end
+          end
+
+          if ngx.ctx.headers then
+            for k,v in pairs(ngx.ctx.headers) do
+              req.set_header(k, v)
+            end
+          end
+        ";
+
+        resolver 8.8.8.8;
+        proxy_http_version 1.1;
+        proxy_pass $_url;
+    }
+
+    location /first {
+      set $_url "";
+      content_by_lua '
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["Content-type"] = "application/x-www-form-urlencoded"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["x-some-date"] = "Sun, 01 Dec 2013 11:47:41 GMT",
+              ["x-hello-world-header"] = "123412341234",
+              ["Authorization"] = "Hello"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+      ';
+    }
+--- request
+GET /first
+--- response_body
+hello
+hello
+--- no_error_log eval
+[
+"[error]",
+qr/Assertion .*? failed/
+]
+
+
+
+=== TEST 67: leafo test case 2 for assertion failures
+--- config
+    location = /t {
+        echo hello;
+    }
+
+    location /proxy {
+        internal;
+        rewrite_by_lua "
+          local req = ngx.req
+          print(ngx.var._url)
+
+          for k,v in pairs(req.get_headers()) do
+            if k ~= 'content-length' then
+              req.clear_header(k)
+            end
+          end
+
+          if ngx.ctx.headers then
+            for k,v in pairs(ngx.ctx.headers) do
+              req.set_header(k, v)
+            end
+          end
+        ";
+
+        resolver 8.8.8.8;
+        proxy_http_version 1.1;
+        proxy_pass $_url;
+    }
+
+    location /second {
+      set $_url "";
+      content_by_lua '
+        local res = ngx.location.capture("/proxy", {
+          method = ngx.HTTP_POST,
+          body = ("x"):rep(600),
+          ctx = {
+            headers = {
+              ["Content-type"] = "application/x-www-form-urlencoded"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          ctx = {
+            headers = {
+              ["x-some-date"] = "Sun, 01 Dec 2013 11:47:41 GMT",
+              ["x-hello-world-header"] = "123412341234",
+              ["Authorization"] = "Hello"
+            }
+          },
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+
+        local res = ngx.location.capture("/proxy", {
+          vars = { _url = "http://127.0.0.1:" .. ngx.var.server_port .. "/t" }
+        })
+
+        ngx.print(res.body)
+      ';
+    }
+--- request
+GET /second
+--- response_body
+hello
+hello
+hello
+--- no_error_log eval
+[
+"[error]",
+qr/Assertion .*? failed/
+]
 

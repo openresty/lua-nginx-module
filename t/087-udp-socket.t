@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
@@ -17,7 +17,7 @@ log_level 'warn';
 no_long_string();
 #no_diff();
 #no_shuffle();
-
+check_accum_error_log();
 run_tests();
 
 __DATA__

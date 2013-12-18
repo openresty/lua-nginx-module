@@ -30,7 +30,7 @@ void
 ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
 {
     /* new thread table */
-    lua_newtable(L);
+    lua_createtable(L, 0 /* narr */, 2 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_uthread_spawn);
     lua_setfield(L, -2, "spawn");
@@ -133,8 +133,7 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
         sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
         if (sub_coctx == NULL) {
-            return luaL_error(L, "no co ctx found for the ngx.thread "
-                              "instance given");
+            goto found_dead;
         }
 
         if (!sub_coctx->is_uthread) {
@@ -169,8 +168,24 @@ ngx_http_lua_uthread_wait(lua_State *L)
 
             return nrets;
 
+        case NGX_HTTP_LUA_CO_DEAD:
+            dd("uthread already waited: %p (parent %p)", sub_coctx,
+               coctx);
+
+found_dead:
+            if (i < nargs) {
+                /* just ignore it if it is not the last one */
+                continue;
+            }
+
+            /* being the last one */
+            lua_pushnil(L);
+            lua_pushliteral(L, "already waited");
+            return 2;
+
         default:
-            /* still alive */
+            dd("uthread %p still alive, status: %d, parent %p", sub_coctx,
+               sub_coctx->co_status, coctx);
             break;
         }
 
