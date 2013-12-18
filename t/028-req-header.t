@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 20);
+plan tests => repeat_each() * (2 * blocks() + 21);
 
 #no_diff();
 #no_long_string();
@@ -1400,6 +1400,30 @@ Cookie: test=cookie;\r
 --- response_body
 got 8 headers
 got 8 headers
+--- no_error_log
+[error]
+
+
+
+=== TEST 45: github issue #314: ngx.req.set_header does not override request headers with multiple values
+--- config
+    #lua_code_cache off;
+    location = /t {
+        content_by_lua '
+            ngx.req.set_header("AAA", "111")
+            local headers = ngx.req.get_headers()
+            ngx.say(headers["AAA"])
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+AAA: 123
+AAA: 456
+AAA: 678
+
+--- response_body
+111
 --- no_error_log
 [error]
 

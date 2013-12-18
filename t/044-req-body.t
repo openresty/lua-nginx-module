@@ -163,7 +163,7 @@ hiya, world"]
 ["body: nil\n",
 qr/400 Bad Request/]
 --- error_code eval
-[200, '']
+[200, 400]
 --- no_error_log
 [error]
 [alert]
