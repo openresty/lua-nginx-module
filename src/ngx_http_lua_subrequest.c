@@ -1993,6 +1993,8 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
     ctx->resume_handler = ngx_http_lua_wev_handler;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
