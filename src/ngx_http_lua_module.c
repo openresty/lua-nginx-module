@@ -36,9 +36,6 @@ static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *plcf);
-static char *ngx_http_lua_init_vm(ngx_conf_t *cf,
-    ngx_http_lua_main_conf_t *lmcf);
-static void ngx_http_lua_cleanup_vm(void *data);
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 
@@ -844,72 +841,5 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *plcf)
 }
 
 #endif
-
-static void
-ngx_http_lua_cleanup_vm(void *data)
-{
-    lua_State *L = data;
-
-    if (L != NULL) {
-        lua_close(L);
-
-        dd("Lua VM closed!");
-    }
-}
-
-
-static char *
-ngx_http_lua_init_vm(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
-{
-    ngx_pool_cleanup_t              *cln;
-    ngx_http_lua_preload_hook_t     *hook;
-    lua_State                       *L;
-    ngx_uint_t                       i;
-
-    ngx_http_lua_content_length_hash =
-        ngx_http_lua_hash_literal("content-length");
-
-    ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
-
-    /* add new cleanup handler to config mem pool */
-    cln = ngx_pool_cleanup_add(cf->pool, 0);
-    if (cln == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    /* create new Lua VM instance */
-    lmcf->lua = ngx_http_lua_new_state(cf, lmcf);
-    if (lmcf->lua == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    /* register cleanup handler for Lua VM */
-    cln->handler = ngx_http_lua_cleanup_vm;
-    cln->data = lmcf->lua;
-
-    if (lmcf->preload_hooks) {
-
-        /* register the 3rd-party module's preload hooks */
-
-        L = lmcf->lua;
-
-        lua_getglobal(L, "package");
-        lua_getfield(L, -1, "preload");
-
-        hook = lmcf->preload_hooks->elts;
-
-        for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
-
-            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
-
-            lua_pushcfunction(L, hook[i].loader);
-            lua_setfield(L, -2, (char *) hook[i].package);
-        }
-
-        lua_pop(L, 2);
-    }
-
-    return NGX_CONF_OK;
-}
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
