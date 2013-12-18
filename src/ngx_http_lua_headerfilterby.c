@@ -84,12 +84,19 @@ ngx_http_lua_header_filter_by_lua_env(lua_State *L, ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
+    int              old_exit_code = 0;
     ngx_int_t        rc;
     u_char          *err_msg;
     size_t           len;
 #if (NGX_PCRE)
     ngx_pool_t      *old_pool;
 #endif
+    ngx_http_lua_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx->exited) {
+        old_exit_code = ctx->exit_code;
+    }
 
     /*  initialize nginx context in Lua VM, code chunk at stack top    sp = 1 */
     ngx_http_lua_header_filter_by_lua_env(L, r);
@@ -112,6 +119,8 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_pcre_malloc_done(old_pool);
 #endif
 
+    dd("rc == %d", (int) rc);
+
     if (rc != 0) {
         /*  error occured when running loaded code */
         err_msg = (u_char *) lua_tolstring(L, -1, &len);
@@ -127,6 +136,25 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
         lua_settop(L, 0); /*  clear remaining elems on stack */
 
         return NGX_ERROR;
+    }
+
+    dd("exited: %d, exit code: %d, old exit code: %d",
+       (int) ctx->exited, (int) ctx->exit_code, (int) old_exit_code);
+
+    if (ctx->exited && ctx->exit_code != old_exit_code) {
+        if (ctx->exit_code == NGX_ERROR) {
+            return NGX_ERROR;
+        }
+
+        dd("finalize request with %d", (int) ctx->exit_code);
+
+        rc = ngx_http_filter_finalize_request(r, &ngx_http_lua_module,
+                                              ctx->exit_code);
+        if (rc == NGX_ERROR || rc == NGX_AGAIN) {
+            return rc;
+        }
+
+        return NGX_DECLINED;
     }
 
     /*  clear Lua stack */
@@ -156,15 +184,9 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_header_filter_by_chunk(L, r);
+    dd("calling header filter by chunk");
 
-    dd("header filter by chunk returns %d", (int) rc);
-
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    return NGX_OK;
+    return ngx_http_lua_header_filter_by_chunk(L, r);
 }
 
 
@@ -205,13 +227,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
     /*  make sure we have a valid code chunk */
     assert(lua_isfunction(L, -1));
 
-    rc = ngx_http_lua_header_filter_by_chunk(L, r);
-
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    return NGX_OK;
+    return ngx_http_lua_header_filter_by_chunk(L, r);
 }
 
 
@@ -268,9 +284,12 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
 
     ctx->context = old_context;
 
-    if (rc != NGX_OK) {
-        dd("calling header filter handler rc %d", (int)rc);
-        return NGX_ERROR;
+    if (rc == NGX_DECLINED) {
+        return NGX_OK;
+    }
+
+    if (rc == NGX_AGAIN || rc == NGX_ERROR) {
+        return rc;
     }
 
     return ngx_http_next_header_filter(r);

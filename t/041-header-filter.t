@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 92;
+plan tests => repeat_each() * 91;
 
 #no_diff();
 #no_long_string();
@@ -580,20 +580,6 @@ API disabled in the context of header_filter_by_lua*
 
     location /sub {
         echo sub;
-    }
---- request
-GET /lua
---- ignore_response
---- error_log
-API disabled in the context of header_filter_by_lua*
-
-
-
-=== TEST 30: no ngx.exit
---- config
-    location /lua {
-        header_filter_by_lua 'ngx.exit(0)';
-        echo ok;
     }
 --- request
 GET /lua
