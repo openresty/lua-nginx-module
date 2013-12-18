@@ -617,3 +617,23 @@ GET /lua HTTP/1.0
 lua sending HTTP 1.0 response headers
 [error]
 
+
+
+=== TEST 20: exit(201) with custom response body
+--- config
+    location = /t {
+        content_by_lua "
+            ngx.status = 201
+            ngx.say('ok');
+            return ngx.exit(201)
+        ";
+    }
+--- request
+    GET /t
+--- ignore_response
+--- log_level: debug
+--- no_error_log
+lua sending HTTP 1.0 response headers
+[error]
+[alert]
+

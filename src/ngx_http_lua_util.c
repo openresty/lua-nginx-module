@@ -2324,6 +2324,21 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         }
     }
 
+#if 1
+    if (r->header_sent
+        && ctx->exit_code > NGX_OK
+        && ctx->exit_code != NGX_HTTP_REQUEST_TIME_OUT
+        && ctx->exit_code != NGX_HTTP_CLIENT_CLOSED_REQUEST
+        && ctx->exit_code != NGX_HTTP_CLOSE)
+    {
+        if (ctx->entered_content_phase) {
+            return NGX_OK;
+        }
+
+        return NGX_HTTP_OK;
+    }
+#endif
+
     return ctx->exit_code;
 }
 
