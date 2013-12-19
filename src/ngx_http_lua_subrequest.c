@@ -15,6 +15,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_ctx.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_headers_in.h"
 #if defined(NGX_DTRACE) && NGX_DTRACE
 #include "ngx_http_probe.h"
 #endif
@@ -1203,12 +1204,7 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
             continue;
         }
 
-        h = ngx_list_push(&r->headers_in.headers);
-        if (h == NULL) {
-            return NGX_ERROR;
-        }
-
-        *h = header[i];
+        ngx_http_lua_set_input_header(r, header[i].key, header[i].value, 1);
     }
 
     /* XXX maybe we should set those built-in header slot in
@@ -1491,7 +1487,8 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->pool = r->pool;
 
-    sr->headers_in = r->headers_in;
+    sr->headers_in.content_length_n = -1;
+    sr->headers_in.keep_alive_n = -1;
 
     ngx_http_clear_content_length(sr);
     ngx_http_clear_accept_ranges(sr);
@@ -1703,7 +1700,7 @@ ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_lua_copy_request_headers(ngx_http_request_t *sr, ngx_http_request_t *r)
 {
-    ngx_table_elt_t                 *h, *header;
+    ngx_table_elt_t                 *header;
     ngx_list_part_t                 *part;
     ngx_uint_t                       i;
 
@@ -1728,12 +1725,7 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr, ngx_http_request_t *r)
             i = 0;
         }
 
-        h = ngx_list_push(&sr->headers_in.headers);
-        if (h == NULL) {
-            return NGX_ERROR;
-        }
-
-        *h = header[i];
+        ngx_http_lua_set_input_header(sr, header[i].key, header[i].value, 1);
     }
 
     /* XXX we should set those built-in header slot in
