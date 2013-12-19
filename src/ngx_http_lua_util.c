@@ -1100,6 +1100,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             /*  run code */
             dd("ctx: %p", ctx);
             dd("cur co: %p", ctx->cur_co_ctx->co);
+            dd("cur co status: %d", ctx->cur_co_ctx->co_status);
 
             orig_coctx = ctx->cur_co_ctx;
             rv = lua_resume(orig_coctx->co, nrets);
@@ -3717,7 +3718,7 @@ ngx_http_lua_cleanup_vm(void *data)
 
 #if (DDEBUG)
     if (state) {
-        dd("cleanup VM: c:%d, s:%p", (int) state->count, state->state);
+        dd("cleanup VM: c:%d, s:%p", (int) state->count, state->vm);
     }
 #endif
 
