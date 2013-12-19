@@ -627,8 +627,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
     r = sr->parent;
 
-    sr->headers_in.content_length_n = -1;
-    sr->headers_in.keep_alive_n = -1;
+    sr->header_in = r->header_in;
 
     if (body) {
         sr->request_body = body;
@@ -1487,6 +1486,9 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     sr->loc_conf = cscf->ctx->loc_conf;
 
     sr->pool = r->pool;
+
+    sr->headers_in.content_length_n = -1;
+    sr->headers_in.keep_alive_n = -1;
 
     ngx_http_clear_content_length(sr);
     ngx_http_clear_accept_ranges(sr);
