@@ -901,7 +901,13 @@ ngx_http_lua_socket_ssl_handshake_ended(ngx_http_request_t *r,
 
     if (!c->ssl->handshaked) {
         lua_pushnil(L);
-        lua_pushliteral(L, "SSL handshake failed");
+        if (c->read->timedout) {
+            lua_pushliteral(L, "SSL handshake timed out");
+        } else {
+            lua_pushliteral(L, "SSL handshake failed");
+        }
+        ngx_close_connection(u->peer.connection);
+        u->peer.connection = NULL;
         return 2;
     }
 
