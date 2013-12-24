@@ -363,7 +363,6 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     luaL_unref(L, -1, coctx->co_ref);
     coctx->co_ref = LUA_NOREF;
     coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-    coctx->co = NULL;
 
     lua_pop(L, 1);
 }
@@ -396,7 +395,6 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
                 ctx->uthreads--;
             }
 
-            cc->co = NULL;
             cc->co_status = NGX_HTTP_LUA_CO_DEAD;
         }
 
@@ -435,7 +433,6 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
                 luaL_unref(L, -1, ref);
                 cc[i].co_ref = LUA_NOREF;
                 cc[i].co_status = NGX_HTTP_LUA_CO_DEAD;
-                cc[i].co = NULL;
                 ctx->uthreads--;
 
                 if (ctx->uthreads == 0) {
@@ -461,7 +458,6 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
         luaL_unref(L, -1, entry_coctx->co_ref);
         entry_coctx->co_ref = LUA_NOREF;
         entry_coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-        entry_coctx->co = NULL;
     }
 
     if (inited) {
@@ -1100,6 +1096,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             /*  run code */
             dd("ctx: %p", ctx);
             dd("cur co: %p", ctx->cur_co_ctx->co);
+            dd("cur co status: %d", ctx->cur_co_ctx->co_status);
 
             orig_coctx = ctx->cur_co_ctx;
             rv = lua_resume(orig_coctx->co, nrets);
@@ -2323,6 +2320,21 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
             return rc;
         }
     }
+
+#if 1
+    if (r->header_sent
+        && ctx->exit_code > NGX_OK
+        && ctx->exit_code != NGX_HTTP_REQUEST_TIME_OUT
+        && ctx->exit_code != NGX_HTTP_CLIENT_CLOSED_REQUEST
+        && ctx->exit_code != NGX_HTTP_CLOSE)
+    {
+        if (ctx->entered_content_phase) {
+            return NGX_OK;
+        }
+
+        return NGX_HTTP_OK;
+    }
+#endif
 
     return ctx->exit_code;
 }
@@ -3702,7 +3714,7 @@ ngx_http_lua_cleanup_vm(void *data)
 
 #if (DDEBUG)
     if (state) {
-        dd("cleanup VM: c:%d, s:%p", (int) state->count, state->state);
+        dd("cleanup VM: c:%d, s:%p", (int) state->count, state->vm);
     }
 #endif
 

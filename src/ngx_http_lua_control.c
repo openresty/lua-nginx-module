@@ -303,7 +303,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER);
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
@@ -331,11 +332,17 @@ ngx_http_lua_ngx_exit(lua_State *L)
         rc = NGX_HTTP_OK;
     }
 
+    dd("setting exit code: %d", (int) rc);
+
     ctx->exit_code = rc;
     ctx->exited = 1;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua exit with code %i", ctx->exit_code);
+
+    if (ctx->context & NGX_HTTP_LUA_CONTEXT_HEADER_FILTER) {
+        return 0;
+    }
 
     dd("calling yield");
     return lua_yield(L, 0);
@@ -415,7 +422,8 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     if (ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
-                                       | NGX_HTTP_LUA_CONTEXT_TIMER,
+                                       | NGX_HTTP_LUA_CONTEXT_TIMER
+                                       | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER,
                                        err, errlen)
         != NGX_OK)
     {
@@ -455,6 +463,10 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua exit with code %i", ctx->exit_code);
+
+    if (ctx->context & NGX_HTTP_LUA_CONTEXT_HEADER_FILTER) {
+        return NGX_DONE;
+    }
 
     return NGX_OK;
 }

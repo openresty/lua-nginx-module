@@ -1158,3 +1158,35 @@ data
 --- no_error_log
 [error]
 
+
+
+=== TEST 28: coroutine context collicisions
+--- config
+    location /lua {
+        content_by_lua '
+            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+            function f()
+                return 3
+            end
+
+            for i = 1, 10 do
+                collectgarbage()
+                local c = cc(f)
+                if coroutine.status(c) == "dead" then
+                    ngx.say("found a dead coroutine")
+                    return
+                end
+                cr(c)
+            end
+            ngx.say("ok")
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- response_body
+ok
+--- no_error_log
+[error]
+

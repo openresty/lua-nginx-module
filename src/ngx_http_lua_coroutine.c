@@ -81,9 +81,16 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
-    coctx = ngx_http_lua_create_co_ctx(r, ctx);
+    coctx = ngx_http_lua_get_co_ctx(co, ctx);
     if (coctx == NULL) {
-        return luaL_error(L, "out of memory");
+        coctx = ngx_http_lua_create_co_ctx(r, ctx);
+        if (coctx == NULL) {
+            return luaL_error(L, "out of memory");
+        }
+
+    } else {
+        ngx_memzero(coctx, sizeof(ngx_http_lua_co_ctx_t));
+        coctx->co_ref = LUA_NOREF;
     }
 
     coctx->co = co;
