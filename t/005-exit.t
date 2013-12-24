@@ -11,7 +11,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 3 + 1);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -615,5 +615,113 @@ GET /lua HTTP/1.0
 --- log_level: debug
 --- no_error_log
 lua sending HTTP 1.0 response headers
+[error]
+
+
+
+=== TEST 20: exit(201) with custom response body
+--- config
+    location = /t {
+        content_by_lua "
+            ngx.status = 201
+            ngx.say('ok');
+            return ngx.exit(201)
+        ";
+    }
+--- request
+    GET /t
+--- ignore_response
+--- log_level: debug
+--- no_error_log
+lua sending HTTP 1.0 response headers
+[error]
+[alert]
+
+
+
+=== TEST 21: exit 403 in header filter
+--- config
+    location = /t {
+        content_by_lua "ngx.say('hi');";
+        header_filter_by_lua '
+            return ngx.exit(403)
+        ';
+    }
+--- request
+GET /t
+--- error_code: 403
+--- response_body_like: 403 Forbidden
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: exit 201 in header filter
+--- config
+    lingering_close always;
+    location = /t {
+        content_by_lua "ngx.say('hi');";
+        header_filter_by_lua '
+            return ngx.exit(201)
+        ';
+    }
+--- request
+GET /t
+--- error_code: 201
+--- response_body
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: exit both in header filter and content handler
+--- config
+    location = /t {
+        content_by_lua "ngx.status = 201 ngx.say('hi') ngx.exit(201)";
+        header_filter_by_lua '
+            return ngx.exit(201)
+        ';
+    }
+--- request
+GET /t
+--- error_code: 201
+--- stap2
+/*
+F(ngx_http_send_header) {
+    printf("=== %d\n", $r->headers_out->status)
+    print_ubacktrace()
+}
+*/
+F(ngx_http_lua_header_filter_inline) {
+    printf("=== %d\n", $r->headers_out->status)
+    print_ubacktrace()
+}
+F(ngx_http_lua_header_filter_by_chunk).return {
+    if ($return == -1) {
+        printf("====== header filter by chunk\n")
+        print_ubacktrace()
+    }
+}
+--- stap_out
+--- response_body
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 24: exit 444 in header filter
+--- config
+    location = /t {
+        content_by_lua "ngx.say('hello world');";
+        header_filter_by_lua '
+            return ngx.exit(444)
+        ';
+    }
+--- request
+GET /t
+--- error_code: 444
+--- response_body
+--- no_error_log
 [error]
 

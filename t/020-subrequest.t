@@ -2588,3 +2588,155 @@ hello
 qr/Assertion .*? failed/
 ]
 
+
+
+=== TEST 68: fetch subrequest's builtin request headers
+--- config
+    location = /sub {
+        echo "sr: User-Agent: $http_user_agent";
+        echo "sr: Host: $http_host";
+    }
+
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("pr: User-Agent: ", ngx.var.http_user_agent)
+            ngx.say("pr: Host: ", ngx.var.http_host)
+        ';
+    }
+--- request
+    GET /t
+--- more_headers
+User-Agent: foo
+--- response_body
+sr: User-Agent: foo
+sr: Host: localhost
+pr: User-Agent: foo
+pr: Host: localhost
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 69: modify subrequest's builtin request headers
+--- config
+    location = /sub {
+        rewrite_by_lua '
+            ngx.req.set_header("User-Agent", "bar")
+        ';
+        echo "sr: User-Agent: $http_user_agent";
+        echo "sr: Host: $http_host";
+    }
+
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("pr: User-Agent: ", ngx.var.http_user_agent)
+            ngx.say("pr: Host: ", ngx.var.http_host)
+        ';
+    }
+--- request
+    GET /t
+--- more_headers
+User-Agent: foo
+--- response_body
+sr: User-Agent: bar
+sr: Host: localhost
+pr: User-Agent: foo
+pr: Host: localhost
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 70: modify subrequest's builtin request headers (main req is POST)
+--- config
+    location = /sub {
+        rewrite_by_lua '
+            ngx.req.set_header("User-Agent", "bar")
+        ';
+        echo "sr: User-Agent: $http_user_agent";
+        echo "sr: Host: $http_host";
+    }
+
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("pr: User-Agent: ", ngx.var.http_user_agent)
+            ngx.say("pr: Host: ", ngx.var.http_host)
+        ';
+    }
+--- request
+POST /t
+hello world
+--- more_headers
+User-Agent: foo
+--- response_body
+sr: User-Agent: bar
+sr: Host: localhost
+pr: User-Agent: foo
+pr: Host: localhost
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 71: duplicate request headers (main req is POST)
+--- config
+    location = /sub {
+        echo "sr: Cookie: $http_cookie";
+    }
+
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("pr: Cookie: ", ngx.var.http_cookie)
+        ';
+    }
+--- request
+POST /t
+hello world
+--- more_headers
+Cookie: foo
+Cookie: bar
+--- response_body
+sr: Cookie: foo; bar
+pr: Cookie: foo; bar
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 72: duplicate request headers (main req is GET)
+--- config
+    location = /sub {
+        echo "sr: Cookie: $http_cookie";
+    }
+
+    location = /t {
+        content_by_lua '
+            res = ngx.location.capture("/sub")
+            ngx.print(res.body)
+            ngx.say("pr: Cookie: ", ngx.var.http_cookie)
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+Cookie: foo
+Cookie: bar
+--- response_body
+sr: Cookie: foo; bar
+pr: Cookie: foo; bar
+
+--- no_error_log
+[error]
+
