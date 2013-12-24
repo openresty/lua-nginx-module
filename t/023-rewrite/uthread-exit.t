@@ -9,7 +9,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -171,6 +171,7 @@ hello in thread
 after
 --- no_error_log
 [error]
+[alert]
 
 
 
