@@ -236,7 +236,9 @@ ngx_http_lua_uthread_kill(lua_State *L)
         luaL_argcheck(L, sub_co, i, "lua thread expected");
 
         sub_coctx = ngx_http_lua_get_co_ctx(sub_co, ctx);
-        if (sub_coctx == NULL) {
+        if (sub_coctx == NULL
+            || sub_coctx->co_status == NGX_HTTP_LUA_CO_DEAD)
+        {
             /* XXX The thread is dead, consider it a success and continue. */
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                           "attempt to kill an already dead thread");
