@@ -1010,7 +1010,7 @@ ngx_http_lua_socket_ssl_handshake_ended(ngx_http_request_t *r,
     if (llcf->ssl_verify) {
         if (SSL_get_verify_result(c->ssl->connection) != X509_V_OK) {
             lua_pushnil(L);
-            lua_pushliteral(L, "SSL certificate verfication failed");
+            lua_pushliteral(L, "SSL certificate verification failed");
             return 2;
         }
         
