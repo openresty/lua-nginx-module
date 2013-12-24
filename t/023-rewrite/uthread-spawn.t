@@ -1421,15 +1421,15 @@ terminate 1: ok
 delete thread 1
 terminate 4: ok
 delete thread 4
-finalize request /proxy/1: rc:201 c:3 a:0
-post subreq: /proxy/1 rc=201, status=201 a=0
+finalize request /proxy/1: rc:0 c:3 a:0
+post subreq: /proxy/1 rc=0, status=201 a=0
 subrequest /proxy/1 done
 terminate 2: ok
 delete thread 2
 terminate 5: ok
 delete thread 5
-finalize request /proxy/2: rc:201 c:2 a:0
-post subreq: /proxy/2 rc=201, status=201 a=0
+finalize request /proxy/2: rc:0 c:2 a:0
+post subreq: /proxy/2 rc=0, status=201 a=0
 subrequest /proxy/2 done
 terminate 3: ok
 delete thread 3
