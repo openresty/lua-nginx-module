@@ -216,6 +216,7 @@ typedef struct {
     ngx_flag_t                       ssl_verify;
     ngx_uint_t                       ssl_verify_depth;
     ngx_str_t                        ssl_trusted_certificate;
+    ngx_str_t                        ssl_crl;
 #endif
 
     ngx_flag_t                       use_default_type;

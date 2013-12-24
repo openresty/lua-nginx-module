@@ -368,6 +368,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_trusted_certificate),
       NULL },
 
+    { ngx_string("lua_ssl_crl"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_crl),
+      NULL },
+
 #endif
 
     { ngx_string("lua_use_default_type"),
@@ -779,8 +786,12 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_uint_value(conf->ssl_verify_depth,
                               prev->ssl_verify_depth, 1);
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
-                              prev->ssl_trusted_certificate, "");
+                             prev->ssl_trusted_certificate, "");
+    ngx_conf_merge_str_value(conf->ssl_crl,
+                             prev->ssl_crl, "");
 
+    /* TODO: Maybe the verification should be an option for the
+             tcpsock:connect() method. */
     if (conf->ssl_verify) {
         if (conf->ssl_trusted_certificate.len == 0) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -790,16 +801,20 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
             
             return NGX_CONF_ERROR;
         }
-    }
 
-    if (ngx_ssl_trusted_certificate(cf, conf->ssl,
+        if (ngx_ssl_trusted_certificate(cf, conf->ssl,
                                     &conf->ssl_trusted_certificate,
                                     conf->ssl_verify_depth)
-        != NGX_OK)
-    {
-        return NGX_CONF_ERROR;
+            != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+
+        if (ngx_ssl_crl(cf, conf->ssl, &conf->ssl_crl) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
     }
-    
+
 #endif
     
     return NGX_CONF_OK;
