@@ -84,13 +84,24 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
-    ngx_http_lua_co_ctx_t           *co_ctx;
+    ngx_http_lua_co_ctx_t           *co_ctx_read;
+    ngx_http_lua_co_ctx_t           *co_ctx_write;
 
     ngx_uint_t                       reused;
 
+#if (NGX_HTTP_SSL)
+    ngx_str_t                        ssl_verify_name;
+#endif
+    
     unsigned                         no_close:1;
     unsigned                         waiting:1;
+    unsigned                         waiting_read:1;
+    unsigned                         waiting_write:1;
     unsigned                         eof:1;
+    unsigned                         fake_eof:1;
+#if (NGX_HTTP_SSL)
+    unsigned                         ssl:1;
+#endif
     unsigned                         body_downstream:1;
     unsigned                         raw_downstream:1;
 };

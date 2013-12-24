@@ -210,6 +210,15 @@ typedef struct {
     ngx_flag_t                       transform_underscores_in_resp_headers;
     ngx_flag_t                       log_socket_errors;
     ngx_flag_t                       check_client_abort;
+    
+#if (NGX_HTTP_SSL)
+    ngx_ssl_t                       *ssl;
+    ngx_flag_t                       ssl_verify;
+    ngx_uint_t                       ssl_verify_depth;
+    ngx_str_t                        ssl_trusted_certificate;
+    ngx_str_t                        ssl_crl;
+#endif
+
     ngx_flag_t                       use_default_type;
 } ngx_http_lua_loc_conf_t;
 
