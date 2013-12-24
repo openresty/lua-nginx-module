@@ -89,6 +89,10 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 
     ngx_uint_t                       reused;
 
+#if (NGX_HTTP_SSL)
+    ngx_str_t                        ssl_verify_name;
+#endif
+    
     unsigned                         no_close:1;
     unsigned                         waiting:1;
     unsigned                         waiting_read:1;

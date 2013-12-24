@@ -124,6 +124,13 @@ static void ngx_http_lua_socket_ssl_handshake(ngx_connection_t *c);
 static ngx_int_t ngx_http_lua_socket_ssl_init_connection(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 
+/* TODO: When these functions are either built-in Nginx's OpenSSL module or
+         in the OpenSSL library itself, we should remove the following functions.
+ */
+static ngx_int_t ngx_http_lua_ssl_verify_name(X509 *cert, ngx_str_t *name);
+static int ngx_http_lua_ssl_host_wildcard_match(ASN1_STRING *pattern,
+    ngx_str_t *hostname);
+
 #endif
 
 enum {
@@ -331,6 +338,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
 #if (NGX_HTTP_SSL)
     ngx_int_t                    ssl = 0;
+    ngx_str_t                    ssl_verify_name = {0, NULL};
 #endif
     
     ngx_http_lua_socket_tcp_upstream_t      *u;
@@ -415,8 +423,30 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         
         ssl = lua_toboolean(L, -1);
         lua_pop(L, 1);
+
+
+        /* TODO: Maybe if this is passed as true, used the host.
+         */
+        lua_getfield(L, n, "ssl_verify_name");
+
+        p = (u_char *) lua_tolstring(L, -1, &len);
+
+        if (p != NULL) {
+            ssl_verify_name.data = ngx_palloc(r->pool, len + 1);
+            
+            if (ssl_verify_name.data == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+            
+            ngx_memcpy(ssl_verify_name.data, p, len);
+            ssl_verify_name.data[len] = '\0';
+            ssl_verify_name.len = len;
+        }
         
-#endif  
+        lua_pop(L, 1);
+        
+#endif
+        
         if (!custom_pool) {
             lua_pop(L, 2);
         }
@@ -501,6 +531,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     if (llcf->ssl) {
         u->ssl = ssl;
+
+        if (ssl && ssl_verify_name.data) {
+            u->ssl_verify_name.data = ssl_verify_name.data;
+            u->ssl_verify_name.len = ssl_verify_name.len;
+        }
     }
 
 #endif
@@ -924,13 +959,148 @@ ngx_http_lua_socket_ssl_handshake_ended(ngx_http_request_t *r,
             lua_pushliteral(L, "SSL server did not return certificate");
             return 2;
         }
-            
+
+        if (u->ssl_verify_name.data
+            && ngx_http_lua_ssl_verify_name(cert, &u->ssl_verify_name) != NGX_OK)
+        {
+            X509_free(cert);
+            lua_pushnil(L);
+            lua_pushliteral(L, "SSL certificate name validation error");
+            return 2;
+        }
+
         X509_free(cert);
     }
     
     c->log->action = "SSL connection transaction";
     lua_pushinteger(L, 1);
     return 1;
+}
+
+static int
+ngx_http_lua_ssl_host_wildcard_match(ASN1_STRING *pattern,
+    ngx_str_t *hostname)
+{
+    int        n;
+    u_char    *p;
+    u_char    *wp;
+
+    /* sanity check */
+    if (!pattern
+        || pattern->length <= 0
+        || !hostname
+        || !hostname->len)
+    {
+        return 0;
+    }
+
+    /* trivial case */
+    if (ngx_strncasecmp((u_char *) pattern->data,
+                        hostname->data,
+                        hostname->len)
+        == 0)
+    {
+        return 1;
+    }
+
+    /* simple wildcard matching - only in the beginning of the string. */
+    if (pattern->length > 2
+        && pattern->data[0] == '*'
+        && pattern->data[1] == '.')
+    {
+
+        wp = (u_char *) (pattern->data + 1);
+
+        p = ngx_strlchr(hostname->data,
+                        hostname->data + hostname->len,
+                        '.');
+        
+        /*
+         *  If the pattern begings with "*." and the hostname consists of
+         *  a top level domain, compare the pattern to the top level domain.
+         */
+        if (p != NULL) {
+            n = hostname->len - (int) (p - hostname->data);
+
+            if (n == pattern->length - 1
+                && ngx_strncasecmp(wp,
+                                   p,
+                                   pattern->length - 1)
+                   == 0)
+            {
+                return 1;
+            }
+        }
+    }
+        
+    return 0;
+}
+
+
+static ngx_int_t
+ngx_http_lua_ssl_verify_name(X509 *cert, ngx_str_t *name)
+{
+    X509_NAME_ENTRY *ne;
+    GENERAL_NAMES   *gens;
+    GENERAL_NAME    *gen;
+    ASN1_STRING     *cstr;
+    X509_NAME       *sn;
+    int              rc;
+    int              i;
+
+    /* based on OpenSSL's do_x509_check */
+
+    gens = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+    
+    if (gens) {
+
+        rc = 0;
+
+        for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+            
+            gen = sk_GENERAL_NAME_value(gens, i);
+            
+            /* we only check for name */
+            switch (gen->type) {
+            
+            case GEN_DNS:
+                cstr = gen->d.dNSName;
+                rc = ngx_http_lua_ssl_host_wildcard_match(cstr,
+                                                          name);
+                break;
+
+            default:
+                cstr = NULL;
+                rc = 0;
+            }
+
+            if (rc) {
+                break;
+            }
+
+        }
+
+        GENERAL_NAMES_free(gens);
+
+        if (rc) {
+            return NGX_OK;
+        }
+    }
+
+    sn = X509_get_subject_name(cert);
+    i = X509_NAME_get_index_by_NID(sn, NID_commonName, -1);
+    while (i >= 0) {
+        ne = X509_NAME_get_entry(sn, i);
+        cstr = X509_NAME_ENTRY_get_data(ne);
+
+        if (ngx_http_lua_ssl_host_wildcard_match(cstr, name)) {
+            return NGX_OK;
+        }
+        
+        i = X509_NAME_get_index_by_NID(sn, NID_commonName, i);
+    }
+
+    return NGX_ERROR;
 }
 #endif
 
