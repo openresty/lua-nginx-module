@@ -5765,11 +5765,13 @@ coroutine.create
 ----------------
 **syntax:** *co = coroutine.create(f)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Creates a user Lua coroutines with a Lua function, and returns a coroutine object.
 
 Similar to the standard Lua [coroutine.create](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.create) API, but works in the context of the Lua coroutines created by ngx_lua.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first introduced in the `v0.6.0` release.
 
@@ -5779,11 +5781,13 @@ coroutine.resume
 ----------------
 **syntax:** *ok, ... = coroutine.resume(co, ...)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Resumes the executation of a user Lua coroutine object previously yielded or just created.
 
 Similar to the standard Lua [coroutine.resume](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume) API, but works in the context of the Lua coroutines created by ngx_lua.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first introduced in the `v0.6.0` release.
 
@@ -5793,11 +5797,13 @@ coroutine.yield
 ---------------
 **syntax:** *... = coroutine.yield(co, ...)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Yields the executation of the current user Lua coroutine.
 
 Similar to the standard Lua [coroutine.yield](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.yield) API, but works in the context of the Lua coroutines created by ngx_lua.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first introduced in the `v0.6.0` release.
 
@@ -5807,9 +5813,11 @@ coroutine.wrap
 --------------
 **syntax:** *co = coroutine.wrap(f)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Similar to the standard Lua [coroutine.wrap](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.wrap) API, but works in the context of the Lua coroutines created by ngx_lua.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first introduced in the `v0.6.0` release.
 
@@ -5819,9 +5827,11 @@ coroutine.running
 -----------------
 **syntax:** *co = coroutine.running()*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Identical to the standard Lua [coroutine.running](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.running) API.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
 
@@ -5831,9 +5841,11 @@ coroutine.status
 ----------------
 **syntax:** *status = coroutine.status(co)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
 Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status) API.
+
+This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
 
