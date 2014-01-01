@@ -284,12 +284,12 @@ ngx_http_lua_ffi_var_get(ngx_http_request_t *r, u_char *name_data,
     size_t name_len, u_char *lowcase_buf, int capture_id, u_char **value,
     size_t *value_len, char **err)
 {
-    u_char                      *p;
     ngx_uint_t                   hash;
     ngx_str_t                    name;
     ngx_http_variable_value_t   *vv;
 
 #if (NGX_PCRE)
+    u_char                      *p;
     ngx_uint_t                   n;
     int                         *cap;
 #endif
