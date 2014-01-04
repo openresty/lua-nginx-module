@@ -100,7 +100,7 @@ static ngx_int_t ngx_http_lua_regex_compile(ngx_http_lua_regex_compile_t *rc);
 static void ngx_http_lua_ngx_re_gmatch_cleanup(void *data);
 static int ngx_http_lua_ngx_re_gmatch_gc(lua_State *L);
 static void ngx_http_lua_re_collect_named_captures(lua_State *L,
-    u_char *name_table, int name_count, int name_entry_size,
+    int res_tb_idx, u_char *name_table, int name_count, int name_entry_size,
     unsigned flags, ngx_str_t *subj);
 
 
@@ -133,6 +133,7 @@ static int
 ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
 {
     /* u_char                      *p; */
+    int                          res_tb_idx = 0;
     ngx_http_request_t          *r;
     ngx_str_t                    subj;
     ngx_str_t                    pat;
@@ -208,10 +209,25 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
         opts.len = 0;
     }
 
-    if (!wantcaps && nargs == 5) {
-        group_id =  luaL_checkint(L, 5);
-        if (group_id < 0) {
-            group_id = 0;
+    if (nargs == 5) {
+        if (wantcaps) {
+            luaL_checktype(L, 5, LUA_TTABLE);
+            res_tb_idx = 5;
+
+            /* clear the Lua table */
+            lua_pushnil(L);
+            while (lua_next(L, res_tb_idx) != 0) {
+                lua_pop(L, 1);
+                lua_pushvalue(L, -1);
+                lua_pushnil(L);
+                lua_rawset(L, res_tb_idx);
+            }
+
+        } else {
+            group_id =  luaL_checkint(L, 5);
+            if (group_id < 0) {
+                group_id = 0;
+            }
         }
     }
 
@@ -567,7 +583,10 @@ exec:
         }
     }
 
-    lua_createtable(L, rc /* narr */, 0 /* nrec */);
+    if (res_tb_idx == 0) {
+        lua_createtable(L, rc /* narr */, 0 /* nrec */);
+        res_tb_idx = lua_gettop(L);
+    }
 
     for (i = 0, n = 0; i < rc; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
@@ -581,12 +600,13 @@ exec:
             dd("pushing capture %s at %d", lua_tostring(L, -1), (int) i);
         }
 
-        lua_rawseti(L, -2, (int) i);
+        lua_rawseti(L, res_tb_idx, (int) i);
     }
 
     if (name_count > 0) {
-        ngx_http_lua_re_collect_named_captures(L, name_table, name_count,
-                                               name_entry_size, flags, &subj);
+        ngx_http_lua_re_collect_named_captures(L, res_tb_idx, name_table,
+                                               name_count, name_entry_size,
+                                               flags, &subj);
     }
 
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
@@ -1103,9 +1123,9 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     }
 
     if (name_count > 0) {
-        ngx_http_lua_re_collect_named_captures(L, name_table, name_count,
-                                               name_entry_size, ctx->flags,
-                                               &subj);
+        ngx_http_lua_re_collect_named_captures(L, lua_gettop(L), name_table,
+                                               name_count, name_entry_size,
+                                               ctx->flags, &subj);
     }
 
     offset = cap[1];
@@ -1735,7 +1755,8 @@ exec:
             }
 
             if (name_count > 0) {
-                ngx_http_lua_re_collect_named_captures(L, name_table,
+                ngx_http_lua_re_collect_named_captures(L, lua_gettop(L),
+                                                       name_table,
                                                        name_count,
                                                        name_entry_size,
                                                        flags, &subj);
@@ -2011,8 +2032,9 @@ ngx_http_lua_ngx_re_gmatch_gc(lua_State *L)
 
 
 static void
-ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
-    int name_count, int name_entry_size, unsigned flags, ngx_str_t *subj)
+ngx_http_lua_re_collect_named_captures(lua_State *L, int res_tb_idx,
+    u_char *name_table, int name_count, int name_entry_size, unsigned flags,
+    ngx_str_t *subj)
 {
     int              i, n;
     size_t           len;
@@ -2043,7 +2065,7 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
                 lua_createtable(L, 1 /* narr */, 0 /* nrec */);
                 lua_pushstring(L, name);
                 lua_pushvalue(L, -2); /* big_tb cap small_tb key small_tb */
-                lua_rawset(L, -5); /* big_tb cap small_tb */
+                lua_rawset(L, res_tb_idx); /* big_tb cap small_tb */
                 len = 0;
 
             } else {
@@ -2057,7 +2079,7 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, u_char *name_table,
         } else {
             lua_pushstring(L, name); /* big_tb cap key */
             lua_pushvalue(L, -2); /* big_tb cap key cap */
-            lua_rawset(L, -4); /* big_tb cap */
+            lua_rawset(L, res_tb_idx); /* big_tb cap */
             lua_pop(L, 1);
         }
 
