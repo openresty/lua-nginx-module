@@ -420,13 +420,11 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
-    if (lua_isnil(L, 1)) {
-        src.data = (u_char *) "";
-        src.len = 0;
-
-    } else {
-        src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
+    if (lua_type(L, 1) != LUA_TSTRING) {
+        return luaL_error(L, "string argument only");
     }
+
+    src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
 
     p.len = ngx_base64_decoded_length(src.len);
 
