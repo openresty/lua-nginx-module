@@ -2421,6 +2421,19 @@ ngx_http_lua_ffi_script_eval_data(ngx_http_lua_script_engine_t *e,
         code(e);
     }
 }
+
+
+uint32_t
+ngx_http_lua_ffi_max_regex_cache_size(void)
+{
+    ngx_http_lua_main_conf_t    *lmcf;
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+    if (lmcf == NULL) {
+        return 0;
+    }
+    return (uint32_t) lmcf->regex_cache_max_entries;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
