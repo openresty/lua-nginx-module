@@ -117,7 +117,7 @@ ngx_http_lua_ffi_get_ctx_ref(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        return -3;
+        return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
     return ctx->ctx_ref;
