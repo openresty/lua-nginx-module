@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 8);
+plan tests => repeat_each() * (blocks() * 3 + 10);
 
 #no_diff();
 no_long_string();
@@ -1097,6 +1097,44 @@ GET /read
 --- response_body
 s = content_type
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 55: set a number header name
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header[32] = "private"
+            ngx.say("32: ", ngx.var.sent_http_32)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+32: private
+--- response_body
+32: private
+--- no_error_log
+[error]
+
+
+
+=== TEST 56: set a number header name (in a table value)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.header.foo = {32}
+            ngx.say("foo: ", ngx.var.sent_http_foo)
+        ';
+    }
+--- request
+    GET /lua
+--- response_headers
+foo: 32
+--- response_body
+foo: 32
 --- no_error_log
 [error]
 
