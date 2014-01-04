@@ -1093,3 +1093,35 @@ end
 --- response_body
 failed to match
 
+
+
+=== TEST 47: extra table argument
+--- config
+    location /re {
+        content_by_lua '
+            local res = {}
+            local s = "hello, 1234"
+            m = ngx.re.match(s, [[(\\d)(\\d)]], "o", nil, res)
+            if m then
+                ngx.say("1: m size: ", #m)
+                ngx.say("1: res size: ", #res)
+            else
+                ngx.say("1: not matched!")
+            end
+            m = ngx.re.match(s, [[(\\d)]], "o", nil, res)
+            if m then
+                ngx.say("2: m size: ", #m)
+                ngx.say("2: res size: ", #res)
+            else
+                ngx.say("2: not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1: m size: 2
+1: res size: 2
+2: m size: 1
+2: res size: 1
+
