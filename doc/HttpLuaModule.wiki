@@ -3709,6 +3709,8 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 
 Retrieving the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. If the key does not exist or has been expired, then <code>nil</code> will be returned.
 
+In case of errors, <code>nil</code> and a string describing the error will be returned.
+
 The value returned will have the original data type when they were inserted into the dictionary, for example, Lua booleans, numbers, or strings.
 
 The first argument to this method must be the dictionary object itself, for example,
@@ -5534,4 +5536,3 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [[HttpMemcModule]]
 * [http://openresty.org The ngx_openresty bundle]
 * [https://github.com/agentzh/nginx-systemtap-toolkit Nginx Systemtap Toolkit]
-

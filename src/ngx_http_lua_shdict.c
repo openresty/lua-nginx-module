@@ -396,28 +396,32 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                           "but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
-        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+        return luaL_error(L, "bad \"zone\" argument");
     }
 
     ctx = zone->data;
-
     name = ctx->name;
+
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
         lua_pushnil(L);
-        return 1;
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
-        return luaL_error(L,
-                          "the key argument is more than 65535 bytes: \"%s\"",
-                          key.data);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -831,24 +835,31 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
                           "but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
-        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+        return luaL_error(L, "bad \"zone\" argument");
     }
 
     ctx = zone->data;
 
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
+
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attempt to use empty keys");
+        lua_pushnil(L);
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
-        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
-                          (int) key.len);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -882,9 +893,9 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         break;
 
     default:
-        return luaL_error(L, "unsupported value type for key \"%s\" in "
-                          "shared_dict: %s", key.data,
-                          lua_typename(L, value_type));
+        lua_pushnil(L);
+        lua_pushliteral(L, "bad value type");
+        return 2;
     }
 
     if (n >= 4) {
@@ -1142,8 +1153,9 @@ ngx_http_lua_shdict_incr(lua_State *L)
     }
 
     if (key.len > 65535) {
-        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
-                          (int) key.len);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);

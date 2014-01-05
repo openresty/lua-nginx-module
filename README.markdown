@@ -4432,6 +4432,8 @@ ngx.shared.DICT.get
 
 Retrieving the value in the dictionary [ngx.shared.DICT](#ngxshareddict) for the key `key`. If the key does not exist or has been expired, then `nil` will be returned.
 
+In case of errors, `nil` and a string describing the error will be returned.
+
 The value returned will have the original data type when they were inserted into the dictionary, for example, Lua booleans, numbers, or strings.
 
 The first argument to this method must be the dictionary object itself, for example,
@@ -6533,4 +6535,3 @@ See Also
 * [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
-
