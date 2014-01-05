@@ -2245,7 +2245,7 @@ get ok: 33, flags: nil
 
 
 
-=== TEST 80: add nil values
+=== TEST 84: add nil values
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -2269,7 +2269,7 @@ not ok: attempt to add or replace nil values
 
 
 
-=== TEST 33: replace key with exptime
+=== TEST 85: replace key with exptime
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
