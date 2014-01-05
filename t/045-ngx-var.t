@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 #no_long_string();
@@ -210,5 +210,21 @@ GET /test
 --- response_body_like: 500 Internal Server Error
 --- error_log
 bad variable name
+--- error_code: 500
+
+
+
+=== TEST 11: set a variable that is not changeable
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.var.query_string = 56
+        ';
+    }
+--- request
+GET /test?hello
+--- response_body_like: 500 Internal Server Error
+--- error_log
+variable "query_string" not changeable
 --- error_code: 500
 
