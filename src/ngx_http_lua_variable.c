@@ -104,7 +104,11 @@ ngx_http_lua_var_get(lua_State *L)
     }
 #endif
 
-    p = (u_char *) luaL_checklstring(L, -1, &len);
+    if (lua_type(L, -1) != LUA_TSTRING) {
+        return luaL_error(L, "bad variable name");
+    }
+
+    p = (u_char *) lua_tolstring(L, -1, &len);
 
     lowcase = lua_newuserdata(L, len);
 
@@ -157,7 +161,11 @@ ngx_http_lua_var_set(lua_State *L)
 
     /* we read the variable name */
 
-    p = (u_char *) luaL_checklstring(L, 2, &len);
+    if (lua_type(L, 2) != LUA_TSTRING) {
+        return luaL_error(L, "bad variable name");
+    }
+
+    p = (u_char *) lua_tolstring(L, 2, &len);
 
     lowcase = lua_newuserdata(L, len + 1);
 
