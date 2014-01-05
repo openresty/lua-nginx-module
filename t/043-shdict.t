@@ -2243,3 +2243,58 @@ get ok: 33, flags: nil
 --- no_error_log
 [error]
 
+
+
+=== TEST 80: add nil values
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local ok, err = dogs:add("foo", nil)
+            if not ok then
+                ngx.say("not ok: ", err)
+                return
+            end
+            ngx.say("ok")
+        ';
+    }
+--- request
+GET /test
+--- response_body
+not ok: attempt to add or replace nil values
+--- no_error_log
+[error]
+
+
+
+=== TEST 33: replace key with exptime
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 2, 0)
+            dogs:replace("foo", 32, 0.01)
+            local data = dogs:get("foo")
+            ngx.say("get foo: ", data)
+            ngx.location.capture("/sleep/0.02")
+            local res, err, forcible = dogs:replace("foo", 10502)
+            ngx.say("replace: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+get foo: 32
+replace: false not found false
+foo = nil
+--- no_error_log
+[error]
+

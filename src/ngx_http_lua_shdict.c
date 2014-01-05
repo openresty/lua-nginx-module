@@ -885,7 +885,9 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     case LUA_TNIL:
         if (flags & (NGX_HTTP_LUA_SHDICT_ADD|NGX_HTTP_LUA_SHDICT_REPLACE)) {
-            return luaL_error(L, "attempt to add or replace nil values");
+            lua_pushnil(L);
+            lua_pushliteral(L, "attempt to add or replace nil values");
+            return 2;
         }
 
         value.len = 0;
