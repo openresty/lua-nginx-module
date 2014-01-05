@@ -115,6 +115,11 @@ ngx_http_lua_ngx_escape_uri(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
+    if (lua_isnil(L, 1)) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+
     src = (u_char *) luaL_checklstring(L, 1, &len);
 
     if (len == 0) {
@@ -143,6 +148,11 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
+    }
+
+    if (lua_isnil(L, 1)) {
+        lua_pushliteral(L, "");
+        return 1;
     }
 
     src = (u_char *) luaL_checklstring(L, 1, &len);
