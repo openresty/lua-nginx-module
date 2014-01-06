@@ -1236,7 +1236,8 @@ ngx_http_lua_ngx_re_parse_opts(lua_State *L, ngx_http_lua_regex_compile_t *re,
 #endif
 
             default:
-                msg = lua_pushfstring(L, "unknown flag \"%c\"", *p);
+                msg = lua_pushfstring(L, "unknown flag \"%c\" (flags \"%s\")",
+                                      *p, opts->data);
                 return luaL_argerror(L, narg, msg);
         }
 

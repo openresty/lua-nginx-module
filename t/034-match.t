@@ -372,7 +372,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- config
     location /re {
         content_by_lua '
-            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "H")
+            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "Hm")
             if rc then
                 if m then
                     ngx.say(m[0])
@@ -387,7 +387,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- request
     GET /re
 --- response_body_like chop
-error: .*?unknown flag "H"
+error: .*?unknown flag "H" \(flags "Hm"\)
 
 
 
