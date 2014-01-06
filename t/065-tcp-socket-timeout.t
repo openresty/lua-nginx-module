@@ -29,7 +29,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 11);
+plan tests => repeat_each() * (blocks() * 4 + 12);
 
 our $HtmlDir = html_dir;
 
@@ -770,4 +770,112 @@ failed to send again: closed
 lua tcp socket send timeout: 100
 lua tcp socket connect timeout: 60000
 lua tcp socket write timed out
+
+
+
+=== TEST 19: abort when upstream sockets pending on writes
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:settimeout(100)
+            ngx.thread.spawn(function () ngx.sleep(0.001) ngx.say("done") ngx.exit(200) end)
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- stap2
+global active = 0
+F(ngx_http_lua_socket_send) {
+    active = 1
+    println(probefunc())
+}
+probe syscall.send,
+    syscall.sendto,
+    syscall.writev
+{
+    if (active && pid() == target()) {
+        println(probefunc())
+    }
+}
+--- response_body
+connected: 1
+done
+--- error_log
+lua tcp socket send timeout: 100
+lua tcp socket connect timeout: 60000
+--- no_error_log
+lua tcp socket write timed out
+
+
+
+=== TEST 20: abort when downstream socket pending on writes
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            ngx.send_headers()
+            ngx.flush(true)
+            local sock, err = ngx.req.socket(true)
+            if not sock then
+                ngx.say("failed to acquire the req socket: ", err)
+                return
+            end
+
+            sock:settimeout(100)
+            ngx.thread.spawn(function ()
+                ngx.sleep(0.001)
+                ngx.log(ngx.WARN, "quitting request now")
+                ngx.exit(200)
+            end)
+            local bytes
+            bytes, err = sock:send("e\\r\\nget helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- stap2
+global active = 0
+F(ngx_http_lua_socket_send) {
+    active = 1
+    println(probefunc())
+}
+probe syscall.send,
+    syscall.sendto,
+    syscall.writev
+{
+    if (active && pid() == target()) {
+        println(probefunc())
+    }
+}
+--- ignore_response
+--- error_log
+lua tcp socket send timeout: 100
+quitting request now
+--- no_error_log
+lua tcp socket write timed out
+[alert]
 

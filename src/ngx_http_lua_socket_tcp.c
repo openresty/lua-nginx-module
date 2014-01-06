@@ -40,7 +40,6 @@ static void ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
 static void ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_tcp_cleanup(void *data);
-static void ngx_http_lua_req_socket_cleanup(void *data);
 static void ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_send(ngx_http_request_t *r,
@@ -2471,6 +2470,15 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     }
 
     if (u->raw_downstream || u->body_downstream) {
+        if (ctx && ctx->writing_raw_req_socket) {
+            ctx->writing_raw_req_socket = 0;
+            if (r->connection->write->timer_set) {
+                ngx_del_timer(r->connection->write);
+            }
+
+            r->connection->write->error = 1;
+        }
+
         if (r->connection->read->timer_set) {
             ngx_del_timer(r->connection->read);
         }
@@ -3384,7 +3392,7 @@ ngx_http_lua_req_socket(lua_State *L)
         return 2;
     }
 
-    cln->handler = ngx_http_lua_req_socket_cleanup;
+    cln->handler = ngx_http_lua_socket_tcp_cleanup;
     cln->data = u;
     u->cleanup = &cln->handler;
 
@@ -3957,36 +3965,10 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
     }
 
     if (u->cleanup) {
-        ngx_http_lua_req_socket_cleanup(u); /* it will clear u->cleanup */
+        ngx_http_lua_tcp_socket_cleanup(u); /* it will clear u->cleanup */
     }
 
     return 0;
-}
-
-
-static void
-ngx_http_lua_req_socket_cleanup(void *data)
-{
-    ngx_http_lua_socket_tcp_upstream_t  *u = data;
-
-#if (NGX_DEBUG)
-    ngx_http_request_t  *r;
-
-    r = u->request;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "cleanup lua tcp socket downstream request: \"%V\"",
-                   &r->uri);
-#endif
-
-    if (u->cleanup) {
-        *u->cleanup = NULL;
-        u->cleanup = NULL;
-    }
-
-    if (u->peer.connection) {
-        u->peer.connection = NULL;
-    }
 }
 
 
