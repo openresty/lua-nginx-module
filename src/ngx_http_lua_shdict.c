@@ -1139,7 +1139,9 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return luaL_error(L, "expecting 3 arguments, but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    if (lua_type(L, 1) != LUA_TLIGHTUSERDATA) {
+        return luaL_error(L, "bad \"zone\" argument");
+    }
 
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
@@ -1148,10 +1150,18 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     ctx = zone->data;
 
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
+
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attempt to use empty keys");
+        lua_pushnil(L);
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
