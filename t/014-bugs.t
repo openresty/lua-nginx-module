@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 24);
+plan tests => repeat_each() * (blocks() * 2 + 25);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -18,6 +18,7 @@ our $HtmlDir = html_dir;
 #no_long_string();
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 #no_shuffle();
 no_long_string();
@@ -822,6 +823,23 @@ not-exist.agentzh.org could not be resolved
 GET /lua
 --- response_body
 ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 37: resolving names with a trailing dot
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    location /t {
+        resolver $TEST_NGINX_RESOLVER;
+        set $myhost 'agentzh.org.';
+        proxy_pass http://$myhost/misc/.vimrc;
+    }
+--- request
+GET /t
+--- response_body_like: An example for a vimrc file
 --- no_error_log
 [error]
 
