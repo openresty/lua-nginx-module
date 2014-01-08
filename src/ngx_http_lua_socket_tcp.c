@@ -102,7 +102,7 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, u_char *pat, size_t prefix);
 static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
-static void ngx_http_lua_tcp_socket_cleanup(void *data);
+static void ngx_http_lua_coctx_cleanup(void *data);
 
 
 enum {
@@ -971,7 +971,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* rc == NGX_AGAIN */
 
-    coctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
+    coctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     ngx_add_timer(c->write, u->connect_timeout);
 
@@ -1256,7 +1256,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -1854,7 +1854,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* rc == NGX_AGAIN */
 
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
     if (u->raw_downstream) {
         ctx->writing_raw_req_socket = 1;
     }
@@ -2426,7 +2426,7 @@ ngx_http_lua_socket_tcp_cleanup(void *data)
     r = u->request;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "cleanup lua tcp socket upstream request: \"%V\"", &r->uri);
+                   "cleanup lua tcp socket request: \"%V\"", &r->uri);
 
     ngx_http_lua_socket_tcp_finalize(r, u);
 }
@@ -2441,8 +2441,15 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_chain_t                        **ll;
     ngx_http_lua_ctx_t                  *ctx;
 
+    dd("request: %p, u: %p, u->cleanup: %p", r, u, u->cleanup);
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
+
+    if (u->cleanup) {
+        *u->cleanup = NULL;
+        u->cleanup = NULL;
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -2462,11 +2469,6 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->bufs_in = NULL;
         u->buf_in = NULL;
         ngx_memzero(&u->buffer, sizeof(ngx_buf_t));
-    }
-
-    if (u->cleanup) {
-        *u->cleanup = NULL;
-        u->cleanup = NULL;
     }
 
     if (u->raw_downstream || u->body_downstream) {
@@ -2813,7 +2815,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_tcp_socket_cleanup;
+    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -3957,15 +3959,16 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
 {
     ngx_http_lua_socket_tcp_upstream_t     *u;
 
-    dd("upstream destroy triggered by Lua GC");
+    dd("downstream destory");
 
     u = lua_touserdata(L, 1);
     if (u == NULL) {
+        dd("u is NULL");
         return 0;
     }
 
     if (u->cleanup) {
-        ngx_http_lua_tcp_socket_cleanup(u); /* it will clear u->cleanup */
+        ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
     }
 
     return 0;
@@ -4287,10 +4290,12 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
 
 
 static void
-ngx_http_lua_tcp_socket_cleanup(void *data)
+ngx_http_lua_coctx_cleanup(void *data)
 {
     ngx_http_lua_socket_tcp_upstream_t      *u;
     ngx_http_lua_co_ctx_t                   *coctx = data;
+
+    dd("running coctx cleanup");
 
     u = coctx->data;
     if (u == NULL) {
