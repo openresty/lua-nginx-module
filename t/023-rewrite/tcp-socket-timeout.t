@@ -110,7 +110,7 @@ lua tcp socket connect timeout: 150
     lua_socket_log_errors off;
     lua_socket_connect_timeout 102ms;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    #resolver_timeout 1s;
     location /t3 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
