@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.3] released on 14 December 2013.
+This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module/tags v0.9.4] released on 10 January 2013.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2878,7 +2878,7 @@ Since <code>v0.8.3</code> this function returns <code>1</code> on success, or re
 == ngx.exit ==
 '''syntax:''' ''ngx.exit(status)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
 When <code>status >= 200</code> (i.e., <code>ngx.HTTP_OK</code> and above), it will interrupt the execution of the current request and return status code to nginx.
 
@@ -2918,7 +2918,9 @@ Number literals can be used directly as the argument, for instance,
 
 Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
 
-It is recommended, though not necessary, to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>, to give a visual hint to others reading the code.
+It is recommended, though not necessary (for contexts other than [[#header_filter_by_lua|header_filter_by_lua]], to combine the <code>return</code> statement with this call, i.e., <code>return ngx.exit(...)</code>, to give a visual hint to others reading the code.
+
+When being used in the context of [[#header_filter_by_lua|header_filter_by_lua]], <code>ngx.exit()</code> is an asynchronous operation and will return immediately. This behavior might change in the future. So always use <code>return</code> at the same time, as suggested above.
 
 == ngx.eof ==
 '''syntax:''' ''ok, err = ngx.eof()''
@@ -5330,7 +5332,7 @@ On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k
 = Nginx Compatibility =
 The latest module is compatible with the following versions of Nginx:
 
-* 1.5.x (last tested: 1.5.4)
+* 1.5.x (last tested: 1.5.8)
 * 1.4.x (last tested: 1.4.4)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
@@ -5357,9 +5359,9 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 Build the source with this module:
 
 <geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.4.4.tar.gz'
-    tar -xzvf nginx-1.4.4.tar.gz
-    cd nginx-1.4.4/
+    wget 'http://nginx.org/download/nginx-1.5.8.tar.gz'
+    tar -xzvf nginx-1.5.8.tar.gz
+    cd nginx-1.5.8/
 
     # tell nginx's build system where to find LuaJIT 2.0:
     export LUAJIT_LIB=/path/to/luajit/lib
