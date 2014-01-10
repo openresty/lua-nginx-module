@@ -3964,7 +3964,7 @@ Returns `true` if the current request is an nginx subrequest, or `false` otherwi
 
 ngx.re.match
 ------------
-**syntax:** *captures, err = ngx.re.match(subject, regex, options?, ctx?)*
+**syntax:** *captures, err = ngx.re.match(subject, regex, options?, ctx?, res_table?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
@@ -4113,6 +4113,8 @@ To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the 
 
     pcre JIT compiling result: 1
 
+
+Starting from the `0.9.4` release, this function also accepts a 5th argument, `res_table`, for letting the caller supply the Lua table used to hold all the capturing results. This table will always be cleared before inserting the resulting capturing data. This is very useful for recycling Lua tables and saving GC and table allocation overhead.
 
 This feature was introduced in the `v0.2.1rc11` release.
 
