@@ -103,7 +103,7 @@ done:
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
         && lmcf->init_handler)
     {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != 0) {
+        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
             /* an error happened */
             return NGX_ERROR;
         }

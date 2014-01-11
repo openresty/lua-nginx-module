@@ -3941,7 +3941,7 @@ abort:
 }
 
 
-int
+ngx_int_t
 ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status)
 {
     const char      *msg;
@@ -3960,7 +3960,7 @@ ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status)
     /* force a full garbage-collection cycle */
     lua_gc(L, LUA_GCCOLLECT, 0);
 
-    return status;
+    return status == 0 ? NGX_OK : NGX_ERROR;
 }
 
 
