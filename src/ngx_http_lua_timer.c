@@ -250,8 +250,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     int                      n;
     lua_State               *L;
     ngx_int_t                rc;
-    ngx_log_t               *log;
-    ngx_connection_t        *c = NULL, *saved_c = NULL;
+    ngx_connection_t        *c = NULL;
     ngx_http_request_t      *r = NULL;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
@@ -280,64 +279,13 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto abort;
     }
 
-    /* create the fake connection (we temporarily use a valid fd (0) to make
-       ngx_get_connection happy) */
-
-    if (ngx_cycle->files) {
-        saved_c = ngx_cycle->files[0];
-    }
-
-    c = ngx_get_connection(0, ngx_cycle->log);
-
-    if (ngx_cycle->files) {
-        ngx_cycle->files[0] = saved_c;
-    }
-
+    /* create the fake connection */
+    c = ngx_http_lua_create_fake_connection();
     if (c == NULL) {
         goto abort;
     }
 
-    c->fd = (ngx_socket_t) -1;
-
-    c->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
-    if (c->pool == NULL) {
-        goto abort;
-    }
-
-    log = ngx_pcalloc(c->pool, sizeof(ngx_log_t));
-    if (log == NULL) {
-        goto abort;
-    }
-
-    logctx = ngx_palloc(c->pool, sizeof(ngx_http_log_ctx_t));
-    if (logctx == NULL) {
-        goto abort;
-    }
-
-    dd("c pool allocated: %d", (int) (sizeof(ngx_log_t)
-       + sizeof(ngx_http_log_ctx_t) + sizeof(ngx_http_request_t)));
-
-    logctx->connection = c;
-    logctx->request = NULL;
-    logctx->current_request = NULL;
-
-    c->log = log;
-    c->log->connection = c->number;
     c->log->handler = ngx_http_lua_log_timer_error;
-    c->log->data = logctx;
-    c->log->action = NULL;
-
-    c->log_error = NGX_ERROR_INFO;
-
-#if 0
-    c->buffer = ngx_create_temp_buf(c->pool, 2);
-    if (c->buffer == NULL) {
-        goto abort;
-    }
-
-    c->buffer->start[0] = CR;
-    c->buffer->start[1] = LF;
-#endif
 
     /* create the fake request */
 
@@ -347,6 +295,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     }
 
     c->requests++;
+
+    logctx = c->log->data;
     logctx->request = r;
     logctx->current_request = r;
 

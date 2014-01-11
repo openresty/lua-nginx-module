@@ -214,6 +214,8 @@ void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
 
 void ngx_http_lua_cleanup_vm(void *data);
 
+ngx_connection_t * ngx_http_lua_create_fake_connection(void);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \

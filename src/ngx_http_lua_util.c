@@ -3768,4 +3768,77 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
     lua_pop(L, 1);
 }
 
+
+ngx_connection_t *
+ngx_http_lua_create_fake_connection(void)
+{
+    ngx_log_t               *log;
+    ngx_connection_t        *c;
+    ngx_connection_t        *saved_c = NULL;
+    ngx_http_log_ctx_t      *logctx;
+
+    /* (we temporarily use a valid fd (0) to make ngx_get_connection happy) */
+    if (ngx_cycle->files) {
+        saved_c = ngx_cycle->files[0];
+    }
+
+    c = ngx_get_connection(0, ngx_cycle->log);
+
+    if (ngx_cycle->files) {
+        ngx_cycle->files[0] = saved_c;
+    }
+
+    if (c == NULL) {
+        return NULL;
+    }
+
+    c->fd = (ngx_socket_t) -1;
+
+    c->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
+    if (c->pool == NULL) {
+        goto abort;
+    }
+
+    log = ngx_pcalloc(c->pool, sizeof(ngx_log_t));
+    if (log == NULL) {
+        goto abort;
+    }
+
+    logctx = ngx_palloc(c->pool, sizeof(ngx_http_log_ctx_t));
+    if (logctx == NULL) {
+        goto abort;
+    }
+
+    dd("c pool allocated: %d", (int) (sizeof(ngx_log_t)
+       + sizeof(ngx_http_log_ctx_t) + sizeof(ngx_http_request_t)));
+
+    logctx->connection = c;
+    logctx->request = NULL;
+    logctx->current_request = NULL;
+
+    c->log = log;
+    c->log->connection = c->number;
+    c->log->data = logctx;
+    c->log->action = NULL;
+
+    c->log_error = NGX_ERROR_INFO;
+
+#if 0
+    c->buffer = ngx_create_temp_buf(c->pool, 2);
+    if (c->buffer == NULL) {
+        goto abort;
+    }
+
+    c->buffer->start[0] = CR;
+    c->buffer->start[1] = LF;
+#endif
+
+    return c;
+
+abort:
+
+    ngx_http_lua_close_fake_connection(c);
+    return NULL;
+}
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
