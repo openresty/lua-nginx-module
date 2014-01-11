@@ -3833,11 +3833,110 @@ ngx_http_lua_create_fake_connection(void)
     c->buffer->start[1] = LF;
 #endif
 
+    c->error = 1;
+
     return c;
 
 abort:
 
     ngx_http_lua_close_fake_connection(c);
+    return NULL;
+}
+
+
+ngx_http_request_t *
+ngx_http_lua_create_fake_request(ngx_connection_t *c)
+{
+    ngx_http_log_ctx_t      *logctx;
+    ngx_http_request_t      *r;
+
+    r = ngx_pcalloc(c->pool, sizeof(ngx_http_request_t));
+    if (r == NULL) {
+        return NULL;
+    }
+
+    c->requests++;
+
+    logctx = c->log->data;
+    logctx->request = r;
+    logctx->current_request = r;
+
+    r->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
+    if (r->pool == NULL) {
+        return NULL;
+    }
+
+    dd("r pool allocated: %d", (int) (sizeof(ngx_http_lua_ctx_t)
+       + sizeof(void *) * ngx_http_max_module + sizeof(ngx_http_cleanup_t)));
+
+#if 0
+    hc = ngx_pcalloc(c->pool, sizeof(ngx_http_connection_t));
+    if (hc == NULL) {
+        goto abort;
+    }
+
+    r->header_in = c->buffer;
+    r->header_end = c->buffer->start;
+
+    if (ngx_list_init(&r->headers_out.headers, r->pool, 0,
+                      sizeof(ngx_table_elt_t))
+        != NGX_OK)
+    {
+        goto abort;
+    }
+
+    if (ngx_list_init(&r->headers_in.headers, r->pool, 0,
+                      sizeof(ngx_table_elt_t))
+        != NGX_OK)
+    {
+        goto abort;
+    }
+#endif
+
+    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
+    if (r->ctx == NULL) {
+        goto abort;
+    }
+
+#if 0
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
+                                        * sizeof(ngx_http_variable_value_t));
+    if (r->variables == NULL) {
+        goto abort;
+    }
+#endif
+
+    r->connection = c;
+
+    r->headers_in.content_length_n = 0;
+    c->data = r;
+#if 0
+    hc->request = r;
+    r->http_connection = hc;
+#endif
+    r->signature = NGX_HTTP_MODULE;
+    r->main = r;
+    r->count = 1;
+
+    r->method = NGX_HTTP_UNKNOWN;
+
+    r->headers_in.keep_alive_n = -1;
+    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
+    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;
+
+    r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
+    r->discard_body = 1;
+
+    return r;
+
+abort:
+
+    if (r->pool) {
+        ngx_destroy_pool(r->pool);
+    }
+
     return NULL;
 }
 

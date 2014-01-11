@@ -255,7 +255,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
     ngx_pool_cleanup_t      *pcln;
-    ngx_http_log_ctx_t      *logctx;
 
     ngx_http_lua_timer_ctx_t         tctx;
     ngx_http_lua_main_conf_t        *lmcf;
@@ -279,7 +278,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto abort;
     }
 
-    /* create the fake connection */
     c = ngx_http_lua_create_fake_connection();
     if (c == NULL) {
         goto abort;
@@ -287,70 +285,20 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     c->log->handler = ngx_http_lua_log_timer_error;
 
-    /* create the fake request */
-
-    r = ngx_pcalloc(c->pool, sizeof(ngx_http_request_t));
+    r = ngx_http_lua_create_fake_request(c);
     if (r == NULL) {
         goto abort;
     }
 
-    c->requests++;
-
-    logctx = c->log->data;
-    logctx->request = r;
-    logctx->current_request = r;
-
-    r->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
-    if (r->pool == NULL) {
-        goto abort;
-    }
-
-    dd("r pool allocated: %d", (int) (sizeof(ngx_http_lua_ctx_t)
-       + sizeof(void *) * ngx_http_max_module + sizeof(ngx_http_cleanup_t)));
-
-#if 0
-    hc = ngx_pcalloc(c->pool, sizeof(ngx_http_connection_t));
-    if (hc == NULL) {
-        goto abort;
-    }
-
-    r->header_in = c->buffer;
-    r->header_end = c->buffer->start;
-
-    if (ngx_list_init(&r->headers_out.headers, r->pool, 0,
-                      sizeof(ngx_table_elt_t))
-        != NGX_OK)
-    {
-        goto abort;
-    }
-
-    if (ngx_list_init(&r->headers_in.headers, r->pool, 0,
-                      sizeof(ngx_table_elt_t))
-        != NGX_OK)
-    {
-        goto abort;
-    }
-#endif
-
-    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
-    if (r->ctx == NULL) {
-        goto abort;
-    }
-
-#if 0
-    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
-
-    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));
-    if (r->variables == NULL) {
-        goto abort;
-    }
-#endif
-
-    r->connection = c;
     r->main_conf = tctx.main_conf;
     r->srv_conf = tctx.srv_conf;
     r->loc_conf = tctx.loc_conf;
+
+    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+    c->log->file = clcf->error_log->file;
+    if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
+        c->log->log_level = clcf->error_log->log_level;
+    }
 
     dd("lmcf: %p", lmcf);
 
@@ -370,33 +318,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         pcln->handler = ngx_http_lua_cleanup_vm;
         pcln->data = tctx.vm_state;
     }
-
-    r->headers_in.content_length_n = 0;
-    c->data = r;
-#if 0
-    hc->request = r;
-    r->http_connection = hc;
-#endif
-    r->signature = NGX_HTTP_MODULE;
-    r->main = r;
-    r->count = 1;
-
-    r->method = NGX_HTTP_UNKNOWN;
-
-    r->headers_in.keep_alive_n = -1;
-    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
-    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;
-
-    r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
-    r->discard_body = 1;
-
-    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
-    c->log->file = clcf->error_log->file;
-    if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
-        c->log->log_level = clcf->error_log->log_level;
-    }
-
-    c->error = 1;
 
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
 
@@ -455,6 +376,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     return;
 
 abort:
+
     if (tctx.co_ref && tctx.co) {
         lua_pushlightuserdata(tctx.co, &ngx_http_lua_coroutines_key);
         lua_rawget(tctx.co, LUA_REGISTRYINDEX);

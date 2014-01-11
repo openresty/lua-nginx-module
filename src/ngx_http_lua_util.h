@@ -216,6 +216,8 @@ void ngx_http_lua_cleanup_vm(void *data);
 
 ngx_connection_t * ngx_http_lua_create_fake_connection(void);
 
+ngx_http_request_t * ngx_http_lua_create_fake_request(ngx_connection_t *c);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
