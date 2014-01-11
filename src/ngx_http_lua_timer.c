@@ -275,19 +275,19 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                       "%i lua_max_running_timers are not enough",
                       lmcf->max_running_timers);
-        goto abort;
+        goto failed;
     }
 
     c = ngx_http_lua_create_fake_connection();
     if (c == NULL) {
-        goto abort;
+        goto failed;
     }
 
     c->log->handler = ngx_http_lua_log_timer_error;
 
     r = ngx_http_lua_create_fake_request(c);
     if (r == NULL) {
-        goto abort;
+        goto failed;
     }
 
     r->main_conf = tctx.main_conf;
@@ -304,7 +304,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ctx = ngx_http_lua_create_ctx(r);
     if (ctx == NULL) {
-        goto abort;
+        goto failed;
     }
 
     if (tctx.vm_state) {
@@ -312,7 +312,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
         pcln = ngx_pool_cleanup_add(r->pool, 0);
         if (pcln == NULL) {
-            goto abort;
+            goto failed;
         }
 
         pcln->handler = ngx_http_lua_cleanup_vm;
@@ -325,7 +325,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
-        goto abort;
+        goto failed;
     }
 
     cln->handler = ngx_http_lua_request_cleanup_handler;
@@ -375,7 +375,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     ngx_http_lua_finalize_request(r, rc);
     return;
 
-abort:
+failed:
 
     if (tctx.co_ref && tctx.co) {
         lua_pushlightuserdata(tctx.co, &ngx_http_lua_coroutines_key);

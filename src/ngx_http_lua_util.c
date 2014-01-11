@@ -3796,17 +3796,17 @@ ngx_http_lua_create_fake_connection(void)
 
     c->pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, c->log);
     if (c->pool == NULL) {
-        goto abort;
+        goto failed;
     }
 
     log = ngx_pcalloc(c->pool, sizeof(ngx_log_t));
     if (log == NULL) {
-        goto abort;
+        goto failed;
     }
 
     logctx = ngx_palloc(c->pool, sizeof(ngx_http_log_ctx_t));
     if (logctx == NULL) {
-        goto abort;
+        goto failed;
     }
 
     dd("c pool allocated: %d", (int) (sizeof(ngx_log_t)
@@ -3826,7 +3826,7 @@ ngx_http_lua_create_fake_connection(void)
 #if 0
     c->buffer = ngx_create_temp_buf(c->pool, 2);
     if (c->buffer == NULL) {
-        goto abort;
+        goto failed;
     }
 
     c->buffer->start[0] = CR;
@@ -3837,7 +3837,7 @@ ngx_http_lua_create_fake_connection(void)
 
     return c;
 
-abort:
+failed:
 
     ngx_http_lua_close_fake_connection(c);
     return NULL;
@@ -3872,7 +3872,7 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
 #if 0
     hc = ngx_pcalloc(c->pool, sizeof(ngx_http_connection_t));
     if (hc == NULL) {
-        goto abort;
+        goto failed;
     }
 
     r->header_in = c->buffer;
@@ -3882,20 +3882,20 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
                       sizeof(ngx_table_elt_t))
         != NGX_OK)
     {
-        goto abort;
+        goto failed;
     }
 
     if (ngx_list_init(&r->headers_in.headers, r->pool, 0,
                       sizeof(ngx_table_elt_t))
         != NGX_OK)
     {
-        goto abort;
+        goto failed;
     }
 #endif
 
     r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
     if (r->ctx == NULL) {
-        goto abort;
+        goto failed;
     }
 
 #if 0
@@ -3904,7 +3904,7 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
     if (r->variables == NULL) {
-        goto abort;
+        goto failed;
     }
 #endif
 
@@ -3931,7 +3931,7 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
 
     return r;
 
-abort:
+failed:
 
     if (r->pool) {
         ngx_destroy_pool(r->pool);
