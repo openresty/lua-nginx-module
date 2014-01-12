@@ -151,6 +151,7 @@ src/probe.h
 src/uthread.[ch]
 src/timer.[ch]
 src/config.[ch]
+src/worker.[ch]
 *.plist
 lua
 ttimer
