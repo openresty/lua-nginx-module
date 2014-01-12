@@ -72,14 +72,16 @@ typedef struct {
 #endif
 
 
-#define NGX_HTTP_LUA_CONTEXT_SET            0x01
-#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x02
-#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x04
-#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x08
-#define NGX_HTTP_LUA_CONTEXT_LOG            0x10
-#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x20
-#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x40
-#define NGX_HTTP_LUA_CONTEXT_TIMER          0x80
+/* must be within 16 bit */
+#define NGX_HTTP_LUA_CONTEXT_SET            0x001
+#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x002
+#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x004
+#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x008
+#define NGX_HTTP_LUA_CONTEXT_LOG            0x010
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x020
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x040
+#define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
+#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
 
 
 #ifndef NGX_HTTP_LUA_NO_FFI_API
@@ -133,6 +135,10 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_conf_handler_pt    init_handler;
     ngx_str_t                       init_src;
+
+    ngx_http_lua_conf_handler_pt    init_worker_handler;
+    ngx_str_t                       init_worker_src;
+
     ngx_uint_t                      shm_zones_inited;
 
     unsigned             requires_header_filter:1;

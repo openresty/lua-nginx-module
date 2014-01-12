@@ -76,7 +76,8 @@ extern char ngx_http_lua_req_get_headers_metatable_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_CONTENT ? "content_by_lua*"               \
      : (c) == NGX_HTTP_LUA_CONTEXT_LOG ? "log_by_lua*"                       \
      : (c) == NGX_HTTP_LUA_CONTEXT_HEADER_FILTER ? "header_filter_by_lua*"   \
-     : (c) == NGX_HTTP_LUA_CONTEXT_TIMER ? "ngx.timer"   \
+     : (c) == NGX_HTTP_LUA_CONTEXT_TIMER ? "ngx.timer"                       \
+     : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
      : "(unknown)")
 
 

@@ -21,6 +21,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
+#include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
 
 
@@ -143,6 +144,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_init_by_file },
+
+    { ngx_string("init_worker_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_init_worker_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      ngx_http_lua_init_worker_by_inline },
+
+    { ngx_string("init_worker_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_init_worker_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      ngx_http_lua_init_worker_by_file },
 
 #if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
@@ -377,7 +392,7 @@ ngx_module_t ngx_http_lua_module = {
     NGX_HTTP_MODULE,            /*  module type */
     NULL,                       /*  init master */
     NULL,                       /*  init module */
-    NULL,                       /*  init process */
+    ngx_http_lua_init_worker,   /*  init process */
     NULL,                       /*  init thread */
     NULL,                       /*  exit thread */
     NULL,                       /*  exit process */

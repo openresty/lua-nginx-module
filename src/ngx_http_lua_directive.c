@@ -22,6 +22,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
+#include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
 
 
@@ -906,6 +907,47 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     } else {
         lmcf->init_src = value[1];
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    u_char                      *name;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf = conf;
+
+    dd("enter");
+
+    /*  must specifiy a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (lmcf->init_worker_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    lmcf->init_worker_handler = cmd->post;
+
+    if (cmd->post == ngx_http_lua_init_worker_by_file) {
+        name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
+                                        value[1].len);
+        if (name == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->init_worker_src.data = name;
+        lmcf->init_worker_src.len = ngx_strlen(name);
+
+    } else {
+        lmcf->init_worker_src = value[1];
     }
 
     return NGX_CONF_OK;
