@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 4 + 3);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 #no_diff();
@@ -291,4 +291,149 @@ lua tcp socket send timeout: 60000
 lua tcp socket read timeout: 60000
 --- no_error_log
 [error]
+
+
+
+=== TEST 7: ngx.ctx
+--- http_config
+    init_worker_by_lua '
+        ngx.ctx.foo = "hello world"
+        local function warn(...)
+            ngx.log(ngx.WARN, ...)
+        end
+        warn("foo = ", ngx.ctx.foo)
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- grep_error_log eval: qr/warn\(\): [^,]*/
+--- grep_error_log_out
+warn(): foo = hello world
+--- no_error_log
+[error]
+
+
+
+=== TEST 8: print
+--- http_config
+    init_worker_by_lua '
+        print("md5 = ", ngx.md5("hello world"))
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- error_log
+md5 = 5eb63bbbe01eeed093cb22bb8f5acdc3
+
+
+
+=== TEST 9: unescape_uri
+--- http_config
+    init_worker_by_lua '
+        local function warn(...)
+            ngx.log(ngx.WARN, ...)
+        end
+
+        warn(ngx.unescape_uri("hello%20world"))
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/warn\(\): [^,]*/
+--- grep_error_log_out
+warn(): hello world
+
+
+
+=== TEST 10: escape_uri
+--- http_config
+    init_worker_by_lua '
+        local function warn(...)
+            ngx.log(ngx.WARN, ...)
+        end
+
+        warn(ngx.escape_uri("hello world"))
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/warn\(\): [^,]*/
+--- grep_error_log_out
+warn(): hello%20world
+
+
+
+=== TEST 11: ngx.re
+--- http_config
+    init_worker_by_lua '
+        local function warn(...)
+            ngx.log(ngx.WARN, ...)
+        end
+
+        warn((ngx.re.sub("hello world", "world", "XXX", "jo")))
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/warn\(\): [^,]*/
+--- grep_error_log_out
+warn(): hello XXX
+
+
+
+=== TEST 12: ngx.http_time
+--- http_config
+    init_worker_by_lua '
+        local function warn(...)
+            ngx.log(ngx.WARN, ...)
+        end
+
+        warn(ngx.http_time(5678))
+    ';
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/warn\(\): .*?(?=, context)/
+--- grep_error_log_out
+warn(): Thu, 01 Jan 1970 01:34:38 GMT
 
