@@ -26,6 +26,8 @@ Table of Contents
     * [lua_package_cpath](#lua_package_cpath)
     * [init_by_lua](#init_by_lua)
     * [init_by_lua_file](#init_by_lua_file)
+    * [init_worker_by_lua](#init_worker_by_lua)
+    * [init_worker_by_lua_file](#init_worker_by_lua_file)
     * [set_by_lua](#set_by_lua)
     * [set_by_lua_file](#set_by_lua_file)
     * [content_by_lua](#content_by_lua)
@@ -637,6 +639,38 @@ Equivalent to [init_by_lua](#init_by_lua), except that the file specified by `<p
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 This directive was first introduced in the `v0.5.5` release.
+
+[Back to TOC](#table-of-contents)
+
+init_worker_by_lua
+------------------
+
+**syntax:** *init_worker_by_lua &lt;lua-script-str&gt;*
+
+**context:** *http*
+
+**phase:** *starting-worker*
+
+Runs the specified Lua code upon every Nginx worker process's startup when the master process is enabled. When the master process is disabled, this hook will just run after [init_by_lua*](#init_by_lua).
+
+This hook is often used to create per-worker reoccurring timers (via the [ngx.timer.at](#ngxtimerat) Lua API), either for backend healthcheck or other timed routine work.
+
+This directive was first introduced in the `v0.9.5` release.
+
+[Back to TOC](#table-of-contents)
+
+init_worker_by_lua_file
+-----------------------
+
+**syntax:** *init_worker_by_lua_file &lt;lua-file-path&gt;*
+
+**context:** *http*
+
+**phase:** *starting-worker*
+
+Similar to [init_worker_by_lua](#init_worker_by_lua), but accepts the file path to a Lua source file or Lua bytecode file.
+
+This directive was first introduced in the `v0.9.5` release.
 
 [Back to TOC](#table-of-contents)
 
@@ -1788,7 +1822,7 @@ print
 -----
 **syntax:** *print(...)*
 
-**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
 Writes argument values into the nginx `error.log` file with the `ngx.NOTICE` log level.
 
@@ -1807,7 +1841,7 @@ There is a hard coded `2048` byte limitation on error message lengths in the Ngi
 
 ngx.ctx
 -------
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
 This table can be used to store per-request Lua context data and has a life time identical to the current request (as with the Nginx variables). 
 
@@ -1909,6 +1943,8 @@ Overriding `ngx.ctx` with a new Lua table is also supported, for example,
 
 ngx.ctx = { foo = 32, bar = 54 }
 ```
+
+When being used in the context of [init_worker_by_lua*](#init_worker_by_lua), this table just has the same lifetime of the current Lua handler.
 
 [Back to TOC](#table-of-contents)
 
@@ -3434,7 +3470,7 @@ ngx.log
 -------
 **syntax:** *ngx.log(log_level, ...)*
 
-**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Log arguments concatenated to error.log with the given logging level.
 
@@ -3572,7 +3608,7 @@ ngx.escape_uri
 --------------
 **syntax:** *newstr = ngx.escape_uri(str)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Escape `str` as a URI component.
 
@@ -3582,7 +3618,7 @@ ngx.unescape_uri
 ----------------
 **syntax:** *newstr = ngx.unescape_uri(str)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Unescape `str` as an escaped URI component.
 
@@ -3832,7 +3868,7 @@ ngx.today
 ---------
 **syntax:** *str = ngx.today()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns current date (in the format `yyyy-mm-dd`) from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -3844,7 +3880,7 @@ ngx.time
 --------
 **syntax:** *secs = ngx.time()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -3856,7 +3892,7 @@ ngx.now
 -------
 **syntax:** *secs = ngx.now()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns a floating-point number for the elapsed time in seconds (including milliseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
@@ -3870,7 +3906,7 @@ ngx.update_time
 ---------------
 **syntax:** *ngx.update_time()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Forcibly updates the Nginx current time cache. This call involves a syscall and thus has some overhead, so do not abuse it.
 
@@ -3882,7 +3918,7 @@ ngx.localtime
 -------------
 **syntax:** *str = ngx.localtime()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
 
@@ -3894,7 +3930,7 @@ ngx.utctime
 -----------
 **syntax:** *str = ngx.utctime()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the nginx cached time (no syscall involved unlike Lua's [os.date](http://www.lua.org/manual/5.1/manual.html#pdf-os.date) function).
 
@@ -3906,9 +3942,9 @@ ngx.cookie_time
 ---------------
 **syntax:** *str = ngx.cookie_time(sec)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Returns a formated string can be used as the cookie expiration time. The parameter `sec` is the time stamp in seconds (like those returned from [ngx.time](#ngxtime)).
+Returns a formatted string can be used as the cookie expiration time. The parameter `sec` is the time stamp in seconds (like those returned from [ngx.time](#ngxtime)).
 
 ```nginx
 
@@ -3922,7 +3958,7 @@ ngx.http_time
 -------------
 **syntax:** *str = ngx.http_time(sec)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Returns a formated string can be used as the http header time (for example, being used in `Last-Modified` header). The parameter `sec` is the time stamp in seconds (like those returned from [ngx.time](#ngxtime)).
 
@@ -3938,7 +3974,7 @@ ngx.parse_http_time
 -------------------
 **syntax:** *sec = ngx.parse_http_time(str)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Parse the http time string (as returned by [ngx.http_time](#ngxhttp_time)) into seconds. Returns the seconds or `nil` if the input string is in bad forms.
 
@@ -3966,7 +4002,7 @@ ngx.re.match
 ------------
 **syntax:** *captures, err = ngx.re.match(subject, regex, options?, ctx?, res_table?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Matches the `subject` string using the Perl compatible regular expression `regex` with the optional `options`.
 
@@ -4124,7 +4160,7 @@ ngx.re.find
 -----------
 **syntax:** *from, to, err = ngx.re.find(subject, regex, options?, ctx?, nth?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Similar to [ngx.re.match](#ngxrematch) but only returns the begining index (`from`) and end index (`to`) of the matched substring. The returned indexes are 1-based and can be fed directly into the [string.sub](http://www.lua.org/manual/5.1/manual.html#pdf-string.sub) API function to obtain the matched substring.
 
@@ -4178,7 +4214,7 @@ ngx.re.gmatch
 -------------
 **syntax:** *iterator, err = ngx.re.gmatch(subject, regex, options?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Similar to [ngx.re.match](#ngxrematch), but returns a Lua iterator instead, so as to let the user programmer iterate all the matches over the `<subject>` string argument with the PCRE `regex`.
 
@@ -4256,7 +4292,7 @@ ngx.re.sub
 ----------
 **syntax:** *newstr, n, err = ngx.re.sub(subject, regex, replace, options?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Substitutes the first match of the Perl compatible regular expression `regex` on the `subject` argument string with the string or function argument `replace`. The optional `options` argument has exactly the same meaning as in [ngx.re.match](#ngxrematch).
 
@@ -4322,7 +4358,7 @@ ngx.re.gsub
 -----------
 **syntax:** *newstr, n, err = ngx.re.gsub(subject, regex, replace, options?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Just like [ngx.re.sub](#ngxresub), but does global substitution.
 
@@ -4362,7 +4398,7 @@ ngx.shared.DICT
 
 **syntax:** *dict = ngx.shared[name_var]*
 
-**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named `DICT` defined by the [lua_shared_dict](#lua_shared_dict) directive.
 
@@ -5542,7 +5578,7 @@ ngx.timer.at
 ------------
 **syntax:** *ok, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Creates an Nginx timer with a user callback function as well as optional user arguments.
 
@@ -5666,7 +5702,7 @@ ngx.config.debug
 ----------------
 **syntax:** *debug = ngx.config.debug*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua**
 
 This boolean field indicates whether the current Nginx is a debug build, i.e., being built by the `./configure` option `--with-debug`.
 
@@ -5679,7 +5715,7 @@ ngx.config.prefix
 
 **syntax:** *prefix = ngx.config.prefix()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua**
 
 Returns the Nginx server "prefix" path, as determined by the `-p` command-line option when running the nginx executable, or the path specified by the `--prefix` command-line option when building Nginx with the `./configure` script.
 
@@ -5692,7 +5728,7 @@ ngx.config.nginx_version
 
 **syntax:** *ver = ngx.config.nginx_version*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua**
 
 This field take an integral value indicating the version number of the current Nginx core being used. For example, the version number `1.4.3` results in the Lua number 1004003.
 
@@ -5718,7 +5754,7 @@ ngx.worker.exiting
 
 **syntax:** *exiting = ngx.worker.exiting()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua**
 
 This function returns a boolean value indicating whether the current Nginx worker process already starts exiting. Nginx worker process exiting happens on Nginx server quit or configuration reload (aka HUP reload).
 
@@ -5730,7 +5766,7 @@ ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
@@ -6501,9 +6537,9 @@ Copyright and License
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2013, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2014, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2013, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
+Copyright (C) 2009-2014, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
 
 All rights reserved.
 
