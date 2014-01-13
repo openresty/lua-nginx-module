@@ -408,7 +408,34 @@ This directive was first introduced in the <code>v0.5.5</code> release.
 
 Runs the specified Lua code upon every Nginx worker process's startup when the master process is enabled. When the master process is disabled, this hook will just run after [[#init_by_lua|init_by_lua*]].
 
-This hook is often used to create per-worker reoccurring timers (via the [[#ngx.timer.at|ngx.timer.at]] Lua API), either for backend healthcheck or other timed routine work.
+This hook is often used to create per-worker reoccurring timers (via the [[#ngx.timer.at|ngx.timer.at]] Lua API), either for backend healthcheck or other timed routine work. Below is an example,
+
+<geshi lang="nginx">
+    init_worker_by_lua '
+        local delay = 3  -- in seconds
+        local new_timer = ngx.timer.at
+        local log = ngx.log
+        local ERR = ngx.ERR
+        local check
+
+        check = function(premature)
+            if not premature then
+                -- do the health check or other routine work
+                local ok, err = new_timer(delay, check)
+                if not ok then
+                    log(ERR, "failed to create timer: ", err)
+                    return
+                end
+            end
+        end
+
+        local ok, err = new_timer(delay, check)
+        if not ok then
+            log(ERR, "failed to create timer: ", err)
+            return
+        end
+    ';
+</geshi>
 
 This directive was first introduced in the <code>v0.9.5</code> release.
 
