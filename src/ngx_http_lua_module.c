@@ -150,14 +150,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_init_worker_by_lua,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
-      ngx_http_lua_init_worker_by_inline },
+      (void *) ngx_http_lua_init_worker_by_inline },
 
     { ngx_string("init_worker_by_lua_file"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_lua_init_worker_by_lua,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
-      ngx_http_lua_init_worker_by_file },
+      (void *) ngx_http_lua_init_worker_by_file },
 
 #if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
