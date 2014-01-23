@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 25);
+plan tests => repeat_each() * (blocks() * 2 + 26);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -840,6 +840,32 @@ ok
 --- request
 GET /t
 --- response_body_like: An example for a vimrc file
+--- no_error_log
+[error]
+
+
+
+=== TEST 38: resolving names with a trailing dot
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    server {
+        listen 54123;
+
+        location = /t {
+            echo 'args: \$args';
+        }
+    }
+"
+--- config
+    location = /t {
+        set $args "foo=1&bar=2";
+        proxy_pass http://127.0.0.1:54123;
+    }
+
+--- request
+GET /t
+--- response_body
+args: foo=1&bar=2
 --- no_error_log
 [error]
 
