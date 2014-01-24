@@ -6163,7 +6163,7 @@ Care must be taken when importing modules and this form should be used:
 local xxx = require('xxx')
 ```
 
-	instead of the old deprecated form:
+instead of the old deprecated form:
 
 ```lua
 
