@@ -3599,7 +3599,7 @@ location = /async {
     keepalive_timeout 0;
     content_by_lua '
         ngx.say("got the task!")
-        ngx.eof()  -- descent HTTP client will close the connection at this point
+        ngx.eof()  -- a decent HTTP client will close the connection at this point
         -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
     ';
 }
