@@ -3613,6 +3613,8 @@ But if you create subrequests to access other locations configured by Nginx upst
 proxy_ignore_client_abort on;
 ```
 
+A better way to do background jobs is to use the [ngx.timer.at](#ngxtimerat) API.
+
 Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
 [Back to TOC](#table-of-contents)

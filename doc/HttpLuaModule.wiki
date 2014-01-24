@@ -3004,6 +3004,8 @@ But if you create subrequests to access other locations configured by Nginx upst
     proxy_ignore_client_abort on;
 </geshi>
 
+A better way to do background jobs is to use the [[#ngx.timer.at|ngx.timer.at]] API.
+
 Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 == ngx.sleep ==
