@@ -3105,6 +3105,7 @@ ngx.req.get_body_data
 Retrieves in-memory request body data. It returns a Lua string rather than a Lua table holding all the parsed query arguments. Use the [ngx.req.get_post_args](#ngxreqget_post_args) function instead if a Lua table is required.
 
 This function returns `nil` if
+
 1. the request body has not been read,
 1. the request body has been read into disk temporary files,
 1. or the request body has zero size.
@@ -3599,7 +3600,7 @@ location = /async {
     keepalive_timeout 0;
     content_by_lua '
         ngx.say("got the task!")
-        ngx.eof()  -- descent HTTP client will close the connection at this point
+        ngx.eof()  -- a decent HTTP client will close the connection at this point
         -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
     ';
 }
@@ -6124,6 +6125,7 @@ This data sharing technique is essential for high performance Lua applications b
 Note that this data sharing is on a *per-worker* basis and not on a *per-server* basis. That is, when there are multiple nginx worker processes under an Nginx master, data sharing cannot cross the process boundary between these workers.
 
 If server-wide data sharing is required, then use one or more of the following approaches:
+
 1. Use the [ngx.shared.DICT](#ngxshareddict) API provided by this module.
 1. Use only a single nginx worker and a single server (this is however not recommended when there is a multi core CPU or multiple CPUs in a single machine).
 1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The ngx_openresty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules and Lua libraries that provide interfaces with these data storage mechanisms.
@@ -6161,7 +6163,7 @@ Care must be taken when importing modules and this form should be used:
 local xxx = require('xxx')
 ```
 
-	instead of the old deprecated form:
+instead of the old deprecated form:
 
 ```lua
 
@@ -6171,6 +6173,7 @@ require('xxx')
 Here is the reason: by design, the global environment has exactly the same lifetime as the Nginx request handler associated with it. Each request handler has its own set of Lua global variables and that is the idea of request isolation. The Lua module is actually loaded by the first Nginx request handler and is cached by the `require()` built-in in the package.loaded table for later reference, and `require()` has the side effect of setting a global variable to the loaded module table. But this global variable will be cleared at the end of the request handler,  and every subsequent request handler all has its own (clean) global environment. So one will get Lua exception for accessing the `nil` value.
 
 Generally, use of Lua global variables is a really really bad idea in the context of ngx_lua because
+
 1. misuse of Lua globals has very bad side effects for concurrent requests when these variables are actually supposed to be local only,
 1. Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is kinda expensive, and
 1. some Lua global variable references are just typos, which are hard to debug.
