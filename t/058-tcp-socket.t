@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 126;
+plan tests => repeat_each() * 130;
 
 our $HtmlDir = html_dir;
 
@@ -15,7 +15,7 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 #log_level 'warn';
 log_level 'debug';
 
-#no_long_string();
+no_long_string();
 #no_diff();
 run_tests();
 
@@ -2574,4 +2574,95 @@ connected: 1
 close: 1 nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 42: u->coctx left over bug
+--- config
+    server_tokens off;
+    location = /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local ready = false
+            local fatal = false
+
+            function f()
+                local line, err, part = sock:receive()
+                if not line then
+                    ngx.say("failed to receive the 1st line: ", err, " [", part, "]")
+                    fatal = true
+                    return
+                end
+                ready = true
+                ngx.sleep(1)
+            end
+
+            local st = ngx.thread.spawn(f)
+            while true do
+                if fatal then
+                    return
+                end
+
+                if not ready then
+                    ngx.sleep(0.01)
+                else
+                    break
+                end
+            end
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    -- ngx.say("received: ", line)
+
+                else
+                    -- ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+            ngx.exit(0)
+        ';
+    }
+
+    location /foo {
+        content_by_lua 'ngx.sleep(0.1) ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+close: nil closed
+--- no_error_log
+[error]
+--- error_log
+lua clean up the timer for pending ngx.sleep
 

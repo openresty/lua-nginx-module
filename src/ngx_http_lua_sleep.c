@@ -138,7 +138,8 @@ ngx_http_lua_sleep_cleanup(void *data)
     ngx_http_lua_co_ctx_t          *coctx = data;
 
     if (coctx->sleep.timer_set) {
-        dd("cleanup: deleting timer for ngx.sleep");
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua clean up the timer for pending ngx.sleep");
 
         ngx_del_timer(&coctx->sleep);
     }
