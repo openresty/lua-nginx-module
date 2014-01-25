@@ -462,8 +462,8 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
 
     sentinel = ngx_event_timer_rbtree.sentinel;
 
-    prev = NULL;
     cur = ngx_event_timer_rbtree.root;
+    prev = cur->parent;
 
     events = ngx_pcalloc(ngx_cycle->pool,
                          lmcf->pending_timers * sizeof(ngx_event_t));
@@ -475,13 +475,16 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
 
     dd("root: %p, root parent: %p, sentinel: %p", cur, cur->parent, sentinel);
 
-    while (lmcf->pending_timers > n) {
+    while (n < lmcf->pending_timers) {
         if  (cur == sentinel || cur == NULL) {
             ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                           "lua pending timer counter got out of sync: %i",
                           lmcf->pending_timers);
             break;
         }
+
+        dd("prev: %p, cur: %p, cur parent: %p, cur left: %p, cur right: %p",
+           prev, cur, cur->parent, cur->left, cur->right);
 
         if (prev == cur->parent) {
             next = cur->left;
@@ -519,6 +522,10 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
         cur = next;
     }
 
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "lua found %i pending timers to be aborted prematurely",
+                   n);
+
     for (i = 0; i < n; i++) {
         ev = events[i];
 
@@ -537,6 +544,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
         tctx = ev->data;
         tctx->premature = 1;
 
+        dd("calling timer handler prematurely");
         ev->handler(ev);
     }
 
