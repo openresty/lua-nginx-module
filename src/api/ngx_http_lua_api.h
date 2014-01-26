@@ -13,6 +13,7 @@
 #include <ngx_http.h>
 
 #include <lua.h>
+#include <stdint.h>
 
 
 /* Public API for other Nginx modules */
