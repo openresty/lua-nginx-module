@@ -383,6 +383,7 @@ It works!
 --- response_body
 status = 301
 Location: /foo/
+--- no_check_leak
 
 
 
@@ -697,6 +698,7 @@ Content-Type: application/json; charset=utf-8
 
 
 === TEST 32: hang on upstream_next (from kindy)
+--- no_check_leak
 --- http_config
     upstream xx {
         server 127.0.0.1:$TEST_NGINX_SERVER_PORT max_fails=5;
@@ -868,4 +870,5 @@ GET /t
 args: foo=1&bar=2
 --- no_error_log
 [error]
+--- no_check_leak
 
