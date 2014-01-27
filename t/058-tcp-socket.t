@@ -2577,7 +2577,7 @@ close: 1 nil
 
 
 
-=== TEST 42: u->coctx left over bug
+=== TEST 43: u->coctx left over bug
 --- config
     server_tokens off;
     location = /t {
