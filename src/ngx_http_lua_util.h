@@ -219,7 +219,8 @@ ngx_connection_t * ngx_http_lua_create_fake_connection(void);
 
 ngx_http_request_t * ngx_http_lua_create_fake_request(ngx_connection_t *c);
 
-ngx_int_t ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status);
+ngx_int_t ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status,
+    const char *prefix);
 
 int ngx_http_lua_do_call(ngx_log_t *log, lua_State *L);
 

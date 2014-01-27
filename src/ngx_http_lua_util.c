@@ -3942,7 +3942,8 @@ failed:
 
 
 ngx_int_t
-ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status)
+ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status,
+    const char *prefix)
 {
     const char      *msg;
 
@@ -3952,7 +3953,7 @@ ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status)
             msg = "unknown error";
         }
 
-        ngx_log_error(NGX_LOG_ERR, log, 0, "%s", msg);
+        ngx_log_error(NGX_LOG_ERR, log, 0, "%s error: %s", prefix, msg);
         lua_pop(L, 1);
     }
 

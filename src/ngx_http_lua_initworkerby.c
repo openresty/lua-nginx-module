@@ -193,7 +193,7 @@ ngx_http_lua_init_worker_by_inline(ngx_log_t *log,
                              lmcf->init_worker_src.len, "init_worker_by_lua")
              || ngx_http_lua_do_call(log, L);
 
-    return ngx_http_lua_report(log, L, status);
+    return ngx_http_lua_report(log, L, status, "init_worker_by_lua");
 }
 
 
@@ -206,7 +206,7 @@ ngx_http_lua_init_worker_by_file(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
     status = luaL_loadfile(L, (char *) lmcf->init_worker_src.data)
              || ngx_http_lua_do_call(log, L);
 
-    return ngx_http_lua_report(log, L, status);
+    return ngx_http_lua_report(log, L, status, "init_worker_by_lua_file");
 }
 
 
