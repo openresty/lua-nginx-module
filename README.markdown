@@ -6521,6 +6521,7 @@ The following dependencies are required to run the test suite:
 	* [ngx_memc](http://github.com/agentzh/memc-nginx-module)
 	* [ngx_srcache](http://github.com/agentzh/srcache-nginx-module)
 	* ngx_lua (i.e., this module)
+	* [ngx_lua_upstream](http://github.com/agentzh/lua-upstream-nginx-module)
 	* [ngx_headers_more](http://github.com/agentzh/headers-more-nginx-module)
 	* [ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module)
 	* [ngx_rds_json](http://github.com/agentzh/rds-json-nginx-module)

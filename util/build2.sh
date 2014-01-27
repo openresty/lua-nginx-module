@@ -39,6 +39,7 @@ time ngx-build $force $version \
                 --add-module=$root/../memc-nginx-module \
                 --add-module=$root/../srcache-nginx-module \
                 --add-module=$root \
+                --add-module=$root/../lua-upstream-nginx-module \
               --add-module=$root/../headers-more-nginx-module \
                 --add-module=$root/../drizzle-nginx-module \
                 --add-module=$root/../rds-json-nginx-module \
