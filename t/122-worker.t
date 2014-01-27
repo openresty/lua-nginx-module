@@ -17,7 +17,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: content_by_lua
+=== TEST 1: content_by_lua + ngx.worker.exiting
 --- config
     location /lua {
         content_by_lua '
@@ -28,6 +28,55 @@ __DATA__
 GET /lua
 --- response_body
 worker exiting: false
+--- no_error_log
+[error]
+
+
+
+=== TEST 2: content_by_lua + ngx.worker.pid
+--- config
+    location /lua {
+        content_by_lua '
+            local pid = ngx.worker.pid()
+            ngx.say("worker pid: ", pid)
+            if pid ~= tonumber(ngx.var.pid) then
+                ngx.say("worker pid is wrong.")
+            else
+                ngx.say("worker pid is correct.")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like
+worker pid: \d+
+worker pid is correct\.
+--- no_error_log
+[error]
+
+
+
+=== TEST 3: init_worker_by_lua + ngx.worker.pid
+--- http_config
+    init_worker_by_lua '
+        my_pid = ngx.worker.pid()
+    ';
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("worker pid: ", my_pid)
+            if my_pid ~= tonumber(ngx.var.pid) then
+                ngx.say("worker pid is wrong.")
+            else
+                ngx.say("worker pid is correct.")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like
+worker pid: \d+
+worker pid is correct\.
 --- no_error_log
 [error]
 

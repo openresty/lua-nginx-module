@@ -14,6 +14,7 @@
 
 
 static int ngx_http_lua_ngx_worker_exiting(lua_State *L);
+static int ngx_http_lua_ngx_worker_pid(lua_State *L);
 
 
 void
@@ -24,6 +25,9 @@ ngx_http_lua_inject_worker_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_worker_exiting);
     lua_setfield(L, -2, "exiting");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_worker_pid);
+    lua_setfield(L, -2, "pid");
+
     lua_setfield(L, -2, "worker");
 }
 
@@ -32,5 +36,13 @@ static int
 ngx_http_lua_ngx_worker_exiting(lua_State *L)
 {
     lua_pushboolean(L, ngx_exiting);
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_worker_pid(lua_State *L)
+{
+    lua_pushinteger(L, (lua_Integer) ngx_pid);
     return 1;
 }
