@@ -6477,23 +6477,18 @@ TODO
 
 Short Term
 ----------
-* review and apply Brian Akin's patch for the new directive `lua_socket_log_errors`.
-* review and apply Brian Akin's patch for the new `shdict:flush_expired()` API.
 * implement the SSL cosocket API.
 * review and apply Jader H. Silva's patch for `ngx.re.split()`.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](#ngxreqset_header), [ngx.header.HEADER](#ngxheaderheader), and etc.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops.
-* add APIs to access cookies as key/value pairs.
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
-* implement new directive `lua_ignore_client_abort`.
 
 [Back to TOC](#table-of-contents)
 
 Longer Term
 -----------
-* add lightweight thread API (i.e., the `ngx.thread` API) as demonstrated in [this sample code](http://agentzh.org/misc/nginx/lua-thread2.lua).
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](http://httpd.apache.org/docs/2.3/mod/mod_lua.html).
 
