@@ -1290,7 +1290,7 @@ F(ngx_http_lua_timer_handler) {
 --- response_body
 registered timer
 
---- wait: 0.1
+--- wait: 0.2
 --- no_error_log
 [alert]
 [crit]
