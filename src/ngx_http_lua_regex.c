@@ -2125,7 +2125,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     re_comp.options      = pcre_opts;
     re_comp.pattern.data = (u_char *) pat;
     re_comp.pattern.len  = pat_len;
-    re_comp.err.len      = errstr_size;
+    re_comp.err.len      = errstr_size - 1;
     re_comp.err.data     = errstr;
     re_comp.pool         = pool;
 
