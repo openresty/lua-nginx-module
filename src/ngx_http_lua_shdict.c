@@ -1666,21 +1666,23 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     value.len = (size_t) sd->value_len;
 
     if (*str_value_len < (size_t) value.len) {
-        if (*value_type != LUA_TSTRING) {
-            return NGX_ERROR;
-        }
-
-        *str_value_buf = malloc(value.len);
-        if (*str_value_buf == NULL) {
+        if (*value_type == LUA_TBOOLEAN) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
-    }
 
-    *str_value_len = value.len;
+        if (*value_type == LUA_TSTRING) {
+            *str_value_buf = malloc(value.len);
+            if (*str_value_buf == NULL) {
+                ngx_shmtx_unlock(&ctx->shpool->mutex);
+                return NGX_ERROR;
+            }
+        }
+    }
 
     switch (*value_type) {
     case LUA_TSTRING:
+        *str_value_len = value.len;
         ngx_memcpy(*str_value_buf, value.data, value.len);
         break;
 
@@ -1695,6 +1697,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
             return NGX_ERROR;
         }
 
+        *str_value_len = value.len;
         *num_value = *(double *) value.data;
         break;
 
