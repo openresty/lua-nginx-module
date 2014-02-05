@@ -4919,6 +4919,16 @@ This function returns a boolean value indicating whether the current Nginx worke
 
 This API was first introduced in the <code>0.9.3</code> release.
 
+== ngx.worker.pid ==
+
+'''syntax:''' ''pid = ngx.worker.pid()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua*''
+
+This function returns a Lua number for the process ID (PID) of the current Nginx worker process. This API is more efficient than <code>ngx.var.pid</code> and can be used in contexts where the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] API cannot be used (like [[#init_worker_by_lua|init_worker_by_lua]]).
+
+This API was first introduced in the <code>0.9.5</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
