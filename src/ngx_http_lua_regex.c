@@ -2410,7 +2410,7 @@ ngx_http_lua_ffi_script_eval_len(ngx_http_lua_script_engine_t *e,
 
 void
 ngx_http_lua_ffi_script_eval_data(ngx_http_lua_script_engine_t *e,
-    ngx_http_lua_complex_value_t *val, u_char *dst, size_t len)
+    ngx_http_lua_complex_value_t *val, u_char *dst)
 {
     ngx_http_lua_script_code_pt       code;
 
