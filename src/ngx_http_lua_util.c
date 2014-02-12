@@ -71,7 +71,7 @@ char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_coroutines_key;
 char ngx_http_lua_req_get_headers_metatable_key;
-
+char ngx_http_lua_resp_get_headers_metatable_key;
 
 ngx_uint_t  ngx_http_lua_location_hash = 0;
 ngx_uint_t  ngx_http_lua_content_length_hash = 0;
@@ -803,7 +803,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 #endif
 
     ngx_http_lua_inject_req_api(log, L);
-    ngx_http_lua_inject_resp_header_api(L);
+    ngx_http_lua_inject_resp_header_api(log, L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_socket_tcp_api(log, L);

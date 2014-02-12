@@ -57,6 +57,9 @@ extern char ngx_http_lua_coroutines_key;
 /* key to the metatable for ngx.req.get_headers() */
 extern char ngx_http_lua_req_get_headers_metatable_key;
 
+/* key to the metatable for ngx.resp.get_headers() */
+extern char ngx_http_lua_resp_get_headers_metatable_key;
+
 
 #ifndef ngx_str_set
 #define ngx_str_set(str, text)                                               \

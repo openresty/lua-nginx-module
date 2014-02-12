@@ -1138,3 +1138,49 @@ foo: 32
 --- no_error_log
 [error]
 
+
+
+=== TEST 57: random access resp headers
+--- config
+    location /resp-header {
+        content_by_lua '
+            ngx.header["Foo"] = "bar"
+            ngx.header["Bar"] = "baz"
+            ngx.say("Foo: ", ngx.resp.get_headers()["Foo"] or "nil")
+            ngx.say("Bar: ", ngx.resp.get_headers()["Bar"] or "nil")
+        ';
+    }
+--- request
+GET /resp-header
+--- response_headers
+Foo: bar
+Bar: baz
+--- response_body
+Foo: bar
+Bar: baz
+
+
+
+=== TEST 58: iterating through resp headers
+--- config
+    location /resp-header {
+        content_by_lua '
+            ngx.header["Foo"] = "bar"
+            ngx.header["Bar"] = "baz"
+            local h = {}
+            for k, v in pairs(ngx.resp.get_headers(nil, true)) do
+                h[k] = v
+            end
+            ngx.say("Foo: ", h["Foo"] or "nil")
+            ngx.say("Bar: ", h["Bar"] or "nil")
+        ';
+    }
+--- request
+GET /resp-header
+--- response_headers
+Foo: bar
+Bar: baz
+--- response_body
+Foo: bar
+Bar: baz
+
