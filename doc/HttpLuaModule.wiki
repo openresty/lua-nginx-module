@@ -185,7 +185,7 @@ This document describes ngx_lua [https://github.com/chaoslawful/lua-nginx-module
 
 This module embeds Lua, via the standard Lua 5.1 interpreter or [http://luajit.org/luajit.html LuaJIT 2.0/2.1], into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
-Unlike [http://httpd.apache.org/docs/2.3/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
+Unlike [https://httpd.apache.org/docs/trunk/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
 requests to upstream services such as MySQL, PostgreSQL, Memcached, Redis, or upstream HTTP web services.
 
 At least the following Lua libraries and Nginx modules can be used with this ngx_lua module:
@@ -5504,7 +5504,7 @@ Please submit bug reports, wishlists, or patches by
 
 == Longer Term ==
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
-* add <code>stat</code> mode similar to [http://httpd.apache.org/docs/2.3/mod/mod_lua.html mod_lua].
+* add <code>stat</code> mode similar to [https://httpd.apache.org/docs/trunk/mod/mod_lua.html mod_lua].
 
 = Changes =
 
