@@ -5882,7 +5882,7 @@ This API was first introduced in the `v0.6.0` release.
 
 coroutine.yield
 ---------------
-**syntax:** *... = coroutine.yield(co, ...)*
+**syntax:** *... = coroutine.yield(...)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
 
