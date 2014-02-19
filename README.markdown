@@ -172,6 +172,7 @@ Table of Contents
     * [ngx.config.prefix](#ngxconfigprefix)
     * [ngx.config.nginx_version](#ngxconfignginx_version)
     * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
+    * [ngx.config.ngx_configure_args](#ngxconfigngx_configure_args)
     * [ngx.worker.exiting](#ngxworkerexiting)
     * [ngx.worker.pid](#ngxworkerpid)
     * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
@@ -5778,6 +5779,17 @@ ngx.config.ngx_lua_version
 This field take an integral value indicating the version number of the current `ngx_lua` module being used. For example, the version number `0.9.3` results in the Lua number 9003.
 
 This API was first introduced in the `0.9.3` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.config.ngx_configure_args
+--------------------------
+
+**syntax:** *configure_args = ngx.config.ngx_configure_args*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the arguments-string of `./configure` script when building Nginx.
 
 [Back to TOC](#table-of-contents)
 

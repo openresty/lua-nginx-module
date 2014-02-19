@@ -22,7 +22,7 @@ ngx_http_lua_inject_config_api(lua_State *L)
 {
     /* ngx.config */
 
-    lua_createtable(L, 0, 4 /* nrec */);    /* .config */
+    lua_createtable(L, 0, 5 /* nrec */);    /* .config */
 
 #if (NGX_DEBUG)
     lua_pushboolean(L, 1);
@@ -39,6 +39,9 @@ ngx_http_lua_inject_config_api(lua_State *L)
 
     lua_pushinteger(L, ngx_http_lua_version);
     lua_setfield(L, -2, "ngx_lua_version");
+
+    lua_pushlstring(L, NGX_CONFIGURE, sizeof(NGX_CONFIGURE) - 1);
+    lua_setfield(L, -2, "ngx_configure_args");
 
     lua_setfield(L, -2, "config");
 }
