@@ -395,11 +395,12 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     ngx_list_part_t    *part;
     ngx_table_elt_t    *header;
     ngx_http_request_t *r;
-    u_char             *lowcase_key;
+    u_char             *lowcase_key = NULL;
+    size_t              lowcase_key_sz = 0;
     ngx_uint_t          i;
     int                 n;
     int                 max;
-    int                 raw   = 0;
+    int                 raw = 0;
     int                 count = 0;
 
     n = lua_gettop(L);
@@ -465,25 +466,34 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
             i = 0;
         }
 
+        if (header[i].hash == 0) {
+            continue;
+        }
+
         if (raw) {
             lua_pushlstring(L, (char *) header[i].key.data, header[i].key.len);
 
         } else {
-            /* lowcase_key of some header (such as ETag) in headers_out is uninitialized */
-            lowcase_key = ngx_palloc(r->pool, header[i].key.len + 1);
-            if (lowcase_key == NULL) {
-                return luaL_error(L, "out of memory");
+            /* nginx does not even bother initializing output header entry's
+             * "lowcase_key" field. so we cannot count on that at all. */
+            if (header[i].key.len > lowcase_key_sz) {
+                lowcase_key_sz = header[i].key.len * 2;
+
+                /* we allocate via Lua's GC to prevent in-request
+                 * leaks in the nginx request memory pools */
+                lowcase_key = lua_newuserdata(L, lowcase_key_sz);
+                lua_insert(L, 1);
             }
 
             ngx_strlow(lowcase_key, header[i].key.data, header[i].key.len);
-            lowcase_key[header[i].key.len] = '\0';
             lua_pushlstring(L, (char *) lowcase_key, header[i].key.len);
         }
 
-        /* stack: table key */
+        /* stack: [udata] table key */
 
         lua_pushlstring(L, (char *) header[i].value.data,
-                        header[i].value.len); /* stack: table key value */
+                        header[i].value.len); /* stack: [udata] table key
+                                                 value */
 
         ngx_http_lua_set_multi_value_table(L, -3);
 

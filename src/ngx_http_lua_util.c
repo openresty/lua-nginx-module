@@ -782,7 +782,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 97 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 98 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
