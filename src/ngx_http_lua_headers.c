@@ -339,7 +339,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
     lua_createtable(L, 0, count);
 
     if (!raw) {
-        lua_pushlightuserdata(L, &ngx_http_lua_req_get_headers_metatable_key);
+        lua_pushlightuserdata(L, &ngx_http_lua_get_headers_metatable_key);
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
     }
@@ -444,7 +444,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     lua_createtable(L, 0, count);
 
     if (!raw) {
-        lua_pushlightuserdata(L, &ngx_http_lua_resp_get_headers_metatable_key);
+        lua_pushlightuserdata(L, &ngx_http_lua_get_headers_metatable_key);
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
     }
@@ -840,10 +840,8 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
 
 void
-ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
+ngx_http_lua_inject_req_header_api(lua_State *L)
 {
-    int         rc;
-
     lua_pushcfunction(L, ngx_http_lua_ngx_req_http_version);
     lua_setfield(L, -2, "http_version");
 
@@ -859,38 +857,12 @@ ngx_http_lua_inject_req_header_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_headers);
     lua_setfield(L, -2, "get_headers");
 
-    lua_pushlightuserdata(L, &ngx_http_lua_req_get_headers_metatable_key);
-    lua_createtable(L, 0, 1); /* metatable for ngx.req.get_headers(_, true) */
-
-    {
-        const char buf[] =
-            "local tb, key = ...\n"
-            "local new_key = string.gsub(string.lower(key), '_', '-')\n"
-            "if new_key ~= key then return tb[new_key] else return nil end";
-
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1,
-                             "ngx.req.get_headers __index");
-    }
-
-    if (rc != 0) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to load Lua code of the metamethod for "
-                      "ngx.req.get_headers: %i: %s", rc, lua_tostring(L, -1));
-
-        lua_pop(L, 3);
-        return;
-    }
-
-    lua_setfield(L, -2, "__index");
-    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
 void
-ngx_http_lua_inject_resp_header_api(ngx_log_t *log, lua_State *L)
+ngx_http_lua_inject_resp_header_api(lua_State *L)
 {
-    int rc;
-
     lua_newtable(L);    /* .header */
 
     lua_createtable(L, 0, 2); /* metatable for .header */
@@ -908,23 +880,31 @@ ngx_http_lua_inject_resp_header_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_resp_get_headers);
     lua_setfield(L, -2, "get_headers");
 
-    lua_pushlightuserdata(L, &ngx_http_lua_resp_get_headers_metatable_key);
-    lua_createtable(L, 0, 1); /* metatable for ngx.resp.get_headers(_, true) */
+    lua_setfield(L, -2, "resp");
+}
 
-    {
-        const char buf[] =
-            "local tb, key = ...\n"
-            "local new_key = string.gsub(string.lower(key), '_', '-')\n"
-            "if new_key ~= key then return tb[new_key] else return nil end";
 
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1,
-                             "ngx.resp.get_headers __index");
-    }
+void
+ngx_http_lua_inject_metatable_header_api(ngx_log_t *log, lua_State *L)
+{
+    int rc;
+    const char buf[] =
+        "local tb, key = ...\n"
+        "local new_key = string.gsub(string.lower(key), '_', '-')\n"
+        "if new_key ~= key then return tb[new_key] else return nil end";
+
+    lua_pushlightuserdata(L, &ngx_http_lua_get_headers_metatable_key);
+    /* metatable for ngx.req.get_headers(_, true)
+     * and ngx.resp.get_headers(_, true) */
+    lua_createtable(L, 0, 1); 
+
+    rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1,
+                         "ngx_req.get_headers and ngx.resp.get_headers __index");
 
     if (rc != 0) {
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "failed to load Lua code of the metamethod for "
-                      "ngx.resp.get_headers: %i: %s", rc, lua_tostring(L, -1));
+                      "ngx.req.get_headers, ngx.resp.get_headers: %i: %s", rc, lua_tostring(L, -1));
 
         lua_pop(L, 3);
         return;
@@ -932,8 +912,6 @@ ngx_http_lua_inject_resp_header_api(ngx_log_t *log, lua_State *L)
 
     lua_setfield(L, -2, "__index");
     lua_rawset(L, LUA_REGISTRYINDEX);
-
-    lua_setfield(L, -2, "resp");
 
 }
 
