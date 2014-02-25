@@ -30,9 +30,15 @@ static int ngx_http_lua_coroutine_yield(lua_State *L);
 static int ngx_http_lua_coroutine_status(lua_State *L);
 
 
-static const char *
+static const ngx_str_t
     ngx_http_lua_co_status_names[] =
-        {"running", "suspended", "normal", "dead", "zombie"};
+    {
+        ngx_string("running"), 
+        ngx_string("suspended"), 
+        ngx_string("normal"), 
+        ngx_string("dead"), 
+        ngx_string("zombie")
+    };
 
 
 
@@ -160,7 +166,7 @@ ngx_http_lua_coroutine_resume(lua_State *L)
 
         lua_pushboolean(L, 0);
         lua_pushfstring(L, "cannot resume %s coroutine",
-                        ngx_http_lua_co_status_names[coctx->co_status]);
+                        ngx_http_lua_co_status_names[coctx->co_status].data);
         return 2;
     }
 
@@ -345,13 +351,17 @@ ngx_http_lua_coroutine_status(lua_State *L)
 
     coctx = ngx_http_lua_get_co_ctx(co, ctx);
     if (coctx == NULL) {
-        lua_pushstring(L, ngx_http_lua_co_status_names[NGX_HTTP_LUA_CO_DEAD]);
+        lua_pushlstring(L, 
+                        (const char *)ngx_http_lua_co_status_names[NGX_HTTP_LUA_CO_DEAD].data,
+                        ngx_http_lua_co_status_names[NGX_HTTP_LUA_CO_DEAD].len);
         return 1;
     }
 
     dd("co status: %d", coctx->co_status);
 
-    lua_pushstring(L, ngx_http_lua_co_status_names[coctx->co_status]);
+    lua_pushlstring(L, 
+                    (const char *)ngx_http_lua_co_status_names[coctx->co_status].data,
+                    ngx_http_lua_co_status_names[coctx->co_status].len);
     return 1;
 }
 
