@@ -72,6 +72,7 @@ Table of Contents
     * [ngx.location.capture_multi](#ngxlocationcapture_multi)
     * [ngx.status](#ngxstatus)
     * [ngx.header.HEADER](#ngxheaderheader)
+    * [ngx.resp.get_headers](#ngxrespget_headers)
     * [ngx.req.start_time](#ngxreqstart_time)
     * [ngx.req.http_version](#ngxreqhttp_version)
     * [ngx.req.raw_header](#ngxreqraw_header)
@@ -2463,6 +2464,28 @@ to be returned when reading `ngx.header.Foo`.
 Note that `ngx.header` is not a normal Lua table and as such, it is not possible to iterate through it using the Lua `ipairs` function.
 
 For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers) function instead.
+
+[Back to TOC](#table-of-contents)
+
+ngx.resp.get_headers
+--------------------
+**syntax:** *headers = ngx.resp.get_headers(max_headers?, raw?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
+
+Returns a Lua table holding all the current response headers for the current request.
+
+```lua
+
+local h = ngx.resp.get_headers()
+for k, v in pairs(h) do
+    ...
+end
+```
+
+This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
+
+This API was first introduced in the `v0.9.5` release.
 
 [Back to TOC](#table-of-contents)
 

@@ -2018,6 +2018,24 @@ Note that <code>ngx.header</code> is not a normal Lua table and as such, it is n
 
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
+== ngx.resp.get_headers ==
+'''syntax:''' ''headers = ngx.resp.get_headers(max_headers?, raw?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+
+Returns a Lua table holding all the current response headers for the current request.
+
+<geshi lang="lua">
+local h = ngx.resp.get_headers()
+for k, v in pairs(h) do
+    ...
+end
+</geshi>
+
+This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_headers]] except getting response headers instead of request headers.
+
+This API was first introduced in the <code>v0.9.5</code> release.
+
 == ngx.req.start_time ==
 '''syntax:''' ''secs = ngx.req.start_time()''
 
