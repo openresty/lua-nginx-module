@@ -94,6 +94,7 @@ Table of Contents
     * [ngx.req.append_body](#ngxreqappend_body)
     * [ngx.req.finish_body](#ngxreqfinish_body)
     * [ngx.req.socket](#ngxreqsocket)
+    * [ngx.resp.get_headers](#ngxrespget_headers)
     * [ngx.exec](#ngxexec)
     * [ngx.redirect](#ngxredirect)
     * [ngx.send_headers](#ngxsend_headers)
@@ -3274,6 +3275,33 @@ When the `raw` argument is `true`, it is required that no pending data from any 
 You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/agentzh/lua-resty-websocket) for a real world example.
 
 This function was first introduced in the `v0.5.0rc1` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.resp.get_headers
+--------------------
+**syntax:** *headers = ngx.resp.get_headers(max_headers?, raw?)*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
+
+Returns a Lua table holding all the current response headers.
+
+```lua
+
+local h = ngx.resp.get_headers()
+for k, v in pairs(h) do
+    ...
+end
+```
+
+To read an individual header:
+
+```lua
+
+ngx.say("ETag: ", ngx.resp.get_headers()["ETag"])
+```
+
+This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
 
 [Back to TOC](#table-of-contents)
 
