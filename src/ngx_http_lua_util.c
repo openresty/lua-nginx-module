@@ -70,7 +70,7 @@ char ngx_http_lua_code_cache_key;
 char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_coroutines_key;
-char ngx_http_lua_req_get_headers_metatable_key;
+char ngx_http_lua_headers_metatable_key;
 
 
 ngx_uint_t  ngx_http_lua_location_hash = 0;
@@ -782,7 +782,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 97 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 98 /* nrec */);    /* ngx.* */
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -804,6 +804,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
     ngx_http_lua_inject_req_api(log, L);
     ngx_http_lua_inject_resp_header_api(L);
+    ngx_http_lua_create_headers_metatable(log, L);
     ngx_http_lua_inject_variable_api(L);
     ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_socket_tcp_api(log, L);
@@ -2151,7 +2152,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 
     lua_createtable(L, 0 /* narr */, 23 /* nrec */);    /* .req */
 
-    ngx_http_lua_inject_req_header_api(log, L);
+    ngx_http_lua_inject_req_header_api(L);
     ngx_http_lua_inject_req_uri_api(log, L);
     ngx_http_lua_inject_req_args_api(L);
     ngx_http_lua_inject_req_body_api(L);

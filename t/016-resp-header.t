@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 10);
+plan tests => repeat_each() * (blocks() * 3 + 13);
 
 #no_diff();
 no_long_string();
@@ -1137,4 +1137,84 @@ foo: 32
 foo: 32
 --- no_error_log
 [error]
+
+
+
+=== TEST 57: random access resp headers
+--- config
+    location /resp-header {
+        content_by_lua '
+            ngx.header["Foo"] = "bar"
+            ngx.header["Bar"] = "baz"
+            ngx.say("Foo: ", ngx.resp.get_headers()["Foo"] or "nil")
+            ngx.say("foo: ", ngx.resp.get_headers()["foo"] or "nil")
+            ngx.say("Bar: ", ngx.resp.get_headers()["Bar"] or "nil")
+            ngx.say("bar: ", ngx.resp.get_headers()["bar"] or "nil")
+        ';
+    }
+--- request
+GET /resp-header
+--- response_headers
+Foo: bar
+Bar: baz
+--- response_body
+Foo: bar
+foo: bar
+Bar: baz
+bar: baz
+
+
+
+=== TEST 58: iterating through raw resp headers
+--- config
+    location /resp-header {
+        content_by_lua '
+            ngx.header["Foo"] = "bar"
+            ngx.header["Bar"] = "baz"
+            local h = {}
+            for k, v in pairs(ngx.resp.get_headers(nil, true)) do
+                h[k] = v
+            end
+            ngx.say("Foo: ", h["Foo"] or "nil")
+            ngx.say("foo: ", h["foo"] or "nil")
+            ngx.say("Bar: ", h["Bar"] or "nil")
+            ngx.say("bar: ", h["bar"] or "nil")
+        ';
+    }
+--- request
+GET /resp-header
+--- response_headers
+Foo: bar
+Bar: baz
+--- response_body
+Foo: bar
+foo: nil
+Bar: baz
+bar: nil
+
+
+
+=== TEST 59: removed response headers
+--- config
+    location /resp-header {
+        content_by_lua '
+            ngx.header["Foo"] = "bar"
+            ngx.header["Foo"] = nil
+            ngx.header["Bar"] = "baz"
+            ngx.say("Foo: ", ngx.resp.get_headers()["Foo"] or "nil")
+            ngx.say("foo: ", ngx.resp.get_headers()["foo"] or "nil")
+            ngx.say("Bar: ", ngx.resp.get_headers()["Bar"] or "nil")
+            ngx.say("bar: ", ngx.resp.get_headers()["bar"] or "nil")
+        ';
+    }
+--- request
+GET /resp-header
+--- response_headers
+!Foo
+Bar: baz
+--- response_body
+Foo: nil
+foo: nil
+Bar: baz
+bar: baz
 
