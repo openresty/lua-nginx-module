@@ -17,11 +17,11 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: nginx configure_args
+=== TEST 1: nginx configure
 --- config
     location /configure_args {
         content_by_lua '
-            ngx.say(ngx.config.ngx_configure_args())
+            ngx.say(ngx.config.ngx_configure())
         ';
     }
 --- request
