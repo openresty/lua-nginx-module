@@ -5785,7 +5785,7 @@ This API was first introduced in the `0.9.3` release.
 ngx.config.ngx_configure_args
 --------------------------
 
-**syntax:** *configure_args = ngx.config.ngx_configure_args*
+**syntax:** *configure_args = ngx.config.ngx_configure_args()*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
 
