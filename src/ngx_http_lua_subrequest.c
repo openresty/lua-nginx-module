@@ -165,12 +165,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-#if (NGX_HTTP_SPDY)
-    if (r->spdy_stream) {
-        return luaL_error(L, "spdy not supported yet");
-    }
-#endif
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
@@ -1492,7 +1486,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->request_body = r->request_body;
 
-#if defined(NGX_HTTP_SPDY) && NGX_HTTP_SPDY
+#if (NGX_HTTP_SPDY)
     sr->spdy_stream = r->spdy_stream;
 #endif
 
