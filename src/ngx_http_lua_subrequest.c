@@ -1492,6 +1492,10 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->request_body = r->request_body;
 
+#if defined(NGX_HTTP_SPDY) && NGX_HTTP_SPDY
+    sr->spdy_stream = r->spdy_stream;
+#endif
+
 #ifdef HAVE_ALLOW_REQUEST_BODY_UPDATING_PATCH
     sr->content_length_n = -1;
 #endif
