@@ -21,7 +21,7 @@ __DATA__
 --- config
     location /configure_args {
         content_by_lua '
-            ngx.say(ngx.config.ngx_configure())
+            ngx.say(ngx.config.nginx_configure())
         ';
     }
 --- request

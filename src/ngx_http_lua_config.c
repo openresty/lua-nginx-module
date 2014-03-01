@@ -42,7 +42,7 @@ ngx_http_lua_inject_config_api(lua_State *L)
     lua_setfield(L, -2, "ngx_lua_version");
 
     lua_pushcfunction(L, ngx_http_lua_config_configure);
-    lua_setfield(L, -2, "ngx_configure");
+    lua_setfield(L, -2, "nginx_configure");
 
     lua_setfield(L, -2, "config");
 }
