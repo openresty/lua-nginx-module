@@ -48,3 +48,19 @@ GET /lua
 --- no_error_log
 [error]
 
+
+
+=== TEST 3: nginx spdy version
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("version: ", ngx.config.nginx_spdy_version)
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^version: \d+$
+--- no_error_log
+[error]
+
