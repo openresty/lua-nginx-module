@@ -26,6 +26,12 @@
 #include <ndk.h>
 #endif
 
+
+#if LUA_VERSION_NUM != 501
+#   error unsupported Lua language version
+#endif
+
+
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
 #endif
