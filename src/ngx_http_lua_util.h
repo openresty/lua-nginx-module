@@ -177,7 +177,7 @@ ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
 ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     ngx_chain_t **free, size_t len, ngx_buf_tag_t tag);
 
-void ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec);
+void ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec);
 
 int ngx_http_lua_traceback(lua_State *L);
 
@@ -309,13 +309,15 @@ ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 }
 
 
+#define ngx_http_lua_req_key  "__ngx_req"
+
+
 static ngx_inline ngx_http_request_t *
 ngx_http_lua_get_req(lua_State *L)
 {
     ngx_http_request_t    *r;
 
-    lua_pushliteral(L, "__ngx_req");
-    lua_rawget(L, LUA_GLOBALSINDEX);
+    lua_getglobal(L, ngx_http_lua_req_key);
     r = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -326,9 +328,22 @@ ngx_http_lua_get_req(lua_State *L)
 static ngx_inline void
 ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 {
-    lua_pushliteral(L, "__ngx_req");
     lua_pushlightuserdata(L, r);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    lua_setglobal(L, ngx_http_lua_req_key);
+}
+
+
+static ngx_inline void
+ngx_http_lua_get_globals_table(lua_State *L)
+{
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+}
+
+
+static ngx_inline void
+ngx_http_lua_set_globals_table(lua_State *L)
+{
+    lua_replace(L, LUA_GLOBALSINDEX);
 }
 
 

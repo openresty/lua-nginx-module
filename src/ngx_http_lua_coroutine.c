@@ -104,9 +104,9 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 
     /* make new coroutine share globals of the parent coroutine.
      * NOTE: globals don't have to be separated! */
-    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(L);
     lua_xmove(L, co, 1);
-    lua_replace(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_globals_table(co);
 
     lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
 

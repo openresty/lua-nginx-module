@@ -230,7 +230,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_xmove(L, co, 1);
 
     /*  set closure's env table to new coroutine's globals table */
-    lua_pushvalue(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(co);
     lua_setfenv(co, -2);
 
     /*  save nginx request in coroutine globals table */

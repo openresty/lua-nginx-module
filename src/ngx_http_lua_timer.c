@@ -141,18 +141,18 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
-    lua_createtable(co, 0, 0);  /* the new global table */
+    lua_createtable(co, 0, 0);  /* the new globals table */
 
     /* co stack: global_tb */
 
     lua_createtable(co, 0, 1);  /* the metatable */
-    lua_pushvalue(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(co);
     lua_setfield(co, -2, "__index");
     lua_setmetatable(co, -2);
 
     /* co stack: global_tb */
 
-    lua_replace(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_globals_table(co);
 
     /* co stack: <empty> */
 
@@ -172,7 +172,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     /* L stack: time func [args] thread */
     /* co stack: func */
 
-    lua_pushvalue(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(co);
     lua_setfenv(co, -2);
 
     /* co stack: func */

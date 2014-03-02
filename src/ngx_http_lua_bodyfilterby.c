@@ -32,9 +32,8 @@ static void ngx_http_lua_body_filter_by_lua_env(lua_State *L,
 static ngx_http_output_body_filter_pt ngx_http_next_body_filter;
 
 
-/* light user data key for the ngx_chain_t *in pointer in the
- * Lua VM registory */
-static char ngx_http_lua_body_filter_chain_key;
+/* key for the ngx_chain_t *in pointer in the Lua thread */
+#define ngx_http_lua_chain_key  "__ngx_cl"
 
 
 /**
@@ -55,9 +54,8 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
     /*  set nginx request pointer to current lua thread's globals table */
     ngx_http_lua_set_req(L, r);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_pushlightuserdata(L, in);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    lua_setglobal(L, ngx_http_lua_chain_key);
 
     /**
      * we want to create empty environment for current script
@@ -70,12 +68,12 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
+    ngx_http_lua_create_new_globals_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
     lua_createtable(L, 0, 1 /* nrec */);    /*  the metatable for the new
                                                 env */
-    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(L);
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
     /*  }}} */
@@ -303,8 +301,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     L = ngx_http_lua_get_lua_vm(r, ctx);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
+    lua_getglobal(L, ngx_http_lua_chain_key);
     out = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -362,8 +359,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
         return 1;
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
+    lua_getglobal(L, ngx_http_lua_chain_key);
     in = lua_touserdata(L, -1);
 
     if (idx == 2) {
@@ -446,8 +442,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         /* overwriting the eof flag */
         last = lua_toboolean(L, 3);
 
-        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-        lua_rawget(L, LUA_GLOBALSINDEX);
+        lua_getglobal(L, ngx_http_lua_chain_key);
         in = lua_touserdata(L, -1);
 
         if (last) {
@@ -503,11 +498,10 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
     case LUA_TNIL:
         /* discard the buffers */
-        lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key); /* key */
-        lua_pushvalue(L, -1); /* key key */
-        lua_rawget(L, LUA_GLOBALSINDEX); /* key val */
+        lua_getglobal(L, ngx_http_lua_chain_key); /* key val */
         in = lua_touserdata(L, -1);
-        lua_pop(L, 1); /* key */
+        lua_pop(L, 1);
+        lua_pushliteral(L, ngx_http_lua_chain_key); /* key */
 
         for (cl = in; cl; cl = cl->next) {
             dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
@@ -534,8 +528,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                           lua_typename(L, type));
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
-    lua_rawget(L, LUA_GLOBALSINDEX);
+    lua_getglobal(L, ngx_http_lua_chain_key);
     in = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
@@ -597,9 +590,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         }
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_body_filter_chain_key);
     lua_pushlightuserdata(L, cl);
-    lua_rawset(L, LUA_GLOBALSINDEX);
+    lua_setglobal(L, ngx_http_lua_chain_key);
     return 0;
 }
 

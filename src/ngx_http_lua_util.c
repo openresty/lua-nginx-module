@@ -178,7 +178,7 @@ ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
  *         |    ...    |
  * */
 void
-ngx_http_lua_create_new_global_table(lua_State *L, int narr, int nrec)
+ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec)
 {
     lua_createtable(L, narr, nrec + 1);
     lua_pushvalue(L, -1);
@@ -322,14 +322,14 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
      *  globals table.
      */
     /*  new globals table for coroutine */
-    ngx_http_lua_create_new_global_table(co, 0, 0);
+    ngx_http_lua_create_new_globals_table(co, 0, 0);
 
     lua_createtable(co, 0, 1);
-    lua_pushvalue(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(co);
     lua_setfield(co, -2, "__index");
     lua_setmetatable(co, -2);
 
-    lua_replace(co, LUA_GLOBALSINDEX);
+    ngx_http_lua_set_globals_table(co);
     /*  }}} */
 
     *ref = luaL_ref(L, -2);
@@ -2900,7 +2900,7 @@ ngx_http_lua_traceback(lua_State *L)
         return 1;  /* keep it intact */
     }
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+    lua_getglobal(L, "debug");
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
         return 1;
