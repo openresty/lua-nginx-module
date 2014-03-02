@@ -293,7 +293,7 @@ lua req cleanup
 
 --- timeout: 0.2
 --- abort
---- wait: 0.6
+--- wait: 0.7
 --- ignore_response
 --- error_log
 client prematurely closed connection
@@ -354,7 +354,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.2
+--- wait: 0.5
 --- ignore_response
 --- no_error_log
 [error]
