@@ -2848,7 +2848,7 @@ Returns a Lua table holding all the current request POST query arguments (of the
 location = /test {
     content_by_lua '
         ngx.req.read_body()
-        local args = ngx.req.get_post_args()
+        local args, err = ngx.req.get_post_args()
         if not args then
             ngx.say("failed to get post args: ", err)
             return
