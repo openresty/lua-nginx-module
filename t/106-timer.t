@@ -447,7 +447,7 @@ delete thread 2
 --- response_body
 registered timer
 
---- wait: 0.05
+--- wait: 0.2
 --- no_error_log
 [error]
 [alert]
