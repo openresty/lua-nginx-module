@@ -2301,6 +2301,8 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
 void
 ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
 {
+    ngx_pool_t                  *old_pool;
+
     dd("destroy regex called");
 
     if (re == NULL || re->pool == NULL) {
@@ -2308,14 +2310,18 @@ ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
     }
 
     if (re->regex_sd) {
+        old_pool = ngx_http_lua_pcre_malloc_init(re->pool);
 #if LUA_HAVE_PCRE_JIT
         pcre_free_study(re->regex_sd);
 #else
         pcre_free(re->regex_sd);
 #endif
+        ngx_http_lua_pcre_malloc_done(old_pool);
+        re->regex_sd = NULL;
     }
 
     ngx_destroy_pool(re->pool);
+    re->pool = NULL;
 }
 
 
