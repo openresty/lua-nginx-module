@@ -319,6 +319,7 @@ Foo 3: nil
 --- config
     location /foo {
         content_by_lua '
+            collectgarbage()
             local vals = ngx.req.get_headers()["Foo"]
             ngx.say("value is of type ", type(vals), ".")
             if type(vals) == "table" then
