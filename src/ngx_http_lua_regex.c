@@ -2321,7 +2321,6 @@ ngx_http_lua_ffi_destroy_regex(ngx_http_lua_regex_t *re)
     }
 
     ngx_destroy_pool(re->pool);
-    re->pool = NULL;
 }
 
 
