@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 87;
+plan tests => repeat_each() * 83;
 
 our $HtmlDir = html_dir;
 
@@ -1284,6 +1284,7 @@ received: OK|failed to close: closed)$/
 
 
 === TEST 22: cannot survive across request boundary (connect)
+--- SKIP
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
