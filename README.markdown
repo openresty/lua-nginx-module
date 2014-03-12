@@ -221,7 +221,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.4](https://github.com/chaoslawful/lua-nginx-module/tags) released on 10 January 2014.
+This document describes ngx_lua [v0.9.5](https://github.com/chaoslawful/lua-nginx-module/tags) released on 12 March 2014.
 
 Synopsis
 ========
@@ -3603,7 +3603,7 @@ ngx.exit(501)
 
 Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](#core-constants).
 
-It is recommended, though not necessary (for contexts other than [header_filter_by_lua](#header_filter_by_lua), to combine the `return` statement with this call, i.e., `return ngx.exit(...)`, to give a visual hint to others reading the code.
+It is recommended, though not necessary (for contexts other than [header_filter_by_lua](#header_filter_by_lua)), to combine the `return` statement with this call, i.e., `return ngx.exit(...)`, to give a visual hint to others reading the code.
 
 When being used in the context of [header_filter_by_lua](#header_filter_by_lua), `ngx.exit()` is an asynchronous operation and will return immediately. This behavior might change in the future. So always use `return` at the same time, as suggested above.
 
@@ -6408,7 +6408,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.5.x (last tested: 1.5.8)
+* 1.5.x (last tested: 1.5.11)
 * 1.4.x (last tested: 1.4.4)
 * 1.3.x (last tested: 1.3.11)
 * 1.2.x (last tested: 1.2.9)
@@ -6442,9 +6442,9 @@ Build the source with this module:
 
 ```bash
 
-wget 'http://nginx.org/download/nginx-1.5.8.tar.gz'
-tar -xzvf nginx-1.5.8.tar.gz
-cd nginx-1.5.8/
+wget 'http://nginx.org/download/nginx-1.5.11.tar.gz'
+tar -xzvf nginx-1.5.11.tar.gz
+cd nginx-1.5.11/
 
 # tell nginx's build system where to find LuaJIT 2.0:
 export LUAJIT_LIB=/path/to/luajit/lib
