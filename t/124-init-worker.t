@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4 + 2);
+plan tests => repeat_each() * (blocks() * 4);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
@@ -528,4 +528,156 @@ second line received: Server: ngx_openresty
 --- no_error_log
 [error]
 --- timeout: 10
+
+
+
+=== TEST 14: connection refused (tcp) - log_errors on by default
+--- http_config
+    init_worker_by_lua '
+        logs = ""
+        done = false
+        local function say(...)
+            logs = logs .. table.concat{...} .. "\\n"
+        end
+
+        local function handler()
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", 16787)
+            if not ok then
+                say("failed to connect: ", err)
+            else
+                say("connect: ", ok, " ", err)
+            end
+        end
+
+        local ok, err = ngx.timer.at(0, handler)
+        if not ok then
+            say("failed to create timer: ", err)
+        else
+            say("timer created")
+        end
+    ';
+
+--- config
+    location = /t {
+        content_by_lua '
+            local i = 0
+            while not done and i < 1000 do
+                ngx.sleep(0.001)
+                i = i + 1
+            end
+            ngx.print(logs)
+        ';
+    }
+
+--- request
+    GET /t
+--- response_body
+timer created
+failed to connect: connection refused
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
+
+
+
+=== TEST 15: connection refused (tcp) - log_errors explicitly on
+--- http_config
+    lua_socket_log_errors on;
+    init_worker_by_lua '
+        logs = ""
+        done = false
+        local function say(...)
+            logs = logs .. table.concat{...} .. "\\n"
+        end
+
+        local function handler()
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", 16787)
+            if not ok then
+                say("failed to connect: ", err)
+            else
+                say("connect: ", ok, " ", err)
+            end
+        end
+
+        local ok, err = ngx.timer.at(0, handler)
+        if not ok then
+            say("failed to create timer: ", err)
+        else
+            say("timer created")
+        end
+    ';
+
+--- config
+    location = /t {
+        content_by_lua '
+            local i = 0
+            while not done and i < 1000 do
+                ngx.sleep(0.001)
+                i = i + 1
+            end
+            ngx.print(logs)
+        ';
+    }
+
+--- request
+    GET /t
+--- response_body
+timer created
+failed to connect: connection refused
+--- error_log eval
+qr/connect\(\) failed \(\d+: Connection refused\)/
+
+
+
+=== TEST 16: connection refused (tcp) - log_errors explicitly off
+--- http_config
+    lua_socket_log_errors off;
+    init_worker_by_lua '
+        logs = ""
+        done = false
+        local function say(...)
+            logs = logs .. table.concat{...} .. "\\n"
+        end
+
+        local function handler()
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", 16787)
+            if not ok then
+                say("failed to connect: ", err)
+            else
+                say("connect: ", ok, " ", err)
+            end
+        end
+
+        local ok, err = ngx.timer.at(0, handler)
+        if not ok then
+            say("failed to create timer: ", err)
+        else
+            say("timer created")
+        end
+    ';
+
+--- config
+    location = /t {
+        content_by_lua '
+            local i = 0
+            while not done and i < 1000 do
+                ngx.sleep(0.001)
+                i = i + 1
+            end
+            ngx.print(logs)
+        ';
+    }
+
+--- request
+    GET /t
+--- response_body
+timer created
+failed to connect: connection refused
+--- no_error_log eval
+[
+'qr/connect\(\) failed \(\d+: Connection refused\)/',
+'[error]',
+]
 

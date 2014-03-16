@@ -30,7 +30,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_http_request_t          *r = NULL;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_conf_ctx_t         *conf_ctx, http_ctx;
-    ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_loc_conf_t     *llcf, *top_llcf;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_core_loc_conf_t    *clcf, *top_clcf;
 
@@ -47,6 +47,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     http_ctx.main_conf = conf_ctx->main_conf;
 
     top_clcf = conf_ctx->loc_conf[ngx_http_core_module.ctx_index];
+    top_llcf = conf_ctx->loc_conf[ngx_http_lua_module.ctx_index];
 
     ngx_memzero(&conf, sizeof(ngx_conf_t));
 
@@ -161,7 +162,9 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     r->read_event_handler = ngx_http_block_reading;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    llcf->log_socket_errors = 0;
+    if (top_llcf->log_socket_errors != NGX_CONF_UNSET) {
+        llcf->log_socket_errors = top_llcf->log_socket_errors;
+    }
 
     ngx_http_lua_set_req(lmcf->lua, r);
 
