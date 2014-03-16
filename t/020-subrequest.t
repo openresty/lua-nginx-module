@@ -120,7 +120,6 @@ POST
 --- request
 GET /lua
 --- response_body
-HEAD
 --- no_error_log
 [error]
 
@@ -2737,6 +2736,27 @@ Cookie: bar
 sr: Cookie: foo; bar
 pr: Cookie: foo; bar
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 73: HEAD subrequest (github #347)
+--- config
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/index.html",
+                { method = ngx.HTTP_HEAD });
+            ngx.say("content-length: ", res.header["Content-Length"])
+            ngx.say("body: [", res.body, "]")
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^content-length: \d+
+body: \[\]
+$
 --- no_error_log
 [error]
 

@@ -116,7 +116,6 @@ POST
 --- request
 GET /lua
 --- response_body
-HEAD
 
 
 
