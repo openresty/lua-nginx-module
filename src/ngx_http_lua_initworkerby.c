@@ -32,7 +32,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_http_conf_ctx_t         *conf_ctx, http_ctx;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_core_loc_conf_t    *clcf;
+    ngx_http_core_loc_conf_t    *clcf, *top_clcf;
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
 
@@ -45,6 +45,8 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     conf_ctx = ((ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index]);
     http_ctx.main_conf = conf_ctx->main_conf;
+
+    top_clcf = conf_ctx->loc_conf[ngx_http_core_module.ctx_index];
 
     ngx_memzero(&conf, sizeof(ngx_conf_t));
 
@@ -143,6 +145,10 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     c->log->file = clcf->error_log->file;
     if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
         c->log->log_level = clcf->error_log->log_level;
+    }
+
+    if (top_clcf->resolver) {
+        clcf->resolver = top_clcf->resolver;
     }
 
     ctx = ngx_http_lua_create_ctx(r);

@@ -9,9 +9,11 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4 + 3);
+plan tests => repeat_each() * (blocks() * 4 + 2);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+
 #no_diff();
 no_long_string();
 run_tests();
@@ -436,4 +438,94 @@ ok
 --- grep_error_log eval: qr/warn\(\): .*?(?=, context)/
 --- grep_error_log_out
 warn(): Thu, 01 Jan 1970 01:34:38 GMT
+
+
+
+=== TEST 13: cosocket with resolver
+--- timeout: 10
+--- http_config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 1s;
+    init_worker_by_lua '
+        -- global
+        logs = ""
+        done = false
+        local function say(...)
+            logs = logs .. table.concat({...}) .. "\\n"
+        end
+
+        local function handler()
+            local sock = ngx.socket.tcp()
+            local port = 80
+            local ok, err = sock:connect("agentzh.org", port)
+            if not ok then
+                say("failed to connect: ", err)
+                done = true
+                return
+            end
+
+            say("connected: ", ok)
+
+            local req = "GET / HTTP/1.0\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                say("failed to send request: ", err)
+                done = true
+                return
+            end
+
+            say("request sent: ", bytes)
+
+            local line, err = sock:receive()
+            if line then
+                say("first line received: ", line)
+
+            else
+                say("failed to receive the first line: ", err)
+            end
+
+            line, err = sock:receive()
+            if line then
+                say("second line received: ", line)
+
+            else
+                say("failed to receive the second line: ", err)
+            end
+
+            done = true
+        end
+
+        local ok, err = ngx.timer.at(0, handler)
+        if not ok then
+            say("failed to create timer: ", err)
+        else
+            say("timer created")
+        end
+    ';
+
+--- config
+    location = /t {
+        content_by_lua '
+            local i = 0
+            while not done and i < 1000 do
+                ngx.sleep(0.001)
+                i = i + 1
+            end
+            ngx.print(logs)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+timer created
+connected: 1
+request sent: 56
+first line received: HTTP/1.1 200 OK
+second line received: Server: ngx_openresty
+--- no_error_log
+[error]
+--- timeout: 10
 
