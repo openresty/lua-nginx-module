@@ -308,7 +308,7 @@ lua req cleanup
 --- error_log
 client prematurely closed connection
 on abort called
-lua user thread aborted: runtime error: [string "access_by_lua"]:4: attempt to abort with pending subrequests
+lua user thread aborted: runtime error: access_by_lua:4: attempt to abort with pending subrequests
 main handler done
 
 

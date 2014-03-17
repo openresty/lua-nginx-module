@@ -898,11 +898,11 @@ chunk: true
 --- request
 GET /t
 --- response_body
-child: resume: false[string "content_by_lua"]:4: bad
+child: resume: falsecontent_by_lua:4: bad
 child: status: dead
 parent: status: running
 --- error_log
-lua coroutine: runtime error: [string "content_by_lua"]:4: bad
+lua coroutine: runtime error: content_by_lua:4: bad
 
 
 

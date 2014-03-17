@@ -318,7 +318,7 @@ hiya globe
 GET /t
 --- ignore_response
 --- error_log
-failed to run body_filter_by_lua*: [string "body_filter_by_lua"]:4: something bad happened!
+failed to run body_filter_by_lua*: body_filter_by_lua:4: something bad happened!
 
 
 

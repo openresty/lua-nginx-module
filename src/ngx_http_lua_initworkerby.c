@@ -199,7 +199,7 @@ ngx_http_lua_init_worker_by_inline(ngx_log_t *log,
     int         status;
 
     status = luaL_loadbuffer(L, (char *) lmcf->init_worker_src.data,
-                             lmcf->init_worker_src.len, "init_worker_by_lua")
+                             lmcf->init_worker_src.len, "=init_worker_by_lua")
              || ngx_http_lua_do_call(log, L);
 
     return ngx_http_lua_report(log, L, status, "init_worker_by_lua");

@@ -31,7 +31,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -50,7 +50,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[emerg\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[emerg\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -69,7 +69,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[alert\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[alert\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -88,7 +88,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[crit\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[crit\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -107,7 +107,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -126,7 +126,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[warn\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[warn\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -145,7 +145,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[notice\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[notice\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -164,7 +164,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[info\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[info\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -183,7 +183,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[debug\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[debug\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -202,7 +202,7 @@ GET /log
 before log
 after log
 --- error_log eval
-qr/\[notice\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:3: hello, log12343.14159/
+qr/\[notice\] \S+: \S+ \[lua\] content_by_lua:3: hello, log12343.14159/
 
 
 
@@ -222,9 +222,9 @@ GET /log
 hi
 --- error_log eval
 [
-'[lua] [string "content_by_lua"]:2: ,',
-'[lua] [string "content_by_lua"]:3: nil,',
-'[lua] [string "content_by_lua"]:4: nil: nil,',
+'[lua] content_by_lua:2: ,',
+'[lua] content_by_lua:3: nil,',
+'[lua] content_by_lua:4: nil: nil,',
 ]
 
 
@@ -243,7 +243,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "set_by_lua"\]:2: HELLO,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: HELLO,/
 
 
 
@@ -261,7 +261,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "set_by_lua"\]:2: truefalsenil,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: truefalsenil,/
 
 
 
@@ -279,7 +279,7 @@ GET /log
 --- response_headers
 foo: 32
 --- error_log eval
-qr/\[notice\] .*? \[lua\] \[string "header_filter_by_lua"\]:2: hello world/
+qr/\[notice\] .*? \[lua\] header_filter_by_lua:2: hello world/
 --- response_body
 hi
 
@@ -301,7 +301,7 @@ foo: 32
 --- response_body
 hi
 --- error_log eval
-qr/\[error\] .*? \[lua\] \[string "header_filter_by_lua"\]:2: howdy, lua!/
+qr/\[error\] .*? \[lua\] header_filter_by_lua:2: howdy, lua!/
 
 
 
@@ -342,7 +342,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:7: bar\(\): hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] content_by_lua:7: bar\(\): hello, log12343.14159/
 
 
 
@@ -372,7 +372,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] \[string "content_by_lua"\]:8:(?: foo\(\):)? hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] content_by_lua:8:(?: foo\(\):)? hello, log12343.14159/
 
 
 

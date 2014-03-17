@@ -48,7 +48,7 @@ __DATA__
 GET /test
 --- response_body
 res len: 2
-res: false[string "content_by_lua"]:4: zero error
+res: falsecontent_by_lua:4: zero error
 res len: 4
 res: true23hellotrue
 --- no_error_log
@@ -95,7 +95,7 @@ res: true23hellotrue
 --- request
 GET /test
 --- response_body
-error handler called: [string "content_by_lua"]:4: zero error
+error handler called: content_by_lua:4: zero error
 res len: 2
 res: falsethis is the new err
 res len: 4

@@ -155,7 +155,7 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->access_src.value.data,
                                        llcf->access_src.value.len,
                                        llcf->access_src_key,
-                                       "access_by_lua");
+                                       "=access_by_lua");
 
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;

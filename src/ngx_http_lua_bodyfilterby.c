@@ -163,7 +163,7 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->body_filter_src.value.data,
                                        llcf->body_filter_src.value.len,
                                        llcf->body_filter_src_key,
-                                       "body_filter_by_lua");
+                                       "=body_filter_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

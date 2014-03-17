@@ -455,7 +455,7 @@ GET /lua
 GET /lua
 --- ignore_response
 --- error_log
-failed to run header_filter_by_lua*: [string "header_filter_by_lua"]:2: Something bad
+failed to run header_filter_by_lua*: header_filter_by_lua:2: Something bad
 --- no_error_log
 [alert]
 

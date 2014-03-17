@@ -420,7 +420,7 @@ hello in thread
 thread created: zombie
 failed to wait thread: bad bad!
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:4: bad bad!
+lua user thread aborted: runtime error: content_by_lua:4: bad bad!
 
 
 
@@ -470,7 +470,7 @@ thread created: running
 hello in thread
 failed to wait thread: bad bad!
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:5: bad bad!
+lua user thread aborted: runtime error: content_by_lua:5: bad bad!
 
 
 
@@ -886,7 +886,7 @@ f status: dead
 g status: zombie
 
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:7: f done
+lua user thread aborted: runtime error: content_by_lua:7: f done
 
 
 
@@ -962,7 +962,7 @@ g status: running
 g: hello
 
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:8: f done
+lua user thread aborted: runtime error: content_by_lua:8: f done
 
 
 
@@ -1185,7 +1185,7 @@ delete thread 1
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-lua entry thread aborted: runtime error: [string "content_by_lua"]:11: attempt to wait on a coroutine that is not a user thread
+lua entry thread aborted: runtime error: content_by_lua:11: attempt to wait on a coroutine that is not a user thread
 
 
 
@@ -1221,7 +1221,7 @@ delete thread 2
 ok
 
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:5: f done
+lua user thread aborted: runtime error: content_by_lua:5: f done
 
 
 

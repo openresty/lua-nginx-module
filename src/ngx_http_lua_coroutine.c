@@ -300,7 +300,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
 #endif
             ;
 
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "coroutine.wrap");
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "=coroutine.wrap");
     }
 
     if (rc != 0) {

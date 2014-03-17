@@ -298,7 +298,7 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     /*  load Lua inline script (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, filter_data->script.data,
                                        filter_data->script.len,
-                                       filter_data->key, "set_by_lua");
+                                       filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

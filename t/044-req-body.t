@@ -316,7 +316,7 @@ yeah
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-lua entry thread aborted: runtime error: [string "content_by_lua"]:2: request body not read yet
+lua entry thread aborted: runtime error: content_by_lua:2: request body not read yet
 --- no_error_log
 [alert]
 
@@ -574,7 +574,7 @@ Will you change this world?
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-lua entry thread aborted: runtime error: [string "rewrite_by_lua"]:3: request body not read yet
+lua entry thread aborted: runtime error: rewrite_by_lua:3: request body not read yet
 --- no_error_log
 [alert]
 
@@ -977,7 +977,7 @@ a client request body is buffered to a temporary file
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-lua entry thread aborted: runtime error: [string "content_by_lua"]:2: request body not read yet
+lua entry thread aborted: runtime error: content_by_lua:2: request body not read yet
 --- no_error_log
 [alert]
 

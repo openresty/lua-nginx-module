@@ -132,7 +132,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
                             " local ok, err = sock:connect(...)"
                             " if ok then return sock else return nil, err end";
 
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "ngx.socket.connect");
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "=ngx.socket.connect");
     }
 
     if (rc != NGX_OK) {

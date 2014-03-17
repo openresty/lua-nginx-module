@@ -127,7 +127,7 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(L, llcf->log_src.value.data,
                                        llcf->log_src.value.len,
-                                       llcf->log_src_key, "log_by_lua");
+                                       llcf->log_src_key, "=log_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

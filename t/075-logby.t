@@ -202,7 +202,7 @@ GET /lua
 --- response_body
 ok
 --- error_log
-failed to run log_by_lua*: [string "log_by_lua"]:1: Bad
+failed to run log_by_lua*: log_by_lua:1: Bad
 
 
 

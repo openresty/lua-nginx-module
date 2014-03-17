@@ -64,7 +64,7 @@ stack traceback:
  in function 'error'
 : in function 'bar'
 :5: in function 'foo'
-:7: in function <[string "content_by_lua"]:1>
+:7: in function <content_by_lua:1>
 
 
 

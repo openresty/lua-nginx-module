@@ -249,7 +249,7 @@ delete thread 3
 --- response_body
 after
 --- error_log
-lua user thread aborted: runtime error: [string "rewrite_by_lua"]:3: attempt to call field 'blah' (a nil value)
+lua user thread aborted: runtime error: rewrite_by_lua:3: attempt to call field 'blah' (a nil value)
 
 
 

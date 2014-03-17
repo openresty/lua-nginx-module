@@ -224,7 +224,7 @@ delete thread 1
 --- response_body
 after
 --- error_log
-lua user thread aborted: runtime error: [string "content_by_lua"]:3: attempt to call field 'blah' (a nil value)
+lua user thread aborted: runtime error: content_by_lua:3: attempt to call field 'blah' (a nil value)
 
 
 
