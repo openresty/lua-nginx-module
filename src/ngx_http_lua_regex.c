@@ -214,6 +214,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
             luaL_checktype(L, 5, LUA_TTABLE);
             res_tb_idx = 5;
 
+#if 0
             /* clear the Lua table */
             lua_pushnil(L);
             while (lua_next(L, res_tb_idx) != 0) {
@@ -222,6 +223,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
                 lua_pushnil(L);
                 lua_rawset(L, res_tb_idx);
             }
+#endif
 
         } else {
             group_id =  luaL_checkint(L, 5);
