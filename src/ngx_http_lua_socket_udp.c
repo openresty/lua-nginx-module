@@ -225,6 +225,10 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     lua_pop(L, 1);
 
     if (u) {
+        if (u->request && u->request != r) {
+            return luaL_error(L, "bad request");
+        }
+
         if (u->waiting) {
             lua_pushnil(L);
             lua_pushliteral(L, "socket busy");
@@ -811,6 +815,10 @@ ngx_http_lua_socket_udp_send(lua_State *L)
         return 2;
     }
 
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
     if (u->ft_type) {
         u->ft_type = 0;
     }
@@ -936,6 +944,10 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
     }
 
     if (u->ft_type) {
@@ -1477,6 +1489,10 @@ ngx_http_lua_socket_udp_close(lua_State *L)
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
     }
 
     if (u->waiting) {
