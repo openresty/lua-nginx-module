@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 126;
+plan tests => repeat_each() * 154;
 
 our $HtmlDir = html_dir;
 
@@ -1259,7 +1259,6 @@ received: OK|failed to close: closed)$/
 
 
 === TEST 22: cannot survive across request boundary (connect)
---- SKIP
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -2666,4 +2665,340 @@ close: nil closed
 [error]
 --- error_log
 lua clean up the timer for pending ngx.sleep
+
+
+
+=== TEST 44: bad request tries to connect
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                test.new_sock()
+            end
+            local sock = test.get_sock()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+            else
+                ngx.say("connected")
+            end
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:7: bad request
+--- no_error_log
+[alert]
+
+
+
+=== TEST 45: bad request tries to receive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                else
+                    ngx.say("connected")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:receive()
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:14: bad request
+--- no_error_log
+[alert]
+
+
+
+=== TEST 46: bad request tries to send
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                else
+                    ngx.say("connected")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:send("a")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:14: bad request
+--- no_error_log
+[alert]
+
+
+
+=== TEST 47: bad request tries to close
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                else
+                    ngx.say("connected")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:close()
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:14: bad request
+--- no_error_log
+[alert]
+
+
+
+=== TEST 48: bad request tries to set keepalive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                else
+                    ngx.say("connected")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:setkeepalive()
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:14: bad request
+--- no_error_log
+[alert]
+
+
+
+=== TEST 49: bad request tries to receiveuntil
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:connect("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                else
+                    ngx.say("connected")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            local it, err = sock:receiveuntil("abc")
+            if it then
+                it()
+            end
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.tcp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^connected
+<html.*?500 Internal Server Error/ms
+
+--- error_log
+runtime error: content_by_lua:16: bad request
+--- no_error_log
+[alert]
 

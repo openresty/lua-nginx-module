@@ -400,6 +400,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     lua_pop(L, 1);
 
     if (u) {
+        if (u->request && u->request != r) {
+            return luaL_error(L, "bad request");
+        }
+
         if (u->waiting) {
             lua_pushnil(L);
             lua_pushliteral(L, "socket busy");
@@ -1131,6 +1135,10 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         return 2;
     }
 
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
     if (u->waiting) {
         lua_pushnil(L);
         lua_pushliteral(L, "socket busy");
@@ -1757,6 +1765,10 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         return 2;
     }
 
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
     if (u->waiting) {
         lua_pushnil(L);
         lua_pushliteral(L, "socket busy");
@@ -2006,6 +2018,10 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
     }
 
     if (u->waiting) {
@@ -2730,13 +2746,20 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
         return 2;
     }
 
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
     if (u->waiting) {
         lua_pushnil(L);
         lua_pushliteral(L, "socket busy");
         return 2;
     }
-
-    r = u->request;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket receiveuntil iterator");
@@ -3533,15 +3556,19 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         return 2;
     }
 
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
     if (u->waiting) {
         lua_pushnil(L);
         lua_pushliteral(L, "socket busy");
         return 2;
-    }
-
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return luaL_error(L, "no request found");
     }
 
     b = &u->buffer;
