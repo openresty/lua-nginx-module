@@ -48,6 +48,7 @@
 #include "ngx_http_lua_timer.h"
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_worker.h"
+#include "ngx_http_lua_isinternal.h"
 
 
 #if 1
@@ -2159,6 +2160,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_socket_api(L);
     ngx_http_lua_inject_req_method_api(L);
     ngx_http_lua_inject_req_time_api(L);
+    ngx_http_lua_inject_req_isinternal_api(L);
 
     lua_setfield(L, -2, "req");
 }
