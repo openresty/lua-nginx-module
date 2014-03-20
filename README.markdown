@@ -4206,7 +4206,7 @@ To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the 
     pcre JIT compiling result: 1
 
 
-Starting from the `0.9.4` release, this function also accepts a 5th argument, `res_table`, for letting the caller supply the Lua table used to hold all the capturing results. This table will always be cleared before inserting the resulting capturing data. This is very useful for recycling Lua tables and saving GC and table allocation overhead.
+Starting from the `0.9.4` release, this function also accepts a 5th argument, `res_table`, for letting the caller supply the Lua table used to hold all the capturing results. Starting from `0.9.6`, it is the caller's responsibility to ensure this table is empty. This is very useful for recycling Lua tables and saving GC and table allocation overhead.
 
 This feature was introduced in the `v0.2.1rc11` release.
 
