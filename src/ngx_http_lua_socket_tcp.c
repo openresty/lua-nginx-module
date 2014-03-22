@@ -12,6 +12,7 @@
 
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_uthread.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_probe.h"
@@ -2310,7 +2311,6 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
     if (u->waiting) {
         u->waiting = 0;
 
-        ngx_http_lua_assert(u->co_ctx != NULL);
         coctx = u->co_ctx;
         coctx->cleanup = NULL;
         u->co_ctx = NULL;
@@ -2322,6 +2322,9 @@ ngx_http_lua_socket_handle_success(ngx_http_request_t *r,
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = coctx;
+
+        ngx_http_lua_assert(coctx && (!ngx_http_lua_is_thread(ctx)
+                            || coctx->co_ref >= 0));
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
@@ -2353,18 +2356,17 @@ ngx_http_lua_socket_handle_error(ngx_http_request_t *r,
     if (u->waiting) {
         u->waiting = 0;
 
-        ngx_http_lua_assert(u->co_ctx != NULL);
         coctx = u->co_ctx;
         coctx->cleanup = NULL;
         u->co_ctx = NULL;
 
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-        if (ctx == NULL) {
-            return;
-        }
 
         ctx->resume_handler = ngx_http_lua_socket_tcp_resume;
         ctx->cur_co_ctx = coctx;
+
+        ngx_http_lua_assert(coctx && (!ngx_http_lua_is_thread(ctx)
+                            || coctx->co_ref >= 0));
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket waking up the current request");
