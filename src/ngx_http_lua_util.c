@@ -903,10 +903,12 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ngx_http_lua_del_all_threads(r, L, ctx);
 
+#if 0
     if (ctx->user_co_ctx) {
         /* no way to destroy a list but clean up the whole pool */
         ctx->user_co_ctx = NULL;
     }
+#endif
 
     ngx_memzero(&ctx->entry_co_ctx, sizeof(ngx_http_lua_co_ctx_t));
 
