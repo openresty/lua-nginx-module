@@ -30,7 +30,7 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
      * phase. */
 
     if (r == NULL) {
-        lua_pushlstring(L, (char *) "init", sizeof("init") - 1);
+        lua_pushliteral(L, "init");
         return 1;
     }
 
