@@ -523,7 +523,7 @@ ngx.print("request_uri: ", v, "\n")
 GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
 
 
 

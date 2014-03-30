@@ -330,7 +330,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
     int                 x = 1, size_of_int, size_of_size_t, little_endian,
                         size_of_inst, version, stripped;
     static int          num_of_inst = 3, num_of_inter_func = 1;
-    const char         *filename, *emsg, *serr, *bytecode;
+    const char         *emsg, *serr, *bytecode;
     size_t              size, bytecode_len;
     long                fsize;
 
@@ -577,13 +577,11 @@ error:
 
     fclose(lf->f);  /* close file (even in case of errors) */
 
-    filename = lua_tostring(L, fname_index) + 1;
-
     if (serr) {
-        lua_pushfstring(L, "%s in %s: %s", emsg, filename, serr);
+        lua_pushfstring(L, "%s: %s", emsg, serr);
 
     } else {
-        lua_pushfstring(L, "%s in %s", emsg, filename);
+        lua_pushstring(L, emsg);
     }
 
     lua_remove(L, fname_index);
@@ -592,7 +590,7 @@ error:
 }
 
 
-int
+ngx_int_t
 ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 {
     int                         c, status, readstatus;
@@ -714,7 +712,7 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 }
 
 
-int
+ngx_int_t
 ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
     size_t size, const char *name)
 {
