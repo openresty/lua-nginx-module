@@ -1094,6 +1094,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
             old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
+            ngx_http_lua_assert(old_pool == NULL);
 #endif
 
             /*  run code */
