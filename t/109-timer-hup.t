@@ -318,7 +318,7 @@ GET /t
 --- response_body
 ok
 
---- wait: 0.3
+--- wait: 0.5
 --- no_error_log
 [error]
 [alert]
