@@ -9,10 +9,13 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 26);
+plan tests => repeat_each() * (blocks() * 2 + 27);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
+
+$ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
+$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
 
 #no_diff();
 #no_long_string();
@@ -871,4 +874,62 @@ args: foo=1&bar=2
 --- no_error_log
 [error]
 --- no_check_leak
+
+
+
+=== TEST 39: lua_code_cache off + setkeepalive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    lua_code_cache off;
+    location = /t {
+        set $port $TEST_NGINX_REDIS_PORT;
+        content_by_lua '
+            local test = require "test"
+            local port = ngx.var.port
+            test.go(port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+function go(port)
+    local sock = ngx.socket.tcp()
+    local sock2 = ngx.socket.tcp()
+
+    sock:settimeout(1000)
+    sock2:settimeout(6000000)
+
+    local ok, err = sock:connect("127.0.0.1", port)
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    local ok, err = sock2:connect("127.0.0.1", port)
+    if not ok then
+        ngx.say("failed to connect: ", err)
+        return
+    end
+
+    local ok, err = sock:setkeepalive(100, 100)
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+
+    local ok, err = sock2:setkeepalive(200, 100)
+    if not ok then
+        ngx.say("failed to set reusable: ", err)
+    end
+
+    ngx.say("done")
+end
+--- request
+GET /t
+--- response_body
+done
+--- wait: 0.5
+--- no_error_log
+[error]
 
