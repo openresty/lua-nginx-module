@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) Xiaozhe Wang (chaoslawful)
  * Copyright (C) Yichun Zhang (agentzh)
@@ -578,7 +577,7 @@ ngx_http_lua_ngx_hmac_sha1(lua_State *L)
     const EVP_MD            *evp_md;
 
     if (lua_gettop(L) != 2) {
-        return luaL_error(L, "expecting one argument, but got %d",
+        return luaL_error(L, "expecting 2 arguments, but got %d",
                           lua_gettop(L));
     }
 
