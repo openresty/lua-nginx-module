@@ -1132,8 +1132,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
     u_char                      *p;
     ngx_shm_zone_t              *zone;
     double                       value;
-	lua_Number                   exptime = -1;
-	ngx_time_t                  *tp;
+    lua_Number                   exptime = -1;
+    ngx_time_t                  *tp;
 
     n = lua_gettop(L);
 
@@ -1145,12 +1145,12 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-	if (n >= 4) {
-		exptime = luaL_checknumber(L, 4);
-		if (exptime < 0) {
-			exptime = -1;
-		}
-	}
+    if (n >= 4) {
+        exptime = luaL_checknumber(L, 4);
+        if (exptime < 0) {
+            exptime = -1;
+        }
+    }
 
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
@@ -1214,18 +1214,18 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return 2;
     }
 
-	if (exptime > 0) {
-		dd("setting expire time to %d", exptime);
+    if (exptime > 0) {
+        dd("setting expire time to %d", exptime);
 
-		tp = ngx_timeofday();
-		sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
-			+ (uint64_t)(exptime * 1000);
+        tp = ngx_timeofday();
+        sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
+            + (uint64_t)(exptime * 1000);
 
-	}
-	else if (exptime == 0) {
-		dd("setting key to never expire");
-		sd->expires = 0;
-	}
+    }
+    else if (exptime == 0) {
+        dd("setting key to never expire");
+        sd->expires = 0;
+    }
 
     ngx_queue_remove(&sd->queue);
     ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
