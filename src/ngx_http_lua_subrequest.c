@@ -243,8 +243,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         body = NULL;
 
-        extra_args.data = NULL;
-        extra_args.len = 0;
+        ngx_str_null(&extra_args);
 
         if (extra_vars != NULL) {
             /* flush out existing elements in the array */
@@ -487,8 +486,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         uri.len = len;
 
-        args.data = NULL;
-        args.len = 0;
+        ngx_str_null(&args);
 
         flags = 0;
 

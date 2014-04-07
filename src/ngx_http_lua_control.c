@@ -74,8 +74,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    args.data = NULL;
-    args.len = 0;
+    ngx_str_null(&args);
 
     /* read the 1st argument (uri) */
 
@@ -138,8 +137,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
             break;
 
         case LUA_TNIL:
-            user_args.data = NULL;
-            user_args.len = 0;
+            ngx_str_null(&user_args);
             break;
 
         default:
