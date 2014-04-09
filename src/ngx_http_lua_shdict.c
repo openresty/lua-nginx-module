@@ -890,8 +890,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
             return 2;
         }
 
-        value.len = 0;
-        value.data = NULL;
+        ngx_str_null(&value);
         break;
 
     default:

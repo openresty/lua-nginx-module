@@ -629,14 +629,12 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     }
 
     if (lua_type(L, 3) == LUA_TNIL) {
-        value.data = NULL;
-        value.len = 0;
+        ngx_str_null(&value);
 
     } else if (lua_type(L, 3) == LUA_TTABLE) {
         n = luaL_getn(L, 3);
         if (n == 0) {
-            value.data = NULL;
-            value.len = 0;
+            ngx_str_null(&value);
 
         } else {
             for (i = 1; i <= n; i++) {
@@ -765,14 +763,12 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     key.len = len;
 
     if (lua_type(L, 2) == LUA_TNIL) {
-        value.data = NULL;
-        value.len = 0;
+        ngx_str_null(&value);
 
     } else if (lua_type(L, 2) == LUA_TTABLE) {
         n = luaL_getn(L, 2);
         if (n == 0) {
-            value.data = NULL;
-            value.len = 0;
+            ngx_str_null(&value);
 
         } else {
             for (i = 1; i <= n; i++) {
