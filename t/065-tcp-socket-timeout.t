@@ -29,7 +29,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 12);
+plan tests => repeat_each() * (blocks() * 4 + 13);
 
 our $HtmlDir = html_dir;
 
@@ -878,4 +878,43 @@ quitting request now
 --- no_error_log
 lua tcp socket write timed out
 [alert]
+
+
+
+=== TEST 21: read timeout on receive(N)
+--- config
+    server_tokens off;
+    lua_socket_read_timeout 100ms;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:settimeout(10)
+
+            local line
+            line, err = sock:receive(3)
+            if line then
+                ngx.say("received: ", line)
+            else
+                ngx.say("failed to receive: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua tcp socket read timeout: 10
+lua tcp socket connect timeout: 60000
+lua tcp socket read timed out
 
