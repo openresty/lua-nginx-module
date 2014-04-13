@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 3 + 10);
 
 #no_diff();
 #no_long_string();
@@ -561,6 +561,24 @@ log handler
 
 --- response_body
 ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 31: reading ngx.header.HEADER in log_by_lua
+--- config
+    location /lua {
+        echo ok;
+        log_by_lua 'ngx.log(ngx.WARN, "content-type: ", ngx.header.content_type)';
+    }
+--- request
+GET /lua
+
+--- response_body
+ok
+--- error_log
+log_by_lua:1: content-type: text/plain
 --- no_error_log
 [error]
 
