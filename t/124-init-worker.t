@@ -524,7 +524,7 @@ timer created
 connected: 1
 request sent: 56
 first line received: HTTP/1.1 200 OK
-second line received: Server: ngx_openresty
+second line received: Server: openresty
 --- no_error_log
 [error]
 --- timeout: 10
