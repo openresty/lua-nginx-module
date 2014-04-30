@@ -719,7 +719,7 @@ The code in `<lua-script-str>` can make [API calls](#nginx-api-for-lua) and can 
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
 
-This directive is implemented by injecting custom commands into the standard HttpRewriteModule's command list. Because HttpRewriteModule does not support nonblocking I/O in its commands, Lua APIs requiring yielding the current Lua "light thread" cannot work in this directive.
+This directive is implemented by injecting custom commands into the standard [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html)'s command list. Because [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html) does not support nonblocking I/O in its commands, Lua APIs requiring yielding the current Lua "light thread" cannot work in this directive.
 
 At least the following API functions are currently disabled within the context of `set_by_lua`:
 
