@@ -221,7 +221,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.7](https://github.com/chaoslawful/lua-nginx-module/tags) released on 6 April 2014.
+This document describes ngx_lua [v0.9.7](https://github.com/openresty/lua-nginx-module/tags) released on 6 April 2014.
 
 Synopsis
 ========
@@ -406,17 +406,17 @@ requests to upstream services such as MySQL, PostgreSQL, Memcached, Redis, or up
 
 At least the following Lua libraries and Nginx modules can be used with this ngx_lua module:
 
-* [lua-resty-memcached](https://github.com/agentzh/lua-resty-memcached)
-* [lua-resty-mysql](https://github.com/agentzh/lua-resty-mysql)
-* [lua-resty-redis](https://github.com/agentzh/lua-resty-redis)
-* [lua-resty-dns](https://github.com/agentzh/lua-resty-dns)
-* [lua-resty-upload](https://github.com/agentzh/lua-resty-upload)
-* [lua-resty-websocket](https://github.com/agentzh/lua-resty-websocket)
-* [lua-resty-lock](https://github.com/agentzh/lua-resty-lock)
-* [lua-resty-string](https://github.com/agentzh/lua-resty-string)
-* [ngx_memc](http://github.com/agentzh/memc-nginx-module)
+* [lua-resty-memcached](https://github.com/openresty/lua-resty-memcached)
+* [lua-resty-mysql](https://github.com/openresty/lua-resty-mysql)
+* [lua-resty-redis](https://github.com/openresty/lua-resty-redis)
+* [lua-resty-dns](https://github.com/openresty/lua-resty-dns)
+* [lua-resty-upload](https://github.com/openresty/lua-resty-upload)
+* [lua-resty-websocket](https://github.com/openresty/lua-resty-websocket)
+* [lua-resty-lock](https://github.com/openresty/lua-resty-lock)
+* [lua-resty-string](https://github.com/openresty/lua-resty-string)
+* [ngx_memc](http://github.com/openresty/memc-nginx-module)
 * [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
-* [ngx_redis2](http://github.com/agentzh/redis2-nginx-module)
+* [ngx_redis2](http://github.com/openresty/redis2-nginx-module)
 * [ngx_redis](http://wiki.nginx.org/HttpRedisModule)
 * [ngx_proxy](http://nginx.org/en/docs/http/ngx_http_proxy_module.html)
 * [ngx_fastcgi](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html)
@@ -712,19 +712,22 @@ set_by_lua
 
 **context:** *server, server if, location, location if*
 
-**phase:** *server-rewrite, rewrite*
+**phase:** *rewrite*
 
 Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`. 
 The code in `<lua-script-str>` can make [API calls](#nginx-api-for-lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
 
-Note that the following API functions are currently disabled within this context:
+This directive is implemented by injecting custom commands into the standard HttpRewriteModule's command list. Because HttpRewriteModule does not support nonblocking I/O in its commands, Lua APIs requiring yielding the current Lua "light thread" cannot work in this directive.
+
+At least the following API functions are currently disabled within the context of `set_by_lua`:
 
 * Output API functions (e.g., [ngx.say](#ngxsay) and [ngx.send_headers](#ngxsend_headers))
 * Control API functions (e.g., [ngx.exit](#ngxexit)) 
 * Subrequest API functions (e.g., [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi))
 * Cosocket API functions (e.g., [ngx.socket.tcp](#ngxsockettcp) and [ngx.req.socket](#ngxreqsocket)).
+* Sleeping API function [ngx.sleep](#ngxsleep).
 
 In addition, note that this directive can only write out a value to a single Nginx variable at
 a time. However, a workaround is possible using the [ngx.var.VARIABLE](#ngxvarvariable) interface.
@@ -746,7 +749,7 @@ location /foo {
 }
 ```
 
-This directive can be freely mixed with all directives of the [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html), [set-misc-nginx-module](http://github.com/agentzh/set-misc-nginx-module), and [array-var-nginx-module](http://github.com/agentzh/array-var-nginx-module) modules. All of these directives will run in the same order as they appear in the config file.
+This directive can be freely mixed with all directives of the [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html), [set-misc-nginx-module](http://github.com/openresty/set-misc-nginx-module), and [array-var-nginx-module](http://github.com/openresty/array-var-nginx-module) modules. All of these directives will run in the same order as they appear in the config file.
 
 ```nginx
 
@@ -767,7 +770,7 @@ set_by_lua_file
 
 **context:** *server, server if, location, location if*
 
-**phase:** *server-rewrite, rewrite*
+**phase:** *rewrite*
 
 Equivalent to [set_by_lua](#set_by_lua), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed. 
 
@@ -3295,7 +3298,7 @@ Since the `v0.9.0` release, this function accepts an optional boolean `raw` argu
 
 When the `raw` argument is `true`, it is required that no pending data from any previous [ngx.say](#ngxsay), [ngx.print](#ngxprint), or [ngx.send_headers](#ngxsend_headers) calls exists. So if you have these downstream output calls previously, you should call [ngx.flush(true)](#ngxflush) before calling `ngx.req.socket(true)` to ensure that there is no pending output data. If the request body has not been read yet, then this "raw socket" can also be used to read the request body.
 
-You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/agentzh/lua-resty-websocket) for a real world example.
+You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/openresty/lua-resty-websocket) for a real world example.
 
 This function was first introduced in the `v0.5.0rc1` release.
 
@@ -3357,7 +3360,7 @@ outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
 
 It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
 
-This method is similar to the [echo_exec](http://github.com/agentzh/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/agentzh/echo-nginx-module).
+This method is similar to the [echo_exec](http://github.com/openresty/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/openresty/echo-nginx-module).
 
 [Back to TOC](#table-of-contents)
 
@@ -5852,21 +5855,21 @@ ndk.set_var.DIRECTIVE
 
 This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
-For example, the following [set-misc-nginx-module](http://github.com/agentzh/set-misc-nginx-module) directives can be invoked this way:
+For example, the following [set-misc-nginx-module](http://github.com/openresty/set-misc-nginx-module) directives can be invoked this way:
 
-* [set_quote_sql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_sql_str)
-* [set_quote_pgsql_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_pgsql_str)
-* [set_quote_json_str](http://github.com/agentzh/set-misc-nginx-module#set_quote_json_str)
-* [set_unescape_uri](http://github.com/agentzh/set-misc-nginx-module#set_unescape_uri)
-* [set_escape_uri](http://github.com/agentzh/set-misc-nginx-module#set_escape_uri)
-* [set_encode_base32](http://github.com/agentzh/set-misc-nginx-module#set_encode_base32)
-* [set_decode_base32](http://github.com/agentzh/set-misc-nginx-module#set_decode_base32)
-* [set_encode_base64](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
-* [set_decode_base64](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
-* [set_encode_hex](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
-* [set_decode_hex](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
-* [set_sha1](http://github.com/agentzh/set-misc-nginx-module#set_encode_base64)
-* [set_md5](http://github.com/agentzh/set-misc-nginx-module#set_decode_base64)
+* [set_quote_sql_str](http://github.com/openresty/set-misc-nginx-module#set_quote_sql_str)
+* [set_quote_pgsql_str](http://github.com/openresty/set-misc-nginx-module#set_quote_pgsql_str)
+* [set_quote_json_str](http://github.com/openresty/set-misc-nginx-module#set_quote_json_str)
+* [set_unescape_uri](http://github.com/openresty/set-misc-nginx-module#set_unescape_uri)
+* [set_escape_uri](http://github.com/openresty/set-misc-nginx-module#set_escape_uri)
+* [set_encode_base32](http://github.com/openresty/set-misc-nginx-module#set_encode_base32)
+* [set_decode_base32](http://github.com/openresty/set-misc-nginx-module#set_decode_base32)
+* [set_encode_base64](http://github.com/openresty/set-misc-nginx-module#set_encode_base64)
+* [set_decode_base64](http://github.com/openresty/set-misc-nginx-module#set_decode_base64)
+* [set_encode_hex](http://github.com/openresty/set-misc-nginx-module#set_encode_base64)
+* [set_decode_hex](http://github.com/openresty/set-misc-nginx-module#set_decode_base64)
+* [set_sha1](http://github.com/openresty/set-misc-nginx-module#set_encode_base64)
+* [set_md5](http://github.com/openresty/set-misc-nginx-module#set_decode_base64)
 
 For instance,
 
@@ -5876,10 +5879,10 @@ local res = ndk.set_var.set_escape_uri('a/b');
 -- now res == 'a%2fb'
 ```
 
-Similarly, the following directives provided by [encrypted-session-nginx-module](http://github.com/agentzh/encrypted-session-nginx-module) can be invoked from within Lua too:
+Similarly, the following directives provided by [encrypted-session-nginx-module](http://github.com/openresty/encrypted-session-nginx-module) can be invoked from within Lua too:
 
-* [set_encrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_encrypt_session)
-* [set_decrypt_session](http://github.com/agentzh/encrypted-session-nginx-module#set_decrypt_session)
+* [set_encrypt_session](http://github.com/openresty/encrypted-session-nginx-module#set_encrypt_session)
+* [set_decrypt_session](http://github.com/openresty/encrypted-session-nginx-module#set_decrypt_session)
 
 This feature requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
@@ -6233,7 +6236,7 @@ Generally, use of Lua global variables is a really really bad idea in the contex
 
 It's *highly* recommended to always declare them via "local" in the scope that is reasonable.
 
-To find out all the uses of Lua global variables in your Lua code, you can run the [lua-releng tool](https://github.com/agentzh/nginx-devel-utils/blob/master/lua-releng) across all your .lua source files:
+To find out all the uses of Lua global variables in your Lua code, you can run the [lua-releng tool](https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng) across all your .lua source files:
 
     $ lua-releng
     Checking use of Lua global variables in file lib/foo/bar.lua ...
@@ -6249,7 +6252,7 @@ This tool will guarantee that local variables in the Lua module functions are al
 
 Locations Configured by Subrequest Directives of Other Modules
 --------------------------------------------------------------
-The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [echo_location](http://github.com/agentzh/echo-nginx-module#echo_location), [echo_location_async](http://github.com/agentzh/echo-nginx-module#echo_location_async), [echo_subrequest](http://github.com/agentzh/echo-nginx-module#echo_subrequest), or [echo_subrequest_async](http://github.com/agentzh/echo-nginx-module#echo_subrequest_async) directives.
+The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [echo_location](http://github.com/openresty/echo-nginx-module#echo_location), [echo_location_async](http://github.com/openresty/echo-nginx-module#echo_location_async), [echo_subrequest](http://github.com/openresty/echo-nginx-module#echo_subrequest), or [echo_subrequest_async](http://github.com/openresty/echo-nginx-module#echo_subrequest_async) directives.
 
 ```nginx
 
@@ -6422,7 +6425,7 @@ The latest module is compatible with the following versions of Nginx:
 Code Repository
 ===============
 
-The code repository of this project is hosted on github at [chaoslawful/lua-nginx-module](http://github.com/chaoslawful/lua-nginx-module).
+The code repository of this project is hosted on github at [openresty/lua-nginx-module](http://github.com/openresty/lua-nginx-module).
 
 [Back to TOC](#table-of-contents)
 
@@ -6435,7 +6438,7 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 
 1. Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuajIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuajIT and/or Lua.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
-1. Download the latest version of ngx_lua [HERE](http://github.com/chaoslawful/lua-nginx-module/tags).
+1. Download the latest version of ngx_lua [HERE](http://github.com/openresty/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
 
 Build the source with this module:
@@ -6516,7 +6519,7 @@ Bugs and Patches
 
 Please submit bug reports, wishlists, or patches by
 
-1. creating a ticket on the [GitHub Issue Tracker](http://github.com/chaoslawful/lua-nginx-module/issues),
+1. creating a ticket on the [GitHub Issue Tracker](http://github.com/openresty/lua-nginx-module/issues),
 1. or posting to the [OpenResty community](#community).
 
 [Back to TOC](#table-of-contents)
@@ -6562,22 +6565,22 @@ The following dependencies are required to run the test suite:
 * Nginx version >= 1.4.2
 
 * Perl modules:
-	* Test::Nginx: <http://github.com/agentzh/test-nginx> 
+	* Test::Nginx: <http://github.com/openresty/test-nginx> 
 
 * Nginx modules:
 	* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
-	* [ngx_set_misc](http://github.com/agentzh/set-misc-nginx-module)
+	* [ngx_set_misc](http://github.com/openresty/set-misc-nginx-module)
 	* [ngx_auth_request](http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz) (this is not needed if you're using Nginx 1.5.4+.
-	* [ngx_echo](http://github.com/agentzh/echo-nginx-module)
-	* [ngx_memc](http://github.com/agentzh/memc-nginx-module)
-	* [ngx_srcache](http://github.com/agentzh/srcache-nginx-module)
+	* [ngx_echo](http://github.com/openresty/echo-nginx-module)
+	* [ngx_memc](http://github.com/openresty/memc-nginx-module)
+	* [ngx_srcache](http://github.com/openresty/srcache-nginx-module)
 	* ngx_lua (i.e., this module)
-	* [ngx_lua_upstream](http://github.com/agentzh/lua-upstream-nginx-module)
-	* [ngx_headers_more](http://github.com/agentzh/headers-more-nginx-module)
-	* [ngx_drizzle](http://github.com/chaoslawful/drizzle-nginx-module)
-	* [ngx_rds_json](http://github.com/agentzh/rds-json-nginx-module)
+	* [ngx_lua_upstream](http://github.com/openresty/lua-upstream-nginx-module)
+	* [ngx_headers_more](http://github.com/openresty/headers-more-nginx-module)
+	* [ngx_drizzle](http://github.com/openresty/drizzle-nginx-module)
+	* [ngx_rds_json](http://github.com/openresty/rds-json-nginx-module)
 	* [ngx_coolkit](https://github.com/FRiCKLE/ngx_coolkit)
-	* [ngx_redis2](http://github.com/agentzh/redis2-nginx-module)
+	* [ngx_redis2](http://github.com/openresty/redis2-nginx-module)
 
 The order in which these modules are added during configuration is important because the position of any filter module in the
 filtering chain determines the final output, for example. The correct adding order is shown above.
@@ -6590,7 +6593,7 @@ filtering chain determines the final output, for example. The correct adding ord
 	* memcached: listening on the default port, 11211.
 	* redis: listening on the default port, 6379.
 
-See also the [developer build script](https://github.com/chaoslawful/lua-nginx-module/blob/master/util/build2.sh) for more details on setting up the testing environment.
+See also the [developer build script](https://github.com/openresty/lua-nginx-module/blob/master/util/build2.sh) for more details on setting up the testing environment.
 
 To run the whole test suite in the default testing mode:
 
@@ -6636,22 +6639,22 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
-* [lua-resty-memcached](http://github.com/agentzh/lua-resty-memcached) library based on ngx_lua cosocket.
-* [lua-resty-redis](http://github.com/agentzh/lua-resty-redis) library based on ngx_lua cosocket.
-* [lua-resty-mysql](http://github.com/agentzh/lua-resty-mysql) library based on ngx_lua cosocket.
-* [lua-resty-upload](http://github.com/agentzh/lua-resty-upload) library based on ngx_lua cosocket.
-* [lua-resty-dns](http://github.com/agentzh/lua-resty-dns) library based on ngx_lua cosocket.
-* [lua-resty-websocket](http://github.com/agentzh/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
-* [lua-resty-string](http://github.com/agentzh/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
-* [lua-resty-lock](http://github.com/agentzh/lua-resty-lock) library for a nonblocking simple lock API.
+* [lua-resty-memcached](http://github.com/openresty/lua-resty-memcached) library based on ngx_lua cosocket.
+* [lua-resty-redis](http://github.com/openresty/lua-resty-redis) library based on ngx_lua cosocket.
+* [lua-resty-mysql](http://github.com/openresty/lua-resty-mysql) library based on ngx_lua cosocket.
+* [lua-resty-upload](http://github.com/openresty/lua-resty-upload) library based on ngx_lua cosocket.
+* [lua-resty-dns](http://github.com/openresty/lua-resty-dns) library based on ngx_lua cosocket.
+* [lua-resty-websocket](http://github.com/openresty/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
+* [lua-resty-string](http://github.com/openresty/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
+* [lua-resty-lock](http://github.com/openresty/lua-resty-lock) library for a nonblocking simple lock API.
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
-* [Introduction to ngx_lua](https://github.com/chaoslawful/lua-nginx-module/wiki/Introduction)
+* [Introduction to ngx_lua](https://github.com/openresty/lua-nginx-module/wiki/Introduction)
 * [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
-* [echo-nginx-module](http://github.com/agentzh/echo-nginx-module)
-* [drizzle-nginx-module](http://github.com/chaoslawful/drizzle-nginx-module)
+* [echo-nginx-module](http://github.com/openresty/echo-nginx-module)
+* [drizzle-nginx-module](http://github.com/openresty/drizzle-nginx-module)
 * [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
-* [memc-nginx-module](http://github.com/agentzh/memc-nginx-module)
+* [memc-nginx-module](http://github.com/openresty/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
-* [Nginx Systemtap Toolkit](https://github.com/agentzh/nginx-systemtap-toolkit)
+* [Nginx Systemtap Toolkit](https://github.com/openresty/nginx-systemtap-toolkit)
