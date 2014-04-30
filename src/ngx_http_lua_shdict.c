@@ -1721,6 +1721,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                       "bad value type found for key %*s in "
                       "shared_dict %V: %d", key_len, key, &name,
                       *value_type);
+        return NGX_ERROR;
     }
 
     *user_flags = sd->user_flags;
