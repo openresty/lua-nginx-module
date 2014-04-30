@@ -1270,6 +1270,8 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
         if (value->value.s.data == NULL || value->value.s.len == 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "no string buffer "
                           "initialized");
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
 
