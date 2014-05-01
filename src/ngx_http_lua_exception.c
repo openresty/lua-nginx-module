@@ -30,6 +30,9 @@ jmp_buf ngx_http_lua_exception;
 int
 ngx_http_lua_atpanic(lua_State *L)
 {
+#if (NGX_LUA_ABORT_AT_PANIC)
+    abort();
+#else
     u_char                  *s = NULL;
     size_t                   len = 0;
 
@@ -47,6 +50,7 @@ ngx_http_lua_atpanic(lua_State *L)
 
     /*  restore nginx execution */
     NGX_LUA_EXCEPTION_THROW(1);
+#endif
 
     /* impossible to reach here */
 }
