@@ -91,6 +91,10 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_sprintf(ctx->shpool->log_ctx, " in lua_shared_dict zone \"%V\"%Z",
                 &shm_zone->shm.name);
 
+#if defined(nginx_version) && nginx_version >= 1005013
+    ctx->shpool->log_nomem = 0;
+#endif
+
 done:
     dd("get lmcf");
 
