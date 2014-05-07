@@ -992,7 +992,7 @@ successfully safe set baz
             end
 
             for i = 1, 1 do
-                for j = 1, 50 do
+                for j = 1, 63 do
                     dogs:set("foo" .. j, string.rep("a", 5))
                 end
                 set_key("bar", string.rep("a", 4000))
