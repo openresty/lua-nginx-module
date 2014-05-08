@@ -1076,7 +1076,7 @@ failed to safe set baz: no memory
 
 
 
-=== TEST 8: cannot merge in-used big slabs page (forward)
+=== TEST 9: cannot merge in-used big slabs page (forward)
 --- http_config
     lua_shared_dict dogs 20k;
 --- config
