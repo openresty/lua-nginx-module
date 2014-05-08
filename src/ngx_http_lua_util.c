@@ -968,8 +968,6 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     lua_State                   *L;
     ngx_http_request_t          *r;
     ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_loc_conf_t     *llcf;
-    ngx_http_lua_ctx_t          *cur_ctx;
 
     r = ctx->request;
 
@@ -998,50 +996,8 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
 
     L = ngx_http_lua_get_lua_vm(r, ctx);
 
-    /* we cannot release the ngx.ctx table if we have log_by_lua* hooks
-     * because request cleanup runs before log phase handlers */
-
-    if (ctx->ctx_ref != LUA_NOREF) {
-
-        if (forcible || r->connection->fd == -1 /* being a fake request */) {
-            ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
-
-        } else {
-
-            cur_ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-            if (cur_ctx != ctx) {
-                /* internal redirects happened */
-                ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
-
-            } else {
-
-                llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-                if (llcf->log_handler == NULL) {
-                    /* no log_by_lua* configured */
-                    ngx_http_lua_release_ngx_ctx_table(r->connection->log, L,
-                                                       ctx);
-                }
-            }
-        }
-    }
-
     ngx_http_lua_finalize_coroutines(r, ctx);
     ngx_http_lua_del_all_threads(r, L, ctx);
-}
-
-
-void
-ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
-    ngx_http_lua_ctx_t *ctx)
-{
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0,
-                   "lua release ngx.ctx at ref %d", ctx->ctx_ref);
-
-    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    luaL_unref(L, -1, ctx->ctx_ref);
-    ctx->ctx_ref = LUA_NOREF;
-    lua_pop(L, 1);
 }
 
 

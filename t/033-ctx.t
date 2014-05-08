@@ -390,3 +390,52 @@ foo
 --- error_log
 lua release ngx.ctx at ref
 
+
+
+=== TEST 17: ngx.ctx gets prematurely released ngx.exit()
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.ctx.foo = 3
+        ';
+        content_by_lua '
+            -- if ngx.headers_sent ~= true then ngx.send_headers() end
+            return ngx.exit(200)
+        ';
+        header_filter_by_lua '
+            if ngx.ctx.foo ~= 3 then
+                ngx.log(ngx.ERR, "bad ngx.ctx.foo: ", ngx.ctx.foo)
+            end
+        ';
+        }
+--- request
+    GET /t
+--- response_body
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: ngx.ctx gets prematurely released ngx.exit() (lua_code_cache off)
+--- config
+    location = /t {
+        lua_code_cache off;
+        rewrite_by_lua '
+            ngx.ctx.foo = 3
+        ';
+        content_by_lua '
+            -- if ngx.headers_sent ~= true then ngx.send_headers() end
+            return ngx.exit(200)
+        ';
+        header_filter_by_lua '
+            if ngx.ctx.foo ~= 3 then
+                ngx.log(ngx.ERR, "bad ngx.ctx.foo: ", ngx.ctx.foo)
+            end
+        ';
+        }
+--- request
+    GET /t
+--- response_body
+--- no_error_log
+[error]
+

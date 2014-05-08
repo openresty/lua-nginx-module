@@ -68,8 +68,6 @@ ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_loc_conf_t     *llcf;
-    ngx_int_t                    rc;
-    lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -97,17 +95,7 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     ctx->context = NGX_HTTP_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
-    rc = llcf->log_handler(r);
-
-    /* we must release the ngx.ctx table here because request cleanup runs
-     * before log phase handlers */
-
-    if (ctx->ctx_ref != LUA_NOREF) {
-        L = ngx_http_lua_get_lua_vm(r, ctx);
-        ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
-    }
-
-    return rc;
+    return llcf->log_handler(r);
 }
 
 
