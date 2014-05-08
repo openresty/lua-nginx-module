@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 43;
+plan tests => repeat_each() * 51;
 
 #no_diff();
 #no_long_string();
@@ -253,4 +253,56 @@ hello
 --- wait: 0.1
 --- error_log
 API disabled in the context of log_by_lua*
+
+
+
+=== TEST 11: ngx.sleep() fails to yield (xpcall err handler)
+--- config
+    location = /t {
+        content_by_lua '
+            local function f()
+                return error(1)
+            end
+            local function err()
+                ngx.sleep(0.001)
+            end
+            xpcall(f, err)
+            ngx.say("ok")
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+lua clean up the timer for pending ngx.sleep
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: ngx.sleep() fails to yield (require)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+--- config
+    location = /t {
+        content_by_lua '
+            package.loaded["foosleep"] = nil
+            require "foosleep";
+        ';
+    }
+--- request
+    GET /t
+--- user_files
+>>> foosleep.lua
+ngx.sleep(0.001)
+
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- wait: 0.2
+--- error_log eval
+[
+"lua clean up the timer for pending ngx.sleep",
+qr{runtime error: attempt to yield across (?:metamethod/)?C-call boundary},
+]
 

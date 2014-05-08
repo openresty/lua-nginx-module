@@ -1196,6 +1196,11 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
             case 0:
 
+                if (ctx->cur_co_ctx->cleanup) {
+                    ctx->cur_co_ctx->cleanup(ctx->cur_co_ctx);
+                    ctx->cur_co_ctx->cleanup = NULL;
+                }
+
                 ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
 
                 ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
@@ -1352,6 +1357,13 @@ user_co_done:
             } else {
                 msg = "unknown reason";
             }
+
+#if 1
+            if (ctx->cur_co_ctx->cleanup) {
+                ctx->cur_co_ctx->cleanup(ctx->cur_co_ctx);
+                ctx->cur_co_ctx->cleanup = NULL;
+            }
+#endif
 
             ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 0);
 
