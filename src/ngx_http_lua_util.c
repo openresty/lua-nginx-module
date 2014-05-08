@@ -3610,7 +3610,6 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_http_lua_preload_hook_t     *hook;
     ngx_http_lua_vm_state_t         *state;
 
-    /* add new cleanup handler to config mem pool */
     cln = ngx_pool_cleanup_add(pool, 0);
     if (cln == NULL) {
         return NULL;
