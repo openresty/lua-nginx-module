@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * 36;
+plan tests => repeat_each() * 39;
 
 #no_diff();
 no_long_string();
@@ -1202,4 +1202,47 @@ failed to safe set baz: no memory
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 10: fuzz testing
+--- http_config
+    lua_shared_dict dogs 200k;
+--- config
+    location = /t {
+        content_by_lua '
+            local rand = math.random
+            local dogs = ngx.shared.dogs
+            local maxsz = 9000
+            local maxkeyidx = 30
+            local rep = string.rep
+
+            math.randomseed(ngx.time())
+            for i = 1, 30000 do
+                local key = "mylittlekey" .. rand(maxkeyidx)
+                local ok, err = dogs:get(key)
+                if not ok or rand() > 0.6 then
+                    sz = rand(maxsz)
+                    val = rep("a", sz)
+                    local ok, err, forcible = dogs:set(key, val)
+                    if err then
+                        ngx.log(ngx.ERR, "failed to set key: ", err)
+                        -- return
+                    end
+                    if forcible then
+                        -- error("forcible")
+                    end
+                end
+            end
+            ngx.say("ok")
+        ';
+    }
+--- request
+GET /t
+--- response_body
+ok
+
+--- no_error_log
+[error]
+--- timeout: 30
 
