@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 76;
+plan tests => repeat_each() * 81;
 
 #no_diff();
 no_long_string();
@@ -438,4 +438,67 @@ failed to register a new timer after reload
 --- grep_error_log eval: qr/lua found \d+ pending timers/
 --- grep_error_log_out
 lua found 1 pending timers
+
+
+
+=== TEST 6: HUP reload should abort pending timers (fuzz test)
+--- http_config
+    lua_max_pending_timers 8192;
+
+--- config
+    location /t {
+        content_by_lua '
+            local job = function(premature, kill)
+                if premature then
+                    return
+                end
+
+                if kill then
+                    local f, err = io.open("t/servroot/logs/nginx.pid", "r")
+                    if not f then
+                        ngx.log(ngx.ERR, "failed to open nginx.pid: ", err)
+                        return
+                    end
+                    local pid = f:read()
+                    -- ngx.say("master pid: [", pid, "]")
+                    f:close()
+
+                    os.execute("kill -HUP " .. pid)
+                end
+            end
+
+            math.randomseed(ngx.time())
+            local rand = math.random
+            local newtimer = ngx.timer.at
+            for i = 1, 8191 do
+                local delay = rand(4096)
+                local ok, err = newtimer(delay, job, false)
+                if not ok then
+                    ngx.say("failed to create timer at ", delay, ": ", err)
+                    return
+                end
+            end
+            local ok, err = newtimer(0, job, true)
+            if not ok then
+                ngx.say("failed to create the killer timer: ", err)
+                return
+            end
+            ngx.say("ok")
+        ';
+    }
+--- request
+GET /t
+
+--- response_body
+ok
+
+--- wait: 0.3
+--- no_error_log
+[error]
+[alert]
+
+--- grep_error_log eval: qr/lua found \d+ pending timers/
+--- grep_error_log_out
+lua found 8191 pending timers
+--- timeout: 20
 
