@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 150;
+plan tests => repeat_each() * 160;
 
 our $HtmlDir = html_dir;
 
@@ -3001,5 +3001,75 @@ qr/^connected
 --- error_log
 runtime error: content_by_lua:16: bad request
 --- no_error_log
+[alert]
+
+
+
+=== TEST 50: cosocket resolving aborted by coroutine yielding failures (require)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+    resolver 8.8.8.8;
+
+--- config
+    location = /t {
+        content_by_lua '
+            package.loaded.myfoo = nil
+            require "myfoo"
+        ';
+    }
+--- request
+    GET /t
+--- user_files
+>>> myfoo.lua
+local sock = ngx.socket.tcp()
+local ok, err = sock:connect("agentzh.org")
+if not ok then
+    ngx.log(ngx.ERR, "failed to connect: ", err)
+    return
+end
+
+--- response_body_like: 500 Internal Server Error
+--- wait: 0.3
+--- error_code: 500
+--- error_log
+resolve name done
+runtime error: attempt to yield across C-call boundary
+--- no_error_log
+[alert]
+
+
+
+=== TEST 51: cosocket resolving aborted by coroutine yielding failures (xpcall err)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+    resolver 8.8.8.8;
+
+--- config
+    location = /t {
+        content_by_lua '
+            local function f()
+                return error(1)
+            end
+            local function err()
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect("agentzh.org")
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to connect: ", err)
+                    return
+                end
+            end
+            xpcall(f, err)
+            ngx.say("ok")
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- wait: 0.3
+--- error_log
+resolve name done
+--- no_error_log
+[error]
 [alert]
 
