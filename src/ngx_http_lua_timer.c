@@ -487,6 +487,8 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
            prev, cur, cur->parent, cur->left, cur->right);
 
         if (prev == cur->parent) {
+            /* neither of the children has been accessed yet */
+
             next = cur->left;
             if (next == sentinel) {
                 ev = (ngx_event_t *)
@@ -501,6 +503,8 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
             }
 
         } else if (prev == cur->left) {
+            /* just accessed the left child */
+
             ev = (ngx_event_t *)
                 ((char *) cur - offsetof(ngx_event_t, timer));
 
@@ -512,9 +516,11 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
             next = (cur->right != sentinel) ? cur->right : cur->parent;
 
         } else if (prev == cur->right) {
+            /* already accessed both children */
             next = cur->parent;
 
         } else {
+            /* not reacheable */
             next = NULL;
         }
 
