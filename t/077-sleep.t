@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 51;
+plan tests => repeat_each() * 63;
 
 #no_diff();
 #no_long_string();
@@ -305,4 +305,104 @@ ngx.sleep(0.001)
 "lua clean up the timer for pending ngx.sleep",
 qr{runtime error: attempt to yield across (?:metamethod/)?C-call boundary},
 ]
+
+
+
+=== TEST 13: sleep coctx handler did not get called in ngx.exit().
+--- config
+    location /t {
+         content_by_lua "
+            local function sleep(t)
+                --- nginx return reply to client without waiting
+                ngx.sleep(t)
+            end
+
+            local function wait()
+                 --- worker would crash afterwards
+                 xpcall(function () error(1) end, function() return sleep(0.001) end)
+                 --- ngx.exit was required to crash worker
+                 ngx.exit(200)
+            end
+
+            wait()
+         ";
+    }
+--- request
+    GET /t
+
+--- wait: 0.1
+--- response_body
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 14: sleep coctx handler did not get called in ngx.exec().
+--- config
+    location /t {
+         content_by_lua '
+            local function sleep(t)
+                --- nginx return reply to client without waiting
+                ngx.sleep(t)
+            end
+
+            local function wait()
+                 --- worker would crash afterwards
+                 xpcall(function () error(1) end, function() return sleep(0.001) end)
+                 --- ngx.exit was required to crash worker
+                 ngx.exec("/dummy")
+            end
+
+            wait()
+         ';
+    }
+
+    location /dummy {
+        echo ok;
+    }
+--- request
+    GET /t
+
+--- wait: 0.1
+--- response_body
+ok
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 15: sleep coctx handler did not get called in ngx.req.set_uri(uri, true).
+--- config
+    location /t {
+         rewrite_by_lua '
+            local function sleep(t)
+                --- nginx return reply to client without waiting
+                ngx.sleep(t)
+            end
+
+            local function wait()
+                 --- worker would crash afterwards
+                 xpcall(function () error(1) end, function() return sleep(0.001) end)
+                 --- ngx.exit was required to crash worker
+                 ngx.req.set_uri("/dummy", true)
+            end
+
+            wait()
+         ';
+    }
+
+    location /dummy {
+        echo ok;
+    }
+--- request
+    GET /t
+
+--- wait: 0.1
+--- response_body
+ok
+--- no_error_log
+[error]
+[alert]
 

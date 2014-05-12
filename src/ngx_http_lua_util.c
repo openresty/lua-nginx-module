@@ -2144,6 +2144,11 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
                    "lua thread initiated internal redirect to %V",
                    &ctx->exec_uri);
 
+    if (ctx->cur_co_ctx->cleanup) {
+        ctx->cur_co_ctx->cleanup(ctx->cur_co_ctx);
+        ctx->cur_co_ctx->cleanup = NULL;
+    }
+
     ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
 
     ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
@@ -2248,6 +2253,11 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         r->headers_out.status = ctx->exit_code;
     }
 #endif
+
+    if (ctx->cur_co_ctx->cleanup) {
+        ctx->cur_co_ctx->cleanup(ctx->cur_co_ctx);
+        ctx->cur_co_ctx->cleanup = NULL;
+    }
 
     ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
 
@@ -2586,6 +2596,11 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua thread aborting request with URI rewrite jump: "
                    "\"%V?%V\"", &r->uri, &r->args);
+
+    if (ctx->cur_co_ctx->cleanup) {
+        ctx->cur_co_ctx->cleanup(ctx->cur_co_ctx);
+        ctx->cur_co_ctx->cleanup = NULL;
+    }
 
     ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
 
