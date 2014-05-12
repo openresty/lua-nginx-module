@@ -366,7 +366,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.4
+--- wait: 0.5
 --- ignore_response
 --- no_error_log
 [error]
@@ -602,6 +602,7 @@ terminate 4: ok
 delete thread 4
 lua req cleanup
 
+--- wait: 0.5
 --- response_body
 done
 --- no_error_log
