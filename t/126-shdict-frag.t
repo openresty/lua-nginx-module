@@ -1244,5 +1244,5 @@ ok
 
 --- no_error_log
 [error]
---- timeout: 30
+--- timeout: 60
 
