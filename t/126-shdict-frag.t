@@ -63,6 +63,8 @@ __DATA__
                 check_key("bar")
                 check_key("baz")
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -190,6 +192,8 @@ found baz: 8102
                 check_key("bar")
                 check_key("baz")
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -334,6 +338,8 @@ found baz: 8102
                 dogs:delete("bar")
                 safe_set_key("blah", string.rep("a", 12010))
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -487,6 +493,8 @@ successfully safe set blah
                 dogs:delete("foo")
                 check_key("blah")
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -620,6 +628,8 @@ found blah: 8100
                 dogs:delete("baz")
                 check_key("blah")
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -750,6 +760,8 @@ found blah: 8100
                 check_key("bar")
                 check_key("baz")
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -881,6 +893,8 @@ found baz: 16300
 
                 safe_set_key("baz", string.rep("b", 8100))
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -1011,6 +1025,8 @@ successfully safe set baz
 
                 safe_set_key("baz", string.rep("b", 8100))
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -1140,6 +1156,8 @@ failed to safe set baz: no memory
 
                 safe_set_key("baz", string.rep("b", 8100))
             end
+
+            collectgarbage()
         ';
     }
 --- request
@@ -1235,6 +1253,7 @@ failed to safe set baz: no memory
                 end
             end
             ngx.say("ok")
+            collectgarbage()
         ';
     }
 --- request
