@@ -441,7 +441,7 @@ lua found 1 pending timers
 
 
 
-=== TEST 6: HUP reload should abort pending timers (fuzz test)
+=== TEST 7: HUP reload should abort pending timers (fuzz test)
 --- http_config
     lua_max_pending_timers 8192;
 
