@@ -29,8 +29,9 @@ __DATA__
         content_by_lua '
             local sock = ngx.socket.connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
             local err 
-            local max = 1
+            local max = 100000
             local t = ngx.thread.spawn(function ()
+                local chunks = {}
                 local i = 1
                 while i <= max and not err do
                     local header, chunk_size, chunk_data
@@ -46,23 +47,27 @@ __DATA__
                         if chunk_size and chunk_size ~= "0" then
                             chunk_data, err = sock:receive(tonumber(chunk_size, 16));
                             if chunk_data then
-                                ngx.print(chunk_data)
+                                table.insert(chunks, chunk_data)
                             end 
                         end 
                         sock:receive("*l")
                     end 
             
                     i = i + 1 
-                end 
+                end
+
+                local data = table.concat(chunks)
+                ngx.say("total received size: " .. #data)
+                ngx.say("total received md5: " .. ngx.md5(data))
             end)
-            
+ 
             local i = 1 
             while i <= max and not err do
                 local bytes
                 bytes, err = sock:send("GET /echo?data=" .. string.format("%08d", i) .. " HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n")
-                i = i + 1 
+                i = i + 1
             end
-            
+ 
             ngx.thread.wait(t)
             
             if err then
@@ -75,12 +80,16 @@ __DATA__
 
 --- request
 GET /duplex
+--- timeout: 300
 --- response_body eval
-my $body = "";
-for (my $i = 1; $i <= 1; $i++) {
-    $body .= sprintf("%08d", $i);
+use Digest::MD5 qw(md5_hex);
+my $data = "";
+for (my $i = 1; $i <= 100000; $i++) {
+    $data .= sprintf("%08d", $i);
 }
-$body
+my $size = length($data);
+my $md5 = md5_hex($data);
+"total received size: " . $size . "\ntotal received md5: " . $md5 . "\n"
 
 === TEST 2: lua_socket_return_socket_busy_when_read_in_two_coroutines
 --- config
