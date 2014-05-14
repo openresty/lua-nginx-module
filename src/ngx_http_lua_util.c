@@ -3952,12 +3952,17 @@ ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status,
 int
 ngx_http_lua_do_call(ngx_log_t *log, lua_State *L)
 {
-    int     status, base;
+    int                 status, base;
+    ngx_pool_t         *old_pool;
 
     base = lua_gettop(L);  /* function index */
     lua_pushcfunction(L, ngx_http_lua_traceback);  /* push traceback function */
     lua_insert(L, base);  /* put it under chunk and args */
+
+    old_pool = ngx_http_lua_pcre_malloc_init(ngx_cycle->pool);
     status = lua_pcall(L, 0, 0, base);
+    ngx_http_lua_pcre_malloc_done(old_pool);
+
     lua_remove(L, base);
 
     return status;
