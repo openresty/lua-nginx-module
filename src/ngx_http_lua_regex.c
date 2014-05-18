@@ -58,6 +58,11 @@ typedef struct {
     pcre_extra                   *regex_sd;
 
     ngx_http_lua_complex_value_t    *replace;
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+    /* only for (stap) debugging, and may be an invalid pointer */
+    const u_char                 *pattern;
+#endif
 } ngx_http_lua_regex_t;
 
 
@@ -2229,6 +2234,10 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     re->ncaptures = re_comp.captures;
     re->captures = cap;
     re->replace = NULL;
+
+    /* only for (stap) debugging, the pointer might be invalid when the string is
+     * collected later on.... */
+    re->pattern = pat;
 
     return re;
 
