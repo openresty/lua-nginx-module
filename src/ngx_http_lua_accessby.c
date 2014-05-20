@@ -100,8 +100,32 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         rc = ctx->resume_handler(r);
         dd("wev handler returns %d", (int) rc);
 
-        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
             return rc;
+        }
+
+        if (rc == NGX_OK) {
+            if (r->header_sent) {
+                dd("header already sent");
+
+                /* response header was already generated in access_by_lua*,
+                 * so it is no longer safe to proceed to later phases
+                 * which may generate responses again */
+
+                if (!ctx->eof) {
+                    dd("eof not yet sent");
+
+                    rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                                     /* indicate last_buf */);
+                    if (rc == NGX_ERROR || rc > NGX_OK) {
+                        return rc;
+                    }
+                }
+
+                return NGX_HTTP_OK;
+            }
+
+            return NGX_OK;
         }
 
         return NGX_DECLINED;
@@ -283,7 +307,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     dd("returned %d", (int) rc);
 
-    if (rc == NGX_ERROR || rc >= NGX_OK) {
+    if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
@@ -292,24 +316,53 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (rc == NGX_AGAIN) {
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
 
-        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
             return rc;
         }
 
-        return NGX_DECLINED;
-    }
+        if (rc != NGX_OK) {
+            return NGX_DECLINED;
+        }
 
-    if (rc == NGX_DONE) {
+    } else if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
 
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
 
-        if (rc == NGX_ERROR || rc == NGX_DONE || rc >= NGX_OK) {
+        if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
             return rc;
         }
 
-        return NGX_DECLINED;
+        if (rc != NGX_OK) {
+            return NGX_DECLINED;
+        }
     }
+
+#if 1
+    if (rc == NGX_OK) {
+        if (r->header_sent) {
+            dd("header already sent");
+
+            /* response header was already generated in access_by_lua*,
+             * so it is no longer safe to proceed to later phases
+             * which may generate responses again */
+
+            if (!ctx->eof) {
+                dd("eof not yet sent");
+
+                rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                                  /* indicate last_buf */);
+                if (rc == NGX_ERROR || rc > NGX_OK) {
+                    return rc;
+                }
+            }
+
+            return NGX_HTTP_OK;
+        }
+
+        return NGX_OK;
+    }
+#endif
 
     return NGX_DECLINED;
 }
