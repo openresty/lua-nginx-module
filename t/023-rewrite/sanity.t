@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 9);
+plan tests => repeat_each() * (blocks() * 2 + 12);
 
 #no_diff();
 #no_long_string();
@@ -755,4 +755,49 @@ GET /lua?a=1&b=2
 --- error_code: 500
 --- error_log eval
 qr/failed to load external Lua file ".*?\btest2\.lua": cannot open .*? No such file or directory/
+
+
+
+=== TEST 40: use of ngx.say() in rewrite_by_lua without exiting with 200+.
+--- config
+    location /t {
+        rewrite_by_lua "ngx.say('test')";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
+
+
+
+=== TEST 41: use of ngx.say() in rewrite_by_lua without exiting with 200+. (with explicit ngx.eof())
+--- config
+    location /t {
+        rewrite_by_lua "ngx.say('test') ngx.eof()";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
+
+
+
+=== TEST 42: use of ngx.say() in rewrite_by_lua without exiting with 200+. (with IO)
+--- config
+    location /t {
+        rewrite_by_lua "ngx.say('test') ngx.sleep(0.001)";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
 
