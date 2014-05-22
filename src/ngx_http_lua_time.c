@@ -258,6 +258,13 @@ ngx_http_lua_ffi_ngx_now(void)
 
     return tp->sec + tp->msec / 1000.0;
 }
+
+
+int
+ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r)
+{
+    return r->start_sec + r->start_msec / 1000.0;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
