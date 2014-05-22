@@ -371,6 +371,8 @@ But note that, the [[#lua_shared_dict|lua_shared_dict]]'s shm storage will not b
 
 Because the Lua code in this context runs before Nginx forks its worker processes (if any), data or code loaded here will enjoy the [http://en.wikipedia.org/wiki/Copy-on-write Copy-on-write (COW)] feature provided by many operating systems among all the worker processes, thus saving a lot of memory.
 
+Do *not* initialize your own Lua global variables in this context because use of Lua global variables have performance penalties and can lead to global namespace pollution (see the [[#Lua_Variable_Scope|Lua Variable Scope]] section for more details). The recommended way is to use proper [http://www.lua.org/manual/5.1/manual.html#5.3 Lua module] files (but do not use the standard Lua function [http://www.lua.org/manual/5.1/manual.html#pdf-module module()] to define Lua modules because it pollutes the global namespace as well) and call [http://www.lua.org/manual/5.1/manual.html#pdf-require require()] to load your own module files in <code>init_by_lua</code> or other contexts ([http://www.lua.org/manual/5.1/manual.html#pdf-require require()] does cache the loaded Lua modules in the global <code>package.loaded</code> table in the Lua registry so your modules will only loaded once for the whole Lua VM instance).
+
 Only a small set of the [[#Nginx API for Lua|Nginx API for Lua]] is supported in this context:
 
 * Logging APIs: [[#ngx.log|ngx.log]] and [[#print|print]],
@@ -1025,6 +1027,8 @@ This also applies to [[#access_by_lua|access_by_lua]] and [[#access_by_lua_file|
 '''phase:''' ''depends on usage''
 
 Declares a shared memory zone, <code><name></code>, to serve as storage for the shm based Lua dictionary <code>ngx.shared.<name></code>.
+
+Shared memory zones are always shared by all the nginx worker processes in the current nginx server instance.
 
 The <code><size></code> argument accepts size units such as <code>k</code> and <code>m</code>:
 
@@ -3726,6 +3730,8 @@ This feature was first introduced in the <code>v0.2.1rc15</code> release.
 '''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named <code>DICT</code> defined by the [[#lua_shared_dict|lua_shared_dict]] directive.
+
+Shared memory zones are always shared by all the nginx worker processes in the current nginx server instance.
 
 The resulting object <code>dict</code> has the following methods:
 
