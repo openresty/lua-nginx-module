@@ -1190,7 +1190,7 @@ location /foo {
 }
 ```
 
-Note that the following API functions are currently disabled within this context:
+Note that the following API functions are currently disabled within this context due to the limitations in NGINX output filter's current implementation:
 
 * Output API functions (e.g., [ngx.say](#ngxsay) and [ngx.send_headers](#ngxsend_headers))
 * Control API functions (e.g., [ngx.exit](#ngxexit) and [ngx.exec](#ngxexec))
@@ -6519,7 +6519,7 @@ Bugs and Patches
 
 Please submit bug reports, wishlists, or patches by
 
-1. creating a ticket on the [GitHub Issue Tracker](http://github.com/openresty/lua-nginx-module/issues),
+1. creating a ticket on the [GitHub Issue Tracker](https://github.com/openresty/lua-nginx-module/issues),
 1. or posting to the [OpenResty community](#community).
 
 [Back to TOC](#table-of-contents)

@@ -889,7 +889,7 @@ When the Lua code may change the length of the response body, then it is require
     }
 </geshi>
 
-Note that the following API functions are currently disabled within this context:
+Note that the following API functions are currently disabled within this context due to the limitations in NGINX output filter's current implementation:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
 * Control API functions (e.g., [[#ngx.exit|ngx.exit]] and [[#ngx.exec|ngx.exec]])
@@ -5519,7 +5519,7 @@ The [https://groups.google.com/group/openresty openresty] mailing list is for Ch
 
 Please submit bug reports, wishlists, or patches by
 
-# creating a ticket on the [http://github.com/openresty/lua-nginx-module/issues GitHub Issue Tracker],
+# creating a ticket on the [https://github.com/openresty/lua-nginx-module/issues GitHub Issue Tracker],
 # or posting to the [[#Community|OpenResty community]].
 
 = TODO =
