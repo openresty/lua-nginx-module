@@ -250,7 +250,7 @@ ngx_http_lua_inject_req_time_api(lua_State *L)
 
 #ifndef NGX_HTTP_LUA_NO_FFI_API
 double
-ngx_http_lua_ffi_ngx_now(void)
+ngx_http_lua_ffi_now(void)
 {
     ngx_time_t              *tp;
 
