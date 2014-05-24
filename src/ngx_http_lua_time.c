@@ -68,8 +68,7 @@ ngx_http_lua_ngx_localtime(lua_State *L)
 static int
 ngx_http_lua_ngx_time(lua_State *L)
 {
-    lua_pushnumber(L, (lua_Number) ngx_time());
-
+    lua_pushinteger(L, (lua_Integer) ngx_time());
     return 1;
 }
 
