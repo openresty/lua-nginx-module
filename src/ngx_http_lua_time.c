@@ -266,10 +266,10 @@ ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r)
 }
 
 
-int
+long
 ngx_http_lua_ffi_time(void)
 {
-    return ngx_time();
+    return (long) ngx_time();
 }
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
