@@ -74,8 +74,6 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    r->method = method;
-
     switch (method) {
         case NGX_HTTP_GET:
             r->method_name = ngx_http_lua_get_method;
@@ -139,8 +137,9 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
 
         default:
             return luaL_error(L, "unsupported HTTP method: %d", method);
-
     }
+
+    r->method = method;
 
     return 0;
 }
