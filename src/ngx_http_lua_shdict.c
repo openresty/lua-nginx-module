@@ -1802,6 +1802,33 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     *value = num;
     return NGX_OK;
 }
+
+
+int
+ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
+{
+    ngx_queue_t                 *q;
+    ngx_http_lua_shdict_node_t  *sd;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    for (q = ngx_queue_head(&ctx->sh->queue);
+         q != ngx_queue_sentinel(&ctx->sh->queue);
+         q = ngx_queue_next(q))
+    {
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+        sd->expires = 1;
+    }
+
+    ngx_http_lua_shdict_expire(ctx, 0);
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return NGX_OK;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
