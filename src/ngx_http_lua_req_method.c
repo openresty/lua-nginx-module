@@ -145,4 +145,32 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
     return 0;
 }
 
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+int
+ngx_http_lua_ffi_req_get_method(ngx_http_request_t *r)
+{
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    return r->method;
+}
+
+
+int
+ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r, char *buf,
+    size_t *len)
+{
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    *len = ngx_min(r->method_name.len, *len);
+    ngx_memcpy(buf, r->method_name.data, *len);
+    return NGX_OK;
+}
+#endif
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
