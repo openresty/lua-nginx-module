@@ -1115,6 +1115,55 @@ nomem:
     *errmsg = "no memory";
     return NGX_ERROR;
 }
+
+
+int
+ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
+    const u_char *key, size_t key_len, const u_char *value, size_t value_len)
+{
+    ngx_str_t                    k;
+    ngx_str_t                    v;
+
+    if (r->connection->fd == -1) {  /* fake request */
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    if (r->http_version < NGX_HTTP_VERSION_10) {
+        return NGX_DECLINED;
+    }
+
+    k.data = ngx_palloc(r->pool, key_len + 1);
+    if (k.data == NULL) {
+        return NGX_ERROR;
+    }
+    ngx_memcpy(k.data, key, key_len);
+    k.data[key_len] = '\0';
+
+    k.len = key_len;
+
+    if (value_len == 0) {
+        v.data = NULL;
+        v.len = 0;
+
+    } else {
+        v.data = ngx_palloc(r->pool, value_len + 1);
+        if (v.data == NULL) {
+            return NGX_ERROR;
+        }
+        ngx_memcpy(v.data, value, value_len);
+        v.data[value_len] = '\0';
+    }
+
+    v.len = value_len;
+
+    if (ngx_http_lua_set_input_header(r, k, v, 1 /* override */)
+        != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
 #endif /* NGX_HTTP_LUA_NO_FFI_API */
 
 
