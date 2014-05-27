@@ -2235,8 +2235,8 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     re->captures = cap;
     re->replace = NULL;
 
-    /* only for (stap) debugging, the pointer might be invalid when the string is
-     * collected later on.... */
+    /* only for (stap) debugging, the pointer might be invalid when the
+     * string is collected later on.... */
     re->pattern = pat;
 
     return re;

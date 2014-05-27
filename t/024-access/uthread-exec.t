@@ -282,7 +282,6 @@ hello foo
             ngx.location.capture("/sleep")
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 
     location = /sleep {
@@ -341,8 +340,6 @@ expire timer 200
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1

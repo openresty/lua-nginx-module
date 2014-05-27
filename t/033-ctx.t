@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 7);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -39,7 +39,7 @@ GET /lua
 --- config
     location /lua {
         rewrite_by_lua '
-            ngx.say("foo = ", ngx.ctx.foo)
+            print("foo = ", ngx.ctx.foo)
             ngx.ctx.foo = 76
         ';
         access_by_lua '
@@ -52,10 +52,13 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-foo = nil
 79
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/foo = [^,]+/
+--- log_level: info
+--- grep_error_log_out
+foo = nil
 
 
 

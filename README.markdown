@@ -613,6 +613,8 @@ But note that, the [lua_shared_dict](#lua_shared_dict)'s shm storage will not be
 
 Because the Lua code in this context runs before Nginx forks its worker processes (if any), data or code loaded here will enjoy the [Copy-on-write (COW)](http://en.wikipedia.org/wiki/Copy-on-write) feature provided by many operating systems among all the worker processes, thus saving a lot of memory.
 
+Do *not* initialize your own Lua global variables in this context because use of Lua global variables have performance penalties and can lead to global namespace pollution (see the [Lua Variable Scope](#lua_variable_scope) section for more details). The recommended way is to use proper [Lua module](http://www.lua.org/manual/5.1/manual.html#5.3) files (but do not use the standard Lua function [module()](http://www.lua.org/manual/5.1/manual.html#pdf-module) to define Lua modules because it pollutes the global namespace as well) and call [require()](http://www.lua.org/manual/5.1/manual.html#pdf-require) to load your own module files in `init_by_lua` or other contexts ([require()](http://www.lua.org/manual/5.1/manual.html#pdf-require) does cache the loaded Lua modules in the global `package.loaded` table in the Lua registry so your modules will only loaded once for the whole Lua VM instance).
+
 Only a small set of the [Nginx API for Lua](#nginx-api-for-lua) is supported in this context:
 
 * Logging APIs: [ngx.log](#ngxlog) and [print](#print),
@@ -1190,7 +1192,7 @@ location /foo {
 }
 ```
 
-Note that the following API functions are currently disabled within this context:
+Note that the following API functions are currently disabled within this context due to the limitations in NGINX output filter's current implementation:
 
 * Output API functions (e.g., [ngx.say](#ngxsay) and [ngx.send_headers](#ngxsend_headers))
 * Control API functions (e.g., [ngx.exit](#ngxexit) and [ngx.exec](#ngxexec))
@@ -1342,6 +1344,8 @@ lua_shared_dict
 **phase:** *depends on usage*
 
 Declares a shared memory zone, `<name>`, to serve as storage for the shm based Lua dictionary `ngx.shared.<name>`.
+
+Shared memory zones are always shared by all the nginx worker processes in the current nginx server instance.
 
 The `<size>` argument accepts size units such as `k` and `m`:
 
@@ -4461,6 +4465,8 @@ ngx.shared.DICT
 
 Fetching the shm-based Lua dictionary object for the shared memory zone named `DICT` defined by the [lua_shared_dict](#lua_shared_dict) directive.
 
+Shared memory zones are always shared by all the nginx worker processes in the current nginx server instance.
+
 The resulting object `dict` has the following methods:
 
 * [get](#ngxshareddictget)
@@ -6519,7 +6525,7 @@ Bugs and Patches
 
 Please submit bug reports, wishlists, or patches by
 
-1. creating a ticket on the [GitHub Issue Tracker](http://github.com/openresty/lua-nginx-module/issues),
+1. creating a ticket on the [GitHub Issue Tracker](https://github.com/openresty/lua-nginx-module/issues),
 1. or posting to the [OpenResty community](#community).
 
 [Back to TOC](#table-of-contents)

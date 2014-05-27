@@ -103,7 +103,29 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         dd("rewriteby: wev handler returns %d", (int) rc);
 
         if (rc == NGX_OK) {
-            return NGX_DECLINED;
+            rc = NGX_DECLINED;
+        }
+
+        if (rc == NGX_DECLINED) {
+            if (r->header_sent) {
+                dd("header already sent");
+
+                /* response header was already generated in access_by_lua*,
+                 * so it is no longer safe to proceed to later phases
+                 * which may generate responses again */
+
+                if (!ctx->eof) {
+                    dd("eof not yet sent");
+
+                    rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                                     /* indicate last_buf */);
+                    if (rc == NGX_ERROR || rc > NGX_OK) {
+                        return rc;
+                    }
+                }
+
+                return NGX_HTTP_OK;
+            }
         }
 
         return rc;
@@ -286,25 +308,36 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (rc == NGX_AGAIN) {
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
 
-        if (rc == NGX_OK) {
-            return NGX_DECLINED;
-        }
-
-        return rc;
-    }
-
-    if (rc == NGX_DONE) {
+    } else if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
         rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
-
-        if (rc == NGX_OK) {
-            return NGX_DECLINED;
-        }
-
-        return rc;
     }
 
-    return NGX_DECLINED;
+    if (rc == NGX_OK || rc == NGX_DECLINED) {
+        if (r->header_sent) {
+            dd("header already sent");
+
+            /* response header was already generated in access_by_lua*,
+             * so it is no longer safe to proceed to later phases
+             * which may generate responses again */
+
+            if (!ctx->eof) {
+                dd("eof not yet sent");
+
+                rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                                  /* indicate last_buf */);
+                if (rc == NGX_ERROR || rc > NGX_OK) {
+                    return rc;
+                }
+            }
+
+            return NGX_HTTP_OK;
+        }
+
+        return NGX_DECLINED;
+    }
+
+    return rc;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

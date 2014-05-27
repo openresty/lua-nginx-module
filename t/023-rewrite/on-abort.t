@@ -395,7 +395,6 @@ callback done: +OK
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
-        content_by_lua return;
     }
 --- request
 GET /t
@@ -405,8 +404,6 @@ GET /t
 --- stap_out
 terminate 1: ok
 delete thread 1
-terminate 2: ok
-delete thread 2
 lua req cleanup
 
 --- timeout: 0.2
@@ -435,7 +432,6 @@ main handler done
 
             ngx.say("done")
         ';
-        content_by_lua return;
     }
 --- request
 GET /t
@@ -446,10 +442,8 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-delete thread 2
-terminate 3: ok
-delete thread 3
 lua req cleanup
+delete thread 2
 
 --- response_body
 done
@@ -597,10 +591,8 @@ terminate 1: ok
 delete thread 1
 terminate 3: ok
 delete thread 3
-delete thread 2
-terminate 4: ok
-delete thread 4
 lua req cleanup
+delete thread 2
 
 --- wait: 0.5
 --- response_body
@@ -652,10 +644,8 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-delete thread 2
-terminate 3: ok
-delete thread 3
 lua req cleanup
+delete thread 2
 
 --- response_body
 2: cannot set on_abort: duplicate call

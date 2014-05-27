@@ -39,7 +39,6 @@ __DATA__
             }
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 
     location = /echo {
@@ -104,8 +103,6 @@ post subreq /sleep
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
