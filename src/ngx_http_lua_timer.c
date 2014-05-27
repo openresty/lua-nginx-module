@@ -355,6 +355,10 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         lua_insert(tctx.co, 2);
     }
 
+#ifdef ngx_http_lua_assert
+    ctx->cur_co_ctx->co_top = 1;
+#endif
+
     rc = ngx_http_lua_run_thread(L, r, ctx, n - 1);
 
     dd("timer lua run thread: %d", (int) rc);

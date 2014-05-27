@@ -117,6 +117,10 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
         *pcoctx = coctx;
     }
 
+#ifdef ngx_http_lua_assert
+    coctx->co_top = 1;
+#endif
+
     return 1;    /* return new coroutine to Lua */
 }
 

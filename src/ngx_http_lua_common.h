@@ -284,6 +284,11 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;  /* used for ngx.sleep */
 
+#ifdef ngx_http_lua_assert
+    int                      co_top; /* stack top after yielding/creation,
+                                        only for sanity checks */
+#endif
+
     int                      co_ref; /*  reference to anchor the thread
                                          coroutines (entry coroutine and user
                                          threads) in the Lua registry,

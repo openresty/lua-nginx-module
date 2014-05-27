@@ -94,6 +94,8 @@ ngx_http_lua_uthread_spawn(lua_State *L)
 
     ngx_http_lua_probe_user_thread_spawn(r, L, coctx->co);
 
+    dd("yielding with arg %s, top=%d, index-1:%s", luaL_typename(L, -1),
+       (int) lua_gettop(L), luaL_typename(L, 1));
     return lua_yield(L, 1);
 }
 
