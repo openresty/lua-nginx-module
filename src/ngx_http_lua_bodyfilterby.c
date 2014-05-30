@@ -215,7 +215,7 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    ngx_http_lua_assert(lua_isfunction(L, -1));
 
     rc = ngx_http_lua_body_filter_by_chunk(L, r, in);
 

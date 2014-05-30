@@ -258,7 +258,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     }
 
     /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    ngx_http_lua_assert(lua_isfunction(L, -1));
 
     return ngx_http_lua_content_by_chunk(L, r);
 }
