@@ -211,6 +211,116 @@ The Lua interpreter or LuaJIT instance is shared across all the requests in a si
 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint in Lua even when under heavy loads.
 
+= Typical Uses =
+
+Just to name a few:
+
+* Mashup'ing and processing outputs of various nginx upstream outputs (proxy, drizzle, postgres, redis, memcached, and etc) in Lua,
+* doing arbitrarily complex access control and security checks in Lua before requests actually reach the upstream backends,
+* manipulating response headers in an arbitrary way (by Lua)
+* fetching backend information from external storage backends (like redis, memcached, mysql, postgresql) and use that information to choose which upstream backend to access on-the-fly,
+* coding up arbitrarily complex web applications in a content handler using synchronous but still non-blocking access to the database backends and other storage,
+* doing very complex URL dispatch in Lua at rewrite phase,
+* using Lua to implement advanced caching mechanism for Nginx's subrequests and arbitrary locations.
+
+The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.x is enabled.
+
+Other scripting language implementations typically struggle to match this performance level.
+
+The Lua state (Lua VM instance) is shared across all the requests handled by a single nginx worker process to minimize memory use.
+
+On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k req/sec using <code>http_load -p 10</code>. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [http://nodejs.org/ Node.js] v0.6.1 yields 10.2k req/sec for their Hello World equivalents.
+
+= Nginx Compatibility =
+The latest module is compatible with the following versions of Nginx:
+
+* 1.5.x (last tested: 1.5.12)
+* 1.4.x (last tested: 1.4.4)
+* 1.3.x (last tested: 1.3.11)
+* 1.2.x (last tested: 1.2.9)
+* 1.1.x (last tested: 1.1.5)
+* 1.0.x (last tested: 1.0.15)
+* 0.9.x (last tested: 0.9.4)
+* 0.8.x >= 0.8.54 (last tested: 0.8.54)
+
+= Installation =
+
+The [http://openresty.org ngx_openresty bundle] can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0/2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple <code>./configure --with-luajit && make && make install</code>.
+
+Alternatively, ngx_lua can be manually compiled into Nginx:
+
+# Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuajIT can be downloaded from the [http://luajit.org/download.html the LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuajIT and/or Lua.
+# Download the latest version of the ngx_devel_kit (NDK) module [http://github.com/simpl/ngx_devel_kit/tags HERE].
+# Download the latest version of ngx_lua [http://github.com/openresty/lua-nginx-module/tags HERE].
+# Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
+
+Build the source with this module:
+
+<geshi lang="bash">
+    wget 'http://nginx.org/download/nginx-1.5.12.tar.gz'
+    tar -xzvf nginx-1.5.12.tar.gz
+    cd nginx-1.5.12/
+
+    # tell nginx's build system where to find LuaJIT 2.0:
+    export LUAJIT_LIB=/path/to/luajit/lib
+    export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
+
+    # tell nginx's build system where to find LuaJIT 2.1:
+    export LUAJIT_LIB=/path/to/luajit/lib
+    export LUAJIT_INC=/path/to/luajit/include/luajit-2.1
+ 
+    # or tell where to find Lua if using Lua instead:
+    #export LUA_LIB=/path/to/lua/lib
+    #export LUA_INC=/path/to/lua/include
+ 
+    # Here we assume Nginx is to be installed under /opt/nginx/.
+    ./configure --prefix=/opt/nginx \
+            --add-module=/path/to/ngx_devel_kit \
+            --add-module=/path/to/lua-nginx-module
+ 
+    make -j2
+    make install
+</geshi>
+
+== Installation on Ubuntu 11.10 ==
+
+Note that it is recommended to use LuaJIT 2.0 or LuaJIT 2.1 instead of the standard Lua 5.1 interpreter wherever possible.
+
+If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
+
+<geshi lang="bash">
+apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
+</geshi>
+
+Everything should be installed correctly, except for one small tweak.
+
+Library name <code>liblua.so</code> has been changed in liblua5.1 package, it only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
+
+<geshi lang="bash">
+ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
+</geshi>
+
+= Community =
+
+== English Mailing List ==
+
+The [https://groups.google.com/group/openresty-en openresty-en] mailing list is for English speakers.
+
+== Chinese Mailing List ==
+
+The [https://groups.google.com/group/openresty openresty] mailing list is for Chinese speakers.
+
+= Code Repository =
+
+The code repository of this project is hosted on github at [http://github.com/openresty/lua-nginx-module openresty/lua-nginx-module].
+
+= Bugs and Patches =
+
+Please submit bug reports, wishlists, or patches by
+
+# creating a ticket on the [https://github.com/openresty/lua-nginx-module/issues GitHub Issue Tracker],
+# or posting to the [[#Community|OpenResty community]].
+
 = Directives =
 
 == lua_use_default_type ==
@@ -5417,116 +5527,6 @@ Mixing SSI with ngx_lua in the same Nginx request is not supported at all. Just 
 == SPDY Mode Not Fully Supported ==
 
 Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], and [[#ngx.req.socket|ngx.req.socket]].
-
-= Typical Uses =
-
-Just to name a few:
-
-* Mashup'ing and processing outputs of various nginx upstream outputs (proxy, drizzle, postgres, redis, memcached, and etc) in Lua,
-* doing arbitrarily complex access control and security checks in Lua before requests actually reach the upstream backends,
-* manipulating response headers in an arbitrary way (by Lua)
-* fetching backend information from external storage backends (like redis, memcached, mysql, postgresql) and use that information to choose which upstream backend to access on-the-fly,
-* coding up arbitrarily complex web applications in a content handler using synchronous but still non-blocking access to the database backends and other storage,
-* doing very complex URL dispatch in Lua at rewrite phase,
-* using Lua to implement advanced caching mechanism for Nginx's subrequests and arbitrary locations.
-
-The possibilities are unlimited as the module allows bringing together various elements within Nginx as well as exposing the power of the Lua language to the user. The module provides the full flexibility of scripting while offering performance levels comparable with native C language programs both in terms of CPU time as well as memory footprint. This is particularly the case when LuaJIT 2.x is enabled.
-
-Other scripting language implementations typically struggle to match this performance level.
-
-The Lua state (Lua VM instance) is shared across all the requests handled by a single nginx worker process to minimize memory use.
-
-On a ThinkPad T400 2.80 GHz laptop, the Hello World example readily achieves 28k req/sec using <code>http_load -p 10</code>. By contrast, Nginx + php-fpm 5.2.8 + Unix Domain Socket yields 6k req/sec and [http://nodejs.org/ Node.js] v0.6.1 yields 10.2k req/sec for their Hello World equivalents.
-
-= Nginx Compatibility =
-The latest module is compatible with the following versions of Nginx:
-
-* 1.5.x (last tested: 1.5.12)
-* 1.4.x (last tested: 1.4.4)
-* 1.3.x (last tested: 1.3.11)
-* 1.2.x (last tested: 1.2.9)
-* 1.1.x (last tested: 1.1.5)
-* 1.0.x (last tested: 1.0.15)
-* 0.9.x (last tested: 0.9.4)
-* 0.8.x >= 0.8.54 (last tested: 0.8.54)
-
-= Code Repository =
-
-The code repository of this project is hosted on github at [http://github.com/openresty/lua-nginx-module openresty/lua-nginx-module].
-
-= Installation =
-
-The [http://openresty.org ngx_openresty bundle] can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0/2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple <code>./configure --with-luajit && make && make install</code>.
-
-Alternatively, ngx_lua can be manually compiled into Nginx:
-
-# Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuajIT can be downloaded from the [http://luajit.org/download.html the LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuajIT and/or Lua.
-# Download the latest version of the ngx_devel_kit (NDK) module [http://github.com/simpl/ngx_devel_kit/tags HERE].
-# Download the latest version of ngx_lua [http://github.com/openresty/lua-nginx-module/tags HERE].
-# Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
-
-Build the source with this module:
-
-<geshi lang="bash">
-    wget 'http://nginx.org/download/nginx-1.5.12.tar.gz'
-    tar -xzvf nginx-1.5.12.tar.gz
-    cd nginx-1.5.12/
-
-    # tell nginx's build system where to find LuaJIT 2.0:
-    export LUAJIT_LIB=/path/to/luajit/lib
-    export LUAJIT_INC=/path/to/luajit/include/luajit-2.0
-
-    # tell nginx's build system where to find LuaJIT 2.1:
-    export LUAJIT_LIB=/path/to/luajit/lib
-    export LUAJIT_INC=/path/to/luajit/include/luajit-2.1
- 
-    # or tell where to find Lua if using Lua instead:
-    #export LUA_LIB=/path/to/lua/lib
-    #export LUA_INC=/path/to/lua/include
- 
-    # Here we assume Nginx is to be installed under /opt/nginx/.
-    ./configure --prefix=/opt/nginx \
-            --add-module=/path/to/ngx_devel_kit \
-            --add-module=/path/to/lua-nginx-module
- 
-    make -j2
-    make install
-</geshi>
-
-== Installation on Ubuntu 11.10 ==
-
-Note that it is recommended to use LuaJIT 2.0 or LuaJIT 2.1 instead of the standard Lua 5.1 interpreter wherever possible.
-
-If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
-
-<geshi lang="bash">
-apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
-</geshi>
-
-Everything should be installed correctly, except for one small tweak.
-
-Library name <code>liblua.so</code> has been changed in liblua5.1 package, it only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
-
-<geshi lang="bash">
-ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
-</geshi>
-
-= Community =
-
-== English Mailing List ==
-
-The [https://groups.google.com/group/openresty-en openresty-en] mailing list is for English speakers.
-
-== Chinese Mailing List ==
-
-The [https://groups.google.com/group/openresty openresty] mailing list is for Chinese speakers.
-
-= Bugs and Patches =
-
-Please submit bug reports, wishlists, or patches by
-
-# creating a ticket on the [https://github.com/openresty/lua-nginx-module/issues GitHub Issue Tracker],
-# or posting to the [[#Community|OpenResty community]].
 
 = TODO =
 
