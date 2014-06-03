@@ -5468,6 +5468,8 @@ user "light threads" ([[#ngx.thread.spawn|ngx.thread.*]]), [[#ngx.exit|ngx.exit]
 (like [[#ngx.say|ngx.say]], [[#ngx.print|ngx.print]], and [[#ngx.flush|ngx.flush]]) are explicitly disabled in
 this context.
 
+You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you ''cannot'' pass any thread objects returned by [[#coroutine.create|coroutine.create]] and [[#ngx.thread.spawn|ngx.thread.spawn]] or any cosocket objects returned by [[#ngx.socket.tcp|ngx.socket.tcp]], [[#ngx.socket.udp|ngx.socket.udp]], and [[#ngx.req.socket|ngx.req.socket]] because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to creating all these objects inside your timer callback.
+
 This API was first introduced in the <code>v0.8.0</code> release.
 
 == ngx.config.debug ==
