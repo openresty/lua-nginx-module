@@ -46,6 +46,13 @@ static ngx_conf_post_t  ngx_http_lua_lowat_post =
 static volatile ngx_cycle_t  *ngx_http_lua_prev_cycle = NULL;
 
 
+static ngx_conf_enum_t  ngx_http_lua_exceeding_socket_pool[] = {
+    { ngx_string("ignore"), NGX_HTTP_LUA_IGNORE_POOL_EXCEEDING },
+    { ngx_string("abort"), NGX_HTTP_LUA_ABORT_POOL_EXCEEDING },
+    { ngx_null_string, 0 }
+};
+
+
 static ngx_command_t ngx_http_lua_cmds[] = {
 
     { ngx_string("lua_max_running_timers"),
@@ -333,6 +340,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_lua_loc_conf_t, pool_size),
       NULL },
+
+    { ngx_string("lua_socket_pool_exceeding"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_enum_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, pool_exceeding),
+      &ngx_http_lua_exceeding_socket_pool },
 
     { ngx_string("lua_socket_read_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -665,6 +680,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->send_lowat = NGX_CONF_UNSET_SIZE;
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->pool_size = NGX_CONF_UNSET_UINT;
+    conf->pool_exceeding = NGX_CONF_UNSET_UINT;
 
     conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
     conf->log_socket_errors = NGX_CONF_UNSET;
@@ -742,6 +758,8 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                               (size_t) ngx_pagesize);
 
     ngx_conf_merge_uint_value(conf->pool_size, prev->pool_size, 30);
+    ngx_conf_merge_uint_value(conf->pool_exceeding, prev->pool_exceeding,
+                              NGX_HTTP_LUA_IGNORE_POOL_EXCEEDING);
 
     ngx_conf_merge_value(conf->transform_underscores_in_resp_headers,
                          prev->transform_underscores_in_resp_headers, 1);

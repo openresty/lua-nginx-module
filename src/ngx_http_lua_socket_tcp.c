@@ -105,12 +105,15 @@ static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
 static void ngx_http_lua_coctx_cleanup(void *data);
 static int ngx_http_lua_socket_shutdown_pool(lua_State *L);
+static ngx_http_lua_socket_pool_t *
+    ngx_http_lua_tcp_socket_create_pool(ngx_http_request_t *r, lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf, size_t pool_size,
+    u_char *key, size_t key_len);
 
 
 enum {
     SOCKET_CTX_INDEX = 1,
-    SOCKET_TIMEOUT_INDEX = 2,
-    SOCKET_KEY_INDEX = 3
+    SOCKET_TIMEOUT_INDEX = 2
 };
 
 
@@ -261,7 +264,7 @@ ngx_http_lua_socket_tcp(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER);
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */);
+    lua_createtable(L, 2 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
@@ -285,15 +288,20 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     int                          n;
     u_char                      *p;
     size_t                       len;
+    ssize_t                      pool_size = 0;
     ngx_url_t                    url;
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
     int                          timeout;
-    unsigned                     custom_pool;
+    int                          custom_pool;
     int                          key_index;
+    u_char                      *key;
+    size_t                       key_len;
     const char                  *msg;
     ngx_http_lua_co_ctx_t       *coctx;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_socket_pool_t  *spool;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
@@ -347,23 +355,44 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         case LUA_TSTRING:
             custom_pool = 1;
-
-            lua_pushvalue(L, -1);
-            lua_rawseti(L, 1, SOCKET_KEY_INDEX);
-
             key_index = n + 1;
 
             break;
 
         case LUA_TNIL:
-            lua_pop(L, 2);
+            lua_pop(L, 1);
             break;
 
         default:
             msg = lua_pushfstring(L, "bad \"pool\" option type: %s",
                                   luaL_typename(L, -1));
-            luaL_argerror(L, n, msg);
+            return luaL_argerror(L, n, msg);
+        }
+
+        lua_getfield(L, n, "pool_size");
+
+        switch (lua_type(L, -1)) {
+        case LUA_TSTRING:
+        case LUA_TNUMBER:
+            pool_size = (ssize_t) lua_tointeger(L, -1);
+            if (pool_size <= 0) {
+                return luaL_error(L, "bad \"pool_size\" option value");
+            }
+            lua_pop(L, 1);
             break;
+
+        case LUA_TNIL:
+            lua_pop(L, 1);
+            break;
+
+        default:
+            msg = lua_pushfstring(L, "bad \"pool_size\" option type: %s",
+                                  luaL_typename(L, -1));
+            return luaL_argerror(L, n, msg);
+        }
+
+        if (!custom_pool) {
+            lua_pop(L, 1);
         }
 
         n--;
@@ -388,13 +417,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     } else { /* n == 2 */
         port = 0;
-    }
-
-    if (!custom_pool) {
-        /* the key's index is 2 */
-
-        lua_pushvalue(L, 2);
-        lua_rawseti(L, 1, SOCKET_KEY_INDEX);
     }
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
@@ -474,20 +496,64 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         u->connect_timeout = u->conf->connect_timeout;
     }
 
-    rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
-
-    if (rc == NGX_OK) {
-        lua_pushinteger(L, 1);
-        return 1;
+    if (pool_size == 0) {
+        pool_size = llcf->pool_size;
     }
 
-    if (rc == NGX_ERROR) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "error in get keepalive peer");
-        return 2;
+    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
+    lua_rawget(L, LUA_REGISTRYINDEX); /* table */
+    lua_pushvalue(L, key_index); /* key */
+    lua_rawget(L, -2);
+
+    spool = lua_touserdata(L, -1);
+    if (spool) {
+        rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
+        if (rc == NGX_ERROR) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "error in get keepalive peer");
+            return 2;
+        }
+
+        if (rc == NGX_OK) {
+            lua_pushinteger(L, 1);
+            return 1;
+        }
+
+        /* rc == NGX_DECLINED */
+
+        dd("pool size: %d vs %d (conn %d)", (int) pool_size,
+           (int) spool->size, (int) spool->open_connections);
+
+        if (llcf->pool_exceeding == NGX_HTTP_LUA_ABORT_POOL_EXCEEDING
+            && spool->open_connections >= spool->size)
+        {
+            lua_pushnil(L);
+            lua_pushliteral(L, "exceeding pool size");
+            return 2;
+        }
+
+    } else {
+        /* create the pool */
+        key = (u_char *) lua_tolstring(L, key_index, &key_len);
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
+        lua_rawget(L, LUA_REGISTRYINDEX);
+        lua_pushvalue(L, key_index);
+        spool = ngx_http_lua_tcp_socket_create_pool(r, L, lmcf,
+                                                    (size_t) pool_size,
+                                                    key, key_len);
+        if (spool == NULL) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "failed to create pool");
+            return 2;
+        }
+
+        lua_rawset(L, -3);
+        u->socket_pool = spool;
     }
 
-    /* rc == NGX_DECLINED */
+    lua_pop(L, 1);
 
     ngx_memzero(&url, sizeof(ngx_url_t));
 
@@ -912,6 +978,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* rc == NGX_OK || rc == NGX_AGAIN */
 
+    u->socket_pool->open_connections++;
     c = pc->connection;
 
     c->data = u;
@@ -2525,18 +2592,13 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         ngx_close_connection(u->peer.connection);
         u->peer.connection = NULL;
 
-        if (!u->reused) {
-            return;
-        }
-
         spool = u->socket_pool;
         if (spool == NULL) {
             return;
         }
 
-        spool->active_connections--;
-
-        if (spool->active_connections == 0) {
+        spool->open_connections--;
+        if (spool->open_connections == 0) {
             ngx_http_lua_socket_free_pool(r->connection->log, spool);
         }
     }
@@ -3367,7 +3429,7 @@ ngx_http_lua_req_socket(lua_State *L)
         r->request_body = rb;
     }
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */); /* the object */
+    lua_createtable(L, 2 /* narr */, 1 /* nrec */); /* the object */
 
     if (raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
@@ -3509,20 +3571,15 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
     ngx_http_lua_socket_pool_t          *spool;
-    size_t                               size;
-    ngx_str_t                            key;
-    ngx_uint_t                           i;
     ngx_queue_t                         *q;
     ngx_peer_connection_t               *pc;
-    u_char                              *p;
     ngx_http_request_t                  *r;
     ngx_msec_t                           timeout;
-    ngx_uint_t                           pool_size;
     int                                  n;
     ngx_int_t                            rc;
     ngx_buf_t                           *b;
 
-    ngx_http_lua_socket_pool_item_t     *items, *item;
+    ngx_http_lua_socket_pool_item_t     *item;
 
     n = lua_gettop(L);
 
@@ -3532,17 +3589,6 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     }
 
     luaL_checktype(L, 1, LUA_TTABLE);
-
-    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    lua_rawgeti(L, 1, SOCKET_KEY_INDEX);
-    key.data = (u_char *) lua_tolstring(L, -1, &key.len);
-    if (key.data == NULL) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "key not found");
-        return 2;
-    }
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -3572,6 +3618,19 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         lua_pushnil(L);
         lua_pushliteral(L, "socket busy");
         return 2;
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    if (n >= 2) {
+        timeout = (ngx_msec_t) luaL_checkinteger(L, 2);
+
+    } else {
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+        timeout = llcf->keepalive_timeout;
     }
 
     b = &u->buffer;
@@ -3607,80 +3666,24 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     dd("saving connection to key %s", lua_tostring(L, -1));
 
-    lua_pushvalue(L, -1);
-    lua_rawget(L, -3);
-    spool = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    spool = u->socket_pool;
+    if (spool == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "connection pool not found");
+        return 2;
+    }
 
     /* stack: obj timeout? size? cache key */
-
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
-    if (spool == NULL) {
-        /* create a new socket pool for the current peer key */
-
-        if (n == 3) {
-            pool_size = luaL_checkinteger(L, 3);
-
-        } else {
-            pool_size = llcf->pool_size;
-        }
-
-        if (pool_size == 0) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "zero pool size");
-            return 2;
-        }
-
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua tcp socket connection pool size: %ui", pool_size);
-
-        size = sizeof(ngx_http_lua_socket_pool_t) + key.len
-               + sizeof(ngx_http_lua_socket_pool_item_t)
-               * pool_size;
-
-        spool = lua_newuserdata(L, size);
-        if (spool == NULL) {
-            return luaL_error(L, "out of memory");
-        }
-
-        lua_createtable(L, 0, 1); /* metatable */
-        lua_pushcfunction(L, ngx_http_lua_socket_shutdown_pool);
-        lua_setfield(L, -2, "__gc");
-        lua_setmetatable(L, -2);
-
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
-                       "lua tcp socket keepalive create connection pool for key"
-                       " \"%s\"", lua_tostring(L, -2));
-
-        lua_rawset(L, -3);
-
-        spool->active_connections = 0;
-        spool->lua_vm = ngx_http_lua_get_lua_vm(r, NULL);
-
-        ngx_queue_init(&spool->cache);
-        ngx_queue_init(&spool->free);
-
-        p = ngx_copy(spool->key, key.data, key.len);
-        *p++ = '\0';
-
-        items = (ngx_http_lua_socket_pool_item_t *) p;
-
-        for (i = 0; i < pool_size; i++) {
-            ngx_queue_insert_head(&spool->free, &items[i].queue);
-            items[i].socket_pool = spool;
-        }
-    }
 
     if (ngx_queue_empty(&spool->free)) {
 
         q = ngx_queue_last(&spool->cache);
         ngx_queue_remove(q);
-        spool->active_connections--;
 
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
 
         ngx_close_connection(item->connection);
+        spool->open_connections--;
 
     } else {
         q = ngx_queue_head(&spool->free);
@@ -3691,10 +3694,6 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     item->connection = c;
     ngx_queue_insert_head(&spool->cache, q);
-
-    if (!u->reused) {
-        spool->active_connections++;
-    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "lua tcp socket clear current socket connection");
@@ -3714,13 +3713,6 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     if (c->write->timer_set) {
         ngx_del_timer(c->write);
-    }
-
-    if (n >= 2) {
-        timeout = (ngx_msec_t) luaL_checkinteger(L, 2);
-
-    } else {
-        timeout = llcf->keepalive_timeout;
     }
 
 #if (NGX_DEBUG)
@@ -3938,12 +3930,12 @@ close:
 
     ngx_queue_remove(&item->queue);
     ngx_queue_insert_head(&spool->free, &item->queue);
-    spool->active_connections--;
+    spool->open_connections--;
 
-    dd("keepalive: active connections: %u",
-       (unsigned) spool->active_connections);
+    dd("keepalive: open connections: %u",
+       (unsigned) spool->open_connections);
 
-    if (spool->active_connections == 0) {
+    if (spool->open_connections == 0) {
         ngx_http_lua_socket_free_pool(ev->log, spool);
     }
 
@@ -3996,7 +3988,7 @@ ngx_http_lua_socket_shutdown_pool(lua_State *L)
         ngx_queue_insert_head(&spool->free, q);
     }
 
-    spool->active_connections = 0;
+    spool->open_connections = 0;
 
     return 0;
 }
@@ -4375,6 +4367,60 @@ ngx_http_lua_coctx_cleanup(void *data)
     }
 
     ngx_http_lua_socket_tcp_finalize(u->request, u);
+}
+
+
+static ngx_http_lua_socket_pool_t *
+ngx_http_lua_tcp_socket_create_pool(ngx_http_request_t *r, lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf, size_t pool_size, u_char *key,
+    size_t key_len)
+{
+    u_char                              *p;
+    size_t                               size;
+    ngx_uint_t                           i;
+    ngx_http_lua_socket_pool_t          *spool;
+    ngx_http_lua_socket_pool_item_t     *items;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket connection pool size: %uz", pool_size);
+
+    size = sizeof(ngx_http_lua_socket_pool_t) + key_len
+           + sizeof(ngx_http_lua_socket_pool_item_t)
+           * (size_t) pool_size;
+
+    spool = lua_newuserdata(L, size);
+    if (spool == NULL) {
+        return NULL;
+    }
+
+    lua_createtable(L, 0, 1); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_shutdown_pool);
+    lua_setfield(L, -2, "__gc");
+    lua_setmetatable(L, -2);
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket keepalive create connection pool for key"
+                   " \"%*s\"", key_len, key);
+
+    spool->open_connections = 0;
+    spool->lua_vm = ngx_http_lua_get_lua_vm(r, NULL);
+
+    ngx_queue_init(&spool->cache);
+    ngx_queue_init(&spool->free);
+
+    p = ngx_copy(spool->key, key, key_len);
+    *p++ = '\0';
+
+    items = (ngx_http_lua_socket_pool_item_t *) p;
+
+    for (i = 0; i < pool_size; i++) {
+        ngx_queue_insert_head(&spool->free, &items[i].queue);
+        items[i].socket_pool = spool;
+    }
+
+    spool->size = (ngx_uint_t) pool_size;
+
+    return spool;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

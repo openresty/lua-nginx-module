@@ -157,7 +157,7 @@ function set(self, key, value, exptime, flags)
 end
 
 function set_keepalive(self)
-    return self.sock:setkeepalive(0, 100)
+    return self.sock:setkeepalive(0)
 end
 --- request
     GET /t

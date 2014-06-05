@@ -901,24 +901,26 @@ function go(port)
     sock:settimeout(1000)
     sock2:settimeout(6000000)
 
-    local ok, err = sock:connect("127.0.0.1", port)
+    local opts = { pool_size = 100 }
+
+    local ok, err = sock:connect("127.0.0.1", port, opts)
     if not ok then
         ngx.say("failed to connect: ", err)
         return
     end
 
-    local ok, err = sock2:connect("127.0.0.1", port)
+    local ok, err = sock2:connect("127.0.0.1", port, opts)
     if not ok then
         ngx.say("failed to connect: ", err)
         return
     end
 
-    local ok, err = sock:setkeepalive(100, 100)
+    local ok, err = sock:setkeepalive(100)
     if not ok then
         ngx.say("failed to set reusable: ", err)
     end
 
-    local ok, err = sock2:setkeepalive(200, 100)
+    local ok, err = sock2:setkeepalive(200)
     if not ok then
         ngx.say("failed to set reusable: ", err)
     end

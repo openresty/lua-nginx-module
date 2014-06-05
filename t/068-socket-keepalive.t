@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 7);
+plan tests => repeat_each() * (blocks() * 5);
 
 our $HtmlDir = html_dir;
 
@@ -624,7 +624,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
 
 
-=== TEST 9: sock:setkeepalive(timeout, size) overrides lua_socket_pool_size
+=== TEST 9: pool_size option overrides lua_socket_pool_size
 --- config
    server_tokens off;
    location /t {
@@ -638,7 +638,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
             local sock = ngx.socket.tcp()
 
-            local ok, err = sock:connect("127.0.0.1", port)
+            local ok, err = sock:connect("127.0.0.1", port, { pool_size = 25 })
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -666,7 +666,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
             ngx.say("received response of ", #data, " bytes")
 
-            local ok, err = sock:setkeepalive(101, 25)
+            local ok, err = sock:setkeepalive(101)
             if not ok then
                 ngx.say("failed to set reusable: ", err)
             end
@@ -1476,4 +1476,256 @@ received: $-1
 done
 --- no_error_log
 [error]
+
+
+
+=== TEST 24: setkeepalive(timeout), bad timeout argument
+--- config
+   server_tokens off;
+   location /t {
+        keepalive_timeout 60s;
+        lua_socket_keepalive_timeout 60s;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local data, res = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            local ok, err = sock:setkeepalive(true)
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("done")
+        ';
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- ignore_response
+--- error_log
+bad argument #1 to 'setkeepalive' (number expected, got boolean)
+
+
+
+=== TEST 25: pool exceeding (abort)
+--- config
+   server_tokens off;
+   location /t {
+       lua_socket_pool_exceeding abort;
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+       lua_socket_pool_size 1;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local sock2 = ngx.socket.tcp()
+
+            local ok, err = sock2:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect 2: ", err)
+                return
+            end
+
+            ngx.say("connected 2: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to connect 2: exceeding pool size
+--- no_error_log
+[error]
+
+
+
+=== TEST 26: pool not exceeding (abort)
+--- config
+   server_tokens off;
+   location /t {
+       lua_socket_pool_exceeding abort;
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+       lua_socket_pool_size 1;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setkeepalive(0)
+
+            local sock2 = ngx.socket.tcp()
+
+            local ok, err = sock2:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect 2: ", err)
+                return
+            end
+
+            ngx.say("connected 2: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+connected 2: 1
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 27: pool exceeding (abort)
+--- config
+   server_tokens off;
+   location /t {
+       lua_socket_pool_exceeding abort;
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+       lua_socket_pool_size 1;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:close()
+
+            local sock2 = ngx.socket.tcp()
+
+            local ok, err = sock2:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect 2: ", err)
+                return
+            end
+
+            ngx.say("connected 2: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+connected 2: 1
+--- no_error_log
+[error]
+[alert]
+[warn]
+
+
+
+=== TEST 28: pool exceeding (abort) - set size limit in Lua
+--- config
+   server_tokens off;
+   location /t {
+       lua_socket_pool_exceeding abort;
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+       #lua_socket_pool_size 1;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port, { pool_size = 1})
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local sock2 = ngx.socket.tcp()
+
+            local ok, err = sock2:connect("127.0.0.1", port, { pool_size = 10})
+            if not ok then
+                ngx.say("failed to connect 2: ", err)
+                return
+            end
+
+            ngx.say("connected 2: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to connect 2: exceeding pool size
+--- no_error_log
+[error]
+[alert]
+[warn]
 

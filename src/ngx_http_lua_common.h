@@ -59,6 +59,12 @@
     (NGX_HTTP_LUA_FILE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
 
 
+enum {
+    NGX_HTTP_LUA_IGNORE_POOL_EXCEEDING = 0,
+    NGX_HTTP_LUA_ABORT_POOL_EXCEEDING  = 1
+};
+
+
 #if defined(NDK) && NDK
 typedef struct {
     size_t       size;
@@ -218,6 +224,7 @@ typedef struct {
     size_t                           buffer_size;
 
     ngx_uint_t                       pool_size;
+    ngx_uint_t                       pool_exceeding;
 
     ngx_flag_t                       transform_underscores_in_resp_headers;
     ngx_flag_t                       log_socket_errors;

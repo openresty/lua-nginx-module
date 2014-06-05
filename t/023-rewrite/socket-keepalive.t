@@ -650,7 +650,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
 
 
-=== TEST 9: sock:setkeepalive(timeout, size) overrides lua_socket_pool_size
+=== TEST 9: pool_size in connect() overrides lua_socket_pool_size
 --- config
    server_tokens off;
    location /t {
@@ -664,7 +664,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
             local sock = ngx.socket.tcp()
 
-            local ok, err = sock:connect("127.0.0.1", port)
+            local ok, err = sock:connect("127.0.0.1", port, { pool_size = 25 })
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -692,7 +692,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 
             ngx.say("received response of ", #data, " bytes")
 
-            local ok, err = sock:setkeepalive(101, 25)
+            local ok, err = sock:setkeepalive(101)
             if not ok then
                 ngx.say("failed to set reusable: ", err)
             end
