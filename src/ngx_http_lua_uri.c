@@ -39,7 +39,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 argument but seen %d", n);
+        return luaL_error(L, "expecting 1 or 2 arguments but seen %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
