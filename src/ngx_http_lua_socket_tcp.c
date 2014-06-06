@@ -105,6 +105,8 @@ static ngx_int_t ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
 static void ngx_http_lua_coctx_cleanup(void *data);
 static int ngx_http_lua_socket_shutdown_pool(lua_State *L);
+static void
+    ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx);
 
 
 enum {
@@ -616,6 +618,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     return lua_yield(L, 0);
+}
+
+
+static void
+ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx)
+{
+    /* do nothing */
 }
 
 
@@ -4352,6 +4361,9 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
     if (rctx == NULL) {
         return;
     }
+
+    /* just to be safer */
+    rctx->handler = ngx_http_lua_socket_empty_resolve_handler;
 
     ngx_resolve_name_done(rctx);
 }
