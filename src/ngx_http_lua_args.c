@@ -89,16 +89,25 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
     int                          retval;
     int                          n;
     int                          max;
+    int                          raw = 0;
 
     n = lua_gettop(L);
 
-    if (n != 0 && n != 1) {
-        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
+    if (n != 0 && n != 1 && n != 2) {
+        return luaL_error(L, "expecting 0 or 1 or 2 arguments but seen %d", n);
     }
 
-    if (n == 1) {
-        max = luaL_checkinteger(L, 1);
-        lua_pop(L, 1);
+    if (n >= 1) {
+        if (lua_isnil(L, 1)) {
+            max = NGX_HTTP_LUA_MAX_ARGS;
+
+        } else {
+            max = luaL_checkinteger(L, 1);
+        }
+
+        if (n == 2) {
+            raw = lua_toboolean(L, 2);
+        }
 
     } else {
         max = NGX_HTTP_LUA_MAX_ARGS;
@@ -125,7 +134,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
 
     last = buf + r->args.len;
 
-    retval = ngx_http_lua_parse_args(L, buf, last, max);
+    retval = ngx_http_lua_parse_args(L, buf, last, max, raw);
 
     ngx_pfree(r->pool, buf);
 
@@ -145,16 +154,25 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
     u_char                      *last;
     int                          n;
     int                          max;
+    int                          raw = 0;
 
     n = lua_gettop(L);
 
-    if (n != 0 && n != 1) {
-        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
+    if (n != 0 && n != 1 && n != 2) {
+        return luaL_error(L, "expecting 0 or 1 or 2 arguments but seen %d", n);
     }
 
-    if (n == 1) {
-        max = luaL_checkinteger(L, 1);
-        lua_pop(L, 1);
+    if (n >= 1) {
+        if (lua_isnil(L, 1)) {
+            max = NGX_HTTP_LUA_MAX_ARGS;
+
+        } else {
+            max = luaL_checkinteger(L, 1);
+        }
+
+        if (n == 2) {
+            raw = lua_toboolean(L, 2);
+        }
 
     } else {
         max = NGX_HTTP_LUA_MAX_ARGS;
@@ -211,7 +229,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
     last = buf + len;
 
-    retval = ngx_http_lua_parse_args(L, buf, last, max);
+    retval = ngx_http_lua_parse_args(L, buf, last, max, raw);
 
     ngx_pfree(r->pool, buf);
 
@@ -220,7 +238,8 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
 
 int
-ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
+ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last,
+                        int max, int raw)
 {
     u_char                      *p, *q;
     u_char                      *src, *dst;
@@ -228,6 +247,7 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
     size_t                       len;
     int                          count = 0;
     int                          top;
+    ngx_uint_t                   type;
 
     top = lua_gettop(L);
 
@@ -236,14 +256,15 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
     parsing_value = 0;
     q = p;
 
+    type = raw ? NGX_UNESCAPE_URI_COMPONENT_RAW : NGX_UNESCAPE_URI_COMPONENT;
+
     while (p != last) {
         if (*p == '=' && ! parsing_value) {
             /* key data is between p and q */
 
             src = q; dst = q;
 
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                      NGX_UNESCAPE_URI_COMPONENT);
+            ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
             dd("pushing key %.*s", (int) (dst - q), q);
 
@@ -260,8 +281,7 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
             /* reached the end of a key or a value, just save it */
             src = q; dst = q;
 
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                      NGX_UNESCAPE_URI_COMPONENT);
+            ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
             dd("pushing key or value %.*s", (int) (dst - q), q);
 
@@ -312,8 +332,7 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
     if (p != q || parsing_value) {
         src = q; dst = q;
 
-        ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                  NGX_UNESCAPE_URI_COMPONENT);
+        ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
         dd("pushing key or value %.*s", (int) (dst - q), q);
 
@@ -421,9 +440,10 @@ ngx_http_lua_ffi_req_get_uri_args_count(ngx_http_request_t *r, int max)
 
 int
 ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
-    ngx_http_lua_ffi_table_elt_t *out, int count)
+    ngx_http_lua_ffi_table_elt_t *out, int count, int raw)
 {
     int                          i, parsing_value = 0;
+    ngx_uint_t                   type;
     u_char                      *last, *p, *q;
     u_char                      *src, *dst;
 
@@ -438,14 +458,15 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
     p = buf;
     q = p;
 
+    type = raw ? NGX_UNESCAPE_URI_COMPONENT_RAW : NGX_UNESCAPE_URI_COMPONENT;
+
     while (p != last) {
         if (*p == '=' && !parsing_value) {
             /* key data is between p and q */
 
             src = q; dst = q;
 
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                      NGX_UNESCAPE_URI_COMPONENT);
+            ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
             dd("saving key %.*s", (int) (dst - q), q);
 
@@ -462,8 +483,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
             /* reached the end of a key or a value, just save it */
             src = q; dst = q;
 
-            ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                      NGX_UNESCAPE_URI_COMPONENT);
+            ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
             dd("pushing key or value %.*s", (int) (dst - q), q);
 
@@ -507,8 +527,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
     if (p != q || parsing_value) {
         src = q; dst = q;
 
-        ngx_http_lua_unescape_uri(&dst, &src, p - q,
-                                  NGX_UNESCAPE_URI_COMPONENT);
+        ngx_http_lua_unescape_uri(&dst, &src, p - q, type);
 
         dd("pushing key or value %.*s", (int) (dst - q), q);
 
