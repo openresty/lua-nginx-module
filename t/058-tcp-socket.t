@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 160;
+plan tests => repeat_each() * 161;
 
 our $HtmlDir = html_dir;
 
@@ -3072,4 +3072,5 @@ resolve name done
 --- no_error_log
 [error]
 [alert]
+could not cancel
 

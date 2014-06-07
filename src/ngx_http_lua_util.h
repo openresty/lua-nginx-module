@@ -381,6 +381,16 @@ ngx_http_lua_set_content_type(ngx_http_request_t *r)
 }
 
 
+static ngx_inline void
+ngx_http_lua_cleanup_pending_operation(ngx_http_lua_co_ctx_t *coctx)
+{
+    if (coctx->cleanup) {
+        coctx->cleanup(coctx);
+        coctx->cleanup = NULL;
+    }
+}
+
+
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
 

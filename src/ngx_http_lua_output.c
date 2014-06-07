@@ -610,6 +610,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
             return 2;
         }
 
+        ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
         coctx->cleanup = ngx_http_lua_flush_cleanup;
         coctx->data = r;
 

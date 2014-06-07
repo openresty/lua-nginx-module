@@ -144,6 +144,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         ctx->waiting_more_body = 1;
         ctx->downstream_co_ctx = coctx;
 
+        ngx_http_lua_cleanup_pending_operation(coctx);
         coctx->cleanup = ngx_http_lua_req_body_cleanup;
         coctx->data = r;
 

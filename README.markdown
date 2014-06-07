@@ -2439,7 +2439,9 @@ local val = ngx.var.some_var
 --- use the val repeatedly later
 ```
 
-to prevent (temporary) memory leaking within the current request's lifetime.
+to prevent (temporary) memory leaking within the current request's lifetime. Another way of caching the result is to use the [ngx.ctx](#ngxctx) table.
+
+This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 
 [Back to TOC](#table-of-contents)
 
@@ -2670,6 +2672,8 @@ ngx.ctx = { foo = 32, bar = 54 }
 ```
 
 When being used in the context of [init_worker_by_lua*](#init_worker_by_lua), this table just has the same lifetime of the current Lua handler.
+
+The `ngx.ctx` lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact. And because of the metamethod magic, never "local" the `ngx.ctx` table outside your function scope.
 
 [Back to TOC](#table-of-contents)
 

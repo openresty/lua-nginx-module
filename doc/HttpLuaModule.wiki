@@ -1944,7 +1944,9 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
     --- use the val repeatedly later
 </geshi>
 
-to prevent (temporary) memory leaking within the current request's lifetime.
+to prevent (temporary) memory leaking within the current request's lifetime. Another way of caching the result is to use the [[#ngx.ctx|ngx.ctx]] table.
+
+This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 
 == Core constants ==
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua*, ngx.timer.*''
@@ -2145,6 +2147,8 @@ Overriding <code>ngx.ctx</code> with a new Lua table is also supported, for exam
 </geshi>
 
 When being used in the context of [[#init_worker_by_lua|init_worker_by_lua*]], this table just has the same lifetime of the current Lua handler.
+
+The <code>ngx.ctx</code> lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact. And because of the metamethod magic, never "local" the <code>ngx.ctx</code> table outside your function scope.
 
 == ngx.location.capture ==
 '''syntax:''' ''res = ngx.location.capture(uri, options?)''
