@@ -576,6 +576,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     saved_top = lua_gettop(L);
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
     coctx->cleanup = ngx_http_lua_tcp_resolve_cleanup;
 
     if (ngx_resolve_name(rctx) != NGX_OK) {
@@ -987,6 +988,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     /* rc == NGX_AGAIN */
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
     coctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     ngx_add_timer(c->write, u->connect_timeout);
@@ -1277,6 +1279,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     if (ctx->entered_content_phase) {
@@ -1880,6 +1883,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* rc == NGX_AGAIN */
 
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
     if (u->raw_downstream) {
         ctx->writing_raw_req_socket = 1;
@@ -2852,6 +2856,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
 
     if (ctx->entered_content_phase) {

@@ -366,6 +366,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     saved_top = lua_gettop(L);
 
     coctx = ctx->cur_co_ctx;
+    ngx_http_lua_cleanup_pending_operation(coctx);
     coctx->cleanup = ngx_http_lua_udp_resolve_cleanup;
 
     if (ngx_resolve_name(rctx) != NGX_OK) {
@@ -999,6 +1000,7 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     ctx->cur_co_ctx->cleanup = ngx_http_lua_udp_socket_cleanup;
 
     if (ctx->entered_content_phase) {

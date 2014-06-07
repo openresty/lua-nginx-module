@@ -73,6 +73,7 @@ ngx_http_lua_ngx_sleep(lua_State *L)
 
     ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
     coctx->cleanup = ngx_http_lua_sleep_cleanup;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
