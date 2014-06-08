@@ -82,8 +82,7 @@ static void ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r);
 static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
-    lua_State *L, int key_index,
-    ngx_http_lua_socket_tcp_upstream_t *u);
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static void ngx_http_lua_socket_keepalive_dummy_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev);
 static void ngx_http_lua_socket_keepalive_rev_handler(ngx_event_t *ev);
@@ -509,7 +508,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     spool = lua_touserdata(L, -1);
     if (spool) {
-        rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
+        u->socket_pool = spool;
+
+        rc = ngx_http_lua_get_keepalive_peer(r, u, L);
+
         if (rc == NGX_ERROR) {
             lua_pushnil(L);
             lua_pushliteral(L, "error in get keepalive peer");
@@ -526,9 +528,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         dd("pool size: %d vs %d (conn %d)", (int) pool_size,
            (int) spool->size, (int) spool->open_connections);
 
-        if (llcf->pool_exceeding == NGX_HTTP_LUA_ABORT_POOL_EXCEEDING
-            && spool->open_connections >= spool->size)
-        {
+        if (llcf->pool_exceeding == NGX_HTTP_LUA_ABORT_POOL_EXCEEDING) {
             lua_pushnil(L);
             lua_pushliteral(L, "exceeding pool size");
             return 2;
@@ -3775,42 +3775,25 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
 
 static ngx_int_t
-ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
-    int key_index, ngx_http_lua_socket_tcp_upstream_t *u)
+ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     ngx_http_lua_socket_pool_item_t     *item;
     ngx_http_lua_socket_pool_t          *spool;
     ngx_http_cleanup_t                  *cln;
     ngx_queue_t                         *q;
-    int                                  top;
     ngx_peer_connection_t               *pc;
     ngx_connection_t                    *c;
-
-    top = lua_gettop(L);
-
-    if (key_index < 0) {
-        key_index = top + key_index + 1;
-    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket pool get keepalive peer");
 
     pc = &u->peer;
 
-    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
-    lua_rawget(L, LUA_REGISTRYINDEX); /* table */
-    lua_pushvalue(L, key_index); /* key */
-    lua_rawget(L, -2);
-
-    spool = lua_touserdata(L, -1);
+    spool = u->socket_pool;
     if (spool == NULL) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
-                       "lua tcp socket keepalive connection pool not found");
-        lua_settop(L, top);
-        return NGX_DECLINED;
+        return NGX_ERROR;
     }
-
-    u->socket_pool = spool;
 
     if (!ngx_queue_empty(&spool->cache)) {
         q = ngx_queue_head(&spool->cache);
@@ -3854,7 +3837,6 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
             cln = ngx_http_cleanup_add(r, 0);
             if (cln == NULL) {
                 u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
-                lua_settop(L, top);
                 return NGX_ERROR;
             }
 
@@ -3863,16 +3845,11 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
             u->cleanup = &cln->handler;
         }
 
-        lua_settop(L, top);
-
         return NGX_OK;
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "lua tcp socket keepalive: connection pool empty");
-
-    lua_settop(L, top);
-
     return NGX_DECLINED;
 }
 
@@ -4434,8 +4411,6 @@ ngx_http_lua_tcp_socket_create_pool(ngx_http_request_t *r, lua_State *L,
         ngx_queue_insert_head(&spool->free, &items[i].queue);
         items[i].socket_pool = spool;
     }
-
-    spool->size = (ngx_uint_t) pool_size;
 
     return spool;
 }

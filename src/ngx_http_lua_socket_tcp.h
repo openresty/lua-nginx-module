@@ -38,7 +38,6 @@ typedef struct {
     lua_State                         *lua_vm;
 
     ngx_uint_t                         open_connections;
-    ngx_uint_t                         size;
 
     /* queues of ngx_http_lua_socket_pool_item_t: */
     ngx_queue_t                        cache;
