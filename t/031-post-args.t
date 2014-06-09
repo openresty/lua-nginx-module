@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 #no_diff();
 #no_long_string();
@@ -323,4 +323,105 @@ for my $k (@k) {
 }
 CORE::join("", @k);
 --- timeout: 4
+
+
+
+=== TEST 10: raw is not set(decode '+' to ' ')
+--- config
+    location /lua {
+        lua_need_request_body on;
+        content_by_lua '
+            local args = ngx.req.get_post_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+POST /lua
+a=3+5&b=4&c
+--- response_body
+a = 3 5
+b = 4
+c = true
+
+
+
+=== TEST 11: raw is true with max_args
+--- config
+    location /lua {
+        lua_need_request_body on;
+        content_by_lua '
+            local args = ngx.req.get_post_args(2, true)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+POST /lua
+a=3+5&b=4&c
+--- response_body
+a = 3+5
+b = 4
+
+
+
+=== TEST 12: raw is true with max_args is not set(default 100)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args(nil, true)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request eval
+my $s = "POST /lua\n";
+my $i = 1;
+while ($i <= 102) {
+    if ($i != 1) {
+        $s .= '&';
+    }
+    $s .= "a$i=$i+$i";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 100) {
+    push @k, "a$i";
+    $i++;
+}
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= " = $&+$&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+--- error_log
+lua hit query args limit 100
 

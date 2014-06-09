@@ -182,3 +182,27 @@ GET /t
 --- response_body
 [32]
 
+
+
+=== TEST 14: unescape uri raw is not set
+--- config
+    location /unescape {
+        content_by_lua "ngx.say(ngx.unescape_uri('a+%e4%bd%a0'))";
+    }
+--- request
+GET /unescape
+--- response_body
+a 你
+
+
+
+=== TEST 15: unescape uri raw is true
+--- config
+    location /unescape {
+        content_by_lua "ngx.say(ngx.unescape_uri('a+%e4%bd%a0', true))";
+    }
+--- request
+GET /unescape
+--- response_body
+a+你
+
