@@ -572,12 +572,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     u->resolved->ctx = rctx;
     u->co_ctx = ctx->cur_co_ctx;
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_tcp_resolve_cleanup;
     coctx->data = u;
 
     saved_top = lua_gettop(L);
-
-    ngx_http_lua_cleanup_pending_operation(coctx);
-    coctx->cleanup = ngx_http_lua_tcp_resolve_cleanup;
 
     if (ngx_resolve_name(rctx) != NGX_OK) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -952,8 +951,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     dd("setting data to %p", u);
 
-    coctx->data = u;
-
     if (rc == NGX_OK) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket connected: fd:%d", (int) c->fd);
@@ -990,6 +987,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     ngx_http_lua_cleanup_pending_operation(coctx);
     coctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx->data = u;
 
     ngx_add_timer(c->write, u->connect_timeout);
 
@@ -1279,8 +1277,11 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx = ctx->cur_co_ctx;
+
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx->data = u;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -1289,15 +1290,11 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         r->write_event_handler = ngx_http_core_run_phases;
     }
 
-    u->co_ctx = ctx->cur_co_ctx;
+    u->co_ctx = coctx;
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
-    coctx = ctx->cur_co_ctx;
-
     dd("setting data to %p, coctx:%p", u, coctx);
-
-    coctx->data = u;
 
     if (u->raw_downstream || u->body_downstream) {
         ctx->downstream_co_ctx = coctx;
@@ -1883,8 +1880,12 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* rc == NGX_AGAIN */
 
-    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx = ctx->cur_co_ctx;
+
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx->data = u;
+
     if (u->raw_downstream) {
         ctx->writing_raw_req_socket = 1;
     }
@@ -1896,14 +1897,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         r->write_event_handler = ngx_http_core_run_phases;
     }
 
-    u->co_ctx = ctx->cur_co_ctx;
+    u->co_ctx = coctx;
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_tcp_send_retval_handler;
 
     dd("setting data to %p", u);
-
-    coctx = ctx->cur_co_ctx;
-    coctx->data = u;
 
     return lua_yield(L, 0);
 }
@@ -2853,11 +2851,14 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     /* rc == NGX_AGAIN */
 
+    coctx = ctx->cur_co_ctx;
+
     u->read_event_handler = ngx_http_lua_socket_read_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
-    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
-    ctx->cur_co_ctx->cleanup = ngx_http_lua_coctx_cleanup;
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_coctx_cleanup;
+    coctx->data = u;
 
     if (ctx->entered_content_phase) {
         r->write_event_handler = ngx_http_lua_content_wev_handler;
@@ -2866,15 +2867,11 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
         r->write_event_handler = ngx_http_core_run_phases;
     }
 
-    u->co_ctx = ctx->cur_co_ctx;
+    u->co_ctx = coctx;
     u->waiting = 1;
     u->prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
 
-    coctx = ctx->cur_co_ctx;
-
     dd("setting data to %p", u);
-
-    coctx->data = u;
 
     if (u->raw_downstream || u->body_downstream) {
         ctx->downstream_co_ctx = coctx;

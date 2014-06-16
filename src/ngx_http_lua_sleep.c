@@ -62,6 +62,8 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no co ctx found");
     }
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_sleep_cleanup;
     coctx->data = r;
 
     coctx->sleep.handler = ngx_http_lua_sleep_handler;
@@ -72,9 +74,6 @@ ngx_http_lua_ngx_sleep(lua_State *L)
        (int) r->uri.len, r->uri.data);
 
     ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
-
-    ngx_http_lua_cleanup_pending_operation(coctx);
-    coctx->cleanup = ngx_http_lua_sleep_cleanup;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua ready to sleep for %d ms", delay);
