@@ -510,7 +510,7 @@ warn(): Thu, 01 Jan 1970 01:34:38 GMT
     location = /t {
         content_by_lua '
             local i = 0
-            while not done and i < 1000 do
+            while not done and i < 3000 do
                 ngx.sleep(0.001)
                 i = i + 1
             end
