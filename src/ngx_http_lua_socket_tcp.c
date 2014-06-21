@@ -4344,6 +4344,9 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
     ngx_http_lua_socket_tcp_upstream_t      *u;
     ngx_http_lua_co_ctx_t                   *coctx = data;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "lua tcp socket abort resolver");
+
     u = coctx->data;
     if (u == NULL) {
         return;

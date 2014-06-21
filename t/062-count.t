@@ -414,7 +414,7 @@ probe process("$LIBLUA_PATH").function("rehashtab") {
 }
 --- stap_out2
 --- response_body
-thread: 2
+thread: 3
 --- no_error_log
 [error]
 

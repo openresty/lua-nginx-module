@@ -1274,7 +1274,7 @@ delete thread 1
 --- response_body
 hello in thread
 thread created: zombie
-failed to run thread: already waited
+failed to run thread: already waited or killed
 --- no_error_log
 [error]
 
