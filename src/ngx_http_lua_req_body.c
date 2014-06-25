@@ -777,7 +777,6 @@ ngx_http_lua_pool_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
         if (c->handler == ngx_pool_cleanup_file
             || c->handler == ngx_pool_delete_file)
         {
-
             cf = c->data;
 
             if (cf->fd == fd) {
