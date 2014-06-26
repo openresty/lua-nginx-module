@@ -344,12 +344,12 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 }
 
 
-void
+ngx_int_t
 ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx)
 {
     if (coctx->co_ref == LUA_NOREF) {
-        return;
+        return NGX_DECLINED;
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -365,6 +365,8 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     coctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
     lua_pop(L, 1);
+
+    return NGX_OK;
 }
 
 
