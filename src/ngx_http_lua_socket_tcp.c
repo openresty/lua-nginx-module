@@ -18,12 +18,6 @@
 #include "ngx_http_lua_probe.h"
 
 
-#if 1
-#undef ngx_http_lua_probe_info
-#define ngx_http_lua_probe_info(msg)
-#endif
-
-
 static int ngx_http_lua_socket_tcp(lua_State *L);
 static int ngx_http_lua_socket_tcp_connect(lua_State *L);
 static int ngx_http_lua_socket_tcp_receive(lua_State *L);
@@ -4303,10 +4297,6 @@ ngx_http_lua_socket_tcp_resume(ngx_http_request_t *r)
                    "lua tcp operation done, resuming lua thread");
 
     coctx = ctx->cur_co_ctx;
-
-#if 0
-    ngx_http_lua_probe_info("tcp resume");
-#endif
 
     dd("coctx: %p", coctx);
 
