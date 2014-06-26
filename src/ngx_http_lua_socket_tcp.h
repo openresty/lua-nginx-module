@@ -51,7 +51,8 @@ typedef struct {
 
 
 struct ngx_http_lua_socket_tcp_upstream_s {
-    ngx_http_lua_socket_tcp_retval_handler          prepare_retvals;
+    ngx_http_lua_socket_tcp_retval_handler          read_prepare_retvals;
+    ngx_http_lua_socket_tcp_retval_handler          write_prepare_retvals;
     ngx_http_lua_socket_tcp_upstream_handler_pt     read_event_handler;
     ngx_http_lua_socket_tcp_upstream_handler_pt     write_event_handler;
 
@@ -84,15 +85,20 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     size_t                           request_len;
     ngx_chain_t                     *request_bufs;
 
-    ngx_http_lua_co_ctx_t           *co_ctx;
+    ngx_http_lua_co_ctx_t           *read_co_ctx;
+    ngx_http_lua_co_ctx_t           *write_co_ctx;
 
     ngx_uint_t                       reused;
 
     unsigned                         no_close:1;
-    unsigned                         waiting:1;
+    unsigned                         conn_waiting:1;
+    unsigned                         read_waiting:1;
+    unsigned                         write_waiting:1;
     unsigned                         eof:1;
     unsigned                         body_downstream:1;
     unsigned                         raw_downstream:1;
+    unsigned                         read_closed:1;
+    unsigned                         write_closed:1;
 };
 
 

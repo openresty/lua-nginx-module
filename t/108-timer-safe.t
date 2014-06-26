@@ -223,7 +223,7 @@ qr/received: Server: \S+/,
 "received: Content-Length: 4",
 "received: Connection: close",
 "received: foo",
-"close: nil closed",
+"close: 1 nil",
 ]
 
 

@@ -29,7 +29,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 13);
+plan tests => repeat_each() * (blocks() * 4 + 12);
 
 our $HtmlDir = html_dir;
 
@@ -48,7 +48,7 @@ __DATA__
     server_tokens off;
     lua_socket_connect_timeout 100ms;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -76,6 +76,7 @@ lua tcp socket connect timed out
     server_tokens off;
     lua_socket_connect_timeout 60s;
     resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -685,7 +686,7 @@ after
     server_tokens off;
     lua_socket_connect_timeout 100ms;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -917,4 +918,72 @@ failed to receive: timeout
 lua tcp socket read timeout: 10
 lua tcp socket connect timeout: 60000
 lua tcp socket read timed out
+
+
+
+=== TEST 22: concurrent operations while writing
+--- config
+    server_tokens off;
+    lua_socket_log_errors off;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+
+            local function f()
+                ngx.sleep(0.01)
+                local bytes, err = sock:send("flush_all")
+                ngx.say("send: ", bytes, " ", err)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+
+                local ok, err = sock:getreusedtimes()
+                ngx.say("getreusedtimes: ", ok, " ", err)
+
+                local ok, err = sock:setkeepalive()
+                ngx.say("setkeepalive: ", ok, " ", err)
+
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+                ngx.say("connect: ", ok, " ", err)
+
+                sock:settimeout(1)
+                local res, err = sock:receive(1)
+                ngx.say("receive: ", res, " ", err)
+            end
+
+            local ok, err = ngx.thread.spawn(f)
+            if not ok then
+                ngx.say("failed to spawn writer thread: ", err)
+                return
+            end
+
+            sock:settimeout(300)
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            ngx.say("connect: ", ok, " ", err)
+
+            local bytes, err = sock:send("get helloworld!")
+            if not bytes then
+                ngx.say("send failed: ", err)
+            end
+
+            local ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connect: 1 nil
+send: nil socket busy writing
+close: nil socket busy writing
+getreusedtimes: 0 nil
+setkeepalive: nil socket busy writing
+connect: nil socket busy writing
+receive: nil timeout
+send failed: timeout
+close: 1 nil
+
+--- no_error_log
+[error]
 
