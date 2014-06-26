@@ -297,7 +297,8 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
             "coroutine.wrap = function(f)\n"
                "local co = create(f)\n"
                "return function(...) return select(2, resume(co, ...)) end\n"
-            "end";
+            "end\n"
+            "package.loaded.coroutine = coroutine";
 
 #if 0
             "debug.sethook(function () collectgarbage() end, 'rl', 1)"

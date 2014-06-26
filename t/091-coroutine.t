@@ -1190,3 +1190,42 @@ ok
 --- no_error_log
 [error]
 
+
+
+=== TEST 29: require "coroutine"
+--- config
+    location /lua {
+        content_by_lua '
+            local coroutine = require "coroutine"
+            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    ngx.say("Hello, ", cnt)
+                    ngx.sleep(0.001)
+                    cy()
+                    cnt = cnt + 1
+                end
+            end
+
+            local c = cc(f)
+            for i=1,3 do
+                cr(c)
+                ngx.say("***")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- response_body
+Hello, 0
+***
+Hello, 1
+***
+Hello, 2
+***
+--- no_error_log
+[error]
+
