@@ -486,9 +486,13 @@ close: nil closed
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
+            local ready = false
 
             local function f()
-                ngx.sleep(0.001)
+                while not ready do
+                    ngx.sleep(0.001)
+                end
+
                 local res, err = sock:receive(1)
                 ngx.say("receive: ", res, " ", err)
 
@@ -517,6 +521,8 @@ close: nil closed
             sock:settimeout(300)
             local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
             ngx.say("connect: ", ok, " ", err)
+
+            ready = true
 
             local res, err = sock:receive(1)
             ngx.say("receive: ", res, " ", err)
@@ -550,10 +556,14 @@ close: 1 nil
     lua_socket_log_errors off;
     location /t {
         content_by_lua '
+            local ready = false
             local sock = ngx.socket.tcp()
 
             local function f()
-                ngx.sleep(0.001)
+                while not ready do
+                    ngx.sleep(0.001)
+                end
+
                 local res, err = sock:receive(1)
                 ngx.say("receive: ", res, " ", err)
 
@@ -582,6 +592,8 @@ close: 1 nil
             sock:settimeout(300)
             local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
             ngx.say("connect: ", ok, " ", err)
+
+            ready = true
 
             local it, err = sock:receiveuntil("\\r\\n")
             if not it then

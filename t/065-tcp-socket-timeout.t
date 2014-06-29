@@ -928,9 +928,13 @@ lua tcp socket read timed out
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
+            local ready = false
 
             local function f()
-                ngx.sleep(0.01)
+                while not ready do
+                    ngx.sleep(0.001)
+                end
+
                 local bytes, err = sock:send("flush_all")
                 ngx.say("send: ", bytes, " ", err)
 
@@ -957,10 +961,12 @@ lua tcp socket read timed out
                 return
             end
 
-            sock:settimeout(300)
             local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
             ngx.say("connect: ", ok, " ", err)
 
+            ready = true
+
+            sock:settimeout(300)
             local bytes, err = sock:send("get helloworld!")
             if not bytes then
                 ngx.say("send failed: ", err)
