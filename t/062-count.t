@@ -418,3 +418,23 @@ thread: 3
 --- no_error_log
 [error]
 
+
+
+=== TEST 19: entries under ngx.worker
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                for k, v in pairs(ngx.worker) do
+                    n = n + 1
+                end
+                ngx.say("worker: ", n)
+            ';
+        }
+--- request
+GET /test
+--- response_body
+worker: 2
+--- no_error_log
+[error]
+
