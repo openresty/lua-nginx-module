@@ -42,9 +42,16 @@ ngx_http_lua_pcre_malloc(size_t size)
 
 
 static void
-ngx_http_lua_pcre_free(void *p)
+ngx_http_lua_pcre_free(void *ptr)
 {
-    return;
+    dd("lua pcre pool is %p", ngx_http_lua_pcre_pool);
+
+    if (ngx_http_lua_pcre_pool) {
+        ngx_pfree(ngx_http_lua_pcre_pool, ptr);
+        return;
+    }
+
+    fprintf(stderr, "error: lua pcre free failed due to empty pcre pool");
 }
 
 
