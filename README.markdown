@@ -2294,6 +2294,7 @@ Nginx API for Lua
 * [ngx.get_phase](#ngxget_phase)
 * [ngx.thread.spawn](#ngxthreadspawn)
 * [ngx.thread.wait](#ngxthreadwait)
+* [ngx.thread.kill](#ngxthreadkill)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.config.debug](#ngxconfigdebug)
@@ -6287,6 +6288,20 @@ And it will generate the following output:
 
 
 This API was first enabled in the `v0.7.0` release.
+
+[Back to TOC](#table-of-contents)
+
+ngx.thread.kill
+---------------
+**syntax:** *ok, err = ngx.thread.kill(thread)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+
+Kills a running "light thread" created by [ngx.thread.spawn](#ngxthreadspawn). Returns a true value when successful or `nil` and a string describing the error otherwise.
+
+According to the current implementation, only the parent coroutine (or "light thread") can kill a thread. Also, a running "light thread" with pending NGINX subrequests (initiated by [ngx.location.capture](#ngxlocationcapture) for example) cannot be killed due to a limitation in the NGINX core.
+
+This API was first enabled in the `v0.9.9` release.
 
 [Back to TOC](#table-of-contents)
 
