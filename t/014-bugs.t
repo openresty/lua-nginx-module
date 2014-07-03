@@ -933,3 +933,22 @@ done
 --- no_error_log
 [error]
 
+
+
+=== TEST 40: .lua file of exactly N*1024 bytes (github issue #385)
+--- config
+    location = /t {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files eval
+my $s = "ngx.say('ok')\n";
+">>> a.lua\n" . (" " x (8192 - length($s))) . $s;
+
+--- request
+GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+
