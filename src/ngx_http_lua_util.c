@@ -401,7 +401,7 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
         ctx->on_abort_co_ctx = NULL;
     }
 
-    if (ctx->uthreads && ctx->user_co_ctx) {
+    if (ctx->user_co_ctx) {
         /* release all pending user threads */
 
         if (!inited) {
@@ -435,11 +435,15 @@ ngx_http_lua_del_all_threads(ngx_http_request_t *r, lua_State *L,
                 cc[i].co_status = NGX_HTTP_LUA_CO_DEAD;
                 ctx->uthreads--;
 
+#if 0
                 if (ctx->uthreads == 0) {
                     break;
                 }
+#endif
             }
         }
+
+        ngx_http_lua_assert(ctx->uthreads == 0);
     }
 
     /* release the reference to the entry thread */
