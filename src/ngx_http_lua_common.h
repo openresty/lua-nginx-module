@@ -14,7 +14,6 @@
 #include <ngx_http.h>
 #include <ngx_md5.h>
 
-#include <assert.h>
 #include <setjmp.h>
 #include <stdint.h>
 
@@ -36,7 +35,14 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
-#define ngx_http_lua_assert(a)  assert(a)
+
+#ifdef NGX_LUA_USE_ASSERT
+#   include <assert.h>
+#   define ngx_http_lua_assert(a)  assert(a)
+#else
+#   define ngx_http_lua_assert(a)
+#endif
+
 
 /* Nginx HTTP Lua Inline tag prefix */
 
@@ -284,7 +290,7 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;  /* used for ngx.sleep */
 
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
     int                      co_top; /* stack top after yielding/creation,
                                         only for sanity checks */
 #endif

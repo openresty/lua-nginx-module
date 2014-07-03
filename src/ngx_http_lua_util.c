@@ -996,7 +996,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                                "lua thread yielded");
 
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
                 dd("%p: saving curr top after yield: %d (co-op: %d)",
                    orig_coctx->co,
                    (int) lua_gettop(orig_coctx->co), (int) ctx->co_op);
@@ -1023,9 +1023,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 case NGX_HTTP_LUA_USER_CORO_NOP:
                     dd("hit! it is the API yield");
 
-#ifdef ngx_http_lua_assert
                     ngx_http_lua_assert(lua_gettop(ctx->cur_co_ctx->co) == 0);
-#endif
 
                     ctx->cur_co_ctx = NULL;
 
@@ -1039,7 +1037,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     ctx->co_op = NGX_HTTP_LUA_USER_CORO_NOP;
                     nrets = lua_gettop(ctx->cur_co_ctx->co) - 1;
                     dd("nrets = %d", nrets);
-#ifdef ngx_http_lua_assert
+
+#ifdef NGX_LUA_USE_ASSERT
                     /* ignore the return value (the thread) already pushed */
                     orig_coctx->co_top--;
 #endif
@@ -1062,7 +1061,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     if (nrets) {
                         dd("moving %d return values to parent", nrets);
                         lua_xmove(old_co, ctx->cur_co_ctx->co, nrets);
-#ifdef ngx_http_lua_assert
+
+#ifdef NGX_LUA_USE_ASSERT
                         ctx->cur_co_ctx->parent_co_ctx->co_top -= nrets;
 #endif
                     }
@@ -1084,7 +1084,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                          * coroutine.yield()'s arguments */
                         lua_settop(ctx->cur_co_ctx->co, 0);
 
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
                         ctx->cur_co_ctx->co_top = 0;
 #endif
 
@@ -1120,7 +1120,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     if (nrets) {
                         dd("moving %d return values to next co", nrets);
                         lua_xmove(ctx->cur_co_ctx->co, next_co, nrets);
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
                         ctx->cur_co_ctx->co_top -= nrets;
 #endif
                     }
@@ -3048,12 +3048,17 @@ static void
 ngx_http_lua_finalize_threads(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
-    int                              inited = 0, top, ref;
+#ifdef NGX_LUA_USE_ASSERT
+    int                              top;
+#endif
+    int                              inited = 0, ref;
     ngx_uint_t                       i;
     ngx_list_part_t                 *part;
     ngx_http_lua_co_ctx_t           *cc, *coctx;
 
+#ifdef NGX_LUA_USE_ASSERT
     top = lua_gettop(L);
+#endif
 
 #if 1
     coctx = ctx->on_abort_co_ctx;

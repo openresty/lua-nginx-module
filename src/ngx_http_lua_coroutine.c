@@ -117,7 +117,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
         *pcoctx = coctx;
     }
 
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
     coctx->co_top = 1;
 #endif
 

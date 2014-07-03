@@ -355,7 +355,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         lua_insert(tctx.co, 2);
     }
 
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
     ctx->cur_co_ctx->co_top = 1;
 #endif
 

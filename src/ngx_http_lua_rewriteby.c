@@ -270,7 +270,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
     ctx->cur_co_ctx->co = co;
     ctx->cur_co_ctx->co_ref = co_ref;
-#ifdef ngx_http_lua_assert
+#ifdef NGX_LUA_USE_ASSERT
     ctx->cur_co_ctx->co_top = 1;
 #endif
 
