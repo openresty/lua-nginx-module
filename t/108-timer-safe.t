@@ -1305,9 +1305,9 @@ add timer 100
 add timer 1000
 expire timer 100
 terminate 3: ok
+delete thread 3
 lua sleep cleanup
 delete timer 1000
-delete thread 3
 delete thread 2
 terminate 1: ok
 delete thread 1
