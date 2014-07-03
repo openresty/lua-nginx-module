@@ -446,7 +446,7 @@ warn(): Thu, 01 Jan 1970 01:34:38 GMT
 --- http_config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     init_worker_by_lua '
         -- global
         logs = ""

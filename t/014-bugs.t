@@ -789,7 +789,7 @@ qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
     location ~ /myproxy {
 
         rewrite    ^/myproxy/(.*)  /$1  break;
-        resolver_timeout 1s;
+        resolver_timeout 3s;
         #resolver 172.16.0.23; #  AWS DNS resolver address is the same in all regions - 172.16.0.23
         resolver 8.8.8.8;
         proxy_read_timeout 1s;
