@@ -236,7 +236,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     uint16_t                     old_context;
     ngx_http_cleanup_t          *cln;
     lua_State                   *L;
-    ngx_chain_t                 *out;
+    ngx_chain_t                 *out, *cl;
     ngx_buf_tag_t                tag;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -305,12 +305,14 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     out = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    for (cl = out; cl && !ngx_buf_size(cl->buf) && cl->buf->sync; cl = cl->next);
+
     if (in == out) {
-        return ngx_http_next_body_filter(r, in);
+        return ngx_http_next_body_filter(r, cl);
     }
 
     /* in != out */
-    rc = ngx_http_next_body_filter(r, out);
+    rc = ngx_http_next_body_filter(r, cl);
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
@@ -474,10 +476,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                 }
 
                 if (cl->buf->last - cl->buf->pos == 0) {
+#if 0
                     cl->buf->temporary = 0;
                     cl->buf->memory = 0;
                     cl->buf->mmap = 0;
                     cl->buf->in_file = 0;
+#endif
                     cl->buf->sync = 1;
                 }
             }
@@ -508,10 +512,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             cl->buf->pos = cl->buf->last;
             cl->buf->file_pos = cl->buf->file_last;
 
+#if 0
             cl->buf->temporary = 0;
             cl->buf->memory = 0;
             cl->buf->mmap = 0;
             cl->buf->in_file = 0;
+#endif
             cl->buf->sync = 1;
         }
 
@@ -554,10 +560,12 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         } else {
             for (cl = in; cl; cl = cl->next) {
                 cl->buf->sync = 1;
+#if 0
                 cl->buf->temporary = 0;
                 cl->buf->memory = 0;
                 cl->buf->mmap = 0;
                 cl->buf->in_file = 0;
+#endif
             }
         }
 

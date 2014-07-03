@@ -573,3 +573,35 @@ GET /t
 [error]
 [alert]
 
+
+
+=== TEST 22: work with content_by_lua
+--- config
+    location /t {
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            if not ngx.ctx.chunks then
+                ngx.ctx.chunks = {}
+            end
+
+            table.insert(ngx.ctx.chunks, ngx.arg[1])
+            ngx.arg[1] = nil
+
+            if ngx.arg[2] then
+                ngx.arg[1] = string.upper(table.concat(ngx.ctx.chunks))
+            end
+        ';
+
+        content_by_lua '
+        for i = 1, 10 do
+            ngx.say("hello world")
+        end
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+("HELLO WORLD\n" x 10)
+--- no_error_log
+[error]
