@@ -323,6 +323,7 @@ receive: nil closed
 close: nil closed
 --- error_log
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
@@ -396,7 +397,7 @@ connected: nil
 failed to send request: closed$
 --- error_log
 attempt to send data on a closed socket
---- timeout: 5
+--- timeout: 10
 
 
 

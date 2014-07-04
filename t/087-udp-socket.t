@@ -736,7 +736,7 @@ successfully connected to xxx!
 
 --- no_error_log
 [error]
---- timeout: 5
+--- timeout: 10
 
 
 

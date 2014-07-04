@@ -815,7 +815,7 @@ Hello, 502
 
 --- error_log
 not-exist.agentzh.org could not be resolved
---- timeout: 3
+--- timeout: 10
 
 
 

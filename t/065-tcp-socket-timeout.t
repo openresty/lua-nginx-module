@@ -68,6 +68,7 @@ failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 100
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
@@ -97,6 +98,7 @@ failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 150
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
@@ -154,7 +156,7 @@ failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
 lua tcp socket connect timed out
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -715,6 +717,7 @@ GET /t
 --- error_log
 lua tcp socket connect timeout: 100
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
