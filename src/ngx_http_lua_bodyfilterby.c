@@ -236,8 +236,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     uint16_t                     old_context;
     ngx_http_cleanup_t          *cln;
     lua_State                   *L;
-    ngx_buf_t                   *b;
-    ngx_chain_t                 *out, *cl;
+    ngx_chain_t                 *out;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua body filter for user lua code, uri \"%V\"", &r->uri);
@@ -305,32 +304,18 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     out = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-#if 1
-    for (cl = out; cl; cl = cl->next) {
-        b = cl->buf;
-        if (b->last == b->pos && !b->last_buf && !b->last_in_chain) {
-            /* skip leading zero-size bufs because they can stuck in the buffer
-             * of ngx_http_write_filter_module (that is, being busy) but get
-             * still recycled by the buffer generator
-             * (usually being the content handler module) at the same
-             * time, which can lead to buffer corruptions. */
-
-            /* FIXME we should handle the "flush" flag properly here
-             * now we just discard it if it is set in these zero-size bufs. */
-            continue;
-        }
-
-        break;
-    }
-#endif
-
     if (in == out) {
-        return ngx_http_next_body_filter(r, cl);
+        return ngx_http_next_body_filter(r, in);
+    }
+
+    if (out == NULL) {
+        /* do not forward NULL to the next filters because the input is
+         * not NULL */
+        return NGX_OK;
     }
 
     /* in != out */
-    rc = ngx_http_next_body_filter(r, cl);
-
+    rc = ngx_http_next_body_filter(r, out);
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
@@ -445,6 +430,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     u_char                  *data;
     size_t                   size;
     unsigned                 last;
+    unsigned                 flush = 0;
+    ngx_buf_t               *b;
     ngx_chain_t             *cl;
     ngx_chain_t             *in;
 
@@ -467,6 +454,9 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         if (last) {
             ctx->seen_last_in_filter = 1;
 
+            /* the "in" chain cannot be NULL and we set the "last_buf" or
+             * "last_in_chain" flag in the last buf of "in" */
+
             for (cl = in; cl; cl = cl->next) {
                 if (cl->next == NULL) {
                     if (r == r->main) {
@@ -486,27 +476,26 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
             found = 0;
 
             for (cl = in; cl; cl = cl->next) {
-                if (cl->buf->last_buf) {
-                    cl->buf->last_buf = 0;
+                b = cl->buf;
+
+                if (b->last_buf) {
+                    b->last_buf = 0;
                     found = 1;
                 }
 
-                if (cl->buf->last_in_chain) {
-                    cl->buf->last_in_chain = 0;
+                if (b->last_in_chain) {
+                    b->last_in_chain = 0;
                     found = 1;
                 }
 
-                if (found && cl->buf->last - cl->buf->pos == 0) {
+                if (found && b->last == b->pos && !ngx_buf_in_memory(b)) {
                     /* make it a special sync buf to make
                      * ngx_http_write_filter_module happy. */
-
-                    cl->buf->temporary = 0;
-                    cl->buf->memory = 0;
-                    cl->buf->mmap = 0;
-                    cl->buf->in_file = 0;
-                    cl->buf->sync = 1;
+                    b->sync = 1;
                 }
             }
+
+            ctx->seen_last_in_filter = 0;
         }
 
         return 0;
@@ -524,19 +513,31 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
     case LUA_TNIL:
         /* discard the buffers */
+
         lua_getglobal(L, ngx_http_lua_chain_key); /* key val */
         in = lua_touserdata(L, -1);
         lua_pop(L, 1);
 
-        for (cl = in; cl; cl = cl->next) {
-            dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
-            cl->buf->pos = cl->buf->last;
+        last = 0;
 
-            /* will later be skipped by ngx_http_lua_body_filter()
-             * and never be forwarded to the next filters. */
+        for (cl = in; cl; cl = cl->next) {
+            b = cl->buf;
+
+            if (b->flush) {
+                flush = 1;
+            }
+
+            if (b->last_in_chain || b->last_buf) {
+                last = 1;
+            }
+
+            dd("mark the buf as consumed: %d", (int) ngx_buf_size(b));
+            b->pos = b->last;
         }
 
-        return 0;
+        /* cl == NULL */
+
+        goto done;
 
     case LUA_TTABLE:
         size = ngx_http_lua_calc_strlen_in_table(L, 3 /* index */, 3 /* arg */,
@@ -554,40 +555,32 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     lua_pop(L, 1);
 
     last = 0;
+
     for (cl = in; cl; cl = cl->next) {
-        if (cl->buf->last_buf || cl->buf->last_in_chain) {
+        b = cl->buf;
+
+        if (b->flush) {
+            flush = 1;
+        }
+
+        if (b->last_buf || b->last_in_chain) {
             last = 1;
         }
 
         dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
         cl->buf->pos = cl->buf->last;
-
-        /* will later be skipped by ngx_http_lua_body_filter() and
-         * never be forwarded to the next filters */
     }
 
-    if (size == 0 && !last) {
-        return 0;
+    /* cl == NULL */
+
+    if (size == 0) {
+        goto done;
     }
 
     cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
                                          &ctx->free_bufs, size);
     if (cl == NULL) {
         return luaL_error(L, "out of memory");
-    }
-
-    if (size == 0) {
-
-        /* "last" must already be set */
-
-        if (r == r->main) {
-            cl->buf->last_buf = 1;
-
-        } else {
-            cl->buf->last_in_chain = 1;
-        }
-
-        return 0;
     }
 
     if (type == LUA_TTABLE) {
@@ -597,14 +590,31 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         cl->buf->last = ngx_copy(cl->buf->pos, data, size);
     }
 
-    if (last) {
-        ctx->seen_last_in_filter = 1;
+done:
 
-        if (r == r->main) {
-            cl->buf->last_buf = 1;
+    if (last || flush) {
+        if (cl == NULL) {
+            cl = ngx_http_lua_chain_get_free_buf(r->connection->log,
+                                                 r->pool,
+                                                 &ctx->free_bufs, 0);
+            if (cl == NULL) {
+                return luaL_error(L, "out of memory");
+            }
+        }
 
-        } else {
-            cl->buf->last_in_chain = 1;
+        if (last) {
+            ctx->seen_last_in_filter = 1;
+
+            if (r == r->main) {
+                cl->buf->last_buf = 1;
+
+            } else {
+                cl->buf->last_in_chain = 1;
+            }
+        }
+
+        if (flush) {
+            cl->buf->flush = 1;
         }
     }
 

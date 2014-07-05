@@ -11,10 +11,10 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 8);
+plan tests => repeat_each() * (blocks() * 3 + 9);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 
 run_tests();
 
@@ -599,7 +599,7 @@ GET /t
 
         content_by_lua '
             for i = 1, 10 do
-                ngx.say("hello world")
+                assert(ngx.say("hello world"))
             end
         ';
     }
@@ -677,8 +677,8 @@ probe syscall.writev.return {
 
         content_by_lua '
             for i = 1, 10 do
-                ngx.say("hello world")
-                ngx.flush()
+                assert(ngx.say("hello world"))
+                ngx.flush(true)
             end
         ';
     }
@@ -686,6 +686,22 @@ probe syscall.writev.return {
 GET /t
 --- response_body eval
 "HELLO WORLD\n" x 10
+
+--- stap
+F(ngx_http_write_filter) {
+    for (cl = $in; cl; cl = @cast(cl, "ngx_chain_t")->next) {
+        if (@cast(cl, "ngx_chain_t")->buf->flush) {
+            printf("seen flush buf.\n")
+        }
+
+        if (@cast(cl, "ngx_chain_t")->buf->last_buf) {
+            printf("seen last buf.\n")
+        }
+    }
+}
+
+--- stap_out eval
+("seen flush buf.\n" x 10) . "seen last buf.\n"
 
 --- stap2
 global active = 1
@@ -697,19 +713,25 @@ F(ngx_http_write_filter) {
     printf("write filter: %p: %s\n", $in, ngx_chain_dump($in))
 }
 
+F(ngx_http_charset_body_filter) {
+    printf("charset body filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
 
 F(ngx_output_chain) {
     #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
     #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
     printf("output chain %p: %s\n", $in, ngx_chain_dump($in))
 }
+
 F(ngx_linux_sendfile_chain) {
     printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
 }
+
 F(ngx_chain_writer) {
     printf("chain writer ctx out: %p\n", $data)
     printf("nginx chain writer: %s\n", ngx_chain_dump($in))
 }
+
 probe syscall.writev {
     if (active && pid() == target()) {
         printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
@@ -720,6 +742,7 @@ probe syscall.writev {
         */
     }
 }
+
 probe syscall.writev.return {
     if (active && pid() == target()) {
         printf(" = %s\n", retstr)
