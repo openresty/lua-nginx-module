@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -569,6 +569,164 @@ truncated: true
 --- request
 GET /t
 --- response_body
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 22: body filter + ngx.say() (github issue #386)
+--- config
+    postpone_output 1;
+    location = /t {
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            -- do return end
+            if not ngx.ctx.chunks then
+                ngx.ctx.chunks = {}
+            end
+
+            table.insert(ngx.ctx.chunks, ngx.arg[1])
+            print("got chunk ", ngx.arg[1])
+            ngx.arg[1] = nil
+
+            if ngx.arg[2] then
+                print("seen eof: ", string.upper(table.concat(ngx.ctx.chunks)))
+                ngx.arg[1] = string.upper(table.concat(ngx.ctx.chunks))
+            end
+        ';
+
+        content_by_lua '
+            for i = 1, 10 do
+                ngx.say("hello world")
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"HELLO WORLD\n" x 10
+
+--- stap2
+global active = 1
+F(ngx_http_lua_body_filter_by_chunk) {
+    printf("body filter by lua: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_http_write_filter) {
+    printf("write filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+
+F(ngx_output_chain) {
+    #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
+    #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
+    printf("output chain %p: %s\n", $in, ngx_chain_dump($in))
+}
+F(ngx_linux_sendfile_chain) {
+    printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
+}
+F(ngx_chain_writer) {
+    printf("chain writer ctx out: %p\n", $data)
+    printf("nginx chain writer: %s\n", ngx_chain_dump($in))
+}
+probe syscall.writev {
+    if (active && pid() == target()) {
+        printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
+        /*
+        for (i = 0; i < $vlen; i++) {
+            printf(" %p [%s]", $vec[i]->iov_base, text_str(user_string_n($vec[i]->iov_base, $vec[i]->iov_len)))
+        }
+        */
+    }
+}
+probe syscall.writev.return {
+    if (active && pid() == target()) {
+        printf(" = %s\n", retstr)
+    }
+}
+
+--- stap_out2
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 23: body filter + ngx.say() (github issue #386), with flush
+--- config
+    location = /t {
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            -- do return end
+            if not ngx.ctx.chunks then
+                ngx.ctx.chunks = {}
+            end
+
+            table.insert(ngx.ctx.chunks, ngx.arg[1])
+            print("got chunk ", ngx.arg[1])
+            ngx.arg[1] = nil
+
+            if ngx.arg[2] then
+                print("seen eof: ", string.upper(table.concat(ngx.ctx.chunks)))
+                ngx.arg[1] = string.upper(table.concat(ngx.ctx.chunks))
+            end
+        ';
+
+        content_by_lua '
+            for i = 1, 10 do
+                ngx.say("hello world")
+                ngx.flush()
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"HELLO WORLD\n" x 10
+
+--- stap2
+global active = 1
+F(ngx_http_lua_body_filter_by_chunk) {
+    printf("body filter by lua: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_http_write_filter) {
+    printf("write filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+
+F(ngx_output_chain) {
+    #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
+    #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
+    printf("output chain %p: %s\n", $in, ngx_chain_dump($in))
+}
+F(ngx_linux_sendfile_chain) {
+    printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
+}
+F(ngx_chain_writer) {
+    printf("chain writer ctx out: %p\n", $data)
+    printf("nginx chain writer: %s\n", ngx_chain_dump($in))
+}
+probe syscall.writev {
+    if (active && pid() == target()) {
+        printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
+        /*
+        for (i = 0; i < $vlen; i++) {
+            printf(" %p [%s]", $vec[i]->iov_base, text_str(user_string_n($vec[i]->iov_base, $vec[i]->iov_len)))
+        }
+        */
+    }
+}
+probe syscall.writev.return {
+    if (active && pid() == target()) {
+        printf(" = %s\n", retstr)
+    }
+}
+
+--- stap_out2
 --- no_error_log
 [error]
 [alert]
