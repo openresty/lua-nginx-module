@@ -2680,7 +2680,10 @@ ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
             b->last = start;
             b->end = end;
             b->tag = tag;
-            b->temporary = 1;
+
+            if (len) {
+                b->temporary = 1;
+            }
 
             return cl;
         }
@@ -2726,7 +2729,7 @@ ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
                    "lua allocate new chainlink and new buf of size %uz, cl:%p",
                    len, cl);
 
-    cl->buf = ngx_create_temp_buf(p, len);
+    cl->buf = len ? ngx_create_temp_buf(p, len) : ngx_calloc_buf(p);
     if (cl->buf == NULL) {
         return NULL;
     }
