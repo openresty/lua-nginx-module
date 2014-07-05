@@ -462,6 +462,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
 
         lua_getglobal(L, ngx_http_lua_chain_key);
         in = lua_touserdata(L, -1);
+        lua_pop(L, 1);
 
         if (last) {
             ctx->seen_last_in_filter = 1;
@@ -526,7 +527,6 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         lua_getglobal(L, ngx_http_lua_chain_key); /* key val */
         in = lua_touserdata(L, -1);
         lua_pop(L, 1);
-        lua_pushliteral(L, ngx_http_lua_chain_key); /* key */
 
         for (cl = in; cl; cl = cl->next) {
             dd("mark the buf as consumed: %d", (int) ngx_buf_size(cl->buf));
