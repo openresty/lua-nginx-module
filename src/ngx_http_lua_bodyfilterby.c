@@ -238,7 +238,6 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     lua_State                   *L;
     ngx_buf_t                   *b;
     ngx_chain_t                 *out, *cl;
-    ngx_buf_tag_t                tag;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua body filter for user lua code, uri \"%V\"", &r->uri);
@@ -336,14 +335,13 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
-
 #if nginx_version >= 1001004
     ngx_chain_update_chains(r->pool,
 #else
     ngx_chain_update_chains(
 #endif
-                            &ctx->free_bufs, &ctx->busy_bufs, &out, tag);
+                            &ctx->free_bufs, &ctx->busy_bufs, &out,
+                            (ngx_buf_tag_t) &ngx_http_lua_module);
 
     return rc;
 }
@@ -449,7 +447,6 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     unsigned                 last;
     ngx_chain_t             *cl;
     ngx_chain_t             *in;
-    ngx_buf_tag_t            tag;
 
     idx = luaL_checkint(L, 2);
 
@@ -573,10 +570,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         return 0;
     }
 
-    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
-
-    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, size, tag);
+    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                         &ctx->free_bufs, size);
     if (cl == NULL) {
         return luaL_error(L, "out of memory");
     }

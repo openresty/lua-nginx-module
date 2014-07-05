@@ -1326,11 +1326,9 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
 
     if (u->bufs_in == NULL) {
         u->bufs_in =
-            ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                             &ctx->free_recv_bufs,
-                                             u->conf->buffer_size,
-                                             (ngx_buf_tag_t)
-                                             &ngx_http_lua_module);
+            ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                            &ctx->free_recv_bufs,
+                                            u->conf->buffer_size);
 
         if (u->bufs_in == NULL) {
             return luaL_error(L, "out of memory");
@@ -1912,10 +1910,8 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, len,
-                                          (ngx_buf_tag_t)
-                                          &ngx_http_lua_module);
+    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                         &ctx->free_bufs, len);
 
     if (cl == NULL) {
         return luaL_error(L, "out of memory");
@@ -3132,11 +3128,9 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     if (u->bufs_in == NULL) {
         u->bufs_in =
-            ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                             &ctx->free_recv_bufs,
-                                             u->conf->buffer_size,
-                                             (ngx_buf_tag_t)
-                                             &ngx_http_lua_module);
+            ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                            &ctx->free_recv_bufs,
+                                            u->conf->buffer_size);
 
         if (u->bufs_in == NULL) {
             return luaL_error(L, "out of memory");
@@ -4492,11 +4486,9 @@ ngx_http_lua_socket_add_input_buffer(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_recv_bufs,
-                                          u->conf->buffer_size,
-                                          (ngx_buf_tag_t)
-                                          &ngx_http_lua_module);
+    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                         &ctx->free_recv_bufs,
+                                         u->conf->buffer_size);
 
     if (cl == NULL) {
         return NGX_ERROR;
@@ -4560,11 +4552,9 @@ static ngx_int_t ngx_http_lua_socket_insert_buffer(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    new_cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                              &ctx->free_recv_bufs,
-                                              size,
-                                              (ngx_buf_tag_t)
-                                              &ngx_http_lua_module);
+    new_cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                             &ctx->free_recv_bufs,
+                                             size);
 
     if (new_cl == NULL) {
         return NGX_ERROR;

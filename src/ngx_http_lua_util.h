@@ -174,8 +174,8 @@ void ngx_http_lua_process_args_option(ngx_http_request_t *r,
 ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
     ngx_open_file_info_t *of, ngx_log_t *log);
 
-ngx_chain_t * ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
-    ngx_chain_t **free, size_t len, ngx_buf_tag_t tag);
+ngx_chain_t * ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
+    ngx_chain_t **free, size_t len);
 
 void ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec);
 

@@ -765,10 +765,8 @@ ngx_http_lua_add_copy_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_OK;
     }
 
-    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, len,
-                                          (ngx_buf_tag_t) &ngx_http_lua_module);
-
+    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                         &ctx->free_bufs, len);
     if (cl == NULL) {
         return NGX_ERROR;
     }
@@ -2653,12 +2651,14 @@ failed:
 
 
 ngx_chain_t *
-ngx_http_lua_chains_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
-    ngx_chain_t **free, size_t len, ngx_buf_tag_t tag)
+ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
+    ngx_chain_t **free, size_t len)
 {
     ngx_buf_t    *b;
     ngx_chain_t  *cl;
     u_char       *start, *end;
+
+    const ngx_buf_tag_t  tag = (ngx_buf_tag_t) &ngx_http_lua_module;
 
     if (*free) {
         cl = *free;

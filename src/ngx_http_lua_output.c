@@ -49,7 +49,6 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     int                          nargs;
     int                          type;
     const char                  *msg;
-    ngx_buf_tag_t                tag;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
@@ -152,10 +151,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         return 1;
     }
 
-    tag = (ngx_buf_tag_t) &ngx_http_lua_module;
-
-    cl = ngx_http_lua_chains_get_free_buf(r->connection->log, r->pool,
-                                          &ctx->free_bufs, size, tag);
+    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                         &ctx->free_bufs, size);
 
     if (cl == NULL) {
         return luaL_error(L, "out of memory");
@@ -241,7 +238,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 #else
         ngx_chain_update_chains(
 #endif
-                                &ctx->free_bufs, &ctx->busy_bufs, &cl, tag);
+                                &ctx->free_bufs, &ctx->busy_bufs, &cl,
+                                (ngx_buf_tag_t) &ngx_http_lua_module);
 
         dd("out lua buf tag: %p, buffered: %x, busy bufs: %p",
            &ngx_http_lua_module, (int) r->connection->buffered,
