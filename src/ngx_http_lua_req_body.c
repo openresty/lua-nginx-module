@@ -465,6 +465,10 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
         rb->bufs->next = NULL;
 
         b = ngx_create_temp_buf(r->pool, body.len);
+        if (b == NULL) {
+            return luaL_error(L, "no memory");
+        }
+
         b->tag = tag;
         b->last = ngx_copy(b->pos, body.data, body.len);
 
