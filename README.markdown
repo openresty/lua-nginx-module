@@ -20,6 +20,7 @@ Table of Contents
 * [Typical Uses](#typical-uses)
 * [Nginx Compatibility](#nginx-compatibility)
 * [Installation](#installation)
+    * [C Macro Configurations](#c-macro-configurations)
     * [Installation on Ubuntu 11.10](#installation-on-ubuntu-1110)
 * [Community](#community)
     * [English Mailing List](#english-mailing-list)
@@ -342,6 +343,24 @@ export LUAJIT_INC=/path/to/luajit/include/luajit-2.1
 make -j2
 make install
 ```
+
+[Back to TOC](#table-of-contents)
+
+C Macro Configurations
+----------------------
+
+While building this module either via OpenResty or with the NGINX core, you can define the following C macros via the C compiler options:
+
+* `NGX_LUA_USE_ASSERT`
+	When defined, will enable assertions in the ngx_lua C code base. Recommended for debugging or testing builds. It can introduce some (small) runtime overhead when enabled. This macro was first introduced in the `v0.9.10` release.
+* `NGX_LUA_ABORT_AT_PANIC`
+	When the Lua/LuaJIT VM panics, ngx_lua will instruct the current nginx worker process to quit gracefully by default. By specifying this C macro, ngx_lua will abort the current nginx worker process (which usually result in a core dump file) immediately. This option is useful for debugging VM panics. This option was first introduced in the `v0.9.8` release.
+
+To enable one or more of these macros, just pass extra C compiler options to the `./configure` script of either NGINX or OpenResty. For instance,
+
+
+    ./configure --with-cc-opt="-DNGX_LUA_USE_ASSERT -DNGX_LUA_ABORT_AT_PANIC"
+
 
 [Back to TOC](#table-of-contents)
 
@@ -6693,3 +6712,4 @@ Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/m
 This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
+

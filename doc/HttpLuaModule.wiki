@@ -281,6 +281,21 @@ Build the source with this module:
     make install
 </geshi>
 
+== C Macro Configurations ==
+
+While building this module either via OpenResty or with the NGINX core, you can define the following C macros via the C compiler options:
+
+* <code>NGX_LUA_USE_ASSERT</code>
+: When defined, will enable assertions in the ngx_lua C code base. Recommended for debugging or testing builds. It can introduce some (small) runtime overhead when enabled. This macro was first introduced in the <code>v0.9.10</code> release.
+* <code>NGX_LUA_ABORT_AT_PANIC</code>
+: When the Lua/LuaJIT VM panics, ngx_lua will instruct the current nginx worker process to quit gracefully by default. By specifying this C macro, ngx_lua will abort the current nginx worker process (which usually result in a core dump file) immediately. This option is useful for debugging VM panics. This option was first introduced in the <code>v0.9.8</code> release.
+
+To enable one or more of these macros, just pass extra C compiler options to the <code>./configure</code> script of either NGINX or OpenResty. For instance,
+
+<geshi>
+    ./configure --with-cc-opt="-DNGX_LUA_USE_ASSERT -DNGX_LUA_ABORT_AT_PANIC"
+</geshi>
+
 == Installation on Ubuntu 11.10 ==
 
 Note that it is recommended to use LuaJIT 2.0 or LuaJIT 2.1 instead of the standard Lua 5.1 interpreter wherever possible.
@@ -5668,3 +5683,4 @@ Identical to the standard Lua [http://www.lua.org/manual/5.1/manual.html#pdf-cor
 This API was first usable in the context of [[#init_by_lua|init_by_lua*]] since the <code>0.9.2</code>.
 
 This API was first enabled in the <code>v0.6.0</code> release.
+
