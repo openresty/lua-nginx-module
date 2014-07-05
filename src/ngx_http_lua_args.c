@@ -48,7 +48,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
         args.data = ngx_palloc(r->pool, len);
         if (args.data == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         ngx_memcpy(args.data, p, len);
@@ -118,7 +118,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
 
     buf = ngx_palloc(r->pool, r->args.len);
     if (buf == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(buf, r->args.data, r->args.len);
@@ -199,7 +199,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
     buf = ngx_palloc(r->pool, len);
     if (buf == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     p = buf;

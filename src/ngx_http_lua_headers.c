@@ -534,7 +534,7 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(key.data, p, len);
@@ -598,7 +598,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(key.data, p, len);
@@ -645,7 +645,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
                 value.data = ngx_palloc(r->pool, len);
                 if (value.data == NULL) {
-                    return luaL_error(L, "out of memory");
+                    return luaL_error(L, "no memory");
                 }
 
                 ngx_memcpy(value.data, p, len);
@@ -668,7 +668,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
         p = (u_char *) luaL_checklstring(L, 3, &len);
         value.data = ngx_palloc(r->pool, len);
         if (value.data == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         ngx_memcpy(value.data, p, len);
@@ -753,7 +753,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(key.data, p, len);
@@ -785,7 +785,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
                 value.data = ngx_palloc(r->pool, len + 1);
                 if (value.data == NULL) {
-                    return luaL_error(L, "out of memory");
+                    return luaL_error(L, "no memory");
                 }
 
                 ngx_memcpy(value.data, p, len + 1);
@@ -814,7 +814,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
         p = (u_char *) luaL_checklstring(L, 2, &len);
         value.data = ngx_palloc(r->pool, len + 1);
         if (value.data == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         ngx_memcpy(value.data, p, len + 1);

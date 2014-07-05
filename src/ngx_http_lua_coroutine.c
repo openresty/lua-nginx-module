@@ -91,7 +91,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     if (coctx == NULL) {
         coctx = ngx_http_lua_create_co_ctx(r, ctx);
         if (coctx == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
     } else {

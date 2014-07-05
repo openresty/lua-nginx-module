@@ -155,7 +155,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                          &ctx->free_bufs, size);
 
     if (cl == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     b = cl->buf;
@@ -539,7 +539,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
         dd("allocating new flush buf");
         buf = ngx_calloc_buf(r->pool);
         if (buf == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         buf->flush = 1;
@@ -547,7 +547,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
         dd("allocating new flush chain");
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         cl->next = NULL;

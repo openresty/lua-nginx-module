@@ -449,7 +449,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
         b->start = ngx_palloc(r->pool, body.len);
         if (b->start == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
         b->end = b->start + body.len;
 
@@ -460,7 +460,7 @@ ngx_http_lua_ngx_req_set_body_data(lua_State *L)
 
         rb->bufs = ngx_alloc_chain_link(r->pool);
         if (rb->bufs == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
         rb->bufs->next = NULL;
 
@@ -482,7 +482,7 @@ set_header:
 
     value.data = ngx_palloc(r->pool, NGX_SIZE_T_LEN + 1);
     if (value.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     value.len = ngx_sprintf(value.data, "%uz", body.len) - value.data;
@@ -598,12 +598,12 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
 
     rb->buf = ngx_create_temp_buf(r->pool, size);
     if (rb->buf == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     rb->bufs = ngx_alloc_chain_link(r->pool);
     if (rb->bufs == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     rb->bufs->buf = rb->buf;
@@ -720,7 +720,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
 
         b = ngx_calloc_buf(r->pool);
         if (b == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         b->in_file = 1;
@@ -740,7 +740,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
 
     value.data = ngx_palloc(r->pool, NGX_SIZE_T_LEN + 1);
     if (value.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     size = (size_t) r->headers_in.content_length_n;
@@ -838,7 +838,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
     name.data = ngx_palloc(r->pool, name.len + 1);
     if (name.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(name.data, p, name.len);
@@ -888,13 +888,13 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
         rb->bufs = ngx_alloc_chain_link(r->pool);
         if (rb->bufs == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
         rb->bufs->next = NULL;
 
         b = ngx_calloc_buf(r->pool);
         if (b == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         b->tag = tag;
@@ -929,7 +929,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
 
         tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
         if (tf == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         tf->file.fd = NGX_INVALID_FILE;
@@ -985,7 +985,7 @@ ngx_http_lua_ngx_req_set_body_file(lua_State *L)
                                sizeof(ngx_pool_cleanup_file_t));
 
     if (cln == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     cln->handler = clean ? ngx_pool_delete_file : ngx_pool_cleanup_file;
@@ -1014,7 +1014,7 @@ set_header:
 
     value.data = ngx_palloc(r->pool, NGX_OFF_T_LEN + 1);
     if (value.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     value.len = ngx_sprintf(value.data, "%O", of.size) - value.data;

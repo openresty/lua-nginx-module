@@ -86,7 +86,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     uri.data = ngx_palloc(r->pool, len);
     if (uri.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri.data, p, len);
@@ -121,7 +121,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             user_args.data = ngx_palloc(r->pool, len);
             if (user_args.data == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             ngx_memcpy(user_args.data, p, len);
@@ -158,7 +158,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         } else {
             p = ngx_palloc(r->pool, args.len + user_args.len + 1);
             if (p == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             q = ngx_copy(p, args.data, args.len);
@@ -241,14 +241,14 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     uri = ngx_palloc(r->pool, len);
     if (uri == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri, p, len);
 
     r->headers_out.location = ngx_list_push(&r->headers_out.headers);
     if (r->headers_out.location == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     r->headers_out.location->hash = ngx_http_lua_location_hash;

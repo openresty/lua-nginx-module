@@ -90,7 +90,7 @@ ngx_http_lua_uthread_spawn(lua_State *L)
     ctx->cur_co_ctx->thread_spawn_yielded = 1;
 
     if (ngx_http_lua_post_thread(r, ctx, ctx->cur_co_ctx) != NGX_OK) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     coctx->parent_co_ctx = ctx->cur_co_ctx;

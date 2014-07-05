@@ -223,7 +223,7 @@ ngx_http_lua_var_set(lua_State *L)
 
             vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
             if (vv == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             if (value_type == LUA_TNIL) {

@@ -83,7 +83,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
     r->uri.data = ngx_palloc(r->pool, len);
     if (r->uri.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(r->uri.data, p, len);

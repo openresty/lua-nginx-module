@@ -378,7 +378,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     host.data = ngx_palloc(r->pool, len + 1);
     if (host.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     host.len = len;
@@ -481,7 +481,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     } else {
         u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_tcp_upstream_t));
         if (u == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
 #if 1
@@ -567,7 +567,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
     if (u->resolved == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     if (url.addrs && url.addrs[0].sockaddr) {
@@ -941,7 +941,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         if (cln == NULL) {
             u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
             lua_pushnil(L);
-            lua_pushliteral(L, "out of memory");
+            lua_pushliteral(L, "no memory");
             return 2;
         }
 
@@ -1153,7 +1153,7 @@ ngx_http_lua_socket_prepare_error_retvals(ngx_http_request_t *r,
         lua_pushliteral(L, "buffer too small");
 
     } else if (ft_type & NGX_HTTP_LUA_SOCKET_FT_NOMEM) {
-        lua_pushliteral(L, "out of memory");
+        lua_pushliteral(L, "no memory");
 
     } else if (ft_type & NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT) {
         lua_pushliteral(L, "client aborted");
@@ -1331,7 +1331,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
                                             u->conf->buffer_size);
 
         if (u->bufs_in == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         u->buf_in = u->bufs_in;
@@ -1914,7 +1914,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                                          &ctx->free_bufs, len);
 
     if (cl == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     b = cl->buf;
@@ -2060,7 +2060,7 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
             rc = ngx_http_lua_socket_push_input_data(r, ctx, u, L);
             if (rc == NGX_ERROR) {
                 lua_pushnil(L);
-                lua_pushliteral(L, "out of memory");
+                lua_pushliteral(L, "no memory");
                 return 2;
             }
 
@@ -2079,7 +2079,7 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     rc = ngx_http_lua_socket_push_input_data(r, ctx, u, L);
     if (rc == NGX_ERROR) {
         lua_pushnil(L);
-        lua_pushliteral(L, "out of memory");
+        lua_pushliteral(L, "no memory");
         return 2;
     }
 
@@ -3018,7 +3018,7 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
 
     cp = lua_newuserdata(L, size);
     if (cp == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
@@ -3133,7 +3133,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
                                             u->conf->buffer_size);
 
         if (u->bufs_in == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         u->buf_in = u->bufs_in;
@@ -3589,7 +3589,7 @@ ngx_http_lua_req_socket(lua_State *L)
         } else {
             rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
             if (rb == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
             r->request_body = rb;
         }
@@ -3687,7 +3687,7 @@ ngx_http_lua_req_socket(lua_State *L)
 
         rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
         if (rb == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         rb->rest = r->headers_in.content_length_n;
@@ -3709,7 +3709,7 @@ ngx_http_lua_req_socket(lua_State *L)
 
     u = lua_newuserdata(L, sizeof(ngx_http_lua_socket_tcp_upstream_t));
     if (u == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
 #if 1
@@ -3746,7 +3746,7 @@ ngx_http_lua_req_socket(lua_State *L)
     if (cln == NULL) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
         lua_pushnil(L);
-        lua_pushliteral(L, "out of memory");
+        lua_pushliteral(L, "no memory");
         return 2;
     }
 
@@ -3970,7 +3970,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         spool = lua_newuserdata(L, size);
         if (spool == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         lua_createtable(L, 0, 1); /* metatable */

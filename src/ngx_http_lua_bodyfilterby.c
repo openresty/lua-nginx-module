@@ -580,7 +580,7 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
     cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
                                          &ctx->free_bufs, size);
     if (cl == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     if (type == LUA_TTABLE) {
@@ -598,7 +598,7 @@ done:
                                                  r->pool,
                                                  &ctx->free_bufs, 0);
             if (cl == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
         }
 
