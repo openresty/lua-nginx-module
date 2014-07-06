@@ -956,10 +956,13 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
             orig_coctx = ctx->cur_co_ctx;
 
+#ifdef NGX_LUA_USE_ASSERT
             dd("%p: saved co top: %d, nrets: %d, true top: %d",
                orig_coctx->co,
                (int) orig_coctx->co_top, (int) nrets,
                (int) lua_gettop(orig_coctx->co));
+#endif
+
 #if DDEBUG
             if (lua_gettop(orig_coctx->co) > 0) {
                 dd("top elem: %s", luaL_typename(orig_coctx->co, -1));
