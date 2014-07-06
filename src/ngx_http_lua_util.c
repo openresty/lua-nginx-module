@@ -1522,7 +1522,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    if (c->buffered) {
+    if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
         rc = ngx_http_lua_flush_pending_output(r, ctx);
         if (rc != NGX_OK) {
             return rc;
@@ -1670,7 +1670,7 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
             &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
     }
 
-    if (c->buffered) {
+    if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
 
         clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
 

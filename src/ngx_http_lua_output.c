@@ -241,7 +241,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                 &ctx->free_bufs, &ctx->busy_bufs, &cl,
                                 (ngx_buf_tag_t) &ngx_http_lua_module);
 
-        dd("out lua buf tag: %p, buffered: %x, busy bufs: %p",
+        dd("out lua buf tag: %p, buffered: 0x%x, busy bufs: %p",
            &ngx_http_lua_module, (int) r->connection->buffered,
            ctx->busy_bufs);
     }
@@ -566,12 +566,13 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return 2;
     }
 
-    dd("wait:%d, rc:%d, buffered:%d", wait, (int) rc, r->connection->buffered);
+    dd("wait:%d, rc:%d, buffered:0x%x", wait, (int) rc,
+       r->connection->buffered);
 
-    if (wait && r->connection->buffered) {
+    if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED)) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                "lua flush requires waiting: buffered 0x%uxd",
-                (int) r->connection->buffered);
+                       "lua flush requires waiting: buffered 0x%uxd",
+                       (unsigned) r->connection->buffered);
 
         coctx->flushing = 1;
         ctx->flushing_coros++;

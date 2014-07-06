@@ -161,7 +161,9 @@ enum {
         lua_pushliteral(L, "socket busy writing");                           \
         return 2;                                                            \
     }                                                                        \
-    if ((u)->raw_downstream && (r)->connection->buffered) {                  \
+    if ((u)->raw_downstream                                                  \
+        && ((r)->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED))         \
+    {                                                                        \
         lua_pushnil(L);                                                      \
         lua_pushliteral(L, "socket busy writing");                           \
         return 2;                                                            \
@@ -3594,7 +3596,7 @@ ngx_http_lua_req_socket(lua_State *L)
             r->request_body = rb;
         }
 
-        if (c->buffered) {
+        if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
             lua_pushnil(L);
             lua_pushliteral(L, "pending data to write");
             return 2;
