@@ -10,7 +10,7 @@ This module is under active development and is production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.9] released on 30 June 2014.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.10] released on 8 July 2014.
 
 = Synopsis =
 <geshi lang="nginx">
