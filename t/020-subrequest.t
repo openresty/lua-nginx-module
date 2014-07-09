@@ -461,7 +461,7 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-fo%3d=%3d%3e
+fo%3D=%3D%3E
 --- no_error_log
 [error]
 
@@ -484,7 +484,7 @@ fo%3d=%3d%3e
 --- request
 GET /lua
 --- response_body_like chop
-^(?:fo%3d=%3d%3e\&%3d=%3a|%3d=%3a\&fo%3d=%3d%3e)$
+^(?:fo%3D=%3D%3E\&%3D=%3A|%3D=%3A\&fo%3D=%3D%3E)$
 --- no_error_log
 [error]
 --- no_error_log
@@ -1128,7 +1128,7 @@ hello world
 --- request
 GET /t?r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fjquery.min.js&r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fdojo%2F1.7.2%2Fdojo%2Fdojo.js.uncompressed.js
 --- response_body
-r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fjquery%2f1.7.2%2fjquery.min.js&r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fdojo%2f1.7.2%2fdojo%2fdojo.js.uncompressed.js
+r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fjquery.min.js&r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fdojo%2F1.7.2%2Fdojo%2Fdojo.js.uncompressed.js
 --- no_error_log
 [error]
 
