@@ -916,7 +916,7 @@ As from the <code>v0.5.0rc29</code> release, the special notation <code>$prefix<
 
 Runs the Lua code specified by the argument <code><lua-script-str></code> on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
-When Nginx receives the <code>HUP</code> signal and starts reloading the config file, the Lua VM will also be re-created and <code>init_by_lua</code> will run again on the new Lua VM.
+When Nginx receives the <code>HUP</code> signal and starts reloading the config file, the Lua VM will also be re-created and <code>init_by_lua</code> will run again on the new Lua VM. In case that the [[#lua_code_cache|lua_code_cache]] directive is turned off (default on), the <code>init_by_lua</code> handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
 
 Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
 
