@@ -1026,7 +1026,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
             ngx_http_lua_socket_handle_conn_error(r, u,
                                                 NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
-            lua_pushliteral(L, "failed to handle write event");
+            lua_pushliteral(L, "failed to handle read event");
             return 2;
         }
 
