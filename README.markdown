@@ -6631,7 +6631,7 @@ coroutine.create
 ----------------
 **syntax:** *co = coroutine.create(f)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Creates a user Lua coroutines with a Lua function, and returns a coroutine object.
 
@@ -6647,7 +6647,7 @@ coroutine.resume
 ----------------
 **syntax:** *ok, ... = coroutine.resume(co, ...)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Resumes the executation of a user Lua coroutine object previously yielded or just created.
 
@@ -6663,7 +6663,7 @@ coroutine.yield
 ---------------
 **syntax:** *... = coroutine.yield(...)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Yields the executation of the current user Lua coroutine.
 
@@ -6679,7 +6679,7 @@ coroutine.wrap
 --------------
 **syntax:** *co = coroutine.wrap(f)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Similar to the standard Lua [coroutine.wrap](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.wrap) API, but works in the context of the Lua coroutines created by ngx_lua.
 
@@ -6693,7 +6693,7 @@ coroutine.running
 -----------------
 **syntax:** *co = coroutine.running()*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Identical to the standard Lua [coroutine.running](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.running) API.
 
@@ -6707,7 +6707,7 @@ coroutine.status
 ----------------
 **syntax:** *status = coroutine.status(co)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua**
 
 Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/manual.html#pdf-coroutine.status) API.
 
