@@ -119,6 +119,7 @@ static ngx_int_t
 static lua_State * ngx_http_lua_new_state(lua_State *parent_vm,
     ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_cleanup_conn_pools(lua_State *L);
+static int ngx_http_lua_get_raw_phase_context(lua_State *L);
 
 
 #ifndef LUA_PATH_SEP
@@ -682,7 +683,10 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 98 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 99 /* nrec */);    /* ngx.* */
+
+    lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
+    lua_setfield(L, -2, "_phase_ctx");
 
     ngx_http_lua_inject_arg_api(L);
 
@@ -3974,6 +3978,27 @@ ngx_http_lua_do_call(ngx_log_t *log, lua_State *L)
     lua_remove(L, base);
 
     return status;
+}
+
+
+static int
+ngx_http_lua_get_raw_phase_context(lua_State *L)
+{
+    ngx_http_request_t      *r;
+    ngx_http_lua_ctx_t      *ctx;
+
+    r = lua_touserdata(L, 1);
+    if (r == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return 0;
+    }
+
+    lua_pushinteger(L, (int) ctx->context);
+    return 1;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
