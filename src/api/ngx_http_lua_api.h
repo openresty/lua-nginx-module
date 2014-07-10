@@ -19,7 +19,7 @@
 /* Public API for other Nginx modules */
 
 
-#define ngx_http_lua_version  9010
+#define ngx_http_lua_version  9011
 
 
 typedef struct {
