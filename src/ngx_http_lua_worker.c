@@ -46,3 +46,19 @@ ngx_http_lua_ngx_worker_pid(lua_State *L)
     lua_pushinteger(L, (lua_Integer) ngx_pid);
     return 1;
 }
+
+
+#ifndef NGX_HTTP_LUA_NO_FFI_API
+int
+ngx_http_lua_ffi_worker_pid(void)
+{
+    return (int) ngx_pid;
+}
+
+
+int
+ngx_http_lua_ffi_worker_exiting(void)
+{
+    return (int) ngx_exiting;
+}
+#endif
