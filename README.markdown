@@ -355,6 +355,8 @@ While building this module either via OpenResty or with the NGINX core, you can 
 	When defined, will enable assertions in the ngx_lua C code base. Recommended for debugging or testing builds. It can introduce some (small) runtime overhead when enabled. This macro was first introduced in the `v0.9.10` release.
 * `NGX_LUA_ABORT_AT_PANIC`
 	When the Lua/LuaJIT VM panics, ngx_lua will instruct the current nginx worker process to quit gracefully by default. By specifying this C macro, ngx_lua will abort the current nginx worker process (which usually result in a core dump file) immediately. This option is useful for debugging VM panics. This option was first introduced in the `v0.9.8` release.
+* `NGX_LUA_NO_FFI_API`
+	Excludes pure C API functions for FFI-based Lua API for NGINX (as required by [lua-resty-core](https://github.com/openresty/lua-resty-core#readme), for example). Enabling this macro can make the resulting binary code size smaller.
 
 To enable one or more of these macros, just pass extra C compiler options to the `./configure` script of either NGINX or OpenResty. For instance,
 
