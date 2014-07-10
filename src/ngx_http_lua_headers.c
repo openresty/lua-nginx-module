@@ -993,7 +993,7 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
 int
 ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     size_t key_len, int is_nil, const u_char *sval, size_t sval_len,
-    ngx_str_t *mvals, size_t mvals_len, char **errmsg)
+    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, char **errmsg)
 {
     u_char                      *p;
     ngx_str_t                    value, key;
