@@ -48,7 +48,7 @@ ngx_http_lua_ngx_worker_pid(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_worker_pid(void)
 {

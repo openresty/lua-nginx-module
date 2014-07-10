@@ -1369,7 +1369,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
@@ -1829,7 +1829,7 @@ ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
 
     return NGX_OK;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

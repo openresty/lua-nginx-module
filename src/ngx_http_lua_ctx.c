@@ -130,7 +130,7 @@ ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_get_ctx_ref(ngx_http_request_t *r)
 {
@@ -163,7 +163,7 @@ ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
 
     return NGX_OK;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 static ngx_int_t

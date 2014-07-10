@@ -96,7 +96,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
 #define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
 #endif

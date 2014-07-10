@@ -248,7 +248,7 @@ ngx_http_lua_inject_req_time_api(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 double
 ngx_http_lua_ffi_now(void)
 {
@@ -272,7 +272,7 @@ ngx_http_lua_ffi_time(void)
 {
     return (long) ngx_time();
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

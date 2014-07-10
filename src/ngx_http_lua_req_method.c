@@ -145,7 +145,7 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_req_get_method(ngx_http_request_t *r)
 {

@@ -17,7 +17,7 @@
 #endif
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 typedef struct {
     int          len;
     u_char      *data;
@@ -28,7 +28,7 @@ typedef struct {
     ngx_http_lua_ffi_str_t   key;
     ngx_http_lua_ffi_str_t   value;
 } ngx_http_lua_ffi_table_elt_t;
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* char whose address we use as the key in Lua vm registry for
@@ -88,7 +88,7 @@ extern char ngx_http_lua_headers_metatable_key;
     }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 static ngx_inline ngx_int_t
 ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     u_char *err, size_t *errlen)

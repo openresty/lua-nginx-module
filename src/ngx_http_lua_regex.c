@@ -44,7 +44,7 @@
 
 
 typedef struct {
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
     ngx_pool_t                   *pool;
     u_char                       *name_table;
     int                           name_count;
@@ -59,7 +59,7 @@ typedef struct {
 
     ngx_http_lua_complex_value_t    *replace;
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
     /* only for (stap) debugging, and may be an invalid pointer */
     const u_char                 *pattern;
 #endif
@@ -2096,7 +2096,7 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, int res_tb_idx,
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 ngx_http_lua_regex_t *
 ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     int flags, int pcre_opts, u_char *errstr,
@@ -2451,7 +2451,7 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
     }
     return (uint32_t) lmcf->regex_cache_max_entries;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_PCRE */

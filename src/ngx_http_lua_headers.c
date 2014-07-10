@@ -908,7 +908,7 @@ ngx_http_lua_create_headers_metatable(ngx_log_t *log, lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max)
 {
@@ -1164,7 +1164,7 @@ ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
 
     return NGX_OK;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

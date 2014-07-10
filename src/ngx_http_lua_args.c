@@ -365,7 +365,7 @@ ngx_http_lua_inject_req_args_api(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 size_t
 ngx_http_lua_ffi_req_get_querystring_len(ngx_http_request_t *r)
 {
@@ -531,7 +531,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 
     return i;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

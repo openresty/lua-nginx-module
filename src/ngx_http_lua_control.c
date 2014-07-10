@@ -404,7 +404,7 @@ ngx_http_lua_on_abort(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     size_t *errlen)
@@ -468,6 +468,6 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
     return NGX_OK;
 }
-#endif  /* NGX_HTTP_LUA_NO_FFI_API */
+#endif  /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
