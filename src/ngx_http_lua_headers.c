@@ -532,7 +532,7 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    key.data = ngx_palloc(r->pool, len + 1);
+    key.data = (u_char*) lua_newuserdata(L, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "no memory");
     }
