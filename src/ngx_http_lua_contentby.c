@@ -254,7 +254,11 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadfile(r, L, script_path,
                                      llcf->content_src_key);
     if (rc != NGX_OK) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return rc;
     }
 
     /*  make sure we have a valid code chunk */
