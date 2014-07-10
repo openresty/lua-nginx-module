@@ -620,6 +620,7 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     }
 
 send:
+
     rc = ngx_http_send_header(r);
     return rc;
 }
@@ -1229,6 +1230,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                 success = 1;
 
 user_co_done:
+
                 nrets = lua_gettop(ctx->cur_co_ctx->co);
 
                 next_coctx = ctx->cur_co_ctx->parent_co_ctx;
@@ -1424,6 +1426,7 @@ user_co_done:
     return NGX_ERROR;
 
 no_parent:
+
     lua_settop(L, 0);
 
     ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
@@ -1440,6 +1443,7 @@ no_parent:
     return r->header_sent ? NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
+
     if (ctx->entered_content_phase && r->connection->fd != -1) {
         rc = ngx_http_lua_send_chain_link(r, ctx,
                                           NULL /* last_buf */);
@@ -1543,6 +1547,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     /* ctx->flushing_coros == 0 */
 
 useless:
+
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "useless lua write event handler");
 

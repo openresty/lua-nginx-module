@@ -346,6 +346,7 @@ ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
     }
 
 done:
+
     if (n == 1) {
         return NGX_DONE;
     }

@@ -467,6 +467,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     }
 
 exec:
+
     if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
                       &name_count) != 0)
     {
@@ -629,6 +630,7 @@ exec:
     return 1;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -923,6 +925,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     }
 
 compiled:
+
     lua_settop(L, 1);
 
     ctx = lua_newuserdata(L, sizeof(ngx_http_lua_regex_ctx_t));
@@ -963,6 +966,7 @@ compiled:
     return 1;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -1159,6 +1163,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     return 1;
 
 error:
+
     lua_pushinteger(L, -1);
     lua_replace(L, lua_upvalueindex(3));
 
@@ -1656,6 +1661,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     }
 
 exec:
+
     count = 0;
     offset = 0;
     cp_offset = 0;
@@ -1878,6 +1884,7 @@ exec:
     return 2;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -2242,6 +2249,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     return re;
 
 error:
+
     p = ngx_snprintf(errstr, errstr_size - 1, "%s", msg);
     *p = '\0';
 

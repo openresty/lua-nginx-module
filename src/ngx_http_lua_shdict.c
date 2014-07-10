@@ -96,6 +96,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 #endif
 
 done:
+
     dd("get lmcf");
 
     lmcf = ctx->main_conf;
@@ -971,6 +972,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
 replace:
+
         if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1015,6 +1017,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1027,6 +1030,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (value.data == NULL) {
@@ -1084,6 +1088,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
@@ -1479,6 +1484,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
         }
 
 replace:
+
         if (str_value_buf && str_value_len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1520,6 +1526,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1532,6 +1539,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (str_value_buf == NULL) {
@@ -1583,6 +1591,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;

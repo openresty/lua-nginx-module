@@ -326,6 +326,7 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
     }
 
 create:
+
     ph = ngx_array_push(pa);
     if (ph == NULL) {
         return NGX_ERROR;

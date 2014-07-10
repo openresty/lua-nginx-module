@@ -358,6 +358,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
             default:
 
 bad_type:
+
                 msg = lua_pushfstring(L, "bad data type %s found",
                         lua_typename(L, type));
                 return luaL_argerror(L, arg_i, msg);

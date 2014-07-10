@@ -1615,6 +1615,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
 #endif
 
 success:
+
                 ngx_http_lua_socket_handle_read_success(r, u);
                 return NGX_OK;
             }
@@ -4458,6 +4459,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     ngx_pfree(r->pool, p);
 
 done:
+
     if (nbufs > 1 && ll) {
         dd("recycle buffers: %d", (int) (nbufs - 1));
 
