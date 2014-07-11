@@ -3788,7 +3788,7 @@ ngx.req.clear_header
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua**
 
-Clear the current request's request header named `header_name`. None of the current request's subrequests will be affected.
+Clears the current request's request header named `header_name`. None of the current request's existing subrequests will be affected but subsequently initiated subrequests will inherit the change by default.
 
 [Back to TOC](#table-of-contents)
 
