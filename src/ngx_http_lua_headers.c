@@ -1164,6 +1164,132 @@ ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
 
     return NGX_OK;
 }
+
+
+int
+ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
+    const u_char *key, size_t key_len,
+    u_char *key_buf, ngx_http_lua_ffi_str_t *values, int max_nvalues)
+{
+    int                  found;
+    u_char               c, *p;
+    ngx_uint_t           i;
+    ngx_table_elt_t     *h;
+    ngx_list_part_t     *part;
+
+    ngx_http_lua_loc_conf_t     *llcf;
+
+    if (r->connection->fd == -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->transform_underscores_in_resp_headers
+        && memchr(key, '_', key_len) != NULL)
+    {
+        for (i = 0; i < key_len; i++) {
+            c = key[i];
+            if (c == '_') {
+                c = '-';
+            }
+
+            key_buf[i] = c;
+        }
+
+    } else {
+        key_buf = (u_char *) key;
+    }
+
+    switch (key_len) {
+    case 14:
+        if (r->headers_out.content_length == NULL
+            && r->headers_out.content_length_n >= 0
+            && ngx_strncasecmp(key_buf, (u_char *) "Content-Length", 14) == 0)
+        {
+            p = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+            if (p == NULL) {
+                return NGX_ERROR;
+            }
+
+            values[0].data = p;
+            values[0].len = (int) (ngx_snprintf(p, NGX_OFF_T_LEN, "%O",
+                                              r->headers_out.content_length_n)
+                            - p);
+            return 1;
+        }
+
+        break;
+
+    case 12:
+        if (r->headers_out.content_type.len
+            && ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0)
+        {
+            values[0].data = r->headers_out.content_type.data;
+            values[0].len = r->headers_out.content_type.len;
+            return 1;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    dd("not a built-in output header");
+
+#if 1
+    if (r->headers_out.location
+        && r->headers_out.location->value.len
+        && r->headers_out.location->value.data[0] == '/')
+    {
+        /* XXX ngx_http_core_find_config_phase, for example,
+         * may not initialize the "key" and "hash" fields
+         * for a nasty optimization purpose, and
+         * we have to work-around it here */
+
+        r->headers_out.location->hash = ngx_http_lua_location_hash;
+        ngx_str_set(&r->headers_out.location->key, "Location");
+    }
+#endif
+
+    found = 0;
+
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0) {
+            continue;
+        }
+
+        dd("checking (%d) \"%.*s\"", (int) h[i].key.len, (int) h[i].key.len,
+           h[i].key.data);
+
+        if (h[i].key.len == key_len
+            && ngx_strncasecmp(key_buf, h[i].key.data, key_len) == 0)
+        {
+            values[found].data = h[i].value.data;
+            values[found].len = (int) h[i].value.len;
+
+            if (++found >= max_nvalues) {
+                break;
+            }
+        }
+    }
+
+    return found;
+}
 #endif /* NGX_LUA_NO_FFI_API */
 
 
