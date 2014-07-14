@@ -514,7 +514,7 @@ static int
 ngx_http_lua_ngx_header_get(lua_State *L)
 {
     ngx_http_request_t          *r;
-    u_char                      *p;
+    u_char                      *p, c;
     ngx_str_t                    key;
     ngx_uint_t                   i;
     size_t                       len;
@@ -532,25 +532,27 @@ ngx_http_lua_ngx_header_get(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
-    key.data = (u_char*) lua_newuserdata(L, len + 1);
-    if (key.data == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    ngx_memcpy(key.data, p, len);
-
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->transform_underscores_in_resp_headers
+        && memchr(p, '_', len) != NULL)
+    {
+        key.data = (u_char*) lua_newuserdata(L, len);
+        if (key.data == NULL) {
+            return luaL_error(L, "no memory");
+        }
 
-    if (llcf->transform_underscores_in_resp_headers) {
         /* replace "_" with "-" */
         for (i = 0; i < len; i++) {
-            if (key.data[i] == '_') {
-                key.data[i] = '-';
+            c = p[i];
+            if (c == '_') {
+                c = '-';
             }
+            key.data[i] = c;
         }
-    }
 
-    key.data[len] = '\0';
+    } else {
+        key.data = p;
+    }
 
     key.len = len;
 
