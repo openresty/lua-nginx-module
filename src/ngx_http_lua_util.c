@@ -2764,6 +2764,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     lua_Debug   ar;
 
     base = lua_gettop(L);
+    lua_checkstack(L, 3);
     lua_pushliteral(L, "stack traceback:");
     coid = 0;
 
@@ -2773,11 +2774,14 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
             break;
         }
 
+        lua_checkstack(L, 2);
         lua_pushfstring(L, "\ncoroutine %d:", coid++);
 
         level = 0;
 
         while (lua_getstack(co, level++, &ar)) {
+
+            lua_checkstack(L, 5);
 
             if (level > NGX_HTTP_LUA_BT_DEPTH) {
                 lua_pushliteral(L, "\n\t...");
