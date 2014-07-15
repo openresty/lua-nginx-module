@@ -1045,13 +1045,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
     ngx_add_timer(c->write, u->connect_timeout);
 
-    if (ctx->entered_content_phase) {
-        r->write_event_handler = ngx_http_lua_content_wev_handler;
-
-    } else {
-        r->write_event_handler = ngx_http_core_run_phases;
-    }
-
     u->write_co_ctx = ctx->cur_co_ctx;
     u->conn_waiting = 1;
     u->write_prepare_retvals = ngx_http_lua_socket_tcp_conn_retval_handler;
