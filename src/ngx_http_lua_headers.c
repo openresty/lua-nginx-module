@@ -93,11 +93,13 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     hc = mr->http_connection;
     c = mr->connection;
 
-#if 0
+#if 1
     dd("hc->nbusy: %d", (int) hc->nbusy);
 
-    dd("hc->busy: %p %p %p %p", hc->busy[0]->start, hc->busy[0]->pos,
-       hc->busy[0]->last, hc->busy[0]->end);
+    if (hc->nbusy) {
+        dd("hc->busy: %p %p %p %p", hc->busy[0]->start, hc->busy[0]->pos,
+           hc->busy[0]->last, hc->busy[0]->end);
+    }
 
     dd("request line: %p %p", mr->request_line.data,
        mr->request_line.data + mr->request_line.len);
@@ -120,7 +122,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         first = b;
 
         if (mr->header_in == b) {
-            size += mr->header_end + 2 - mr->request_line.data;
+            size += mr->header_in->pos - mr->request_line.data;
 
         } else {
             /* the subsequent part of the header is in the large header
@@ -137,6 +139,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 #endif
         }
     }
+
+    dd("size: %d", (int) size);
 
     if (hc->nbusy) {
         b = NULL;
@@ -160,7 +164,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             }
 
             if (b == mr->header_in) {
-                size += mr->header_end + 2 - b->start;
+                size += mr->header_in->pos - b->start;
                 break;
             }
 
@@ -168,13 +172,18 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         }
     }
 
+    size++;  /* plus the null terminator, as required by the later
+                ngx_strstr() call */
+
+    dd("header size: %d", (int) size);
+
     data = lua_newuserdata(L, size);
     last = data;
 
     b = c->buffer;
     if (first == b) {
         if (mr->header_in == b) {
-            pos = mr->header_end + 2;
+            pos = mr->header_in->pos;
 
         } else {
             pos = b->pos;
@@ -221,7 +230,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             p = last;
 
             if (b == mr->header_in) {
-                pos = mr->header_end + 2;
+                pos = mr->header_in->pos;
 
             } else {
                 pos = b->pos;
@@ -277,8 +286,20 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         }
     }
 
+    *last++ = '\0';
+
     if (last - data > (ssize_t) size) {
         return luaL_error(L, "buffer error: %d", (int) (last - data - size));
+    }
+
+    /* strip the leading part (if any) of the request body in our header.
+     * the first part of the request body could slip in because nginx core's
+     * ngx_http_request_body_length_filter and etc can move r->header_in->pos
+     * in case that some of the body data has been preread into r->header_in.
+     */
+    p = (u_char *) ngx_strstr(data, CRLF CRLF);
+    if (p) {
+        last = p + sizeof(CRLF CRLF) - 1;
     }
 
     lua_pushlstring(L, (char *) data, last - data);

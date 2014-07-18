@@ -595,3 +595,35 @@ Cookie: " . ("C" x 1200) . "\r\n\r\n"
 --- no_error_log
 [error]
 
+
+
+=== TEST 22: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+\r
+"
+--- no_error_log
+[error]
+
