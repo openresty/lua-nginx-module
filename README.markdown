@@ -1029,7 +1029,7 @@ This directive is turned on by default.
 
 This directive was first introduced in the `v0.9.1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_code_cache
 --------------
@@ -1065,7 +1065,7 @@ Disabling the Lua code cache is strongly
 discouraged for production use and should only be used during 
 development as it has a significant negative impact on overall performance. For example, the performance a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_regex_cache_max_entries
 ---------------------------
@@ -1087,7 +1087,7 @@ The default number of entries allowed is 1024 and when this limit is reached, ne
 
 Do not activate the `o` option for regular expressions (and/or `replace` string arguments for [ngx.re.sub](#ngxresub) and [ngx.re.gsub](#ngxregsub)) that are generated *on the fly* and give rise to infinite variations to avoid hitting the specified limit.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_regex_match_limit
 ---------------------
@@ -1105,7 +1105,7 @@ When setting the limit to 0, the default "match limit" when compiling the PCRE l
 
 This directive was first introduced in the `v0.8.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_package_path
 ----------------
@@ -1122,7 +1122,7 @@ can be used to stand for the original search paths.
 
 As from the `v0.5.0rc29` release, the special notation `$prefix` or `${prefix}` can be used in the search path string to indicate the path of the `server prefix` usually determined by the `-p PATH` command-line option while starting the Nginx server.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_package_cpath
 -----------------
@@ -1139,7 +1139,7 @@ can be used to stand for the original cpath.
 
 As from the `v0.5.0rc29` release, the special notation `$prefix` or `${prefix}` can be used in the search path string to indicate the path of the `server prefix` usually determined by the `-p PATH` command-line option while starting the Nginx server.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 init_by_lua
 -----------
@@ -1209,7 +1209,7 @@ You should be very careful about potential security vulnerabilities in your Lua 
 
 This directive was first introduced in the `v0.5.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 init_by_lua_file
 ----------------
@@ -1226,7 +1226,7 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 
 This directive was first introduced in the `v0.5.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 init_worker_by_lua
 ------------------
@@ -1271,7 +1271,7 @@ init_worker_by_lua '
 
 This directive was first introduced in the `v0.9.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 init_worker_by_lua_file
 -----------------------
@@ -1286,7 +1286,7 @@ Similar to [init_worker_by_lua](#init_worker_by_lua), but accepts the file path 
 
 This directive was first introduced in the `v0.9.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 set_by_lua
 ----------
@@ -1345,7 +1345,7 @@ As from the `v0.5.0rc29` release, Nginx variable interpolation is disabled in th
 
 This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 set_by_lua_file
 ---------------
@@ -1368,7 +1368,7 @@ switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloa
 
 This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 content_by_lua
 --------------
@@ -1384,7 +1384,7 @@ The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new s
 
 Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass) directive should not be used in the same location.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 content_by_lua_file
 -------------------
@@ -1406,7 +1406,7 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 rewrite_by_lua
 --------------
@@ -1530,7 +1530,7 @@ Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewr
 
 The `rewrite_by_lua` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone) is turned on.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 rewrite_by_lua_file
 -------------------
@@ -1551,7 +1551,7 @@ When the Lua code cache is turned on (by default), the user code is loaded once 
 
 The `rewrite_by_lua_file` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone) is turned on.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 access_by_lua
 -------------
@@ -1624,7 +1624,7 @@ As with other access phase handlers, [access_by_lua](#access_by_lua) will *not* 
 
 Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](#access_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [access_by_lua](#access_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 access_by_lua_file
 ------------------
@@ -1645,7 +1645,7 @@ When the Lua code cache is turned on (by default), the user code is loaded once 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid repeatedly reloading Nginx.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 header_filter_by_lua
 --------------------
@@ -1677,7 +1677,7 @@ location / {
 
 This directive was first introduced in the `v0.2.1rc20` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 header_filter_by_lua_file
 -------------------------
@@ -1694,7 +1694,7 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 
 This directive was first introduced in the `v0.2.1rc20` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 body_filter_by_lua
 ------------------
@@ -1784,7 +1784,7 @@ Nginx output filters may be called multiple times for a single request because r
 
 This directive was first introduced in the `v0.5.0rc32` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 body_filter_by_lua_file
 -----------------------
@@ -1801,7 +1801,7 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 
 This directive was first introduced in the `v0.5.0rc32` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 log_by_lua
 ----------
@@ -1866,7 +1866,7 @@ server {
 
 This directive was first introduced in the `v0.5.0rc31` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 log_by_lua_file
 ---------------
@@ -1883,7 +1883,7 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 
 This directive was first introduced in the `v0.5.0rc31` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_need_request_body
 ---------------------
@@ -1911,7 +1911,7 @@ It is recommended however, to use the [ngx.req.read_body](#ngxreqread_body) and 
 
 This also applies to [access_by_lua](#access_by_lua) and [access_by_lua_file](#access_by_lua_file).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_shared_dict
 ---------------
@@ -1942,7 +1942,7 @@ See [ngx.shared.DICT](#ngxshareddict) for details.
 
 This directive was first introduced in the `v0.3.1rc22` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_connect_timeout
 --------------------------
@@ -1959,7 +1959,7 @@ The `<time>` argument can be an integer, with an optional time unit, like `s` (s
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_send_timeout
 -----------------------
@@ -1976,7 +1976,7 @@ The `<time>` argument can be an integer, with an optional time unit, like `s` (s
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_send_lowat
 ---------------------
@@ -1989,7 +1989,7 @@ lua_socket_send_lowat
 
 Controls the `lowat` (low water) value for the cosocket send buffer.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_read_timeout
 -----------------------
@@ -2008,7 +2008,7 @@ The `<time>` argument can be an integer, with an optional time unit, like `s` (s
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_buffer_size
 ----------------------
@@ -2025,7 +2025,7 @@ This buffer does not have to be that big to hold everything at the same time bec
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_pool_size
 --------------------
@@ -2046,7 +2046,7 @@ Note that the cosocket connection pool is per nginx worker process rather than p
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_keepalive_timeout
 ----------------------------
@@ -2063,7 +2063,7 @@ The `<time>` argument can be an integer, with an optional time unit, like `s` (s
 
 This directive was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_socket_log_errors
 ---------------------
@@ -2078,7 +2078,7 @@ This directive can be used to toggle error logging when a failure occurs for the
 
 This directive was first introduced in the `v0.5.13` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_http10_buffering
 --------------------
@@ -2099,7 +2099,7 @@ This directive is turned `on` by default.
 
 This directive was first introduced in the `v0.5.0rc19` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 rewrite_by_lua_no_postpone
 --------------------------
@@ -2114,7 +2114,7 @@ Controls whether or not to disable postponing [rewrite_by_lua](#rewrite_by_lua) 
 
 This directive was first introduced in the `v0.5.0rc29` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_transform_underscores_in_response_headers
 ---------------------------------------------
@@ -2129,7 +2129,7 @@ Controls whether to transform underscores (`_`) in the response header names spe
 
 This directive was first introduced in the `v0.5.0rc32` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_check_client_abort
 ----------------------
@@ -2164,7 +2164,7 @@ This directive was first introduced in the `v0.7.4` release.
 
 See also [ngx.on_abort](#ngxon_abort).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_max_pending_timers
 ----------------------
@@ -2183,7 +2183,7 @@ When exceeding this limit, the [ngx.timer.at](#ngxtimerat) call will immediately
 
 This directive was first introduced in the `v0.8.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 lua_max_running_timers
 ----------------------
@@ -2202,7 +2202,7 @@ When exceeding this limit, Nginx will stop running the callbacks of newly expire
 
 This directive was first introduced in the `v0.8.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#directives)
 
 Nginx API for Lua
 =================
@@ -2371,7 +2371,7 @@ The ability to require these packages was introduced in the `v0.2.1rc19` release
 
 Network I/O operations in user code should only be done through the Nginx Lua API calls as the Nginx event loop may be blocked and performance drop off dramatically otherwise. Disk operations with relatively small amount of data can be done using the standard Lua `io` library but huge file reading and writing should be avoided wherever possible as they may block the Nginx process significantly. Delegating all network and disk I/O operations to Nginx's subrequests (via the [ngx.location.capture](#ngxlocationcapture) method and similar) is strongly recommended for maximum performance.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.arg
 -------
@@ -2408,7 +2408,7 @@ When this table is used in the context of [body_filter_by_lua](#body_filter_by_l
 
 The data chunk and "eof" flag passed to the downstream Nginx output filters can also be overridden by assigning values directly to the corresponding table elements. When setting `nil` or an empty Lua string value to `ngx.arg[1]`, no data chunk will be passed to the downstream Nginx output filters at all.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.var.VARIABLE
 ----------------
@@ -2465,7 +2465,7 @@ to prevent (temporary) memory leaking within the current request's lifetime. Ano
 
 This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 Core constants
 --------------
@@ -2491,7 +2491,7 @@ The `ngx.null` constant is a `NULL` light userdata usually used to represent nil
 
 The `ngx.DECLINED` constant was first introduced in the `v0.5.0rc19` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 HTTP method constants
 ---------------------
@@ -2517,7 +2517,7 @@ HTTP method constants
 
 These constants are usually used in [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) method calls.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 HTTP status constants
 ---------------------
@@ -2544,7 +2544,7 @@ HTTP status constants
   value = ngx.HTTP_GATEWAY_TIMEOUT (504) (first added in the v0.3.1rc38 release)
 ```
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 Nginx log level constants
 -------------------------
@@ -2565,7 +2565,7 @@ Nginx log level constants
 
 These constants are usually used by the [ngx.log](#ngxlog) method.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 print
 -----
@@ -2586,7 +2586,7 @@ Lua `nil` arguments are accepted and result in literal `"nil"` strings while Lua
 
 There is a hard coded `2048` byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.ctx
 -------
@@ -2697,7 +2697,7 @@ When being used in the context of [init_worker_by_lua*](#init_worker_by_lua), th
 
 The `ngx.ctx` lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact. And because of the metamethod magic, never "local" the `ngx.ctx` table outside your function scope.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.location.capture
 --------------------
@@ -2986,7 +2986,7 @@ The limit can be manually modified if required by editing the definition of the 
 
 Please also refer to restrictions on capturing locations configured by [subrequest directives of other modules](#locations_configured_by_subrequest_directives_of_other_modules).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.location.capture_multi
 --------------------------
@@ -3051,7 +3051,7 @@ ngx.location.capture =
 
 Please also refer to restrictions on capturing locations configured by [subrequest directives of other modules](#locations_configured_by_subrequest_directives_of_other_modules).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.status
 ----------
@@ -3072,7 +3072,7 @@ Setting `ngx.status` after the response header is sent out has no effect but lea
     attempt to set ngx.status after sending out response headers
 
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.header.HEADER
 -----------------
@@ -3186,7 +3186,7 @@ Note that `ngx.header` is not a normal Lua table and as such, it is not possible
 
 For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers) function instead.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.resp.get_headers
 --------------------
@@ -3208,7 +3208,7 @@ This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers
 
 This API was first introduced in the `v0.9.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.start_time
 ------------------
@@ -3229,7 +3229,7 @@ This function was first introduced in the `v0.7.7` release.
 
 See also [ngx.now](#ngxnow) and [ngx.update_time](#ngxupdate_time).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.http_version
 --------------------
@@ -3243,7 +3243,7 @@ Current possible values are 1.0, 1.1, and 0.9. Returns `nil` for unrecognized va
 
 This method was first introduced in the `v0.7.17` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.raw_header
 ------------------
@@ -3289,7 +3289,7 @@ outputs something like this:
 
 This method was first introduced in the `v0.7.17` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_method
 ------------------
@@ -3305,7 +3305,7 @@ This method was first introduced in the `v0.5.6` release.
 
 See also [ngx.req.set_method](#ngxreqset_method).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_method
 ------------------
@@ -3321,7 +3321,7 @@ This method was first introduced in the `v0.5.6` release.
 
 See also [ngx.req.get_method](#ngxreqget_method).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_uri
 ---------------
@@ -3420,7 +3420,7 @@ ngx.req.set_uri("/foo", true)
 
 This interface was first introduced in the `v0.3.1rc14` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_uri_args
 --------------------
@@ -3457,7 +3457,7 @@ This interface was first introduced in the `v0.3.1rc13` release.
 
 See also [ngx.req.set_uri](#ngxreqset_uri).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_uri_args
 --------------------
@@ -3553,7 +3553,7 @@ local args = ngx.req.get_uri_args(0)
 
 Removing the `max_args` cap is strongly discouraged.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_post_args
 ---------------------
@@ -3655,7 +3655,7 @@ local args = ngx.req.get_post_args(0)
 
 Removing the `max_args` cap is strongly discouraged.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_headers
 -------------------
@@ -3729,7 +3729,7 @@ ngx.say(headers["my-foo-header"])
 
 The `__index` metamethod will not be added when the `raw` argument is set to `true`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_header
 ------------------
@@ -3780,7 +3780,7 @@ is equivalent to
 ngx.req.clear_header("X-Foo")
 ```
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.clear_header
 --------------------
@@ -3790,7 +3790,7 @@ ngx.req.clear_header
 
 Clears the current request's request header named `header_name`. None of the current request's existing subrequests will be affected but subsequently initiated subrequests will inherit the change by default.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.read_body
 -----------------
@@ -3821,7 +3821,7 @@ In cases where current request may have a request body and the request body data
 
 This function was first introduced in the `v0.3.1rc17` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.discard_body
 --------------------
@@ -3839,7 +3839,7 @@ This function was first introduced in the `v0.3.1rc17` release.
 
 See also [ngx.req.read_body](#ngxreqread_body).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_body_data
 ---------------------
@@ -3867,7 +3867,7 @@ This function was first introduced in the `v0.3.1rc17` release.
 
 See also [ngx.req.get_body_file](#ngxreqget_body_file).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_body_file
 ---------------------
@@ -3889,7 +3889,7 @@ This function was first introduced in the `v0.3.1rc17` release.
 
 See also [ngx.req.get_body_data](#ngxreqget_body_data).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_body_data
 ---------------------
@@ -3905,7 +3905,7 @@ This function was first introduced in the `v0.3.1rc18` release.
 
 See also [ngx.req.set_body_file](#ngxreqset_body_file).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.set_body_file
 ---------------------
@@ -3925,7 +3925,7 @@ This function was first introduced in the `v0.3.1rc18` release.
 
 See also [ngx.req.set_body_data](#ngxreqset_body_data).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.init_body
 -----------------
@@ -3956,7 +3956,7 @@ This function can be used with [ngx.req.append_body](#ngxreqappend_body), [ngx.r
 
 This function was first introduced in the `v0.5.11` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.append_body
 -------------------
@@ -3976,7 +3976,7 @@ This function was first introduced in the `v0.5.11` release.
 
 See also [ngx.req.init_body](#ngxreqinit_body).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.finish_body
 -------------------
@@ -3992,7 +3992,7 @@ This function was first introduced in the `v0.5.11` release.
 
 See also [ngx.req.init_body](#ngxreqinit_body).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.req.socket
 --------------
@@ -4019,7 +4019,7 @@ You can use the "raw request socket" returned by `ngx.req.socket(true)` to imple
 
 This function was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.exec
 --------
@@ -4079,7 +4079,7 @@ It is strongly recommended to combine the `return` statement with this call, i.e
 
 This method is similar to the [echo_exec](http://github.com/openresty/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/openresty/echo-nginx-module).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.redirect
 ------------
@@ -4160,7 +4160,7 @@ return ngx.redirect('/foo?a=3&b=4')
 
 This method call terminates the current request's processing and never returns. It is recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`, so as to be more explicit.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.send_headers
 ----------------
@@ -4175,7 +4175,7 @@ Since `v0.8.3` this function returns `1` on success, or returns `nil` and a stri
 Note that there is normally no need to manually send out response headers as ngx_lua will automatically send headers out
 before content is output with [ngx.say](#ngxsay) or [ngx.print](#ngxprint) or when [content_by_lua](#content_by_lua) exits normally.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.headers_sent
 ----------------
@@ -4187,7 +4187,7 @@ Returns `true` if the response headers have been sent (by ngx_lua), and `false` 
 
 This API was first introduced in ngx_lua v0.3.1rc6.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.print
 ---------
@@ -4228,7 +4228,7 @@ This is an asynchronous call and will return immediately without waiting for all
 
 Please note that both `ngx.print` and [ngx.say](#ngxsay) will always invoke the whole Nginx output body filter chain, which is an expensive operation. So be careful when calling either of these two in a tight loop; buffer the data yourself in Lua and save the calls.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.say
 -------
@@ -4238,7 +4238,7 @@ ngx.say
 
 Just as [ngx.print](#ngxprint) but also emit a trailing newline.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.log
 -------
@@ -4254,7 +4254,7 @@ The `log_level` argument can take constants like `ngx.ERR` and `ngx.WARN`. Check
 
 There is a hard coded `2048` byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the `NGX_MAX_ERROR_STR` macro definition in the `src/core/ngx_log.h` file in the Nginx source tree.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.flush
 ---------
@@ -4274,7 +4274,7 @@ Note that `ngx.flush` is non functional when in the HTTP 1.0 output buffering mo
 
 Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.exit
 --------
@@ -4327,7 +4327,7 @@ It is recommended, though not necessary (for contexts other than [header_filter_
 
 When being used in the context of [header_filter_by_lua](#header_filter_by_lua), `ngx.exit()` is an asynchronous operation and will return immediately. This behavior might change in the future. So always use `return` at the same time, as suggested above.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.eof
 -------
@@ -4362,7 +4362,7 @@ A better way to do background jobs is to use the [ngx.timer.at](#ngxtimerat) API
 
 Since `v0.8.3` this function returns `1` on success, or returns `nil` and a string describing the error otherwise.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.sleep
 ---------
@@ -4378,7 +4378,7 @@ Since the `0.7.20` release, The `0` time argument can also be specified.
 
 This method was introduced in the `0.5.0rc30` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.escape_uri
 --------------
@@ -4388,7 +4388,7 @@ ngx.escape_uri
 
 Escape `str` as a URI component.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.unescape_uri
 ----------------
@@ -4411,7 +4411,7 @@ gives the output
     b r56 7
 
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.encode_args
 ---------------
@@ -4468,7 +4468,7 @@ If the argument value is `false`, then the effect is equivalent to the `nil` val
 
 This method was first introduced in the `v0.3.1rc27` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.decode_args
 ---------------
@@ -4491,7 +4491,7 @@ Removing the `max_args` cap is strongly discouraged.
 
 This method was introduced in the `v0.5.0rc29`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.encode_base64
 -----------------
@@ -4501,7 +4501,7 @@ ngx.encode_base64
 
 Encode `str` to a base64 digest.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.decode_base64
 -----------------
@@ -4511,7 +4511,7 @@ ngx.decode_base64
 
 Decodes the `str` argument as a base64 digest to the raw form. Returns `nil` if `str` is not well formed.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.crc32_short
 ---------------
@@ -4527,7 +4527,7 @@ Behind the scene, it is just a thin wrapper around the `ngx_crc32_short` functio
 
 This API was first introduced in the `v0.3.1rc8` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.crc32_long
 --------------
@@ -4543,7 +4543,7 @@ Behind the scene, it is just a thin wrapper around the `ngx_crc32_long` function
 
 This API was first introduced in the `v0.3.1rc8` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.hmac_sha1
 -------------
@@ -4575,7 +4575,7 @@ This API requires the OpenSSL library enabled in the Nginx build (usually by pas
 
 This function was first introduced in the `v0.3.1rc29` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.md5
 -------
@@ -4602,7 +4602,7 @@ yields the output
 
 See [ngx.md5_bin](#ngxmd5_bin) if the raw binary MD5 digest is required.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.md5_bin
 -----------
@@ -4614,7 +4614,7 @@ Returns the binary form of the MD5 digest of the `str` argument.
 
 See [ngx.md5](#ngxmd5) if the hexadecimal form of the MD5 digest is required.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.sha1_bin
 ------------
@@ -4628,7 +4628,7 @@ This function requires SHA-1 support in the Nginx build. (This usually just mean
 
 This function was first introduced in the `v0.5.0rc6`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.quote_sql_str
 -----------------
@@ -4638,7 +4638,7 @@ ngx.quote_sql_str
 
 Returns a quoted SQL string literal according to the MySQL quoting rules.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.today
 ---------
@@ -4650,7 +4650,7 @@ Returns current date (in the format `yyyy-mm-dd`) from the nginx cached time (no
 
 This is the local time.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.time
 --------
@@ -4662,7 +4662,7 @@ Returns the elapsed seconds from the epoch for the current time stamp from the n
 
 Updates of the Nginx time cache an be forced by calling [ngx.update_time](#ngxupdate_time) first.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.now
 -------
@@ -4676,7 +4676,7 @@ You can forcibly update the Nginx time cache by calling [ngx.update_time](#ngxup
 
 This API was first introduced in `v0.3.1rc32`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.update_time
 ---------------
@@ -4688,7 +4688,7 @@ Forcibly updates the Nginx current time cache. This call involves a syscall and 
 
 This API was first introduced in `v0.3.1rc32`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.localtime
 -------------
@@ -4700,7 +4700,7 @@ Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the ngin
 
 This is the local time.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.utctime
 -----------
@@ -4712,7 +4712,7 @@ Returns the current time stamp (in the format `yyyy-mm-dd hh:mm:ss`) of the ngin
 
 This is the UTC time.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.cookie_time
 ---------------
@@ -4728,7 +4728,7 @@ ngx.say(ngx.cookie_time(1290079655))
     -- yields "Thu, 18-Nov-10 11:27:35 GMT"
 ```
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.http_time
 -------------
@@ -4744,7 +4744,7 @@ ngx.say(ngx.http_time(1290079655))
     -- yields "Thu, 18 Nov 2010 11:27:35 GMT"
 ```
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.parse_http_time
 -------------------
@@ -4762,7 +4762,7 @@ if time == nil then
 end
 ```
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.is_subrequest
 -----------------
@@ -4772,7 +4772,7 @@ ngx.is_subrequest
 
 Returns `true` if the current request is an nginx subrequest, or `false` otherwise.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.re.match
 ------------
@@ -4930,7 +4930,7 @@ Starting from the `0.9.4` release, this function also accepts a 5th argument, `r
 
 This feature was introduced in the `v0.2.1rc11` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.re.find
 -----------
@@ -4984,7 +4984,7 @@ end
 
 This API function was first introduced in the `v0.9.2` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.re.gmatch
 -------------
@@ -5062,7 +5062,7 @@ This method requires the PCRE library enabled in Nginx.  ([Known Issue With Spec
 
 This feature was first introduced in the `v0.2.1rc12` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.re.sub
 ----------
@@ -5128,7 +5128,7 @@ This method requires the PCRE library enabled in Nginx.  ([Known Issue With Spec
 
 This feature was first introduced in the `v0.2.1rc13` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.re.gsub
 -----------
@@ -5166,7 +5166,7 @@ This method requires the PCRE library enabled in Nginx.  ([Known Issue With Spec
 
 This feature was first introduced in the `v0.2.1rc15` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT
 ---------------
@@ -5240,7 +5240,7 @@ The contents in the dictionary storage will be lost, however, when the Nginx ser
 
 This feature was first introduced in the `v0.3.1rc22` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.get
 -------------------
@@ -5278,7 +5278,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.get_stale
 -------------------------
@@ -5296,7 +5296,7 @@ This method was first introduced in the `0.8.6` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.set
 -------------------
@@ -5344,7 +5344,7 @@ Please note that while internally the key-value pair is set atomically, the atom
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.safe_set
 ------------------------
@@ -5358,7 +5358,7 @@ This feature was first introduced in the `v0.7.18` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.add
 -------------------
@@ -5374,7 +5374,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.safe_add
 ------------------------
@@ -5388,7 +5388,7 @@ This feature was first introduced in the `v0.7.18` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.replace
 -----------------------
@@ -5404,7 +5404,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.delete
 ----------------------
@@ -5420,7 +5420,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.incr
 --------------------
@@ -5440,7 +5440,7 @@ This feature was first introduced in the `v0.3.1rc22` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.flush_all
 -------------------------
@@ -5454,7 +5454,7 @@ This feature was first introduced in the `v0.5.0rc17` release.
 
 See also [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired) and [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.flush_expired
 -----------------------------
@@ -5470,7 +5470,7 @@ This feature was first introduced in the `v0.6.3` release.
 
 See also [ngx.shared.DICT.flush_all](#ngxshareddictflush_all) and [ngx.shared.DICT](#ngxshareddict).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.get_keys
 ------------------------
@@ -5486,7 +5486,7 @@ By default, only the first 1024 keys (if any) are returned. When the `<max_count
 
 This feature was first introduced in the `v0.7.3` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.socket.udp
 --------------
@@ -5508,7 +5508,7 @@ This feature was first introduced in the `v0.5.7` release.
 
 See also [ngx.socket.tcp](#ngxsockettcp).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 udpsock:setpeername
 -------------------
@@ -5569,7 +5569,7 @@ Calling this method on an already connected socket object will cause the origina
 
 This method was first introduced in the `v0.5.7` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 udpsock:send
 ------------
@@ -5585,7 +5585,7 @@ The input argument `data` can either be a Lua string or a (nested) Lua table hol
 
 This feature was first introduced in the `v0.5.7` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 udpsock:receive
 ---------------
@@ -5620,7 +5620,7 @@ It is important here to call the [settimeout](#udpsocksettimeout) method *before
 
 This feature was first introduced in the `v0.5.7` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 udpsock:close
 -------------
@@ -5634,7 +5634,7 @@ Socket objects that have not invoked this method (and associated connections) wi
 
 This feature was first introduced in the `v0.5.7` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 udpsock:settimeout
 ------------------
@@ -5648,7 +5648,7 @@ Settings done by this method takes priority over those config directives, like [
 
 This feature was first introduced in the `v0.5.7` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.socket.tcp
 --------------
@@ -5678,7 +5678,7 @@ This feature was first introduced in the `v0.5.0rc1` release.
 
 See also [ngx.socket.udp](#ngxsocketudp).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:connect
 ---------------
@@ -5759,7 +5759,7 @@ The support for the options table argument was first introduced in the `v0.5.7` 
 
 This method was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:send
 ------------
@@ -5789,7 +5789,7 @@ In case of any connection errors, this method always automatically closes the cu
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:receive
 ---------------
@@ -5833,7 +5833,7 @@ Since the `v0.8.8` release, this method no longer automatically closes the curre
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:receiveuntil
 --------------------
@@ -5932,7 +5932,7 @@ Since the `v0.8.8` release, this method no longer automatically closes the curre
 
 This method was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:close
 -------------
@@ -5948,7 +5948,7 @@ Socket objects that have not invoked this method (and associated connections) wi
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:settimeout
 ------------------
@@ -5964,7 +5964,7 @@ Note that this method does *not* affect the [lua_socket_keepalive_timeout](#lua_
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:setoption
 -----------------
@@ -5976,7 +5976,7 @@ This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasock
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:setkeepalive
 --------------------
@@ -6002,7 +6002,7 @@ This method also makes the current cosocket object enter the "closed" state, so 
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 tcpsock:getreusedtimes
 ----------------------
@@ -6016,7 +6016,7 @@ If the current connection does not come from the built-in connection pool, then 
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.socket.connect
 ------------------
@@ -6042,7 +6042,7 @@ There is no way to use the [settimeout](#tcpsocksettimeout) method to specify co
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.get_phase
 -------------
@@ -6073,7 +6073,7 @@ Retrieves the current running phase name. Possible return values are
 
 This API was first introduced in the `v0.5.10` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.thread.spawn
 ----------------
@@ -6211,7 +6211,7 @@ ngx.thread.spawn(query_http)       -- create thread 3
 
 This API was first enabled in the `v0.7.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.thread.wait
 ---------------
@@ -6314,7 +6314,7 @@ And it will generate the following output:
 
 This API was first enabled in the `v0.7.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.thread.kill
 ---------------
@@ -6328,7 +6328,7 @@ According to the current implementation, only the parent coroutine (or "light th
 
 This API was first enabled in the `v0.9.9` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.on_abort
 ------------
@@ -6368,7 +6368,7 @@ This API was first introduced in the `v0.7.4` release.
 
 See also [lua_check_client_abort](#lua_check_client_abort).
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.timer.at
 ------------
@@ -6494,7 +6494,7 @@ You can pass most of the standard Lua values (nils, booleans, numbers, strings, 
 
 This API was first introduced in the `v0.8.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.config.debug
 ----------------
@@ -6506,7 +6506,7 @@ This boolean field indicates whether the current Nginx is a debug build, i.e., b
 
 This field was first introduced in the `0.8.7`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.config.prefix
 -----------------
@@ -6519,7 +6519,7 @@ Returns the Nginx server "prefix" path, as determined by the `-p` command-line o
 
 This function was first introduced in the `0.9.2`.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.config.nginx_version
 ------------------------
@@ -6532,7 +6532,7 @@ This field take an integral value indicating the version number of the current N
 
 This API was first introduced in the `0.9.3` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.config.nginx_configure
 --------------------------
@@ -6545,7 +6545,7 @@ This function returns a string for the NGINX `./configure` command's arguments s
 
 This API was first introduced in the `0.9.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.config.ngx_lua_version
 --------------------------
@@ -6558,7 +6558,7 @@ This field take an integral value indicating the version number of the current `
 
 This API was first introduced in the `0.9.3` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.worker.exiting
 ------------------
@@ -6571,7 +6571,7 @@ This function returns a boolean value indicating whether the current Nginx worke
 
 This API was first introduced in the `0.9.3` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.worker.pid
 --------------
@@ -6584,7 +6584,7 @@ This function returns a Lua number for the process ID (PID) of the current Nginx
 
 This API was first introduced in the `0.9.5` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 ndk.set_var.DIRECTIVE
 ---------------------
@@ -6625,7 +6625,7 @@ Similarly, the following directives provided by [encrypted-session-nginx-module]
 
 This feature requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.create
 ----------------
@@ -6641,7 +6641,7 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first introduced in the `v0.6.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.resume
 ----------------
@@ -6657,7 +6657,7 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first introduced in the `v0.6.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.yield
 ---------------
@@ -6673,7 +6673,7 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first introduced in the `v0.6.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.wrap
 --------------
@@ -6687,7 +6687,7 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first introduced in the `v0.6.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.running
 -----------------
@@ -6701,7 +6701,7 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first enabled in the `v0.6.0` release.
 
-[Back to TOC](#table-of-contents)
+[Back to TOC](#nginx-api-for-lua)
 
 coroutine.status
 ----------------
@@ -6715,3 +6715,5 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first enabled in the `v0.6.0` release.
 
+
+[Back to TOC](#nginx-api-for-lua)
