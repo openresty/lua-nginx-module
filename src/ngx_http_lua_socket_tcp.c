@@ -883,6 +883,10 @@ nomem:
     if (waiting) {
         dd("run posted requests");
         ngx_http_run_posted_requests(c);
+
+    } else {
+        lua_pushnil(L);
+        lua_pushliteral(L, "no memory");
     }
 }
 
@@ -2531,9 +2535,6 @@ ngx_http_lua_socket_handle_conn_error(ngx_http_request_t *r,
                        "lua tcp socket waking up the current request");
 
         r->write_event_handler(r);
-
-    } else {
-        u->write_prepare_retvals(r, u, coctx->co);
     }
 }
 
