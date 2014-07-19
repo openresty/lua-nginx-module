@@ -65,12 +65,12 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
 static int
 ngx_http_lua_ngx_req_raw_header(lua_State *L)
 {
-    int                          n;
+    int                          n, line_break_len;
     u_char                      *data, *p, *last, *pos;
     unsigned                     no_req_line = 0, found;
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
-    ngx_int_t                    i;
+    ngx_int_t                    i, j;
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
     ngx_http_connection_t       *hc;
@@ -116,8 +116,16 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size = 0;
     b = c->buffer;
 
+    if (mr->request_line.data[mr->request_line.len] == CR) {
+        line_break_len = 2;
+
+    } else {
+        line_break_len = 1;
+    }
+
     if (mr->request_line.data >= b->start
-        && mr->request_line.data + mr->request_line.len + 2 <= b->pos)
+        && mr->request_line.data + mr->request_line.len
+           + line_break_len <= b->pos)
     {
         first = b;
 
@@ -153,7 +161,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             if (first == NULL) {
                 if (mr->request_line.data >= b->pos
                     || mr->request_line.data
-                       + mr->request_line.len + 2
+                       + mr->request_line.len + line_break_len
                        <= b->start)
                 {
                     continue;
@@ -192,22 +200,27 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         if (no_req_line) {
             last = ngx_copy(data,
                             mr->request_line.data
-                            + mr->request_line.len + 2,
+                            + mr->request_line.len + line_break_len,
                             pos - mr->request_line.data
-                            - mr->request_line.len - 2);
+                            - mr->request_line.len - line_break_len);
 
         } else {
             last = ngx_copy(data, mr->request_line.data,
                             pos - mr->request_line.data);
         }
 
+        i = 0;
         for (p = data; p != last; p++) {
             if (*p == '\0') {
+                i++;
                 if (p + 1 != last && *(p + 1) == LF) {
                     *p = CR;
 
-                } else {
+                } else if (i % 2 == 1) {
                     *p = ':';
+
+                } else {
+                    *p = LF;
                 }
             }
         }
@@ -243,9 +256,9 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 if (no_req_line) {
                     last = ngx_copy(last,
                                     mr->request_line.data
-                                    + mr->request_line.len + 2,
+                                    + mr->request_line.len + line_break_len,
                                     pos - mr->request_line.data
-                                    - mr->request_line.len - 2);
+                                    - mr->request_line.len - line_break_len);
 
                 } else {
                     last = ngx_copy(last,
@@ -265,8 +278,10 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
             }
 #endif
 
+            j = 0;
             for (; p != last; p++) {
                 if (*p == '\0') {
+                    j++;
                     if (p + 1 == last) {
                         /* XXX this should not happen */
                         dd("found string end!!");
@@ -274,8 +289,11 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                     } else if (*(p + 1) == LF) {
                         *p = CR;
 
-                    } else {
+                    } else if (j % 2 == 1) {
                         *p = ':';
+
+                    } else {
+                        *p = LF;
                     }
                 }
             }
@@ -297,9 +315,29 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
      * ngx_http_request_body_length_filter and etc can move r->header_in->pos
      * in case that some of the body data has been preread into r->header_in.
      */
-    p = (u_char *) ngx_strstr(data, CRLF CRLF);
-    if (p) {
+
+    if ((p = (u_char *) ngx_strstr(data, CRLF CRLF)) != NULL) {
         last = p + sizeof(CRLF CRLF) - 1;
+
+    } else if ((p = (u_char *) ngx_strstr(data, CRLF "\n")) != NULL) {
+        last = p + sizeof(CRLF "\n") - 1;
+
+    } else if ((p = (u_char *) ngx_strstr(data, "\n" CRLF)) != NULL) {
+        last = p + sizeof("\n" CRLF) - 1;
+
+    } else {
+        for (p = last - 1; p - data >= 2; p--) {
+            if (p[0] == LF && p[-1] == CR) {
+                p[-1] = LF;
+                last = p + 1;
+                break;
+            }
+
+            if (p[0] == LF && p[-1] == LF) {
+                last = p + 1;
+                break;
+            }
+        }
     }
 
     lua_pushlstring(L, (char *) data, last - data);
