@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 3 + 13);
 
 #no_diff();
 no_long_string();
@@ -750,6 +750,75 @@ probe syscall.writev.return {
 }
 
 --- stap_out2
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 24: clear ngx.arg[1] and then read it
+--- config
+    location /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = nil
+            local data = ngx.arg[1]
+            print([[data chunk: "]], data, [["]])
+
+            ngx.arg[1] = ""
+            data = ngx.arg[1]
+            print([[data chunk 2: "]], data, [["]])
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- log_level: info
+--- grep_error_log eval: qr/data chunk(?: \d+)?: [^,]+/
+--- grep_error_log_out
+data chunk: ""
+data chunk 2: ""
+data chunk: ""
+data chunk 2: ""
+data chunk: ""
+data chunk 2: ""
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 25: clear ngx.arg[1] and then read ngx.arg[2]
+--- config
+    location /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = nil
+            local eof = ngx.arg[2]
+            print([[eof: ]], eof)
+
+            ngx.arg[1] = ""
+            eof = ngx.arg[2]
+            print([[eof 2: ]], eof)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- log_level: info
+--- grep_error_log eval: qr/eof(?: \d+)?: [^,]+/
+--- grep_error_log_out
+eof: false
+eof 2: false
+eof: false
+eof 2: false
+eof: true
+eof 2: true
+
 --- no_error_log
 [error]
 [alert]

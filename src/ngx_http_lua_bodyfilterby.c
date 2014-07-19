@@ -383,6 +383,12 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
     size = 0;
 
+    if (in == NULL) {
+        /* being a cleared chain on the Lua land */
+        lua_pushlstring(L, "", 0);
+        return 1;
+    }
+
     if (in->next == NULL) {
 
         dd("seen only single buffer");
