@@ -644,14 +644,14 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     if (u->conn_waiting) {
-        /* resolved and already connecting */
+        dd("resolved and already connecting");
         return lua_yield(L, 0);
     }
 
     n = lua_gettop(L) - saved_top;
     if (n) {
-        /* errors occurred during resolving or connecting
-         * or already connected */
+        dd("errors occurred during resolving or connecting"
+           "or already connected");
         return n;
     }
 
@@ -784,19 +784,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     }
 #endif
 
-    if (ur->naddrs == 0) {
-        ngx_resolve_name_done(ctx);
-        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
-
-        lua_pushnil(L);
-        lua_pushliteral(L, "name cannot be resolved to a address");
-
-        if (waiting) {
-            ngx_http_run_posted_requests(c);
-        }
-
-        return;
-    }
+    ngx_http_lua_assert(ur->naddrs > 0);
 
     if (ur->naddrs == 1) {
         i = 0;
@@ -864,9 +852,8 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     ur->host.len = len;
     ur->naddrs = 1;
 
-    ur->ctx = NULL;
-
     ngx_resolve_name_done(ctx);
+    ur->ctx = NULL;
 
     u->conn_waiting = 0;
     u->write_co_ctx = NULL;
@@ -884,13 +871,17 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 nomem:
 
-    ngx_resolve_name_done(ctx);
-    u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_NOMEM;
+    if (ur->ctx) {
+        ngx_resolve_name_done(ctx);
+        ur->ctx = NULL;
+    }
 
-    lua_pushnil(L);
-    lua_pushliteral(L, "no memory");
+    u->write_prepare_retvals = ngx_http_lua_socket_conn_error_retval_handler;
+    ngx_http_lua_socket_handle_conn_error(r, u,
+                                          NGX_HTTP_LUA_SOCKET_FT_NOMEM);
 
     if (waiting) {
+        dd("run posted requests");
         ngx_http_run_posted_requests(c);
     }
 }
@@ -2518,10 +2509,13 @@ ngx_http_lua_socket_handle_conn_error(ngx_http_request_t *r,
     u->read_event_handler = ngx_http_lua_socket_dummy_handler;
     u->write_event_handler = ngx_http_lua_socket_dummy_handler;
 
+    dd("connection waiting: %d", (int) u->conn_waiting);
+
+    coctx = u->write_co_ctx;
+
     if (u->conn_waiting) {
         u->conn_waiting = 0;
 
-        coctx = u->write_co_ctx;
         coctx->cleanup = NULL;
         u->write_co_ctx = NULL;
 
@@ -2537,6 +2531,9 @@ ngx_http_lua_socket_handle_conn_error(ngx_http_request_t *r,
                        "lua tcp socket waking up the current request");
 
         r->write_event_handler(r);
+
+    } else {
+        u->write_prepare_retvals(r, u, coctx->co);
     }
 }
 
