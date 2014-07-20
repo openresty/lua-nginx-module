@@ -173,6 +173,10 @@ enum {
 static char ngx_http_lua_req_socket_metatable_key;
 static char ngx_http_lua_raw_req_socket_metatable_key;
 static char ngx_http_lua_tcp_socket_metatable_key;
+static char ngx_http_lua_upstream_udata_metatable_key;
+static char ngx_http_lua_downstream_udata_metatable_key;
+static char ngx_http_lua_pool_udata_metatable_key;
+static char ngx_http_lua_pattern_udata_metatable_key;
 
 
 void
@@ -278,6 +282,38 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+
+    /* {{{upstream userdata metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_upstream_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_upstream_destroy);
+    lua_setfield(L, -2, "__gc");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+
+    /* {{{downstream userdata metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_downstream_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_downstream_destroy);
+    lua_setfield(L, -2, "__gc");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+
+    /* {{{socket pool userdata metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_pool_udata_metatable_key);
+    lua_createtable(L, 0, 1); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_shutdown_pool);
+    lua_setfield(L, -2, "__gc");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+
+    /* {{{socket compiled pattern userdata metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_pattern_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_cleanup_compiled_pattern);
+    lua_setfield(L, -2, "__gc");
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 }
@@ -487,9 +523,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         }
 
 #if 1
-        lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-        lua_pushcfunction(L, ngx_http_lua_socket_tcp_upstream_destroy);
-        lua_setfield(L, -2, "__gc");
+        lua_pushlightuserdata(L, &ngx_http_lua_upstream_udata_metatable_key);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
 #endif
 
@@ -3015,9 +3050,8 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
         return luaL_error(L, "no memory");
     }
 
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-    lua_pushcfunction(L, ngx_http_lua_socket_cleanup_compiled_pattern);
-    lua_setfield(L, -2, "__gc");
+    lua_pushlightuserdata(L, &ngx_http_lua_pattern_udata_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 
     ngx_memzero(cp, size);
@@ -3707,9 +3741,8 @@ ngx_http_lua_req_socket(lua_State *L)
     }
 
 #if 1
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-    lua_pushcfunction(L, ngx_http_lua_socket_downstream_destroy);
-    lua_setfield(L, -2, "__gc");
+    lua_pushlightuserdata(L, &ngx_http_lua_downstream_udata_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 #endif
 
@@ -3967,9 +4000,8 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
             return luaL_error(L, "no memory");
         }
 
-        lua_createtable(L, 0, 1); /* metatable */
-        lua_pushcfunction(L, ngx_http_lua_socket_shutdown_pool);
-        lua_setfield(L, -2, "__gc");
+        lua_pushlightuserdata(L, &ngx_http_lua_pool_udata_metatable_key);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
