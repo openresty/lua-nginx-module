@@ -68,6 +68,7 @@ enum {
 
 
 static char ngx_http_lua_socket_udp_metatable_key;
+static char ngx_http_lua_udp_udata_metatable_key;
 static u_char ngx_http_lua_socket_udp_buffer[UDP_MAX_DATAGRAM_SIZE];
 
 
@@ -100,6 +101,14 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+
+    /* udp socket object metatable */
+    lua_pushlightuserdata(L, &ngx_http_lua_udp_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_http_lua_socket_udp_upstream_destroy);
+    lua_setfield(L, -2, "__gc");
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
@@ -252,9 +261,8 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
         }
 
 #if 1
-        lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-        lua_pushcfunction(L, ngx_http_lua_socket_udp_upstream_destroy);
-        lua_setfield(L, -2, "__gc");
+        lua_pushlightuserdata(L, &ngx_http_lua_udp_udata_metatable_key);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
 #endif
 
