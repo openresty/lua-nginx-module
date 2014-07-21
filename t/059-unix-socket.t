@@ -47,17 +47,6 @@ close: nil closed
 
 
 === TEST 2: invalid host argument
---- http_server
-    server {
-        listen /tmp/test-nginx.sock;
-        default_type 'text/plain';
-
-        server_tokens off;
-        location /foo {
-            echo foo;
-            more_clear_headers Date;
-        }
-    }
 --- config
     location /test {
         content_by_lua '
