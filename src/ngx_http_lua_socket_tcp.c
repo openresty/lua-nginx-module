@@ -1258,9 +1258,9 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         if (llcf->log_socket_errors) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "attempt to receive data on a closed socket: u:%p, "
-                          "c:%p, ft:%ui eof:%ud",
-                          u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
-                          u ? u->eof : 0);
+                          "c:%p, ft:%d eof:%d",
+                          u, u ? u->peer.connection : NULL,
+                          u ? (int) u->ft_type : 0, u ? (int) u->eof : 0);
         }
 
         lua_pushnil(L);
@@ -1886,9 +1886,9 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         if (llcf->log_socket_errors) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "attempt to send data on a closed socket: u:%p, "
-                          "c:%p, ft:%ui eof:%ud",
-                          u, u ? u->peer.connection : NULL, u ? u->ft_type : 0,
-                          u ? u->eof : 0);
+                          "c:%p, ft:%d eof:%d",
+                          u, u ? u->peer.connection : NULL,
+                          u ? (int) u->ft_type : 0, u ? (int) u->eof : 0);
         }
 
         lua_pushnil(L);
