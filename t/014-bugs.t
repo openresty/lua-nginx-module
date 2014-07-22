@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 28);
+plan tests => repeat_each() * (blocks() * 2 + 30);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -951,4 +951,43 @@ GET /t
 ok
 --- no_error_log
 [error]
+
+
+
+=== TEST 41: https proxy has no timeout protection for ssl handshake
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        ssl_certificate /tmp/test.crt;
+        ssl_certificate_key /tmp/test.key;
+
+        location /foo {
+            echo foo;
+        }
+    }
+
+    upstream local {
+        server unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+    }
+
+--- config
+    location = /t {
+        proxy_pass https://local/foo;
+    }
+--- request
+GET /t
+
+--- stap
+probe process("nginx").function("ngx_http_upstream_ssl_handshake") {
+    printf("read timer set: %d\n", $c->read->timer_set)
+    printf("write timer set: %d\n", $c->write->timer_set)
+}
+--- stap_out
+read timer set: 0
+write timer set: 1
+
+--- response_body eval
+--- no_error_log
+[error]
+[alert]
 
