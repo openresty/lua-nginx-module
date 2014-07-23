@@ -27,7 +27,6 @@ sub read_file {
     $cert;
 }
 
-;
 our $StartComRootCertificate = read_file("t/cert/startcom.crt");
 our $EquifaxRootCertificate = read_file("t/cert/equifax.crt");
 our $TestCertificate = read_file("t/cert/test.crt");
