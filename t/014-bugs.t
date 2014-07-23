@@ -26,6 +26,18 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 #no_shuffle();
 no_long_string();
 
+sub read_file {
+    my $infile = shift;
+    open my $in, $infile
+        or die "cannot open $infile for reading: $!";
+    my $cert = do { local $/; <$in> };
+    close $in;
+    $cert;
+}
+
+our $TestCertificate = read_file("t/cert/test.crt");
+our $TestCertificateKey = read_file("t/cert/test.key");
+
 run_tests();
 
 __DATA__
@@ -927,6 +939,12 @@ function go(port)
 end
 --- request
 GET /t
+--- stap2
+F(ngx_close_connection) {
+    println("=== close connection")
+    print_ubacktrace()
+}
+--- stap_out2
 --- response_body
 done
 --- wait: 0.5
@@ -958,8 +976,8 @@ ok
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        ssl_certificate /tmp/test.crt;
-        ssl_certificate_key /tmp/test.key;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
 
         location /foo {
             echo foo;
@@ -974,6 +992,13 @@ ok
     location = /t {
         proxy_pass https://local/foo;
     }
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+
 --- request
 GET /t
 
