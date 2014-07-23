@@ -48,6 +48,7 @@
 #include "ngx_http_lua_timer.h"
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_worker.h"
+#include "ngx_http_lua_socket_tcp.h"
 
 
 #if 1
@@ -118,7 +119,6 @@ static ngx_int_t
     ngx_http_lua_ctx_t *ctx);
 static lua_State * ngx_http_lua_new_state(lua_State *parent_vm,
     ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
-static void ngx_http_lua_cleanup_conn_pools(lua_State *L);
 static int ngx_http_lua_get_raw_phase_context(lua_State *L);
 
 
@@ -3737,41 +3737,6 @@ ngx_http_lua_cleanup_vm(void *data)
             ngx_free(state);
         }
     }
-}
-
-
-static void
-ngx_http_lua_cleanup_conn_pools(lua_State *L)
-{
-    ngx_queue_t                         *q;
-    ngx_connection_t                    *c;
-    ngx_http_lua_socket_pool_t          *spool;
-    ngx_http_lua_socket_pool_item_t     *item;
-
-    lua_pushlightuserdata(L, &ngx_http_lua_socket_pool_key);
-    lua_rawget(L, LUA_REGISTRYINDEX); /* table */
-
-    lua_pushnil(L);  /* first key */
-    while (lua_next(L, -2) != 0) {
-        /* tb key val */
-        spool = lua_touserdata(L, -1);
-
-        if (!ngx_queue_empty(&spool->cache)) {
-            q = ngx_queue_head(&spool->cache);
-            item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
-            c = item->connection;
-            ngx_close_connection(c);
-            ngx_queue_remove(q);
-
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                           "lua tcp socket keepalive: free connection pool "
-                           "for \"%s\"", spool->key);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    lua_pop(L, 1);
 }
 
 
