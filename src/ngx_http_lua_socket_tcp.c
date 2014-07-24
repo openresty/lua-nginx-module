@@ -1061,6 +1061,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     c->log = r->connection->log;
+    c->pool->log = c->log;
     c->read->log = c->log;
     c->write->log = c->log;
 
@@ -4468,6 +4469,7 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     c->data = item;
     c->idle = 1;
     c->log = ngx_cycle->log;
+    c->pool->log = ngx_cycle->log;
     c->read->log = ngx_cycle->log;
     c->write->log = ngx_cycle->log;
 
@@ -4546,6 +4548,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
         c->idle = 0;
         c->log = pc->log;
+        c->pool->log = pc->log;
         c->read->log = pc->log;
         c->write->log = pc->log;
         c->data = u;
