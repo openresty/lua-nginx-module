@@ -974,6 +974,9 @@ ok
 
 === TEST 41: https proxy has no timeout protection for ssl handshake
 --- http_config
+    # to suppress a valgrind false positive in the nginx core:
+    proxy_ssl_session_reuse off;
+
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         ssl_certificate ../html/test.crt;
