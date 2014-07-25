@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 13);
+plan tests => repeat_each() * (blocks() * 2 + 15);
 
 #no_diff();
 no_long_string();
@@ -419,6 +419,10 @@ a [b c] [b] [c] [] [] d
 --- response_body
 a [b c] [b] [c] d
 1
+--- no_error_log
+[error]
+[alert]
+--- timeout: 5
 
 
 
