@@ -59,7 +59,7 @@ GET /load
 >>> foo.lua
 module(..., package.seeall);
 
-function foo () 
+function foo ()
     return 1
     return 2
 end
