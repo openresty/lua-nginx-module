@@ -1219,12 +1219,25 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
     c = u->peer.connection;
 
-    if (c->ssl && c->ssl->handshaked) {
-        if (lua_type(L, 2) == LUA_TUSERDATA) {
-            lua_pushvalue(L, 2);
+    u->ssl_session_reuse = 1;
 
-        } else {
+    if (c->ssl && c->ssl->handshaked) {
+        switch (lua_type(L, 2)) {
+        case LUA_TUSERDATA:
+            lua_pushvalue(L, 2);
+            break;
+
+        case LUA_TBOOLEAN:
+            if (!lua_toboolean(L, 2)) {
+                /* avoid generating the ssl session */
+                lua_pushboolean(L, 1);
+                break;
+            }
+            /* fall through */
+
+        default:
             ngx_http_lua_ssl_handshake_retval_handler(r, u, L);
+            break;
         }
 
         return 1;
@@ -1251,18 +1264,23 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
     u->write_prepare_retvals = ngx_http_lua_ssl_handshake_retval_handler;
 
     if (n >= 2) {
-        psession = lua_touserdata(L, 2);
+        if (lua_type(L, 2) == LUA_TBOOLEAN) {
+            u->ssl_session_reuse = lua_toboolean(L, 2);
 
-        if (psession != NULL && *psession != NULL) {
-            if (ngx_ssl_set_session(c, *psession) != NGX_OK) {
-                lua_pushnil(L);
-                lua_pushliteral(L, "lua ssl set session failed");
-                return 2;
+        } else {
+            psession = lua_touserdata(L, 2);
+
+            if (psession != NULL && *psession != NULL) {
+                if (ngx_ssl_set_session(c, *psession) != NGX_OK) {
+                    lua_pushnil(L);
+                    lua_pushliteral(L, "lua ssl set session failed");
+                    return 2;
+                }
+
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                               "lua ssl set session: %p:%d",
+                               *psession, (*psession)->references);
             }
-
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                           "lua ssl set session: %p:%d",
-                           *psession, (*psession)->references);
         }
 
         if (n >= 3) {
@@ -1429,6 +1447,11 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
 {
     ngx_connection_t            *c;
     ngx_ssl_session_t           *ssl_session, **ud;
+
+    if (!u->ssl_session_reuse) {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
 
     ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t*));
 
