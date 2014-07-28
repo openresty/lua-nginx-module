@@ -5185,6 +5185,8 @@ ngx_http_lua_ssl_free_session(lua_State *L)
     return 0;
 }
 
+#endif  /* NGX_HTTP_SSL */
+
 
 void
 ngx_http_lua_cleanup_conn_pools(lua_State *L)
@@ -5221,7 +5223,5 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
 
     lua_pop(L, 1);
 }
-
-#endif  /* NGX_HTTP_SSL */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
