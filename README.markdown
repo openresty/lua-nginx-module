@@ -5189,10 +5189,11 @@ The resulting object `dict` has the following methods:
 * [add](#ngxshareddictadd)
 * [safe_add](#ngxshareddictsafe_add)
 * [replace](#ngxshareddictreplace)
-* [incr](#ngxshareddictincr)
 * [delete](#ngxshareddictdelete)
+* [incr](#ngxshareddictincr)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
+* [get_keys](#ngxshareddictget_keys)
 
 Here is an example:
 
