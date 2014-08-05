@@ -1005,6 +1005,11 @@ Directives
 * [lua_socket_pool_size](#lua_socket_pool_size)
 * [lua_socket_keepalive_timeout](#lua_socket_keepalive_timeout)
 * [lua_socket_log_errors](#lua_socket_log_errors)
+* [lua_ssl_ciphers](#lua_ssl_ciphers)
+* [lua_ssl_crl](#lua_ssl_crl)
+* [lua_ssl_protocols](#lua_ssl_protocols)
+* [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
+* [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
 * [lua_transform_underscores_in_response_headers](#lua_transform_underscores_in_response_headers)
@@ -2080,6 +2085,87 @@ This directive was first introduced in the `v0.5.13` release.
 
 [Back to TOC](#directives)
 
+lua_ssl_ciphers
+---------------
+
+**syntax:** *lua_ssl_ciphers &lt;ciphers&gt;*
+
+**default:** *lua_ssl_ciphers DEFAULT*
+
+**context:** *http, server, location*
+
+Specifies the enabled ciphers for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method. The ciphers are specified in the format understood by the OpenSSL library.
+
+The full list can be viewed using the “openssl ciphers” command.
+
+This directive was first introduced in the `v0.9.11` release.
+
+[Back to TOC](#directives)
+
+lua_ssl_crl
+-----------
+
+**syntax:** *lua_ssl_crl &lt;file&gt;*
+
+**default:** *no*
+
+**context:** *http, server, location*
+
+Specifies a file with revoked certificates (CRL) in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive was first introduced in the `v0.9.11` release.
+
+[Back to TOC](#directives)
+
+lua_ssl_protocols
+-----------------
+
+**syntax:** *lua_ssl_protocols [SSLv2] [SSLv3] [TLSv1] [TLSv1.1] [TLSv1.2]*
+
+**default:** *lua_ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2*
+
+**context:** *http, server, location*
+
+Enables the specified protocols for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive was first introduced in the `v0.9.11` release.
+
+[Back to TOC](#directives)
+
+lua_ssl_trusted_certificate
+---------------------------
+
+**syntax:** *lua_ssl_trusted_certificate &lt;file&gt;*
+
+**default:** *no*
+
+**context:** *http, server, location*
+
+Specifies a file path with trusted CA certificates in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive was first introduced in the `v0.9.11` release.
+
+See also [lua_ssl_verify_depth](#lua_ssl_verify_depth).
+
+[Back to TOC](#directives)
+
+lua_ssl_verify_depth
+--------------------
+
+**syntax:** *lua_ssl_verify_depth &lt;number&gt;*
+
+**default:** *lua_ssl_verify_depth 1*
+
+**context:** *http, server, location*
+
+Sets the verification depth in the server certificates chain.
+
+This directive was first introduced in the `v0.9.11` release.
+
+See also [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
+
+[Back to TOC](#directives)
+
 lua_http10_buffering
 --------------------
 
@@ -2303,6 +2389,7 @@ Nginx API for Lua
 * [udpsock:settimeout](#udpsocksettimeout)
 * [ngx.socket.tcp](#ngxsockettcp)
 * [tcpsock:connect](#tcpsockconnect)
+* [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
 * [tcpsock:receive](#tcpsockreceive)
 * [tcpsock:receiveuntil](#tcpsockreceiveuntil)
@@ -5660,6 +5747,7 @@ ngx.socket.tcp
 Creates and returns a TCP or stream-oriented unix domain socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object:
 
 * [connect](#tcpsockconnect)
+* [sslhandshake](#tcpsocksslhandshake)
 * [send](#tcpsocksend)
 * [receive](#tcpsockreceive)
 * [close](#tcpsockclose)
@@ -5759,6 +5847,48 @@ An optional Lua table can be specified as the last argument to this method to sp
 The support for the options table argument was first introduced in the `v0.5.7` release.
 
 This method was first introduced in the `v0.5.0rc1` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:sslhandshake
+--------------------
+**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+
+Does SSL/TLS handshake on the currently established connection.
+
+The optional `reused_session` argument can take a former SSL
+session userdata returned by a previous `sslhandshake`
+call for exactly the same target. For short-lived connections, reusing SSL
+sessions can usually speed up the handshake by one order by magnitude but it
+is not so useful if the connection pool is enabled. This argument defaults to
+`nil`. If this argument takes the boolean `false` value, no SSL session
+userdata would return by this call and only a Lua boolean will be returned as
+the first return value; otherwise the current SSL session will
+always be returned as the first argument in case of successes.
+
+The optional `server_name` argument is used to specify the server
+name for the new TLS extension Server Name Indication (SNI). Use of SNI can
+make different servers share the same IP address on the server side. Also,
+when SSL verification is enabled, this `server_name` argument is
+also used to validate the server name specified in the server certificate sent from
+the remote.
+
+The optional `ssl_verify` argument takes a Lua boolean value to
+control whether to perform SSL verification. When set to `true`, the server
+certificate will be verified according to the CA certificates specified by
+the [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate) directive.
+You may also need to adjust the [lua_ssl_verify_depth](#lua_ssl_verify_depth)
+directive to control how deep we should follow along the certificate chain.
+Also, when the `ssl_verify` argument is true and the
+`server_name` argument is also specified, the latter will be used
+to validate the server name in the server certificate.
+
+For connections that have already done SSL/TLS handshake, this method returns
+immediately.
+
+This method was first introduced in the `v0.9.11` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
