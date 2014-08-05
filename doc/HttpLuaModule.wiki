@@ -4336,10 +4336,11 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.add|add]]
 * [[#ngx.shared.DICT.safe_add|safe_add]]
 * [[#ngx.shared.DICT.replace|replace]]
-* [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.delete|delete]]
+* [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
+* [[#ngx.shared.DICT.get_keys|get_keys]]
 
 Here is an example:
 
