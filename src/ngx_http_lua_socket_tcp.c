@@ -1284,16 +1284,20 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
         }
 
         if (n >= 3) {
-            name.data = (u_char *) luaL_checklstring(L, 3, &name.len);
+            name.data = (u_char *) lua_tolstring(L, 3, &name.len);
 
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua ssl server name: \"%*s\"", name.len,
-                           name.data);
+            if (name.data) {
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                               "lua ssl server name: \"%*s\"", name.len,
+                               name.data);
 
-            if (SSL_set_tlsext_host_name(c->ssl->connection, name.data) == 0) {
-                lua_pushnil(L);
-                lua_pushliteral(L, "SSL_set_tlsext_host_name failed");
-                return 2;
+                if (SSL_set_tlsext_host_name(c->ssl->connection, name.data)
+                    == 0)
+                {
+                    lua_pushnil(L);
+                    lua_pushliteral(L, "SSL_set_tlsext_host_name failed");
+                    return 2;
+                }
             }
 
             if (n >= 4) {

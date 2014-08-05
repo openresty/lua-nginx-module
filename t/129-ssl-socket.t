@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 7 + 2);
+plan tests => repeat_each() * (blocks() * 7);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -2348,6 +2348,202 @@ $::TestCertificate"
 lua ssl server name:
 SSL reused session
 [error]
+[alert]
+--- timeout: 3
+
+
+
+=== TEST 30: unix domain ssl cosocket (verify cert but no host name check, passed)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../html/test.crt;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, nil, true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to recieve response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log_out eval
+qr/^lua ssl save session: ([0-9A-F]+):2
+lua ssl free session: ([0-9A-F]+):1
+$/
+--- error_log
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 3
+
+
+
+=== TEST 31: unix domain ssl cosocket (verify cert but no host name check, NOT passed)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    #lua_ssl_trusted_certificate ../html/test.crt;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, nil, true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to recieve response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: 18: self signed certificate
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log_out
+--- error_log
+lua ssl certificate verify error: (18: self signed certificate)
+--- no_error_log
+SSL reused session
 [alert]
 --- timeout: 3
 
