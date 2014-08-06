@@ -2830,7 +2830,7 @@ Set-Cookie: baz=blah
 Then `res.header["Set-Cookie"]` will be evaluated to the table value
 `{"a=3", "foo=bar", "baz=blah"}`.
 
-`res.body` holds the subrequest's response body data, which might be truncated. You always need to check the `res.truncated` boolean flag to see if `res.body` contains truncated data.
+`res.body` holds the subrequest's response body data, which might be truncated. You always need to check the `res.truncated` boolean flag to see if `res.body` contains truncated data. The data truncation here can only be caused by those unrecoverable errors in your subrequests like the cases that the remote end aborts the connection prematurely in the middle of the response body data stream or a read timeout happens when your subrequest is receiving the response body data from the remote.
 
 URI query strings can be concatenated to URI itself, for instance,
 

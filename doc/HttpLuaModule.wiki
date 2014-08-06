@@ -2274,7 +2274,7 @@ lines:
 Then <code>res.header["Set-Cookie"]</code> will be evaluated to the table value
 <code>{"a=3", "foo=bar", "baz=blah"}</code>.
 
-<code>res.body</code> holds the subrequest's response body data, which might be truncated. You always need to check the <code>res.truncated</code> boolean flag to see if <code>res.body</code> contains truncated data.
+<code>res.body</code> holds the subrequest's response body data, which might be truncated. You always need to check the <code>res.truncated</code> boolean flag to see if <code>res.body</code> contains truncated data. The data truncation here can only be caused by those unrecoverable errors in your subrequests like the cases that the remote end aborts the connection prematurely in the middle of the response body data stream or a read timeout happens when your subrequest is receiving the response body data from the remote.
 
 URI query strings can be concatenated to URI itself, for instance,
 
