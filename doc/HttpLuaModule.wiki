@@ -683,7 +683,6 @@ Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [[#ng
 = TODO =
 
 == Short Term ==
-* implement the SSL cosocket API.
 * review and apply Jader H. Silva's patch for <code>ngx.re.split()</code>.
 * review and apply vadim-pavlov's patch for [[#ngx.location.capture|ngx.location.capture]]'s <code>extra_headers</code> option
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.

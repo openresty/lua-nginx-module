@@ -838,7 +838,6 @@ TODO
 
 Short Term
 ----------
-* implement the SSL cosocket API.
 * review and apply Jader H. Silva's patch for `ngx.re.split()`.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](#ngxreqset_header), [ngx.header.HEADER](#ngxheaderheader), and etc.
