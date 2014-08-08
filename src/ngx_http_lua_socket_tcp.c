@@ -1407,7 +1407,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
                 && ngx_ssl_check_host(c, &u->ssl_name) != NGX_OK)
             {
                 lua_pushnil(L);
-                lua_pushstring(L, "certificate host mismatch");
+                lua_pushliteral(L, "certificate host mismatch");
 
                 llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
                 if (llcf->log_socket_errors) {

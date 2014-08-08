@@ -385,7 +385,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
     if (in == NULL) {
         /* being a cleared chain on the Lua land */
-        lua_pushlstring(L, "", 0);
+        lua_pushliteral(L, "");
         return 1;
     }
 
