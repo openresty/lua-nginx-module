@@ -3700,6 +3700,10 @@ ngx_http_lua_socket_compile_pattern(u_char *data, size_t len,
                                    new_state, (size_t) new_state, data);
 
                     edge = ngx_alloc(sizeof(ngx_http_lua_dfa_edge_t), log);
+                    if (edge == NULL) {
+                        return NGX_ERROR;
+                    }
+
                     edge->chr = data[prefix_len];
                     edge->new_state = new_state;
                     edge->next = NULL;
