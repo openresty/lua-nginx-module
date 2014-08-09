@@ -1261,8 +1261,6 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
     c->sendfile = 0;
 
-    u->write_prepare_retvals = ngx_http_lua_ssl_handshake_retval_handler;
-
     if (n >= 2) {
         if (lua_type(L, 2) == LUA_TBOOLEAN) {
             u->ssl_session_reuse = lua_toboolean(L, 2);
@@ -1311,6 +1309,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
     rc = ngx_ssl_handshake(c);
 
+    dd("ngx_ssl_handshake returned %d", (int) rc);
+
     if (rc == NGX_AGAIN) {
         if (c->write->timer_set) {
             ngx_del_timer(c->write);
@@ -1319,7 +1319,7 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
         ngx_add_timer(c->read, u->connect_timeout);
 
         u->conn_waiting = 1;
-        u->write_co_ctx = coctx;
+        u->write_prepare_retvals = ngx_http_lua_ssl_handshake_retval_handler;
 
         ngx_http_lua_cleanup_pending_operation(coctx);
         coctx->cleanup = ngx_http_lua_coctx_cleanup;
@@ -1384,6 +1384,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
     }
 
     if (c->ssl->handshaked) {
+
         if (u->ssl_verify) {
             rc = SSL_get_verify_result(c->ssl->connection);
 
@@ -1422,7 +1423,12 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
 #endif
         }
 
-        ngx_http_lua_socket_handle_conn_success(r, u);
+        if (waiting) {
+            ngx_http_lua_socket_handle_conn_success(r, u);
+
+        } else {
+            (void) ngx_http_lua_ssl_handshake_retval_handler(r, u, L);
+        }
 
         if (waiting) {
             ngx_http_run_posted_requests(dc);
@@ -1436,11 +1442,15 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
 
 failed:
 
-    u->write_prepare_retvals = ngx_http_lua_socket_conn_error_retval_handler;
-    ngx_http_lua_socket_handle_conn_error(r, u,
-                                          NGX_HTTP_LUA_SOCKET_FT_SSL);
     if (waiting) {
+        u->write_prepare_retvals =
+                                ngx_http_lua_socket_conn_error_retval_handler;
+        ngx_http_lua_socket_handle_conn_error(r, u,
+                                              NGX_HTTP_LUA_SOCKET_FT_SSL);
         ngx_http_run_posted_requests(dc);
+
+    } else {
+        (void) ngx_http_lua_socket_conn_error_retval_handler(r, u, L);
     }
 }
 
