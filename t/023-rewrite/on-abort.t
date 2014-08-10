@@ -291,17 +291,18 @@ GET /t
 
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
-create 2 in 1
+--- stap_out_like eval
+qr/^create 2 in 1
 lua check broken conn
 terminate 2: fail
-terminate 1: ok
+(?:lua check broken conn
+)?terminate 1: ok
 delete thread 2
 delete thread 1
 terminate 3: ok
 delete thread 3
 lua req cleanup
-
+$/
 --- timeout: 0.2
 --- abort
 --- wait: 0.6
