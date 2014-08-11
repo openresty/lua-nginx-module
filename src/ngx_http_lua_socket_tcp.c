@@ -3994,7 +3994,7 @@ ngx_http_lua_req_socket(lua_State *L)
 #endif
 
 #if nginx_version >= 1003009
-    if (r->headers_in.chunked) {
+    if (!raw && r->headers_in.chunked) {
         lua_pushnil(L);
         lua_pushliteral(L, "chunked request bodies not supported yet");
         return 2;
