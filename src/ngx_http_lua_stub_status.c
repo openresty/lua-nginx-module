@@ -1,24 +1,18 @@
-#include <ngx_atomic.h>
-#include <ngx_http_lua_inject_stub_status.h>
+#include <ngx_core.h>
+#include "ngx_http_lua_stub_status.h"
 
 
-extern ngx_atomic_t  *ngx_stat_accepted;
-extern ngx_atomic_t  *ngx_stat_handled;
-extern ngx_atomic_t  *ngx_stat_requests;
-extern ngx_atomic_t  *ngx_stat_active;
-extern ngx_atomic_t  *ngx_stat_reading;
-extern ngx_atomic_t  *ngx_stat_writing;
-extern ngx_atomic_t  *ngx_stat_waiting;
+static int ngx_http_lua_stub_status(lua_State *L);
 
 
 void
 ngx_http_lua_inject_stub_status_api(lua_State *L) {
-    lua_pushcfunction(L, ngx_http_lua_ngx_stub_status);
+    lua_pushcfunction(L, ngx_http_lua_stub_status);
     lua_setfield(L, -2, "stub_status");
 }
 
 static int
-ngx_http_lua_ngx_stub_status(lua_State *L) {
+ngx_http_lua_stub_status(lua_State *L) {
     ngx_atomic_int_t   ap, hn, ac, rq, rd, wr, wa;
     ap = *ngx_stat_accepted;
     hn = *ngx_stat_handled;
