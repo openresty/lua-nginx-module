@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 14);
+plan tests => repeat_each() * (blocks() * 3 + 24);
 
 #no_diff();
 no_long_string();
@@ -1220,4 +1220,129 @@ Foo: nil
 foo: nil
 Bar: baz
 bar: baz
+
+
+
+=== TEST 60: built-in Content-Type header
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.say("hi")
+        ';
+
+        header_filter_by_lua '
+            local hs = ngx.resp.get_headers()
+            print("my Content-Type: ", hs["Content-Type"])
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+hi
+--- no_error_log
+[error]
+[alert]
+--- error_log
+my Content-Type: text/plain
+
+
+
+=== TEST 61: built-in Content-Length header
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.say("hi")
+        ';
+
+        header_filter_by_lua '
+            local hs = ngx.resp.get_headers()
+            print("my Content-Length: ", hs["Content-Length"])
+        ';
+    }
+--- request
+    GET /t HTTP/1.0
+--- response_body
+hi
+--- no_error_log
+[error]
+[alert]
+--- error_log
+my Content-Length: 3
+
+
+
+=== TEST 62: built-in Connection header
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.say("hi")
+        ';
+
+        header_filter_by_lua '
+            local hs = ngx.resp.get_headers()
+            print("my Connection: ", hs["Connection"])
+        ';
+    }
+--- request
+    GET /t HTTP/1.0
+--- response_body
+hi
+--- no_error_log
+[error]
+[alert]
+--- error_log
+my Connection: close
+
+
+
+=== TEST 63: built-in Transfer-Encoding header (chunked)
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.say("hi")
+        ';
+
+        body_filter_by_lua '
+            local hs = ngx.resp.get_headers()
+            print("my Transfer-Encoding: ", hs["Transfer-Encoding"])
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+hi
+--- no_error_log
+[error]
+[alert]
+--- error_log
+my Transfer-Encoding: chunked
+
+
+
+=== TEST 64: built-in Transfer-Encoding header (none)
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.say("hi")
+        ';
+
+        body_filter_by_lua '
+            local hs = ngx.resp.get_headers()
+            print("my Transfer-Encoding: ", hs["Transfer-Encoding"])
+        ';
+    }
+--- request
+    GET /t HTTP/1.0
+--- response_body
+hi
+--- no_error_log
+[error]
+[alert]
+--- error_log
+my Transfer-Encoding: nil
 

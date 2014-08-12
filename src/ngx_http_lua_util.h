@@ -64,6 +64,11 @@ extern char ngx_http_lua_headers_metatable_key;
 #endif
 
 
+#ifndef NGX_HTTP_SWITCHING_PROTOCOLS
+#define NGX_HTTP_SWITCHING_PROTOCOLS 101
+#endif
+
+
 #if defined(nginx_version) && nginx_version < 1000000
 #define ngx_memmove(dst, src, n)   (void) memmove(dst, src, n)
 #endif
