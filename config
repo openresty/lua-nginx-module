@@ -4,7 +4,10 @@ ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs="#include <lauxlib.h>"
 ngx_feature_path=
-ngx_feature_test="(void) luaL_newstate();"
+ngx_feature_test="#if LUA_VERSION_NUM != 501
+#   error unsupported Lua language version
+#endif
+(void) luaL_newstate();"
 
 if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     # explicitly set Lua lib path
