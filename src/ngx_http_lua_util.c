@@ -2801,7 +2801,7 @@ ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
 
             } else {
                 if (*ar.what == 'm') {  /* main? */
-                    lua_pushfstring(L, " in main chunk");
+                    lua_pushliteral(L, " in main chunk");
 
                 } else if (*ar.what == 'C' || *ar.what == 't') {
                     lua_pushliteral(L, " ?");  /* C function or tail call */
