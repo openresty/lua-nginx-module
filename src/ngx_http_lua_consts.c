@@ -134,13 +134,13 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_INTERNAL_SERVER_ERROR);
     lua_setfield(L, -2, "HTTP_INTERNAL_SERVER_ERROR");
 
-    lua_pushinteger(L, 501);
+    lua_pushinteger(L, NGX_HTTP_NOT_IMPLEMENTED);
     lua_setfield(L, -2, "HTTP_METHOD_NOT_IMPLEMENTED");
 
     lua_pushinteger(L, NGX_HTTP_SERVICE_UNAVAILABLE);
     lua_setfield(L, -2, "HTTP_SERVICE_UNAVAILABLE");
 
-    lua_pushinteger(L, 504);
+    lua_pushinteger(L, NGX_HTTP_GATEWAY_TIME_OUT);
     lua_setfield(L, -2, "HTTP_GATEWAY_TIMEOUT");
     /* }}} */
 }
