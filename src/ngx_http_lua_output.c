@@ -813,3 +813,4 @@ ngx_http_lua_flush_cleanup(void *data)
     ctx->flushing_coros--;
 }
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
