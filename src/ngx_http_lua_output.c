@@ -294,8 +294,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
         /* not an array (non positive integer key) */
         lua_pop(L, 2); /* stack: table */
 
-        msg = lua_pushliteral(L, "non-array table found");
-        luaL_argerror(L, arg_i, msg);
+        luaL_argerror(L, arg_i, "non-array table found");
         return 0;
     }
 
