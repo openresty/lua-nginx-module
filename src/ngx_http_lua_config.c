@@ -63,3 +63,5 @@ ngx_http_lua_config_configure(lua_State *L)
     lua_pushliteral(L, NGX_CONFIGURE);
     return 1;
 }
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

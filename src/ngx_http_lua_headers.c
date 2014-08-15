@@ -508,6 +508,41 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
         lua_setmetatable(L, -2);
     }
 
+#if 1
+    if (r->headers_out.content_type.len) {
+        lua_pushliteral(L, "Content-Type");
+        lua_pushlstring(L, (char *) r->headers_out.content_type.data,
+                        r->headers_out.content_type.len);
+        lua_rawset(L, -3);
+    }
+
+    if (r->headers_out.content_length == NULL
+        && r->headers_out.content_length_n >= 0)
+    {
+        lua_pushliteral(L, "Content-Length");
+        lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
+        lua_rawset(L, -3);
+    }
+
+    lua_pushliteral(L, "Connection");
+    if (r->headers_out.status == NGX_HTTP_SWITCHING_PROTOCOLS) {
+        lua_pushliteral(L, "upgrade");
+
+    } else if (r->keepalive) {
+        lua_pushliteral(L, "keep-alive");
+
+    } else {
+        lua_pushliteral(L, "close");
+    }
+    lua_rawset(L, -3);
+
+    if (r->chunked) {
+        lua_pushliteral(L, "Transfer-Encoding");
+        lua_pushliteral(L, "chunked");
+        lua_rawset(L, -3);
+    }
+#endif
+
     part = &r->headers_out.headers.part;
     header = part->elts;
 
