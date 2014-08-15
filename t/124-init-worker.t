@@ -9,10 +9,12 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+
+our $ServerRoot = server_root();
 
 #no_diff();
 no_long_string();
@@ -680,4 +682,27 @@ failed to connect: connection refused
 'qr/connect\(\) failed \(\d+: Connection refused\)/',
 '[error]',
 ]
+
+
+
+=== TEST 17: init_by_lua + proxy_temp_path which has side effects in cf->cycle->paths
+--- http_config eval
+qq{
+    proxy_temp_path $::ServerRoot/proxy_temp;
+    init_worker_by_lua '
+        local a = 2 + 3
+    ';
+}
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+[alert]
+[emerg]
 
