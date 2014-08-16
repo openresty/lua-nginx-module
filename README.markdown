@@ -58,7 +58,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.10](https://github.com/openresty/lua-nginx-module/tags) released on 8 July 2014.
+This document describes ngx_lua [v0.9.11](https://github.com/openresty/lua-nginx-module/tags) released on 16 August 2014.
 
 Synopsis
 ========
@@ -291,7 +291,8 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.7.x (last tested: 1.7.2)
+* 1.7.x (last tested: 1.7.4)
+* 1.6.x
 * 1.5.x (last tested: 1.5.12)
 * 1.4.x (last tested: 1.4.4)
 * 1.3.x (last tested: 1.3.11)
@@ -319,9 +320,9 @@ Build the source with this module:
 
 ```bash
 
-wget 'http://nginx.org/download/nginx-1.7.2.tar.gz'
-tar -xzvf nginx-1.7.2.tar.gz
-cd nginx-1.7.2/
+wget 'http://nginx.org/download/nginx-1.7.4.tar.gz'
+tar -xzvf nginx-1.7.4.tar.gz
+cd nginx-1.7.4/
 
 # tell nginx's build system where to find LuaJIT 2.0:
 export LUAJIT_LIB=/path/to/luajit/lib
