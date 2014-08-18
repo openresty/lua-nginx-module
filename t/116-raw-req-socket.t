@@ -100,8 +100,10 @@ __DATA__
 GET /t
 --- response_body
 msg: 1: received: hello
---- error_log
-lua raw req socket tcp_nodelay
+--- grep_error_log: lua socket tcp_nodelay
+--- grep_error_log_out
+lua socket tcp_nodelay
+lua socket tcp_nodelay
 --- no_error_log
 [error]
 
