@@ -1289,6 +1289,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
                                "lua ssl server name: \"%*s\"", name.len,
                                name.data);
 
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+
                 if (SSL_set_tlsext_host_name(c->ssl->connection, name.data)
                     == 0)
                 {
@@ -1296,6 +1298,14 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
                     lua_pushliteral(L, "SSL_set_tlsext_host_name failed");
                     return 2;
                 }
+
+#else
+
+               ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                              "lua socket SNI disabled because the current "
+                              "version of OpenSSL lacks the support");
+
+#endif
             }
 
             if (n >= 4) {
