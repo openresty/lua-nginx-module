@@ -83,12 +83,12 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 #endif
 
     ngx_array_init(&fake_cycle->listening, cycle->pool,
-                   cycle->listening.nelts,
+                   cycle->listening.nelts || 1,
                    sizeof(ngx_listening_t));
 
 #if defined(nginx_version) && nginx_version >= 1003007
 
-    ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts,
+    ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
                    sizeof(ngx_path_t *));
 
 #endif
@@ -96,7 +96,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     part = &cycle->open_files.part;
     ofile = part->elts;
 
-    if (ngx_list_init(&fake_cycle->open_files, cycle->pool, part->nelts,
+    if (ngx_list_init(&fake_cycle->open_files, cycle->pool, part->nelts || 1,
                       sizeof(ngx_open_file_t))
         != NGX_OK)
     {
