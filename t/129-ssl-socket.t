@@ -1977,7 +1977,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-failed to do SSL handshake: 23: certificate revoked
+failed to do SSL handshake: 12: CRL has expired
 failed to send http request: closed
 
 --- user_files eval
