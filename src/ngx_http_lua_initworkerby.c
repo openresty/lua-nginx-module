@@ -82,14 +82,22 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
 #endif
 
-    ngx_array_init(&fake_cycle->listening, cycle->pool,
-                   cycle->listening.nelts || 1,
-                   sizeof(ngx_listening_t));
+    if (ngx_array_init(&fake_cycle->listening, cycle->pool,
+                       cycle->listening.nelts || 1,
+                       sizeof(ngx_listening_t))
+        != NGX_OK)
+    {
+        goto failed;
+    }
 
 #if defined(nginx_version) && nginx_version >= 1003007
 
-    ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
-                   sizeof(ngx_path_t *));
+    if (ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
+                       sizeof(ngx_path_t *))
+        != NGX_OK)
+    {
+        goto failed;
+    }
 
 #endif
 
