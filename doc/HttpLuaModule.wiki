@@ -4820,6 +4820,19 @@ It is intended to be compatible with the TCP API of the [http://w3.impa.br/~dieg
 
 The cosocket object created by this API function has exactly the same lifetime as the Lua handler creating it. So never pass the cosocket object to any other Lua handler (including ngx.timer callback functions) and never share the cosocket object between different NGINX requests.
 
+For every cosocket object's underlying connection, if you do not
+explicitly close it (via [[#tcpsock:close|close]]) or put it back to the connection
+pool (via [[#tcpsock:setkeepalive|setkeepalive]]), then it is automatically closed when one of
+the following two events happens:
+
+* the current request handler completes, or
+* the Lua cosocket object value gets collected by the Lua GC.
+
+Fatal errors in cosocket operations always automatically close the current
+connection (note that, read timeout error is the only error that is
+not fatal), and if you call [[#tcpsock:close|close]] on a closed connection, you will get
+the "closed" error.
+
 Starting from the <code>0.9.9</code> release, the cosocket object here is full-duplex, that is, a reader "light thread" and a writer "light thread" can operate on a single cosocket object simultaneously (both "light threads" must belong to the same Lua handler though, see reasons above). But you cannot have two "light threads" both reading (or writing or connecting) the same cosocket, otherwise you might get an error like "socket busy reading" when calling the methods of the cosocket object.
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
