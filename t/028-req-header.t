@@ -420,7 +420,7 @@ while ($i <= 98) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -468,7 +468,7 @@ while ($i <= 100) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -516,7 +516,7 @@ while ($i <= 105) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -758,7 +758,7 @@ Bar: baz
 Host: localhost
 Bar: baz
 My-Foo: bar
-Connection: Close
+Connection: close
 
 
 
@@ -1064,7 +1064,7 @@ Bar: baz
 Host: localhost
 Bar: baz
 My-Foo: bar
-Connection: Close
+Connection: close
 --- no_error_log
 [error]
 

@@ -29,7 +29,7 @@ GET /t
 --- response_body eval
 qq{GET /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 \r
 }
 --- no_error_log
@@ -54,7 +54,7 @@ CORE::join "\n", map { "Header$_: value-$_" } 1..512
 --- response_body eval
 qq{GET /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\n\r\n"
 
@@ -80,7 +80,7 @@ CORE::join "\n", map { "Header$_: value-$_" } 1..512
 
 --- response_body eval
 qq{Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\n\r\n"
 
@@ -101,7 +101,7 @@ Connection: Close\r
 GET /t
 --- response_body eval
 qq{Host: localhost\r
-Connection: Close\r
+Connection: close\r
 \r
 }
 --- no_error_log
@@ -380,7 +380,7 @@ hello
 --- response_body eval
 qq{POST /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 Content-Length: 5\r
 \r
 }
@@ -410,7 +410,7 @@ hello
 --- response_body eval
 qq{POST /main HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 Content-Length: 5\r
 \r
 }
@@ -438,7 +438,7 @@ CORE::join"\n", map { "Header$_: value-$_" } 1..512
 --- response_body eval
 qq{POST /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\nContent-Length: 5\r\n\r\n"
 
@@ -474,7 +474,7 @@ CORE::join"\n", map { "Header$_: value-$_" } 1..512
 --- response_body eval
 qq{POST /main HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..512) . "\r\nContent-Length: 5\r\n\r\n"
 
@@ -503,7 +503,7 @@ CORE::join("\n", map { "Header$_: value-$_" } 1..80) . "\nA: abcdefghijklmnopqrs
 --- response_body eval
 qq{POST /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..80)
 . "\r\nA: abcdefghijklmnopqrs\r\nContent-Length: 5\r\n\r\n"
@@ -533,7 +533,7 @@ CORE::join("\n", map { "Header$_: value-$_" } 1..52) . "\nA: abcdefghijklmnopqrs
 --- response_body eval
 qq{POST /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 }
 .(CORE::join "\r\n", map { "Header$_: value-$_" } 1..52)
 . "\r\nA: abcdefghijklmnopqrs\r\nContent-Length: 5\r\n\r\n"
@@ -560,7 +560,7 @@ $s .= "Cookie: " . "C" x 1200 . "\n";
 $s
 --- response_body eval
 "Host: localhost\r
-Connection: Close\r
+Connection: close\r
 User-Agent: curl\r
 Bah: bah\r
 Accept: */*\r
@@ -587,7 +587,7 @@ $s
 --- response_body eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 User-Agent: curl\r
 Bah: bah\r
 Accept: */*\r
@@ -621,7 +621,7 @@ GET /t
 --- response_body eval
 "GET /t HTTP/1.1\r
 Host: localhost\r
-Connection: Close\r
+Connection: close\r
 \r
 "
 --- no_error_log
