@@ -112,6 +112,9 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_NOT_MODIFIED);
     lua_setfield(L, -2, "HTTP_NOT_MODIFIED");
 
+    lua_pushinteger(L, NGX_HTTP_TEMPORARY_REDIRECT);
+    lua_setfield(L, -2, "HTTP_TEMPORARY_REDIRECT");
+
     lua_pushinteger(L, NGX_HTTP_BAD_REQUEST);
     lua_setfield(L, -2, "HTTP_BAD_REQUEST");
 
