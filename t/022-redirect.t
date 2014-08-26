@@ -1,7 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use lib 'lib';
-use t::TestNginxLua;
+use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
@@ -167,3 +167,47 @@ Location: http://agentzh.org/foo?bar=3
 --- response_body eval
 [qr/302 Found/, qr/302 Found/]
 
+=== TEST 9: explicit 307
+--- config
+    location /read {
+        content_by_lua '
+            ngx.redirect("http://agentzh.org/foo", ngx.HTTP_TEMPORARY_REDIRECT);
+            ngx.say("hi")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo
+--- response_body_like: 307 Temporary Redirect
+--- error_code: 307
+
+=== TEST 10: explicit 307 with args
+--- config
+    location /read {
+        content_by_lua '
+            ngx.redirect("http://agentzh.org/foo?a=b&c=d", ngx.HTTP_TEMPORARY_REDIRECT);
+            ngx.say("hi")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo?a=b&c=d
+--- response_body_like: 307 Temporary Redirect
+--- error_code: 307
+
+=== TEST 11: explicit 307
+--- config
+    location /read {
+        content_by_lua '
+            ngx.redirect("http://agentzh.org/foo?a=b&c=d", 307);
+            ngx.say("hi")
+        ';
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo?a=b&c=d
+--- response_body_like: 307 Temporary Redirect
+--- error_code: 307
