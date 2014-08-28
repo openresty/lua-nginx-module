@@ -167,6 +167,8 @@ Location: http://agentzh.org/foo?bar=3
 --- response_body eval
 [qr/302 Found/, qr/302 Found/]
 
+
+
 === TEST 9: explicit 307
 --- config
     location /read {
@@ -182,6 +184,8 @@ Location: http://agentzh.org/foo
 --- response_body_like: 307 Temporary Redirect
 --- error_code: 307
 
+
+
 === TEST 10: explicit 307 with args
 --- config
     location /read {
@@ -196,6 +200,8 @@ GET /read
 Location: http://agentzh.org/foo?a=b&c=d
 --- response_body_like: 307 Temporary Redirect
 --- error_code: 307
+
+
 
 === TEST 11: explicit 307
 --- config
