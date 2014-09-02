@@ -513,6 +513,15 @@ This data sharing technique is essential for high performance Lua applications b
 
 Note that this data sharing is on a ''per-worker'' basis and not on a ''per-server'' basis. That is, when there are multiple nginx worker processes under an Nginx master, data sharing cannot cross the process boundary between these workers.
 
+It is usually recommended to share read-only data this way. You can also share changeable data among all the concurrent requests of each nginx worker process as
+long as there is ''no'' nonblocking I/O operations (including [[#ngx.sleep|ngx.sleep]])
+in the middle of your calculations. As long as you do not give the
+control back to the nginx event loop and ngx_lua's light thread
+scheduler (even implicitly), there can never be any race conditions in
+between. For this reason, always be very careful when you want to share changeable data on the
+worker level. Buggy optimizations can easily lead to hard-to-debug
+race conditions under load.
+
 If server-wide data sharing is required, then use one or more of the following approaches:
 
 # Use the [[#ngx.shared.DICT|ngx.shared.DICT]] API provided by this module.
