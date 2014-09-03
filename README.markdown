@@ -58,7 +58,7 @@ This module is under active development and is production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.11](https://github.com/openresty/lua-nginx-module/tags) released on 16 August 2014.
+This document describes ngx_lua [v0.9.12](https://github.com/openresty/lua-nginx-module/tags) released on 2 September 2014.
 
 Synopsis
 ========
