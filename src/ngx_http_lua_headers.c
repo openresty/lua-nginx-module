@@ -154,6 +154,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 first = b;
             }
 
+            dd("adding size %d", (int) (b->pos - b->start));
             size += b->pos - b->start;
         }
     }
@@ -167,7 +168,10 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     last = data;
 
     b = c->buffer;
+    found = 0;
+
     if (first == b) {
+        found = 1;
         pos = b->pos;
 
         if (no_req_line) {
@@ -207,7 +211,6 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     }
 
     if (hc->nbusy) {
-        found = (b == c->buffer);
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
 
