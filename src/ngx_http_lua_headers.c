@@ -135,16 +135,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         } else {
             /* the subsequent part of the header is in the large header
              * buffers */
-#if 1
             p = b->pos;
             size += p - mr->request_line.data;
-
-            /* skip truncated header entries (if any) */
-            while (b->pos > b->start && b->pos[-1] != LF) {
-                b->pos--;
-                size--;
-            }
-#endif
         }
     }
 
@@ -207,6 +199,13 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         } else {
             last = ngx_copy(data, mr->request_line.data,
                             pos - mr->request_line.data);
+        }
+
+        if (mr->header_in != b) {
+            /* skip truncated header entries (if any) */
+            while (last > data && last[-1] != LF) {
+                last--;
+            }
         }
 
         i = 0;
