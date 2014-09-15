@@ -5191,7 +5191,7 @@ Curly braces can also be used to disambiguate variable names from the background
 ```lua
 
 local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
-    -- newstr == "hello, 10034"
+    -- newstr == "hello, 100234"
     -- n == 1
 ```
 
