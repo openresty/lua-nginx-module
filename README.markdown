@@ -4132,7 +4132,7 @@ ngx.exec('/some-location', 'a=3&b=5&c=6');
 ngx.exec('/some-location?a=3&b=5', 'c=6');
 ```
 
-Named locations are also supported, but query strings are ignored. For example,
+Named locations are also supported (but the second `args` argument is currently ignored). For example,
 
 ```nginx
 
