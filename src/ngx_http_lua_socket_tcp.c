@@ -3212,7 +3212,11 @@ ngx_http_lua_socket_tcp_finalize_read_part(ngx_http_request_t *r,
             ngx_del_event(c->read, NGX_READ_EVENT, NGX_CLOSE_EVENT);
         }
 
+#if defined(nginx_version) && nginx_version >= 1007005
+        if (c->read->posted) {
+#else
         if (c->read->prev) {
+#endif
             ngx_delete_posted_event(c->read);
         }
 
@@ -3261,7 +3265,11 @@ ngx_http_lua_socket_tcp_finalize_write_part(ngx_http_request_t *r,
             ngx_del_event(c->write, NGX_WRITE_EVENT, NGX_CLOSE_EVENT);
         }
 
+#if defined(nginx_version) && nginx_version >= 1007005
+        if (c->write->posted) {
+#else
         if (c->write->prev) {
+#endif
             ngx_delete_posted_event(c->write);
         }
 
