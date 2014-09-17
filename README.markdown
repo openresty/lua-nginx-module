@@ -5422,7 +5422,7 @@ The first argument to this method must be the dictionary object itself, for exam
 ```lua
 
 local cats = ngx.shared.cats
-local succ, err, forcible = cats.set(cats, "Marry", "it is a nice cat!")
+local succ, err, forcible = cats:set(cats, "Marry", "it is a nice cat!")
 ```
 
 or use Lua's syntactic sugar for method calls:
