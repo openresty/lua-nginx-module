@@ -46,6 +46,8 @@ static int ngx_http_lua_ngx_sha1_bin(lua_State *L);
 
 static int ngx_http_lua_ngx_decode_base64(lua_State *L);
 static int ngx_http_lua_ngx_encode_base64(lua_State *L);
+static int ngx_http_lua_ngx_decode_base64url(lua_State *L);
+static int ngx_http_lua_ngx_encode_base64url(lua_State *L);
 static int ngx_http_lua_ngx_crc32_short(lua_State *L);
 static int ngx_http_lua_ngx_crc32_long(lua_State *L);
 static int ngx_http_lua_ngx_encode_args(lua_State *L);
@@ -78,6 +80,12 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64);
     lua_setfield(L, -2, "encode_base64");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_decode_base64url);
+    lua_setfield(L, -2, "decode_base64url");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_encode_base64url);
+    lua_setfield(L, -2, "encode_base64url");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_md5_bin);
     lua_setfield(L, -2, "md5_bin");
@@ -472,6 +480,64 @@ ngx_http_lua_ngx_encode_base64(lua_State *L)
     p.data = lua_newuserdata(L, p.len);
 
     ngx_encode_base64(&p, &src);
+
+    lua_pushlstring(L, (char *) p.data, p.len);
+
+    return 1;
+}
+
+static int
+ngx_http_lua_ngx_decode_base64url(lua_State *L)
+{
+    ngx_str_t                p, src;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    if (lua_type(L, 1) != LUA_TSTRING) {
+        return luaL_error(L, "string argument only");
+    }
+
+    src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
+
+    p.len = ngx_base64_decoded_length(src.len);
+
+    p.data = lua_newuserdata(L, p.len);
+
+    if (ngx_decode_base64url(&p, &src) == NGX_OK) {
+        lua_pushlstring(L, (char *) p.data, p.len);
+
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_encode_base64url(lua_State *L)
+{
+    ngx_str_t                p, src;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    if (lua_isnil(L, 1)) {
+        src.data = (u_char *) "";
+        src.len = 0;
+
+    } else {
+        src.data = (u_char *) luaL_checklstring(L, 1, &src.len);
+    }
+
+    p.len = ngx_base64_encoded_length(src.len);
+
+    p.data = lua_newuserdata(L, p.len);
+
+    ngx_encode_base64url(&p, &src);
 
     lua_pushlstring(L, (char *) p.data, p.len);
 
