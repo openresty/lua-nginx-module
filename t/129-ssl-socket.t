@@ -59,6 +59,7 @@ __DATA__
 
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("www.google.com", 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -132,6 +133,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("g.sregex.org", 443)
@@ -208,6 +210,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -285,6 +288,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
 
@@ -379,6 +383,7 @@ lua ssl free session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("agentzh.org", 443)
@@ -457,6 +462,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("agentzh.org", 443)
@@ -532,6 +538,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("agentzh.org", 443)
@@ -612,6 +619,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -696,6 +704,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -774,6 +783,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -863,6 +873,7 @@ SSL reused session
 
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("www.google.com", 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -955,6 +966,7 @@ SSL reused session
 
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("www.google.com", 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1029,6 +1041,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -1112,6 +1125,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -1191,6 +1205,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -1270,6 +1285,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -1350,6 +1366,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -1426,6 +1443,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
 
@@ -1502,6 +1520,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
             do
 
@@ -1635,6 +1654,7 @@ attempt to call method 'sslhandshake' (a nil value)
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1739,6 +1759,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1840,6 +1861,9 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1932,6 +1956,9 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2010,6 +2037,8 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+
+            sock:settimeout(2000)
 
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
@@ -2093,6 +2122,8 @@ SSL reused session
         content_by_lua '
             local sock = ngx.socket.tcp()
 
+            sock:settimeout(2000)
+
             do
                 local ok, err = sock:connect("iscribblet.org", 443)
                 if not ok then
@@ -2159,6 +2190,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2229,6 +2261,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2301,6 +2334,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
             for i = 1, 2 do
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
@@ -2380,6 +2414,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2484,6 +2519,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
