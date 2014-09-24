@@ -24,6 +24,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_sslcertby.h"
 
 
 #if defined(NDK) && NDK
@@ -898,7 +899,7 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    lmcf->init_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
@@ -939,7 +940,7 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     value = cf->args->elts;
 
-    lmcf->init_worker_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_worker_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_worker_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
