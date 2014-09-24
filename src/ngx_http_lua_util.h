@@ -215,6 +215,8 @@ void ngx_http_lua_finalize_fake_request(ngx_http_request_t *r,
 
 void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
 
+void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
+
 void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
 

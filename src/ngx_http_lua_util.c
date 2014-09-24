@@ -111,7 +111,6 @@ static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
 static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
-static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static ngx_int_t
@@ -3565,7 +3564,7 @@ ngx_http_lua_close_fake_request(ngx_http_request_t *r)
 }
 
 
-static void
+void
 ngx_http_lua_free_fake_request(ngx_http_request_t *r)
 {
     ngx_log_t                 *log;
