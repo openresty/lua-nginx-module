@@ -34,6 +34,8 @@ int ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
 int ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     size_t *namelen, char **err);
 
+int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem, size_t pem_len,
+    unsigned char *der, char **err);
 ]]
 
 
@@ -74,7 +76,7 @@ function _M.set_der_cert(data)
 end
 
 
-function _M.set_der_pkey(data)
+function _M.set_der_priv_key(data)
     local r = getfenv(0).__ngx_req
     if not r then
         return error("no request found")
@@ -133,6 +135,23 @@ function _M.server_name()
 
     if rc == FFI_DECLINED then
         return nil
+    end
+
+    return nil, ffi_str(errmsg[0])
+end
+
+
+function _M.cert_pem_to_der(pem)
+    local r = getfenv(0).__ngx_req
+    if not r then
+        return error("no request found")
+    end
+
+    local outbuf = get_string_buf(#pem)
+
+    local sz = C.ngx_http_lua_ffi_cert_pem_to_der(pem, #pem, outbuf, errmsg)
+    if sz > 0 then
+        return ffi_str(outbuf, sz)
     end
 
     return nil, ffi_str(errmsg[0])

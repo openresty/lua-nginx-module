@@ -380,6 +380,8 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
+#ifndef NGX_LUA_NO_FFI_API
+
 int
 ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 {
@@ -437,10 +439,12 @@ ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
         goto failed;
     }
 
+#if 0
     if (SSL_set_ex_data(ssl_conn, ngx_ssl_certificate_index, x509) == 0) {
         *err = " SSL_set_ex_data() failed";
         goto failed;
     }
+#endif
 
     X509_free(x509);
     x509 = NULL;
@@ -636,6 +640,80 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 
     return NGX_DECLINED;
 }
+
+
+int
+ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
+    char **err)
+{
+    int       total, len;
+    BIO      *bio;
+    X509     *x509;
+    u_long    n;
+
+    bio = BIO_new_mem_buf((char *) pem, (int) pem_len);
+    if (bio == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        return NGX_ERROR;
+    }
+
+    x509 = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
+    if (x509 == NULL) {
+        *err = "PEM_read_bio_X509_AUX() failed";
+        return NGX_ERROR;
+    }
+
+    total = i2d_X509(x509, &der);
+    if (total < 0) {
+        X509_free(x509);
+        BIO_free(bio);
+        return NGX_ERROR;
+    }
+
+    X509_free(x509);
+
+    /* read rest of the chain */
+
+    for ( ;; ) {
+
+        x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+        if (x509 == NULL) {
+            n = ERR_peek_last_error();
+
+            if (ERR_GET_LIB(n) == ERR_LIB_PEM
+                && ERR_GET_REASON(n) == PEM_R_NO_START_LINE)
+            {
+                /* end of file */
+                ERR_clear_error();
+                break;
+            }
+
+            /* some real error */
+
+            *err = "PEM_read_bio_X509() failed";
+            BIO_free(bio);
+            return NGX_ERROR;
+        }
+
+        len = i2d_X509(x509, &der);
+        if (len < 0) {
+            *err = "i2d_X509() failed";
+            X509_free(x509);
+            BIO_free(bio);
+            return NGX_ERROR;
+        }
+
+        total += len;
+
+        X509_free(x509);
+    }
+
+    BIO_free(bio);
+
+    return total;
+}
+
+#endif  /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_HTTP_SSL */
