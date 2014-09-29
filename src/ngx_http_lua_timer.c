@@ -296,6 +296,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
     c->log->file = clcf->error_log->file;
+    c->log->writer = clcf->error_log->writer;
+    c->log->wdata = clcf->error_log->wdata;
     if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
         c->log->log_level = clcf->error_log->log_level;
     }
