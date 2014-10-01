@@ -48,7 +48,6 @@ qr{\[crit\] .*? connect\(\) to unix:/tmp/nosuchfile\.sock failed}
 
 
 
-
 === TEST 2: invalid host argument
 --- config
     location /test {
