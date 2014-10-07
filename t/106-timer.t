@@ -1929,10 +1929,12 @@ registered timer
 [crit]
 [error]
 
---- error_log
-1 lua_max_running_timers are not enough
-lua ngx.timer expired
-http lua close fake http connection
+--- error_log eval
+[
+qr/\[alert\] .*? 1 lua_max_running_timers are not enough/,
+"lua ngx.timer expired",
+"http lua close fake http connection",
+]
 
 
 
