@@ -3227,7 +3227,7 @@ lua socket tcp_nodelay
     server_tokens off;
 
     server {
-        listen [::1]:$TEST_NGINX_PORT;
+        listen [::1]:$TEST_NGINX_SERVER_PORT;
 
         location /foo {
             content_by_lua 'ngx.say("foo")';
