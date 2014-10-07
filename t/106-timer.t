@@ -13,7 +13,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 76);
+plan tests => repeat_each() * (blocks() * 8 + 72);
 
 #no_diff();
 no_long_string();
@@ -2161,4 +2161,34 @@ qr/\[lua\] content_by_lua:\d+: elapsed: .*?, context: ngx\.timer/,
 "timer prematurely expired: false",
 "lua release ngx.ctx at ref ",
 ]
+
+
+
+=== TEST 32: syslog error log
+--- http_config
+    #error_log syslog:server=127.0.0.1:12345 error;
+--- config
+    location /t {
+        content_by_lua '
+            local function f()
+                ngx.log(ngx.ERR, "Bad bad bad")
+            end
+            ngx.timer.at(0, f)
+            ngx.sleep(0.001)
+            ngx.say("ok")
+        ';
+    }
+--- log_level: error
+--- error_log_file: syslog:server=127.0.0.1:12345
+--- udp_listen: 12345
+--- udp_query eval: qr/Bad bad bad/
+--- udp_reply: hello
+--- wait: 0.1
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+Bad bad bad
+--- skip_nginx: 4: < 1.7.1
 
