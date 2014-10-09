@@ -53,7 +53,7 @@ Table of Contents
 Status
 ======
 
-This module is under active development and is production ready.
+Production ready.
 
 Version
 =======
@@ -312,8 +312,8 @@ The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, n
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
 1. Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuaJIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuajIT and/or Lua.
-1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](http://github.com/simpl/ngx_devel_kit/tags).
-1. Download the latest version of ngx_lua [HERE](http://github.com/openresty/lua-nginx-module/tags).
+1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simpl/ngx_devel_kit/tags).
+1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
 
 Build the source with this module:
@@ -412,7 +412,7 @@ The [openresty](https://groups.google.com/group/openresty) mailing list is for C
 Code Repository
 ===============
 
-The code repository of this project is hosted on github at [openresty/lua-nginx-module](http://github.com/openresty/lua-nginx-module).
+The code repository of this project is hosted on github at [openresty/lua-nginx-module](https://github.com/openresty/lua-nginx-module).
 
 [Back to TOC](#table-of-contents)
 
@@ -881,22 +881,22 @@ The following dependencies are required to run the test suite:
 * Nginx version >= 1.4.2
 
 * Perl modules:
-	* Test::Nginx: <http://github.com/openresty/test-nginx> 
+	* Test::Nginx: <https://github.com/openresty/test-nginx>
 
 * Nginx modules:
 	* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
-	* [ngx_set_misc](http://github.com/openresty/set-misc-nginx-module)
+	* [ngx_set_misc](https://github.com/openresty/set-misc-nginx-module)
 	* [ngx_auth_request](http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz) (this is not needed if you're using Nginx 1.5.4+.
-	* [ngx_echo](http://github.com/openresty/echo-nginx-module)
-	* [ngx_memc](http://github.com/openresty/memc-nginx-module)
-	* [ngx_srcache](http://github.com/openresty/srcache-nginx-module)
+	* [ngx_echo](https://github.com/openresty/echo-nginx-module)
+	* [ngx_memc](https://github.com/openresty/memc-nginx-module)
+	* [ngx_srcache](https://github.com/openresty/srcache-nginx-module)
 	* ngx_lua (i.e., this module)
-	* [ngx_lua_upstream](http://github.com/openresty/lua-upstream-nginx-module)
-	* [ngx_headers_more](http://github.com/openresty/headers-more-nginx-module)
-	* [ngx_drizzle](http://github.com/openresty/drizzle-nginx-module)
-	* [ngx_rds_json](http://github.com/openresty/rds-json-nginx-module)
+	* [ngx_lua_upstream](https://github.com/openresty/lua-upstream-nginx-module)
+	* [ngx_headers_more](https://github.com/openresty/headers-more-nginx-module)
+	* [ngx_drizzle](https://github.com/openresty/drizzle-nginx-module)
+	* [ngx_rds_json](https://github.com/openresty/rds-json-nginx-module)
 	* [ngx_coolkit](https://github.com/FRiCKLE/ngx_coolkit)
-	* [ngx_redis2](http://github.com/openresty/redis2-nginx-module)
+	* [ngx_redis2](https://github.com/openresty/redis2-nginx-module)
 
 The order in which these modules are added during configuration is important because the position of any filter module in the
 filtering chain determines the final output, for example. The correct adding order is shown above.
@@ -955,22 +955,23 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
-* [lua-resty-memcached](http://github.com/openresty/lua-resty-memcached) library based on ngx_lua cosocket.
-* [lua-resty-redis](http://github.com/openresty/lua-resty-redis) library based on ngx_lua cosocket.
-* [lua-resty-mysql](http://github.com/openresty/lua-resty-mysql) library based on ngx_lua cosocket.
-* [lua-resty-upload](http://github.com/openresty/lua-resty-upload) library based on ngx_lua cosocket.
-* [lua-resty-dns](http://github.com/openresty/lua-resty-dns) library based on ngx_lua cosocket.
-* [lua-resty-websocket](http://github.com/openresty/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
-* [lua-resty-string](http://github.com/openresty/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
-* [lua-resty-lock](http://github.com/openresty/lua-resty-lock) library for a nonblocking simple lock API.
+* [lua-resty-memcached](https://github.com/openresty/lua-resty-memcached) library based on ngx_lua cosocket.
+* [lua-resty-redis](https://github.com/openresty/lua-resty-redis) library based on ngx_lua cosocket.
+* [lua-resty-mysql](https://github.com/openresty/lua-resty-mysql) library based on ngx_lua cosocket.
+* [lua-resty-upload](https://github.com/openresty/lua-resty-upload) library based on ngx_lua cosocket.
+* [lua-resty-dns](https://github.com/openresty/lua-resty-dns) library based on ngx_lua cosocket.
+* [lua-resty-websocket](https://github.com/openresty/lua-resty-websocket) library for both WebSocket server and client, based on ngx_lua cosocket.
+* [lua-resty-string](https://github.com/openresty/lua-resty-string) library based on [LuaJIT FFI](http://luajit.org/ext_ffi.html).
+* [lua-resty-lock](https://github.com/openresty/lua-resty-lock) library for a nonblocking simple lock API.
+* [lua-resty-cookie](https://github.com/cloudflare/lua-resty-cookie) library for HTTP cookie manipulation.
 * [Routing requests to different MySQL queries based on URI arguments](http://openresty.org/#RoutingMySQLQueriesBasedOnURIArgs)
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/openresty/lua-nginx-module/wiki/Introduction)
-* [ngx_devel_kit](http://github.com/simpl/ngx_devel_kit)
+* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
 * [echo-nginx-module](http://github.com/openresty/echo-nginx-module)
 * [drizzle-nginx-module](http://github.com/openresty/drizzle-nginx-module)
-* [postgres-nginx-module](http://github.com/FRiCKLE/ngx_postgres)
+* [postgres-nginx-module](https://github.com/FRiCKLE/ngx_postgres)
 * [memc-nginx-module](http://github.com/openresty/memc-nginx-module)
 * [The ngx_openresty bundle](http://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/openresty/nginx-systemtap-toolkit)
@@ -4123,28 +4124,13 @@ ngx.exec
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Does an internal redirect to `uri` with `args`.
+Does an internal redirect to `uri` with `args` and is similar to the [echo_exec](http://github.com/openresty/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/openresty/echo-nginx-module).
 
 ```lua
 
 ngx.exec('/some-location');
 ngx.exec('/some-location', 'a=3&b=5&c=6');
 ngx.exec('/some-location?a=3&b=5', 'c=6');
-```
-
-Named locations are also supported (but the second `args` argument is currently ignored). For example,
-
-```nginx
-
-location /foo {
-    content_by_lua '
-        ngx.exec("@bar");
-    ';
-}
- 
-location @bar {
-    ...
-}
 ```
 
 The optional second `args` can be used to specify extra URI query arguments, for example:
@@ -4161,19 +4147,41 @@ Alternatively, a Lua table can be passed for the `args` argument for ngx_lua to 
 ngx.exec("/foo", { a = 3, b = "hello world" })
 ```
 
-The result is exactly the same as the previous example. The format for the Lua table passed as the `args` argument is identical to the format used in the [ngx.encode_args](#ngxencode_args) method.
+The result is exactly the same as the previous example.
 
-Note that this is very different from [ngx.redirect](#ngxredirect) in that
-it is just an internal redirect and no new HTTP traffic is involved.
+The format for the Lua table passed as the `args` argument is identical to the format used in the [ngx.encode_args](#ngxencode_args) method.
 
-This method never returns.
+Named locations are also supported but the second `args` argument will be ignored if present and the querystring for the new target is inherited from the referring location (if any).
 
-This method *must* be called before [ngx.send_headers](#ngxsend_headers) or explicit response body
+`GET /foo/file.php?a=hello` will return "hello" and not "goodbye" in the example below
+
+```nginx
+
+location /foo {
+    content_by_lua '
+        ngx.exec("@bar", "a=goodbye");
+    ';
+}
+
+location @bar {
+    content_by_lua '
+        local args = ngx.req.get_uri_args()
+        for key, val in pairs(args) do
+            if key == "a" then
+                ngx.say(val)
+            end
+        end
+    ';
+}
+```
+
+Note that the `ngx.exec` method is different from [ngx.redirect](#ngxredirect) in that
+it is purely an internal redirect and that no new external HTTP traffic is involved.
+
+Also note that this method call terminates the processing of the current request and that it *must* be called before [ngx.send_headers](#ngxsend_headers) or explicit response body
 outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
 
-It is strongly recommended to combine the `return` statement with this call, i.e., `return ngx.exec(...)`.
-
-This method is similar to the [echo_exec](http://github.com/openresty/echo-nginx-module#echo_exec) directive of the [echo-nginx-module](http://github.com/openresty/echo-nginx-module).
+It is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exec(...)` be adopted when this method call is used in contexts other than [header_filter_by_lua](#header_filter_by_lua) to reinforce the fact that the request processing is being terminated.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -4188,7 +4196,7 @@ Issue an `HTTP 301` or `302` redirection to `uri`.
 The optional `status` parameter specifies whether
 `301` or `302` to be used. It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
 
-Here is an example assuming the current server name is `localhost` and that it is listening on Port 1984:
+Here is an example assuming the current server name is `localhost` and that it is listening on port 1984:
 
 ```lua
 
@@ -4216,9 +4224,7 @@ We can also use the numerical code directly as the second `status` argument:
 return ngx.redirect("/foo", 301)
 ```
 
-This method *must* be called before [ngx.send_headers](#ngxsend_headers) or explicit response body outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
-
-This method is very much like the [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive with the `redirect` modifier in the standard
+This method is similar to the [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite) directive with the `redirect` modifier in the standard
 [[HttpRewriteModule]], for example, this `nginx.conf` snippet
 
 ```nginx
@@ -4254,7 +4260,10 @@ URI arguments can be specified as well, for example:
 return ngx.redirect('/foo?a=3&b=4')
 ```
 
-This method call terminates the current request's processing and never returns. It is recommended to combine the `return` statement with this call, i.e., `return ngx.redirect(...)`, so as to be more explicit.
+Note that this method call terminates the processing of the current request and that it *must* be called before [ngx.send_headers](#ngxsend_headers) or explicit response body
+outputs by either [ngx.print](#ngxprint) or [ngx.say](#ngxsay).
+
+It is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.redirect(...)` be adopted when this method call is used in contexts other than [header_filter_by_lua](#header_filter_by_lua) to reinforce the fact that the request processing is being terminated.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -4419,9 +4428,9 @@ ngx.exit(501)
 
 Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](#core-constants).
 
-It is recommended, though not necessary (for contexts other than [header_filter_by_lua](#header_filter_by_lua)), to combine the `return` statement with this call, i.e., `return ngx.exit(...)`, to give a visual hint to others reading the code.
+Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exit(...)` be used to reinforce the fact that the request processing is being terminated.
 
-When being used in the context of [header_filter_by_lua](#header_filter_by_lua), `ngx.exit()` is an asynchronous operation and will return immediately. This behavior might change in the future. So always use `return` at the same time, as suggested above.
+When being used in the context of [header_filter_by_lua](#header_filter_by_lua), `ngx.exit()` is an asynchronous operation and will return immediately. This behavior may change in future and it is recommended that users always use `return` in combination as suggested above.
 
 [Back to TOC](#nginx-api-for-lua)
 
