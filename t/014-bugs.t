@@ -859,6 +859,7 @@ GET /t
 --- response_body_like: An example for a vimrc file
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
