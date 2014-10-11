@@ -132,3 +132,16 @@ fun:main
    fun:_dl_sysdep_start
    fun:_dl_start
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   sendmsg(mmsg[0].msg_hdr)
+   fun:sendmmsg
+   fun:__libc_res_nsend
+   fun:__libc_res_nquery
+   fun:__libc_res_nquerydomain
+   fun:__libc_res_nsearch
+   fun:_nss_dns_gethostbyname4_r
+   fun:gaih_inet
+   fun:getaddrinfo
+}
