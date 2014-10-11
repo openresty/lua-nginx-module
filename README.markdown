@@ -2491,7 +2491,7 @@ location /foo {
     set $a 32;
     set $b 56;
  
-    set_by_lua $res
+    set_by_lua $sum
         'return tonumber(ngx.arg[1]) + tonumber(ngx.arg[2])'
         $a $b;
  
