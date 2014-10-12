@@ -404,7 +404,7 @@ attempt to send data on a closed socket
 === TEST 9: resolver error (timeout)
 --- config
     server_tokens off;
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
     resolver_timeout 1ms;
     location /t {
         content_by_lua '
@@ -1996,7 +1996,7 @@ close: 1 nil
 
 === TEST 33: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
     location = /sub {
         content_by_lua '
@@ -2039,7 +2039,7 @@ resolve name done
 
 === TEST 34: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
     location = /sub {
         content_by_lua '
@@ -3009,7 +3009,7 @@ runtime error: content_by_lua:16: bad request
 === TEST 50: cosocket resolving aborted by coroutine yielding failures (require)
 --- http_config
     lua_package_path "$prefix/html/?.lua;;";
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
 --- config
     location = /t {
@@ -3043,7 +3043,7 @@ runtime error: attempt to yield across C-call boundary
 === TEST 51: cosocket resolving aborted by coroutine yielding failures (xpcall err)
 --- http_config
     lua_package_path "$prefix/html/?.lua;;";
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
 --- config
     location = /t {

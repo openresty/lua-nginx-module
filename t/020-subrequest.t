@@ -2463,7 +2463,6 @@ capture body filter
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }
@@ -2534,7 +2533,6 @@ qr/Assertion .*? failed/
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }

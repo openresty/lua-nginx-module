@@ -558,7 +558,7 @@ lua udp socket read timed out
 
             udp:settimeout(2000) -- 2 sec
 
-            local ok, err = udp:setpeername("8.8.8.8", 53)
+            local ok, err = udp:setpeername("$TEST_NGINX_RESOLVER", 53)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -613,7 +613,7 @@ lua udp socket receive buffer size: 8192
 
             udp:settimeout(2000) -- 2 sec
 
-            local ok, err = udp:setpeername("google-public-dns-a.google.com", 53)
+            local ok, err = udp:setpeername("$TEST_NGINX_RESOLVER", 53)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -657,7 +657,7 @@ lua udp socket receive buffer size: 8192
 
 === TEST 12: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
     location = /sub {
         content_by_lua '
@@ -699,7 +699,7 @@ resolve name done
 
 === TEST 13: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
     resolver_timeout 3s;
 
     location = /sub {
