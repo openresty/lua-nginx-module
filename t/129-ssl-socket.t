@@ -40,7 +40,7 @@ __DATA__
 === TEST 1: www.google.com
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -852,7 +852,7 @@ SSL reused session
 === TEST 11: www.google.com  (SSL verify passes)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 3;
     location /t {
@@ -945,7 +945,7 @@ SSL reused session
 === TEST 12: www.google.com  (SSL verify enabled and no corresponding trusted certificates)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 3;
     location /t {

@@ -603,9 +603,20 @@ lua udp socket receive buffer size: 8192
 === TEST 11: access the google DNS server (using domain names)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
+            -- avoid flushing google in "check leak" testing mode:
+            local counter = package.loaded.counter
+            if not counter then
+                counter = 1
+            elseif counter >= 2 then
+                return ngx.exit(503)
+            else
+                counter = counter + 1
+            end
+            package.loaded.counter = counter
+
             local socket = ngx.socket
             -- local socket = require "socket"
 
@@ -613,7 +624,7 @@ lua udp socket receive buffer size: 8192
 
             udp:settimeout(2000) -- 2 sec
 
-            local ok, err = udp:setpeername("$TEST_NGINX_RESOLVER", 53)
+            local ok, err = udp:setpeername("google-public-dns-a.google.com", 53)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
