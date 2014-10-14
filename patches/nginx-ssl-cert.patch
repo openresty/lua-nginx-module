@@ -30,7 +30,7 @@ diff --exclude '*~' '--exclude=*.swp' -upr a/src/event/ngx_event_openssl.h b/src
      ngx_event_handler_pt        saved_read_handler;
      ngx_event_handler_pt        saved_write_handler;
  
-+    void                       *ctx;  /* used by 3rd-party modules */
++    void                       *lua_ctx;  /* used by 3rd-party modules */
 +
      unsigned                    handshaked:1;
      unsigned                    renegotiation:1;

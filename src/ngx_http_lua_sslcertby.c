@@ -155,7 +155,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    cctx = c->ssl->ctx;
+    cctx = c->ssl->lua_ctx;
 
     dd("ssl cert handler, cert-ctx=%p", cctx);
 
@@ -164,7 +164,6 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
         if (cctx->done) {
             dd("lua ssl cert done, finally");
-            c->ssl->ctx = NULL;
             return 1;
         }
 
@@ -219,7 +218,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
         goto failed;  /* error */
     }
 
-    c->ssl->ctx = cctx;
+    c->ssl->lua_ctx = cctx;
 
     cln = ngx_pool_cleanup_add(fc->pool, 0);
     if (cln == NULL) {
@@ -268,7 +267,7 @@ ngx_http_lua_ssl_cert_done(void *data)
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    cctx = c->ssl->ctx;
+    cctx = c->ssl->lua_ctx;
     if (cctx == NULL) {
         return;
     }
