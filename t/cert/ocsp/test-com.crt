@@ -1,0 +1,69 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4 (0x4)
+    Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=US, ST=California, L=Default City, O=OpenResty, CN=signing-ca-2
+        Validity
+            Not Before: Oct 14 21:06:36 2014 GMT
+            Not After : Sep 20 21:06:36 2114 GMT
+        Subject: C=US, ST=California, L=Default City, O=OpenResty, CN=test.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (1024 bit)
+                Modulus:
+                    00:c1:15:20:74:35:94:10:83:48:5e:06:ec:5f:3b:
+                    f6:eb:b7:81:f3:9f:57:74:1f:55:7d:e3:e5:d9:90:
+                    04:b3:4d:51:e9:40:df:65:57:87:bf:db:11:cd:75:
+                    c7:51:da:cf:eb:8e:91:02:ae:45:9a:da:3d:8c:62:
+                    4f:8d:69:95:a5:de:a5:93:34:39:a9:74:09:86:51:
+                    fd:d3:ba:4d:71:00:00:75:bc:0f:04:34:20:0b:88:
+                    61:d6:90:53:e1:0a:17:e6:8d:be:af:55:9e:1c:6b:
+                    14:32:04:bd:3b:fc:41:96:3f:58:6c:16:c9:72:b7:
+                    c3:bb:ed:ea:12:fc:b7:77:59
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                B7:E9:82:6F:DB:43:30:59:78:25:98:6B:65:98:17:F7:EA:6D:27:95
+            X509v3 Authority Key Identifier: 
+                keyid:BF:F3:05:AE:47:6B:FC:8C:22:F0:23:3B:E6:59:62:23:25:B0:75:6D
+                DirName:/C=US/ST=California/L=Default City/O=OpenResty/CN=signing-ca-1
+                serial:03
+
+            Authority Information Access: 
+                OCSP - URI:http://127.0.0.1:8888/
+
+    Signature Algorithm: sha1WithRSAEncryption
+         22:7f:fb:4c:be:d8:fc:91:18:07:e7:d3:92:80:03:79:0e:6b:
+         f1:b2:ce:41:6a:65:db:03:d5:ef:91:76:16:a6:e9:03:af:09:
+         89:36:62:6b:f6:1f:2a:f6:6b:74:44:81:6a:98:62:7d:b8:00:
+         97:1c:35:46:fb:40:d2:ce:9f:c1:a5:db:6b:09:8e:ac:d2:dd:
+         90:d9:b0:54:b2:7b:a8:fc:24:f2:14:81:99:6c:c8:f4:4a:37:
+         ff:de:74:7d:74:b7:db:e2:3a:43:b7:99:34:80:a7:85:44:80:
+         34:55:94:23:4b:22:c3:6a:84:86:fc:1e:99:a8:30:3b:87:4a:
+         dc:3b
+-----BEGIN CERTIFICATE-----
+MIIDXzCCAsigAwIBAgIBBDANBgkqhkiG9w0BAQUFADBkMQswCQYDVQQGEwJVUzET
+MBEGA1UECBMKQ2FsaWZvcm5pYTEVMBMGA1UEBxMMRGVmYXVsdCBDaXR5MRIwEAYD
+VQQKEwlPcGVuUmVzdHkxFTATBgNVBAMTDHNpZ25pbmctY2EtMjAgFw0xNDEwMTQy
+MTA2MzZaGA8yMTE0MDkyMDIxMDYzNlowYDELMAkGA1UEBhMCVVMxEzARBgNVBAgT
+CkNhbGlmb3JuaWExFTATBgNVBAcTDERlZmF1bHQgQ2l0eTESMBAGA1UEChMJT3Bl
+blJlc3R5MREwDwYDVQQDEwh0ZXN0LmNvbTCBnzANBgkqhkiG9w0BAQEFAAOBjQAw
+gYkCgYEAwRUgdDWUEINIXgbsXzv267eB859XdB9VfePl2ZAEs01R6UDfZVeHv9sR
+zXXHUdrP646RAq5Fmto9jGJPjWmVpd6lkzQ5qXQJhlH907pNcQAAdbwPBDQgC4hh
+1pBT4QoX5o2+r1WeHGsUMgS9O/xBlj9YbBbJcrfDu+3qEvy3d1kCAwEAAaOCASEw
+ggEdMAkGA1UdEwQCMAAwLAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVk
+IENlcnRpZmljYXRlMB0GA1UdDgQWBBS36YJv20MwWXglmGtlmBf36m0nlTCBjgYD
+VR0jBIGGMIGDgBS/8wWuR2v8jCLwIzvmWWIjJbB1baFopGYwZDELMAkGA1UEBhMC
+VVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFTATBgNVBAcTDERlZmF1bHQgQ2l0eTES
+MBAGA1UEChMJT3BlblJlc3R5MRUwEwYDVQQDEwxzaWduaW5nLWNhLTGCAQMwMgYI
+KwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vMTI3LjAuMC4xOjg4ODgv
+MA0GCSqGSIb3DQEBBQUAA4GBACJ/+0y+2PyRGAfn05KAA3kOa/GyzkFqZdsD1e+R
+dham6QOvCYk2Ymv2Hyr2a3REgWqYYn24AJccNUb7QNLOn8Gl22sJjqzS3ZDZsFSy
+e6j8JPIUgZlsyPRKN//edH10t9viOkO3mTSAp4VEgDRVlCNLIsNqhIb8HpmoMDuH
+Stw7
+-----END CERTIFICATE-----

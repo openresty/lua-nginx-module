@@ -10,9 +10,11 @@ local ffi_str = ffi.string
 local getfenv = getfenv
 local errmsg = base.get_errmsg_ptr()
 local get_string_buf = base.get_string_buf
+local get_string_buf_size = base.get_string_buf_size
 local get_size_ptr = base.get_size_ptr
 local FFI_DECLINED = base.FFI_DECLINED
 local FFI_OK = base.FFI_OK
+local FFI_BUSY = -3  -- base.FFI_BUSY
 
 
 ffi.cdef[[
@@ -36,6 +38,10 @@ int ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 
 int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem, size_t pem_len,
     unsigned char *der, char **err);
+
+int ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
+    const char *chain_data, size_t chain_len, char *out, size_t *out_size,
+    char **err);
 ]]
 
 
@@ -67,7 +73,8 @@ function _M.set_der_cert(data)
         return error("no request found")
     end
 
-    local rc = C.ngx_http_lua_ffi_ssl_set_der_certificate(r, data, #data, errmsg)
+    local rc = C.ngx_http_lua_ffi_ssl_set_der_certificate(r, data, #data,
+                                                          errmsg)
     if rc == FFI_OK then
         return true
     end
@@ -82,7 +89,8 @@ function _M.set_der_priv_key(data)
         return error("no request found")
     end
 
-    local rc = C.ngx_http_lua_ffi_ssl_set_der_private_key(r, data, #data, errmsg)
+    local rc = C.ngx_http_lua_ffi_ssl_set_der_private_key(r, data, #data,
+                                                          errmsg)
     if rc == FFI_OK then
         return true
     end
@@ -152,6 +160,36 @@ function _M.cert_pem_to_der(pem)
     local sz = C.ngx_http_lua_ffi_cert_pem_to_der(pem, #pem, outbuf, errmsg)
     if sz > 0 then
         return ffi_str(outbuf, sz)
+    end
+
+    return nil, ffi_str(errmsg[0])
+end
+
+
+function _M.get_ocsp_responder_from_der_chain(data, maxlen)
+
+    local buf_size = maxlen
+    if not buf_size then
+        buf_size = get_string_buf_size()
+    end
+    local buf = get_string_buf(buf_size)
+
+    local sizep = get_size_ptr()
+    sizep[0] = buf_size
+
+    local rc = C.ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(data,
+                                                    #data, buf, sizep, errmsg)
+
+    if rc == FFI_DECLINED then
+        return nil
+    end
+
+    if rc == FFI_OK then
+        return ffi_str(buf, sizep[0])
+    end
+
+    if rc == FFI_BUSY then
+        return ffi_str(buf, sizep[0]), "truncated"
     end
 
     return nil, ffi_str(errmsg[0])

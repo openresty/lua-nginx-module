@@ -712,6 +712,112 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
     return total;
 }
 
+
+int
+ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
+    const char *chain_data, size_t chain_len, u_char *out, size_t *out_size,
+    char **err)
+{
+    int                        rc = NGX_OK;
+    BIO                       *bio = NULL;
+    char                      *s;
+    X509                      *cert = NULL, *issuer = NULL;
+    size_t                     len;
+    STACK_OF(OPENSSL_STRING)  *aia = NULL;
+
+    /* certificate */
+
+    bio = BIO_new_mem_buf((char *) chain_data, chain_len);
+    if (bio == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        rc = NGX_ERROR;
+        goto done;
+    }
+
+    cert = d2i_X509_bio(bio, NULL);
+    if (cert == NULL) {
+        *err = "d2i_X509_bio() failed";
+        rc = NGX_ERROR;
+        goto done;
+    }
+
+    /* responder */
+
+    aia = X509_get1_ocsp(cert);
+    if (aia == NULL) {
+        rc = NGX_DECLINED;
+        goto done;
+    }
+
+    s = sk_OPENSSL_STRING_value(aia, 0);
+    if (s == NULL) {
+        rc = NGX_DECLINED;
+        goto done;
+    }
+
+    len = ngx_strlen(s);
+    if (len > *out_size) {
+        len = *out_size;
+        rc = NGX_BUSY;
+
+    } else {
+        rc = NGX_OK;
+        *out_size = len;
+    }
+
+    ngx_memcpy(out, s, len);
+
+    X509_email_free(aia);
+    aia = NULL;
+
+    /* issuer */
+
+    if (BIO_eof(bio)) {
+        *err = "no issuer certificate in chain";
+        rc = NGX_ERROR;
+        goto done;
+    }
+
+    issuer = d2i_X509_bio(bio, NULL);
+    if (issuer == NULL) {
+        *err = "d2i_X509_bio() failed";
+        rc = NGX_ERROR;
+        goto done;
+    }
+
+    if (X509_check_issued(issuer, cert) != X509_V_OK) {
+        *err = "issuer certificate not next to leaf";
+        rc = NGX_ERROR;
+        goto done;
+    }
+
+    X509_free(issuer);
+    X509_free(cert);
+    BIO_free(bio);
+
+    return rc;
+
+done:
+
+    if (aia) {
+        X509_email_free(aia);
+    }
+
+    if (issuer) {
+        X509_free(issuer);
+    }
+
+    if (cert) {
+        X509_free(cert);
+    }
+
+    if (bio) {
+        BIO_free(bio);
+    }
+
+    return rc;
+}
+
 #endif  /* NGX_LUA_NO_FFI_API */
 
 
