@@ -715,7 +715,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
 int
 ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
-    const char *chain_data, size_t chain_len, u_char *out, size_t *out_size,
+    const char *chain_data, size_t chain_len, unsigned char *out, size_t *out_size,
     char **err)
 {
     int                        rc = NGX_OK;
@@ -801,6 +801,109 @@ done:
 
     if (aia) {
         X509_email_free(aia);
+    }
+
+    if (issuer) {
+        X509_free(issuer);
+    }
+
+    if (cert) {
+        X509_free(cert);
+    }
+
+    if (bio) {
+        BIO_free(bio);
+    }
+
+    return rc;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
+    size_t chain_len, unsigned char *out, size_t *out_size, char **err)
+{
+    int                        rc = NGX_ERROR;
+    BIO                       *bio = NULL;
+    X509                      *cert = NULL, *issuer = NULL;
+    size_t                     len;
+    OCSP_CERTID               *id;
+    OCSP_REQUEST              *ocsp = NULL;
+
+    /* certificate */
+
+    bio = BIO_new_mem_buf((char *) chain_data, chain_len);
+    if (bio == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        goto failed;
+    }
+
+    cert = d2i_X509_bio(bio, NULL);
+    if (cert == NULL) {
+        *err = "d2i_X509_bio() failed";
+        goto failed;
+    }
+
+    if (BIO_eof(bio)) {
+        *err = "no issuer certificate in chain";
+        goto failed;
+    }
+
+    issuer = d2i_X509_bio(bio, NULL);
+    if (issuer == NULL) {
+        *err = "d2i_X509_bio() failed";
+        goto failed;
+    }
+
+    ocsp = OCSP_REQUEST_new();
+    if (ocsp == NULL) {
+        *err = "OCSP_REQUEST_new() failed";
+        goto failed;
+    }
+
+    id = OCSP_cert_to_id(NULL, cert, issuer);
+    if (id == NULL) {
+        *err = "OCSP_cert_to_id() failed";
+        goto failed;
+    }
+
+    if (OCSP_request_add0_id(ocsp, id) == NULL) {
+        *err = "OCSP_request_add0_id() failed";
+        goto failed;
+    }
+
+    len = i2d_OCSP_REQUEST(ocsp, NULL);
+    if (len <= 0) {
+        *err = "i2d_OCSP_REQUEST() failed";
+        goto failed;
+    }
+
+    if (len > *out_size) {
+        *err = "output buffer too small";
+        *out_size = len;
+        rc = NGX_BUSY;
+        goto failed;
+    }
+
+    len = i2d_OCSP_REQUEST(ocsp, &out);
+    if (len <=  0) {
+        *err = "i2d_OCSP_REQUEST() failed";
+        goto failed;
+    }
+
+    *out_size = len;
+
+    OCSP_REQUEST_free(ocsp);
+    X509_free(issuer);
+    X509_free(cert);
+    BIO_free(bio);
+
+    return NGX_OK;
+
+failed:
+
+    if (ocsp) {
+        OCSP_REQUEST_free(ocsp);
     }
 
     if (issuer) {

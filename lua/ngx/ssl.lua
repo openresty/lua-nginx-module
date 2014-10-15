@@ -42,6 +42,9 @@ int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem, size_t pem_len,
 int ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
     const char *chain_data, size_t chain_len, char *out, size_t *out_size,
     char **err);
+
+int ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
+    size_t chain_len, unsigned char *out, size_t *out_size, char **err);
 ]]
 
 
@@ -190,6 +193,34 @@ function _M.get_ocsp_responder_from_der_chain(data, maxlen)
 
     if rc == FFI_BUSY then
         return ffi_str(buf, sizep[0]), "truncated"
+    end
+
+    return nil, ffi_str(errmsg[0])
+end
+
+
+function _M.create_ocsp_request(data, maxlen)
+
+    local buf_size = maxlen
+    if not buf_size then
+        buf_size = get_string_buf_size()
+    end
+    local buf = get_string_buf(buf_size)
+
+    local sizep = get_size_ptr()
+    sizep[0] = buf_size
+
+    local rc = C.ngx_http_lua_ffi_ssl_create_ocsp_request(data,
+                                                          #data, buf, sizep,
+                                                          errmsg)
+
+    if rc == FFI_OK then
+        return ffi_str(buf, sizep[0])
+    end
+
+    if rc == FFI_BUSY then
+        return nil, ffi_str(errmsg[0]) .. ": " .. tonumber(sizep[0])
+               .. " > " .. buf_size
     end
 
     return nil, ffi_str(errmsg[0])

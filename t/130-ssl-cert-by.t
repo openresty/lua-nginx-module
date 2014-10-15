@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6 + 4);
+plan tests => repeat_each() * (blocks() * 6 + 6);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -1973,6 +1973,375 @@ still get an error: truncated
 
 --- no_error_log
 [error]
+[alert]
+[emerg]
+
+
+
+=== TEST 19: create OCSP request (good)
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local f = assert(io.open("t/cert/ocsp/chain.pem"))
+            local cert_data = f:read("*a")
+            f:close()
+
+            cert_data, err = ssl.cert_pem_to_der(cert_data)
+            if not cert_data then
+                ngx.log(ngx.ERR, "failed to convert pem cert to der cert: ", err)
+                return
+            end
+
+            local req, err = ssl.create_ocsp_request(cert_data)
+            if not req then
+                ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
+                return
+            end
+
+            ngx.log(ngx.WARN, "OCSP request created with length ", #req)
+            local bytes = {string.byte(req, 1, #req)}
+            for i, byte in ipairs(bytes) do
+                bytes[i] = string.format("%02x", byte)
+            end
+            ngx.log(ngx.WARN, "OCSP request content: ", table.concat(bytes, " "))
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+
+--- error_log
+lua ssl server name: "test.com"
+OCSP request created with length 68
+OCSP request content: 30 42 30 40 30 3e 30 3c 30 3a 30 09 06 05 2b 0e 03 02 1a 05 00 04 14 d6 ea 26 21 83 6d 8e 8e 15 8e 46 ec 09 78 77 ca 60 be 25 c6 04 14 bf f3 05 ae 47 6b fc 8c 22 f0 23 3b e6 59 62 23 25 b0 75 6d 02 01 04,
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 20: create OCSP request (buffer too small)
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local f = assert(io.open("t/cert/ocsp/chain.pem"))
+            local cert_data = f:read("*a")
+            f:close()
+
+            cert_data, err = ssl.cert_pem_to_der(cert_data)
+            if not cert_data then
+                ngx.log(ngx.ERR, "failed to convert pem cert to der cert: ", err)
+                return
+            end
+
+            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            if not req then
+                ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
+                return
+            end
+
+            ngx.log(ngx.WARN, "OCSP request created with length ", #req)
+            local bytes = {string.byte(req, 1, #req)}
+            for i, byte in ipairs(bytes) do
+                bytes[i] = string.format("%02x", byte)
+            end
+            ngx.log(ngx.WARN, "OCSP request content: ", table.concat(bytes, " "))
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+
+--- error_log
+lua ssl server name: "test.com"
+failed to create OCSP request: output buffer too small: 68 > 67
+
+--- no_error_log
+[alert]
+[emerg]
+
+
+
+=== TEST 21: create OCSP request (empty string cert chain)
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local cert_data = ""
+            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            if not req then
+                ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
+                return
+            end
+
+            ngx.log(ngx.WARN, "OCSP request created with length ", #req)
+            local bytes = {string.byte(req, 1, #req)}
+            for i, byte in ipairs(bytes) do
+                bytes[i] = string.format("%02x", byte)
+            end
+            ngx.log(ngx.WARN, "OCSP request content: ", table.concat(bytes, " "))
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+
+--- error_log
+lua ssl server name: "test.com"
+failed to create OCSP request: d2i_X509_bio() failed
+
+--- no_error_log
+[alert]
+[emerg]
+
+
+
+=== TEST 22: create OCSP request (no issuer cert in the chain)
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local f = assert(io.open("t/cert/ocsp/test-com.crt"))
+            local cert_data = f:read("*a")
+            f:close()
+
+            cert_data, err = ssl.cert_pem_to_der(cert_data)
+            if not cert_data then
+                ngx.log(ngx.ERR, "failed to convert pem cert to der cert: ", err)
+                return
+            end
+
+            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            if not req then
+                ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
+                return
+            end
+
+            ngx.log(ngx.WARN, "OCSP request created with length ", #req)
+            local bytes = {string.byte(req, 1, #req)}
+            for i, byte in ipairs(bytes) do
+                bytes[i] = string.format("%02x", byte)
+            end
+            ngx.log(ngx.WARN, "OCSP request content: ", table.concat(bytes, " "))
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+
+--- error_log
+lua ssl server name: "test.com"
+failed to create OCSP request: no issuer certificate in chain
+
+--- no_error_log
 [alert]
 [emerg]
 
