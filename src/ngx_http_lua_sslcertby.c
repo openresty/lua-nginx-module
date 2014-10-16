@@ -921,6 +921,166 @@ failed:
     return rc;
 }
 
+
+int
+ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
+    size_t resp_len, const char *chain_data, size_t chain_len,
+    u_char *errbuf, size_t *errbuf_size)
+{
+    int                    n;
+    BIO                   *bio = NULL;
+    X509                  *cert = NULL, *issuer = NULL;
+    OCSP_CERTID           *id = NULL;
+    OCSP_RESPONSE         *ocsp = NULL;
+    OCSP_BASICRESP        *basic = NULL;
+    STACK_OF(X509)        *chain = NULL;
+    ASN1_GENERALIZEDTIME  *thisupdate, *nextupdate;
+
+    ocsp = d2i_OCSP_RESPONSE(NULL, &resp, resp_len);
+    if (ocsp == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_OCSP_RESPONSE() failed") - errbuf;
+        goto error;
+    }
+
+    n = OCSP_response_status(ocsp);
+
+    if (n != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP response not successful (%d: %s)",
+                                    n, OCSP_response_status_str(n)) - errbuf;
+        goto error;
+    }
+
+    basic = OCSP_response_get1_basic(ocsp);
+    if (basic == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_response_get1_basic() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    /* get issuer certificate from chain */
+
+    bio = BIO_new_mem_buf((char *) chain_data, chain_len);
+    if (bio == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "BIO_new_mem_buf() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    cert = d2i_X509_bio(bio, NULL);
+    if (cert == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_X509_bio() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    if (BIO_eof(bio)) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "no issuer certificate in chain")
+                       - errbuf;
+        goto error;
+    }
+
+    issuer = d2i_X509_bio(bio, NULL);
+    if (issuer == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_X509_bio() failed") - errbuf;
+        goto error;
+    }
+
+    chain = sk_X509_new_null();
+    if (chain == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "sk_X509_new_null() failed") - errbuf;
+        goto error;
+    }
+
+    (void) sk_X509_push(chain, issuer);
+
+    if (OCSP_basic_verify(basic, chain, NULL, OCSP_NOVERIFY) != 1) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_basic_verify() failed") - errbuf;
+        goto error;
+    }
+
+    id = OCSP_cert_to_id(NULL, cert, issuer);
+    if (id == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_cert_to_id() failed") - errbuf;
+        goto error;
+    }
+
+    if (OCSP_resp_find_status(basic, id, &n, NULL, NULL,
+                              &thisupdate, &nextupdate)
+        != 1)
+    {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "certificate status not found in the "
+                                    "OCSP response") - errbuf;
+        goto error;
+    }
+
+    if (n != V_OCSP_CERTSTATUS_GOOD) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "certificate status \"%s\" in the OCSP "
+                                    "response", OCSP_cert_status_str(n))
+                       - errbuf;
+        goto error;
+    }
+
+    if (OCSP_check_validity(thisupdate, nextupdate, 300, -1) != 1) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_check_validity() failed") - errbuf;
+        goto error;
+    }
+
+    sk_X509_free(chain);
+    X509_free(cert);
+    X509_free(issuer);
+    BIO_free(bio);
+    OCSP_CERTID_free(id);
+    OCSP_BASICRESP_free(basic);
+    OCSP_RESPONSE_free(ocsp);
+
+    return NGX_OK;
+
+error:
+
+    if (chain) {
+        sk_X509_free(chain);
+    }
+
+    if (id) {
+        OCSP_CERTID_free(id);
+    }
+
+    if (basic) {
+        OCSP_BASICRESP_free(basic);
+    }
+
+    if (ocsp) {
+        OCSP_RESPONSE_free(ocsp);
+    }
+
+    if (cert) {
+        X509_free(cert);
+    }
+
+    if (issuer) {
+        X509_free(issuer);
+    }
+
+    if (bio) {
+        BIO_free(bio);
+    }
+
+    return NGX_ERROR;
+}
+
 #endif  /* NGX_LUA_NO_FFI_API */
 
 

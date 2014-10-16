@@ -45,6 +45,10 @@ int ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
 
 int ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
     size_t chain_len, unsigned char *out, size_t *out_size, char **err);
+
+int ngx_http_lua_ffi_ssl_validate_ocsp_response(const unsigned char *resp,
+    size_t resp_len, const char *chain_data, size_t chain_len,
+    unsigned char *errbuf, size_t *errbuf_size);
 ]]
 
 
@@ -224,6 +228,30 @@ function _M.create_ocsp_request(data, maxlen)
     end
 
     return nil, ffi_str(errmsg[0])
+end
+
+
+function _M.validate_ocsp_response(resp, chain, max_errmsg_len)
+
+    local errbuf_size = max_errmsg_len
+    if not errbuf_size then
+        errbuf_size = get_string_buf_size()
+    end
+    local errbuf = get_string_buf(errbuf_size)
+
+    local sizep = get_size_ptr()
+    sizep[0] = errbuf_size
+
+    local rc = C.ngx_http_lua_ffi_ssl_validate_ocsp_response(
+                        resp, #resp, chain, #chain, errbuf, sizep)
+
+    if rc == FFI_OK then
+        return true
+    end
+
+    -- rc == FFI_ERROR
+
+    return nil, ffi_str(errbuf, sizep[0])
 end
 
 

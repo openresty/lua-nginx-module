@@ -5,22 +5,22 @@ Certificate:
     Signature Algorithm: sha1WithRSAEncryption
         Issuer: C=US, ST=California, L=Default City, O=OpenResty, CN=signing-ca-2
         Validity
-            Not Before: Oct 14 21:06:36 2014 GMT
-            Not After : Sep 20 21:06:36 2114 GMT
+            Not Before: Oct 16 03:27:09 2014 GMT
+            Not After : Sep 22 03:27:09 2114 GMT
         Subject: C=US, ST=California, L=Default City, O=OpenResty, CN=test.com
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
                 Public-Key: (1024 bit)
                 Modulus:
-                    00:c1:15:20:74:35:94:10:83:48:5e:06:ec:5f:3b:
-                    f6:eb:b7:81:f3:9f:57:74:1f:55:7d:e3:e5:d9:90:
-                    04:b3:4d:51:e9:40:df:65:57:87:bf:db:11:cd:75:
-                    c7:51:da:cf:eb:8e:91:02:ae:45:9a:da:3d:8c:62:
-                    4f:8d:69:95:a5:de:a5:93:34:39:a9:74:09:86:51:
-                    fd:d3:ba:4d:71:00:00:75:bc:0f:04:34:20:0b:88:
-                    61:d6:90:53:e1:0a:17:e6:8d:be:af:55:9e:1c:6b:
-                    14:32:04:bd:3b:fc:41:96:3f:58:6c:16:c9:72:b7:
-                    c3:bb:ed:ea:12:fc:b7:77:59
+                    00:c7:bd:50:99:71:46:af:93:22:85:ab:74:8b:5b:
+                    19:74:af:3e:ad:d2:e1:17:3e:cb:5b:36:9c:8a:38:
+                    bd:1b:47:2d:8b:92:55:1d:fe:a6:72:92:78:00:de:
+                    30:cb:a3:10:b5:92:aa:b8:e0:7b:44:9a:f5:99:89:
+                    36:f4:84:20:81:e3:5c:76:00:9d:76:e7:b9:41:ab:
+                    74:b6:14:9f:b2:94:b3:b6:48:a8:92:dc:09:e3:3d:
+                    04:e3:5f:0f:5b:50:ad:0c:59:3a:88:06:39:2d:34:
+                    a6:52:2f:58:6f:53:1b:df:9f:98:ea:82:8d:52:60:
+                    b1:ef:6b:e9:f5:ad:29:87:45
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
             X509v3 Basic Constraints: 
@@ -28,42 +28,42 @@ Certificate:
             Netscape Comment: 
                 OpenSSL Generated Certificate
             X509v3 Subject Key Identifier: 
-                B7:E9:82:6F:DB:43:30:59:78:25:98:6B:65:98:17:F7:EA:6D:27:95
+                67:DF:28:25:D1:F8:83:36:28:EE:DB:41:63:E4:E0:3A:32:0D:EA:30
             X509v3 Authority Key Identifier: 
-                keyid:BF:F3:05:AE:47:6B:FC:8C:22:F0:23:3B:E6:59:62:23:25:B0:75:6D
+                keyid:B3:0B:F5:7D:51:16:51:7E:28:37:C3:A2:0F:1D:2F:10:C0:51:A3:B3
                 DirName:/C=US/ST=California/L=Default City/O=OpenResty/CN=signing-ca-1
                 serial:03
 
             Authority Information Access: 
-                OCSP - URI:http://127.0.0.1:8888/
+                OCSP - URI:http://127.0.0.1:8888/ocsp?foo=1
 
     Signature Algorithm: sha1WithRSAEncryption
-         22:7f:fb:4c:be:d8:fc:91:18:07:e7:d3:92:80:03:79:0e:6b:
-         f1:b2:ce:41:6a:65:db:03:d5:ef:91:76:16:a6:e9:03:af:09:
-         89:36:62:6b:f6:1f:2a:f6:6b:74:44:81:6a:98:62:7d:b8:00:
-         97:1c:35:46:fb:40:d2:ce:9f:c1:a5:db:6b:09:8e:ac:d2:dd:
-         90:d9:b0:54:b2:7b:a8:fc:24:f2:14:81:99:6c:c8:f4:4a:37:
-         ff:de:74:7d:74:b7:db:e2:3a:43:b7:99:34:80:a7:85:44:80:
-         34:55:94:23:4b:22:c3:6a:84:86:fc:1e:99:a8:30:3b:87:4a:
-         dc:3b
+         37:29:3f:ed:d9:47:9a:51:36:a3:5b:00:85:66:de:51:4d:48:
+         2d:f8:bc:f1:5e:b4:fd:30:48:f0:25:ee:77:57:9c:f1:4b:0a:
+         4f:7e:96:1a:f8:48:76:23:46:8d:d6:f2:5e:1e:08:52:12:53:
+         08:07:9f:75:db:77:22:2e:7e:89:c2:2c:66:85:6b:df:e9:77:
+         ca:23:6d:9a:af:87:8a:8c:27:37:1e:9e:55:92:8e:8a:a9:93:
+         24:41:a8:96:01:c0:65:93:8e:3d:7a:6c:bf:ed:c8:2a:f8:26:
+         cc:00:17:b7:27:ca:85:6c:2e:d5:2a:0a:8d:f3:88:e8:26:48:
+         e3:e8
 -----BEGIN CERTIFICATE-----
-MIIDXzCCAsigAwIBAgIBBDANBgkqhkiG9w0BAQUFADBkMQswCQYDVQQGEwJVUzET
+MIIDaTCCAtKgAwIBAgIBBDANBgkqhkiG9w0BAQUFADBkMQswCQYDVQQGEwJVUzET
 MBEGA1UECBMKQ2FsaWZvcm5pYTEVMBMGA1UEBxMMRGVmYXVsdCBDaXR5MRIwEAYD
-VQQKEwlPcGVuUmVzdHkxFTATBgNVBAMTDHNpZ25pbmctY2EtMjAgFw0xNDEwMTQy
-MTA2MzZaGA8yMTE0MDkyMDIxMDYzNlowYDELMAkGA1UEBhMCVVMxEzARBgNVBAgT
+VQQKEwlPcGVuUmVzdHkxFTATBgNVBAMTDHNpZ25pbmctY2EtMjAgFw0xNDEwMTYw
+MzI3MDlaGA8yMTE0MDkyMjAzMjcwOVowYDELMAkGA1UEBhMCVVMxEzARBgNVBAgT
 CkNhbGlmb3JuaWExFTATBgNVBAcTDERlZmF1bHQgQ2l0eTESMBAGA1UEChMJT3Bl
 blJlc3R5MREwDwYDVQQDEwh0ZXN0LmNvbTCBnzANBgkqhkiG9w0BAQEFAAOBjQAw
-gYkCgYEAwRUgdDWUEINIXgbsXzv267eB859XdB9VfePl2ZAEs01R6UDfZVeHv9sR
-zXXHUdrP646RAq5Fmto9jGJPjWmVpd6lkzQ5qXQJhlH907pNcQAAdbwPBDQgC4hh
-1pBT4QoX5o2+r1WeHGsUMgS9O/xBlj9YbBbJcrfDu+3qEvy3d1kCAwEAAaOCASEw
-ggEdMAkGA1UdEwQCMAAwLAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVk
-IENlcnRpZmljYXRlMB0GA1UdDgQWBBS36YJv20MwWXglmGtlmBf36m0nlTCBjgYD
-VR0jBIGGMIGDgBS/8wWuR2v8jCLwIzvmWWIjJbB1baFopGYwZDELMAkGA1UEBhMC
+gYkCgYEAx71QmXFGr5Mihat0i1sZdK8+rdLhFz7LWzaciji9G0cti5JVHf6mcpJ4
+AN4wy6MQtZKquOB7RJr1mYk29IQggeNcdgCddue5Qat0thSfspSztkioktwJ4z0E
+418PW1CtDFk6iAY5LTSmUi9Yb1Mb35+Y6oKNUmCx72vp9a0ph0UCAwEAAaOCASsw
+ggEnMAkGA1UdEwQCMAAwLAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVk
+IENlcnRpZmljYXRlMB0GA1UdDgQWBBRn3ygl0fiDNiju20Fj5OA6Mg3qMDCBjgYD
+VR0jBIGGMIGDgBSzC/V9URZRfig3w6IPHS8QwFGjs6FopGYwZDELMAkGA1UEBhMC
 VVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFTATBgNVBAcTDERlZmF1bHQgQ2l0eTES
-MBAGA1UEChMJT3BlblJlc3R5MRUwEwYDVQQDEwxzaWduaW5nLWNhLTGCAQMwMgYI
-KwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vMTI3LjAuMC4xOjg4ODgv
-MA0GCSqGSIb3DQEBBQUAA4GBACJ/+0y+2PyRGAfn05KAA3kOa/GyzkFqZdsD1e+R
-dham6QOvCYk2Ymv2Hyr2a3REgWqYYn24AJccNUb7QNLOn8Gl22sJjqzS3ZDZsFSy
-e6j8JPIUgZlsyPRKN//edH10t9viOkO3mTSAp4VEgDRVlCNLIsNqhIb8HpmoMDuH
-Stw7
+MBAGA1UEChMJT3BlblJlc3R5MRUwEwYDVQQDEwxzaWduaW5nLWNhLTGCAQMwPAYI
+KwYBBQUHAQEEMDAuMCwGCCsGAQUFBzABhiBodHRwOi8vMTI3LjAuMC4xOjg4ODgv
+b2NzcD9mb289MTANBgkqhkiG9w0BAQUFAAOBgQA3KT/t2UeaUTajWwCFZt5RTUgt
++LzxXrT9MEjwJe53V5zxSwpPfpYa+Eh2I0aN1vJeHghSElMIB59123ciLn6Jwixm
+hWvf6XfKI22ar4eKjCc3Hp5Vko6KqZMkQaiWAcBlk449emy/7cgq+CbMABe3J8qF
+bC7VKgqN84joJkjj6A==
 -----END CERTIFICATE-----
