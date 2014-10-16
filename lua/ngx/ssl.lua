@@ -14,7 +14,7 @@ local get_string_buf_size = base.get_string_buf_size
 local get_size_ptr = base.get_size_ptr
 local FFI_DECLINED = base.FFI_DECLINED
 local FFI_OK = base.FFI_OK
-local FFI_BUSY = -3  -- base.FFI_BUSY
+local FFI_BUSY = base.FFI_BUSY
 
 
 ffi.cdef[[
