@@ -1312,6 +1312,18 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
             if (n >= 4) {
                 u->ssl_verify = lua_toboolean(L, 4);
+
+                if (n >= 5) {
+                    if (lua_toboolean(L, 5)) {
+#ifdef TLSEXT_STATUSTYPE_ocsp
+                        SSL_set_tlsext_status_type(c->ssl->connection,
+                                                   TLSEXT_STATUSTYPE_ocsp);
+#else
+                        return luaL_error(L, "lack of status request support"
+                                             " in OpenSSL");
+#endif
+                    }
+                }
             }
         }
     }
