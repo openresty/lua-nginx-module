@@ -141,7 +141,4 @@ fun:main
    fun:__libc_res_nquery
    fun:__libc_res_nquerydomain
    fun:__libc_res_nsearch
-   fun:_nss_dns_gethostbyname4_r
-   fun:gaih_inet
-   fun:getaddrinfo
 }
