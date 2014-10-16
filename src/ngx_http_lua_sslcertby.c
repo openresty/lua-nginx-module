@@ -715,8 +715,8 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
 int
 ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
-    const char *chain_data, size_t chain_len, unsigned char *out, size_t *out_size,
-    char **err)
+    const char *chain_data, size_t chain_len, unsigned char *out,
+    size_t *out_size, char **err)
 {
     int                        rc = NGX_OK;
     BIO                       *bio = NULL;
