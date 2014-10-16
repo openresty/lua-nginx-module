@@ -1081,6 +1081,60 @@ error:
     return NGX_ERROR;
 }
 
+
+static int
+ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn, void *data)
+{
+    return SSL_TLSEXT_ERR_OK;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
+    const u_char *resp, size_t resp_len, char **err)
+{
+    u_char                  *p;
+    SSL_CTX                 *ctx;
+    ngx_ssl_conn_t          *ssl_conn;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    if (ssl_conn->tlsext_status_type == -1) {
+        dd("no ocsp status req from client");
+        return NGX_DECLINED;
+    }
+
+    /* we have to register an empty status callback here otherwise
+     * OpenSSL won't send the response staple. */
+
+    ctx = SSL_get_SSL_CTX(ssl_conn);
+    SSL_CTX_set_tlsext_status_cb(ctx,
+                                 ngx_http_lua_ssl_empty_status_callback);
+
+    p = OPENSSL_malloc(resp_len);
+    if (p == NULL) {
+        *err = "OPENSSL_malloc() failed";
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(p, resp, resp_len);
+
+    dd("set ocsp resp: resp_len=%d", (int) resp_len);
+    (void) SSL_set_tlsext_status_ocsp_resp(ssl_conn, p, resp_len);
+    ssl_conn->tlsext_status_expected = 1;
+
+    return NGX_OK;
+}
+
 #endif  /* NGX_LUA_NO_FFI_API */
 
 

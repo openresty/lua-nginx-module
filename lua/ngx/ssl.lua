@@ -15,6 +15,7 @@ local get_size_ptr = base.get_size_ptr
 local FFI_DECLINED = base.FFI_DECLINED
 local FFI_OK = base.FFI_OK
 local FFI_BUSY = base.FFI_BUSY
+local FFI_DECLINED = base.FFI_DECLINED
 
 
 ffi.cdef[[
@@ -49,6 +50,9 @@ int ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
 int ngx_http_lua_ffi_ssl_validate_ocsp_response(const unsigned char *resp,
     size_t resp_len, const char *chain_data, size_t chain_len,
     unsigned char *errbuf, size_t *errbuf_size);
+
+int ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
+    const unsigned char *resp, size_t resp_len, char **err);
 ]]
 
 
@@ -252,6 +256,30 @@ function _M.validate_ocsp_response(resp, chain, max_errmsg_len)
     -- rc == FFI_ERROR
 
     return nil, ffi_str(errbuf, sizep[0])
+end
+
+
+function _M.set_ocsp_status_resp(data)
+    local r = getfenv(0).__ngx_req
+    if not r then
+        return error("no request found")
+    end
+
+    local rc = C.ngx_http_lua_ffi_ssl_set_ocsp_status_resp(r, data, #data,
+                                                           errmsg)
+
+    if rc == FFI_DECLINED then
+        -- no client status req
+        return true, "no status req"
+    end
+
+    if rc == FFI_OK then
+        return true
+    end
+
+    -- rc == FFI_ERROR
+
+    return nil, ffi_str(errmsg[0])
 end
 
 
