@@ -3606,8 +3606,8 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
     ngx_pool_t          *pool;
     ngx_connection_t    *saved_c = NULL;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http lua close fake http connection");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http lua close fake http connection %p", c);
 
     c->destroyed = 1;
 
@@ -3805,6 +3805,8 @@ ngx_http_lua_create_fake_connection(void)
 
     c->error = 1;
 
+    dd("created fake connection: %p", c);
+
     return c;
 
 failed:
@@ -3898,6 +3900,8 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
 
     r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
     r->discard_body = 1;
+
+    dd("created fake request %p", r);
 
     return r;
 

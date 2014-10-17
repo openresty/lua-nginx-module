@@ -275,7 +275,7 @@ ngx_http_lua_ssl_cert_done(void *data)
     cctx->done = 1;
 
     c->log->action = "SSL handshaking";
-    c->write->handler(c->write);;
+    ngx_post_event(c->write, &ngx_posted_events);
 }
 
 

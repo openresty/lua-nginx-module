@@ -2669,6 +2669,8 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
+    dd("lua tcp socket handler: request: %p", r);
+
     ctx = c->log->data;
     ctx->current_request = r;
 
