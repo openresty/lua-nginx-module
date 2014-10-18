@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6 + 13);
+plan tests => repeat_each() * (blocks() * 6 + 23);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -3403,6 +3403,461 @@ got TLS1 version: TLSv1.2,
 
 --- no_error_log
 [error]
+[alert]
+[emerg]
+
+
+
+=== TEST 35: ngx.exit(0) - no yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            ngx.exit(0)
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+lua exit with code 0
+
+--- no_error_log
+should never reached here
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 36: ngx.exit(ngx.ERROR) - no yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            ngx.exit(ngx.ERROR)
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- error_log eval
+[
+'lua_certificate_by_lua: handler return value: -1, cert cb exit code: 0',
+qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+'lua exit with code -1',
+]
+
+--- no_error_log
+should never reached here
+[alert]
+[emerg]
+
+
+
+=== TEST 37: ngx.exit(0) -  yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            ngx.sleep(0.001)
+            ngx.exit(0)
+
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+lua exit with code 0
+
+--- no_error_log
+should never reached here
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 38: ngx.exit(ngx.ERROR) - yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            ngx.sleep(0.001)
+            ngx.exit(ngx.ERROR)
+
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- error_log eval
+[
+'lua_certificate_by_lua: cert cb exit code: 0',
+qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+'lua exit with code -1',
+]
+
+--- no_error_log
+should never reached here
+[alert]
+[emerg]
+
+
+
+=== TEST 39: lua exception - no yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            error("bad bad bad")
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- error_log eval
+[
+'runtime error: ssl_certificate_by_lua:2: bad bad bad',
+'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
+qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+]
+
+--- no_error_log
+should never reached here
+[alert]
+[emerg]
+
+
+
+=== TEST 40: lua exception - yield
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            ngx.sleep(0.001)
+            error("bad bad bad")
+            ngx.log(ngx.ERR, "should never reached here...")
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- error_log eval
+[
+'runtime error: ssl_certificate_by_lua:3: bad bad bad',
+'lua_certificate_by_lua: cert cb exit code: 0',
+qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+]
+
+--- no_error_log
+should never reached here
 [alert]
 [emerg]
 

@@ -49,6 +49,7 @@
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_worker.h"
 #include "ngx_http_lua_socket_tcp.h"
+#include "ngx_http_lua_sslcertby.h"
 
 
 #if 1
@@ -2184,6 +2185,10 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    "lua thread aborting request with status %d",
                    ctx->exit_code);
 
+    if (r->connection->fd == -1) {  /* fake request */
+        return ctx->exit_code;
+    }
+
 #if 1
     if (!r->header_sent
         && r->headers_out.status == 0
@@ -3507,6 +3512,11 @@ void
 ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
 {
     ngx_connection_t          *c;
+#if (NGX_HTTP_SSL)
+    ngx_ssl_conn_t            *ssl_conn;
+
+    ngx_http_lua_ssl_cert_ctx_t     *cctx;
+#endif
 
     c = r->connection;
 
@@ -3520,6 +3530,23 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
     }
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+
+#if (NGX_HTTP_SSL)
+
+        if (r->connection->ssl) {
+            ssl_conn = r->connection->ssl->connection;
+            if (ssl_conn) {
+                c = ngx_ssl_get_connection(ssl_conn);
+
+                if (c && c->ssl && c->ssl->lua_ctx) {
+                    cctx = c->ssl->lua_ctx;
+                    cctx->exit_code = 0;
+                }
+            }
+        }
+
+#endif
+
         ngx_http_lua_close_fake_request(r);
         return;
     }

@@ -11,11 +11,18 @@
 #include "ngx_http_lua_common.h"
 
 
-ngx_int_t ngx_http_lua_ssl_cert_handler_inline(ngx_log_t *log,
-    ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef struct {
+    int                      exit_code;  /* exit code for openssl's
+                                            set_cert_cb callback */
+    unsigned                 done;  /* :1 */
+} ngx_http_lua_ssl_cert_ctx_t;
 
-ngx_int_t ngx_http_lua_ssl_cert_handler_file(ngx_log_t *log,
-    ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+
+ngx_int_t ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L);
+
+ngx_int_t ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
 char * ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);

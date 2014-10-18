@@ -18,6 +18,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_ssl_module.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_sslcertby.h"
 
 
 static void ngx_http_lua_ssl_cert_done(void *data);
@@ -25,11 +26,6 @@ static u_char * ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
-
-
-typedef struct {
-    unsigned                 done;  /* :1 */
-} ngx_http_lua_ssl_cert_ctx_t;
 
 
 ngx_int_t
@@ -154,6 +150,8 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     c = ngx_ssl_get_connection(ssl_conn);
 
+    dd("c = %p", c);
+
     cctx = c->ssl->lua_ctx;
 
     dd("ssl cert handler, cert-ctx=%p", cctx);
@@ -162,8 +160,12 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
         /* not the first time */
 
         if (cctx->done) {
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                           "lua_certificate_by_lua: cert cb exit code: %d",
+                           cctx->exit_code);
+
             dd("lua ssl cert done, finally");
-            return 1;
+            return cctx->exit_code;
         }
 
         return -1;
@@ -195,29 +197,38 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     fc->log->log_level = c->log->log_level;
     fc->ssl = c->ssl;
 
-    lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
-
-    /* TODO honor lua_code_cache off */
-    L = ngx_http_lua_get_lua_vm(r, NULL);
-
-    rc = lscf->ssl_cert_handler(r, lscf, L);
-
-    if (rc == NGX_OK) {
-        return 1;  /* continue ssl handshaking */
-    }
-
-    if (rc == NGX_ERROR || rc > NGX_OK) {
-        return 0;  /* error */
-    }
-
-    /* rc == NGX_DONE */
-
     cctx = ngx_pcalloc(c->pool, sizeof(ngx_http_lua_ssl_cert_ctx_t));
     if (cctx == NULL) {
         goto failed;  /* error */
     }
 
+    cctx->exit_code = 1;  /* successful by default */
+
+    dd("setting cctx");
+
     c->ssl->lua_ctx = cctx;
+
+    lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
+
+    /* TODO honor lua_code_cache off */
+    L = ngx_http_lua_get_lua_vm(r, NULL);
+
+    c->log->action = "loading SSL certificate by lua";
+
+    rc = lscf->ssl_cert_handler(r, lscf, L);
+
+    if (rc >= NGX_OK || rc == NGX_ERROR) {
+        cctx->done = 1;
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "lua_certificate_by_lua: handler return value: %i, "
+                       "cert cb exit code: %d", rc, cctx->exit_code);
+
+        c->log->action = "SSL handshaking";
+        return cctx->exit_code;
+    }
+
+    /* rc == NGX_DONE */
 
     cln = ngx_pool_cleanup_add(fc->pool, 0);
     if (cln == NULL) {
@@ -226,8 +237,6 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     cln->handler = ngx_http_lua_ssl_cert_done;
     cln->data = ssl_conn;
-
-    c->log->action = "loading SSL certificate by lua";
 
     return -1;
 
