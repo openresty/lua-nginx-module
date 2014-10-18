@@ -53,6 +53,8 @@ int ngx_http_lua_ffi_ssl_validate_ocsp_response(const unsigned char *resp,
 
 int ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
     const unsigned char *resp, size_t resp_len, char **err);
+
+int ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err);
 ]]
 
 
@@ -280,6 +282,51 @@ function _M.set_ocsp_status_resp(data)
     -- rc == FFI_ERROR
 
     return nil, ffi_str(errmsg[0])
+end
+
+
+local function get_tls1_version()
+
+    local r = getfenv(0).__ngx_req
+    if not r then
+        return error("no request found")
+    end
+
+    local ver = C.ngx_http_lua_ffi_ssl_get_tls1_version(r, errmsg)
+
+    ver = tonumber(ver)
+
+    if ver >= 0 then
+        return ver
+    end
+
+    -- rc == FFI_ERROR
+
+    return nil, ffi_str(errmsg[0])
+end
+_M.get_tls1_version = get_tls1_version
+
+
+do
+    _M.SSL3_VERSION = 0x0300
+    _M.TLS1_VERSION = 0x0301
+    _M.TLS1_1_VERSION = 0x0302
+    _M.TLS1_2_VERSION = 0x0303
+
+    local map = {
+        [_M.SSL3_VERSION] = "SSLv3",
+        [_M.TLS1_VERSION] = "TLSv1",
+        [_M.TLS1_1_VERSION] = "TLSv1.1",
+        [_M.TLS1_2_VERSION] = "TLSv1.2",
+    }
+
+    function _M.get_tls1_version_str()
+        local ver, err = get_tls1_version()
+        if not ver then
+            return nil, err
+        end
+        return map[ver]
+    end
 end
 
 

@@ -382,6 +382,28 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 #ifndef NGX_LUA_NO_FFI_API
 
 int
+ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
+{
+    ngx_ssl_conn_t    *ssl_conn;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    dd("tls1 ver: %d", (int) TLS1_get_version(ssl_conn));
+
+    return (int) TLS1_get_version(ssl_conn);
+}
+
+
+int
 ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 {
     ngx_ssl_conn_t    *ssl_conn;

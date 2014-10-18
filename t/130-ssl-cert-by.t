@@ -3086,3 +3086,323 @@ ocsp status resp set ok: no status req,
 [alert]
 [emerg]
 
+
+
+=== TEST 31: tls version - SSLv3
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local ver, err = ssl.get_tls1_version_str(resp)
+            if not ver then
+                ngx.log(ngx.ERR, "failed to get TLS1 version: ", err)
+                return
+            end
+            ngx.log(ngx.WARN, "got TLS1 version: ", ver)
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_protocols SSLv3;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+    lua_ssl_protocols SSLv3;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+got TLS1 version: SSLv3,
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 32: tls version - TLSv1
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local ver, err = ssl.get_tls1_version_str(resp)
+            if not ver then
+                ngx.log(ngx.ERR, "failed to get TLS1 version: ", err)
+                return
+            end
+            ngx.log(ngx.WARN, "got TLS1 version: ", ver)
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_protocols TLSv1;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+    lua_ssl_protocols TLSv1;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+got TLS1 version: TLSv1,
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 33: tls version - TLSv1.1
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local ver, err = ssl.get_tls1_version_str(resp)
+            if not ver then
+                ngx.log(ngx.ERR, "failed to get TLS1 version: ", err)
+                return
+            end
+            ngx.log(ngx.WARN, "got TLS1 version: ", ver)
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_protocols TLSv1.1;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+    lua_ssl_protocols TLSv1.1;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+got TLS1 version: TLSv1.1,
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 34: tls version - TLSv1.2
+--- http_config
+    lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua '
+            local ssl = require "ngx.ssl"
+
+            local ver, err = ssl.get_tls1_version_str(resp)
+            if not ver then
+                ngx.log(ngx.ERR, "failed to get TLS1 version: ", err)
+                return
+            end
+            ngx.log(ngx.WARN, "got TLS1 version: ", ver)
+        ';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_protocols TLSv1.2;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+    lua_ssl_protocols TLSv1.2;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log
+got TLS1 version: TLSv1.2,
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
