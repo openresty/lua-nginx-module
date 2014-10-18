@@ -28,7 +28,6 @@ static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
 
 
 typedef struct {
-    ngx_event_t              sleep;
     unsigned                 done;  /* :1 */
 } ngx_http_lua_ssl_cert_ctx_t;
 
@@ -227,14 +226,6 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     cln->handler = ngx_http_lua_ssl_cert_done;
     cln->data = ssl_conn;
-
-#if 0
-    cctx->sleep.handler = ngx_http_lua_ssl_cert_done;
-    cctx->sleep.data = ssl_conn;
-    cctx->sleep.log = c->log;
-
-    ngx_add_timer(&cctx->sleep, 1000);
-#endif
 
     c->log->action = "loading SSL certificate by lua";
 
