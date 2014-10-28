@@ -569,10 +569,15 @@ ngx_http_lua_ngx_flush(lua_State *L)
     dd("wait:%d, rc:%d, buffered:0x%x", wait, (int) rc,
        r->connection->buffered);
 
-    if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED)) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua flush requires waiting: buffered 0x%uxd",
-                       (unsigned) r->connection->buffered);
+    wev = r->connection->write;
+
+    if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED
+                 || wev->delayed))
+    {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua flush requires waiting: buffered 0x%uxd, "
+                       "delayed:%d", (unsigned) r->connection->buffered,
+                       wev->delayed);
 
         coctx->flushing = 1;
         ctx->flushing_coros++;
@@ -585,14 +590,6 @@ ngx_http_lua_ngx_flush(lua_State *L)
             r->write_event_handler = ngx_http_core_run_phases;
         }
 
-        wev = r->connection->write;
-
-        if (wev->ready && wev->delayed) {
-            lua_pushnil(L);
-            lua_pushliteral(L, "delayed");
-            return 2;
-        }
-
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
         if (!wev->delayed) {
@@ -601,6 +598,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
         if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
             if (wev->timer_set) {
+                wev->delayed = 0;
                 ngx_del_timer(wev);
             }
 
