@@ -1710,6 +1710,7 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 #if 1
         if (wev->timer_set && !wev->delayed) {
             ngx_del_timer(wev);
+            wev->delayed = 0;
         }
 #endif
     }
