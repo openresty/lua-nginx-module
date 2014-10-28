@@ -1654,7 +1654,7 @@ attempt to call method 'sslhandshake' (a nil value)
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1728,7 +1728,7 @@ lua ssl server name:
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -1759,7 +1759,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -1834,7 +1834,7 @@ lua ssl server name: "test.com"
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -1957,7 +1957,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
 
-                sock:settimeout(2000)
+                sock:settimeout(3000)
 
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
@@ -2023,7 +2023,7 @@ lua ssl server name: "test.com"
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -2190,7 +2190,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2232,7 +2232,7 @@ lua ssl server name:
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -2261,7 +2261,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2306,7 +2306,7 @@ lua ssl server name:
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -2334,7 +2334,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
+            sock:settimeout(3000)
             for i = 1, 2 do
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
@@ -2383,7 +2383,7 @@ lua ssl server name:
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -2414,7 +2414,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2488,7 +2488,7 @@ $/
 SSL reused session
 [error]
 [alert]
---- timeout: 3
+--- timeout: 5
 
 
 
@@ -2519,7 +2519,7 @@ SSL reused session
         content_by_lua '
             do
                 local sock = ngx.socket.tcp()
-                sock:settimeout(2000)
+                sock:settimeout(3000)
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
@@ -2581,5 +2581,5 @@ lua ssl certificate verify error: (18: self signed certificate)
 --- no_error_log
 SSL reused session
 [alert]
---- timeout: 3
+--- timeout: 5
 
