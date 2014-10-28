@@ -744,6 +744,7 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
 ngx_int_t
 ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
+    int                          n;
     lua_State                   *vm;
     ngx_int_t                    rc;
     ngx_connection_t            *c;
@@ -752,11 +753,25 @@ ngx_http_lua_flush_resume_helper(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     ctx->cur_co_ctx->cleanup = NULL;
 
-    /* push the return value 1 */
-    lua_pushinteger(ctx->cur_co_ctx->co, 1);
+    /* push the return values */
+
+    if (c->timedout) {
+        lua_pushnil(ctx->cur_co_ctx->co);
+        lua_pushliteral(ctx->cur_co_ctx->co, "timeout");
+        n = 2;
+
+    } else if (c->error) {
+        lua_pushnil(ctx->cur_co_ctx->co);
+        lua_pushliteral(ctx->cur_co_ctx->co, "client aborted");
+        n = 2;
+
+    } else {
+        lua_pushinteger(ctx->cur_co_ctx->co, 1);
+        n = 1;
+    }
 
     vm = ngx_http_lua_get_lua_vm(r, ctx);
-    rc = ngx_http_lua_run_thread(vm, r, ctx, 1);
+    rc = ngx_http_lua_run_thread(vm, r, ctx, n);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua run thread returned %d", rc);

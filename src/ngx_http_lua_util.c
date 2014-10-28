@@ -1490,11 +1490,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                           "client timed out");
             c->timedout = 1;
 
-            if (ctx->entered_content_phase) {
-                ngx_http_lua_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
-            }
-
-            return NGX_HTTP_REQUEST_TIME_OUT;
+            goto flush_coros;
         }
 
         wev->timedout = 0;
@@ -1535,10 +1531,20 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
         rc = ngx_http_lua_flush_pending_output(r, ctx);
-        if (rc != NGX_OK) {
-            return rc;
+
+        dd("flush pending output returned %d, c->error: %d", (int) rc,
+           c->error);
+
+        if (rc != NGX_ERROR && rc != NGX_OK) {
+            goto useless;
         }
+
+        /* when rc == NGX_ERROR, c->error must be set */
     }
+
+flush_coros:
+
+    dd("ctx->flushing_coros: %d", (int) ctx->flushing_coros);
 
     if (ctx->flushing_coros) {
         return ngx_http_lua_process_flushing_coroutines(r, ctx);
@@ -1657,11 +1663,9 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 
     rc = ngx_http_lua_output_filter(r, NULL);
 
-    if (rc == NGX_ERROR || rc > NGX_OK) {
-        if (ctx->entered_content_phase) {
-            ngx_http_lua_finalize_request(r, rc);
-        }
+    dd("output filter returned %d", (int) rc);
 
+    if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
