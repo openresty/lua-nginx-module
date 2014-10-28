@@ -14,7 +14,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 55;
+plan tests => repeat_each() * 58;
 
 #no_diff();
 no_long_string();
@@ -488,4 +488,25 @@ GET /test
 --- ignore_response
 --- no_error_log
 [error]
+
+
+
+=== TEST 17: limit_rate
+--- config
+    location /test {
+        limit_rate 150;
+        content_by_lua '
+            for i = 1, 2 do
+                ngx.print(string.rep("a", 100))
+                ngx.flush(true)
+            end
+        ';
+    }
+--- request
+GET /test
+--- response_body eval
+"a" x 200
+--- no_error_log
+[error]
+--- timeout: 4
 
