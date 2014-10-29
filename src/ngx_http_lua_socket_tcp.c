@@ -1314,7 +1314,43 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
         }
     }
 
-    u->ssl_name = name;
+    dd("found sni name: %.*s %p", (int) name.len, name.data, name.data);
+
+    if (name.len == 0) {
+        u->ssl_name.len = 0;
+
+    } else {
+        if (u->ssl_name.data) {
+            /* buffer already allocated */
+
+            if (u->ssl_name.len >= name.len) {
+                /* reuse it */
+                ngx_memcpy(u->ssl_name.data, name.data, name.len);
+                u->ssl_name.len = name.len;
+
+            } else {
+                ngx_free(u->ssl_name.data);
+                goto new_ssl_name;
+            }
+
+        } else {
+
+new_ssl_name:
+
+            u->ssl_name.data = ngx_alloc(name.len, ngx_cycle->log);
+            if (u->ssl_name.data == NULL) {
+                u->ssl_name.len = 0;
+
+                lua_pushnil(L);
+                lua_pushliteral(L, "no memory");
+                return 2;
+            }
+
+            ngx_memcpy(u->ssl_name.data, name.data, name.len);
+            u->ssl_name.len = name.len;
+        }
+    }
+
     u->write_co_ctx = coctx;
 
     rc = ngx_ssl_handshake(c);
@@ -3312,6 +3348,12 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
     if (u->peer.free) {
         u->peer.free(&u->peer, u->peer.data, 0);
+    }
+
+    if (u->ssl_name.data) {
+        ngx_free(u->ssl_name.data);
+        u->ssl_name.data = NULL;
+        u->ssl_name.len = 0;
     }
 
     c = u->peer.connection;
