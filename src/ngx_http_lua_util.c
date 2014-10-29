@@ -1490,11 +1490,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
                           "client timed out");
             c->timedout = 1;
 
-            if (ctx->entered_content_phase) {
-                ngx_http_lua_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
-            }
-
-            return NGX_HTTP_REQUEST_TIME_OUT;
+            goto flush_coros;
         }
 
         wev->timedout = 0;
@@ -1535,10 +1531,20 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
 
     if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
         rc = ngx_http_lua_flush_pending_output(r, ctx);
-        if (rc != NGX_OK) {
-            return rc;
+
+        dd("flush pending output returned %d, c->error: %d", (int) rc,
+           c->error);
+
+        if (rc != NGX_ERROR && rc != NGX_OK) {
+            goto useless;
         }
+
+        /* when rc == NGX_ERROR, c->error must be set */
     }
+
+flush_coros:
+
+    dd("ctx->flushing_coros: %d", (int) ctx->flushing_coros);
 
     if (ctx->flushing_coros) {
         return ngx_http_lua_process_flushing_coroutines(r, ctx);
@@ -1657,11 +1663,9 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 
     rc = ngx_http_lua_output_filter(r, NULL);
 
-    if (rc == NGX_ERROR || rc > NGX_OK) {
-        if (ctx->entered_content_phase) {
-            ngx_http_lua_finalize_request(r, rc);
-        }
+    dd("output filter returned %d", (int) rc);
 
+    if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
@@ -1708,7 +1712,7 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 
     } else {
 #if 1
-        if (wev->timer_set) {
+        if (wev->timer_set && !wev->delayed) {
             ngx_del_timer(wev);
         }
 #endif
@@ -3969,15 +3973,23 @@ int
 ngx_http_lua_do_call(ngx_log_t *log, lua_State *L)
 {
     int                 status, base;
+#if (NGX_PCRE)
     ngx_pool_t         *old_pool;
+#endif
 
     base = lua_gettop(L);  /* function index */
     lua_pushcfunction(L, ngx_http_lua_traceback);  /* push traceback function */
     lua_insert(L, base);  /* put it under chunk and args */
 
+#if (NGX_PCRE)
     old_pool = ngx_http_lua_pcre_malloc_init(ngx_cycle->pool);
+#endif
+
     status = lua_pcall(L, 0, 0, base);
+
+#if (NGX_PCRE)
     ngx_http_lua_pcre_malloc_done(old_pool);
+#endif
 
     lua_remove(L, base);
 

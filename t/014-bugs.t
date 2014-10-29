@@ -784,7 +784,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 --- no_error_log
 [alert]
 --- error_log eval
-qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
+qr/send\(\) failed \(\d+: Connection refused\) while resolving/
 
 
 
@@ -860,6 +860,7 @@ GET /t
 --- response_body_like: An example for a vimrc file
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
