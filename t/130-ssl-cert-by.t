@@ -3861,3 +3861,72 @@ should never reached here
 [alert]
 [emerg]
 
+
+
+=== TEST 41: get phase
+--- http_config
+    lua_package_path "lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua 'print("get_phase: ", ngx.get_phase())';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end
+            collectgarbage()
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+
+--- error_log
+lua ssl server name: "test.com"
+get_phase: ssl_cert
+
+--- no_error_log
+[error]
+[alert]
+
