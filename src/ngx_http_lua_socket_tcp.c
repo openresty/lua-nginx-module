@@ -3350,11 +3350,13 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->peer.free(&u->peer, u->peer.data, 0);
     }
 
+#if (NGX_HTTP_SSL)
     if (u->ssl_name.data) {
         ngx_free(u->ssl_name.data);
         u->ssl_name.data = NULL;
         u->ssl_name.len = 0;
     }
+#endif
 
     c = u->peer.connection;
     if (c) {
