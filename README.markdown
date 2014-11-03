@@ -743,6 +743,8 @@ Due the internal limitations in the nginx core, the cosocket API are disabled in
 
 The cosockets are currently also disabled in the [init_by_lua*](#init_by_lua) and [init_worker_by_lua*](#init_worker_by_lua) directive contexts but we may add support for these contexts in the future because there is no limitation in the nginx core (or the limitation might be worked around).
 
+There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a 0-delay timer via the [ngx.timer.at](#ngxtimerat) API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
+
 [Back to TOC](#table-of-contents)
 
 Special PCRE Sequences
@@ -6169,6 +6171,8 @@ Note that the cosocket connection pool is per Nginx worker process rather than p
 Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
 
 In case of success, this method returns `1`; otherwise, it returns `nil` and a string describing the error.
+
+When the system receive buffer for the current connection has unread data, then this method will return the "connection in dubious state" error message (as the second return value) because the previous session has unread data left behind for the next session and the connection is not safe to be reused.
 
 This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [close](#tcpsockclose) method on it afterwards.
 
