@@ -1100,6 +1100,8 @@ error:
         BIO_free(bio);
     }
 
+    ERR_clear_error();
+
     return NGX_ERROR;
 }
 
