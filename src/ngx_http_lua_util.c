@@ -570,6 +570,7 @@ static ngx_int_t
 ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
     ngx_int_t            rc;
+    ngx_http_lua_ctx_t  *ctx;
     ngx_http_request_t  *ar; /* active request */
 
     ar = r->connection->data;
@@ -584,7 +585,23 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return rc;
     }
 
-    return ngx_http_output_filter(r, in);
+    rc = ngx_http_output_filter(r, in);
+
+    if (rc == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+#if nginx_version >= 1001004
+    ngx_chain_update_chains(r->pool,
+#else
+    ngx_chain_update_chains(
+#endif
+                            &ctx->free_bufs, &ctx->busy_bufs, &in,
+                            (ngx_buf_tag_t) &ngx_http_lua_module);
+
+    return rc;
 }
 
 
@@ -1661,29 +1678,22 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
                    "lua flushing output: buffered 0x%uxd",
                    c->buffered);
 
-    rc = ngx_http_lua_output_filter(r, NULL);
+    if (ctx->busy_bufs) {
+        rc = ngx_http_lua_output_filter(r, NULL);
+
+    } else {
+        cl = ngx_http_lua_get_flush_chain(r, ctx);
+        if (cl == NULL) {
+            return NGX_ERROR;
+        }
+
+        rc = ngx_http_lua_output_filter(r, cl);
+    }
 
     dd("output filter returned %d", (int) rc);
 
     if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
-    }
-
-    if (ctx->busy_bufs) {
-        cl = NULL;
-
-        dd("updating chains...");
-
-#if nginx_version >= 1001004
-        ngx_chain_update_chains(r->pool,
-#else
-        ngx_chain_update_chains(
-#endif
-                                &ctx->free_bufs, &ctx->busy_bufs, &cl,
-                                (ngx_buf_tag_t) &ngx_http_lua_module);
-
-        dd("update lua buf tag: %p, buffered: %x, busy bufs: %p",
-            &ngx_http_lua_module, (int) c->buffered, ctx->busy_bufs);
     }
 
     if (c->buffered & NGX_HTTP_LOWLEVEL_BUFFERED) {
@@ -2684,7 +2694,7 @@ ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
         b = cl->buf;
         start = b->start;
         end = b->end;
-        if ((size_t) (end - start) >= len) {
+        if (start && (size_t) (end - start) >= len) {
             ngx_log_debug4(NGX_LOG_DEBUG_HTTP, log, 0,
                            "lua reuse free buf memory %O >= %uz, cl:%p, p:%p",
                            (off_t) (end - start), len, cl, start);
