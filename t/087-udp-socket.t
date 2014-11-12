@@ -262,8 +262,8 @@ M(http-lua-info) {
 --- request
 GET /main
 --- response_body_like: \b500\b
---- error_log
-content_by_lua:8: bad request
+--- error_log eval
+qr/content_by_lua\(nginx\.conf:\d+\):8: bad request/
 
 
 
@@ -327,8 +327,8 @@ end
 --- request
 GET /main
 --- response_body_like: \b500\b
---- error_log
-content_by_lua:6: bad request
+--- error_log eval
+qr/content_by_lua\(nginx\.conf:\d+\):6: bad request/
 
 
 
@@ -868,8 +868,9 @@ GET /main
 qr/^peer set
 <html.*?500 Internal Server Error/ms
 
---- error_log
-runtime error: content_by_lua:14: bad request
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
 --- no_error_log
 [alert]
 
@@ -924,8 +925,9 @@ GET /main
 qr/^peer set
 <html.*?500 Internal Server Error/ms
 
---- error_log
-runtime error: content_by_lua:14: bad request
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
 --- no_error_log
 [alert]
 
@@ -980,8 +982,9 @@ GET /main
 qr/^peer set
 <html.*?500 Internal Server Error/ms
 
---- error_log
-runtime error: content_by_lua:14: bad request
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
 --- no_error_log
 [alert]
 
@@ -1036,8 +1039,9 @@ GET /main
 qr/^peer set
 <html.*?500 Internal Server Error/ms
 
---- error_log
-runtime error: content_by_lua:14: bad request
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
 --- no_error_log
 [alert]
 
@@ -1092,8 +1096,9 @@ GET /main
 qr/^peer set
 <html.*?500 Internal Server Error/ms
 
---- error_log
-runtime error: content_by_lua:14: bad request
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
 --- no_error_log
 [alert]
 

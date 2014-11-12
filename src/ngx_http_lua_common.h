@@ -189,18 +189,21 @@ typedef struct {
 
     ngx_http_output_body_filter_pt         body_filter_handler;
 
+    u_char                  *rewrite_chunkname;
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
                                                 inline script/script
                                                 file path */
 
     u_char                 *rewrite_src_key; /* cached key for rewrite_src */
 
+    u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua
                                                 inline script/script
                                                 file path */
 
     u_char                  *access_src_key; /* cached key for access_src */
 
+    u_char                  *content_chunkname;
     ngx_http_complex_value_t content_src;    /*  content_by_lua
                                                 inline script/script
                                                 file path */
@@ -208,6 +211,7 @@ typedef struct {
     u_char                 *content_src_key; /* cached key for content_src */
 
 
+    u_char                      *log_chunkname;
     ngx_http_complex_value_t     log_src;     /* log_by_lua inline script/script
                                                  file path */
 
