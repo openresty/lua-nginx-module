@@ -76,8 +76,8 @@ Yay! 123
 GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-content_by_lua(nginx.conf:39):1: attempt to call field 'echo' (a nil value)
+--- error_log eval
+qr/content_by_lua\(nginx\.conf:\d+\):1: attempt to call field 'echo' \(a nil value\)/
 
 
 
