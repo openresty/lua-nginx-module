@@ -1299,8 +1299,10 @@ ngx_http_lua_socket_udp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
-    ctx = c->log->data;
-    ctx->current_request = r;
+    if (c->fd != -1) {  /* not a fake connection */
+        ctx = c->log->data;
+        ctx->current_request = r;
+    }
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua udp socket handler for \"%V?%V\", wev %d", &r->uri,

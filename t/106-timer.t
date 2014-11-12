@@ -69,7 +69,7 @@ timer prematurely expired: true
 
 --- error_log eval
 [
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer/,
+qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "timer prematurely expired: false",
@@ -1482,10 +1482,12 @@ registered timer
 [alert]
 [crit]
 
---- error_log
-lua ngx.timer expired
-http lua close fake http connection
-trace: [m][f][g]
+--- error_log eval
+[
+'lua ngx.timer expired',
+'http lua close fake http connection',
+qr/trace: \[m\]\[f\]\[g\], context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
+]
 
 
 
