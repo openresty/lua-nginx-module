@@ -207,7 +207,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_destroy_pool(conf.temp_pool);
     conf.temp_pool = NULL;
 
-    c = ngx_http_lua_create_fake_connection();
+    c = ngx_http_lua_create_fake_connection(NULL);
     if (c == NULL) {
         goto failed;
     }
@@ -261,7 +261,6 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     (void) lmcf->init_worker_handler(cycle->log, lmcf, lmcf->lua);
 
-    ngx_destroy_pool(r->pool);
     ngx_destroy_pool(c->pool);
     return NGX_OK;
 
@@ -269,10 +268,6 @@ failed:
 
     if (conf.temp_pool) {
         ngx_destroy_pool(conf.temp_pool);
-    }
-
-    if (r && r->pool) {
-        ngx_destroy_pool(r->pool);
     }
 
     if (c) {

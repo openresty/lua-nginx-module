@@ -578,7 +578,7 @@ second line received: Server: openresty
 timer created
 failed to connect: connection refused
 --- error_log eval
-qr/connect\(\) failed \(\d+: Connection refused\)/
+qr/connect\(\) failed \(\d+: Connection refused\), context: ngx\.timer$/
 
 
 

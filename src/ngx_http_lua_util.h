@@ -220,7 +220,7 @@ void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
 
 void ngx_http_lua_cleanup_vm(void *data);
 
-ngx_connection_t * ngx_http_lua_create_fake_connection(void);
+ngx_connection_t * ngx_http_lua_create_fake_connection(ngx_pool_t *pool);
 
 ngx_http_request_t * ngx_http_lua_create_fake_request(ngx_connection_t *c);
 
