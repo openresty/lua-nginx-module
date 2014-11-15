@@ -789,7 +789,6 @@ qr/send\(\) failed \(\d+: Connection refused\) while resolving/
 
 
 === TEST 35: github issue #218: ngx.location.capture hangs when querying a remote host that does not exist or is really slow to respond
---- ONLY
 --- config
     set $myurl "https://not-exist.agentzh.org";
     location /toto {
