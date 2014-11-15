@@ -22,6 +22,7 @@
 
 
 static void ngx_http_lua_ssl_cert_done(void *data);
+static void ngx_http_lua_ssl_cert_aborted(void *data);
 static u_char * ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
@@ -203,6 +204,8 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     }
 
     cctx->exit_code = 1;  /* successful by default */
+    cctx->connection = c;
+    cctx->request = r;
 
     dd("setting cctx");
 
@@ -236,7 +239,15 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     }
 
     cln->handler = ngx_http_lua_ssl_cert_done;
-    cln->data = ssl_conn;
+    cln->data = cctx;
+
+    cln = ngx_pool_cleanup_add(c->pool, 0);
+    if (cln == NULL) {
+        goto failed;
+    }
+
+    cln->handler = ngx_http_lua_ssl_cert_aborted;
+    cln->data = cctx;
 
     return -1;
 
@@ -259,23 +270,46 @@ failed:
 static void
 ngx_http_lua_ssl_cert_done(void *data)
 {
-    ngx_ssl_conn_t                  *ssl_conn = data;
     ngx_connection_t                *c;
-    ngx_http_lua_ssl_cert_ctx_t     *cctx;
+    ngx_http_lua_ssl_cert_ctx_t     *cctx = data;
 
     dd("lua ssl cert done");
 
-    c = ngx_ssl_get_connection(ssl_conn);
-
-    cctx = c->ssl->lua_ctx;
-    if (cctx == NULL) {
+    if (cctx->aborted) {
         return;
     }
 
+    ngx_http_lua_assert(cctx->done == 0);
+
     cctx->done = 1;
 
+    c = cctx->connection;
+
     c->log->action = "SSL handshaking";
+
     ngx_post_event(c->write, &ngx_posted_events);
+}
+
+
+static void
+ngx_http_lua_ssl_cert_aborted(void *data)
+{
+    ngx_http_lua_ssl_cert_ctx_t     *cctx = data;
+
+    dd("lua ssl cert done");
+
+    if (cctx->done) {
+        /* completed successfully already */
+        return;
+    }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cctx->connection->log, 0,
+                   "lua_certificate_by_lua: cert cb aborted");
+
+    cctx->aborted = 1;
+    cctx->request->connection->ssl = NULL;
+
+    ngx_http_lua_finalize_fake_request(cctx->request, NGX_ERROR);
 }
 
 

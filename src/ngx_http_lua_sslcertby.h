@@ -12,9 +12,12 @@
 
 
 typedef struct {
+    ngx_connection_t        *connection; /* original true connection */
+    ngx_http_request_t      *request;    /* fake request */
     int                      exit_code;  /* exit code for openssl's
                                             set_cert_cb callback */
-    unsigned                 done;  /* :1 */
+    unsigned                 done;       /* :1 */
+    unsigned                 aborted;    /* :1 */
 } ngx_http_lua_ssl_cert_ctx_t;
 
 
