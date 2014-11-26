@@ -178,7 +178,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     hc = c->data;
 
-    fc = ngx_http_lua_create_fake_connection();
+    fc = ngx_http_lua_create_fake_connection(NULL);
     if (fc == NULL) {
         goto failed;
     }
