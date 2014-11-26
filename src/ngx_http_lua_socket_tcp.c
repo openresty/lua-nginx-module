@@ -2705,10 +2705,10 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
-    dd("lua tcp socket handler: request: %p", r);
-
-    ctx = c->log->data;
-    ctx->current_request = r;
+    if (c->fd != -1) {  /* not a fake connection */
+        ctx = c->log->data;
+        ctx->current_request = r;
+    }
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua tcp socket handler for \"%V?%V\", wev %d", &r->uri,
@@ -3370,11 +3370,13 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->peer.free(&u->peer, u->peer.data, 0);
     }
 
+#if (NGX_HTTP_SSL)
     if (u->ssl_name.data) {
         ngx_free(u->ssl_name.data);
         u->ssl_name.data = NULL;
         u->ssl_name.len = 0;
     }
+#endif
 
     c = u->peer.connection;
     if (c) {

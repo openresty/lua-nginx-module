@@ -59,7 +59,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.12](https://github.com/openresty/lua-nginx-module/tags) released on 2 September 2014.
+This document describes ngx_lua [v0.9.13](https://github.com/openresty/lua-nginx-module/tags) released on 21 November 2014.
 
 Synopsis
 ========
@@ -292,7 +292,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.7.x (last tested: 1.7.4)
+* 1.7.x (last tested: 1.7.7)
 * 1.6.x
 * 1.5.x (last tested: 1.5.12)
 * 1.4.x (last tested: 1.4.4)
@@ -321,9 +321,9 @@ Build the source with this module:
 
 ```bash
 
-wget 'http://nginx.org/download/nginx-1.7.4.tar.gz'
-tar -xzvf nginx-1.7.4.tar.gz
-cd nginx-1.7.4/
+wget 'http://nginx.org/download/nginx-1.7.7.tar.gz'
+tar -xzvf nginx-1.7.7.tar.gz
+cd nginx-1.7.7/
 
 # tell nginx's build system where to find LuaJIT 2.0:
 export LUAJIT_LIB=/path/to/luajit/lib
@@ -742,6 +742,8 @@ Cocockets Not Available Everywhere
 Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [set_by_lua*](#set_by_lua), [log_by_lua*](#log_by_lua), [header_filter_by_lua*](#header_filter_by_lua), and [body_filter_by_lua](#body_filter_by_lua).
 
 The cosockets are currently also disabled in the [init_by_lua*](#init_by_lua) and [init_worker_by_lua*](#init_worker_by_lua) directive contexts but we may add support for these contexts in the future because there is no limitation in the nginx core (or the limitation might be worked around).
+
+There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a 0-delay timer via the [ngx.timer.at](#ngxtimerat) API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
 
 [Back to TOC](#table-of-contents)
 
@@ -6169,6 +6171,8 @@ Note that the cosocket connection pool is per Nginx worker process rather than p
 Idle connections in the pool will be monitored for any exceptional events like connection abortion or unexpected incoming data on the line, in which cases the connection in question will be closed and removed from the pool.
 
 In case of success, this method returns `1`; otherwise, it returns `nil` and a string describing the error.
+
+When the system receive buffer for the current connection has unread data, then this method will return the "connection in dubious state" error message (as the second return value) because the previous session has unread data left behind for the next session and the connection is not safe to be reused.
 
 This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [close](#tcpsockclose) method on it afterwards.
 

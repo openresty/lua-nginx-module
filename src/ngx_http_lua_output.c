@@ -232,20 +232,6 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     dd("downstream write: %d, buf len: %d", (int) rc,
        (int) (b->last - b->pos));
 
-    if (!ctx->out) {
-#if nginx_version >= 1001004
-        ngx_chain_update_chains(r->pool,
-#else
-        ngx_chain_update_chains(
-#endif
-                                &ctx->free_bufs, &ctx->busy_bufs, &cl,
-                                (ngx_buf_tag_t) &ngx_http_lua_module);
-
-        dd("out lua buf tag: %p, buffered: 0x%x, busy bufs: %p",
-           &ngx_http_lua_module, (int) r->connection->buffered,
-           ctx->busy_bufs);
-    }
-
     lua_pushinteger(L, 1);
     return 1;
 }
@@ -461,7 +447,6 @@ ngx_http_lua_ngx_flush(lua_State *L)
 {
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_buf_t                   *buf;
     ngx_chain_t                 *cl;
     ngx_int_t                    rc;
     int                          n;
@@ -532,28 +517,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 #endif
 
-    if (ctx->flush_buf) {
-        cl = ctx->flush_buf;
-
-    } else {
-        dd("allocating new flush buf");
-        buf = ngx_calloc_buf(r->pool);
-        if (buf == NULL) {
-            return luaL_error(L, "no memory");
-        }
-
-        buf->flush = 1;
-
-        dd("allocating new flush chain");
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
-            return luaL_error(L, "no memory");
-        }
-
-        cl->next = NULL;
-        cl->buf = buf;
-
-        ctx->flush_buf = cl;
+    cl = ngx_http_lua_get_flush_chain(r, ctx);
+    if (cl == NULL) {
+        return luaL_error(L, "no memory");
     }
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
