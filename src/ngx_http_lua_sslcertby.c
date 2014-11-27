@@ -184,6 +184,10 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     }
 
     fc->log->handler = ngx_http_lua_log_ssl_cert_error;
+    fc->log->data = fc;
+
+    fc->addr_text = c->addr_text;
+    fc->listening = c->listening;
 
     r = ngx_http_lua_create_fake_request(fc);
     if (r == NULL) {
@@ -317,6 +321,7 @@ static u_char *
 ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
 {
     u_char              *p;
+    ngx_connection_t    *c;
 
     if (log->action) {
         p = ngx_snprintf(buf, len, " while %s", log->action);
@@ -324,7 +329,25 @@ ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
         buf = p;
     }
 
-    return ngx_snprintf(buf, len, ", context: ssl_certificate_by_lua*");
+    p = ngx_snprintf(buf, len, ", context: ssl_certificate_by_lua*");
+    len -= p - buf;
+    buf = p;
+
+    c = log->data;
+
+    if (c->addr_text.len) {
+        p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
+        len -= p - buf;
+        buf = p;
+    }
+
+    if (c && c->listening && c->listening->addr_text.len) {
+        p = ngx_snprintf(buf, len, ", server: %V", &c->listening->addr_text);
+        /* len -= p - buf; */
+        buf = p;
+    }
+
+    return buf;
 }
 
 
