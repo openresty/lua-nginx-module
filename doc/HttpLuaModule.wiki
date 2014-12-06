@@ -2027,7 +2027,8 @@ For example:
 That is, nginx variables cannot be created on-the-fly.
 
 Some special nginx variables like <code>$args</code> and <code>$limit_rate</code> can be assigned a value,
-some are not, like <code>$arg_PARAMETER</code>.
+some cannot, like <code>$arg_PARAMETER</code>, and most variables prefixed with <code>http_</code>, even if
+they are user-defined.
 
 Nginx regex group capturing variables <code>$1</code>, <code>$2</code>, <code>$3</code>, and etc, can be read by this
 interface as well, by writing <code>ngx.var[1]</code>, <code>ngx.var[2]</code>, <code>ngx.var[3]</code>, and etc.
