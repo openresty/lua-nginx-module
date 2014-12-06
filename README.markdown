@@ -2550,7 +2550,7 @@ For example:
 That is, nginx variables cannot be created on-the-fly.
 
 Some special nginx variables like `$args` and `$limit_rate` can be assigned a value,
-some are not, like `$arg_PARAMETER`.
+many others are not, like `$query_string`, `$arg_PARAMETER`, and `$http_NAME`.
 
 Nginx regex group capturing variables `$1`, `$2`, `$3`, and etc, can be read by this
 interface as well, by writing `ngx.var[1]`, `ngx.var[2]`, `ngx.var[3]`, and etc.
