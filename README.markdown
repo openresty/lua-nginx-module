@@ -899,6 +899,8 @@ TODO
 * cosocket: add support in the context of [init_by_lua*](#init_by_lua).
 * cosocket: implement the `bind()` method for stream-typed cosockets.
 * cosocket: pool-based backend concurrency level control: implement automatic `connect` queueing when the backend concurrency exceeds its connection pool limit.
+* cosocket: review and merge aviramc's [patch](https://github.com/openresty/lua-nginx-module/pull/290) for adding the `bsdrecv` method.
+* add new API function `ngx.resp.add_header` to emulate the standard `add_header` config directive.
 * [ngx.re](#ngxrematch) API: use `false` instead of `nil` in the resulting match table to indicate non-existent submatch captures, such that we can avoid "holes" in the array table.
 * review and apply Jader H. Silva's patch for `ngx.re.split()`.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
