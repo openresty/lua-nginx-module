@@ -1850,11 +1850,12 @@ exec:
 
     } else {
         if (offset < (int) subj.len) {
-            dd("adding trailer: %s (len %d)", &subj.data[offset],
-               (int) (subj.len - offset));
+            dd("adding trailer: %s (len %d)", &subj.data[cp_offset],
+               (int) (subj.len - cp_offset));
 
-            luaL_addlstring(&luabuf, (char *) &subj.data[offset],
-                            subj.len - offset);
+
+            luaL_addlstring(&luabuf, (char *) &subj.data[cp_offset],
+                            subj.len - cp_offset);
         }
 
         luaL_pushresult(&luabuf);
