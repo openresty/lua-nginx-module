@@ -573,3 +573,39 @@ ngx.say("gsub: ", cnt)
 gsub: 0
 --- timeout: 10
 
+
+
+=== TEST 25: bug: gsub incorrectly swallowed a character is the first character
+Original bad result: estCase
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("TestCase", "^ *", "", "o")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+TestCase
+
+
+
+=== TEST 26: bug: gsub incorrectly swallowed a character is not the first character
+Original bad result: .b.d
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("abcd", "a|(?=c)", ".")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+.b.cd
+
