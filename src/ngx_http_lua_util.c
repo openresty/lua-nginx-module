@@ -81,7 +81,7 @@ ngx_uint_t  ngx_http_lua_content_length_hash = 0;
 static ngx_int_t ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static void ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log);
-static void ngx_http_lua_init_globals(lua_State *L,
+static void ngx_http_lua_init_globals(lua_State *L, ngx_cycle_t *cycle,
     ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
     const char *fieldname, const char *path, const char *default_path,
@@ -294,7 +294,7 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
     lua_pop(L, 1); /* remove the "package" table */
 
     ngx_http_lua_init_registry(L, log);
-    ngx_http_lua_init_globals(L, lmcf, log);
+    ngx_http_lua_init_globals(L, cycle, lmcf, log);
 
     return L;
 }
@@ -683,11 +683,14 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
 
 
 static void
-ngx_http_lua_init_globals(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
-    ngx_log_t *log)
+ngx_http_lua_init_globals(lua_State *L, ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0,
                    "lua initializing lua globals");
+
+    lua_pushlightuserdata(L, cycle);
+    lua_setglobal(L, "__ngx_cycle");
 
 #if defined(NDK) && NDK
     ngx_http_lua_inject_ndk_api(L);
