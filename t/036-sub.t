@@ -651,3 +651,39 @@ ngx.say("sub: ", cnt)
 --- response_body
 sub: 0
 
+
+
+=== TEST 25: bug: sub incorrectly swallowed a character is the first character
+Original bad result: estCase
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("TestCase", "^ *", "", "o")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+TestCase
+
+
+
+=== TEST 26: bug: sub incorrectly swallowed a character is not the first character
+Original bad result: .b.d
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.sub("abcd", "(?=c)", ".")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+ab.cd
+
