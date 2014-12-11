@@ -37,11 +37,6 @@ typedef struct {
 } ngx_http_lua_timer_ctx_t;
 
 
-typedef struct {
-    ngx_connection_t        *connection;
-} ngx_http_lua_timer_log_ctx_t;
-
-
 static int ngx_http_lua_ngx_timer_at(lua_State *L);
 static void ngx_http_lua_timer_handler(ngx_event_t *ev);
 static u_char * ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf,
@@ -306,7 +301,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     ngx_http_lua_timer_ctx_t         tctx;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_core_loc_conf_t        *clcf;
-    ngx_http_lua_timer_log_ctx_t    *logctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua ngx.timer expired");
@@ -331,15 +325,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto failed;
     }
 
-    logctx = ngx_palloc(c->pool, sizeof(ngx_http_lua_timer_log_ctx_t));
-    if (logctx == NULL) {
-        goto failed;
-    }
-
-    logctx->connection = c;
-
     c->log->handler = ngx_http_lua_log_timer_error;
-    c->log->data = logctx;
+    c->log->data = c;
 
     c->listening = tctx.listening;
     c->addr_text = tctx.client_addr_text;
@@ -476,23 +463,19 @@ ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf, size_t len)
     u_char              *p;
     ngx_connection_t    *c;
 
-    ngx_http_lua_timer_log_ctx_t  *ctx;
-
     if (log->action) {
         p = ngx_snprintf(buf, len, " while %s", log->action);
         len -= p - buf;
         buf = p;
     }
 
-    ctx = log->data;
+    c = log->data;
 
     dd("ctx = %p", ctx);
 
     p = ngx_snprintf(buf, len, ", context: ngx.timer");
     len -= p - buf;
     buf = p;
-
-    c = ctx->connection;
 
     if (c->addr_text.len) {
         p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
