@@ -64,7 +64,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     lua_State               *vm;  /* the main thread */
     lua_State               *co;
     ngx_msec_t               delay;
-    ngx_event_t             *ev;
+    ngx_event_t             *ev = NULL;
     ngx_http_request_t      *r;
     ngx_connection_t        *saved_c = NULL;
     ngx_http_lua_ctx_t      *ctx;
@@ -276,6 +276,10 @@ nomem:
 
     if (tctx && tctx->pool) {
         ngx_destroy_pool(tctx->pool);
+    }
+
+    if (ev) {
+        ngx_free(ev);
     }
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
