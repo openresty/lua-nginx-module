@@ -471,7 +471,7 @@ ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf, size_t len)
 
     c = log->data;
 
-    dd("ctx = %p", ctx);
+    dd("ctx = %p", c);
 
     p = ngx_snprintf(buf, len, ", context: ngx.timer");
     len -= p - buf;
