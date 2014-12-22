@@ -9,7 +9,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 14);
+plan tests => repeat_each() * (blocks() * 2 + 16);
 
 #no_diff();
 no_long_string();
@@ -608,4 +608,70 @@ Original bad result: .b.d
     GET /re
 --- response_body
 .b.cd
+
+
+
+=== TEST 27: use of ngx.req.get_headers in the user callback
+--- config
+
+location = /t {
+    content_by_lua '
+        local data = [[
+            INNER
+            INNER
+]]
+
+        -- ngx.say(data)
+
+        local res =  ngx.re.gsub(data, "INNER", function(inner_matches)
+            local header = ngx.req.get_headers()["Host"]
+            -- local header = ngx.var["http_HEADER"]
+            return "INNER_REPLACED"
+        end, "s")
+
+        ngx.print(res)
+    ';
+}
+
+--- request
+GET /t
+--- response_body
+            INNER_REPLACED
+            INNER_REPLACED
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 28: use of ngx.var in the user callback
+--- config
+
+location = /t {
+    content_by_lua '
+        local data = [[
+            INNER
+            INNER
+]]
+
+        -- ngx.say(data)
+
+        local res =  ngx.re.gsub(data, "INNER", function(inner_matches)
+            -- local header = ngx.req.get_headers()["Host"]
+            local header = ngx.var["http_HEADER"]
+            return "INNER_REPLACED"
+        end, "s")
+
+        ngx.print(res)
+    ';
+}
+
+--- request
+GET /t
+--- response_body
+            INNER_REPLACED
+            INNER_REPLACED
+
+--- no_error_log
+[error]
 
