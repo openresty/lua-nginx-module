@@ -653,7 +653,7 @@ sub: 0
 
 
 
-=== TEST 25: bug: sub incorrectly swallowed a character is the first character
+=== TEST 30: bug: sub incorrectly swallowed a character is the first character
 Original bad result: estCase
 --- config
     location /re {
@@ -671,7 +671,7 @@ TestCase
 
 
 
-=== TEST 26: bug: sub incorrectly swallowed a character is not the first character
+=== TEST 31: bug: sub incorrectly swallowed a character is not the first character
 Original bad result: .b.d
 --- config
     location /re {
