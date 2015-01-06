@@ -285,7 +285,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
 
                 case 26:
                     *dst++ = '\\';
-                    *dst++ = 'z';
+                    *dst++ = 'Z';
                     break;
 
                 case '\\':
