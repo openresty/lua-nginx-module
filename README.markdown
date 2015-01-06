@@ -3887,7 +3887,7 @@ Set the current request's request header named `header_name` to value `header_va
 
 By default, all the subrequests subsequently initiated by [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) will inherit the new header.
 
-Here is an example of setting the `Content-Length` header:
+Here is an example of setting the `Content-Type` header:
 
 ```lua
 
