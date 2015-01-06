@@ -238,7 +238,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
                     case '\n':
                     case '\r':
                     case '\t':
-                    case 26:  /* \z */
+                    case 26:  /* \Z */
                     case '\\':
                     case '\'':
                     case '"':
@@ -285,7 +285,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
 
                 case 26:
                     *dst++ = '\\';
-                    *dst++ = 'z';
+                    *dst++ = 'Z';
                     break;
 
                 case '\\':
