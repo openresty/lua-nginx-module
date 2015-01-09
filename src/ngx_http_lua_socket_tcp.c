@@ -4335,7 +4335,8 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 }
 
 
-static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
+static int
+ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
     ngx_http_lua_loc_conf_t             *llcf;
     ngx_http_lua_socket_tcp_upstream_t  *u;
@@ -4380,12 +4381,18 @@ static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
+    if (u == NULL) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
     /* stack: obj cache key */
 
     pc = &u->peer;
     c = pc->connection;
 
-    if (u == NULL || pc == NULL || u->read_closed || u->write_closed) {
+    if (c == NULL || u->read_closed || u->write_closed) {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
