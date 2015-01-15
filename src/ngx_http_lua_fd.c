@@ -12,6 +12,7 @@
 
 #include <math.h> /* HUGE_VAL */
 #include <stdlib.h> /* calloc, free */
+#include <poll.h> /* POLLIN, POLLOUT */
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -99,14 +100,23 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
 #endif
 #if defined(nginx_version) && nginx_version >= 1007005
         if (u->conn->read->posted) {
-#else
-        if (u->conn->read->prev) {
-#endif
             ngx_delete_posted_event(u->conn->read);
         }
+        if (u->conn->write->posted) {
+            ngx_delete_posted_event(u->conn->write);
+        }
+#else
+        if (u->conn->read->prev) {
+            ngx_delete_posted_event(u->conn->read);
+        }
+        if (u->conn->write->prev) {
+            ngx_delete_posted_event(u->conn->write);
+        }
+#endif
 #if (NGX_THREADS)
         ngx_unlock(&u->conn->lock);
         u->conn->read->locked = 0;
+        u->conn->write->locked = 0;
 
         ngx_mutex_unlock(ngx_posted_events_mutex);
 #endif
@@ -131,8 +141,17 @@ static int ngx_http_lua_fd_wait(lua_State *L) {
     ngx_http_lua_udata_t *u;
 
     ngx_socket_t fd = luaL_optint(L, 1, -1); /* -1 is invalid fd */
-    double timeout = luaL_optnumber(L, 2, HUGE_VAL); /* default to infinite timeout */
-    if (fd < 0 && timeout == HUGE_VAL) {
+    const char *events = luaL_optstring(L, 2, "");
+    int poll_mask = 0;
+    double timeout = luaL_optnumber(L, 3, HUGE_VAL); /* default to infinite timeout */
+    while (*events) {
+        if (*events == 'r')
+            poll_mask |= POLLIN;
+        else if (*events == 'w')
+            poll_mask |= POLLOUT;
+        events++;
+    }
+    if ((fd < 0 || !poll_mask) && timeout == HUGE_VAL) {
         return luaL_error(L, "must provide a valid file descriptor or timeout");
     }
     if ((r = ngx_http_lua_get_req(L)) == NULL) {
@@ -157,10 +176,18 @@ static int ngx_http_lua_fd_wait(lua_State *L) {
     u->conn->data = u;
     u->conn->read->handler = ngx_http_lua_fd_rev_handler;
     u->conn->read->log = u->conn->log;
+    u->conn->write->handler = ngx_http_lua_fd_rev_handler;
+    u->conn->write->log = u->conn->log;
     u->conn->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
 
     if (fd >= 0) {
-        if (ngx_handle_read_event(u->conn->read, NGX_LEVEL_EVENT) != NGX_OK) {
+        if ((poll_mask & POLLIN) && ngx_handle_read_event(u->conn->read, NGX_LEVEL_EVENT) != NGX_OK) {
+            ngx_free_connection(u->conn);
+            free(u);
+            return luaL_error(L, "unable to add to nginx main loop");
+        }
+        if ((poll_mask & POLLOUT) && ngx_handle_write_event(u->conn->write, NGX_LEVEL_EVENT) != NGX_OK) {
+            if (poll_mask & POLLIN) ngx_del_event(u->conn->read, NGX_READ_EVENT, 0);
             ngx_free_connection(u->conn);
             free(u);
             return luaL_error(L, "unable to add to nginx main loop");
