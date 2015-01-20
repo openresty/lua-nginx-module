@@ -773,7 +773,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
     location /t {
         set $myserver nginx.org;
         proxy_pass http://$myserver/;
-        resolver 127.0.0.1;
+        resolver 127.0.0.1:6789;
     }
 --- request
     GET /t

@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 172;
+plan tests => repeat_each() * 175;
 
 our $HtmlDir = html_dir;
 
@@ -3299,4 +3299,48 @@ failed to receive a line: closed []
 close: 1 nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 55: kill a thread with a connecting socket
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 1s;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 3s;
+    location /t {
+        content_by_lua '
+            local sock
+
+            local thr = ngx.thread.spawn(function ()
+                sock = ngx.socket.tcp()
+                local ok, err = sock:connect("agentzh.org", 12345)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+            end)
+
+            ngx.sleep(0.002)
+            ngx.thread.kill(thr)
+            ngx.sleep(0.001)
+
+            local ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to setkeepalive: ", err)
+            else
+                ngx.say("setkeepalive: ", ok)
+            end
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+failed to setkeepalive: closed
+--- error_log
+lua tcp socket connect timeout: 100
+--- timeout: 10
 

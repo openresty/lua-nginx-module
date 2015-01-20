@@ -599,7 +599,7 @@ The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_m
 
 will not work as expected.
 
-== Cocockets Not Available Everywhere ==
+== Cosockets Not Available Everywhere ==
 
 Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
 
@@ -3221,7 +3221,7 @@ Set the current request's request header named <code>header_name</code> to value
 
 By default, all the subrequests subsequently initiated by [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] will inherit the new header.
 
-Here is an example of setting the <code>Content-Length</code> header:
+Here is an example of setting the <code>Content-Type</code> header:
 
 <geshi lang="lua">
     ngx.req.set_header("Content-Type", "text/css")

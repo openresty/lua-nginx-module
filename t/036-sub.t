@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 15);
+plan tests => repeat_each() * (blocks() * 2 + 18);
 
 #no_diff();
 no_long_string();
@@ -653,7 +653,7 @@ sub: 0
 
 
 
-=== TEST 25: bug: sub incorrectly swallowed a character is the first character
+=== TEST 30: bug: sub incorrectly swallowed a character is the first character
 Original bad result: estCase
 --- config
     location /re {
@@ -671,7 +671,7 @@ TestCase
 
 
 
-=== TEST 26: bug: sub incorrectly swallowed a character is not the first character
+=== TEST 31: bug: sub incorrectly swallowed a character is not the first character
 Original bad result: .b.d
 --- config
     location /re {
@@ -686,4 +686,50 @@ Original bad result: .b.d
     GET /re
 --- response_body
 ab.cd
+
+
+
+=== TEST 32: ngx.re.gsub: recursive calling (github #445)
+--- config
+
+location = /t {
+    content_by_lua '
+        function test()
+            local data = [[
+                OUTER {FIRST}
+]]
+
+            local p1 = "(OUTER)(.+)"
+            local p2 = "{([A-Z]+)}"
+
+            ngx.print(data)
+
+            local res =  ngx.re.gsub(data, p1, function(m)
+                -- ngx.say("pre: m[1]: [", m[1], "]")
+                -- ngx.say("pre: m[2]: [", m[2], "]")
+
+                local res = ngx.re.gsub(m[2], p2, function(_)
+                    return "REPLACED"
+                end, "")
+
+                -- ngx.say("post: m[1]: [", m[1], "]")
+                -- ngx.say("post m[2]: [", m[2], "]")
+                return m[1] .. res
+            end, "")
+
+            ngx.print(res)
+        end
+
+        test()
+    ';
+}
+--- request
+GET /t
+--- response_body
+                OUTER {FIRST}
+                OUTER REPLACED
+--- no_error_log
+[error]
+bad argument type
+NYI
 
