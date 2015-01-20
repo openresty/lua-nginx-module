@@ -37,7 +37,7 @@ Table of Contents
     * [Lua Coroutine Yielding/Resuming](#lua-coroutine-yieldingresuming)
     * [Lua Variable Scope](#lua-variable-scope)
     * [Locations Configured by Subrequest Directives of Other Modules](#locations-configured-by-subrequest-directives-of-other-modules)
-    * [Cocockets Not Available Everywhere](#cocockets-not-available-everywhere)
+    * [Cosockets Not Available Everywhere](#cosockets-not-available-everywhere)
     * [Special PCRE Sequences](#special-pcre-sequences)
     * [Mixing with SSI Not Supported](#mixing-with-ssi-not-supported)
     * [SPDY Mode Not Fully Supported](#spdy-mode-not-fully-supported)
@@ -734,7 +734,7 @@ will not work as expected.
 
 [Back to TOC](#table-of-contents)
 
-Cocockets Not Available Everywhere
+Cosockets Not Available Everywhere
 ----------------------------------
 
 Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [set_by_lua*](#set_by_lua), [log_by_lua*](#log_by_lua), [header_filter_by_lua*](#header_filter_by_lua), and [body_filter_by_lua](#body_filter_by_lua).
