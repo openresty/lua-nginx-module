@@ -599,7 +599,7 @@ The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_m
 
 will not work as expected.
 
-== Cocockets Not Available Everywhere ==
+== Cosockets Not Available Everywhere ==
 
 Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
 
