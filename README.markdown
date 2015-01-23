@@ -197,10 +197,11 @@ Synopsis
      }
 
      # use nginx var in code path
-     # WARN: contents in nginx var must be carefully filtered,
+     # WARNING: contents in nginx var must be carefully filtered,
      # otherwise there'll be great security risk!
-     location ~ ^/app/(.+) {
-             content_by_lua_file /path/to/lua/app/root/$1.lua;
+     location ~ ^/app/([-_a-zA-Z0-9/]+) {
+         set $path $1;
+         content_by_lua_file /path/to/lua/app/root/$path.lua;
      }
 
      location / {
@@ -1470,6 +1471,20 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
+Nginx variables are supported in the file path for dynamic dispatch, for example:
+
+```nginx
+
+ # WARNING: contents in nginx var must be carefully filtered,
+ # otherwise there'll be great security risk!
+ location ~ ^/app/([-_a-zA-Z0-9/]+) {
+     set $path $1;
+     content_by_lua_file /path/to/lua/app/root/$path.lua;
+ }
+```
+
+But be very careful about malicious user inputs and always carefully validate or filter out the user-supplied path components.
+
 [Back to TOC](#directives)
 
 rewrite_by_lua
@@ -1615,6 +1630,8 @@ When the Lua code cache is turned on (by default), the user code is loaded once 
 
 The `rewrite_by_lua_file` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone) is turned on.
 
+Nginx variables are supported in the file path for dynamic dispatch just as in [content_by_lua_file](#content_by_lua_file).
+
 [Back to TOC](#directives)
 
 access_by_lua
@@ -1708,6 +1725,8 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid repeatedly reloading Nginx.
+
+Nginx variables are supported in the file path for dynamic dispatch just as in [content_by_lua_file](#content_by_lua_file).
 
 [Back to TOC](#directives)
 
