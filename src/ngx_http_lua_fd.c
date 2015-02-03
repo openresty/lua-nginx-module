@@ -95,9 +95,6 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
         }
 
         /* delete any pending but not handled events */
-#if (NGX_THREADS)
-        ngx_mutex_lock(ngx_posted_events_mutex);
-#endif
 #if defined(nginx_version) && nginx_version >= 1007005
         if (u->conn->read->posted) {
             ngx_delete_posted_event(u->conn->read);
@@ -113,14 +110,6 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
             ngx_delete_posted_event(u->conn->write);
         }
 #endif
-#if (NGX_THREADS)
-        ngx_unlock(&u->conn->lock);
-        u->conn->read->locked = 0;
-        u->conn->write->locked = 0;
-
-        ngx_mutex_unlock(ngx_posted_events_mutex);
-#endif
-
         /* not sure what this line does, the 0 means non-reusable */
         ngx_reusable_connection(u->conn, 0);
 
