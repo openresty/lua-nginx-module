@@ -25,15 +25,15 @@
 #include "ngx_http_lua_contentby.h" /* ngx_http_lua_content_wev_handler */
 
 typedef struct {
-    ngx_http_request_t *request;
+    ngx_http_request_t    *request;
     ngx_http_lua_co_ctx_t *co_ctx;
-    ngx_connection_t *conn;
+    ngx_connection_t      *conn;
 } ngx_http_lua_udata_t;
 
 static ngx_int_t ngx_http_lua_fd_resume_request(ngx_http_request_t *r) {
     ngx_http_lua_ctx_t *ctx;
-    lua_State *vm;
-    ngx_int_t rc;
+    lua_State          *vm;
+    ngx_int_t           rc;
     if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
         return NGX_ERROR;
     }
@@ -127,10 +127,10 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
 }
 
 static int ngx_http_lua_fd_wait(lua_State *L) {
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
+    ngx_http_request_t    *r;
+    ngx_http_lua_ctx_t    *ctx;
     ngx_http_lua_co_ctx_t *co_ctx;
-    ngx_http_lua_udata_t *u;
+    ngx_http_lua_udata_t  *u;
 
     ngx_socket_t fd = luaL_optint(L, 1, -1); /* -1 is invalid fd */
     const char *events = luaL_optstring(L, 2, "");
