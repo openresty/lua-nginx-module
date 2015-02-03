@@ -11,13 +11,13 @@
 #include "ngx_http_lua_fd.h"
 
 #include <math.h> /* HUGE_VAL */
-#include <stdlib.h> /* calloc, free */
 #include <poll.h> /* POLLIN, POLLOUT */
 
 #include <lua.h>
 #include <lauxlib.h>
 
 #include "ngx_core.h"
+#include "ngx_alloc.h" /* ngx_alloc, ngx_free */
 #include "ngx_http.h" /* ngx_http_request_t, ngx_http_run_posted_requests */
 #include "ngx_http_lua_common.h" /* ngx_http_lua_module, ngx_http_lua_co_ctx_t */
 
@@ -119,7 +119,7 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
 
         u->conn = NULL;
     }
-    free(u);
+    ngx_free(u);
     co_ctx->data = NULL;
 }
 
@@ -152,12 +152,12 @@ static int ngx_http_lua_fd_wait(lua_State *L) {
     if ((co_ctx = ctx->cur_co_ctx) == NULL) {
         return luaL_error(L, "no co ctx found");
     }
-    if ((u = calloc(1, sizeof(ngx_http_lua_udata_t))) == NULL) {
+    if ((u = ngx_alloc(sizeof(ngx_http_lua_udata_t), r->connection->log)) == NULL) {
         return luaL_error(L, "no mem");
     }
     /* always create a connection object (even if fd is < 0) */
     if ((u->conn = ngx_get_connection(fd, r->connection->log)) == NULL) {
-        free(u);
+        ngx_free(u);
         return luaL_error(L, "unable to get nginx connection");
     }
     ngx_http_lua_cleanup_pending_operation(co_ctx);
@@ -172,13 +172,13 @@ static int ngx_http_lua_fd_wait(lua_State *L) {
     if (fd >= 0) {
         if ((poll_mask & POLLIN) && ngx_handle_read_event(u->conn->read, NGX_LEVEL_EVENT) != NGX_OK) {
             ngx_free_connection(u->conn);
-            free(u);
+            ngx_free(u);
             return luaL_error(L, "unable to add to nginx main loop");
         }
         if ((poll_mask & POLLOUT) && ngx_handle_write_event(u->conn->write, NGX_LEVEL_EVENT) != NGX_OK) {
             if (poll_mask & POLLIN) ngx_del_event(u->conn->read, NGX_READ_EVENT, 0);
             ngx_free_connection(u->conn);
-            free(u);
+            ngx_free(u);
             return luaL_error(L, "unable to add to nginx main loop");
         }
     }
