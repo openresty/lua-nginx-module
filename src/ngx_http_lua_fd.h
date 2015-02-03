@@ -7,6 +7,8 @@
 
 #include <lua.h>
 
+
 void ngx_http_lua_inject_fd(lua_State *L);
+
 
 #endif /* _NGX_HTTP_LUA_FD_H_INCLUDED_ */
