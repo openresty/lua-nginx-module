@@ -32,7 +32,9 @@ typedef struct {
 } ngx_http_lua_udata_t;
 
 
-static ngx_int_t ngx_http_lua_fd_resume_request(ngx_http_request_t *r) {
+static ngx_int_t
+ngx_http_lua_fd_resume_request(ngx_http_request_t *r)
+{
     ngx_http_lua_ctx_t *ctx;
     lua_State          *vm;
     ngx_int_t           rc;
@@ -85,7 +87,9 @@ static void ngx_http_lua_fd_rev_handler(ngx_event_t *ev) {
 }
 
 
-static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
+static void
+ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx)
+{
     ngx_http_lua_udata_t *u = co_ctx->data;
     if (u->conn != NULL) {
         /* can't use ngx_close_connection here,
@@ -131,7 +135,9 @@ static void ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx) {
 }
 
 
-static int ngx_http_lua_fd_wait(lua_State *L) {
+static int
+ngx_http_lua_fd_wait(lua_State *L)
+{
     ngx_http_request_t    *r;
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_lua_co_ctx_t *co_ctx;
@@ -212,7 +218,9 @@ static int ngx_http_lua_fd_wait(lua_State *L) {
 }
 
 
-void ngx_http_lua_inject_fd(lua_State *L) {
+void
+ngx_http_lua_inject_fd(lua_State *L)
+{
     lua_pushcfunction(L, ngx_http_lua_fd_wait);
     lua_setfield(L, -2, "wait");
 }
