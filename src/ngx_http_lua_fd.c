@@ -148,10 +148,11 @@ ngx_http_lua_fd_wait(lua_State *L)
     int poll_mask = 0;
     double timeout = luaL_optnumber(L, 3, HUGE_VAL); /* default to infinite timeout */
     while (*events) {
-        if (*events == 'r')
+        if (*events == 'r') {
             poll_mask |= POLLIN;
-        else if (*events == 'w')
+        } else if (*events == 'w') {
             poll_mask |= POLLOUT;
+        }
         events++;
     }
     if ((fd < 0 || !poll_mask) && timeout == HUGE_VAL) {
@@ -190,7 +191,9 @@ ngx_http_lua_fd_wait(lua_State *L)
             return luaL_error(L, "unable to add to nginx main loop");
         }
         if ((poll_mask & POLLOUT) && ngx_handle_write_event(u->conn->write, NGX_LEVEL_EVENT) != NGX_OK) {
-            if (poll_mask & POLLIN) ngx_del_event(u->conn->read, NGX_READ_EVENT, 0);
+            if (poll_mask & POLLIN) {
+                ngx_del_event(u->conn->read, NGX_READ_EVENT, 0);
+            }
             ngx_free_connection(u->conn);
             ngx_free(u);
             return luaL_error(L, "unable to add to nginx main loop");
