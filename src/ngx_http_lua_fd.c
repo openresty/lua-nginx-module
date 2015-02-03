@@ -58,14 +58,17 @@ static ngx_int_t ngx_http_lua_fd_resume_request(ngx_http_request_t *r) {
 }
 
 static void ngx_http_lua_fd_rev_handler(ngx_event_t *ev) {
-    ngx_connection_t *conn = ev->data;
-    ngx_http_lua_udata_t *u = conn->data;
-    ngx_http_request_t *r = u->request;
-    ngx_http_lua_co_ctx_t *co_ctx = u->co_ctx;
-    ngx_http_lua_ctx_t *ctx;
+    ngx_http_lua_udata_t  *u;
+    ngx_http_request_t    *r;
+    ngx_http_lua_co_ctx_t *co_ctx;
+    ngx_http_lua_ctx_t    *ctx;
+
+    u = ((ngx_connection_t*)(ev->data))->data;
+    r = u->request;
+    co_ctx = u->co_ctx;
 
     ngx_http_lua_cleanup_pending_operation(co_ctx);
-    ev = NULL, conn = NULL, u = NULL; /* now invalidated */
+    ev = NULL, u = NULL; /* now invalidated */
 
     if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) != NULL) {
         /* set current coroutine to the one that had the event */
