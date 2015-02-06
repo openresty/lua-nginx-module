@@ -195,6 +195,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     u_char                      *p;
     u_char                      *uri;
     size_t                       len;
+    ngx_table_elt_t             *h;
     ngx_http_request_t          *r;
 
     n = lua_gettop(L);
@@ -246,23 +247,23 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_memcpy(uri, p, len);
 
-    r->headers_out.location = ngx_list_push(&r->headers_out.headers);
-    if (r->headers_out.location == NULL) {
+    h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
         return luaL_error(L, "no memory");
     }
 
-    r->headers_out.location->hash = ngx_http_lua_location_hash;
+    h->hash = ngx_http_lua_location_hash;
 
 #if 0
     dd("location hash: %lu == %lu",
-            (unsigned long) r->headers_out.location->hash,
+            (unsigned long) h->hash,
             (unsigned long) ngx_hash_key_lc((u_char *) "Location",
             sizeof("Location") - 1));
 #endif
 
-    r->headers_out.location->value.len = len;
-    r->headers_out.location->value.data = uri;
-    ngx_str_set(&r->headers_out.location->key, "Location");
+    h->value.len = len;
+    h->value.data = uri;
+    ngx_str_set(&h->key, "Location");
 
     r->headers_out.status = rc;
 
@@ -271,7 +272,16 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua redirect to \"%V\" with code %i",
-                   &r->headers_out.location->value, ctx->exit_code);
+                   &h->value, ctx->exit_code);
+
+    if (len && uri[0] != '/') {
+        r->headers_out.location = h;
+    }
+
+    /*
+     * we do not set r->headers_out.location here to avoid the handling
+     * the local redirects without a host name by ngx_http_header_filter()
+     */
 
     return lua_yield(L, 0);
 }
