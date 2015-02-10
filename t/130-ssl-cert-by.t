@@ -3999,3 +3999,67 @@ lua ssl server name: "test.com"
 [error]
 [alert]
 
+
+
+=== TEST 43: subrequests disabled
+--- http_config
+    lua_package_path "lua/?.lua;../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate_by_lua 'ngx.location.capture("/foo")';
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+            -- collectgarbage()
+        ';
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- error_log eval
+[
+'lua ssl server name: "test.com"',
+'ssl_certificate_by_lua:1: API disabled in the context of ssl_certificate_by_lua*',
+qr/\[crit\] .*?cert cb error/,
+]
+
+--- no_error_log
+[alert]
+
