@@ -17,14 +17,16 @@
 
 
 typedef struct {
-    unsigned      premature;  /* :1 */
-
-    int           co_ref;
-    lua_State    *co;
-
     void        **main_conf;
     void        **srv_conf;
     void        **loc_conf;
+
+    /* event ident must be after 3 words (i.e. 3 pointers' size) as in
+     * ngx_connection_t. and we use the Lua coroutine reference number as
+     * the event ident */
+    int           co_ref;
+    unsigned      premature;  /* :1 */
+    lua_State    *co;
 
     ngx_pool_t   *pool;
 
