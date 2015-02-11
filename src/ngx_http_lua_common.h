@@ -287,9 +287,6 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_http_cleanup_pt      cleanup;
 
-    unsigned                 nsubreqs;  /* number of subrequests of the
-                                         * current request */
-
     ngx_int_t               *sr_statuses; /* all capture subrequest statuses */
 
     ngx_http_headers_out_t **sr_headers;
@@ -297,6 +294,9 @@ struct ngx_http_lua_co_ctx_s {
     ngx_str_t               *sr_bodies;   /* all captured subrequest bodies */
 
     uint8_t                 *sr_flags;
+
+    unsigned                 nsubreqs;  /* number of subrequests of the
+                                         * current request */
 
     unsigned                 pending_subreqs; /* number of subrequests being
                                                  waited */
@@ -365,8 +365,6 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned                 flushing_coros; /* number of coroutines waiting on
                                                 ngx.flush(true) */
 
-    int                      uthreads; /* number of active user threads */
-
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
     ngx_chain_t             *busy_bufs;
@@ -392,6 +390,8 @@ typedef struct ngx_http_lua_ctx_s {
                                                     request */
 
     ngx_http_lua_posted_thread_t   *posted_threads;
+
+    int                      uthreads; /* number of active user threads */
 
     uint16_t                 context;   /* the current running directive context
                                            (or running phase) for the current
