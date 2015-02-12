@@ -131,6 +131,11 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
     dd("exited: %d, exit code: %d, old exit code: %d",
        (int) ctx->exited, (int) ctx->exit_code, (int) old_exit_code);
 
+#if 1
+    /*  clear Lua stack */
+    lua_settop(L, 0);
+#endif
+
     if (ctx->exited && ctx->exit_code != old_exit_code) {
         if (ctx->exit_code == NGX_ERROR) {
             return NGX_ERROR;
@@ -146,9 +151,6 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
         return NGX_DECLINED;
     }
-
-    /*  clear Lua stack */
-    lua_settop(L, 0);
 
     return NGX_OK;
 }
