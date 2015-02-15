@@ -143,8 +143,13 @@ ngx_http_lua_header_filter_by_chunk(lua_State *L, ngx_http_request_t *r)
 
         dd("finalize request with %d", (int) ctx->exit_code);
 
-        return ngx_http_filter_finalize_request(r, &ngx_http_lua_module,
-                                                ctx->exit_code);
+        rc = ngx_http_filter_finalize_request(r, &ngx_http_lua_module,
+                                              ctx->exit_code);
+        if (rc == NGX_ERROR || rc == NGX_AGAIN) {
+            return rc;
+        }
+
+        return NGX_DECLINED;
     }
 
     return NGX_OK;
@@ -271,10 +276,6 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     rc = llcf->header_filter_handler(r);
 
     ctx->context = old_context;
-
-    if (r->filter_finalize) {
-        return rc;
-    }
 
     if (rc == NGX_DECLINED) {
         return NGX_OK;
