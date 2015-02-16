@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 91;
+plan tests => repeat_each() * 94;
 
 #no_diff();
 #no_long_string();
