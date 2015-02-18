@@ -57,7 +57,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.14](https://github.com/openresty/lua-nginx-module/tags) released on 21 January 2015.
+This document describes ngx_lua [v0.9.15](https://github.com/openresty/lua-nginx-module/tags) released on 18 February 2015.
 
 Synopsis
 ========
@@ -291,7 +291,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.7.x (last tested: 1.7.7)
+* 1.7.x (last tested: 1.7.10)
 * 1.6.x
 * 1.5.x (last tested: 1.5.12)
 * 1.4.x (last tested: 1.4.4)
@@ -307,7 +307,7 @@ The latest module is compatible with the following versions of Nginx:
 Installation
 ============
 
-The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0/2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple `./configure --with-luajit && make && make install`.
+It is highly recommended to use the [ngx_openresty bundle](http://openresty.org) that bundles Nginx, ngx_lua,  LuaJIT 2.0/2.1 (or the optional standard Lua 5.1 interpreter), as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: `./configure --with-luajit && make && make install`.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
@@ -320,9 +320,9 @@ Build the source with this module:
 
 ```bash
 
- wget 'http://nginx.org/download/nginx-1.7.7.tar.gz'
- tar -xzvf nginx-1.7.7.tar.gz
- cd nginx-1.7.7/
+ wget 'http://nginx.org/download/nginx-1.7.10.tar.gz'
+ tar -xzvf nginx-1.7.10.tar.gz
+ cd nginx-1.7.10/
 
  # tell nginx's build system where to find LuaJIT 2.0:
  export LUAJIT_LIB=/path/to/luajit/lib
@@ -338,6 +338,7 @@ Build the source with this module:
 
  # Here we assume Nginx is to be installed under /opt/nginx/.
  ./configure --prefix=/opt/nginx \
+         --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
