@@ -57,7 +57,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.13](https://github.com/openresty/lua-nginx-module/tags) released on 21 November 2014.
+This document describes ngx_lua [v0.9.15](https://github.com/openresty/lua-nginx-module/tags) released on 18 February 2015.
 
 Synopsis
 ========
@@ -197,10 +197,11 @@ Synopsis
      }
 
      # use nginx var in code path
-     # WARN: contents in nginx var must be carefully filtered,
+     # WARNING: contents in nginx var must be carefully filtered,
      # otherwise there'll be great security risk!
-     location ~ ^/app/(.+) {
-             content_by_lua_file /path/to/lua/app/root/$1.lua;
+     location ~ ^/app/([-_a-zA-Z0-9/]+) {
+         set $path $1;
+         content_by_lua_file /path/to/lua/app/root/$path.lua;
      }
 
      location / {
@@ -290,7 +291,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.7.x (last tested: 1.7.7)
+* 1.7.x (last tested: 1.7.10)
 * 1.6.x
 * 1.5.x (last tested: 1.5.12)
 * 1.4.x (last tested: 1.4.4)
@@ -306,7 +307,7 @@ The latest module is compatible with the following versions of Nginx:
 Installation
 ============
 
-The [ngx_openresty bundle](http://openresty.org) can be used to install Nginx, ngx_lua, either one of the standard Lua 5.1 interpreter or LuaJIT 2.0/2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple `./configure --with-luajit && make && make install`.
+It is highly recommended to use the [ngx_openresty bundle](http://openresty.org) that bundles Nginx, ngx_lua,  LuaJIT 2.0/2.1 (or the optional standard Lua 5.1 interpreter), as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: `./configure --with-luajit && make && make install`.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
@@ -319,9 +320,9 @@ Build the source with this module:
 
 ```bash
 
- wget 'http://nginx.org/download/nginx-1.7.7.tar.gz'
- tar -xzvf nginx-1.7.7.tar.gz
- cd nginx-1.7.7/
+ wget 'http://nginx.org/download/nginx-1.7.10.tar.gz'
+ tar -xzvf nginx-1.7.10.tar.gz
+ cd nginx-1.7.10/
 
  # tell nginx's build system where to find LuaJIT 2.0:
  export LUAJIT_LIB=/path/to/luajit/lib
@@ -337,6 +338,7 @@ Build the source with this module:
 
  # Here we assume Nginx is to be installed under /opt/nginx/.
  ./configure --prefix=/opt/nginx \
+         --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
@@ -985,9 +987,9 @@ Copyright and License
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2014, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2015, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2014, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
+Copyright (C) 2009-2015, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
 
 All rights reserved.
 
@@ -1470,6 +1472,20 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by 
 switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
+Nginx variables are supported in the file path for dynamic dispatch, for example:
+
+```nginx
+
+ # WARNING: contents in nginx var must be carefully filtered,
+ # otherwise there'll be great security risk!
+ location ~ ^/app/([-_a-zA-Z0-9/]+) {
+     set $path $1;
+     content_by_lua_file /path/to/lua/app/root/$path.lua;
+ }
+```
+
+But be very careful about malicious user inputs and always carefully validate or filter out the user-supplied path components.
+
 [Back to TOC](#directives)
 
 rewrite_by_lua
@@ -1615,6 +1631,8 @@ When the Lua code cache is turned on (by default), the user code is loaded once 
 
 The `rewrite_by_lua_file` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone) is turned on.
 
+Nginx variables are supported in the file path for dynamic dispatch just as in [content_by_lua_file](#content_by_lua_file).
+
 [Back to TOC](#directives)
 
 access_by_lua
@@ -1708,6 +1726,8 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached 
 and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid repeatedly reloading Nginx.
+
+Nginx variables are supported in the file path for dynamic dispatch just as in [content_by_lua_file](#content_by_lua_file).
 
 [Back to TOC](#directives)
 

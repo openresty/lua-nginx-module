@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 24);
+plan tests => repeat_each() * (blocks() * 3 + 26);
 
 #no_diff();
 no_long_string();
@@ -1345,4 +1345,42 @@ hi
 [alert]
 --- error_log
 my Transfer-Encoding: nil
+
+
+
+=== TEST 65: set Location (no host)
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.header.location = "/foo/bar"
+            return ngx.exit(301)
+        ';
+    }
+--- request
+GET /t
+--- response_headers
+Location: /foo/bar
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
+
+
+
+=== TEST 66: set Location (with host)
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.header.location = "http://test.com/foo/bar"
+            return ngx.exit(301)
+        ';
+    }
+--- request
+GET /t
+--- response_headers
+Location: http://test.com/foo/bar
+--- response_body_like: 301 Moved Permanently
+--- error_code: 301
+--- no_error_log
+[error]
 
