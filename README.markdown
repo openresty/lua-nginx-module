@@ -4276,7 +4276,7 @@ which is equivalent to
 
 ```lua
 
- return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
+ return ngx.redirect("/foo", ngx.HTTP_MOVED_TEMPORARILY)
 ```
 
 Redirecting arbitrary external URLs is also supported, for example:

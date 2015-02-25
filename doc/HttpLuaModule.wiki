@@ -3557,7 +3557,7 @@ Here is an example assuming the current server name is <code>localhost</code> an
 which is equivalent to
 
 <geshi lang="lua">
-    return ngx.redirect("http://localhost:1984/foo", ngx.HTTP_MOVED_TEMPORARILY)
+    return ngx.redirect("/foo", ngx.HTTP_MOVED_TEMPORARILY)
 </geshi>
 
 Redirecting arbitrary external URLs is also supported, for example:
