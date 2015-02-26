@@ -839,8 +839,11 @@ Hello
           results.content_type = "anything"
           results.somehing_else = "hi"
 
-          for k, v in pairs(results) do
-            ngx.say(k .. ": " .. v)
+          local arr = {}
+          for k in pairs(results) do table.insert(arr, k) end
+          table.sort(arr)
+          for i, k in ipairs(arr) do
+            ngx.say(k .. ": " .. results[k])
           end
         ';
     }
@@ -850,9 +853,9 @@ GET /read
 Content-Type: text/my-plain
 
 --- response_body
+content_type: anything
 somehing_else: hi
 something: hello
-content_type: anything
 --- no_error_log
 [error]
 
