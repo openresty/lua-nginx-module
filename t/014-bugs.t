@@ -978,7 +978,7 @@ ok
     proxy_ssl_session_reuse off;
 
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
 
@@ -988,7 +988,7 @@ ok
     }
 
     upstream local {
-        server unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        server unix:nginx.sock;
     }
 
 --- config

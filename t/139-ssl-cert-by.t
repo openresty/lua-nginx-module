@@ -22,7 +22,7 @@ __DATA__
 === TEST 1: simple logging
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
         ssl_certificate ../../cert/test.crt;
@@ -46,7 +46,7 @@ __DATA__
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -116,7 +116,7 @@ ssl_certificate_by_lua:1: ssl cert by lua is running!
 === TEST 2: sleep
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local begin = ngx.now()
@@ -144,7 +144,7 @@ ssl_certificate_by_lua:1: ssl cert by lua is running!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -216,7 +216,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
 === TEST 3: timer
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local function f()
@@ -249,7 +249,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -319,7 +319,7 @@ my timer run!
 === TEST 4: cosocket
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local sock = ngx.socket.tcp()
@@ -367,7 +367,7 @@ my timer run!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -857,7 +857,7 @@ should never reached here
 === TEST 11: get phase
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {print("get_phase: ", ngx.get_phase())}
         ssl_certificate ../../cert/test.crt;
@@ -881,7 +881,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -920,7 +920,7 @@ get_phase: ssl_cert
 === TEST 12: connection aborted prematurely
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             ngx.sleep(0.3)
@@ -944,7 +944,7 @@ get_phase: ssl_cert
 
                 sock:settimeout(150)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -985,7 +985,7 @@ ssl-cert-by-lua: after sleeping
 === TEST 13: subrequests disabled
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {ngx.location.capture("/foo")}
         ssl_certificate ../../cert/test.crt;
@@ -1002,7 +1002,7 @@ ssl-cert-by-lua: after sleeping
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1043,7 +1043,7 @@ qr/\[crit\] .*?cert cb error/,
 === TEST 14: simple logging (by_lua_file)
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_file html/a.lua;
         ssl_certificate ../../cert/test.crt;
@@ -1072,7 +1072,7 @@ print("ssl cert by lua is running!")
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1142,7 +1142,7 @@ a.lua:1: ssl cert by lua is running!
 === TEST 15: coroutine API
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
@@ -1183,7 +1183,7 @@ a.lua:1: ssl cert by lua is running!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1261,7 +1261,7 @@ lua ssl server name: "test.com"
 === TEST 16: simple user thread wait with yielding
 --- http_config
     server {
-        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        listen unix:nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
             function f()
@@ -1307,7 +1307,7 @@ lua ssl server name: "test.com"
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                local ok, err = sock:connect("unix:nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return

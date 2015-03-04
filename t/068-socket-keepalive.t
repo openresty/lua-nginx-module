@@ -781,7 +781,7 @@ qr/lua tcp socket connection pool size: 30\b/]
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
     server {
-        listen unix:$::HtmlDir/nginx.sock;
+        listen unix:nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -796,7 +796,7 @@ qr/lua tcp socket connection pool size: 30\b/]
         set $port $TEST_NGINX_MEMCACHED_PORT;
         content_by_lua '
             local test = require "test"
-            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
+            local path = "nginx.sock";
             local port = ngx.var.port
             test.go(path, port)
             test.go(path, port)
@@ -1064,7 +1064,7 @@ lua tcp socket get keepalive peer: using connection
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
     server {
-        listen unix:$::HtmlDir/nginx.sock;
+        listen unix:nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -1079,7 +1079,7 @@ lua tcp socket get keepalive peer: using connection
         set $port $TEST_NGINX_MEMCACHED_PORT;
         content_by_lua '
             local test = require "test"
-            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
+            local path = "nginx.sock";
             test.go(path, "A")
             test.go(path, "B")
         ';
@@ -1124,7 +1124,7 @@ lua tcp socket keepalive create connection pool for key "B"
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
     server {
-        listen unix:$::HtmlDir/nginx.sock;
+        listen unix:nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -1135,7 +1135,7 @@ lua tcp socket keepalive create connection pool for key "B"
         set $port $TEST_NGINX_MEMCACHED_PORT;
         content_by_lua '
             local test = require "test"
-            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
+            local path = "nginx.sock";
             test.go(path, "A")
             test.go(path, "A")
         ';
