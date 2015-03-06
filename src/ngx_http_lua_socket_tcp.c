@@ -4143,6 +4143,8 @@ ngx_http_lua_req_socket(lua_State *L)
             r->header_sent = 1;
         }
 
+        ctx->header_sent = 1;
+
         dd("ctx acquired raw req socket: %d", ctx->acquired_raw_req_socket);
 
         if (ctx->acquired_raw_req_socket) {

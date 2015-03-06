@@ -658,7 +658,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
                       "set ngx.header.HEADER after sending out "
                       "response headers");
@@ -1086,7 +1086,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
                       "set ngx.header.HEADER after sending out "
                       "response headers");
