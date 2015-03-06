@@ -379,7 +379,9 @@ ngx_http_lua_set_content_type(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    if (llcf->use_default_type) {
+    if (llcf->use_default_type
+        && r->headers_out.status != NGX_HTTP_NOT_MODIFIED)
+    {
         return ngx_http_set_content_type(r);
     }
 
