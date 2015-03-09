@@ -4669,11 +4669,13 @@ This method was introduced in the `v0.5.0rc29`.
 
 ngx.encode_base64
 -----------------
-**syntax:** *newstr = ngx.encode_base64(str)*
+**syntax:** *newstr = ngx.encode_base64(str, no_padding?)*
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Encode `str` to a base64 digest.
+Encodes `str` to a base64 digest.
+
+Since the `0.9.16` release, an optional boolean-typed `no_padding` argument can be specified to control whether the base64 padding should be appended to the resulting digest (default to `false`, i.e., with padding enabled). This enables streaming base64 digest calculation by (data chunks) though it would be the caller's responsibility to append an appropriate padding at the end of data stream.
 
 [Back to TOC](#nginx-api-for-lua)
 
