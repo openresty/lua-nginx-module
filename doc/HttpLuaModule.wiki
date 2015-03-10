@@ -700,6 +700,24 @@ Mixing SSI with ngx_lua in the same Nginx request is not supported at all. Just 
 
 Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], and [[#ngx.req.socket|ngx.req.socket]].
 
+== Missing data on short circuited requests ==
+
+Nginx may terminate a request early with (at least):
+
+* `400 (Bad Request)`
+* `405 (Not Allowed)`
+* `408 (Request Timeout)`
+* `414 (Request URI Too Large)`
+* `494 (Request Headers Too Large)
+* `499 (Client Closed Request)`
+* `500 (Internal Server Error)`
+* `501 (Not Implemented)`
+
+This means that phases that normally run are skipped, such as the rewrite or
+access phase. This also means that later phases that are run regardless, e.g.
+`log_by_lua`, will not have access to information that is normally set in those
+phases.
+
 = TODO =
 
 * add <code>*_by_lua_block</code> directives for existing <code>*_by_lua</code> directives so that we put literal Lua code directly in curly braces instead of an nginx literal string. For example,
