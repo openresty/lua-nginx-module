@@ -38,9 +38,10 @@ Table of Contents
     * [Lua Variable Scope](#lua-variable-scope)
     * [Locations Configured by Subrequest Directives of Other Modules](#locations-configured-by-subrequest-directives-of-other-modules)
     * [Cosockets Not Available Everywhere](#cosockets-not-available-everywhere)
-    * [Special PCRE Sequences](#special-pcre-sequences)
+    * [Special Escaping Sequences](#special-escaping-sequences)
     * [Mixing with SSI Not Supported](#mixing-with-ssi-not-supported)
     * [SPDY Mode Not Fully Supported](#spdy-mode-not-fully-supported)
+    * [Missing data on short circuited requests](#missing-data-on-short-circuited-requests)
 * [TODO](#todo)
 * [Changes](#changes)
 * [Test Suite](#test-suite)
@@ -747,8 +748,8 @@ There exists a work-around, however, when the original context does *not* need t
 
 [Back to TOC](#table-of-contents)
 
-Special PCRE Sequences
-----------------------
+Special Escaping Sequences
+--------------------------
 PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in string literals, the backslash character, `\`, is stripped out by both the Lua language parser and by the Nginx config file parser before processing. So the following snippet will not work as expected:
 
 ```nginx
@@ -850,6 +851,27 @@ SPDY Mode Not Fully Supported
 -----------------------------
 
 Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [ngx.location.capture](#ngxlocationcapture), [ngx.location.capture_multi](#ngxlocationcapture_multi), and [ngx.req.socket](#ngxreqsocket).
+
+[Back to TOC](#table-of-contents)
+
+Missing data on short circuited requests
+----------------------------------------
+
+Nginx may terminate a request early with (at least):
+
+* 400 (Bad Request)
+* 405 (Not Allowed)
+* 408 (Request Timeout)
+* 414 (Request URI Too Large)
+* 494 (Request Headers Too Large)
+* 499 (Client Closed Request)
+* 500 (Internal Server Error)
+* 501 (Not Implemented)
+
+This means that phases that normally run are skipped, such as the rewrite or
+access phase. This also means that later phases that are run regardless, e.g.
+[log_by_lua](#log_by_lua), will not have access to information that is normally set in those
+phases.
 
 [Back to TOC](#table-of-contents)
 
@@ -5094,7 +5116,7 @@ The `ctx` table argument combined with the `a` regex modifier can be used to con
 
 Note that, the `options` argument is not optional when the `ctx` argument is specified and that the empty Lua string (`""`) must be used as placeholder for `options` if no meaningful regex options are required.
 
-This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special PCRE Sequences](#special-pcre-sequences)).
+This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
 To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the `--with-debug` option to Nginx or ngx_openresty's `./configure` script. Then, enable the "debug" error log level in `error_log` directive. The following message will be generated if PCRE JIT is enabled:
 
@@ -5234,7 +5256,7 @@ The optional `options` argument takes exactly the same semantics as the [ngx.re.
 
 The current implementation requires that the iterator returned should only be used in a single request. That is, one should *not* assign it to a variable belonging to persistent namespace like a Lua package.
 
-This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special PCRE Sequences](#special-pcre-sequences)).
+This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
 This feature was first introduced in the `v0.2.1rc12` release.
 
@@ -5300,7 +5322,7 @@ When the `replace` argument is of type "function", then it will be invoked with 
 
 The dollar sign characters in the return value of the `replace` function argument are not special at all.
 
-This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special PCRE Sequences](#special-pcre-sequences)).
+This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
 This feature was first introduced in the `v0.2.1rc13` release.
 
@@ -5338,7 +5360,7 @@ Here is some examples:
      -- n == 2
 ```
 
-This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special PCRE Sequences](#special-pcre-sequences)).
+This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
 This feature was first introduced in the `v0.2.1rc15` release.
 
