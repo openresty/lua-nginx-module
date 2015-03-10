@@ -41,6 +41,7 @@ Table of Contents
     * [Special PCRE Sequences](#special-pcre-sequences)
     * [Mixing with SSI Not Supported](#mixing-with-ssi-not-supported)
     * [SPDY Mode Not Fully Supported](#spdy-mode-not-fully-supported)
+    * [Missing data on short circuited requests](#missing-data-on-short-circuited-requests)
 * [TODO](#todo)
 * [Changes](#changes)
 * [Test Suite](#test-suite)
@@ -850,6 +851,27 @@ SPDY Mode Not Fully Supported
 -----------------------------
 
 Certain Lua APIs provided by ngx_lua do not work in Nginx's SPDY mode yet: [ngx.location.capture](#ngxlocationcapture), [ngx.location.capture_multi](#ngxlocationcapture_multi), and [ngx.req.socket](#ngxreqsocket).
+
+[Back to TOC](#table-of-contents)
+
+Missing data on short circuited requests
+----------------------------------------
+
+Nginx may terminate a request early with (at least):
+
+* `400 (Bad Request)`
+* `405 (Not Allowed)`
+* `408 (Request Timeout)`
+* `414 (Request URI Too Large)`
+* `494 (Request Headers Too Large)
+* `499 (Client Closed Request)`
+* `500 (Internal Server Error)`
+* `501 (Not Implemented)`
+
+This means that phases that normally run are skipped, such as the rewrite or
+access phase. This also means that later phases that are run regardless, e.g.
+`log_by_lua`, will not have access to information that is normally set in those
+phases.
 
 [Back to TOC](#table-of-contents)
 
