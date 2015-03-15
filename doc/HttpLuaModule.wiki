@@ -5916,3 +5916,11 @@ This API was first usable in the context of [[#init_by_lua|init_by_lua*]] since 
 
 This API was first enabled in the <code>v0.6.0</code> release.
 
+= Obsolete Sections =
+
+This section is just holding obsolete documentation sections that have been either renamed or removed so that existing links over the web are still valid.
+
+== Special PCRE Sequences ==
+
+This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
+

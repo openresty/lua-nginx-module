@@ -49,6 +49,8 @@ Table of Contents
 * [See Also](#see-also)
 * [Directives](#directives)
 * [Nginx API for Lua](#nginx-api-for-lua)
+* [Obsolete Sections](#obsolete-sections)
+    * [Special PCRE Sequences](#special-pcre-sequences)
 
 Status
 ======
@@ -6974,5 +6976,17 @@ This API was first usable in the context of [init_by_lua*](#init_by_lua) since t
 
 This API was first enabled in the `v0.6.0` release.
 
-
 [Back to TOC](#nginx-api-for-lua)
+
+Obsolete Sections
+=================
+
+This section is just holding obsolete documentation sections that have been either renamed or removed so that existing links over the web are still valid.
+
+[Back to TOC](#table-of-contents)
+
+Special PCRE Sequences
+----------------------
+
+This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
+
