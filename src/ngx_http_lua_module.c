@@ -420,9 +420,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       (void *) ngx_http_lua_ssl_cert_handler_inline },
 
     { ngx_string("ssl_certificate_by_lua_file"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
       ngx_http_lua_ssl_cert_by_lua,
-      NGX_HTTP_LOC_CONF_OFFSET,
+      NGX_HTTP_SRV_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_ssl_cert_handler_file },
 
