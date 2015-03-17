@@ -700,7 +700,8 @@ ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
 
 
 size_t
-ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst)
+ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst,
+    int no_padding)
 {
     ngx_str_t      in, out;
 
@@ -709,7 +710,7 @@ ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst)
 
     out.data = dst;
 
-    ngx_encode_base64(&out, &in);
+    ngx_http_lua_encode_base64(&out, &in, no_padding);
 
     return out.len;
 }
