@@ -1400,7 +1400,8 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
 
     c->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
 
-#if (NGX_THREADS)
+#if ((nginx_version > 1007010) && (NGX_OLD_THREADS)) || \
+    ((nginx_version <= 1007010) && (NGX_THREADS))
 
     /* TODO: lock event when call completion handler */
 
