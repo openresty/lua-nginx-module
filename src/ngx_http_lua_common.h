@@ -194,7 +194,7 @@ typedef struct {
                                                 inline script/script
                                                 file path */
 
-    u_char                 *rewrite_src_key; /* cached key for rewrite_src */
+    u_char                  *rewrite_src_key; /* cached key for rewrite_src */
 
     u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua
