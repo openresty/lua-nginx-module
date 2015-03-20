@@ -33,7 +33,7 @@
 static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 #endif
 
-static u_char * ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
+static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
 
 

@@ -117,7 +117,7 @@ static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
 static ngx_int_t
     ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
-static lua_State * ngx_http_lua_new_state(lua_State *parent_vm,
+static lua_State *ngx_http_lua_new_state(lua_State *parent_vm,
     ngx_cycle_t *cycle, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static int ngx_http_lua_get_raw_phase_context(lua_State *L);
 
