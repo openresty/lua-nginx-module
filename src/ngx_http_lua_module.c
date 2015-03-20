@@ -716,6 +716,7 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     /* set by ngx_pcalloc:
      *      lscf->ssl_cert_handler = NULL;
      *      lscf->ssl_cert_src = { 0, NULL };
+     *      lscf->ssl_cert_src_key = NULL;
      */
 
     return lscf;
