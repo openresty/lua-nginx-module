@@ -243,6 +243,5 @@ dw==
 GET /t
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-bad argument #2 to 'encode_base64' (boolean expected, got number)
-
+--- error_log eval
+qr/bad argument \#2 to 'encode_base64' \(boolean expected, got number\)|\[error\] .*? boolean argument only/
