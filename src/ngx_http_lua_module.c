@@ -21,6 +21,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
+#include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
 
 
@@ -36,6 +37,10 @@ static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
+#if (NGX_HTTP_SSL)
+static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
+    ngx_http_lua_loc_conf_t *llcf);
+#endif
 
 
 static ngx_conf_post_t  ngx_http_lua_lowat_post =
@@ -43,6 +48,20 @@ static ngx_conf_post_t  ngx_http_lua_lowat_post =
 
 
 static volatile ngx_cycle_t  *ngx_http_lua_prev_cycle = NULL;
+
+
+#if (NGX_HTTP_SSL) && defined(nginx_version) && nginx_version >= 1001013
+
+static ngx_conf_bitmask_t  ngx_http_lua_ssl_protocols[] = {
+    { ngx_string("SSLv2"), NGX_SSL_SSLv2 },
+    { ngx_string("SSLv3"), NGX_SSL_SSLv3 },
+    { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
+    { ngx_string("TLSv1.1"), NGX_SSL_TLSv1_1 },
+    { ngx_string("TLSv1.2"), NGX_SSL_TLSv1_2 },
+    { ngx_null_string, 0 }
+};
+
+#endif
 
 
 static ngx_command_t ngx_http_lua_cmds[] = {
@@ -143,6 +162,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_init_by_file },
+
+    { ngx_string("init_worker_by_lua"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_init_worker_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_init_worker_by_inline },
+
+    { ngx_string("init_worker_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_init_worker_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_init_worker_by_file },
 
 #if defined(NDK) && NDK
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
@@ -351,6 +384,49 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, use_default_type),
       NULL },
 
+#if (NGX_HTTP_SSL)
+
+#   if defined(nginx_version) && nginx_version >= 1001013
+
+    { ngx_string("lua_ssl_protocols"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
+      ngx_conf_set_bitmask_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_protocols),
+      &ngx_http_lua_ssl_protocols },
+
+#   endif
+
+    { ngx_string("lua_ssl_ciphers"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_ciphers),
+      NULL },
+
+    { ngx_string("lua_ssl_verify_depth"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_verify_depth),
+      NULL },
+
+    { ngx_string("lua_ssl_trusted_certificate"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_trusted_certificate),
+      NULL },
+
+    { ngx_string("lua_ssl_crl"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_crl),
+      NULL },
+
+#endif  /* NGX_HTTP_SSL */
+
     ngx_null_command
 };
 
@@ -377,7 +453,7 @@ ngx_module_t ngx_http_lua_module = {
     NGX_HTTP_MODULE,            /*  module type */
     NULL,                       /*  init master */
     NULL,                       /*  init module */
-    NULL,                       /*  init process */
+    ngx_http_lua_init_worker,   /*  init process */
     NULL,                       /*  init thread */
     NULL,                       /*  exit thread */
     NULL,                       /*  exit process */
@@ -610,7 +686,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
     conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_loc_conf_t));
     if (conf == NULL) {
-        return NGX_CONF_ERROR;
+        return NULL;
     }
 
     /* set by ngx_pcalloc:
@@ -635,6 +711,12 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->body_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->body_filter_src_key = NULL
      *      conf->body_filter_handler = NULL;
+     *
+     *     conf->ssl = 0;
+     *     conf->ssl_protocols = 0;
+     *     conf->ssl_ciphers = { 0, NULL };
+     *     conf->ssl_trusted_certificate = { 0, NULL };
+     *     conf->ssl_crl = { 0, NULL };
      */
 
     conf->force_read_body    = NGX_CONF_UNSET;
@@ -654,6 +736,9 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
     conf->log_socket_errors = NGX_CONF_UNSET;
 
+#if (NGX_HTTP_SSL)
+    conf->ssl_verify_depth = NGX_CONF_UNSET_UINT;
+#endif
 
     return conf;
 }
@@ -669,24 +754,28 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->rewrite_src = prev->rewrite_src;
         conf->rewrite_handler = prev->rewrite_handler;
         conf->rewrite_src_key = prev->rewrite_src_key;
+        conf->rewrite_chunkname = prev->rewrite_chunkname;
     }
 
     if (conf->access_src.value.len == 0) {
         conf->access_src = prev->access_src;
         conf->access_handler = prev->access_handler;
         conf->access_src_key = prev->access_src_key;
+        conf->access_chunkname = prev->access_chunkname;
     }
 
     if (conf->content_src.value.len == 0) {
         conf->content_src = prev->content_src;
         conf->content_handler = prev->content_handler;
         conf->content_src_key = prev->content_src_key;
+        conf->content_chunkname = prev->content_chunkname;
     }
 
     if (conf->log_src.value.len == 0) {
         conf->log_src = prev->log_src;
         conf->log_handler = prev->log_handler;
         conf->log_src_key = prev->log_src_key;
+        conf->log_chunkname = prev->log_chunkname;
     }
 
     if (conf->header_filter_src.value.len == 0) {
@@ -700,6 +789,32 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->body_filter_handler = prev->body_filter_handler;
         conf->body_filter_src_key = prev->body_filter_src_key;
     }
+
+#if (NGX_HTTP_SSL)
+
+#   if defined(nginx_version) && nginx_version >= 1001013
+
+    ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
+                                 (NGX_CONF_BITMASK_SET|NGX_SSL_SSLv3
+                                  |NGX_SSL_TLSv1|NGX_SSL_TLSv1_1
+                                  |NGX_SSL_TLSv1_2));
+
+#   endif
+
+    ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers,
+                             "DEFAULT");
+
+    ngx_conf_merge_uint_value(conf->ssl_verify_depth,
+                              prev->ssl_verify_depth, 1);
+    ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
+                             prev->ssl_trusted_certificate, "");
+    ngx_conf_merge_str_value(conf->ssl_crl, prev->ssl_crl, "");
+
+    if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+#endif
 
     ngx_conf_merge_value(conf->force_read_body, prev->force_read_body, 0);
     ngx_conf_merge_value(conf->enable_code_cache, prev->enable_code_cache, 1);
@@ -735,5 +850,75 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     return NGX_CONF_OK;
 }
+
+
+#if (NGX_HTTP_SSL)
+
+static ngx_int_t
+ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
+{
+    ngx_pool_cleanup_t  *cln;
+
+    llcf->ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
+    if (llcf->ssl == NULL) {
+        return NGX_ERROR;
+    }
+
+    llcf->ssl->log = cf->log;
+
+    if (ngx_ssl_create(llcf->ssl, llcf->ssl_protocols, NULL) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+
+    cln->handler = ngx_ssl_cleanup_ctx;
+    cln->data = llcf->ssl;
+
+    if (SSL_CTX_set_cipher_list(llcf->ssl->ctx,
+                                (const char *) llcf->ssl_ciphers.data)
+        == 0)
+    {
+        ngx_ssl_error(NGX_LOG_EMERG, cf->log, 0,
+                      "SSL_CTX_set_cipher_list(\"%V\") failed",
+                      &llcf->ssl_ciphers);
+        return NGX_ERROR;
+    }
+
+    if (llcf->ssl_trusted_certificate.len) {
+
+#if defined(nginx_version) && nginx_version >= 1003007
+
+        if (ngx_ssl_trusted_certificate(cf, llcf->ssl,
+                                        &llcf->ssl_trusted_certificate,
+                                        llcf->ssl_verify_depth)
+            != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+
+#else
+
+        ngx_log_error(NGX_LOG_CRIT, cf->log, 0, "at least nginx 1.3.7 is "
+                      "required for the \"lua_ssl_trusted_certificate\" "
+                      "directive");
+        return NGX_ERROR;
+
+#endif
+    }
+
+    dd("ssl crl: %.*s", (int) llcf->ssl_crl.len, llcf->ssl_crl.data);
+
+    if (ngx_ssl_crl(cf, llcf->ssl, &llcf->ssl_crl) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+#endif  /* NGX_HTTP_SSL */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

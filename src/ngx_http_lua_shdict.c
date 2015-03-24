@@ -91,7 +91,12 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_sprintf(ctx->shpool->log_ctx, " in lua_shared_dict zone \"%V\"%Z",
                 &shm_zone->shm.name);
 
+#if defined(nginx_version) && nginx_version >= 1005013
+    ctx->shpool->log_nomem = 0;
+#endif
+
 done:
+
     dd("get lmcf");
 
     lmcf = ctx->main_conf;
@@ -103,7 +108,7 @@ done:
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
         && lmcf->init_handler)
     {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != 0) {
+        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
             /* an error happened */
             return NGX_ERROR;
         }
@@ -396,28 +401,32 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                           "but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
-        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+        return luaL_error(L, "bad \"zone\" argument");
     }
 
     ctx = zone->data;
-
     name = ctx->name;
+
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
         lua_pushnil(L);
-        return 1;
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
-        return luaL_error(L,
-                          "the key argument is more than 65535 bytes: \"%s\"",
-                          key.data);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -472,7 +481,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                               (unsigned long) value.len);
         }
 
-        num = *(double *) value.data;
+        ngx_memcpy(&num, value.data, sizeof(double));
 
         lua_pushnumber(L, num);
         break;
@@ -831,24 +840,31 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
                           "but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
-        return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
+        return luaL_error(L, "bad \"zone\" argument");
     }
 
     ctx = zone->data;
 
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
+
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attempt to use empty keys");
+        lua_pushnil(L);
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
-        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
-                          (int) key.len);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -874,17 +890,18 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     case LUA_TNIL:
         if (flags & (NGX_HTTP_LUA_SHDICT_ADD|NGX_HTTP_LUA_SHDICT_REPLACE)) {
-            return luaL_error(L, "attempt to add or replace nil values");
+            lua_pushnil(L);
+            lua_pushliteral(L, "attempt to add or replace nil values");
+            return 2;
         }
 
-        value.len = 0;
-        value.data = NULL;
+        ngx_str_null(&value);
         break;
 
     default:
-        return luaL_error(L, "unsupported value type for key \"%s\" in "
-                          "shared_dict: %s", key.data,
-                          lua_typename(L, value_type));
+        lua_pushnil(L);
+        lua_pushliteral(L, "bad value type");
+        return 2;
     }
 
     if (n >= 4) {
@@ -955,6 +972,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
 replace:
+
         if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -999,6 +1017,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1011,6 +1030,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (value.data == NULL) {
@@ -1068,6 +1088,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
@@ -1126,7 +1147,9 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return luaL_error(L, "expecting 3 arguments, but only seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    if (lua_type(L, 1) != LUA_TLIGHTUSERDATA) {
+        return luaL_error(L, "bad \"zone\" argument");
+    }
 
     zone = lua_touserdata(L, 1);
     if (zone == NULL) {
@@ -1135,15 +1158,24 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     ctx = zone->data;
 
+    if (lua_isnil(L, 2)) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "nil key");
+        return 2;
+    }
+
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
     if (key.len == 0) {
-        return luaL_error(L, "attempt to use empty keys");
+        lua_pushnil(L);
+        lua_pushliteral(L, "empty key");
+        return 2;
     }
 
     if (key.len > 65535) {
-        return luaL_error(L, "the key argument is more than 65535 bytes: %d",
-                          (int) key.len);
+        lua_pushnil(L);
+        lua_pushliteral(L, "key too long");
+        return 2;
     }
 
     hash = ngx_crc32_short(key.data, key.len);
@@ -1188,7 +1220,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     p = sd->data + key.len;
 
-    num = *(double *) p;
+    ngx_memcpy(&num, p, sizeof(double));
     num += value;
 
     ngx_memcpy(p, (double *) &num, sizeof(double));
@@ -1247,6 +1279,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
         if (value->value.s.data == NULL || value->value.s.len == 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "no string buffer "
                           "initialized");
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
 
@@ -1341,7 +1374,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
@@ -1451,6 +1484,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
         }
 
 replace:
+
         if (str_value_buf && str_value_len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1492,6 +1526,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1504,6 +1539,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (str_value_buf == NULL) {
@@ -1555,6 +1591,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
@@ -1642,21 +1679,23 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     value.len = (size_t) sd->value_len;
 
     if (*str_value_len < (size_t) value.len) {
-        if (*value_type != LUA_TSTRING) {
-            return NGX_ERROR;
-        }
-
-        *str_value_buf = malloc(value.len);
-        if (*str_value_buf == NULL) {
+        if (*value_type == LUA_TBOOLEAN) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
-    }
 
-    *str_value_len = value.len;
+        if (*value_type == LUA_TSTRING) {
+            *str_value_buf = malloc(value.len);
+            if (*str_value_buf == NULL) {
+                ngx_shmtx_unlock(&ctx->shpool->mutex);
+                return NGX_ERROR;
+            }
+        }
+    }
 
     switch (*value_type) {
     case LUA_TSTRING:
+        *str_value_len = value.len;
         ngx_memcpy(*str_value_buf, value.data, value.len);
         break;
 
@@ -1671,7 +1710,8 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
             return NGX_ERROR;
         }
 
-        *num_value = *(double *) value.data;
+        *str_value_len = value.len;
+        ngx_memcpy(num_value, value.data, sizeof(double));
         break;
 
     case LUA_TBOOLEAN:
@@ -1695,6 +1735,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                       "bad value type found for key %*s in "
                       "shared_dict %V: %d", key_len, key, &name,
                       *value_type);
+        return NGX_ERROR;
     }
 
     *user_flags = sd->user_flags;
@@ -1760,7 +1801,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
     p = sd->data + key_len;
 
-    num = *(double *) p;
+    ngx_memcpy(&num, p, sizeof(double));
     num += *value;
 
     ngx_memcpy(p, (double *) &num, sizeof(double));
@@ -1770,7 +1811,34 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     *value = num;
     return NGX_OK;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
+
+int
+ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
+{
+    ngx_queue_t                 *q;
+    ngx_http_lua_shdict_node_t  *sd;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    for (q = ngx_queue_head(&ctx->sh->queue);
+         q != ngx_queue_sentinel(&ctx->sh->queue);
+         q = ngx_queue_next(q))
+    {
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+        sd->expires = 1;
+    }
+
+    ngx_http_lua_shdict_expire(ctx, 0);
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return NGX_OK;
+}
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

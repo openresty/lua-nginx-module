@@ -133,7 +133,7 @@ read: Connection: close
 read: 
 failed to read a line: closed [foo
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -201,7 +201,7 @@ Content-Length: 4\r
 Connection: close
 failed to read a line: closed [foo
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -272,7 +272,7 @@ request sent: 57
 read: abc
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -343,7 +343,7 @@ request sent: 57
 read: abcabc
 failed to read a line: closed [d
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -414,7 +414,7 @@ request sent: 57
 read: abaabc
 failed to read a line: closed [ef
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -485,7 +485,7 @@ request sent: 57
 read: baaaaaaaaeaa
 failed to read a line: closed [f
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -557,7 +557,7 @@ request sent: 57
 read: baaaaaaaaeaa
 failed to read a line: closed [f
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -629,7 +629,7 @@ request sent: 57
 read: baaaaaaaaeaa
 failed to read a line: closed [f
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -700,7 +700,7 @@ request sent: 57
 read: abcabd
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -771,7 +771,7 @@ request sent: 57
 read: abcabdabc
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -842,7 +842,7 @@ request sent: 57
 read: abc
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -913,7 +913,7 @@ request sent: 57
 read: ab
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -984,7 +984,7 @@ request sent: 57
 read: --
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -1060,7 +1060,7 @@ read:
 failed to read a line: nil [nil]
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -1137,7 +1137,7 @@ read:
 failed to read a line: nil [nil]
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -1225,7 +1225,7 @@ read one byte:
 
 failed to read a chunk: nil [nil]
 failed to read a byte: closed []
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -1297,7 +1297,7 @@ request sent: 57
 read: abc
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]

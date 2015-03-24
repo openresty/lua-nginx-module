@@ -179,9 +179,9 @@ add timer 100
 add timer 1000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua sleep cleanup
 delete timer 1000
-delete thread 2
 delete thread 1
 free request
 

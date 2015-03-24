@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 11);
 
 #no_diff();
 no_long_string();
@@ -693,8 +693,53 @@ v = ngx.var["request_uri"]
 ngx.print("request_uri: ", v, "\n")
 --- request
 GET /lua?a=1&b=2
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body_like: 404 Not Found
+--- error_code: 404
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
+
+
+
+=== TEST 37: use of ngx.say() in access_by_lua without exiting with 200+.
+--- config
+    location /t {
+        access_by_lua "ngx.say('test')";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
+
+
+
+=== TEST 38: use of ngx.say() in access_by_lua without exiting with 200+. (with explicit ngx.eof())
+--- config
+    location /t {
+        access_by_lua "ngx.say('test') ngx.eof()";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
+
+
+
+=== TEST 39: use of ngx.say() in access_by_lua without exiting with 200+. (with IO)
+--- config
+    location /t {
+        access_by_lua "ngx.say('test') ngx.sleep(0.001)";
+        echo_exec /t2;
+    }
+--- request
+    GET /t
+--- response_body
+test
+--- no_error_log
+[alert]
 

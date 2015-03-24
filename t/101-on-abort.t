@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 16);
+plan tests => repeat_each() * (blocks() * 4 + 19);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -54,11 +54,12 @@ GET /t
 
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
-create 2 in 1
+--- stap_out_like chop
+^create 2 in 1
 lua check broken conn
 terminate 2: ok
-terminate 1: ok
+(?:lua check broken conn
+)?terminate 1: ok
 delete thread 2
 delete thread 1
 lua req cleanup
@@ -293,13 +294,15 @@ lua req cleanup
 
 --- timeout: 0.2
 --- abort
---- wait: 0.6
+--- wait: 0.7
 --- ignore_response
---- error_log
-client prematurely closed connection
-on abort called
-lua user thread aborted: runtime error: [string "content_by_lua"]:4: attempt to abort with pending subrequests
-main handler done
+--- error_log eval
+[
+'client prematurely closed connection',
+'on abort called',
+qr/lua user thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):4: attempt to abort with pending subrequests/,
+'main handler done',
+]
 
 
 
@@ -354,7 +357,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.2
+--- wait: 0.5
 --- ignore_response
 --- no_error_log
 [error]
@@ -788,4 +791,59 @@ on abort called
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 18: regsiter on_abort callback but no client abortion (2 uthreads and 1 pending)
+--- config
+    location /t {
+        lua_check_client_abort on;
+        rewrite_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.thread.spawn(function ()
+                ngx.sleep(0.1)
+                ngx.say("done")
+                ngx.exit(200)
+            end)
+
+            ngx.thread.spawn(function ()
+                ngx.sleep(100)
+            end)
+        ';
+        content_by_lua return;
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+create 4 in 1
+spawn user thread 4 in 1
+terminate 1: ok
+delete thread 1
+terminate 3: ok
+lua req cleanup
+delete thread 2
+delete thread 3
+delete thread 4
+
+--- wait: 0.5
+--- response_body
+done
+--- no_error_log
+[error]
+client prematurely closed connection
+on abort called
+main handler done
 

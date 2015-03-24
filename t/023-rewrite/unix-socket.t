@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (2 * blocks() + 1);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -45,6 +45,8 @@ connect: nil no such file or directory
 send: nil closed
 receive: nil closed
 close: nil closed
+--- error_log eval
+qr{\[crit\] .*? connect\(\) to unix:/tmp/nosuchfile\.sock failed}
 
 
 
@@ -148,5 +150,5 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed
-close: nil closed
+close: 1 nil
 

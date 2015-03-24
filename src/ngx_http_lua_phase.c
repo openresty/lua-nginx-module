@@ -30,7 +30,7 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
      * phase. */
 
     if (r == NULL) {
-        lua_pushlstring(L, (char *) "init", sizeof("init") - 1);
+        lua_pushliteral(L, "init");
         return 1;
     }
 
@@ -40,6 +40,10 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
     }
 
     switch (ctx->context) {
+    case NGX_HTTP_LUA_CONTEXT_INIT_WORKER:
+        lua_pushliteral(L, "init_worker");
+        break;
+
     case NGX_HTTP_LUA_CONTEXT_SET:
         lua_pushliteral(L, "set");
         break;

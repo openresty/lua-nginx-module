@@ -574,7 +574,7 @@ GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-failed to run set_by_lua*: [string "set_by_lua"]:1: Bad
+failed to run set_by_lua*: set_by_lua:1: Bad
 
 
 
@@ -795,5 +795,5 @@ GET /lua?a=1&b=2
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
 

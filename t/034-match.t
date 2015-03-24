@@ -372,7 +372,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- config
     location /re {
         content_by_lua '
-            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "H")
+            rc, m = pcall(ngx.re.match, "hello\\nworld", ".*", "Hm")
             if rc then
                 if m then
                     ngx.say(m[0])
@@ -387,7 +387,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 --- request
     GET /re
 --- response_body_like chop
-error: .*?unknown flag "H"
+error: .*?unknown flag "H" \(flags "Hm"\)
 
 
 
@@ -1092,4 +1092,59 @@ end
     GET /re
 --- response_body
 failed to match
+
+
+
+=== TEST 47: extra table argument
+--- config
+    location /re {
+        content_by_lua '
+            local res = {}
+            local s = "hello, 1234"
+            m = ngx.re.match(s, [[(\\d)(\\d)]], "o", nil, res)
+            if m then
+                ngx.say("1: m size: ", #m)
+                ngx.say("1: res size: ", #res)
+            else
+                ngx.say("1: not matched!")
+            end
+            m = ngx.re.match(s, [[(\\d)]], "o", nil, res)
+            if m then
+                ngx.say("2: m size: ", #m)
+                ngx.say("2: res size: ", #res)
+            else
+                ngx.say("2: not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1: m size: 2
+1: res size: 2
+2: m size: 2
+2: res size: 2
+
+
+
+=== TEST 48: init_by_lua
+--- http_config
+    init_by_lua '
+        m = ngx.re.match("hello, 1234", "(\\\\d+)")
+    ';
+--- config
+    location /re {
+        content_by_lua '
+            if m then
+                ngx.say(m[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+1234
+--- SKIP
 

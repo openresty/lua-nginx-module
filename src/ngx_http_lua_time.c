@@ -247,4 +247,32 @@ ngx_http_lua_inject_req_time_api(lua_State *L)
     lua_setfield(L, -2, "start_time");
 }
 
+
+#ifndef NGX_LUA_NO_FFI_API
+double
+ngx_http_lua_ffi_now(void)
+{
+    ngx_time_t              *tp;
+
+    tp = ngx_timeofday();
+
+    return tp->sec + tp->msec / 1000.0;
+}
+
+
+double
+ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r)
+{
+    return r->start_sec + r->start_msec / 1000.0;
+}
+
+
+long
+ngx_http_lua_ffi_time(void)
+{
+    return (long) ngx_time();
+}
+#endif /* NGX_LUA_NO_FFI_API */
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

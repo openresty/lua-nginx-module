@@ -15,6 +15,7 @@
 
 
 static int ngx_http_lua_config_prefix(lua_State *L);
+static int ngx_http_lua_config_configure(lua_State *L);
 
 
 void
@@ -22,7 +23,7 @@ ngx_http_lua_inject_config_api(lua_State *L)
 {
     /* ngx.config */
 
-    lua_createtable(L, 0, 4 /* nrec */);    /* .config */
+    lua_createtable(L, 0, 5 /* nrec */);    /* .config */
 
 #if (NGX_DEBUG)
     lua_pushboolean(L, 1);
@@ -40,6 +41,9 @@ ngx_http_lua_inject_config_api(lua_State *L)
     lua_pushinteger(L, ngx_http_lua_version);
     lua_setfield(L, -2, "ngx_lua_version");
 
+    lua_pushcfunction(L, ngx_http_lua_config_configure);
+    lua_setfield(L, -2, "nginx_configure");
+
     lua_setfield(L, -2, "config");
 }
 
@@ -51,3 +55,13 @@ ngx_http_lua_config_prefix(lua_State *L)
                     ngx_cycle->prefix.len);
     return 1;
 }
+
+
+static int
+ngx_http_lua_config_configure(lua_State *L)
+{
+    lua_pushliteral(L, NGX_CONFIGURE);
+    return 1;
+}
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

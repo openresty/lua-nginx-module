@@ -31,6 +31,8 @@ char * ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 char * ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+char * ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 char * ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 #if defined(NDK) && NDK

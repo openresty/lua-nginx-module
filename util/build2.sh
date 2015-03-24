@@ -19,6 +19,7 @@ force=$2
             #--without-http_referer_module \
 
 time ngx-build $force $version \
+            --with-ipv6 \
             --with-cc-opt="-I$PCRE_INC" \
             --with-http_realip_module \
         --with-http_ssl_module \
@@ -28,9 +29,9 @@ time ngx-build $force $version \
             --with-http_spdy_module \
             --without-mail_pop3_module \
             --without-mail_imap_module \
+            --with-http_image_filter_module \
             --without-mail_smtp_module \
             --without-http_upstream_ip_hash_module \
-            --without-http_empty_gif_module \
             --without-http_memcached_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
@@ -39,6 +40,7 @@ time ngx-build $force $version \
                 --add-module=$root/../memc-nginx-module \
                 --add-module=$root/../srcache-nginx-module \
                 --add-module=$root \
+                --add-module=$root/../lua-upstream-nginx-module \
               --add-module=$root/../headers-more-nginx-module \
                 --add-module=$root/../drizzle-nginx-module \
                 --add-module=$root/../rds-json-nginx-module \

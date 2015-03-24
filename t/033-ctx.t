@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 7);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -39,7 +39,7 @@ GET /lua
 --- config
     location /lua {
         rewrite_by_lua '
-            ngx.say("foo = ", ngx.ctx.foo)
+            print("foo = ", ngx.ctx.foo)
             ngx.ctx.foo = 76
         ';
         access_by_lua '
@@ -52,10 +52,13 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-foo = nil
 79
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/foo = [^,]+/
+--- log_level: info
+--- grep_error_log_out
+foo = nil
 
 
 
@@ -389,4 +392,53 @@ foo
 --- log_level: debug
 --- error_log
 lua release ngx.ctx at ref
+
+
+
+=== TEST 17: ngx.ctx gets prematurely released ngx.exit()
+--- config
+    location = /t {
+        rewrite_by_lua '
+            ngx.ctx.foo = 3
+        ';
+        content_by_lua '
+            -- if ngx.headers_sent ~= true then ngx.send_headers() end
+            return ngx.exit(200)
+        ';
+        header_filter_by_lua '
+            if ngx.ctx.foo ~= 3 then
+                ngx.log(ngx.ERR, "bad ngx.ctx.foo: ", ngx.ctx.foo)
+            end
+        ';
+        }
+--- request
+    GET /t
+--- response_body
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: ngx.ctx gets prematurely released ngx.exit() (lua_code_cache off)
+--- config
+    location = /t {
+        lua_code_cache off;
+        rewrite_by_lua '
+            ngx.ctx.foo = 3
+        ';
+        content_by_lua '
+            -- if ngx.headers_sent ~= true then ngx.send_headers() end
+            return ngx.exit(200)
+        ';
+        header_filter_by_lua '
+            if ngx.ctx.foo ~= 3 then
+                ngx.log(ngx.ERR, "bad ngx.ctx.foo: ", ngx.ctx.foo)
+            end
+        ';
+        }
+--- request
+    GET /t
+--- response_body
+--- no_error_log
+[error]
 

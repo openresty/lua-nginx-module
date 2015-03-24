@@ -22,6 +22,7 @@
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
+#include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
 
 
@@ -31,6 +32,9 @@
 
 static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 #endif
+
+static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
+    size_t tag_len);
 
 
 char *
@@ -50,7 +54,12 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        ngx_array_init(lmcf->shm_zones, cf->pool, 2, sizeof(ngx_shm_zone_t *));
+        if (ngx_array_init(lmcf->shm_zones, cf->pool, 2,
+                           sizeof(ngx_shm_zone_t *))
+            != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
     }
 
     value = cf->args->elts;
@@ -295,9 +304,9 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, filter_data->script.data,
+    rc = ngx_http_lua_cache_loadbuffer(r, L, filter_data->script.data,
                                        filter_data->script.len,
-                                       filter_data->key, "set_by_lua");
+                                       filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -348,7 +357,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, filter_data->key);
+    rc = ngx_http_lua_cache_loadfile(r, L, script_path, filter_data->key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -366,7 +375,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 char *
 ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char                      *p;
+    u_char                      *p, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
@@ -399,7 +408,16 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cmd->post == ngx_http_lua_rewrite_handler_inline) {
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "rewrite_by_lua",
+                                                sizeof("rewrite_by_lua") - 1);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        llcf->rewrite_chunkname = chunkname;
+
         /* Don't eval nginx variables for inline lua code */
+
         llcf->rewrite_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
@@ -452,7 +470,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char                      *p;
+    u_char                      *p, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
@@ -481,7 +499,16 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cmd->post == ngx_http_lua_access_handler_inline) {
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "access_by_lua",
+                                                sizeof("access_by_lua") - 1);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        llcf->access_chunkname = chunkname;
+
         /* Don't eval nginx variables for inline lua code */
+
         llcf->access_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
@@ -535,6 +562,7 @@ char *
 ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     u_char                      *p;
+    u_char                      *chunkname;
     ngx_str_t                   *value;
     ngx_http_core_loc_conf_t    *clcf;
     ngx_http_lua_main_conf_t    *lmcf;
@@ -563,7 +591,18 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cmd->post == ngx_http_lua_content_handler_inline) {
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "content_by_lua",
+                                                sizeof("content_by_lua") - 1);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        llcf->content_chunkname = chunkname;
+
+        dd("chunkname: %s", chunkname);
+
         /* Don't eval nginx variables for inline lua code */
+
         llcf->content_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
@@ -623,7 +662,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char                      *p;
+    u_char                      *p, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
@@ -652,7 +691,16 @@ ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cmd->post == ngx_http_lua_log_handler_inline) {
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "log_by_lua",
+                                                sizeof("log_by_lua") - 1);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        llcf->log_chunkname = chunkname;
+
         /* Don't eval nginx variables for inline lua code */
+
         llcf->log_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
@@ -912,6 +960,47 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+char *
+ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    u_char                      *name;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf = conf;
+
+    dd("enter");
+
+    /*  must specifiy a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (lmcf->init_worker_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    lmcf->init_worker_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+
+    if (cmd->post == ngx_http_lua_init_worker_by_file) {
+        name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
+                                        value[1].len);
+        if (name == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->init_worker_src.data = name;
+        lmcf->init_worker_src.len = ngx_strlen(name);
+
+    } else {
+        lmcf->init_worker_src = value[1];
+    }
+
+    return NGX_CONF_OK;
+}
+
+
 #if defined(NDK) && NDK
 static ngx_int_t
 ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
@@ -947,5 +1036,46 @@ ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
     return NGX_OK;
 }
 #endif
+
+
+static u_char *
+ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len)
+{
+    u_char      *p, *out;
+    size_t       len;
+
+    len = sizeof("=(:)") - 1 + tag_len + cf->conf_file->file.name.len
+          + NGX_INT64_LEN + 1;
+
+    out = ngx_palloc(cf->pool, len);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    if (cf->conf_file->file.name.len) {
+        p = cf->conf_file->file.name.data + cf->conf_file->file.name.len;
+        while (--p >= cf->conf_file->file.name.data) {
+            if (*p == '/' || *p == '\\') {
+                p++;
+                goto found;
+            }
+        }
+
+        p++;
+
+    } else {
+        p = cf->conf_file->file.name.data;
+    }
+
+found:
+
+    ngx_snprintf(out, len, "=%*s(%*s:%d)%Z",
+                 tag_len, tag, cf->conf_file->file.name.data
+                               + cf->conf_file->file.name.len - p,
+                 p, cf->conf_file->line);
+
+    return out;
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

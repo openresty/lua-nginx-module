@@ -39,7 +39,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 argument but seen %d", n);
+        return luaL_error(L, "expecting 1 or 2 arguments but seen %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -83,7 +83,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
     r->uri.data = ngx_palloc(r->pool, len);
     if (r->uri.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(r->uri.data, p, len);

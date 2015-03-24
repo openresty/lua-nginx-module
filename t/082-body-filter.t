@@ -11,10 +11,10 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 13);
 
 #no_diff();
-#no_long_string();
+no_long_string();
 
 run_tests();
 
@@ -318,7 +318,7 @@ hiya globe
 GET /t
 --- ignore_response
 --- error_log
-failed to run body_filter_by_lua*: [string "body_filter_by_lua"]:4: something bad happened!
+failed to run body_filter_by_lua*: body_filter_by_lua:4: something bad happened!
 
 
 
@@ -523,7 +523,7 @@ ngx.print("request_uri: ", v, "\n")
 GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
 
 
 
@@ -569,6 +569,258 @@ truncated: true
 --- request
 GET /t
 --- response_body
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 22: body filter + ngx.say() (github issue #386)
+--- config
+    postpone_output 1;
+    location = /t {
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            -- do return end
+            if not ngx.ctx.chunks then
+                ngx.ctx.chunks = {}
+            end
+
+            table.insert(ngx.ctx.chunks, ngx.arg[1])
+            print("got chunk ", ngx.arg[1])
+            ngx.arg[1] = nil
+
+            if ngx.arg[2] then
+                print("seen eof: ", string.upper(table.concat(ngx.ctx.chunks)))
+                ngx.arg[1] = string.upper(table.concat(ngx.ctx.chunks))
+            end
+        ';
+
+        content_by_lua '
+            for i = 1, 10 do
+                assert(ngx.say("hello world"))
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"HELLO WORLD\n" x 10
+
+--- stap2
+global active = 1
+F(ngx_http_lua_body_filter_by_chunk) {
+    printf("body filter by lua: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_http_write_filter) {
+    printf("write filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+
+F(ngx_output_chain) {
+    #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
+    #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
+    printf("output chain %p: %s\n", $in, ngx_chain_dump($in))
+}
+F(ngx_linux_sendfile_chain) {
+    printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
+}
+F(ngx_chain_writer) {
+    printf("chain writer ctx out: %p\n", $data)
+    printf("nginx chain writer: %s\n", ngx_chain_dump($in))
+}
+probe syscall.writev {
+    if (active && pid() == target()) {
+        printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
+        /*
+        for (i = 0; i < $vlen; i++) {
+            printf(" %p [%s]", $vec[i]->iov_base, text_str(user_string_n($vec[i]->iov_base, $vec[i]->iov_len)))
+        }
+        */
+    }
+}
+probe syscall.writev.return {
+    if (active && pid() == target()) {
+        printf(" = %s\n", retstr)
+    }
+}
+
+--- stap_out2
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 23: body filter + ngx.say() (github issue #386), with flush
+--- config
+    location = /t {
+        header_filter_by_lua 'ngx.header.content_length = nil';
+
+        body_filter_by_lua '
+            -- do return end
+            if not ngx.ctx.chunks then
+                ngx.ctx.chunks = {}
+            end
+
+            table.insert(ngx.ctx.chunks, ngx.arg[1])
+            print("got chunk ", ngx.arg[1])
+            ngx.arg[1] = nil
+
+            if ngx.arg[2] then
+                print("seen eof: ", string.upper(table.concat(ngx.ctx.chunks)))
+                ngx.arg[1] = string.upper(table.concat(ngx.ctx.chunks))
+            end
+        ';
+
+        content_by_lua '
+            for i = 1, 10 do
+                assert(ngx.say("hello world"))
+                ngx.flush(true)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"HELLO WORLD\n" x 10
+
+--- stap
+F(ngx_http_write_filter) {
+    for (cl = $in; cl; cl = @cast(cl, "ngx_chain_t")->next) {
+        if (@cast(cl, "ngx_chain_t")->buf->flush) {
+            printf("seen flush buf.\n")
+        }
+
+        if (@cast(cl, "ngx_chain_t")->buf->last_buf) {
+            printf("seen last buf.\n")
+        }
+    }
+}
+
+--- stap_out_like eval
+qr/^(?:seen flush buf\.
+){10,}seen last buf\.
+$/
+
+--- stap2
+global active = 1
+F(ngx_http_lua_body_filter_by_chunk) {
+    printf("body filter by lua: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_http_write_filter) {
+    printf("write filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_http_charset_body_filter) {
+    printf("charset body filter: %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_output_chain) {
+    #printf("ctx->in: %s\n", ngx_chain_dump($ctx->in))
+    #printf("ctx->busy: %s\n", ngx_chain_dump($ctx->busy))
+    printf("output chain %p: %s\n", $in, ngx_chain_dump($in))
+}
+
+F(ngx_linux_sendfile_chain) {
+    printf("linux sendfile chain: %s\n", ngx_chain_dump($in))
+}
+
+F(ngx_chain_writer) {
+    printf("chain writer ctx out: %p\n", $data)
+    printf("nginx chain writer: %s\n", ngx_chain_dump($in))
+}
+
+probe syscall.writev {
+    if (active && pid() == target()) {
+        printf("writev(%s)", ngx_iovec_dump($vec, $vlen))
+        /*
+        for (i = 0; i < $vlen; i++) {
+            printf(" %p [%s]", $vec[i]->iov_base, text_str(user_string_n($vec[i]->iov_base, $vec[i]->iov_len)))
+        }
+        */
+    }
+}
+
+probe syscall.writev.return {
+    if (active && pid() == target()) {
+        printf(" = %s\n", retstr)
+    }
+}
+
+--- stap_out2
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 24: clear ngx.arg[1] and then read it
+--- config
+    location /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = nil
+            local data = ngx.arg[1]
+            print([[data chunk: "]], data, [["]])
+
+            ngx.arg[1] = ""
+            data = ngx.arg[1]
+            print([[data chunk 2: "]], data, [["]])
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- log_level: info
+--- grep_error_log eval: qr/data chunk(?: \d+)?: [^,]+/
+--- grep_error_log_out
+data chunk: ""
+data chunk 2: ""
+data chunk: ""
+data chunk 2: ""
+data chunk: ""
+data chunk 2: ""
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 25: clear ngx.arg[1] and then read ngx.arg[2]
+--- config
+    location /t {
+        echo hello;
+        echo world;
+
+        body_filter_by_lua '
+            ngx.arg[1] = nil
+            local eof = ngx.arg[2]
+            print([[eof: ]], eof)
+
+            ngx.arg[1] = ""
+            eof = ngx.arg[2]
+            print([[eof 2: ]], eof)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+--- log_level: info
+--- grep_error_log eval: qr/eof(?: \d+)?: [^,]+/
+--- grep_error_log_out
+eof: false
+eof 2: false
+eof: false
+eof 2: false
+eof: true
+eof 2: true
+
 --- no_error_log
 [error]
 [alert]

@@ -116,7 +116,6 @@ POST
 --- request
 GET /lua
 --- response_body
-HEAD
 
 
 
@@ -448,7 +447,7 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-fo%3d=%3d%3e
+fo%3D=%3D%3E
 
 
 
@@ -470,7 +469,7 @@ fo%3d=%3d%3e
 --- request
 GET /lua
 --- response_body_like chop
-^(?:fo%3d=%3d%3e\&%3d=%3a|%3d=%3a\&fo%3d=%3d%3e)$
+^(?:fo%3D=%3D%3E\&%3D=%3A|%3D=%3A\&fo%3D=%3D%3E)$
 
 
 

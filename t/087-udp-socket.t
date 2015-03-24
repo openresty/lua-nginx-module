@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 8);
+plan tests => repeat_each() * (3 * blocks() + 13);
 
 our $HtmlDir = html_dir;
 
@@ -262,8 +262,8 @@ M(http-lua-info) {
 --- request
 GET /main
 --- response_body_like: \b500\b
---- error_log
-failed to connect: socket busy
+--- error_log eval
+qr/content_by_lua\(nginx\.conf:\d+\):8: bad request/
 
 
 
@@ -327,8 +327,8 @@ end
 --- request
 GET /main
 --- response_body_like: \b500\b
---- error_log
-failed to receive data: socket busy
+--- error_log eval
+qr/content_by_lua\(nginx\.conf:\d+\):6: bad request/
 
 
 
@@ -558,7 +558,7 @@ lua udp socket read timed out
 
             udp:settimeout(2000) -- 2 sec
 
-            local ok, err = udp:setpeername("8.8.8.8", 53)
+            local ok, err = udp:setpeername("$TEST_NGINX_RESOLVER", 53)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -603,9 +603,20 @@ lua udp socket receive buffer size: 8192
 === TEST 11: access the google DNS server (using domain names)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
+            -- avoid flushing google in "check leak" testing mode:
+            local counter = package.loaded.counter
+            if not counter then
+                counter = 1
+            elseif counter >= 2 then
+                return ngx.exit(503)
+            else
+                counter = counter + 1
+            end
+            package.loaded.counter = counter
+
             local socket = ngx.socket
             -- local socket = require "socket"
 
@@ -657,7 +668,7 @@ lua udp socket receive buffer size: 8192
 
 === TEST 12: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
 
     location = /sub {
         content_by_lua '
@@ -699,7 +710,7 @@ resolve name done
 
 === TEST 13: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver 8.8.8.8;
+    resolver $TEST_NGINX_RESOLVER;
     resolver_timeout 3s;
 
     location = /sub {
@@ -736,7 +747,7 @@ successfully connected to xxx!
 
 --- no_error_log
 [error]
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -805,4 +816,289 @@ probe syscall.socket.return, syscall.connect.return {
 [error]
 [crit]
 --- skip_eval: 3: $^O ne 'linux'
+
+
+
+=== TEST 15: bad request tries to setpeer
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:setpeername("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to set peer: ", err)
+                else
+                    ngx.say("peer set")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:setpeername("127.0.0.1", ngx.var.port)
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.udp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^peer set
+<html.*?500 Internal Server Error/ms
+
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
+--- no_error_log
+[alert]
+
+
+
+=== TEST 16: bad request tries to send
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:setpeername("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to set peer: ", err)
+                else
+                    ngx.say("peer set")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:send("a")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.udp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^peer set
+<html.*?500 Internal Server Error/ms
+
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
+--- no_error_log
+[alert]
+
+
+
+=== TEST 17: bad request tries to receive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:setpeername("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to set peer: ", err)
+                else
+                    ngx.say("peer set")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:receive()
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.udp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^peer set
+<html.*?500 Internal Server Error/ms
+
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
+--- no_error_log
+[alert]
+
+
+
+=== TEST 18: bad request tries to close
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:setpeername("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to set peer: ", err)
+                else
+                    ngx.say("peer set")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:send("a")
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.udp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^peer set
+<html.*?500 Internal Server Error/ms
+
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
+--- no_error_log
+[alert]
+
+
+
+=== TEST 19: bad request tries to receive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+--- config
+    server_tokens off;
+    location = /main {
+        echo_location /t?reset=1;
+        echo_location /t;
+    }
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua '
+            local test = require "test"
+            if ngx.var.arg_reset then
+                local sock = test.new_sock()
+                local ok, err = sock:setpeername("127.0.0.1", ngx.var.port)
+                if not ok then
+                    ngx.say("failed to set peer: ", err)
+                else
+                    ngx.say("peer set")
+                end
+                return
+            end
+            local sock = test.get_sock()
+            sock:close()
+        ';
+    }
+--- user_files
+>>> test.lua
+module("test", package.seeall)
+
+local sock
+
+function new_sock()
+    sock = ngx.socket.udp()
+    return sock
+end
+
+function get_sock()
+    return sock
+end
+--- request
+GET /main
+--- response_body_like eval
+qr/^peer set
+<html.*?500 Internal Server Error/ms
+
+--- error_log eval
+qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
+
+--- no_error_log
+[alert]
 

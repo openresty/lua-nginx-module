@@ -10,7 +10,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 #no_long_string();
@@ -247,4 +247,27 @@ GET /t
 --- http09
 --- response_body
 status = 9
+
+
+
+=== TEST 15: err status
+--- config
+    location /nil {
+        content_by_lua '
+            ngx.exit(502)
+        ';
+        body_filter_by_lua '
+            if ngx.arg[2] then
+                ngx.log(ngx.WARN, "ngx.status = ", ngx.status)
+            end
+        ';
+    }
+--- request
+GET /nil
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- error_log
+ngx.status = 502
+--- no_error_log
+[error]
 

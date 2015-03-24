@@ -98,7 +98,7 @@ barbar\r
 0\r
 \r
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]

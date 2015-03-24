@@ -142,6 +142,7 @@ ERRORS
 src/bodyfilterby.[ch]
 src/tcp.[ch]
 src/initby.[ch]
+src/initworkerby.[ch]
 src/socket.[ch]
 src/udp.[ch]
 src/method.[ch]
@@ -151,6 +152,7 @@ src/probe.h
 src/uthread.[ch]
 src/timer.[ch]
 src/config.[ch]
+src/worker.[ch]
 *.plist
 lua
 ttimer

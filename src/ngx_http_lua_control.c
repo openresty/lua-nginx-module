@@ -74,8 +74,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    args.data = NULL;
-    args.len = 0;
+    ngx_str_null(&args);
 
     /* read the 1st argument (uri) */
 
@@ -87,7 +86,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     uri.data = ngx_palloc(r->pool, len);
     if (uri.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri.data, p, len);
@@ -122,7 +121,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             user_args.data = ngx_palloc(r->pool, len);
             if (user_args.data == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             ngx_memcpy(user_args.data, p, len);
@@ -138,8 +137,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
             break;
 
         case LUA_TNIL:
-            user_args.data = NULL;
-            user_args.len = 0;
+            ngx_str_null(&user_args);
             break;
 
         default:
@@ -160,7 +158,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         } else {
             p = ngx_palloc(r->pool, args.len + user_args.len + 1);
             if (p == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             q = ngx_copy(p, args.data, args.len);
@@ -172,7 +170,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         }
     }
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         return luaL_error(L, "attempt to call ngx.exec after "
                           "sending out response headers");
     }
@@ -197,6 +195,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     u_char                      *p;
     u_char                      *uri;
     size_t                       len;
+    ngx_table_elt_t             *h;
     ngx_http_request_t          *r;
 
     n = lua_gettop(L);
@@ -236,35 +235,35 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
                           "the headers");
     }
 
     uri = ngx_palloc(r->pool, len);
     if (uri == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri, p, len);
 
-    r->headers_out.location = ngx_list_push(&r->headers_out.headers);
-    if (r->headers_out.location == NULL) {
-        return luaL_error(L, "out of memory");
+    h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
+        return luaL_error(L, "no memory");
     }
 
-    r->headers_out.location->hash = ngx_http_lua_location_hash;
+    h->hash = ngx_http_lua_location_hash;
 
 #if 0
     dd("location hash: %lu == %lu",
-            (unsigned long) r->headers_out.location->hash,
+            (unsigned long) h->hash,
             (unsigned long) ngx_hash_key_lc((u_char *) "Location",
             sizeof("Location") - 1));
 #endif
 
-    r->headers_out.location->value.len = len;
-    r->headers_out.location->value.data = uri;
-    ngx_str_set(&r->headers_out.location->key, "Location");
+    h->value.len = len;
+    h->value.data = uri;
+    ngx_str_set(&h->key, "Location");
 
     r->headers_out.status = rc;
 
@@ -273,7 +272,16 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua redirect to \"%V\" with code %i",
-                   &r->headers_out.location->value, ctx->exit_code);
+                   &h->value, ctx->exit_code);
+
+    if (len && uri[0] != '/') {
+        r->headers_out.location = h;
+    }
+
+    /*
+     * we do not set r->headers_out.location here to avoid the handling
+     * the local redirects without a host name by ngx_http_header_filter()
+     */
 
     return lua_yield(L, 0);
 }
@@ -317,7 +325,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "attempt to abort with pending subrequests");
     }
 
-    if (r->header_sent
+    if ((r->header_sent || ctx->header_sent)
         && rc >= NGX_HTTP_SPECIAL_RESPONSE
         && rc != NGX_HTTP_REQUEST_TIME_OUT
         && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST
@@ -406,7 +414,7 @@ ngx_http_lua_on_abort(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     size_t *errlen)
@@ -442,7 +450,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
         return NGX_ERROR;
     }
 
-    if (r->header_sent
+    if ((r->header_sent || ctx->header_sent)
         && status >= NGX_HTTP_SPECIAL_RESPONSE
         && status != NGX_HTTP_REQUEST_TIME_OUT
         && status != NGX_HTTP_CLIENT_CLOSED_REQUEST
@@ -470,6 +478,6 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
     return NGX_OK;
 }
-#endif  /* NGX_HTTP_LUA_NO_FFI_API */
+#endif  /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -291,26 +291,29 @@ GET /t
 
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
-create 2 in 1
+--- stap_out_like eval
+qr/^create 2 in 1
 lua check broken conn
 terminate 2: fail
-terminate 1: ok
+(?:lua check broken conn
+)?terminate 1: ok
 delete thread 2
 delete thread 1
 terminate 3: ok
 delete thread 3
 lua req cleanup
-
+$/
 --- timeout: 0.2
 --- abort
 --- wait: 0.6
 --- ignore_response
---- error_log
-client prematurely closed connection
-on abort called
-lua user thread aborted: runtime error: [string "rewrite_by_lua"]:4: attempt to abort with pending subrequests
-main handler done
+--- error_log eval
+[
+'client prematurely closed connection',
+'on abort called',
+qr/lua user thread aborted: runtime error: rewrite_by_lua\(nginx\.conf:\d+\):4: attempt to abort with pending subrequests/,
+'main handler done',
+]
 
 
 
@@ -366,7 +369,7 @@ delete thread 1
 
 --- timeout: 0.2
 --- abort
---- wait: 0.4
+--- wait: 0.5
 --- ignore_response
 --- no_error_log
 [error]
@@ -395,7 +398,6 @@ callback done: +OK
             ngx.sleep(0.7)
             ngx.log(ngx.NOTICE, "main handler done")
         ';
-        content_by_lua return;
     }
 --- request
 GET /t
@@ -405,8 +407,6 @@ GET /t
 --- stap_out
 terminate 1: ok
 delete thread 1
-terminate 2: ok
-delete thread 2
 lua req cleanup
 
 --- timeout: 0.2
@@ -435,7 +435,6 @@ main handler done
 
             ngx.say("done")
         ';
-        content_by_lua return;
     }
 --- request
 GET /t
@@ -446,10 +445,8 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-delete thread 2
-terminate 3: ok
-delete thread 3
 lua req cleanup
+delete thread 2
 
 --- response_body
 done
@@ -597,11 +594,10 @@ terminate 1: ok
 delete thread 1
 terminate 3: ok
 delete thread 3
-delete thread 2
-terminate 4: ok
-delete thread 4
 lua req cleanup
+delete thread 2
 
+--- wait: 0.5
 --- response_body
 done
 --- no_error_log
@@ -651,10 +647,8 @@ GET /t
 create 2 in 1
 terminate 1: ok
 delete thread 1
-delete thread 2
-terminate 3: ok
-delete thread 3
 lua req cleanup
+delete thread 2
 
 --- response_body
 2: cannot set on_abort: duplicate call

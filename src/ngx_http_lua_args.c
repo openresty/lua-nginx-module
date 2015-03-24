@@ -48,7 +48,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
         args.data = ngx_palloc(r->pool, len);
         if (args.data == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         ngx_memcpy(args.data, p, len);
@@ -118,7 +118,7 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
 
     buf = ngx_palloc(r->pool, r->args.len);
     if (buf == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(buf, r->args.data, r->args.len);
@@ -199,7 +199,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
     buf = ngx_palloc(r->pool, len);
     if (buf == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     p = buf;
@@ -365,7 +365,7 @@ ngx_http_lua_inject_req_args_api(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 size_t
 ngx_http_lua_ffi_req_get_querystring_len(ngx_http_request_t *r)
 {
@@ -531,7 +531,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 
     return i;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

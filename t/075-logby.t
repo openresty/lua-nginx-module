@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 3 + 10);
 
 #no_diff();
 #no_long_string();
@@ -201,8 +201,8 @@ lua release ngx.ctx
 GET /lua
 --- response_body
 ok
---- error_log
-failed to run log_by_lua*: [string "log_by_lua"]:1: Bad
+--- error_log eval
+qr/failed to run log_by_lua\*: log_by_lua\(nginx\.conf:\d+\):1: Bad/
 
 
 
@@ -535,7 +535,7 @@ GET /lua?a=1&b=2
 --- response_body
 ok
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
 
 
 
@@ -561,6 +561,25 @@ log handler
 
 --- response_body
 ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 31: reading ngx.header.HEADER in log_by_lua
+--- config
+    location /lua {
+        echo ok;
+        log_by_lua 'ngx.log(ngx.WARN, "content-type: ", ngx.header.content_type)';
+    }
+--- request
+GET /lua
+
+--- response_body
+ok
+--- error_log eval
+qr{log_by_lua\(nginx\.conf:\d+\):1: content-type: text/plain}
+
 --- no_error_log
 [error]
 

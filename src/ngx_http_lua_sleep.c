@@ -62,6 +62,8 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no co ctx found");
     }
 
+    ngx_http_lua_cleanup_pending_operation(coctx);
+    coctx->cleanup = ngx_http_lua_sleep_cleanup;
     coctx->data = r;
 
     coctx->sleep.handler = ngx_http_lua_sleep_handler;
@@ -72,8 +74,6 @@ ngx_http_lua_ngx_sleep(lua_State *L)
        (int) r->uri.len, r->uri.data);
 
     ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
-
-    coctx->cleanup = ngx_http_lua_sleep_cleanup;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua ready to sleep for %d ms", delay);
@@ -102,8 +102,10 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
         return;
     }
 
-    log_ctx = c->log->data;
-    log_ctx->current_request = r;
+    if (c->fd != -1) {  /* not a fake connection */
+        log_ctx = c->log->data;
+        log_ctx->current_request = r;
+    }
 
     coctx->cleanup = NULL;
 
@@ -138,7 +140,8 @@ ngx_http_lua_sleep_cleanup(void *data)
     ngx_http_lua_co_ctx_t          *coctx = data;
 
     if (coctx->sleep.timer_set) {
-        dd("cleanup: deleting timer for ngx.sleep");
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua clean up the timer for pending ngx.sleep");
 
         ngx_del_timer(&coctx->sleep);
     }

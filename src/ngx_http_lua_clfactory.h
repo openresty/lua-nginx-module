@@ -12,8 +12,8 @@
 #include "ngx_http_lua_common.h"
 
 
-int ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename);
-int ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
+ngx_int_t ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename);
+ngx_int_t ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
     size_t size, const char *name);
 
 

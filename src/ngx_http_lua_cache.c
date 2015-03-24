@@ -32,8 +32,12 @@
  *
  * */
 static ngx_int_t
-ngx_http_lua_cache_load_code(lua_State *L, const char *key)
+ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
+    const char *key)
 {
+    int          rc;
+    u_char      *err;
+
     /*  get code cache table */
     lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
     lua_rawget(L, LUA_REGISTRYINDEX);    /*  sp++ */
@@ -49,14 +53,26 @@ ngx_http_lua_cache_load_code(lua_State *L, const char *key)
 
     if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
-        int rc = lua_pcall(L, 0, 1, 0);
-
+        rc = lua_pcall(L, 0, 1, 0);
         if (rc == 0) {
             /*  remove cache table from stack, leave code chunk at
              *  top of stack */
             lua_remove(L, -2);   /*  sp-- */
             return NGX_OK;
         }
+
+        if (lua_isstring(L, -1)) {
+            err = (u_char *) lua_tostring(L, -1);
+
+        } else {
+            err = (u_char *) "unknown error";
+        }
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "lua: failed to run factory at key \"%s\": %s",
+                      key, err);
+        lua_pop(L, 2);
+        return NGX_ERROR;
     }
 
     dd("Value associated with given key in code cache table is not code "
@@ -117,22 +133,31 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *key)
 
 
 ngx_int_t
-ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
-    const u_char *cache_key, const char *name)
+ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
+    const u_char *src, size_t src_len, const u_char *cache_key,
+    const char *name)
 {
-    int          rc, n;
+    int          n;
+    ngx_int_t    rc;
     const char  *err = NULL;
 
     n = lua_gettop(L);
 
     dd("XXX cache key: [%s]", cache_key);
 
-    if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
+    rc = ngx_http_lua_cache_load_code(r, L, (char *) cache_key);
+    if (rc == NGX_OK) {
         /*  code chunk loaded from cache, sp++ */
         dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'",
            cache_key, lua_gettop(L), (int) src_len, src);
         return NGX_OK;
     }
+
+    if (rc == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    /* rc == NGX_DECLINED */
 
     dd("Code cache missed! cache key='%s', stack top=%d, script='%.*s'",
        cache_key, lua_gettop(L), (int) src_len, src);
@@ -160,7 +185,6 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
     /*  store closure factory and gen new closure at the top of lua stack to
      *  code cache */
     rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
-
     if (rc != NGX_OK) {
         err = "fail to generate new closure from the closure factory";
         goto error;
@@ -169,7 +193,8 @@ ngx_http_lua_cache_loadbuffer(lua_State *L, const u_char *src, size_t src_len,
     return NGX_OK;
 
 error:
-    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                   "failed to load inlined Lua code: %s", err);
     lua_settop(L, n);
     return NGX_ERROR;
@@ -177,10 +202,11 @@ error:
 
 
 ngx_int_t
-ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
-    const u_char *cache_key)
+ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
+    const u_char *script, const u_char *cache_key)
 {
-    int              rc, n;
+    int              n;
+    ngx_int_t        rc, errcode = NGX_ERROR;
     u_char          *p;
     u_char           buf[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
     const char      *err = NULL;
@@ -203,12 +229,19 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
 
     dd("XXX cache key for file: [%s]", cache_key);
 
-    if (ngx_http_lua_cache_load_code(L, (char *) cache_key) == NGX_OK) {
+    rc = ngx_http_lua_cache_load_code(r, L, (char *) cache_key);
+    if (rc == NGX_OK) {
         /*  code chunk loaded from cache, sp++ */
         dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'",
            cache_key, lua_gettop(L), script);
         return NGX_OK;
     }
+
+    if (rc == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    /* rc == NGX_DECLINED */
 
     dd("Code cache missed! cache key='%s', stack top=%d, file path='%s'",
        cache_key, lua_gettop(L), script);
@@ -216,12 +249,20 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     /*  load closure factory of script file to the top of lua stack, sp++ */
     rc = ngx_http_lua_clfactory_loadfile(L, (char *) script);
 
+    dd("loadfile returns %d (%d)", (int) rc, LUA_ERRFILE);
+
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */
-        if (rc == LUA_ERRMEM) {
+        switch (rc) {
+        case LUA_ERRMEM:
             err = "memory allocation error";
+            break;
 
-        } else {
+        case LUA_ERRFILE:
+            errcode = NGX_HTTP_NOT_FOUND;
+            /* fall through */
+
+        default:
             if (lua_isstring(L, -1)) {
                 err = lua_tostring(L, -1);
 
@@ -236,7 +277,6 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     /*  store closure factory and gen new closure at the top of lua stack
      *  to code cache */
     rc = ngx_http_lua_cache_store_code(L, (char *) cache_key);
-
     if (rc != NGX_OK) {
         err = "fail to generate new closure from the closure factory";
         goto error;
@@ -245,11 +285,12 @@ ngx_http_lua_cache_loadfile(lua_State *L, const u_char *script,
     return NGX_OK;
 
 error:
-    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                  "failed to load external Lua file: %s", err);
+
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                  "failed to load external Lua file \"%s\": %s", script, err);
 
     lua_settop(L, n);
-    return NGX_ERROR;
+    return errcode;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

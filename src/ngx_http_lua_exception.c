@@ -30,6 +30,9 @@ jmp_buf ngx_http_lua_exception;
 int
 ngx_http_lua_atpanic(lua_State *L)
 {
+#ifdef NGX_LUA_ABORT_AT_PANIC
+    abort();
+#else
     u_char                  *s = NULL;
     size_t                   len = 0;
 
@@ -49,6 +52,7 @@ ngx_http_lua_atpanic(lua_State *L)
     NGX_LUA_EXCEPTION_THROW(1);
 
     /* impossible to reach here */
+#endif
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

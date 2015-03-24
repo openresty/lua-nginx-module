@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 8);
+plan tests => repeat_each() * (blocks() * 3 + 9);
 
 our $HtmlDir = html_dir;
 
@@ -1064,4 +1064,37 @@ received: received: hello world
 
 --- error_log
 lua tcp socket read timed out
+
+
+
+=== TEST 17: req socket GC'd
+--- config
+    location /t {
+        content_by_lua '
+            do
+                local sock, err = ngx.req.socket()
+                if sock then
+                    ngx.say("got the request socket")
+                else
+                    ngx.say("failed to get the request socket: ", err)
+                end
+            end
+            collectgarbage()
+            ngx.log(ngx.WARN, "GC cycle done")
+
+            ngx.say("done")
+        ';
+    }
+--- request
+POST /t
+hello world
+--- response_body
+got the request socket
+done
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/lua finalize socket|GC cycle done/
+--- grep_error_log_out
+lua finalize socket
+GC cycle done
 

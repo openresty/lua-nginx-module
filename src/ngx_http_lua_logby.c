@@ -41,8 +41,8 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     /**
      * we want to create empty environment for current script
      *
-	 * newt = {}
-	 * newt["_G"] = newt
+     * newt = {}
+     * newt["_G"] = newt
      * setmetatable(newt, {__index = _G})
      *
      * if a function or symbol is not defined in our env, __index will lookup
@@ -51,11 +51,11 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
      * all variables created in the script-env will be thrown away at the end
      * of the script run.
      * */
-    ngx_http_lua_create_new_global_table(L, 0 /* narr */, 1 /* nrec */);
+    ngx_http_lua_create_new_globals_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
     lua_createtable(L, 0, 1);    /*  the metatable for the new env */
-    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    ngx_http_lua_get_globals_table(L);
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
     /*  }}} */
@@ -68,8 +68,6 @@ ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_loc_conf_t     *llcf;
-    ngx_int_t                    rc;
-    lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -97,17 +95,7 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     ctx->context = NGX_HTTP_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
-    rc = llcf->log_handler(r);
-
-    /* we must release the ngx.ctx table here because request cleanup runs
-     * before log phase handlers */
-
-    if (ctx->ctx_ref != LUA_NOREF) {
-        L = ngx_http_lua_get_lua_vm(r, ctx);
-        ngx_http_lua_release_ngx_ctx_table(r->connection->log, L, ctx);
-    }
-
-    return rc;
+    return llcf->log_handler(r);
 }
 
 
@@ -125,9 +113,10 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(L, llcf->log_src.value.data,
+    rc = ngx_http_lua_cache_loadbuffer(r, L, llcf->log_src.value.data,
                                        llcf->log_src.value.len,
-                                       llcf->log_src_key, "log_by_lua");
+                                       llcf->log_src_key,
+                                       (const char *) llcf->log_chunkname);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -161,7 +150,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(L, script_path, llcf->log_src_key);
+    rc = ngx_http_lua_cache_loadfile(r, L, script_path, llcf->log_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

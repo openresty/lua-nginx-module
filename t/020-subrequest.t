@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 21);
+plan tests => repeat_each() * (blocks() * 3 + 22);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -120,7 +120,6 @@ POST
 --- request
 GET /lua
 --- response_body
-HEAD
 --- no_error_log
 [error]
 
@@ -462,7 +461,7 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-fo%3d=%3d%3e
+fo%3D=%3D%3E
 --- no_error_log
 [error]
 
@@ -485,7 +484,7 @@ fo%3d=%3d%3e
 --- request
 GET /lua
 --- response_body_like chop
-^(?:fo%3d=%3d%3e\&%3d=%3a|%3d=%3a\&fo%3d=%3d%3e)$
+^(?:fo%3D=%3D%3E\&%3D=%3A|%3D=%3A\&fo%3D=%3D%3E)$
 --- no_error_log
 [error]
 --- no_error_log
@@ -1129,7 +1128,7 @@ hello world
 --- request
 GET /t?r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fjquery.min.js&r[]=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fdojo%2F1.7.2%2Fdojo%2Fdojo.js.uncompressed.js
 --- response_body
-r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fjquery%2f1.7.2%2fjquery.min.js&r%5b%5d=http%3a%2f%2fajax.googleapis.com%3a80%2fajax%2flibs%2fdojo%2f1.7.2%2fdojo%2fdojo.js.uncompressed.js
+r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fjquery.min.js&r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fdojo%2F1.7.2%2Fdojo%2Fdojo.js.uncompressed.js
 --- no_error_log
 [error]
 
@@ -2464,7 +2463,6 @@ capture body filter
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }
@@ -2535,7 +2533,6 @@ qr/Assertion .*? failed/
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }
@@ -2736,6 +2733,66 @@ Cookie: bar
 --- response_body
 sr: Cookie: foo; bar
 pr: Cookie: foo; bar
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 73: HEAD subrequest (github #347)
+--- config
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/index.html",
+                { method = ngx.HTTP_HEAD });
+            ngx.say("content-length: ", res.header["Content-Length"])
+            ngx.say("body: [", res.body, "]")
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like chop
+^content-length: \d+
+body: \[\]
+$
+--- no_error_log
+[error]
+
+
+
+=== TEST 74: image_filter + ngx.location.capture
+ngx_http_image_filter_module's header filter intercepts
+the header filter chain so the r->header_sent flag won't
+get set right after the header filter chain is first invoked.
+
+--- config
+
+location = /back {
+    empty_gif;
+}
+
+location = /t {
+    image_filter rotate 90;
+
+    content_by_lua '
+        local res = ngx.location.capture("/back")
+        for k, v in pairs(res.header) do
+            ngx.header[k] = v
+        end
+        ngx.status = res.status
+        ngx.print(res.body)
+    ';
+}
+
+--- request
+GET /t
+--- response_body_like: .
+--- stap
+F(ngx_http_image_header_filter) {
+    println("image header filter")
+}
+--- stap_out
+image header filter
 
 --- no_error_log
 [error]

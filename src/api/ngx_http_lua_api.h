@@ -13,12 +13,13 @@
 #include <ngx_http.h>
 
 #include <lua.h>
+#include <stdint.h>
 
 
 /* Public API for other Nginx modules */
 
 
-#define ngx_http_lua_version  9004
+#define ngx_http_lua_version  9016
 
 
 typedef struct {

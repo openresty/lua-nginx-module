@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 36;
+plan tests => repeat_each() * 40;
 
 our $HtmlDir = html_dir;
 
@@ -100,8 +100,10 @@ __DATA__
 GET /t
 --- response_body
 msg: 1: received: hello
---- error_log
-lua raw req socket tcp_nodelay
+--- grep_error_log: lua socket tcp_nodelay
+--- grep_error_log_out
+lua socket tcp_nodelay
+lua socket tcp_nodelay
 --- no_error_log
 [error]
 
@@ -778,4 +780,102 @@ hell"
 [alert]
 --- error_log
 server: failed to get raw req socket: pending request body reading in some other thread
+
+
+
+=== TEST 15: read chunked request body with raw req socket
+--- main_config
+--- config
+    location = /t {
+        content_by_lua '
+            local sock, err = ngx.req.socket(true)
+            if not sock then
+                ngx.log(ngx.ERR, "failed to new: ", err)
+                return
+            end
+            local function err(...)
+                ngx.log(ngx.ERR, ...)
+                return ngx.exit(400)
+            end
+            local num = tonumber
+            local MAX_CHUNKS = 1000
+            local eof = false
+            local chunks = {}
+            for i = 1, MAX_CHUNKS do
+                local line, err = sock:receive()
+                if not line then
+                    err("failed to receive chunk size: ", err)
+                end
+
+                local size = num(line, 16)
+                if not size then
+                    err("bad chunk size: ", line)
+                end
+
+                if size == 0 then -- last chunk
+                    -- receive the last line
+                    line, err = sock:receive()
+                    if not line then
+                        err("failed to receive last chunk: ", err)
+                    end
+
+                    if line ~= "" then
+                        err("bad last chunk: ", line)
+                    end
+
+                    eof = true
+                    break
+                end
+
+                local chunk, err = sock:receive(size)
+                if not chunk then
+                    err("failed to receive chunk of size ", size, ": ", err)
+                end
+
+                local data, err = sock:receive(2)
+                if not data then
+                    err("failed to receive chunk terminator: ", err)
+                end
+
+                if data ~= "\\r\\n" then
+                    err("bad chunk terminator: ", data)
+                end
+
+                chunks[i] = chunk
+            end
+
+            if not eof then
+                err("too many chunks (more than ", MAX_CHUNKS, ")")
+            end
+
+            local concat = table.concat
+            local body = concat{"got ", #chunks, " chunks.\\nrequest body: "}
+                         .. concat(chunks) .. "\\n"
+            local ok, err = sock:send("HTTP/1.1 200 OK\\r\\nConnection: close\\r\\nContent-Length: "
+                            .. #body .. "\\r\\n\\r\\n" .. body)
+            if not ok then
+                err("failed to send response: ", err)
+            end
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Transfer-Encoding: chunked\r
+Connection: close\r
+\r
+5\r
+hey, \r
+b\r
+hello world\r
+0\r
+\r
+"
+--- response_body
+got 2 chunks.
+request body: hey, hello world
+
+--- no_error_log
+[error]
+[alert]
 

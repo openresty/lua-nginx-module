@@ -84,7 +84,7 @@ read: abcabcabd
 read: abcabd
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -155,7 +155,7 @@ request sent: 57
 read: ababcabdabcabe
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -228,7 +228,7 @@ read: abcabcabd
 read: abcabd
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -299,7 +299,7 @@ request sent: 57
 read: abcabc
 failed to read a line: closed [d
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -370,7 +370,7 @@ request sent: 57
 read: abcabc
 failed to read a line: closed [d
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -441,7 +441,7 @@ request sent: 57
 read: abcabcaa
 failed to read a line: closed [d
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -652,7 +652,7 @@ read: --abc
 failed to read a line: nil [nil]
 failed to read a line: closed [
 ]
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]
@@ -740,7 +740,7 @@ read one byte:
 
 failed to read a chunk: nil [nil]
 failed to read a byte: closed []
-close: nil closed
+close: 1 nil
 }
 --- no_error_log
 [error]

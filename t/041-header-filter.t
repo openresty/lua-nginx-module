@@ -11,7 +11,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 91;
+plan tests => repeat_each() * 94;
 
 #no_diff();
 #no_long_string();
@@ -455,7 +455,7 @@ GET /lua
 GET /lua
 --- ignore_response
 --- error_log
-failed to run header_filter_by_lua*: [string "header_filter_by_lua"]:2: Something bad
+failed to run header_filter_by_lua*: header_filter_by_lua:2: Something bad
 --- no_error_log
 [alert]
 
@@ -765,5 +765,30 @@ ngx.print("request_uri: ", v, "\n")
 GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
-qr/failed to load external Lua file: cannot open .*? No such file or directory/
+qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
+
+
+
+=== TEST 41: filter finalize
+--- config
+    error_page 582 = /bar;
+    location = /t {
+        echo ok;
+        header_filter_by_lua '
+            return ngx.exit(582)
+        ';
+    }
+
+    location = /bar {
+        echo hi;
+        header_filter_by_lua '
+            return ngx.exit(302)
+        ';
+    }
+--- request
+GET /t
+--- response_body_like: 302 Found
+--- error_code: 302
+--- no_error_log
+[error]
 

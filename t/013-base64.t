@@ -1,4 +1,5 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+
 use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
@@ -6,9 +7,9 @@ use Test::Nginx::Socket::Lua;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(1);
+repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -104,19 +105,7 @@ hello
 
 
 
-=== TEST 8: nil string to ngx.decode_base64
---- config
-    location = /decode_base64 {
-        content_by_lua 'ngx.say("left" .. ngx.decode_base64(nil) .. "right")';
-    }
---- request
-GET /decode_base64
---- response_body
-leftright
-
-
-
-=== TEST 9: null string to ngx.decode_base64
+=== TEST 8: null string to ngx.decode_base64
 --- config
     location = /decode_base64 {
         content_by_lua 'ngx.say("left" .. ngx.decode_base64("") .. "right")';
@@ -128,7 +117,7 @@ leftright
 
 
 
-=== TEST 10: use ngx.decode_base64 in set_by_lua
+=== TEST 9: use ngx.decode_base64 in set_by_lua
 --- config
     location = /decode_base64 {
         set_by_lua $a 'return ngx.decode_base64("aGVsbG8=")';
@@ -141,7 +130,7 @@ hello
 
 
 
-=== TEST 11: use ngx.decode_base64 in set_by_lua (nil)
+=== TEST 10: use ngx.decode_base64 in set_by_lua (nil)
 --- config
     location = /decode_base64 {
         set_by_lua $a 'return "left" .. ngx.decode_base64(nil) .. "right"';
@@ -149,12 +138,14 @@ hello
     }
 --- request
 GET /decode_base64
---- response_body
-leftright
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+string argument only
 
 
 
-=== TEST 12: use ngx.decode_base64 in set_by_lua (null string)
+=== TEST 11: use ngx.decode_base64 in set_by_lua (null string)
 --- config
     location /decode_base64 {
         set_by_lua $a 'return "left" .. ngx.decode_base64("") .. "right"';
@@ -164,4 +155,94 @@ leftright
 GET /decode_base64
 --- response_body
 leftright
+
+
+
+=== TEST 12: base64 encode number
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64(32))';
+    }
+--- request
+GET /t
+--- response_body
+MzI=
+
+
+
+=== TEST 13: base64 decode number
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.decode_base64(32))';
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+string argument only
+
+
+
+=== TEST 14: base64 decode error
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.decode_base64("^*~"))';
+    }
+--- request
+GET /t
+--- response_body
+nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: base64 encode without padding (explicit true to no_padding)
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("hello", true))';
+    }
+--- request
+GET /t
+--- response_body
+aGVsbG8
+
+
+
+=== TEST 16: base64 encode short string
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w"))';
+    }
+--- request
+GET /t
+--- response_body
+dw==
+
+
+
+=== TEST 17: base64 encode short string with padding (explicit false to no_padding)
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w", false))';
+    }
+--- request
+GET /t
+--- response_body
+dw==
+
+
+
+=== TEST 18: base64 encode with wrong 2nd parameter
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w", 0))';
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad argument #2 to 'encode_base64' (boolean expected, got number)
 

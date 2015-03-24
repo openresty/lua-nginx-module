@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 5);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -179,7 +179,7 @@ cc3: 2
 
             local urls = {
                 "agentzh.org",
-                "agentzh.com",
+                "iscribblet.org",
                 "openresty.org"
             }
 
@@ -205,7 +205,7 @@ cc3: 2
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: agentzh.com
+successfully connected to: iscribblet.org
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
@@ -378,7 +378,7 @@ GET /lua
 
             local urls = {
                 "agentzh.org",
-                "agentzh.com",
+                "iscribblet.org",
                 "openresty.org"
             }
 
@@ -399,7 +399,7 @@ GET /lua
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: agentzh.com
+successfully connected to: iscribblet.org
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
@@ -897,12 +897,13 @@ chunk: true
     }
 --- request
 GET /t
---- response_body
-child: resume: false[string "content_by_lua"]:4: bad
+--- response_body eval
+qr/^child: resume: falsecontent_by_lua\(nginx\.conf:\d+\):4: bad
 child: status: dead
 parent: status: running
---- error_log
-lua coroutine: runtime error: [string "content_by_lua"]:4: bad
+$/s
+--- error_log eval
+qr/lua coroutine: runtime error: content_by_lua\(nginx\.conf:\d+\):4: bad/
 
 
 
@@ -1187,6 +1188,132 @@ GET /lua
 --- stap2 eval: $::StapScript
 --- response_body
 ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 29: require "coroutine"
+--- config
+    location /lua {
+        content_by_lua '
+            local coroutine = require "coroutine"
+            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    ngx.say("Hello, ", cnt)
+                    ngx.sleep(0.001)
+                    cy()
+                    cnt = cnt + 1
+                end
+            end
+
+            local c = cc(f)
+            for i=1,3 do
+                cr(c)
+                ngx.say("***")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- stap2 eval: $::StapScript
+--- response_body
+Hello, 0
+***
+Hello, 1
+***
+Hello, 2
+***
+--- no_error_log
+[error]
+
+
+
+=== TEST 30: basic coroutine in header_filter_by_lua
+--- config
+    location = /t {
+        echo ok;
+        header_filter_by_lua '
+            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    print("co yield: ", cnt)
+                    cy()
+                    cnt = cnt + 1
+                end
+            end
+
+            local c = cc(f)
+            for i = 1, 3 do
+                print("co resume.")
+                cr(c)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- grep_error_log eval: qr/co (?:yield: \d+|resume\.)/
+--- grep_error_log_out
+co resume.
+co yield: 0
+co resume.
+co yield: 1
+co resume.
+co yield: 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 31: basic coroutine in body_filter_by_lua
+--- config
+    location = /t {
+        echo ok;
+        body_filter_by_lua '
+            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    print("co yield: ", cnt)
+                    cy()
+                    cnt = cnt + 1
+                end
+            end
+
+            local c = cc(f)
+            for i = 1, 3 do
+                print("co resume.")
+                cr(c)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- grep_error_log eval: qr/co (?:yield: \d+|resume\.)/
+--- grep_error_log_out
+co resume.
+co yield: 0
+co resume.
+co yield: 1
+co resume.
+co yield: 2
+co resume.
+co yield: 0
+co resume.
+co yield: 1
+co resume.
+co yield: 2
+
 --- no_error_log
 [error]
 
