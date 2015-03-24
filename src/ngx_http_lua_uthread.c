@@ -242,12 +242,6 @@ ngx_http_lua_uthread_kill(lua_State *L)
         return 2;
     }
 
-    if (sub_coctx->parent_co_ctx != coctx) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "killer not parent");
-        return 2;
-    }
-
     if (sub_coctx->pending_subreqs > 0) {
         lua_pushnil(L);
         lua_pushliteral(L, "pending subrequests");
