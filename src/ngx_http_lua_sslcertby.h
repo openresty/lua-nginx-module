@@ -27,7 +27,7 @@ ngx_int_t ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
 ngx_int_t ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
-char * ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+char *ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
 int ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data);

@@ -23,7 +23,7 @@
 
 static void ngx_http_lua_ssl_cert_done(void *data);
 static void ngx_http_lua_ssl_cert_aborted(void *data);
-static u_char * ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
+static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
