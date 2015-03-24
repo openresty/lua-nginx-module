@@ -2303,9 +2303,9 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
                                          (int) pos, cap, ovecsize, ws,
                                          sizeof(ws)/sizeof(ws[0]), exec_opts);
 
-#else /* LUA_HAVE_PCRE_DFA */
+#else
 
-        return PCRE_ERROR_INTERNAL;
+        return PCRE_ERROR_BADOPTION;
 
 #endif /* LUA_HAVE_PCRE_DFA */
 

@@ -41,7 +41,7 @@ typedef struct {
 
 static int ngx_http_lua_ngx_timer_at(lua_State *L);
 static void ngx_http_lua_timer_handler(ngx_event_t *ev);
-static u_char * ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf,
+static u_char *ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static void ngx_http_lua_abort_pending_timers(ngx_event_t *ev);
 

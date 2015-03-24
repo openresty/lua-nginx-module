@@ -510,7 +510,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 
 #if 1
-    if (!r->header_sent) {
+    if (!r->header_sent && !ctx->header_sent) {
         lua_pushnil(L);
         lua_pushliteral(L, "nothing to flush");
         return 2;
@@ -690,7 +690,7 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
-    if (!r->header_sent) {
+    if (!r->header_sent && !ctx->header_sent) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua send headers");
 
