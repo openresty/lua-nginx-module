@@ -127,14 +127,14 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     }
 
 
-lua_State * ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
+lua_State *ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln);
 
-lua_State * ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
+lua_State *ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
 
-u_char * ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len);
+u_char *ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len);
 
 ngx_int_t ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
@@ -162,7 +162,7 @@ ngx_int_t ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
 ngx_int_t ngx_http_lua_wev_handler(ngx_http_request_t *r);
 
-u_char * ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
+u_char *ngx_http_lua_digest_hex(u_char *dest, const u_char *buf,
     int buf_len);
 
 void ngx_http_lua_set_multi_value_table(lua_State *L, int index);
@@ -181,17 +181,17 @@ void ngx_http_lua_process_args_option(ngx_http_request_t *r,
 ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
     ngx_open_file_info_t *of, ngx_log_t *log);
 
-ngx_chain_t * ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
+ngx_chain_t *ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     ngx_chain_t **free, size_t len);
 
 void ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec);
 
 int ngx_http_lua_traceback(lua_State *L);
 
-ngx_http_lua_co_ctx_t * ngx_http_lua_get_co_ctx(lua_State *L,
+ngx_http_lua_co_ctx_t *ngx_http_lua_get_co_ctx(lua_State *L,
     ngx_http_lua_ctx_t *ctx);
 
-ngx_http_lua_co_ctx_t * ngx_http_lua_create_co_ctx(ngx_http_request_t *r,
+ngx_http_lua_co_ctx_t *ngx_http_lua_create_co_ctx(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
 ngx_int_t ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
@@ -224,9 +224,9 @@ void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
 
 void ngx_http_lua_cleanup_vm(void *data);
 
-ngx_connection_t * ngx_http_lua_create_fake_connection(ngx_pool_t *pool);
+ngx_connection_t *ngx_http_lua_create_fake_connection(ngx_pool_t *pool);
 
-ngx_http_request_t * ngx_http_lua_create_fake_request(ngx_connection_t *c);
+ngx_http_request_t *ngx_http_lua_create_fake_request(ngx_connection_t *c);
 
 ngx_int_t ngx_http_lua_report(ngx_log_t *log, lua_State *L, int status,
     const char *prefix);
