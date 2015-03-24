@@ -51,6 +51,23 @@ ngx_str_t  ngx_http_lua_patch_method =
 ngx_str_t  ngx_http_lua_trace_method =
         ngx_http_lua_method_name("TRACE");
 
+ngx_str_t * ngx_http_lua_ordered_methods[] = {
+    &ngx_http_lua_get_method,
+    &ngx_http_lua_head_method,
+    &ngx_http_lua_post_method,
+    &ngx_http_lua_put_method,
+    &ngx_http_lua_delete_method,
+    &ngx_http_lua_mkcol_method,
+    &ngx_http_lua_copy_method,
+    &ngx_http_lua_move_method,
+    &ngx_http_lua_options_method,
+    &ngx_http_lua_propfind_method,
+    &ngx_http_lua_proppatch_method,
+    &ngx_http_lua_lock_method,
+    &ngx_http_lua_unlock_method,
+    &ngx_http_lua_patch_method,
+    &ngx_http_lua_trace_method,
+};
 
 static ngx_str_t  ngx_http_lua_content_length_header_key =
     ngx_string("Content-Length");
@@ -59,7 +76,7 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
     off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
-    ngx_uint_t method, int forward_body,
+    ngx_uint_t method, ngx_str_t *method_name, int forward_body,
     ngx_http_request_body_t *body, unsigned vars_action,
     ngx_array_t *extra_vars);
 static int ngx_http_lua_ngx_location_capture(lua_State *L);
@@ -139,6 +156,11 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     unsigned                         vars_action;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
+    ngx_uint_t                       method_index;
+    ngx_uint_t                       methods_number;
+    ngx_str_t                       *ngx_method_name = NULL;
+    u_char                          *lua_method_name;
+    size_t                           method_name_length;
     size_t                           sr_statuses_len;
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
@@ -382,15 +404,62 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             type = lua_type(L, -1);
 
-            if (type == LUA_TNIL) {
-                method = NGX_HTTP_GET;
+            switch (type) {
+                case LUA_TNIL:
+                    method = NGX_HTTP_GET;
+                    break;
+                case LUA_TNUMBER:
+                    method = (ngx_uint_t) lua_tonumber(L, -1);
+                    break;
+                case LUA_TSTRING:
+                    lua_method_name = (u_char *) lua_tolstring(L, -1,
+                                                        &method_name_length);
+                    if (method_name_length == 0) {
+                        return luaL_error(L, "Bad http request method");
+                    }
+                    
+                    methods_number = sizeof(ngx_http_lua_ordered_methods) /
+                        sizeof(ngx_http_lua_ordered_methods[0]);
+                    for (method_index = 0; method_index < methods_number;
+                         method_index++) {
+                        if (ngx_strncasecmp(
+                              ngx_http_lua_ordered_methods[method_index]->data,
+                              lua_method_name,
+                              method_name_length)
+                            == 0) {
+                            break;
+                        }
+                    }
 
-            } else {
-                if (type != LUA_TNUMBER) {
+                    if (method_index == methods_number) {
+                        /* unknown method */
+                        method = NGX_HTTP_UNKNOWN;
+                        ngx_method_name = ngx_palloc(r->pool,
+                                                     sizeof(ngx_str_t));
+                        if (ngx_method_name == NULL) {
+                            return luaL_error(L, "out of memory");
+                        }
+                        ngx_method_name->data = ngx_palloc(r->pool,
+                                                           method_name_length);
+                        if (ngx_method_name->data == NULL) {
+                            return luaL_error(L, "out of memory");
+                        }
+                        ngx_memcpy(ngx_method_name->data,
+                                   lua_method_name,
+                                   method_name_length);
+                        ngx_memcpy(ngx_method_name->data + method_name_length,
+                                   " ",
+                                   1);
+                        ngx_method_name->len = method_name_length;
+                    } else {
+                        /* the method is a bit field, the first value is
+                           of NGX_HTTP_GET */
+                        method = NGX_HTTP_GET << method_index;
+                        ngx_method_name = NULL;
+                    }
+                    break;
+                default:
                     return luaL_error(L, "Bad http request method");
-                }
-
-                method = (ngx_uint_t) lua_tonumber(L, -1);
             }
 
             lua_pop(L, 1);
@@ -573,7 +642,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-        rc = ngx_http_lua_adjust_subrequest(sr, method, always_forward_body,
+        rc = ngx_http_lua_adjust_subrequest(sr, method, ngx_method_name,
+                                            always_forward_body,
                                             body, vars_action, extra_vars);
 
         if (rc != NGX_OK) {
@@ -609,8 +679,9 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-    int always_forward_body, ngx_http_request_body_t *body,
-    unsigned vars_action, ngx_array_t *extra_vars)
+    ngx_str_t *method_name, int always_forward_body,
+    ngx_http_request_body_t *body, unsigned vars_action,
+    ngx_array_t *extra_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
@@ -667,6 +738,13 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
     sr->method = method;
 
     switch (method) {
+        case NGX_HTTP_UNKNOWN:
+            if (method_name == NULL) {
+                return NGX_ERROR;
+            }
+            sr->method_name = *method_name;
+            break;
+            
         case NGX_HTTP_GET:
             sr->method_name = ngx_http_lua_get_method;
             break;
