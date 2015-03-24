@@ -261,6 +261,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_initworkerby.c \
                 $ngx_addon_dir/src/ngx_http_lua_socket_udp.c \
                 $ngx_addon_dir/src/ngx_http_lua_req_method.c \
+                $ngx_addon_dir/src/ngx_http_lua_req_keepalive.c \
                 $ngx_addon_dir/src/ngx_http_lua_phase.c \
                 $ngx_addon_dir/src/ngx_http_lua_uthread.c \
                 $ngx_addon_dir/src/ngx_http_lua_timer.c \
@@ -313,6 +314,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_initworkerby.h \
                 $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
                 $ngx_addon_dir/src/ngx_http_lua_req_method.h \
+                $ngx_addon_dir/src/ngx_http_lua_req_keepalive.h \
                 $ngx_addon_dir/src/ngx_http_lua_phase.h \
                 $ngx_addon_dir/src/ngx_http_lua_probe.h \
                 $ngx_addon_dir/src/ngx_http_lua_uthread.h \
