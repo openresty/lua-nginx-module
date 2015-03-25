@@ -1541,7 +1541,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     if (ctx->writing_raw_req_socket) {
         ctx->writing_raw_req_socket = 0;
 
-        coctx = ctx->downstream_co_ctx;
+        coctx = ctx->downstream_write_co_ctx;
         if (coctx == NULL) {
             return NGX_ERROR;
         }
