@@ -240,9 +240,6 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
     lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
 
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_send_timeout);
-    lua_setfield(L, -2, "set_send_timeout"); /* ngx socket mt */
-
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
@@ -267,6 +264,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
     lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_send_timeout);
+    lua_setfield(L, -2, "set_send_timeout"); /* ngx socket mt */
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
