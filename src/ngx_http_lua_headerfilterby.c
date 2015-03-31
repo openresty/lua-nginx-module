@@ -226,7 +226,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
     }
 
     /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    ngx_http_lua_assert(lua_isfunction(L, -1));
 
     return ngx_http_lua_header_filter_by_chunk(L, r);
 }

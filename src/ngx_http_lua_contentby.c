@@ -72,6 +72,9 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     ctx->cur_co_ctx = &ctx->entry_co_ctx;
     ctx->cur_co_ctx->co = co;
     ctx->cur_co_ctx->co_ref = co_ref;
+#ifdef NGX_LUA_USE_ASSERT
+    ctx->cur_co_ctx->co_top = 1;
+#endif
 
     /*  {{{ register request cleanup hooks */
     if (ctx->cleanup == NULL) {
@@ -251,11 +254,15 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadfile(r, L, script_path,
                                      llcf->content_src_key);
     if (rc != NGX_OK) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return rc;
     }
 
     /*  make sure we have a valid code chunk */
-    assert(lua_isfunction(L, -1));
+    ngx_http_lua_assert(lua_isfunction(L, -1));
 
     return ngx_http_lua_content_by_chunk(L, r);
 }
@@ -339,6 +346,7 @@ ngx_http_lua_content_run_posted_threads(lua_State *L, ngx_http_request_t *r,
     }
 
 done:
+
     if (n == 1) {
         return NGX_DONE;
     }

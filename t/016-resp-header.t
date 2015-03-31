@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 13);
+plan tests => repeat_each() * (blocks() * 3 + 14);
 
 #no_diff();
 no_long_string();
@@ -668,6 +668,8 @@ Cache-Control: no-cache, blah, foo
 --- response_body_like chop
 ^Cache-Control: no-cache[;,] blah[;,] foo
 Cache-Control: no-cache[;,] blah[;,] foo$
+--- no_error_log
+[error]
 
 
 
@@ -901,6 +903,7 @@ GET /read
 ok
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 

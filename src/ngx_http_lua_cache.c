@@ -193,6 +193,7 @@ ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
     return NGX_OK;
 
 error:
+
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                   "failed to load inlined Lua code: %s", err);
     lua_settop(L, n);
@@ -205,7 +206,7 @@ ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
     const u_char *script, const u_char *cache_key)
 {
     int              n;
-    ngx_int_t        rc;
+    ngx_int_t        rc, errcode = NGX_ERROR;
     u_char          *p;
     u_char           buf[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
     const char      *err = NULL;
@@ -248,12 +249,20 @@ ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
     /*  load closure factory of script file to the top of lua stack, sp++ */
     rc = ngx_http_lua_clfactory_loadfile(L, (char *) script);
 
+    dd("loadfile returns %d (%d)", (int) rc, LUA_ERRFILE);
+
     if (rc != 0) {
         /*  Oops! error occured when loading Lua script */
-        if (rc == LUA_ERRMEM) {
+        switch (rc) {
+        case LUA_ERRMEM:
             err = "memory allocation error";
+            break;
 
-        } else {
+        case LUA_ERRFILE:
+            errcode = NGX_HTTP_NOT_FOUND;
+            /* fall through */
+
+        default:
             if (lua_isstring(L, -1)) {
                 err = lua_tostring(L, -1);
 
@@ -276,11 +285,12 @@ ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
     return NGX_OK;
 
 error:
+
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                   "failed to load external Lua file \"%s\": %s", script, err);
 
     lua_settop(L, n);
-    return NGX_ERROR;
+    return errcode;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

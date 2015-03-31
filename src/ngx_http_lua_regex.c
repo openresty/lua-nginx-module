@@ -44,7 +44,7 @@
 
 
 typedef struct {
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
     ngx_pool_t                   *pool;
     u_char                       *name_table;
     int                           name_count;
@@ -58,6 +58,11 @@ typedef struct {
     pcre_extra                   *regex_sd;
 
     ngx_http_lua_complex_value_t    *replace;
+
+#ifndef NGX_LUA_NO_FFI_API
+    /* only for (stap) debugging, and may be an invalid pointer */
+    const u_char                 *pattern;
+#endif
 } ngx_http_lua_regex_t;
 
 
@@ -462,6 +467,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     }
 
 exec:
+
     if (pcre_fullinfo(re_comp.regex, NULL, PCRE_INFO_NAMECOUNT,
                       &name_count) != 0)
     {
@@ -624,6 +630,7 @@ exec:
     return 1;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -918,6 +925,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
     }
 
 compiled:
+
     lua_settop(L, 1);
 
     ctx = lua_newuserdata(L, sizeof(ngx_http_lua_regex_ctx_t));
@@ -958,6 +966,7 @@ compiled:
     return 1;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -1154,6 +1163,7 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
     return 1;
 
 error:
+
     lua_pushinteger(L, -1);
     lua_replace(L, lua_upvalueindex(3));
 
@@ -1651,6 +1661,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
     }
 
 exec:
+
     count = 0;
     offset = 0;
     cp_offset = 0;
@@ -1873,6 +1884,7 @@ exec:
     return 2;
 
 error:
+
     if (!(flags & NGX_LUA_RE_COMPILE_ONCE)) {
         if (sd) {
             ngx_http_lua_regex_free_study_data(pool, sd);
@@ -2091,7 +2103,7 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, int res_tb_idx,
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 ngx_http_lua_regex_t *
 ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     int flags, int pcre_opts, u_char *errstr,
@@ -2230,9 +2242,14 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     re->captures = cap;
     re->replace = NULL;
 
+    /* only for (stap) debugging, the pointer might be invalid when the
+     * string is collected later on.... */
+    re->pattern = pat;
+
     return re;
 
 error:
+
     p = ngx_snprintf(errstr, errstr_size - 1, "%s", msg);
     *p = '\0';
 
@@ -2442,7 +2459,7 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
     }
     return (uint32_t) lmcf->regex_cache_max_entries;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_PCRE */

@@ -12,7 +12,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #no_diff();
-no_long_string();
+#no_long_string();
 run_tests();
 
 __DATA__
@@ -592,6 +592,187 @@ User-Agent: curl\r
 Bah: bah\r
 Accept: */*\r
 Cookie: " . ("C" x 1200) . "\r\n\r\n"
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: Close\r
+\r
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers (exclusive LF in the request data)
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 5
+
+hello"
+--- response_body eval
+"GET /t HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 5
+
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 24: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers (exclusive LF in the request data, and no status line)
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header(true))
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1
+Host: localhost
+Connection: close
+Content-Length: 5
+
+hello"
+--- response_body eval
+"Host: localhost
+Connection: close
+Content-Length: 5
+
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 25: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers (mixed LF and CRLF in the request data, and no status line)
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header(true))
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost
+Connection: close\r
+Content-Length: 5\r
+
+hello"
+--- response_body eval
+"Host: localhost
+Connection: close\r
+Content-Length: 5\r
+
+"
+--- no_error_log
+[error]
+
+
+
+=== TEST 26: ngx_proxy/ngx_fastcgi/etc change r->header_end to point to their own buffers (another way of mixing LF and CRLF in the request data, and no status line)
+--- config
+    location = /t {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$server_port/bad;
+        proxy_intercept_errors on;
+        error_page 500 = /500;
+    }
+
+    location = /bad {
+        return 500;
+    }
+
+    location = /500 {
+        internal;
+        content_by_lua '
+            ngx.print(ngx.req.raw_header(true))
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost
+Connection: close\r
+Content-Length: 5
+\r
+hello"
+--- response_body eval
+"Host: localhost
+Connection: close\r
+Content-Length: 5
+\r
+"
 --- no_error_log
 [error]
 

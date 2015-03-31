@@ -595,7 +595,7 @@ ngx_http_lua_ngx_hmac_sha1(lua_State *L)
 #endif
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 void
 ngx_http_lua_ffi_md5_bin(const u_char *src, size_t len, u_char *dst)
 {

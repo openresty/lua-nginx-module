@@ -36,7 +36,6 @@ __DATA__
             ngx.sleep(1)
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -76,8 +75,6 @@ spawn user thread 2 in 1
 terminate 2: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before
@@ -103,7 +100,6 @@ hello in thread
             ngx.sleep(1)
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -157,12 +153,10 @@ add timer 100
 add timer 1000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua sleep cleanup
 delete timer 1000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -194,7 +188,6 @@ after
             ngx.thread.spawn(g)
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -252,12 +245,10 @@ terminate 1: ok
 delete thread 1
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua sleep cleanup
 delete timer 1000
-delete thread 2
 delete thread 3
-terminate 4: ok
-delete thread 4
 free request
 
 --- response_body
@@ -282,7 +273,6 @@ f
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -295,8 +285,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- wait: 0.1
 --- response_body
@@ -331,7 +319,6 @@ exiting the user thread
             end
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -390,12 +377,10 @@ resolving agentzh.org
 add timer 12000
 expire timer 1
 terminate 2: ok
+delete thread 2
 lua tcp resolve cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
@@ -430,7 +415,6 @@ after
             end
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -489,12 +473,10 @@ resolving agentzh.org
 add timer 12000
 expire timer 1
 terminate 2: ok
+delete thread 2
 lua udp resolve cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
@@ -528,7 +510,6 @@ after
             end
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -582,12 +563,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua tcp socket cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
@@ -636,7 +615,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -685,12 +663,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua tcp socket cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
@@ -745,7 +721,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -794,12 +769,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua tcp socket cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- response_body
@@ -842,7 +815,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -891,12 +863,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua udp socket cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -934,7 +904,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 POST /lua
@@ -987,12 +956,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua tcp socket cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -1024,7 +991,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 --- request
 POST /lua
@@ -1075,12 +1041,10 @@ add timer 100
 add timer 12000
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua req body cleanup
 delete timer 12000
-delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -1112,7 +1076,6 @@ after
 
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 
     location = /sleep {
@@ -1167,8 +1130,6 @@ expire timer 200
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -1197,7 +1158,6 @@ attempt to abort with pending subrequests
             ngx.location.capture("/sleep")
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 
     location = /sleep {
@@ -1258,8 +1218,6 @@ post subreq /sleep
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1
@@ -1288,7 +1246,6 @@ attempt to abort with pending subrequests
             }
             ngx.say("end")
         ';
-        content_by_lua return;
     }
 
     location = /echo {
@@ -1353,8 +1310,6 @@ post subreq /sleep
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 free request
 
 --- wait: 0.1

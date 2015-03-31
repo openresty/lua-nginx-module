@@ -23,7 +23,7 @@ __DATA__
 --- request
 GET /escape
 --- response_body
-a%20%e4%bd%a0
+a%20%E4%BD%A0
 
 
 
@@ -48,7 +48,7 @@ a 你
 --- request
 GET /escape
 --- response_body
-a%20%e4%bd%a0
+a%20%E4%BD%A0
 
 
 
@@ -73,7 +73,7 @@ a 你
 --- request
 GET /escape
 --- response_body
-a%2bb
+a%2Bb
 
 
 
@@ -86,7 +86,7 @@ a%2bb
 --- request
 GET /escape
 --- response_body
-%22a%2fb%3d%7b%7d%3a%3c%3e%3b%26%5b%5d%5c%5e
+%22a%2Fb%3D%7B%7D%3A%3C%3E%3B%26%5B%5D%5C%5E
 
 
 

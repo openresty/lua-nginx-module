@@ -223,7 +223,7 @@ ngx_http_lua_var_set(lua_State *L)
 
             vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
             if (vv == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             if (value_type == LUA_TNIL) {
@@ -286,7 +286,7 @@ ngx_http_lua_var_set(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_var_get(ngx_http_request_t *r, u_char *name_data,
     size_t name_len, u_char *lowcase_buf, int capture_id, u_char **value,
@@ -493,7 +493,7 @@ nomem:
     ngx_snprintf(errbuf, errlen, "no memory");
     return NGX_ERROR;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

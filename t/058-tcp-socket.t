@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 150;
+plan tests => repeat_each() * 161;
 
 our $HtmlDir = html_dir;
 
@@ -84,7 +84,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -202,7 +202,7 @@ attempt to send data on a closed socket:
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -250,7 +250,7 @@ GET /t
 connected: 1
 request sent: 56
 first line received: HTTP/1.1 200 OK
-second line received: Server: ngx_openresty
+second line received: Server: openresty
 --- no_error_log
 [error]
 --- timeout: 10
@@ -295,7 +295,7 @@ qr/connect\(\) failed \(\d+: Connection refused\)/
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /test {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -323,6 +323,7 @@ receive: nil closed
 close: nil closed
 --- error_log
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
@@ -363,7 +364,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -396,7 +397,7 @@ connected: nil
 failed to send request: closed$
 --- error_log
 attempt to send data on a closed socket
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -502,7 +503,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -569,7 +570,7 @@ Connection: close\r
 foo
 
 err: nil
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -648,7 +649,7 @@ Connection: close\r
 foo
 
 err: nil
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -723,7 +724,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -799,7 +800,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -869,7 +870,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -936,7 +937,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -1048,7 +1049,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -1557,7 +1558,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -2077,7 +2078,7 @@ F(ngx_http_lua_socket_resolve_handler) {
     println("lua socket resolve handler")
 }
 
-F(ngx_http_lua_socket_tcp_connect_retval_handler) {
+F(ngx_http_lua_socket_tcp_conn_retval_handler) {
     println("lua socket tcp connect retval handler")
 }
 
@@ -2661,7 +2662,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 57
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 --- error_log
@@ -3002,4 +3003,75 @@ qr/^connected
 runtime error: content_by_lua:16: bad request
 --- no_error_log
 [alert]
+
+
+
+=== TEST 50: cosocket resolving aborted by coroutine yielding failures (require)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+    resolver 8.8.8.8;
+
+--- config
+    location = /t {
+        content_by_lua '
+            package.loaded.myfoo = nil
+            require "myfoo"
+        ';
+    }
+--- request
+    GET /t
+--- user_files
+>>> myfoo.lua
+local sock = ngx.socket.tcp()
+local ok, err = sock:connect("agentzh.org")
+if not ok then
+    ngx.log(ngx.ERR, "failed to connect: ", err)
+    return
+end
+
+--- response_body_like: 500 Internal Server Error
+--- wait: 0.3
+--- error_code: 500
+--- error_log
+resolve name done
+runtime error: attempt to yield across C-call boundary
+--- no_error_log
+[alert]
+
+
+
+=== TEST 51: cosocket resolving aborted by coroutine yielding failures (xpcall err)
+--- http_config
+    lua_package_path "$prefix/html/?.lua;;";
+    resolver 8.8.8.8;
+
+--- config
+    location = /t {
+        content_by_lua '
+            local function f()
+                return error(1)
+            end
+            local function err()
+                local sock = ngx.socket.tcp()
+                local ok, err = sock:connect("agentzh.org")
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to connect: ", err)
+                    return
+                end
+            end
+            xpcall(f, err)
+            ngx.say("ok")
+        ';
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- wait: 0.3
+--- error_log
+resolve name done
+--- no_error_log
+[error]
+[alert]
+could not cancel
 

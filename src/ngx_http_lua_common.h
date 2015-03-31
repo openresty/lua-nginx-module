@@ -14,7 +14,6 @@
 #include <ngx_http.h>
 #include <ngx_md5.h>
 
-#include <assert.h>
 #include <setjmp.h>
 #include <stdint.h>
 
@@ -36,7 +35,14 @@
 #define MD5_DIGEST_LENGTH 16
 #endif
 
-#define ngx_http_lua_assert(a)  assert(a)
+
+#ifdef NGX_LUA_USE_ASSERT
+#   include <assert.h>
+#   define ngx_http_lua_assert(a)  assert(a)
+#else
+#   define ngx_http_lua_assert(a)
+#endif
+
 
 /* Nginx HTTP Lua Inline tag prefix */
 
@@ -90,7 +96,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
 #define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
 #endif
@@ -284,6 +290,11 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;  /* used for ngx.sleep */
 
+#ifdef NGX_LUA_USE_ASSERT
+    int                      co_top; /* stack top after yielding/creation,
+                                        only for sanity checks */
+#endif
+
     int                      co_ref; /*  reference to anchor the thread
                                          coroutines (entry coroutine and user
                                          threads) in the Lua registry,
@@ -341,7 +352,7 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned                 flushing_coros; /* number of coroutines waiting on
                                                 ngx.flush(true) */
 
-    unsigned                 uthreads; /* number of active user threads */
+    int                      uthreads; /* number of active user threads */
 
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;

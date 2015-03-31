@@ -91,7 +91,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     if (coctx == NULL) {
         coctx = ngx_http_lua_create_co_ctx(r, ctx);
         if (coctx == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
     } else {
@@ -116,6 +116,10 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     if (pcoctx) {
         *pcoctx = coctx;
     }
+
+#ifdef NGX_LUA_USE_ASSERT
+    coctx->co_top = 1;
+#endif
 
     return 1;    /* return new coroutine to Lua */
 }
@@ -282,9 +286,15 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
             "for _, key in ipairs(keys) do\n"
                "local std = coroutine['_' .. key]\n"
                "local ours = coroutine['__' .. key]\n"
+               "local raw_ctx = ngx._phase_ctx\n"
                "coroutine[key] = function (...)\n"
-                    "if getfenv(0).__ngx_req then\n"
-                        "return ours(...)\n"
+                    "local r = getfenv(0).__ngx_req\n"
+                    "if r then\n"
+                        "local ctx = raw_ctx(r)\n"
+                        /* ignore header and body filters */
+                        "if ctx ~= 0x020 and ctx ~= 0x040 then\n"
+                            "return ours(...)\n"
+                        "end\n"
                     "end\n"
                     "return std(...)\n"
                 "end\n"
@@ -293,7 +303,8 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
             "coroutine.wrap = function(f)\n"
                "local co = create(f)\n"
                "return function(...) return select(2, resume(co, ...)) end\n"
-            "end";
+            "end\n"
+            "package.loaded.coroutine = coroutine";
 
 #if 0
             "debug.sethook(function () collectgarbage() end, 'rl', 1)"

@@ -32,7 +32,6 @@ __DATA__
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -56,8 +55,6 @@ terminate 2: ok
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before
@@ -88,7 +85,6 @@ after
             ngx.thread.spawn(g)
             ngx.say("after 2")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -105,8 +101,6 @@ terminate 1: ok
 delete thread 2
 delete thread 3
 delete thread 1
-terminate 4: ok
-delete thread 4
 
 --- response_body
 before 1
@@ -134,7 +128,6 @@ after 2
             ngx.thread.spawn(f)
             ngx.say("after thread create")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -147,8 +140,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before thread create
@@ -184,7 +175,6 @@ after sleep
             ngx.thread.spawn(g)
             ngx.say("2: after thread create")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -201,8 +191,6 @@ terminate 3: ok
 delete thread 3
 terminate 2: ok
 delete thread 2
-terminate 4: ok
-delete thread 4
 
 --- wait: 0.1
 --- response_body
@@ -230,7 +218,6 @@ delete thread 4
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -243,8 +230,6 @@ terminate 2: fail
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 after
@@ -267,7 +252,6 @@ lua user thread aborted: runtime error: rewrite_by_lua:3: attempt to call field 
             ngx.thread.spawn(f)
             ngx.say("after thread create")
         ';
-        content_by_lua return;
     }
 
     location /proxy {
@@ -289,8 +273,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before thread create
@@ -318,7 +300,6 @@ after capture: hello world
             local res = ngx.location.capture("/proxy?bar")
             ngx.say("capture: ", res.body)
         ';
-        content_by_lua return;
     }
 
     location /proxy {
@@ -344,8 +325,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before thread create
@@ -374,7 +353,6 @@ after capture: hello foo
             local res = ngx.location.capture("/proxy?bar")
             ngx.say("capture: ", res.body)
         ';
-        content_by_lua return;
     }
 
     location /proxy {
@@ -401,8 +379,6 @@ terminate 2: ok
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before thread create
@@ -442,7 +418,6 @@ capture: hello bar
             local res = ngx.location.capture("/proxy?bar")
             ngx.say("capture: ", res.body)
         ';
-        content_by_lua return;
     }
 
     location /proxy {
@@ -478,8 +453,6 @@ delete thread 2
 delete thread 1
 terminate 3: ok
 delete thread 3
-terminate 4: ok
-delete thread 4
 
 --- response_body
 before thread 1 create
@@ -514,7 +487,6 @@ g: after capture: hello bah
             ngx.thread.spawn(f)
             ngx.say("after f")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -531,8 +503,6 @@ delete thread 1
 terminate 2: ok
 delete thread 3
 delete thread 2
-terminate 4: ok
-delete thread 4
 
 --- response_body
 before f
@@ -564,7 +534,6 @@ after g
             ngx.thread.spawn(f)
             ngx.say("after f")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -581,8 +550,6 @@ terminate 2: ok
 delete thread 2
 terminate 3: ok
 delete thread 3
-terminate 4: ok
-delete thread 4
 
 --- response_body
 before f
@@ -608,7 +575,6 @@ hello in g()
             ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -621,8 +587,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 status: running
@@ -643,7 +607,6 @@ status: running
             ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -656,8 +619,6 @@ terminate 2: ok
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 status: zombie
@@ -684,7 +645,6 @@ status: zombie
             ngx.thread.spawn(f)
             ngx.say("status: ", coroutine.status(co))
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -699,8 +659,6 @@ delete thread 1
 terminate 3: ok
 terminate 2: ok
 delete thread 2
-terminate 4: ok
-delete thread 4
 
 --- response_body
 status: normal
@@ -728,7 +686,6 @@ status: normal
             coroutine.resume(co)
             ngx.say("after f")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -743,8 +700,6 @@ terminate 2: ok
 delete thread 3
 terminate 1: ok
 delete thread 1
-terminate 4: ok
-delete thread 4
 
 --- response_body
 before f
@@ -783,7 +738,6 @@ after f
             yield(self)
             ngx.say("4")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -796,8 +750,6 @@ terminate 2: ok
 terminate 1: ok
 delete thread 2
 delete thread 1
-terminate 3: ok
-delete thread 3
 
 --- response_body
 0
@@ -841,7 +793,6 @@ f 3
             ngx.thread.spawn(g)
             ngx.say("done")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -858,8 +809,6 @@ terminate 2: ok
 delete thread 2
 terminate 3: ok
 delete thread 3
-terminate 4: ok
-delete thread 4
 
 --- response_body
 f 1
@@ -889,7 +838,6 @@ g 3
             ngx.say("after")
             ngx.flush(true)
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -902,8 +850,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before
@@ -931,7 +877,6 @@ after
             ngx.thread.spawn(f)
             ngx.thread.spawn(g)
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -956,9 +901,7 @@ terminate 3: ok
 terminate 1: ok
 delete thread 2
 delete thread 3
-delete thread 1)
-terminate 4: ok
-delete thread 4$
+delete thread 1)$
 
 --- response_body
 hello from f
@@ -998,7 +941,6 @@ hello from g
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -1011,8 +953,6 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 
 --- response_body
 before
@@ -1049,7 +989,6 @@ received: OK
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 GET /lua
@@ -1062,16 +1001,12 @@ terminate 1: ok
 delete thread 1
 terminate 2: ok
 delete thread 2
-terminate 3: ok
-delete thread 3
 |create 2 in 1
 spawn user thread 2 in 1
 terminate 2: ok
 terminate 1: ok
 delete thread 2
-delete thread 1
-terminate 3: ok
-delete thread 3)$
+delete thread 1)$
 
 --- udp_listen: 12345
 --- udp_query: blah
@@ -1121,9 +1056,7 @@ spawn user thread 2 in 1
 terminate 1: ok
 delete thread 1
 terminate 2: ok
-delete thread 2)
-terminate 3: ok
-delete thread 3$
+delete thread 2)$
 
 --- response_body_like chop
 ^(?:before
@@ -1156,7 +1089,6 @@ body: hello world)$
             ngx.thread.spawn(f)
             ngx.say("after")
         ';
-        content_by_lua return;
     }
 --- request
 POST /lua
@@ -1174,9 +1106,7 @@ spawn user thread 2 in 1
 terminate 1: ok
 delete thread 1
 terminate 2: ok
-delete thread 2)
-terminate 3: ok
-delete thread 3$
+delete thread 2)$
 
 --- response_body_like chop
 ^(?:before
@@ -1210,7 +1140,6 @@ body: hello world)$
 
             ngx.say("ok")
         ';
-        content_by_lua return;
     }
 
     location ~ ^/proxy/(\d+) {
@@ -1257,9 +1186,7 @@ post subreq: /proxy/2 rc=404, status=0 a=0
 subrequest /proxy/2 done
 terminate 3: ok
 delete thread 3
-terminate 4: ok
-delete thread 4
-finalize request /t: rc:0 c:1 a:1
+finalize request /t: rc:200 c:1 a:1
 (?:finalize request /t: rc:0 c:1 a:1)?$
 
 --- response_body
@@ -1292,7 +1219,6 @@ status: 404
 
             ngx.say("ok")
         ';
-        content_by_lua return;
     }
 
     location ~ ^/proxy/(\d+) {
@@ -1338,9 +1264,7 @@ delete thread 4
 terminate 3: ok
 delete thread 3
 terminate 2: ok
-delete thread 2)
-terminate 7: ok
-delete thread 7
+delete thread 2)$
 
 --- response_body
 ok
@@ -1375,7 +1299,6 @@ status: 404
 
             ngx.say("ok")
         ';
-        content_by_lua return;
     }
 
     location ~ ^/proxy/(\d+) {
@@ -1433,9 +1356,7 @@ post subreq: /proxy/2 rc=0, status=201 a=0
 subrequest /proxy/2 done
 terminate 3: ok
 delete thread 3
-terminate 6: ok
-delete thread 6
-finalize request /t: rc:0 c:1 a:1
+finalize request /t: rc:200 c:1 a:1
 (?:finalize request /t: rc:0 c:1 a:1)?$
 
 --- response_body
@@ -1468,7 +1389,6 @@ status: 201
 
             ngx.say("ok")
         ';
-        content_by_lua return;
     }
 
     location ~ ^/proxy/(\d+) {
@@ -1520,9 +1440,7 @@ post subreq: /proxy/2 rc=204, status=204 a=0
 subrequest /proxy/2 done
 terminate 3: ok
 delete thread 3
-terminate 6: ok
-delete thread 6
-finalize request /t: rc:0 c:1 a:1
+finalize request /t: rc:200 c:1 a:1
 (?:finalize request /t: rc:0 c:1 a:1)?$
 
 --- response_body

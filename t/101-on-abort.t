@@ -20,7 +20,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 16);
+plan tests => repeat_each() * (blocks() * 4 + 19);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -788,4 +788,59 @@ on abort called
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 18: regsiter on_abort callback but no client abortion (2 uthreads and 1 pending)
+--- config
+    location /t {
+        lua_check_client_abort on;
+        rewrite_by_lua '
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort called")
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.thread.spawn(function ()
+                ngx.sleep(0.1)
+                ngx.say("done")
+                ngx.exit(200)
+            end)
+
+            ngx.thread.spawn(function ()
+                ngx.sleep(100)
+            end)
+        ';
+        content_by_lua return;
+    }
+--- request
+GET /t
+
+--- stap2 eval: $::StapScript
+--- stap eval: $::GCScript
+--- stap_out
+create 2 in 1
+create 3 in 1
+spawn user thread 3 in 1
+create 4 in 1
+spawn user thread 4 in 1
+terminate 1: ok
+delete thread 1
+terminate 3: ok
+lua req cleanup
+delete thread 2
+delete thread 3
+delete thread 4
+
+--- wait: 0.5
+--- response_body
+done
+--- no_error_log
+[error]
+client prematurely closed connection
+on abort called
+main handler done
 

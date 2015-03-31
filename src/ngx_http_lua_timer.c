@@ -355,6 +355,10 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         lua_insert(tctx.co, 2);
     }
 
+#ifdef NGX_LUA_USE_ASSERT
+    ctx->cur_co_ctx->co_top = 1;
+#endif
+
     rc = ngx_http_lua_run_thread(L, r, ctx, n - 1);
 
     dd("timer lua run thread: %d", (int) rc);
@@ -419,7 +423,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
     ngx_int_t                    i, n;
     ngx_event_t                **events;
     ngx_connection_t            *c, *saved_c = NULL;
-    ngx_rbtree_node_t           *cur, *prev, *next, *sentinel;
+    ngx_rbtree_node_t           *cur, *prev, *next, *sentinel, *temp;
     ngx_http_lua_timer_ctx_t    *tctx;
     ngx_http_lua_main_conf_t    *lmcf;
 
@@ -463,7 +467,13 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
     sentinel = ngx_event_timer_rbtree.sentinel;
 
     cur = ngx_event_timer_rbtree.root;
-    prev = cur->parent;
+
+    /* XXX nginx does not guarentee the parent of root is meaningful,
+     * so we temporarily override it to simplify tree traversal. */
+    temp = cur->parent;
+    cur->parent = NULL;
+
+    prev = NULL;
 
     events = ngx_pcalloc(ngx_cycle->pool,
                          lmcf->pending_timers * sizeof(ngx_event_t));
@@ -487,6 +497,8 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
            prev, cur, cur->parent, cur->left, cur->right);
 
         if (prev == cur->parent) {
+            /* neither of the children has been accessed yet */
+
             next = cur->left;
             if (next == sentinel) {
                 ev = (ngx_event_t *)
@@ -501,6 +513,8 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
             }
 
         } else if (prev == cur->left) {
+            /* just accessed the left child */
+
             ev = (ngx_event_t *)
                 ((char *) cur - offsetof(ngx_event_t, timer));
 
@@ -512,15 +526,20 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
             next = (cur->right != sentinel) ? cur->right : cur->parent;
 
         } else if (prev == cur->right) {
+            /* already accessed both children */
             next = cur->parent;
 
         } else {
+            /* not reacheable */
             next = NULL;
         }
 
         prev = cur;
         cur = next;
     }
+
+    /* restore the old tree root's parent */
+    ngx_event_timer_rbtree.root->parent = temp;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua found %i pending timers to be aborted prematurely",

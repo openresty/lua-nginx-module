@@ -204,9 +204,9 @@ add timer 100
 add timer 200
 expire timer 100
 terminate 2: ok
+delete thread 2
 lua flush cleanup
 delete timer 200
-delete thread 2
 delete thread 1
 add timer 200
 expire timer 200

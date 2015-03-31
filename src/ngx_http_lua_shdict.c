@@ -91,7 +91,12 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_sprintf(ctx->shpool->log_ctx, " in lua_shared_dict zone \"%V\"%Z",
                 &shm_zone->shm.name);
 
+#if defined(nginx_version) && nginx_version >= 1005013
+    ctx->shpool->log_nomem = 0;
+#endif
+
 done:
+
     dd("get lmcf");
 
     lmcf = ctx->main_conf;
@@ -890,8 +895,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
             return 2;
         }
 
-        value.len = 0;
-        value.data = NULL;
+        ngx_str_null(&value);
         break;
 
     default:
@@ -968,6 +972,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
 replace:
+
         if (value.data && value.len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1012,6 +1017,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1024,6 +1030,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (value.data == NULL) {
@@ -1081,6 +1088,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
@@ -1293,6 +1301,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
         if (value->value.s.data == NULL || value->value.s.len == 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "no string buffer "
                           "initialized");
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
 
@@ -1387,7 +1396,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
@@ -1497,6 +1506,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
         }
 
 replace:
+
         if (str_value_buf && str_value_len == (size_t) sd->value_len) {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1538,6 +1548,7 @@ replace:
                        "NOT matched, removing it first");
 
 remove:
+
         ngx_queue_remove(&sd->queue);
 
         node = (ngx_rbtree_node_t *)
@@ -1550,6 +1561,7 @@ remove:
     }
 
 insert:
+
     /* rc == NGX_DECLINED or value size unmatch */
 
     if (str_value_buf == NULL) {
@@ -1601,6 +1613,7 @@ insert:
     }
 
 allocated:
+
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
     node->key = hash;
@@ -1744,6 +1757,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                       "bad value type found for key %*s in "
                       "shared_dict %V: %d", key_len, key, &name,
                       *value_type);
+        return NGX_ERROR;
     }
 
     *user_flags = sd->user_flags;
@@ -1819,7 +1833,34 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     *value = num;
     return NGX_OK;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+
+
+int
+ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
+{
+    ngx_queue_t                 *q;
+    ngx_http_lua_shdict_node_t  *sd;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    for (q = ngx_queue_head(&ctx->sh->queue);
+         q != ngx_queue_sentinel(&ctx->sh->queue);
+         q = ngx_queue_next(q))
+    {
+        sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
+        sd->expires = 1;
+    }
+
+    ngx_http_lua_shdict_expire(ctx, 0);
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return NGX_OK;
+}
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

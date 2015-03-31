@@ -43,7 +43,7 @@ __DATA__
     server_tokens off;
     lua_socket_connect_timeout 100ms;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t1 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -65,7 +65,7 @@ failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 100
 lua tcp socket connect timed out
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -75,7 +75,7 @@ lua tcp socket connect timed out
     lua_socket_connect_timeout 60s;
     lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t2 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -100,7 +100,7 @@ lua tcp socket connect timeout: 150
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -110,7 +110,7 @@ lua tcp socket connect timeout: 150
     lua_socket_log_errors off;
     lua_socket_connect_timeout 102ms;
     resolver $TEST_NGINX_RESOLVER;
-    #resolver_timeout 1s;
+    #resolver_timeout 3s;
     location /t3 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -145,7 +145,7 @@ lua tcp socket connect timeout: 102
     lua_socket_connect_timeout 102ms;
     lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t4 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -171,7 +171,7 @@ lua tcp socket connect timeout: 102
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -181,7 +181,7 @@ lua tcp socket connect timeout: 102
     lua_socket_connect_timeout 102ms;
     lua_socket_log_errors off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t5 {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -206,7 +206,7 @@ lua tcp socket connect timeout: 102
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 

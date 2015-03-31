@@ -164,7 +164,7 @@ ngx_http_lua_ngx_set(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_get_resp_status(ngx_http_request_t *r)
 {
@@ -246,7 +246,7 @@ ngx_http_lua_ffi_headers_sent(ngx_http_request_t *r)
 
     return r->header_sent ? 1 : 0;
 }
-#endif /* NGX_HTTP_LUA_NO_FFI_API */
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

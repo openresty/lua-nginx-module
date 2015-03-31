@@ -74,8 +74,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-    args.data = NULL;
-    args.len = 0;
+    ngx_str_null(&args);
 
     /* read the 1st argument (uri) */
 
@@ -87,7 +86,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     uri.data = ngx_palloc(r->pool, len);
     if (uri.data == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri.data, p, len);
@@ -122,7 +121,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
             user_args.data = ngx_palloc(r->pool, len);
             if (user_args.data == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             ngx_memcpy(user_args.data, p, len);
@@ -138,8 +137,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
             break;
 
         case LUA_TNIL:
-            user_args.data = NULL;
-            user_args.len = 0;
+            ngx_str_null(&user_args);
             break;
 
         default:
@@ -160,7 +158,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         } else {
             p = ngx_palloc(r->pool, args.len + user_args.len + 1);
             if (p == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             q = ngx_copy(p, args.data, args.len);
@@ -243,14 +241,14 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     uri = ngx_palloc(r->pool, len);
     if (uri == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     ngx_memcpy(uri, p, len);
 
     r->headers_out.location = ngx_list_push(&r->headers_out.headers);
     if (r->headers_out.location == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     r->headers_out.location->hash = ngx_http_lua_location_hash;
@@ -406,7 +404,7 @@ ngx_http_lua_on_abort(lua_State *L)
 }
 
 
-#ifndef NGX_HTTP_LUA_NO_FFI_API
+#ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     size_t *errlen)
@@ -470,6 +468,6 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
     return NGX_OK;
 }
-#endif  /* NGX_HTTP_LUA_NO_FFI_API */
+#endif  /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

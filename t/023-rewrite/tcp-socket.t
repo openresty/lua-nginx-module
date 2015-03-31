@@ -84,7 +84,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -206,7 +206,7 @@ attempt to send data on a closed socket:
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -255,7 +255,7 @@ GET /t
 connected: 1
 request sent: 56
 first line received: HTTP/1.1 200 OK
-second line received: Server: ngx_openresty
+second line received: Server: openresty
 --- no_error_log
 [error]
 
@@ -301,7 +301,7 @@ qr/connect\(\) failed \(\d+: Connection refused\)/
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /test {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -331,6 +331,7 @@ receive: nil closed
 close: nil closed
 --- error_log
 lua tcp socket connect timed out
+--- timeout: 10
 
 
 
@@ -373,7 +374,7 @@ connected: 1
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     location /t {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
@@ -408,7 +409,7 @@ connected: nil
 failed to send request: closed$
 --- error_log
 attempt to send data on a closed socket
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -518,7 +519,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -587,7 +588,7 @@ Connection: close\r
 foo
 
 err: nil
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -668,7 +669,7 @@ Connection: close\r
 foo
 
 err: nil
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -745,7 +746,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -823,7 +824,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -895,7 +896,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -964,7 +965,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -1073,7 +1074,7 @@ Con][nection: c][lose\r
 \r
 fo]failed to receive a line: closed [o
 ]
-close: nil closed
+close: 1 nil
 "
 --- no_error_log
 [error]
@@ -1590,7 +1591,7 @@ received: Connection: close
 received: 
 received: foo
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 
@@ -1912,7 +1913,7 @@ received: Connection: close
 received: 
 received: foobarbaz
 failed to receive a line: closed []
-close: nil closed
+close: 1 nil
 --- no_error_log
 [error]
 --- SKIP

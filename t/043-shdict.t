@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 15);
+plan tests => repeat_each() * (blocks() * 3 + 17);
 
 #no_diff();
 no_long_string();
@@ -401,10 +401,10 @@ GET /test
 --- response_body
 false no memory false
 --- log_level: info
---- error_log eval
-qr/\[info\] .* ngx_slab_alloc\(\) failed: no memory in lua_shared_dict zone "dogs"/
 --- no_error_log
 [error]
+[crit]
+ngx_slab_alloc() failed: no memory in lua_shared_dict zone
 
 
 
@@ -706,10 +706,10 @@ GET /test
 --- response_body
 false no memory true
 --- log_level: info
---- error_log eval
-qr/\[info\] .* ngx_slab_alloc\(\) failed: no memory in lua_shared_dict zone "dogs"/
 --- no_error_log
 [error]
+[crit]
+ngx_slab_alloc() failed: no memory in lua_shared_dict zone
 
 
 

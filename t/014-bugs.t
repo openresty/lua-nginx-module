@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 27);
+plan tests => repeat_each() * (blocks() * 2 + 28);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -789,7 +789,7 @@ qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
     location ~ /myproxy {
 
         rewrite    ^/myproxy/(.*)  /$1  break;
-        resolver_timeout 1s;
+        resolver_timeout 3s;
         #resolver 172.16.0.23; #  AWS DNS resolver address is the same in all regions - 172.16.0.23
         resolver 8.8.8.8;
         proxy_read_timeout 1s;
@@ -815,7 +815,7 @@ Hello, 502
 
 --- error_log
 not-exist.agentzh.org could not be resolved
---- timeout: 3
+--- timeout: 10
 
 
 
@@ -930,6 +930,25 @@ GET /t
 --- response_body
 done
 --- wait: 0.5
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: .lua file of exactly N*1024 bytes (github issue #385)
+--- config
+    location = /t {
+        content_by_lua_file html/a.lua;
+    }
+
+--- user_files eval
+my $s = "ngx.say('ok')\n";
+">>> a.lua\n" . (" " x (8192 - length($s))) . $s;
+
+--- request
+GET /t
+--- response_body
+ok
 --- no_error_log
 [error]
 

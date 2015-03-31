@@ -192,7 +192,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                     sr_bodies_len + sr_flags_len);
 
     if (p == NULL) {
-        return luaL_error(L, "out of memory");
+        return luaL_error(L, "no memory");
     }
 
     coctx->sr_statuses = (void *) p;
@@ -243,8 +243,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         body = NULL;
 
-        extra_args.data = NULL;
-        extra_args.len = 0;
+        ngx_str_null(&extra_args);
 
         if (extra_vars != NULL) {
             /* flush out existing elements in the array */
@@ -433,7 +432,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                 body = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
 
                 if (body == NULL) {
-                    return luaL_error(L, "out of memory");
+                    return luaL_error(L, "no memory");
                 }
 
                 q = (u_char *) lua_tolstring(L, -1, &len);
@@ -443,14 +442,14 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                 if (len) {
                     b = ngx_create_temp_buf(r->pool, len);
                     if (b == NULL) {
-                        return luaL_error(L, "out of memory");
+                        return luaL_error(L, "no memory");
                     }
 
                     b->last = ngx_copy(b->last, q, len);
 
                     body->bufs = ngx_alloc_chain_link(r->pool);
                     if (body->bufs == NULL) {
-                        return luaL_error(L, "out of memory");
+                        return luaL_error(L, "no memory");
                     }
 
                     body->bufs->buf = b;
@@ -487,8 +486,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         uri.len = len;
 
-        args.data = NULL;
-        args.len = 0;
+        ngx_str_null(&args);
 
         flags = 0;
 
@@ -503,7 +501,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             if (extra_args.len) {
                 p = ngx_palloc(r->pool, extra_args.len);
                 if (p == NULL) {
-                    return luaL_error(L, "out of memory");
+                    return luaL_error(L, "no memory");
                 }
 
                 ngx_memcpy(p, extra_args.data, extra_args.len);
@@ -518,7 +516,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             p = ngx_palloc(r->pool, len);
             if (p == NULL) {
-                return luaL_error(L, "out of memory");
+                return luaL_error(L, "no memory");
             }
 
             q = ngx_copy(p, args.data, args.len);
@@ -533,7 +531,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                         + sizeof(ngx_http_lua_ctx_t)
                         + sizeof(ngx_http_lua_post_subrequest_data_t));
         if (p == NULL) {
-            return luaL_error(L, "out of memory");
+            return luaL_error(L, "no memory");
         }
 
         psr = (ngx_http_post_subrequest_t *) p;
@@ -894,7 +892,7 @@ ngx_http_lua_process_vars_option(ngx_http_request_t *r, lua_State *L,
         vars = ngx_array_create(r->pool, 4, sizeof(ngx_keyval_t));
         if (vars == NULL) {
             dd("here");
-            luaL_error(L, "out of memory");
+            luaL_error(L, "no memory");
             return;
         }
 
@@ -913,12 +911,13 @@ ngx_http_lua_process_vars_option(ngx_http_request_t *r, lua_State *L,
         if (!lua_isstring(L, -1)) {
             luaL_error(L, "attempt to use bad variable value type %s",
                        luaL_typename(L, -1));
+            return;
         }
 
         var = ngx_array_push(vars);
         if (var == NULL) {
             dd("here");
-            luaL_error(L, "out of memory");
+            luaL_error(L, "no memory");
             return;
         }
 

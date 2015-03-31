@@ -446,7 +446,7 @@ warn(): Thu, 01 Jan 1970 01:34:38 GMT
 --- http_config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 1s;
+    resolver_timeout 3s;
     init_worker_by_lua '
         -- global
         logs = ""
@@ -510,7 +510,7 @@ warn(): Thu, 01 Jan 1970 01:34:38 GMT
     location = /t {
         content_by_lua '
             local i = 0
-            while not done and i < 1000 do
+            while not done and i < 3000 do
                 ngx.sleep(0.001)
                 i = i + 1
             end
@@ -524,7 +524,7 @@ timer created
 connected: 1
 request sent: 56
 first line received: HTTP/1.1 200 OK
-second line received: Server: ngx_openresty
+second line received: Server: openresty
 --- no_error_log
 [error]
 --- timeout: 10
