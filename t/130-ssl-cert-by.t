@@ -3777,7 +3777,7 @@ failed to do SSL handshake: handshake failed
 'runtime error: ssl_certificate_by_lua:2: bad bad bad',
 'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
 qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
-qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
+qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
 ]
 
 --- no_error_log
