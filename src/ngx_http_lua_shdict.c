@@ -1141,12 +1141,18 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_shm_zone_t              *zone;
     double                       value;
     lua_Number                   exptime = -1;
+                         /* indicates whether to set the entries
+                          * exptime property, -1 meaning do not set */
     ngx_time_t                  *tp;
 
     n = lua_gettop(L);
 
     if (n < 3) {
-        return luaL_error(L, "expecting atleast 3 arguments, but only seen %d", n);
+        return luaL_error(L, "expecting at least 3 arguments, but only seen %d", n);
+    }
+	
+	if (n > 4) {
+        return luaL_error(L, "expecting no more than 4 arguments, but %d seen", n);
     }
 
     if (lua_type(L, 1) != LUA_TLIGHTUSERDATA) {
@@ -1229,8 +1235,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
         sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
             + (uint64_t)(exptime * 1000);
 
-    }
-    else if (exptime == 0) {
+    } else if (exptime == 0) {
         dd("setting key to never expire");
         sd->expires = 0;
     }
