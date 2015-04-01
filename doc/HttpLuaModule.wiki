@@ -4538,7 +4538,7 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.shared.DICT.incr ==
-'''syntax:''' ''newval, err = ngx.shared.DICT:incr(key, value)''
+'''syntax:''' ''newval, err = ngx.shared.DICT:incr(key, value, exptime?)''
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
