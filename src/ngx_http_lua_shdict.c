@@ -1150,8 +1150,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
     if (n < 3) {
         return luaL_error(L, "expecting at least 3 arguments, but only seen %d", n);
     }
-	
-	if (n > 4) {
+    
+    if (n > 4) {
         return luaL_error(L, "expecting no more than 4 arguments, but %d seen", n);
     }
 
