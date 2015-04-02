@@ -1142,7 +1142,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     double                       value;
     lua_Number                   exptime = -1;
                          /* indicates whether to set the entries
-                          * exptime property, -1 meaning do not set */
+                          * exptime property, <0 meaning do not set */
     ngx_time_t                  *tp;
 
     n = lua_gettop(L);
@@ -1160,9 +1160,11 @@ ngx_http_lua_shdict_incr(lua_State *L)
     }
 
     if (n >= 4) {
-        exptime = luaL_checknumber(L, 4);
-        if (exptime < 0) {
-            exptime = -1;
+        if (!lua_isnil(L, 4)) {
+            exptime = luaL_checknumber(L, 4);
+            if (exptime < 0) {
+                return luaL_error(L, "bad \"exptime\" argument");
+            }
         }
     }
 
