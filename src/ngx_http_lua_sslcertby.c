@@ -719,6 +719,38 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     return NGX_DECLINED;
 }
 
+int
+ngx_http_lua_ffi_privkey_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
+    char **err)
+{
+    int       total;
+    BIO      *bio;
+    EVP_PKEY *pkey;
+
+    bio = BIO_new_mem_buf((char *) pem, (int) pem_len);
+    if (bio == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        return NGX_ERROR;
+    }
+
+    pkey = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
+    if (pkey == NULL) {
+        *err = "PEM_read_bio_PrivateKey() failed";
+        BIO_free(bio);
+        return NGX_ERROR;
+    }
+
+    total = i2d_PrivateKey(pkey, &der);
+    if (total < 0) {
+        EVP_PKEY_free(pkey);
+        BIO_free(bio);
+        return NGX_ERROR;
+    }
+
+    EVP_PKEY_free(pkey);
+    BIO_free(bio);
+    return total;
+}
 
 int
 ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
