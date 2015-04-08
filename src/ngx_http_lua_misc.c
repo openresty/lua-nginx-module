@@ -40,10 +40,16 @@ ngx_http_lua_ngx_get(lua_State *L)
     ngx_http_request_t          *r;
     u_char                      *p;
     size_t                       len;
+    ngx_http_lua_ctx_t          *ctx;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
     }
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
@@ -90,9 +96,9 @@ ngx_http_lua_ngx_get(lua_State *L)
     {
         ngx_http_lua_check_fake_request(L, r);
 
-        dd("headers sent: %d", r->header_sent);
+        dd("headers sent: %d", r->header_sent || ctx->header_sent);
 
-        lua_pushboolean(L, r->header_sent ? 1 : 0);
+        lua_pushboolean(L, r->header_sent || ctx->header_sent);
         return 1;
     }
 

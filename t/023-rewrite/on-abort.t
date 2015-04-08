@@ -291,26 +291,29 @@ GET /t
 
 --- stap2 eval: $::StapScript
 --- stap eval: $::GCScript
---- stap_out
-create 2 in 1
+--- stap_out_like eval
+qr/^create 2 in 1
 lua check broken conn
 terminate 2: fail
-terminate 1: ok
+(?:lua check broken conn
+)?terminate 1: ok
 delete thread 2
 delete thread 1
 terminate 3: ok
 delete thread 3
 lua req cleanup
-
+$/
 --- timeout: 0.2
 --- abort
 --- wait: 0.6
 --- ignore_response
---- error_log
-client prematurely closed connection
-on abort called
-lua user thread aborted: runtime error: rewrite_by_lua:4: attempt to abort with pending subrequests
-main handler done
+--- error_log eval
+[
+'client prematurely closed connection',
+'on abort called',
+qr/lua user thread aborted: runtime error: rewrite_by_lua\(nginx\.conf:\d+\):4: attempt to abort with pending subrequests/,
+'main handler done',
+]
 
 
 

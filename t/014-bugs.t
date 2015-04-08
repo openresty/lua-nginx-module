@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 28);
+plan tests => repeat_each() * (blocks() * 2 + 30);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -25,6 +25,18 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 #no_shuffle();
 no_long_string();
+
+sub read_file {
+    my $infile = shift;
+    open my $in, $infile
+        or die "cannot open $infile for reading: $!";
+    my $cert = do { local $/; <$in> };
+    close $in;
+    $cert;
+}
+
+our $TestCertificate = read_file("t/cert/test.crt");
+our $TestCertificateKey = read_file("t/cert/test.key");
 
 run_tests();
 
@@ -47,7 +59,7 @@ GET /load
 >>> foo.lua
 module(..., package.seeall);
 
-function foo () 
+function foo ()
     return 1
     return 2
 end
@@ -761,7 +773,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
     location /t {
         set $myserver nginx.org;
         proxy_pass http://$myserver/;
-        resolver 127.0.0.1;
+        resolver 127.0.0.1:6789;
     }
 --- request
     GET /t
@@ -772,7 +784,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 --- no_error_log
 [alert]
 --- error_log eval
-qr/recv\(\) failed \(\d+: Connection refused\) while resolving/
+qr/send\(\) failed \(\d+: Connection refused\) while resolving/
 
 
 
@@ -847,6 +859,7 @@ GET /t
 --- response_body_like: An example for a vimrc file
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
@@ -927,6 +940,12 @@ function go(port)
 end
 --- request
 GET /t
+--- stap2
+F(ngx_close_connection) {
+    println("=== close connection")
+    print_ubacktrace()
+}
+--- stap_out2
 --- response_body
 done
 --- wait: 0.5
@@ -951,4 +970,53 @@ GET /t
 ok
 --- no_error_log
 [error]
+
+
+
+=== TEST 41: https proxy has no timeout protection for ssl handshake
+--- http_config
+    # to suppress a valgrind false positive in the nginx core:
+    proxy_ssl_session_reuse off;
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        location /foo {
+            echo foo;
+        }
+    }
+
+    upstream local {
+        server unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+    }
+
+--- config
+    location = /t {
+        proxy_pass https://local/foo;
+    }
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+
+--- request
+GET /t
+
+--- stap
+probe process("nginx").function("ngx_http_upstream_ssl_handshake") {
+    printf("read timer set: %d\n", $c->read->timer_set)
+    printf("write timer set: %d\n", $c->write->timer_set)
+}
+--- stap_out
+read timer set: 0
+write timer set: 1
+
+--- response_body eval
+--- no_error_log
+[error]
+[alert]
 

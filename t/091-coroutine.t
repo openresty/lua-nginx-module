@@ -179,7 +179,7 @@ cc3: 2
 
             local urls = {
                 "agentzh.org",
-                "agentzh.com",
+                "iscribblet.org",
                 "openresty.org"
             }
 
@@ -205,7 +205,7 @@ cc3: 2
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: agentzh.com
+successfully connected to: iscribblet.org
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
@@ -378,7 +378,7 @@ GET /lua
 
             local urls = {
                 "agentzh.org",
-                "agentzh.com",
+                "iscribblet.org",
                 "openresty.org"
             }
 
@@ -399,7 +399,7 @@ GET /lua
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: agentzh.com
+successfully connected to: iscribblet.org
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
@@ -897,12 +897,13 @@ chunk: true
     }
 --- request
 GET /t
---- response_body
-child: resume: falsecontent_by_lua:4: bad
+--- response_body eval
+qr/^child: resume: falsecontent_by_lua\(nginx\.conf:\d+\):4: bad
 child: status: dead
 parent: status: running
---- error_log
-lua coroutine: runtime error: content_by_lua:4: bad
+$/s
+--- error_log eval
+qr/lua coroutine: runtime error: content_by_lua\(nginx\.conf:\d+\):4: bad/
 
 
 

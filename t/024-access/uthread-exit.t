@@ -569,6 +569,7 @@ delete timer 12000
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread

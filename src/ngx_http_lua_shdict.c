@@ -481,7 +481,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                               (unsigned long) value.len);
         }
 
-        num = *(double *) value.data;
+        ngx_memcpy(&num, value.data, sizeof(double));
 
         lua_pushnumber(L, num);
         break;
@@ -1249,7 +1249,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     p = sd->data + key.len;
 
-    num = *(double *) p;
+    ngx_memcpy(&num, p, sizeof(double));
     num += value;
 
     ngx_memcpy(p, (double *) &num, sizeof(double));
@@ -1740,7 +1740,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
         }
 
         *str_value_len = value.len;
-        *num_value = *(double *) value.data;
+        ngx_memcpy(num_value, value.data, sizeof(double));
         break;
 
     case LUA_TBOOLEAN:
@@ -1830,7 +1830,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
     p = sd->data + key_len;
 
-    num = *(double *) p;
+    ngx_memcpy(&num, p, sizeof(double));
     num += *value;
 
     ngx_memcpy(p, (double *) &num, sizeof(double));

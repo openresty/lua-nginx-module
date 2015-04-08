@@ -9,10 +9,12 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 + 1);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+
+our $ServerRoot = server_root();
 
 #no_diff();
 no_long_string();
@@ -576,7 +578,7 @@ second line received: Server: openresty
 timer created
 failed to connect: connection refused
 --- error_log eval
-qr/connect\(\) failed \(\d+: Connection refused\)/
+qr/connect\(\) failed \(\d+: Connection refused\), context: ngx\.timer$/
 
 
 
@@ -680,4 +682,61 @@ failed to connect: connection refused
 'qr/connect\(\) failed \(\d+: Connection refused\)/',
 '[error]',
 ]
+
+
+
+=== TEST 17: init_by_lua + proxy_temp_path which has side effects in cf->cycle->paths
+--- http_config eval
+qq{
+    proxy_temp_path $::ServerRoot/proxy_temp;
+    init_worker_by_lua '
+        local a = 2 + 3
+    ';
+}
+--- config
+    location /t {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 18: syslog error log
+--- http_config
+    #error_log syslog:server=127.0.0.1:12345 error;
+    init_worker_by_lua '
+        done = false
+        os.execute("sleep 0.1")
+        ngx.log(ngx.ERR, "Bad bad bad")
+        done = true
+    ';
+--- config
+    location /t {
+        content_by_lua '
+            while not done do
+                ngx.sleep(0.001)
+            end
+            ngx.say("ok")
+        ';
+    }
+--- log_level: error
+--- error_log_file: syslog:server=127.0.0.1:12345
+--- udp_listen: 12345
+--- udp_query eval: qr/Bad bad bad/
+--- udp_reply: hello
+--- wait: 0.1
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+Bad bad bad
+--- skip_nginx: 4: < 1.7.1
 

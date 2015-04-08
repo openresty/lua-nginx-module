@@ -19,6 +19,7 @@
 #define NGX_HTTP_LUA_SOCKET_FT_NOMEM         0x0020
 #define NGX_HTTP_LUA_SOCKET_FT_PARTIALWRITE  0x0040
 #define NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT   0x0080
+#define NGX_HTTP_LUA_SOCKET_FT_SSL           0x0100
 
 
 typedef struct ngx_http_lua_socket_tcp_upstream_s
@@ -76,7 +77,6 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     size_t                           length;
     size_t                           rest;
 
-    ngx_uint_t                       ft_type;
     ngx_err_t                        socket_errno;
 
     ngx_int_t                      (*input_filter)(void *data, ssize_t bytes);
@@ -90,6 +90,11 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 
     ngx_uint_t                       reused;
 
+#if (NGX_HTTP_SSL)
+    ngx_str_t                        ssl_name;
+#endif
+
+    unsigned                         ft_type:16;
     unsigned                         no_close:1;
     unsigned                         conn_waiting:1;
     unsigned                         read_waiting:1;
@@ -99,6 +104,10 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     unsigned                         raw_downstream:1;
     unsigned                         read_closed:1;
     unsigned                         write_closed:1;
+#if (NGX_HTTP_SSL)
+    unsigned                         ssl_verify:1;
+    unsigned                         ssl_session_reuse:1;
+#endif
 };
 
 
@@ -139,6 +148,7 @@ typedef struct {
 
 void ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L);
 void ngx_http_lua_inject_req_socket_api(lua_State *L);
+void ngx_http_lua_cleanup_conn_pools(lua_State *L);
 
 
 #endif /* _NGX_HTTP_LUA_SOCKET_TCP_H_INCLUDED_ */

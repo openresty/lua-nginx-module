@@ -420,7 +420,7 @@ while ($i <= 98) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -468,7 +468,7 @@ while ($i <= 100) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -516,7 +516,7 @@ while ($i <= 105) {
     push @k, "x-$i";
     $i++;
 }
-push @k, "connection: Close\n";
+push @k, "connection: close\n";
 push @k, "host: localhost\n";
 @k = sort @k;
 for my $k (@k) {
@@ -744,8 +744,14 @@ Foo22: foo22\r
     location /t {
         content_by_lua '
             local h = {}
+            local arr = {}
             for k, v in pairs(ngx.req.get_headers(nil, true)) do
-                ngx.say(k, ": ", v)
+                h[k] = v
+                table.insert(arr, k)
+            end
+            table.sort(arr)
+            for i, k in ipairs(arr) do
+                ngx.say(k, ": ", h[k])
             end
         ';
     }
@@ -755,10 +761,10 @@ GET /t
 My-Foo: bar
 Bar: baz
 --- response_body
-Host: localhost
 Bar: baz
+Connection: close
+Host: localhost
 My-Foo: bar
-Connection: Close
 
 
 
@@ -1049,9 +1055,15 @@ foo-21: 21\r
     location /t {
         content_by_lua '
            -- get ALL the raw headers (0 == no limit, not recommended)
-           local headers = ngx.req.get_headers(0, true)
-           for k, v in pairs(headers) do
-              ngx.say{ k, ": ", v}
+           local h = {}
+           local arr = {}
+           for k, v in pairs(ngx.req.get_headers(0, true)) do
+               h[k] = v
+               table.insert(arr, k)
+           end
+           table.sort(arr)
+           for i, k in ipairs(arr) do
+               ngx.say(k, ": ", h[k])
            end
         ';
     }
@@ -1061,10 +1073,10 @@ GET /t
 My-Foo: bar
 Bar: baz
 --- response_body
-Host: localhost
 Bar: baz
+Connection: close
+Host: localhost
 My-Foo: bar
-Connection: Close
 --- no_error_log
 [error]
 

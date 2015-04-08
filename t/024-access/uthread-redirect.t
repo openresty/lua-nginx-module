@@ -185,6 +185,7 @@ delete timer 1000
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body_like: 302 Found
 --- error_code: 302
 --- no_error_log

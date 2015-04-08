@@ -255,6 +255,7 @@ delete timer 1000
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 hello foo
 --- no_error_log

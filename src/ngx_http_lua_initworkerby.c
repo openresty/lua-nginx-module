@@ -14,7 +14,7 @@
 #include "ngx_http_lua_util.h"
 
 
-static u_char * ngx_http_lua_log_init_worker_error(ngx_log_t *log,
+static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
     u_char *buf, size_t len);
 
 
@@ -25,6 +25,9 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     void                        *cur, *prev;
     ngx_uint_t                   i;
     ngx_conf_t                   conf;
+    ngx_cycle_t                 *fake_cycle;
+    ngx_open_file_t             *file, *ofile;
+    ngx_list_part_t             *part;
     ngx_connection_t            *c = NULL;
     ngx_http_module_t           *module;
     ngx_http_request_t          *r = NULL;
@@ -56,9 +59,87 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
+    conf.temp_pool->log = cycle->log;
+
+    /* we fake a temporary ngx_cycle_t here because some
+     * modules' merge conf handler may produce side effects in
+     * cf->cycle (like ngx_proxy vs cf->cycle->paths).
+     * also, we cannot allocate our temp cycle on the stack
+     * because some modules like ngx_http_core_module reference
+     * addresses within cf->cycle (i.e., via "&cf->cycle->new_log")
+     */
+
+    fake_cycle = ngx_palloc(cycle->pool, sizeof(ngx_cycle_t));
+    if (fake_cycle == NULL) {
+        goto failed;
+    }
+
+    ngx_memcpy(fake_cycle, cycle, sizeof(ngx_cycle_t));
+
+#if defined(nginx_version) && nginx_version >= 9007
+
+    ngx_queue_init(&fake_cycle->reusable_connections_queue);
+
+#endif
+
+    if (ngx_array_init(&fake_cycle->listening, cycle->pool,
+                       cycle->listening.nelts || 1,
+                       sizeof(ngx_listening_t))
+        != NGX_OK)
+    {
+        goto failed;
+    }
+
+#if defined(nginx_version) && nginx_version >= 1003007
+
+    if (ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
+                       sizeof(ngx_path_t *))
+        != NGX_OK)
+    {
+        goto failed;
+    }
+
+#endif
+
+    part = &cycle->open_files.part;
+    ofile = part->elts;
+
+    if (ngx_list_init(&fake_cycle->open_files, cycle->pool, part->nelts || 1,
+                      sizeof(ngx_open_file_t))
+        != NGX_OK)
+    {
+        goto failed;
+    }
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+            part = part->next;
+            ofile = part->elts;
+            i = 0;
+        }
+
+        file = ngx_list_push(&fake_cycle->open_files);
+        if (file == NULL) {
+            goto failed;
+        }
+
+        ngx_memcpy(file, ofile, sizeof(ngx_open_file_t));
+    }
+
+    if (ngx_list_init(&fake_cycle->shared_memory, cycle->pool, 1,
+                      sizeof(ngx_shm_zone_t))
+        != NGX_OK)
+    {
+        goto failed;
+    }
+
     conf.ctx = &http_ctx;
-    conf.cycle = cycle;
-    conf.pool = cycle->pool;
+    conf.cycle = fake_cycle;
+    conf.pool = fake_cycle->pool;
     conf.log = cycle->log;
 
     http_ctx.loc_conf = ngx_pcalloc(conf.pool,
@@ -126,7 +207,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_destroy_pool(conf.temp_pool);
     conf.temp_pool = NULL;
 
-    c = ngx_http_lua_create_fake_connection();
+    c = ngx_http_lua_create_fake_connection(NULL);
     if (c == NULL) {
         goto failed;
     }
@@ -143,10 +224,20 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     r->loc_conf = http_ctx.loc_conf;
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+#if defined(nginx_version) && nginx_version >= 1003014
+
+    ngx_http_set_connection_log(r->connection, clcf->error_log);
+
+#else
+
     c->log->file = clcf->error_log->file;
+
     if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
         c->log->log_level = clcf->error_log->log_level;
     }
+
+#endif
 
     if (top_clcf->resolver) {
         clcf->resolver = top_clcf->resolver;
@@ -170,7 +261,6 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     (void) lmcf->init_worker_handler(cycle->log, lmcf, lmcf->lua);
 
-    ngx_destroy_pool(r->pool);
     ngx_destroy_pool(c->pool);
     return NGX_OK;
 
@@ -178,10 +268,6 @@ failed:
 
     if (conf.temp_pool) {
         ngx_destroy_pool(conf.temp_pool);
-    }
-
-    if (r && r->pool) {
-        ngx_destroy_pool(r->pool);
     }
 
     if (c) {

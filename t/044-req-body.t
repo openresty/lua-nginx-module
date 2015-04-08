@@ -315,8 +315,8 @@ POST /test
 yeah
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-lua entry thread aborted: runtime error: content_by_lua:2: request body not read yet
+--- error_log eval
+qr/lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):2: request body not read yet/
 --- no_error_log
 [alert]
 
@@ -573,8 +573,9 @@ hello, world
 Will you change this world?
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-lua entry thread aborted: runtime error: rewrite_by_lua:3: request body not read yet
+--- error_log eval
+qr/lua entry thread aborted: runtime error: rewrite_by_lua\(nginx\.conf:\d+\):3: request body not read yet/
+
 --- no_error_log
 [alert]
 
@@ -976,8 +977,9 @@ a client request body is buffered to a temporary file
     GET /t
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-lua entry thread aborted: runtime error: content_by_lua:2: request body not read yet
+--- error_log eval
+qr/lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):2: request body not read yet/
+
 --- no_error_log
 [alert]
 
