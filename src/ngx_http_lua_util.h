@@ -197,7 +197,7 @@ ngx_int_t ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx);
 
 ngx_int_t ngx_http_lua_post_thread(ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx, ngx_int_t nrets);
 
 void ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);

@@ -1123,7 +1123,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                         ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
 
                         if (ctx->posted_threads) {
-                            ngx_http_lua_post_thread(r, ctx, ctx->cur_co_ctx);
+                            ngx_http_lua_post_thread(r, ctx, ctx->cur_co_ctx, 0);
                             ctx->cur_co_ctx = NULL;
                             return NGX_AGAIN;
                         }
@@ -3050,7 +3050,7 @@ ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
 
         ctx->cur_co_ctx = pt->co_ctx;
 
-        rc = ngx_http_lua_run_thread(L, r, ctx, 0);
+        rc = ngx_http_lua_run_thread(L, r, ctx, pt->nrets);
 
         if (rc == NGX_AGAIN) {
             continue;
@@ -3076,7 +3076,7 @@ ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
 
 ngx_int_t
 ngx_http_lua_post_thread(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
-    ngx_http_lua_co_ctx_t *coctx)
+    ngx_http_lua_co_ctx_t *coctx, ngx_int_t nrets)
 {
     ngx_http_lua_posted_thread_t  **p;
     ngx_http_lua_posted_thread_t   *pt;
@@ -3087,6 +3087,7 @@ ngx_http_lua_post_thread(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     pt->co_ctx = coctx;
+    pt->nrets = nrets;
     pt->next = NULL;
 
     for (p = &ctx->posted_threads; *p; p = &(*p)->next) { /* void */ }

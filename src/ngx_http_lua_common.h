@@ -268,6 +268,7 @@ typedef struct ngx_http_lua_posted_thread_s  ngx_http_lua_posted_thread_t;
 
 struct ngx_http_lua_posted_thread_s {
     ngx_http_lua_co_ctx_t               *co_ctx;
+    ngx_int_t                            nrets;
     ngx_http_lua_posted_thread_t        *next;
 };
 
