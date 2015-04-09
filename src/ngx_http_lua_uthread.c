@@ -242,6 +242,12 @@ ngx_http_lua_uthread_kill(lua_State *L)
         return 2;
     }
 
+    if (ctx->cur_co_ctx == sub_coctx) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "not allowed to kill self");
+        return 2;
+    }
+
     if (sub_coctx->pending_subreqs > 0) {
         lua_pushnil(L);
         lua_pushliteral(L, "pending subrequests");
