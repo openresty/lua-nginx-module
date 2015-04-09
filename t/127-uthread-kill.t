@@ -9,7 +9,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 2);
+plan tests => repeat_each() * (blocks() * 5);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -498,7 +498,7 @@ GET /t
 --- stap2 eval: $::StapScript
 --- response_body
 failed to kill main thread: not user thread
-failed to kill user thread: killer not parent
+failed to kill user thread: not allowed to kill self
 thread created: zombie
 
 --- no_error_log
@@ -507,3 +507,112 @@ thread created: zombie
 lua tcp socket abort resolver
 --- error_log
 
+=== TEST 10: non parent kill, parent waits for the killed
+--- config
+    location = /t {
+        content_by_lua '
+            function killing_thread(thread_to_kill)
+               ngx.sleep(1)
+               ngx.thread.kill(thread_to_kill)
+               ngx.say("Killing thread ended")
+            end
+            
+            function sleepy_thread()
+               local i
+               for i = 1, 3 do
+                  ngx.say("Sleepy thread going to sleep")
+                  ngx.sleep(3)
+               end
+               ngx.say("Sleepy thread ended")
+            end
+            
+            function spawning_thread()
+               local success, error
+               local killing, sleepy
+               sleepy, error = ngx.thread.spawn(sleepy_thread)
+               if not sleepy then
+                   ngx.say(error)
+                   ngx.exit(200)
+               end
+               killing, error = ngx.thread.spawn(killing_thread, sleepy)
+               if not killing then
+                   ngx.say(error)
+                   ngx.exit(200)
+               end
+               ngx.say("Parent now waits")
+               success, error = ngx.thread.wait(sleepy)
+               ngx.say("Result: ", tostring(success), " ", tostring(error))
+            end
+            
+            function startit()
+               local thread
+               ngx.say("Starting")
+               thread = ngx.thread.spawn(spawning_thread)
+               ngx.thread.wait(thread)
+               ngx.say("Finished")
+               ngx.exit(200)
+            end
+            
+            startit()
+        ';
+    }
+--- request
+GET /t
+--- timeout: 5
+--- response_body
+Starting
+Sleepy thread going to sleep
+Parent now waits
+Killing thread ended
+Result: false user thread killed
+Finished
+
+--- no_error_log
+[error]
+[alert]
+
+
+=== TEST 11: non parent kill, parent waits for the killer
+--- config
+    location = /t {
+        content_by_lua '
+            function killing_thread(thread_to_kill)
+               ngx.sleep(3)
+               ngx.thread.kill(thread_to_kill)
+               ngx.say("Killing thread ended")
+            end
+            
+            function sleepy_thread()
+               local i
+               for i = 1, 3 do
+                  ngx.say("Sleepy thread going to sleep")
+                  ngx.sleep(5)
+               end
+               ngx.say("Sleepy thread ended")
+            end
+            
+            function startit()
+               local success, error
+               local killing, sleepy
+               sleepy = ngx.thread.spawn(sleepy_thread)
+               killing = ngx.thread.spawn(killing_thread, sleepy)
+               success, error = ngx.thread.wait(killing)
+               ngx.say("Result: ", tostring(success), " ", tostring(error))
+            end
+            
+            startit()
+            ngx.say("Finished")
+        ';
+    }
+--- request
+GET /t
+--- timeout: 5
+--- response_body
+Sleepy thread going to sleep
+Killing thread ended
+Result: true nil
+Finished
+
+--- no_error_log
+[error]
+[alert]
