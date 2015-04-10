@@ -29,7 +29,9 @@ static int ngx_http_lua_socket_tcp_close(lua_State *L);
 static int ngx_http_lua_socket_tcp_setoption(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeout(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
-static int ngx_http_lua_socket_tcp_set_receive_timeout(lua_State *L);
+static ngx_msec_t ngx_http_lua_socket_get_timeout(lua_State *L,
+    ngx_msec_t default_timeout, int index);
+static int ngx_http_lua_socket_tcp_set_read_timeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_set_send_timeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_set_connect_timeout(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc,
@@ -140,8 +142,10 @@ static void ngx_http_lua_socket_tcp_close_connection(ngx_connection_t *c);
 
 enum {
     SOCKET_CTX_INDEX = 1,
-    SOCKET_TIMEOUT_INDEX = 2,
-    SOCKET_KEY_INDEX = 3
+    SOCKET_CONNECT_TIMEOUT_INDEX = 2,
+    SOCKET_READ_TIMEOUT_INDEX = 3,
+    SOCKET_SEND_TIMEOUT_INDEX = 4,
+    SOCKET_KEY_INDEX = 5
 };
 
 
@@ -237,8 +241,8 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
-    lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_read_timeout);
+    lua_setfield(L, -2, "setreadtimeout"); /* ngx socket mt */
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -262,11 +266,11 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
-    lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_read_timeout);
+    lua_setfield(L, -2, "setreadtimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_send_timeout);
-    lua_setfield(L, -2, "set_send_timeout"); /* ngx socket mt */
+    lua_setfield(L, -2, "setsendtimeout"); /* ngx socket mt */
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -306,14 +310,14 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_receive_timeout);
-    lua_setfield(L, -2, "set_receive_timeout"); /* ngx socket mt */
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_read_timeout);
+    lua_setfield(L, -2, "setreadtimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_send_timeout);
-    lua_setfield(L, -2, "set_send_timeout"); /* ngx socket mt */
+    lua_setfield(L, -2, "setsendtimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_set_connect_timeout);
-    lua_setfield(L, -2, "set_connect_timeout"); /* ngx socket mt */
+    lua_setfield(L, -2, "setconnecttimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_getreusedtimes);
     lua_setfield(L, -2, "getreusedtimes");
@@ -434,7 +438,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
-    int                          timeout;
     unsigned                     custom_pool;
     int                          key_index;
     const char                  *msg;
@@ -601,20 +604,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     dd("lua peer connection log: %p", pc->log);
 
-    lua_rawgeti(L, 1, SOCKET_TIMEOUT_INDEX);
-    timeout = (ngx_int_t) lua_tointeger(L, -1);
-    lua_pop(L, 1);
-
-    if (timeout > 0) {
-        u->send_timeout = (ngx_msec_t) timeout;
-        u->read_timeout = (ngx_msec_t) timeout;
-        u->connect_timeout = (ngx_msec_t) timeout;
-
-    } else {
-        u->read_timeout = u->conf->read_timeout;
-        u->send_timeout = u->conf->send_timeout;
-        u->connect_timeout = u->conf->connect_timeout;
-    }
+    u->connect_timeout = ngx_http_lua_socket_get_timeout(L,
+                                                  u->conf->connect_timeout,
+                                                  SOCKET_CONNECT_TIMEOUT_INDEX);
+    u->read_timeout = ngx_http_lua_socket_get_timeout(L, u->conf->read_timeout,
+                                                      SOCKET_READ_TIMEOUT_INDEX);
+    u->send_timeout = ngx_http_lua_socket_get_timeout(L, u->conf->send_timeout,
+                                                      SOCKET_SEND_TIMEOUT_INDEX);
 
     rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
@@ -2672,7 +2668,12 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
 
-    lua_rawseti(L, 1, SOCKET_TIMEOUT_INDEX);
+    lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
+    /* XXX lua_rawseti() pops from the stack */
+    lua_pushnumber(L, timeout);
+    lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
+    lua_pushnumber(L, timeout);
+    lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -2694,8 +2695,21 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
 }
 
 
+static ngx_msec_t
+ngx_http_lua_socket_get_timeout(lua_State *L, ngx_msec_t default_timeout,
+    int index)
+{
+    int timeout;
+
+    lua_rawgeti(L, 1, index);
+    timeout = (ngx_int_t) lua_tointeger(L, -1);
+
+    return timeout > 0 ? (ngx_msec_t) timeout : default_timeout;
+}
+
+
 static int
-ngx_http_lua_socket_tcp_set_receive_timeout(lua_State *L)
+ngx_http_lua_socket_tcp_set_read_timeout(lua_State *L)
 {
     int                     n;
     ngx_int_t               timeout;
@@ -2705,24 +2719,20 @@ ngx_http_lua_socket_tcp_set_receive_timeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket set_receive_timeout: expecting at least 2 "
+        return luaL_error(L, "ngx.socket setreadtimeout: expecting at least 2 "
                           "arguments (including the object) but seen %d",
                           lua_gettop(L));
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
 
-    lua_rawseti(L, 1, SOCKET_TIMEOUT_INDEX);
+    lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
 
     if (u) {
-        if (timeout > 0) {
-            u->read_timeout = (ngx_msec_t) timeout;
-        } else {
-            u->read_timeout = u->conf->read_timeout;
-        }
+        u->read_timeout = timeout > 0 ? (ngx_msec_t) timeout : u->conf->read_timeout;
     }
 
     return 0;
@@ -2740,24 +2750,20 @@ ngx_http_lua_socket_tcp_set_connect_timeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket set_connect_timeout: expecting at least 2 "
+        return luaL_error(L, "ngx.socket setconnecttimeout: expecting at least 2 "
                           "arguments (including the object) but seen %d",
                           lua_gettop(L));
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
 
-    lua_rawseti(L, 1, SOCKET_TIMEOUT_INDEX);
+    lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
 
     if (u) {
-        if (timeout > 0) {
-            u->connect_timeout = (ngx_msec_t) timeout;
-        } else {
-            u->connect_timeout = u->conf->connect_timeout;
-        }
+        u->connect_timeout = timeout > 0 ? (ngx_msec_t) timeout : u->conf->connect_timeout;
     }
 
     return 0;
@@ -2775,24 +2781,20 @@ ngx_http_lua_socket_tcp_set_send_timeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket set_send_timeout: expecting at least 2 "
+        return luaL_error(L, "ngx.socket setsendtimeout: expecting at least 2 "
                           "arguments (including the object) but seen %d",
                           lua_gettop(L));
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
 
-    lua_rawseti(L, 1, SOCKET_TIMEOUT_INDEX);
+    lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
 
     if (u) {
-        if (timeout > 0) {
-            u->send_timeout = (ngx_msec_t) timeout;
-        } else {
-            u->send_timeout = u->conf->send_timeout;
-        }
+        u->send_timeout = timeout > 0 ? (ngx_msec_t) timeout : u->conf->send_timeout;
     }
 
     return 0;
