@@ -4084,14 +4084,6 @@ ngx_http_lua_req_socket(lua_State *L)
     }
 #endif
 
-#if nginx_version >= 1003009
-    if (!raw && r->headers_in.chunked) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "chunked request bodies not supported yet");
-        return 2;
-    }
-#endif
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
@@ -4175,7 +4167,11 @@ ngx_http_lua_req_socket(lua_State *L)
 
         dd("req content length: %d", (int) r->headers_in.content_length_n);
 
+#if nginx_version >= 1003009
+        if (!r->headers_in.chunked && r->headers_in.content_length_n <= 0) {
+#else
         if (r->headers_in.content_length_n <= 0) {
+#endif
             lua_pushnil(L);
             lua_pushliteral(L, "no body");
             return 2;
