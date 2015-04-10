@@ -1,4 +1,4 @@
-﻿= Name =
+= Name =
 
 ngx_lua - Embed the power of Lua into Nginx
 
@@ -59,7 +59,7 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
             content_by_lua "ngx.say('Hello,world!')";
         }
  
-         location /nginx_var {
+        location /nginx_var {
             # MIME type determined by default_type:
             default_type 'text/plain';
  
@@ -5923,4 +5923,3 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
-

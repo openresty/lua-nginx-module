@@ -13,6 +13,7 @@ ngx_lua - Embed the power of Lua into Nginx
 Table of Contents
 =================
 
+* [Name](#name)
 * [Status](#status)
 * [Version](#version)
 * [Synopsis](#synopsis)
@@ -111,7 +112,7 @@ Synopsis
          content_by_lua "ngx.say('Hello,world!')";
      }
 
-      location /nginx_var {
+     location /nginx_var {
          # MIME type determined by default_type:
          default_type 'text/plain';
 
@@ -6989,4 +6990,3 @@ Special PCRE Sequences
 ----------------------
 
 This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
-
