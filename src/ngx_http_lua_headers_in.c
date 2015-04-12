@@ -29,7 +29,7 @@ static ngx_int_t ngx_http_set_connection_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-static ngx_int_t ngx_http_set_cookie_header(ngx_http_request_t *r,
+static ngx_int_t ngx_http_set_builtin_multiline_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
@@ -124,13 +124,20 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  ngx_http_set_content_length_header },
 
     { ngx_string("Cookie"),
-                 0,
-                 ngx_http_set_cookie_header },
+                 offsetof(ngx_http_headers_in_t, cookies),
+                 ngx_http_set_builtin_multiline_header },
 
 #if (NGX_HTTP_REALIP)
     { ngx_string("X-Real-IP"),
                  offsetof(ngx_http_headers_in_t, x_real_ip),
                  ngx_http_set_builtin_header },
+#endif
+
+#if (NGX_HTTP_X_FORWARDED_FOR)
+    { ngx_string("X-Forwarded-For"),
+                 offsetof(ngx_http_headers_in_t, x_forwarded_for),
+                 ngx_http_set_builtin_multiline_header },
+
 #endif
 
     { ngx_null_string, 0, ngx_http_set_header }
@@ -545,27 +552,30 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_set_cookie_header(ngx_http_request_t *r,
+ngx_http_set_builtin_multiline_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value)
 {
-    ngx_table_elt_t  **cookie, *h;
+    ngx_array_t       *headers;
+    ngx_table_elt_t  **v, *h;
 
-    if (!hv->no_override && r->headers_in.cookies.nelts > 0) {
-        ngx_array_destroy(&r->headers_in.cookies);
+    headers = (ngx_array_t *) ((char *) &r->headers_in + hv->offset);
 
-        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+    if (!hv->no_override && headers->nelts > 0) {
+        ngx_array_destroy(headers);
+
+        if (ngx_array_init(headers, r->pool, 2,
                            sizeof(ngx_table_elt_t *))
             != NGX_OK)
         {
             return NGX_ERROR;
         }
 
-        dd("clear headers in cookies: %d", (int) r->headers_in.cookies.nelts);
+        dd("clear multiline headers: %d", (int) headers->nelts);
     }
 
 #if 1
-    if (r->headers_in.cookies.nalloc == 0) {
-        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+    if (headers->nalloc == 0) {
+        if (ngx_array_init(headers, r->pool, 2,
                            sizeof(ngx_table_elt_t *))
             != NGX_OK)
         {
@@ -582,14 +592,14 @@ ngx_http_set_cookie_header(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    dd("new cookie header: %p", h);
+    dd("new multiline header: %p", h);
 
-    cookie = ngx_array_push(&r->headers_in.cookies);
-    if (cookie == NULL) {
+    v = ngx_array_push(headers);
+    if (v == NULL) {
         return NGX_ERROR;
     }
 
-    *cookie = h;
+    *v = h;
     return NGX_OK;
 }
 
