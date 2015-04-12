@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 21);
+plan tests => repeat_each() * (2 * blocks() + 15);
 
 #no_diff();
 #no_long_string();
@@ -1439,4 +1439,176 @@ AAA: 678
 111
 --- no_error_log
 [error]
+
+=== TEST 46: clear If-Match header
+--- config
+
+    location /test {
+        content_by_lua '
+            ngx.req.clear_header("If-Match")
+            ngx.exit(200)
+        ';
+    }
+--- request
+GET /test
+--- more_headers
+If-Match: 1234
+--- error_code: 200
+
+=== TEST 47: set If-Match header
+--- config
+
+    location /test {
+        content_by_lua '
+            ngx.req.set_header("If-Match", "1234")
+            ngx.exit(200)
+        ';
+    }
+--- request
+GET /test
+--- error_code: 412
+
+=== TEST 48: clear If-Unmodified-Since header
+--- config
+
+    location /test {
+        content_by_lua '
+           ngx.req.clear_header("If-Unmodified-Since")
+           ngx.exit(200)
+        ';
+    }
+--- request
+GET /test
+--- more_headers
+If-Unmodified-Since: 1234
+--- error_code: 200
+
+=== TEST 49: set If-Unmodified-Since header
+--- config
+
+    location /test {
+        content_by_lua '
+           ngx.req.set_header("If-Unmodified-Since", "1234")
+           ngx.exit(200)
+        ';
+    }
+--- request
+GET /test
+--- error_code: 412
+
+
+=== TEST 50: clear If-None-Match header
+--- config
+
+    location /test {
+        content_by_lua '
+           ngx.header["ETag"] = "123456789"
+           ngx.req.clear_header("If-None-Match")
+        ';
+    }
+--- request
+GET /test
+--- more_headers
+If-None-Match: 123456789
+--- error_code: 200
+
+
+=== TEST 51: set If-None-Match header
+--- config
+
+        location /test {
+            content_by_lua '
+ngx.req.set_header("If-None-Match", "123456789")
+ngx.header["ETag"] = "123456789"
+';
+        }
+--- request
+GET /test
+--- more_headers
+--- error_code: 304
+
+
+=== TEST 52: clear Upgrade header
+--- config
+
+    location /test {
+        rewrite_by_lua '
+           ngx.req.clear_header("Upgrade")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location /foo {
+       return 101;
+    }
+
+--- request
+GET /test
+--- more_headers
+Upgrade: aaa
+--- error_code: 101
+--- no_error_log: http upstream process upgraded
+
+=== TEST 53: set Upgrade header
+--- config
+
+    location /test {
+        rewrite_by_lua '
+           ngx.req.set_header("Upgrade", "aaa")
+        ';
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location /foo {
+       return 101;
+    }
+
+--- request
+GET /test
+--- error_code: 101
+--- error_log: http upstream process upgraded
+
+
+=== TEST 54: clear X-Forwarded-For
+--- config
+
+    location /test {
+        rewrite_by_lua 'ngx.req.clear_header("X-Forwarded-For")';
+
+        proxy_set_header X-Header $proxy_add_x_forwarded_for;
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location /foo {
+        echo $http_x_header;
+    }
+
+--- request
+GET /test
+--- more_headers
+X-Forwarded-For: 555
+--- response_body
+127.0.0.1
+
+
+=== TEST 55: set X-Forwarded-For
+--- config
+
+    location /test {
+        rewrite_by_lua 'ngx.req.set_header("X-Forwarded-For", {"ccc", "bbb"})';
+
+        proxy_set_header X-Header $proxy_add_x_forwarded_for;
+
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location /foo {
+        echo $http_x_header;
+    }
+
+--- request
+GET /test
+--- response_body
+ccc, bbb, 127.0.0.1
 
