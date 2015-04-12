@@ -40,7 +40,7 @@ int ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem, size_t pem_len,
     unsigned char *der, char **err);
     
-int ngx_http_lua_ffi_privkey_pem_to_der(const unsigned char *pem, size_t pem_len,
+int ngx_http_lua_ffi_priv_key_pem_to_der(const unsigned char *pem, size_t pem_len,
     unsigned char *der, char **err);
 
 int ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
@@ -165,7 +165,7 @@ function _M.server_name()
 end
 
 
-function _M.privkey_pem_to_der(pem)
+function _M.priv_key_pem_to_der(pem)
     local r = getfenv(0).__ngx_req
     if not r then
         return error("no request found")
@@ -173,7 +173,7 @@ function _M.privkey_pem_to_der(pem)
 
     local outbuf = get_string_buf(#pem)
 
-    local sz = C.ngx_http_lua_ffi_privkey_pem_to_der(pem, #pem, outbuf, errmsg)
+    local sz = C.ngx_http_lua_ffi_priv_key_pem_to_der(pem, #pem, outbuf, errmsg)
     if sz > 0 then
         return ffi_str(outbuf, sz)
     end

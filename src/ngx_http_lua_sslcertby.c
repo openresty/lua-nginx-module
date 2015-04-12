@@ -719,9 +719,10 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     return NGX_DECLINED;
 }
 
+
 int
-ngx_http_lua_ffi_privkey_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
-    char **err)
+ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
+    u_char *der, char **err)
 {
     int       total;
     BIO      *bio;
@@ -751,6 +752,7 @@ ngx_http_lua_ffi_privkey_pem_to_der(const u_char *pem, size_t pem_len, u_char *d
     BIO_free(bio);
     return total;
 }
+
 
 int
 ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
