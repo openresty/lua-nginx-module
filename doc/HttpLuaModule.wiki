@@ -1680,7 +1680,7 @@ This directive was first introduced in the <code>v0.5.0rc31</code> release.
 
 '''default:''' ''off''
 
-'''context:''' ''main | server | location''
+'''context:''' ''http, server, location, location if''
 
 '''phase:''' ''depends on usage''
 
