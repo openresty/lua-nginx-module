@@ -20,6 +20,13 @@ typedef struct {
     unsigned                 aborted;    /* :1 */
 } ngx_http_lua_ssl_cert_ctx_t;
 
+typedef struct {
+	const unsigned char *common_name;
+	const unsigned char *country;
+	const unsigned char *state;
+	const unsigned char *city;
+	const unsigned char *organisation;
+} csr_info_t;
 
 ngx_int_t ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
