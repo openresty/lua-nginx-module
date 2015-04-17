@@ -2001,7 +2001,7 @@ lua_need_request_body
 
 **default:** *off*
 
-**context:** *http | server | location | location if*
+**context:** *http, server, location, location if*
 
 **phase:** *depends on usage*
 
