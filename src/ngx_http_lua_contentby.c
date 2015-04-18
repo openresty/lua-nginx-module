@@ -103,6 +103,14 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_OK) {
+        if (r->keepalive &&
+            (rc == NGX_OK ||
+            (rc < NGX_HTTP_SPECIAL_RESPONSE && rc >= NGX_HTTP_OK))) {
+            /* need to discard the request body (if any) if the return code
+             * indicates the request was successfully fullfilled.
+             */
+            return ngx_http_discard_request_body(r);
+        }
         return rc;
     }
 

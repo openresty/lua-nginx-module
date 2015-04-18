@@ -230,9 +230,8 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
     return ngx_http_lua_access_by_chunk(L, r);
 }
 
-
 static ngx_int_t
-ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
+ngx_http_lua_access_by_chunk_helper(lua_State *L, ngx_http_request_t *r)
 {
     int                  co_ref;
     ngx_int_t            rc;
@@ -372,6 +371,22 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 #endif
 
     return NGX_DECLINED;
+}
+
+static ngx_int_t
+ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
+{
+    ngx_int_t   rc, rc2;
+    rc = ngx_http_lua_access_by_chunk_helper(L, r);
+
+    if (r->keepalive &&
+        (rc >= NGX_HTTP_OK && rc < NGX_HTTP_SPECIAL_RESPONSE)) {
+        rc2 = ngx_http_discard_request_body(r);
+        if (rc2 != NGX_OK)
+            return rc2;
+    }
+
+    return rc;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
