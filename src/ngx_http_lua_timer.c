@@ -348,18 +348,15 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && nginx_version >= 1003014
-
+#if defined(nginx_version) && nginx_version >= 100900
+    ngx_set_connection_log(r->connection, clcf->error_log);
+#elif defined(nginx_version) && nginx_version < 100900 && nginx_version >= 1003014
     ngx_http_set_connection_log(r->connection, clcf->error_log);
-
 #else
-
     c->log->file = clcf->error_log->file;
-
     if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
         c->log->log_level = clcf->error_log->log_level;
     }
-
 #endif
 
     dd("lmcf: %p", lmcf);
