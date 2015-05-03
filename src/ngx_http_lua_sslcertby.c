@@ -1,7 +1,9 @@
 
 /*
  * Copyright (C) Yichun Zhang (agentzh)
+ * Copyright (C) Remco Verhoef (@remco_verhoef), Dutchcoders
  */
+
 
 
 #ifndef DDEBUG
@@ -895,6 +897,396 @@ done:
     }
 
     return rc;
+}
+
+int
+ngx_http_lua_ffi_ssl_rsa_generate_key(
+    int bits, unsigned char *out, size_t *out_size, char **err)
+{
+    int             rc = NGX_ERROR;
+    size_t          len = 0;
+    BIGNUM          *bne = NULL;
+    RSA             *key = NULL;
+    EVP_PKEY        *pkey = NULL;
+
+    unsigned long   e = RSA_F4;
+
+    bne = BN_new();
+    if (!BN_set_word(bne,e)) {
+        *err = "BN_set_word() failed";
+        goto failed;
+    }
+
+    key = RSA_new();
+    if (!RSA_generate_key_ex(key, bits, bne, NULL)) {
+        *err = "RSA_generate_key_ex() failed";
+        goto failed;
+    }
+
+    pkey = EVP_PKEY_new();
+    if (!EVP_PKEY_assign_RSA(pkey, key)) {
+        *err = "EVP_PKEY_assign_RSA() failed";
+        goto failed;
+    }
+
+    key = NULL;
+
+    len = i2d_PrivateKey(pkey, NULL);
+    if (len <= 0) {
+        *err = "i2d_PrivateKey() failed";
+        goto failed;
+    }
+
+    if (len > *out_size) {
+        *err = "output buffer too small";
+        *out_size = len;
+        rc = NGX_BUSY;
+        goto failed;
+    }
+
+    len = i2d_PrivateKey(pkey, &out);
+    if (len <= 0) {
+        *err = "i2d_PrivateKey() failed";
+        goto failed;
+    }
+
+    *out_size = len;
+
+    // key will be freed when the parent pKey is freed
+    EVP_PKEY_free(pkey);
+    BN_free(bne);
+
+    return NGX_OK;
+
+failed:
+
+    if (pkey) {
+        EVP_PKEY_free(pkey);
+    }
+
+    if (key) {
+        RSA_free(key);
+    }
+
+    if (bne) {
+        BN_free(bne);
+    }
+
+    return rc;
+}
+
+int
+ngx_http_lua_ffi_ssl_generate_certificate_sign_request(
+    const char *data, size_t data_len, csr_info_t *info, unsigned char *out, size_t *out_size, char **err)
+{
+        int             rc = NGX_ERROR;
+        int             ret = 0;
+        BIO             *bio = NULL;
+        EVP_PKEY        *pkey = NULL;
+        size_t          len = 0;
+
+        X509_REQ        *x509_req = NULL;
+        X509_NAME       *x509_name = NULL;
+
+        int             nVersion = 1;
+
+        bio = BIO_new_mem_buf((char *) data, data_len);
+        if (bio == NULL) {
+            *err = "BIO_new_mem_buf() failed";
+            goto failed;
+        }
+
+        pkey = d2i_PrivateKey_bio(bio, NULL);
+        if (pkey == NULL) {
+            *err = "d2i_PrivateKey_bio() failed";
+            goto failed;
+        }
+
+        x509_req = X509_REQ_new();
+        if (X509_REQ_set_version(x509_req, nVersion) != 1) {
+            *err = "X509_REQ_set_version() failed";
+            goto failed;
+        }
+
+        x509_name = X509_REQ_get_subject_name(x509_req);
+
+        if (X509_NAME_add_entry_by_txt(x509_name,"C", MBSTRING_ASC, info->country, -1, -1, 0) != 1) {
+            *err = "X509_NAME_add_entry_by_txt() for country failed";
+            goto failed;
+        }
+
+        if (X509_NAME_add_entry_by_txt(x509_name,"ST", MBSTRING_ASC, info->state, -1, -1, 0) != 1) {
+            *err = "X509_NAME_add_entry_by_txt() for state failed";
+            goto failed;
+        }
+
+        if (X509_NAME_add_entry_by_txt(x509_name,"L", MBSTRING_ASC, info->city, -1, -1, 0) != 1) {
+            *err = "X509_NAME_add_entry_by_txt() for city failed";
+            goto failed;
+        }
+
+        if (X509_NAME_add_entry_by_txt(x509_name,"O", MBSTRING_ASC, info->organisation, -1, -1, 0) != 1) {
+            *err = "X509_NAME_add_entry_by_txt() for organisation failed";
+            goto failed;
+        }
+
+        if (X509_NAME_add_entry_by_txt(x509_name,"CN", MBSTRING_ASC, info->common_name, -1, -1, 0) != 1) {
+            *err = "X509_NAME_add_entry_by_txt() for common name failed";
+            goto failed;
+        }
+
+        if (X509_REQ_set_pubkey(x509_req, pkey) != 1) {
+            *err = "X509_REQ_set_pubkey() failed";
+            goto failed;
+        }
+
+        ret = X509_REQ_sign(x509_req, pkey, EVP_sha256());
+        if (ret <= 0) {
+            *err = "X509_REQ_sign() failed";
+            goto failed;
+        }
+
+        len = i2d_X509_REQ(x509_req, NULL);
+        if (len <= 0) {
+            *err = "i2d_X509_REQ() failed";
+            goto failed;
+        }
+
+        if (len > *out_size) {
+            *err = "output buffer too small";
+            *out_size = len;
+            rc = NGX_BUSY;
+            goto failed;
+        }
+
+
+        len = i2d_X509_REQ(x509_req, &out);
+        if (len <= 0) {
+            *err = "i2d_X509_REQ() failed";
+            goto failed;
+        }
+
+        *out_size = len;
+
+        X509_REQ_free(x509_req);
+        EVP_PKEY_free(pkey);
+        BIO_free(bio);
+
+        return NGX_OK;
+
+failed:
+
+        if (pkey) {
+                EVP_PKEY_free(pkey);
+        }
+
+        if (bio) {
+                BIO_free(bio);
+        }
+
+        if (x509_req) {
+                X509_REQ_free(x509_req);
+        }
+
+        return rc;
+}
+
+int loadX509(const char *ca, size_t len, X509 **ppx509)
+{
+        int     ret = 0;
+        BIO     *in = NULL;
+
+        in = BIO_new_mem_buf((char *) ca, len);
+        if (in == NULL)
+            return 0;
+
+        ret = (PEM_read_bio_X509(in, ppx509, NULL, NULL) != NULL);
+        BIO_free(in);
+
+        return ret;
+}
+
+int loadX509Req(const char *req, size_t len, X509_REQ **ppReq)
+{
+        int     ret = 0;
+        BIO     *in = NULL;
+
+        in = BIO_new_mem_buf((char *) req, len);
+        if (in == NULL)
+            return 0;
+
+        ret = (d2i_X509_REQ_bio(in, ppReq) != NULL);
+
+        BIO_free(in);
+        return ret;
+}
+
+int loadRSAPrivateKey(const char *ca, size_t len, EVP_PKEY **ppkey)
+{
+        BIO         *in = NULL;
+        RSA         *key = NULL;
+        EVP_PKEY    *pkey = NULL;
+
+        in = BIO_new_mem_buf((char *) ca, len);
+        if (in == NULL)
+            return 0;
+
+        if (PEM_read_bio_RSAPrivateKey(in, &key, NULL, NULL) == NULL)
+            goto failed;
+
+        pkey = EVP_PKEY_new();
+        if (EVP_PKEY_assign_RSA(pkey, key) == 0)
+            goto failed;
+
+        *ppkey = pkey;
+
+        key = NULL;
+
+        BIO_free(in);
+
+        return 1;
+
+failed:
+        if (in)
+            BIO_free(in);
+
+        if (key)
+            RSA_free(key);
+
+        if (pkey)
+            EVP_PKEY_free(pkey);
+
+        return 0;
+}
+
+int do_X509_sign(X509 *cert, EVP_PKEY *pkey, const EVP_MD *md)
+{
+        int ret;
+        EVP_MD_CTX mctx;
+        EVP_PKEY_CTX *pkctx = NULL;
+
+        EVP_MD_CTX_init(&mctx);
+        ret = EVP_DigestSignInit(&mctx, &pkctx, md, NULL, pkey);
+
+        if (ret > 0)
+            ret = X509_sign_ctx(cert, &mctx);
+
+        EVP_MD_CTX_cleanup(&mctx);
+        return ret > 0 ? 1 : 0;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_sign_certificate_sign_request(
+        const char *cadata, size_t calen, const char *csr, size_t csrlen, unsigned char *out, size_t *out_size, char **err)
+{
+        int         rc = NGX_ERROR;
+        int         serial = 1;
+        long        days = 3650 * 24 * 3600; // 10 years
+        size_t      len = 0;
+
+        X509        *ca = NULL;
+        X509        *cert = NULL;
+        X509_REQ    *req = NULL;
+        EVP_PKEY    *pkey = NULL;
+        X509_NAME   *subject_name = NULL;
+
+        if(!loadX509(cadata, calen, &ca)) {
+            *err = "loadX509() failed";
+            goto failed;
+        }
+
+        if(!loadRSAPrivateKey(cadata, calen, &pkey)) {
+            *err = "loadRSAPrivateKey() failed";
+            goto failed;
+        }
+
+        if(!loadX509Req(csr, csrlen, &req)) {
+            *err = "loadX509Req() failed";
+            goto failed;
+        }
+
+        cert = X509_new();
+
+        if (!X509_set_version(cert, 2)) {
+            *err = "X509_set_version() failed";
+            goto failed;
+        }
+
+        ASN1_INTEGER_set(X509_get_serialNumber(cert), serial);
+
+        X509_gmtime_adj(X509_get_notBefore(cert), 0);
+        X509_gmtime_adj(X509_get_notAfter(cert), days);
+
+        subject_name = X509_REQ_get_subject_name(req);
+        if (X509_set_subject_name(cert, X509_NAME_dup(subject_name)) == 0) {
+            *err = "X509_set_subject_name() failed";
+            goto failed;
+        }
+
+        subject_name = X509_get_subject_name(ca);
+        if (X509_set_issuer_name(cert, X509_NAME_dup(subject_name)) == 0) {
+            *err = "X509_set_issuer_name() failed";
+            goto failed;
+        }
+
+        if (X509_set_pubkey(cert, X509_REQ_get_pubkey(req)) == 0) {
+            *err = "X509_set_pubkey() failed";
+            goto failed;
+        }
+
+        if (X509_sign(cert, pkey, EVP_sha256()) == 0) {
+            *err = "X509_sign() failed";
+            goto failed;
+        }
+
+        len = i2d_X509(cert, NULL);
+        if (len <= 0) {
+            *err = "i2d_X509() failed";
+            goto failed;
+        }
+
+        if (len > *out_size) {
+            *err = "output buffer too small";
+            *out_size = len;
+            rc = NGX_BUSY;
+            goto failed;
+        }
+
+
+        len = i2d_X509(cert, &out);
+        if (len <= 0) {
+            *err = "i2d_X509_REQ() failed";
+            goto failed;
+        }
+
+        *out_size = len;
+
+        X509_free(cert);
+        X509_free(ca);
+        X509_REQ_free(req);
+        EVP_PKEY_free(pkey);
+
+	return NGX_OK;
+
+failed:
+	if (cert) {
+		X509_free(cert);
+	}
+
+	if (ca) {
+		X509_free(ca);
+	}
+
+	if (req) {
+		X509_REQ_free(req);
+	}
+
+	if (pkey) {
+		EVP_PKEY_free(pkey);
+	}
+
+        return rc;
 }
 
 
