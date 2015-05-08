@@ -1,4 +1,4 @@
-﻿= Name =
+= Name =
 
 ngx_lua - Embed the power of Lua into Nginx
 
@@ -59,7 +59,7 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
             content_by_lua "ngx.say('Hello,world!')";
         }
  
-         location /nginx_var {
+        location /nginx_var {
             # MIME type determined by default_type:
             default_type 'text/plain';
  
@@ -579,7 +579,7 @@ The output says that the line 1489 of file <code>lib/foo/bar.lua</code> writes t
 This tool will guarantee that local variables in the Lua module functions are all declared with the <code>local</code> keyword, otherwise a runtime exception will be thrown. It prevents undesirable race conditions while accessing such variables. See [[#Data_Sharing_within_an_Nginx_Worker|Data Sharing within an Nginx Worker]] for the reasons behind this.
 
 == Locations Configured by Subrequest Directives of Other Modules ==
-The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives cannot capture locations that include the [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives.
+The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] directives cannot capture locations that include the [[HttpAdditionModule#add_before_body|add_before_body]], [[HttpAdditionModule#add_after_body|add_after_body]], [http://nginx.org/en/docs/http/ngx_http_auth_request_module.html#auth_request auth_request], [[HttpEchoModule#echo_location|echo_location]], [[HttpEchoModule#echo_location_async|echo_location_async]], [[HttpEchoModule#echo_subrequest|echo_subrequest]], or [[HttpEchoModule#echo_subrequest_async|echo_subrequest_async]] directives.
 
 <geshi lang="nginx">
     location /foo {
@@ -1680,7 +1680,7 @@ This directive was first introduced in the <code>v0.5.0rc31</code> release.
 
 '''default:''' ''off''
 
-'''context:''' ''main | server | location''
+'''context:''' ''http, server, location, location if''
 
 '''phase:''' ''depends on usage''
 
@@ -5923,4 +5923,3 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
-
