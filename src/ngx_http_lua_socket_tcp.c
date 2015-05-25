@@ -4893,8 +4893,7 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     size_t                   size;
     ngx_buf_t               *b;
     size_t                   nbufs;
-    u_char                  *p;
-    u_char                  *last;
+    luaL_Buffer              luabuf;
 
     if (!u->bufs_in) {
         lua_pushliteral(L, "");
@@ -4929,42 +4928,19 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
         goto done;
     }
 
-    if (nbufs == 1) {
-        b = u->buf_in->buf;
-
-        lua_pushlstring(L, (char *) b->pos, size);
-
-        dd("copying input data chunk from %p: \"%.*s\"", u->buf_in, (int) size,
-                b->pos);
-
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, b->pos, size);
-
-        goto done;
-    }
-
     /* nbufs > 1 */
 
-    dd("WARN: allocate a big memory: %d", (int) size);
-
-    p = ngx_palloc(r->pool, size);
-    if (p == NULL) {
-        return NGX_ERROR;
-    }
-
-    last = p;
+    luaL_buffinit(L, &luabuf);
     for (cl = u->bufs_in; cl; cl = cl->next) {
         b = cl->buf;
-        last = ngx_copy(last, b->pos, b->last - b->pos);
+        luaL_addlstring(&luabuf, (char *) b->pos, (size_t) (b->last - b->pos));
 
         dd("copying input data chunk from %p: \"%.*s\"", cl,
            (int) (b->last - b->pos), b->pos);
     }
+    luaL_pushresult(&luabuf);
 
-    lua_pushlstring(L, (char *) p, size);
-
-    ngx_http_lua_probe_socket_tcp_receive_done(r, u, p, size);
-
-    ngx_pfree(r->pool, p);
+    ngx_http_lua_probe_socket_tcp_receive_done(r, u, lua_tostring(L, -1), size);
 
 done:
 
