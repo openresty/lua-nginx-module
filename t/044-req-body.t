@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 35);
+plan tests => repeat_each() * (blocks() * 4 + 33);
 
 #no_diff();
 no_long_string();
@@ -159,11 +159,8 @@ hiya, world"]
 hello, world",
 "POST /bar
 hiya, world"]
---- response_body eval
-["body: nil\n",
-qr/400 Bad Request/]
 --- error_code eval
-[200, 400]
+[200, 200]
 --- no_error_log
 [error]
 [alert]
@@ -1481,4 +1478,65 @@ Will you change this world?
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 45: content_by_lua quit normally
+--- config
+    location /t {
+        content_by_lua '
+            ngx.exit(200)
+        ';
+    }
+
+--- pipelined_requests eval
+[
+"POST /t
+hello",
+"POST /t
+world"
+]
+--- response_body eval
+["",
+""]
+
+=== TEST 46: content_by_lua quit normally
+--- config
+    location /t {
+        content_by_lua '
+            return
+        ';
+    }
+
+--- pipelined_requests eval
+[
+"POST /t
+hello",
+"POST /t
+world"
+]
+--- response_body eval
+["",
+""]
+
+=== TEST 47: access_by_lua early abort
+-- ONLY
+--- config
+    location /t {
+        access_by_lua '
+            --ngx.req.read_body()
+            ngx.exit(200)
+        ';
+    }
+
+--- pipelined_requests eval
+[
+"POST /t
+hello",
+"POST /t
+world"
+]
+--- response_body eval
+["",
+""]
 
