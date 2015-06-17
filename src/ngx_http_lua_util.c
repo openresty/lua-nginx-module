@@ -487,6 +487,16 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     if (in == NULL) {
+        /* last buf to be sent */
+
+#if 1
+        if (!r->request_body && r == r->main) {
+            if (ngx_http_discard_request_body(r) != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
+#endif
+
         if (ctx->buffering) {
             rc = ngx_http_lua_send_http10_headers(r, ctx);
             if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
