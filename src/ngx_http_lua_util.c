@@ -487,7 +487,7 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     }
 
     if (in == NULL) {
-        /* last buf to be sent */
+        dd("last buf to be sent");
 
 #if 1
         if (!r->request_body && r == r->main) {
