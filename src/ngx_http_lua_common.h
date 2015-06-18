@@ -382,8 +382,10 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_int_t                exit_code;
 
-    ngx_http_lua_co_ctx_t   *downstream_co_ctx; /* co ctx for the coroutine
-                                                   reading the request body */
+    ngx_http_lua_co_ctx_t   *downstream_read_co_ctx; /* co ctx for the coroutine
+                                                        reading the request body */
+    ngx_http_lua_co_ctx_t   *downstream_write_co_ctx; /* co ctx for the coroutine
+                                                        writing the request body */
 
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
