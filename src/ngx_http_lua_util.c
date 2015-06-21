@@ -1500,7 +1500,6 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     ngx_event_t                 *wev;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_lua_co_ctx_t       *coctx;
     ngx_http_core_loc_conf_t    *clcf;
 
     ngx_http_lua_socket_tcp_upstream_t *u;
@@ -1551,7 +1550,7 @@ ngx_http_lua_wev_handler(ngx_http_request_t *r)
     if (ctx->writing_raw_req_socket) {
         ctx->writing_raw_req_socket = 0;
 
-        u = ctx->downstream.u;
+        u = ctx->downstream;
         if (u == NULL) {
             return NGX_ERROR;
         }

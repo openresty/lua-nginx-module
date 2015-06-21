@@ -339,11 +339,6 @@ typedef struct {
 } ngx_http_lua_vm_state_t;
 
 
-struct ngx_http_lua_socket_tcp_upstream_s;
-typedef struct ngx_http_lua_socket_tcp_upstream_s
-    ngx_http_lua_socket_tcp_upstream_t;
-
-
 typedef struct ngx_http_lua_ctx_s {
     /* for lua_coce_cache off: */
     ngx_http_lua_vm_state_t  *vm_state;
@@ -387,10 +382,9 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_int_t                exit_code;
 
-    union {
-        ngx_http_lua_co_ctx_t                  *co_ctx;
-        ngx_http_lua_socket_tcp_upstream_t     *u;
-    } downstream;
+    void                    *downstream;  /* can be either
+                                             ngx_http_lua_socket_tcp_upstream_t
+                                             or ngx_http_lua_co_ctx_t */
 
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
