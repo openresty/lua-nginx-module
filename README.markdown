@@ -2791,7 +2791,6 @@ Consider the following example,
 
  location /test {
      rewrite_by_lua '
-         ngx.say("foo = ", ngx.ctx.foo)
          ngx.ctx.foo = 76
      ';
      access_by_lua '
@@ -2807,7 +2806,6 @@ Then `GET /test` will yield the output
 
 ```bash
 
- foo = nil
  79
 ```
 
@@ -6990,3 +6988,4 @@ Special PCRE Sequences
 ----------------------
 
 This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
+

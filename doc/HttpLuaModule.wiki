@@ -2238,7 +2238,6 @@ Consider the following example,
 <geshi lang="nginx">
     location /test {
         rewrite_by_lua '
-            ngx.say("foo = ", ngx.ctx.foo)
             ngx.ctx.foo = 76
         ';
         access_by_lua '
@@ -2253,7 +2252,6 @@ Consider the following example,
 Then <code>GET /test</code> will yield the output
 
 <geshi lang="bash">
-    foo = nil
     79
 </geshi>
 
@@ -5923,3 +5921,4 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
+
