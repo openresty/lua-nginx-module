@@ -44,12 +44,14 @@ ngx_http_lua_ngx_get(lua_State *L)
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
-        return luaL_error(L, "no request object found");
+        lua_pushnil(L);
+        return 1;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        return luaL_error(L, "no request ctx found");
+        lua_pushnil(L);
+        return 1;
     }
 
     p = (u_char *) luaL_checklstring(L, -1, &len);
