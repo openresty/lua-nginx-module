@@ -2511,6 +2511,7 @@ Nginx API for Lua
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.config.debug](#ngxconfigdebug)
 * [ngx.config.prefix](#ngxconfigprefix)
+* [ngx.config.workers](#ngxconfigworkers)
 * [ngx.config.nginx_version](#ngxconfignginx_version)
 * [ngx.config.nginx_configure](#ngxconfignginx_configure)
 * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
@@ -6778,6 +6779,19 @@ ngx.config.prefix
 Returns the Nginx server "prefix" path, as determined by the `-p` command-line option when running the nginx executable, or the path specified by the `--prefix` command-line option when building Nginx with the `./configure` script.
 
 This function was first introduced in the `0.9.2`.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.config.workers
+-----------------
+
+**syntax:** *prefix = ngx.config.workers()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua**
+
+Returns the count number of Nginx server worker processes.
+
+This function was first introduced in the `0.9.16`.
 
 [Back to TOC](#nginx-api-for-lua)
 
