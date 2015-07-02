@@ -16,6 +16,7 @@
 
 static int ngx_http_lua_config_prefix(lua_State *L);
 static int ngx_http_lua_config_configure(lua_State *L);
+static int ngx_http_lua_config_workers(lua_State *L);
 
 
 void
@@ -44,6 +45,9 @@ ngx_http_lua_inject_config_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_config_configure);
     lua_setfield(L, -2, "nginx_configure");
 
+    lua_pushcfunction(L, ngx_http_lua_config_workers);
+    lua_setfield(L, -2, "workers");
+
     lua_setfield(L, -2, "config");
 }
 
@@ -61,6 +65,16 @@ static int
 ngx_http_lua_config_configure(lua_State *L)
 {
     lua_pushliteral(L, NGX_CONFIGURE);
+    return 1;
+}
+
+static int
+ngx_http_lua_config_workers(lua_State *L)
+{
+    ngx_core_conf_t   *ccf;
+    ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx, ngx_core_module);
+
+    lua_pushinteger(L, ccf->worker_processes);
     return 1;
 }
 
