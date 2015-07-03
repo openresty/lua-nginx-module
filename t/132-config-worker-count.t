@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
-workers(5);
+#workers(2);
 #log_level('warn');
 
 repeat_each(2);
@@ -22,13 +22,13 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            ngx.say("workers: ", ngx.config.workers())
+            ngx.say("workers: ", ngx.config.worker_count())
         ';
     }
 --- request
 GET /lua
 --- response_body_like chop
-^workers: 5$
+^workers: 1$
 --- no_error_log
 [error]
 
