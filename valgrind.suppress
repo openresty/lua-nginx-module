@@ -104,6 +104,13 @@ fun:main
    fun:ngx_event_process_init
 }
 {
+    <insert_a_suppression_name_here>
+    Memcheck:Param
+    sendmsg(mmsg[0].msg_hdr)
+    fun:sendmmsg
+    fun:__libc_res_nsend
+}
+{
    <insert_a_suppression_name_here>
    Memcheck:Param
    sendmsg(msg.msg_iov[0])
