@@ -1860,7 +1860,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     dd("setting data to %p, coctx:%p", u, coctx);
 
     if (u->raw_downstream || u->body_downstream) {
-        ctx->downstream_co_ctx = coctx;
+        ctx->downstream = u;
     }
 
     return lua_yield(L, 0);
@@ -3740,7 +3740,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     dd("setting data to %p", u);
 
     if (u->raw_downstream || u->body_downstream) {
-        ctx->downstream_co_ctx = coctx;
+        ctx->downstream = u;
     }
 
     return lua_yield(L, 0);
@@ -4285,7 +4285,7 @@ ngx_http_lua_req_socket(lua_State *L)
     dd("setting data to %p", u);
 
     coctx->data = u;
-    ctx->downstream_co_ctx = coctx;
+    ctx->downstream = u;
 
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
@@ -4306,7 +4306,6 @@ static void
 ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t                  *ctx;
-    ngx_http_lua_co_ctx_t               *coctx;
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -4317,9 +4316,7 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
         return;
     }
 
-    coctx = ctx->downstream_co_ctx;
-    u = coctx->data;
-
+    u = ctx->downstream;
     if (u) {
         u->read_event_handler(r, u);
     }

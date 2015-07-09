@@ -13,6 +13,7 @@ ngx_lua - Embed the power of Lua into Nginx
 Table of Contents
 =================
 
+* [Name](#name)
 * [Status](#status)
 * [Version](#version)
 * [Synopsis](#synopsis)
@@ -60,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.15](https://github.com/openresty/lua-nginx-module/tags) released on 18 February 2015.
+This document describes ngx_lua [v0.9.16](https://github.com/openresty/lua-nginx-module/tags) released on 22 June 2015.
 
 Synopsis
 ========
@@ -111,7 +112,7 @@ Synopsis
          content_by_lua "ngx.say('Hello,world!')";
      }
 
-      location /nginx_var {
+     location /nginx_var {
          # MIME type determined by default_type:
          default_type 'text/plain';
 
@@ -713,7 +714,7 @@ This tool will guarantee that local variables in the Lua module functions are al
 
 Locations Configured by Subrequest Directives of Other Modules
 --------------------------------------------------------------
-The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [echo_location](http://github.com/openresty/echo-nginx-module#echo_location), [echo_location_async](http://github.com/openresty/echo-nginx-module#echo_location_async), [echo_subrequest](http://github.com/openresty/echo-nginx-module#echo_subrequest), or [echo_subrequest_async](http://github.com/openresty/echo-nginx-module#echo_subrequest_async) directives.
+The [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) directives cannot capture locations that include the [add_before_body](http://nginx.org/en/docs/http/ngx_http_addition_module.html#add_before_body), [add_after_body](http://nginx.org/en/docs/http/ngx_http_addition_module.html#add_after_body), [auth_request](http://nginx.org/en/docs/http/ngx_http_auth_request_module.html#auth_request), [echo_location](http://github.com/openresty/echo-nginx-module#echo_location), [echo_location_async](http://github.com/openresty/echo-nginx-module#echo_location_async), [echo_subrequest](http://github.com/openresty/echo-nginx-module#echo_subrequest), or [echo_subrequest_async](http://github.com/openresty/echo-nginx-module#echo_subrequest_async) directives.
 
 ```nginx
 
@@ -2000,7 +2001,7 @@ lua_need_request_body
 
 **default:** *off*
 
-**context:** *main | server | location*
+**context:** *http, server, location, location if*
 
 **phase:** *depends on usage*
 
@@ -2790,7 +2791,6 @@ Consider the following example,
 
  location /test {
      rewrite_by_lua '
-         ngx.say("foo = ", ngx.ctx.foo)
          ngx.ctx.foo = 76
      ';
      access_by_lua '
@@ -2806,7 +2806,6 @@ Then `GET /test` will yield the output
 
 ```bash
 
- foo = nil
  79
 ```
 
