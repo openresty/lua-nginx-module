@@ -1013,7 +1013,7 @@ replace:
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                       "lua shared dict set: found old entry bug value size "
+                       "lua shared dict set: found old entry but value size "
                        "NOT matched, removing it first");
 
 remove:
@@ -1522,7 +1522,7 @@ replace:
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                       "lua shared dict set: found old entry bug value size "
+                       "lua shared dict set: found old entry but value size "
                        "NOT matched, removing it first");
 
 remove:
