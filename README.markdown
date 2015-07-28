@@ -342,7 +342,7 @@ Build the source with this module:
 
  # Here we assume Nginx is to be installed under /opt/nginx/.
  ./configure --prefix=/opt/nginx \
-         --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
+         --with-ld-opt="-Wl,-rpath,/path/to/luajit-or-lua/lib" \
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
