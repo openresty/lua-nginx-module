@@ -178,7 +178,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
     }
 
     if (r->request_body->temp_file) {
-        return luaL_error(L, "requesty body in temp file not supported");
+        return luaL_error(L, "request body in temp file not supported");
     }
 
     lua_createtable(L, 0, 4);
