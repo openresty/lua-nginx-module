@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 17);
+plan tests => repeat_each() * (blocks() * 2 + 18);
 
 no_root_location();
 
@@ -1389,3 +1389,20 @@ GET /lua
     GET /foo?world
 --- response_body_like
 ^HTTP/1.0 (a=3&b|b&a=3)$
+
+
+
+=== TEST 57: ngx.encode_args (escaping)
+--- config
+    location /lua {
+        content_by_lua_block {
+            local t = {bar = "-_.!~*'()", foo = ",$@|`"}
+            ngx.say("args: ", ngx.encode_args(t))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
+--- no_error_log
+[error]
