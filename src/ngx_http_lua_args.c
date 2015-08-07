@@ -301,6 +301,10 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
                 ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                                "lua hit query args limit %d", max);
 
+                /* set empty metatable to indicate truncated */
+                dd("setting empty metatable");
+                luaL_newmetatable(L, "empty");
+                lua_setmetatable(L, top);
                 return 1;
             }
 
