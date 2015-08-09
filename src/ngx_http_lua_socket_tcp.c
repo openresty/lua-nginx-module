@@ -418,6 +418,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     int                          key_index;
     const char                  *msg;
     ngx_http_lua_co_ctx_t       *coctx;
+    ngx_http_cleanup_pt         *cleanup = NULL;
 
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
@@ -445,16 +446,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     luaL_checktype(L, 1, LUA_TTABLE);
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
-
-    host.data = ngx_palloc(r->pool, len + 1);
-    if (host.data == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    host.len = len;
-
-    ngx_memcpy(host.data, p, len);
-    host.data[len] = '\0';
 
     key_index = 2;
     custom_pool = 0;
@@ -538,6 +529,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             return luaL_error(L, "attempt to re-connect a request socket");
         }
 
+        if (u->cleanup) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua tcp socket save upstream ctx's cleanup handler to reuse");
+
+            cleanup = u->cleanup;
+        }
+
         if (u->peer.connection) {
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "lua tcp socket reconnect without shutting down");
@@ -564,6 +562,15 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     ngx_memzero(u, sizeof(ngx_http_lua_socket_tcp_upstream_t));
+
+#if 1
+    if (cleanup) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua tcp socket upstream ctx's cleanup handler reused");
+
+        u->cleanup = cleanup;
+    }
+#endif
 
     coctx = ctx->cur_co_ctx;
 
@@ -609,6 +616,16 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
+
+    host.data = ngx_palloc(r->pool, len + 1);
+    if (host.data == NULL) {
+        return luaL_error(L, "no memory");
+    }
+
+    host.len = len;
+
+    ngx_memcpy(host.data, p, len);
+    host.data[len] = '\0';
 
     ngx_memzero(&url, sizeof(ngx_url_t));
 
@@ -1012,6 +1029,9 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         cln->handler = ngx_http_lua_socket_tcp_cleanup;
         cln->data = u;
         u->cleanup = &cln->handler;
+
+    } else {
+        *u->cleanup = ngx_http_lua_socket_tcp_cleanup;
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -3330,9 +3350,8 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
-    if (u->cleanup) {
+    if (u->cleanup && *u->cleanup != NULL) {
         *u->cleanup = NULL;
-        u->cleanup = NULL;
     }
 
     ngx_http_lua_socket_tcp_finalize_read_part(r, u);
@@ -4692,6 +4711,12 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
             cln->handler = ngx_http_lua_socket_tcp_cleanup;
             cln->data = u;
             u->cleanup = &cln->handler;
+
+        } else {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, pc->log, 0,
+                            "lua tcp socket reset upstream ctx's cleanup handler");
+
+            *u->cleanup = ngx_http_lua_socket_tcp_cleanup;
         }
 
         lua_settop(L, top);
@@ -4851,8 +4876,8 @@ ngx_http_lua_socket_tcp_upstream_destroy(lua_State *L)
         return 0;
     }
 
-    if (u->cleanup) {
-        ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
+    if (u->cleanup && *u->cleanup != NULL) {
+        ngx_http_lua_socket_tcp_cleanup(u); /* it will clear *u->cleanup */
     }
 
     return 0;
@@ -4872,8 +4897,8 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
         return 0;
     }
 
-    if (u->cleanup) {
-        ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
+    if (u->cleanup && *u->cleanup != NULL) {
+        ngx_http_lua_socket_tcp_cleanup(u); /* it will clear *u->cleanup */
     }
 
     return 0;
