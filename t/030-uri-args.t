@@ -10,7 +10,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 17);
+plan tests => repeat_each() * (blocks() * 2 + 18);
 
 no_root_location();
 
