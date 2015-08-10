@@ -750,7 +750,21 @@ args:
 
 
 
-=== TEST 33: ngx.encode_args (bad arg)
+=== TEST 33: ngx.encode_args (escaping)
+--- config
+    location /lua {
+        content_by_lua '
+            local t = {bar = "-_.!~*\'()", foo = ",$@|`"}
+            ngx.say("args: ", ngx.encode_args(t))
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
+
+
+=== TEST 34: ngx.encode_args (bad arg)
 --- config
     location /lua {
         content_by_lua '
@@ -765,7 +779,7 @@ rc: false, err: bad argument #1 to '?' (table expected, got boolean)
 
 
 
-=== TEST 34: max args (limited after normal key=value)
+=== TEST 35: max args (limited after normal key=value)
 --- config
     location /lua {
         content_by_lua '
@@ -792,7 +806,7 @@ lua hit query args limit 2
 
 
 
-=== TEST 35: max args (limited after an orphan key)
+=== TEST 36: max args (limited after an orphan key)
 --- config
     location /lua {
         content_by_lua '
@@ -819,7 +833,7 @@ lua hit query args limit 2
 
 
 
-=== TEST 36: max args (limited after an empty key, but non-emtpy values)
+=== TEST 37: max args (limited after an empty key, but non-emtpy values)
 --- config
     location /lua {
         content_by_lua '
@@ -848,7 +862,7 @@ lua hit query args limit 2
 
 
 
-=== TEST 37: default max 100 args
+=== TEST 38: default max 100 args
 --- config
     location /lua {
         content_by_lua '
@@ -896,7 +910,7 @@ lua hit query args limit 100
 
 
 
-=== TEST 38: custom max 102 args
+=== TEST 39: custom max 102 args
 --- config
     location /lua {
         content_by_lua '
@@ -944,7 +958,7 @@ lua hit query args limit 102
 
 
 
-=== TEST 39: custom unlimited args
+=== TEST 40: custom unlimited args
 --- config
     location /lua {
         content_by_lua '
@@ -989,7 +1003,7 @@ CORE::join("", @k);
 
 
 
-=== TEST 40: rewrite uri and args (multi-value args)
+=== TEST 41: rewrite uri and args (multi-value args)
 --- config
     location /bar {
         echo $server_protocol $query_string;
@@ -1009,7 +1023,7 @@ HTTP/1.0 a=3&b=5&b=6
 
 
 
-=== TEST 41: ngx.decode_args (sanity)
+=== TEST 42: ngx.decode_args (sanity)
 --- config
     location /lua {
         content_by_lua '
@@ -1027,7 +1041,7 @@ b = foo
 
 
 
-=== TEST 42: ngx.decode_args (multi-value)
+=== TEST 43: ngx.decode_args (multi-value)
 --- config
     location /lua {
         content_by_lua '
@@ -1045,7 +1059,7 @@ b = foo
 
 
 
-=== TEST 43: ngx.decode_args (empty string)
+=== TEST 44: ngx.decode_args (empty string)
 --- config
     location /lua {
         content_by_lua '
@@ -1061,7 +1075,7 @@ n = 0
 
 
 
-=== TEST 44: ngx.decode_args (boolean args)
+=== TEST 45: ngx.decode_args (boolean args)
 --- config
     location /lua {
         content_by_lua '
@@ -1079,7 +1093,7 @@ b = true
 
 
 
-=== TEST 45: ngx.decode_args (empty value args)
+=== TEST 46: ngx.decode_args (empty value args)
 --- config
     location /lua {
         content_by_lua '
@@ -1097,7 +1111,7 @@ b =
 
 
 
-=== TEST 46: ngx.decode_args (max_args = 1)
+=== TEST 47: ngx.decode_args (max_args = 1)
 --- config
     location /lua {
         content_by_lua '
@@ -1115,7 +1129,7 @@ b = nil
 
 
 
-=== TEST 47: ngx.decode_args (max_args = -1)
+=== TEST 48: ngx.decode_args (max_args = -1)
 --- config
     location /lua {
         content_by_lua '
@@ -1133,7 +1147,7 @@ b = foo
 
 
 
-=== TEST 48: ngx.decode_args should not modify lua strings in place
+=== TEST 49: ngx.decode_args should not modify lua strings in place
 --- config
     location /lua {
         content_by_lua '
@@ -1161,7 +1175,7 @@ s = f+f=bar&B=foo
 
 
 
-=== TEST 49: ngx.decode_args should not modify lua strings in place (sample from Xu Jian)
+=== TEST 50: ngx.decode_args should not modify lua strings in place (sample from Xu Jian)
 --- config
     lua_need_request_body on;
     location /t {
@@ -1221,7 +1235,7 @@ method: zadd
 
 
 
-=== TEST 50: recursive rewrite
+=== TEST 51: recursive rewrite
 --- config
     rewrite_by_lua '
         local args = ngx.var.args
@@ -1253,7 +1267,7 @@ rewrite or internal redirection cycle while processing "/jump"
 
 
 
-=== TEST 51: boolean values in ngx.encode_args (trailing arg)
+=== TEST 52: boolean values in ngx.encode_args (trailing arg)
 --- config
     location /lua {
         set_by_lua $args_str '
@@ -1277,7 +1291,7 @@ GET /lua
 
 
 
-=== TEST 52: false boolean values in ngx.encode_args
+=== TEST 53: false boolean values in ngx.encode_args
 --- config
     location /lua {
         set_by_lua $args_str '
@@ -1300,7 +1314,7 @@ GET /lua
 
 
 
-=== TEST 53: false boolean values in ngx.encode_args (escaping)
+=== TEST 54: false boolean values in ngx.encode_args (escaping)
 --- config
     location /lua {
         set_by_lua $args_str '
@@ -1323,7 +1337,7 @@ GET /lua
 
 
 
-=== TEST 54: true boolean values in ngx.encode_args (escaping)
+=== TEST 55: true boolean values in ngx.encode_args (escaping)
 --- config
     location /lua {
         set_by_lua $args_str '
@@ -1347,7 +1361,7 @@ GET /lua
 
 
 
-=== TEST 55: rewrite uri and args (boolean in multi-value args)
+=== TEST 56: rewrite uri and args (boolean in multi-value args)
 --- config
     location /bar {
         echo $server_protocol $query_string;
@@ -1373,7 +1387,7 @@ GET /lua
 
 
 
-=== TEST 56: rewrite uri and args (boolean value)
+=== TEST 57: rewrite uri and args (boolean value)
 --- config
     location /bar {
         echo $server_protocol $query_string;
