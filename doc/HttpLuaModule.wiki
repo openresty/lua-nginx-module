@@ -276,7 +276,7 @@ Build the source with this module:
  
     # Here we assume Nginx is to be installed under /opt/nginx/.
     ./configure --prefix=/opt/nginx \
-            --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
+            --with-ld-opt="-Wl,-rpath,/path/to/luajit-or-lua/lib" \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
  
@@ -2933,7 +2933,7 @@ or equivalently,
     ngx.req.set_uri("/foo")
 </geshi>
 
-The <code>jump</code> can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
+The <code>jump</code> argument can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
 
 A more sophisticated example involving regex substitutions is as follows
 
