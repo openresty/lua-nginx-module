@@ -2349,7 +2349,7 @@ Here is a basic example:
     res = ngx.location.capture(uri)
 </geshi>
 
-Returns a Lua table with three slots (<code>res.status</code>, <code>res.header</code>, <code>res.body</code>, and <code>res.truncated</code>).
+Returns a Lua table with 4 slots: <code>res.status</code>, <code>res.header</code>, <code>res.body</code>, and <code>res.truncated</code>.
 
 <code>res.status</code> holds the response status code for the subrequest response.
 
