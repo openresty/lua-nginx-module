@@ -67,6 +67,20 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, if_modified_since),
                  ngx_http_set_builtin_header },
 
+#if defined(nginx_version) && nginx_version >= 1003003
+    { ngx_string("If-Unmodified-Since"),
+                 offsetof(ngx_http_headers_in_t, if_unmodified_since),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("If-Match"),
+                 offsetof(ngx_http_headers_in_t, if_match),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("If-None-Match"),
+                 offsetof(ngx_http_headers_in_t, if_none_match),
+                 ngx_http_set_builtin_header },
+#endif
+
     { ngx_string("User-Agent"),
                  offsetof(ngx_http_headers_in_t, user_agent),
                  ngx_http_set_user_agent_header },
