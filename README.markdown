@@ -2912,7 +2912,7 @@ Here is a basic example:
  res = ngx.location.capture(uri)
 ```
 
-Returns a Lua table with three slots (`res.status`, `res.header`, `res.body`, and `res.truncated`).
+Returns a Lua table with 4 slots: `res.status`, `res.header`, `res.body`, and `res.truncated`.
 
 `res.status` holds the response status code for the subrequest response.
 
