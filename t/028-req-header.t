@@ -1469,7 +1469,7 @@ test
     location /t {
         content_by_lua '
             ngx.req.clear_header("if-unmodified-since")
-            ngx.header["Last-Modified"] = "Last-Modified:Tue, 30 Jun 2011 12:16:36 GMT"
+            ngx.header["Last-Modified"] = "Tue, 30 Jun 2011 12:16:36 GMT"
             if not ngx.send_headers() then
                 return
             end
@@ -1479,7 +1479,7 @@ test
 --- request
 GET /t
 --- more_headers
-If-Unmodified-Since: Last-Modified:Tue, 28 Jun 2011 12:16:36 GMT
+If-Unmodified-Since: Tue, 28 Jun 2011 12:16:36 GMT
 --- response_body
 test
 --- no_error_log
