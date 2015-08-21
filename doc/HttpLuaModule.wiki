@@ -1473,7 +1473,7 @@ Uses Lua code specified in <code><lua-script-str></code> to define an output hea
 Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
-* Control API functions (e.g., [[#ngx.exit|ngx.exit]] and [[#ngx.exec|ngx.exec]])
+* Control API functions (e.g., [[#ngx.redirect|ngx.redirect]] and [[#ngx.exec|ngx.exec]])
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 * Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 
