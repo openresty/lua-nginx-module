@@ -2509,6 +2509,8 @@ Nginx API for Lua
 * [ngx.thread.kill](#ngxthreadkill)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
+* [ngx.timer.running_count](#ngxtimerrunning_count)
+* [ngx.timer.pending_count](#ngxtimerpending_count)
 * [ngx.config.debug](#ngxconfigdebug)
 * [ngx.config.prefix](#ngxconfigprefix)
 * [ngx.config.nginx_version](#ngxconfignginx_version)
@@ -6753,6 +6755,30 @@ this context.
 You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you *cannot* pass any thread objects returned by [coroutine.create](#coroutinecreate) and [ngx.thread.spawn](#ngxthreadspawn) or any cosocket objects returned by [ngx.socket.tcp](#ngxsockettcp), [ngx.socket.udp](#ngxsocketudp), and [ngx.req.socket](#ngxreqsocket) because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to create all these objects inside your timer callback.
 
 This API was first introduced in the `v0.8.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.running_count
+-----------------------
+**syntax:** *count = ngx.timer.running_count()*
+
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Returns the number of timers currently running.
+
+This directive was first introduced in the `v0.9.17` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.pending_count
+-----------------------
+**syntax:** *count = ngx.timer.pending_count()*
+
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Returns the number of pending timers.
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
