@@ -98,6 +98,8 @@ static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
 static void ngx_http_lua_inject_ngx_api(lua_State *L,
     ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
+static void ngx_http_lua_inject_shared_api(ngx_http_lua_main_conf_t *lmcf,
+                                           lua_State *L);
 static int ngx_http_lua_param_get(lua_State *L);
 static int ngx_http_lua_param_set(lua_State *L);
 static ngx_int_t ngx_http_lua_output_filter(ngx_http_request_t *r,
@@ -747,8 +749,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_create_headers_metatable(log, L);
     ngx_http_lua_inject_variable_api(L);
-    ngx_http_lua_inject_shdict_api(lmcf, L);
-    ngx_http_lua_inject_shrbtree_api(lmcf, L);
+    ngx_http_lua_inject_shared_api(lmcf, L);
     ngx_http_lua_inject_socket_tcp_api(log, L);
     ngx_http_lua_inject_socket_udp_api(log, L);
     ngx_http_lua_inject_uthread_api(log, L);
@@ -2105,6 +2106,19 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "req");
 }
 
+static void
+ngx_http_lua_inject_shared_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
+{
+    /* ngx.shared table */
+    if (lmcf->shm_zones != NULL) {
+        lua_createtable(L, 0, lmcf->shm_zones->nelts/* nrec */);
+        ngx_http_lua_inject_shdict_api(lmcf, L);
+        ngx_http_lua_inject_shrbtree_api(lmcf, L);
+    } else {
+        lua_newtable(L);
+    }
+    lua_setfield(L, -2, "shared");
+}
 
 static ngx_int_t
 ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,

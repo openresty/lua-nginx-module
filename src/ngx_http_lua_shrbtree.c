@@ -147,47 +147,38 @@ ngx_http_lua_inject_shrbtree_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-    if (lmcf->shm_zones != NULL) {
-        lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
+    lua_createtable(L, 0 /* narr */, 4 /* nrec */); /* {zone[i]} mt */
 
-        lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_pushcfunction(L, ngx_http_lua_shrbtree_get);
+    lua_setfield(L, -2, "get");
 
-        lua_pushcfunction(L, ngx_http_lua_shrbtree_get);
-        lua_setfield(L, -2, "get");
+    lua_pushcfunction(L, ngx_http_lua_shrbtree_insert);
+    lua_setfield(L, -2, "insert");
 
-        lua_pushcfunction(L, ngx_http_lua_shrbtree_insert);
-        lua_setfield(L, -2, "insert");
+    lua_pushcfunction(L, ngx_http_lua_shrbtree_delete);
+    lua_setfield(L, -2, "delete");
 
-        lua_pushcfunction(L, ngx_http_lua_shrbtree_delete);
-        lua_setfield(L, -2, "delete");
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
 
-        lua_pushvalue(L, -1);
-        lua_setfield(L, -2, "__index");
+    zone = lmcf->shm_zones->elts;
 
-        zone = lmcf->shm_zones->elts;
-
-        for (i = 0; i < lmcf->shm_zones->nelts; i++) {
-            if (zone[i]->tag != (void *)&ngx_http_lua_module_shrbtree) {
-                continue;
-            }
-            ctx = zone[i]->data;
-
-            lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
-            lua_createtable(L, 1 /* narr */, 0 /* nrec */);
-            lua_pushlightuserdata(L, zone[i]);
-            lua_rawseti(L, -2, 1); /* {zone[i]} */
-            lua_pushvalue(L, -3);  /* mt of {zone[i]}*/
-            lua_setmetatable(L, -2);
-            lua_rawset(L, -4);
+    for (i = 0; i < lmcf->shm_zones->nelts; i++) {
+        if (zone[i]->tag != (void *)&ngx_http_lua_module_shrbtree) {
+            continue;
         }
+        ctx = zone[i]->data;
 
-        lua_pop(L, 1);
-
-    } else {
-        lua_newtable(L);    /* ngx.shrbtree*/
+        lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
+        lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+        lua_pushlightuserdata(L, zone[i]);
+        lua_rawseti(L, -2, 1); /* {zone[i]} */
+        lua_pushvalue(L, -3);  /* mt of {zone[i]}*/
+        lua_setmetatable(L, -2);
+        lua_rawset(L, -4);
     }
 
-    lua_setfield(L, -2, "shrbtree");
+    lua_pop(L, 1);
 }
 
 /* START ngx_http_lua_shrbtree api */

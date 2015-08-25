@@ -294,77 +294,67 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-    if (lmcf->shm_zones != NULL) {
-        lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
-                /* ngx.shared */
+    lua_createtable(L, 0 /* narr */, 13 /* nrec */); /* shared mt */
 
-        lua_createtable(L, 0 /* narr */, 13 /* nrec */); /* shared mt */
+    lua_pushcfunction(L, ngx_http_lua_shdict_get);
+    lua_setfield(L, -2, "get");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_get);
-        lua_setfield(L, -2, "get");
+    lua_pushcfunction(L, ngx_http_lua_shdict_get_stale);
+    lua_setfield(L, -2, "get_stale");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_get_stale);
-        lua_setfield(L, -2, "get_stale");
+    lua_pushcfunction(L, ngx_http_lua_shdict_set);
+    lua_setfield(L, -2, "set");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_set);
-        lua_setfield(L, -2, "set");
+    lua_pushcfunction(L, ngx_http_lua_shdict_safe_set);
+    lua_setfield(L, -2, "safe_set");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_safe_set);
-        lua_setfield(L, -2, "safe_set");
+    lua_pushcfunction(L, ngx_http_lua_shdict_add);
+    lua_setfield(L, -2, "add");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_add);
-        lua_setfield(L, -2, "add");
+    lua_pushcfunction(L, ngx_http_lua_shdict_safe_add);
+    lua_setfield(L, -2, "safe_add");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_safe_add);
-        lua_setfield(L, -2, "safe_add");
+    lua_pushcfunction(L, ngx_http_lua_shdict_replace);
+    lua_setfield(L, -2, "replace");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_replace);
-        lua_setfield(L, -2, "replace");
+    lua_pushcfunction(L, ngx_http_lua_shdict_incr);
+    lua_setfield(L, -2, "incr");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_incr);
-        lua_setfield(L, -2, "incr");
+    lua_pushcfunction(L, ngx_http_lua_shdict_delete);
+    lua_setfield(L, -2, "delete");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_delete);
-        lua_setfield(L, -2, "delete");
+    lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
+    lua_setfield(L, -2, "flush_all");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
-        lua_setfield(L, -2, "flush_all");
+    lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
+    lua_setfield(L, -2, "flush_expired");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
-        lua_setfield(L, -2, "flush_expired");
+    lua_pushcfunction(L, ngx_http_lua_shdict_get_keys);
+    lua_setfield(L, -2, "get_keys");
 
-        lua_pushcfunction(L, ngx_http_lua_shdict_get_keys);
-        lua_setfield(L, -2, "get_keys");
+    lua_pushvalue(L, -1); /* shared mt mt */
+    lua_setfield(L, -2, "__index"); /* shared mt */
 
-        lua_pushvalue(L, -1); /* shared mt mt */
-        lua_setfield(L, -2, "__index"); /* shared mt */
+    zone = lmcf->shm_zones->elts;
 
-        zone = lmcf->shm_zones->elts;
-
-        for (i = 0; i < lmcf->shm_zones->nelts; i++) {
-            if (zone[i]->tag != (void *)&ngx_http_lua_module_shdict) {
-                continue;
-            }
-            ctx = zone[i]->data;
-
-            lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
-                /* shared mt key */
-
-            lua_createtable(L, 1 /* narr */, 0 /* nrec */);
-            lua_pushlightuserdata(L, zone[i]);
-            lua_rawseti(L, -2, 1); /* {zone[i]} */
-            lua_pushvalue(L, -3); /* mt of zone[i] */
-            lua_setmetatable(L, -2); /* setmetatable for {zone[i]} */
-            lua_rawset(L, -4); /* shared mt */
+    for (i = 0; i < lmcf->shm_zones->nelts; i++) {
+        if (zone[i]->tag != (void *)&ngx_http_lua_module_shdict) {
+            continue;
         }
+        ctx = zone[i]->data;
 
-        lua_pop(L, 1); /* shared */
+        lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
+            /* shared mt key */
 
-    } else {
-        lua_newtable(L);    /* ngx.shared */
+        lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+        lua_pushlightuserdata(L, zone[i]);
+        lua_rawseti(L, -2, 1); /* {zone[i]} */
+        lua_pushvalue(L, -3); /* mt of zone[i] */
+        lua_setmetatable(L, -2); /* setmetatable for {zone[i]} */
+        lua_rawset(L, -4); /* shared mt */
     }
 
-    lua_setfield(L, -2, "shared");
+    lua_pop(L, 1); /* shared */
 }
 
 

@@ -36,7 +36,7 @@ __DATA__
                     return 0
                 end 
             end
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
             rbtree:insert{"a", 1, cmp}
             rbtree:insert{"b", 12, cmp}
             rbtree:insert{"c", 123, cmp}
@@ -85,7 +85,7 @@ GET /test
                 end
 
             end
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
             rbtree:insert{"a", 0.1, cmp}
             rbtree:insert{"b", 0.12, cmp}
             rbtree:insert{"c", 0.123, cmp}
@@ -135,7 +135,7 @@ GET /test
 
             end
             
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
             rbtree:insert{1, "s", cmp}
             rbtree:insert{2, "ss", cmp}
             rbtree:insert{3, "sss", cmp}
@@ -192,7 +192,7 @@ sssss string
                 end
             end
 
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
             local node = {}
 
             node[1] = {1, 3}
@@ -239,84 +239,6 @@ nil nil
 --- no_error_log
 [error]
 
-=== TEST 5: number key, table value
---- http_config
-    lua_shared_rbtree rbtree 1m;
---- config
-    location = /test {
-        content_by_lua '
-            local cmp = function(a, b)
-                if a > b then
-                    return 1
-
-                elseif a < b then
-                    return -1
-
-                else
-                    return 0
-                end
-
-            end
-
-            local rbtree = ngx.shrbtree.rbtree
-            local node = {}
-
-            node[1] = 10
-            node[2] = {1, 2, 3, "4", "5", {1, 2, {1, 2}}}
-            node[3] = cmp
-            rbtree:insert(node)
-
-            node[1] = 11
-            node[2] = {k1 = "v1", k2="v2", k3="v3"}
-            node[3] = cmp
-            rbtree:insert(node);
-
-            node[1] = 12.34
-            node[2] = {1, "2", {3, "4", 5}, {"aa", "bb", "cc", {1, 2, 3}}} 
-            node[3] = cmp
-            rbtree:insert(node);
-
-            node[1] = 111
-            node[2] = {is_false = false, is_true = true}
-            node[3] = cmp
-            rbtree:insert(node)
-
-            local val
-            val = rbtree:get{10, 1, cmp}
-            ngx.say(val, " ", type(val))
-            val = rbtree:get{10, 4, cmp}
-            ngx.say(val, " ", type(val))
-            val = rbtree:get{10, 6, cmp}
-            ngx.say(val[3][2], " ", type(val[3][2]))
-            
-            val = rbtree:get{11, "k1", cmp}
-            ngx.say(val, " ", type(val))
-            
-            val = rbtree:get{12.34, cmp}
-
-            ngx.say(val[1], " ", type(val[1]))
-            ngx.say(val[4][4][1], " ", type(val[4][4][1]))
-
-            val = rbtree:get{111, "is_false", cmp}
-            ngx.say(val, " ", type(val))
-            val = rbtree:get{111, "is_true", cmp}
-            ngx.say(val, " ", type(val))
-        ';
-    }
---- request
-GET /test
---- response_body
-1 number
-4 string
-2 number
-v1 string
-1 number
-1 number
-false boolean
-true boolean
---- no_error_log
-[error]
-
 === TEST 6: table key, table value
 --- http_config
     lua_shared_rbtree rbtree 1m;
@@ -342,7 +264,7 @@ true boolean
                 end
             end
 
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
             local node = {}
 
             node[1] = {1, 3}
@@ -415,9 +337,9 @@ v3 string
                 end
 
             end
-            local rbtree1 = ngx.shrbtree.rbtree1
-            local rbtree2 = ngx.shrbtree.rbtree2
-            local rbtree3 = ngx.shrbtree.rbtree3
+            local rbtree1 = ngx.shared.rbtree1
+            local rbtree2 = ngx.shared.rbtree2
+            local rbtree3 = ngx.shared.rbtree3
 
             rbtree1:insert{"a", 11, cmp}
             rbtree1:insert{"b", 112, cmp}
@@ -472,7 +394,7 @@ GET /test
                 end
             end
 
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
 
             local node = {}
             node[3] = cmp
@@ -522,7 +444,7 @@ ok
                 end 
             end
 
-            local rbtree = ngx.shrbtree.shrbtree
+            local rbtree = ngx.shared.shrbtree
             rbtree:insert{"Jim", 8,  cmp}
             rbtree:insert{"Tim", 9,  cmp}
             rbtree:insert{"Lim", 10, cmp}
@@ -580,7 +502,7 @@ GET /test
                 end
             end
 
-            local rbtree = ngx.shrbtree.rbtree
+            local rbtree = ngx.shared.rbtree
 
             local node = {}
             node[3] = cmp
