@@ -266,6 +266,11 @@ nil nil
             node[3] = cmp
             rbtree:insert(node)
 
+            node[1] = 111
+            node[2] = {is_false = false, is_true = true}
+            node[3] = cmp
+            rbtree:insert(node)
+
             node[1] = 11
             node[2] = {k1 = "v1", k2="v2", k3="v3"}
             node[3] = cmp
@@ -275,11 +280,6 @@ nil nil
             node[2] = {1, "2", {3, "4", 5}, {"aa", "bb", "cc", {1, 2, 3}}} 
             node[3] = cmp
             rbtree:insert(node);
-
-            node[1] = 111
-            node[2] = {is_false = false, is_true = true}
-            node[3] = cmp
-            rbtree:insert(node)
 
             local val
             val = rbtree:get{10, 1, cmp}
