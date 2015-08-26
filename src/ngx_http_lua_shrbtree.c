@@ -37,32 +37,43 @@ static void ngx_http_lua_shrbtree_pushlfield(lua_State *L,
 
 
 /* START declare of tolvalue */
-static ngx_int_t ngx_http_lua_shrbtree_tolvalue(lua_State *L, int index,
-                                                u_char **data,
-                                                u_char *type, size_t *len);
-static ngx_int_t ngx_http_lua_shrbtree_toltable(lua_State *L,
-                                                int index,
-                                                ngx_http_lua_shrbtree_ltable_t *ltable);
+static ngx_int_t
+ngx_http_lua_shrbtree_tolvalue(lua_State *L, int index,
+                               u_char **data,
+                               u_char *type, size_t *len);
+static ngx_int_t
+ngx_http_lua_shrbtree_toltable(lua_State *L,
+                               int index,
+                               ngx_http_lua_shrbtree_ltable_t *ltable);
 /* END declare of tolvalue */
 
 
 /* START declare of get */
 static int ngx_http_lua_shrbtree_get(lua_State *L);
-static void ngx_http_lua_shrbtree_get_node(lua_State *L,
-                                           ngx_http_lua_shrbtree_node_t **srbtnp,
-                                           ngx_rbtree_node_t **nodep);
-static void ngx_http_lua_shrbtree_get_lfield(ngx_http_lua_shrbtree_ltable_t *ltable,
-                                             void *kdata, size_t klen,
-                                             ngx_http_lua_shrbtree_lfield_t **lfieldp);
+static void
+ngx_http_lua_shrbtree_get_node(lua_State *L,
+                               ngx_http_lua_shrbtree_ctx_t *ctx,
+                               ngx_http_lua_shrbtree_node_t **srbtnp,
+                               ngx_rbtree_node_t **nodep);
+static void
+ngx_http_lua_shrbtree_get_lfield(ngx_http_lua_shrbtree_ltable_t *ltable,
+                                 void *kdata, size_t klen,
+                                 ngx_http_lua_shrbtree_lfield_t **lfieldp);
 /* END declare of get */
 
 /* START declare of insert */
 static int ngx_http_lua_shrbtree_insert(lua_State *L);
 static void ngx_http_lua_shrbtree_insert_real(lua_State *L,
-                                                   ngx_rbtree_node_t *node);
+                                              ngx_http_lua_shrbtree_ctx_t *ctx,
+                                              ngx_rbtree_node_t *node);
 /* END declare of insert */
 
 static int ngx_http_lua_shrbtree_delete(lua_State *L);
+
+static int ngx_http_lua_shrbtree_luaL_checknarg(lua_State *L, int narg);
+
+static ngx_shm_zone_t*
+ngx_http_lua_shrbtree_luaL_checkzone(lua_State *L, int arg);
 
 #define NGX_HTTP_LUA_SHRBTREE_LVALUE_SIZE sizeof(ngx_http_lua_shrbtree_lvalue_t)
 
@@ -181,11 +192,46 @@ ngx_http_lua_inject_shrbtree_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     lua_pop(L, 1);
 }
 
+static int
+ngx_http_lua_shrbtree_luaL_checknarg(lua_State *L, int narg)
+{
+    if (narg == lua_gettop(L)) {return 0;}
+
+    lua_Debug ar;
+    if (!lua_getstack(L, 0, &ar)) { /* no stack frame? */
+        return luaL_error(L, "excpected %d %s", narg,
+                          1 == narg ? "argument" : "arguments");
+    }
+    lua_getinfo(L, "n", &ar);
+    if (ar.name == NULL) {
+        ar.name = "?";
+    }
+    return luaL_error(L, "excpected %d %s to '%s'",
+                      narg,
+                      1 == narg ? "argument" : "arguments",
+                      ar.name);
+}
+
+static ngx_shm_zone_t*
+ngx_http_lua_shrbtree_luaL_checkzone(lua_State *L, int arg)
+{
+    ngx_shm_zone_t *zone;
+
+    lua_rawgeti(L, arg, 1);
+    zone = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+    if (zone == NULL) {
+        luaL_argerror(L, arg, "excpected \"zone\"");
+    }
+
+    return zone;
+}
+
 /* START ngx_http_lua_shrbtree api */
 static int
 ngx_http_lua_shrbtree_get(lua_State *L)
 {
-    ngx_int_t                      n;
+    ngx_int_t                      rc, n;
     ngx_http_lua_shrbtree_ctx_t    *ctx;
     ngx_http_lua_shrbtree_node_t   *srbtn;
     ngx_http_lua_shrbtree_ltable_t *ltable;
@@ -197,35 +243,23 @@ ngx_http_lua_shrbtree_get(lua_State *L)
     u_char ktype;
     size_t klen;
 
-    ngx_int_t num_of_result;
     ngx_int_t is_getlfield = 0;
 
-    n = lua_gettop(L);
-    if (2 != n) {
-        return luaL_error(L, "expecting exactly 2 arguments, "
-                      "but only seen %d", n);
-    }
+    /* [{zone}, {key, [field, cmpf}]*/
+    ngx_http_lua_shrbtree_luaL_checknarg(L, 2 /* narg */);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_argcheck(L, 1 == lua_objlen(L, 1), 1, "expected 1 element");
 
-    if (LUA_TTABLE != lua_type(L, 2)) {
-        return luaL_error(L, "expecting table type of 2th argument.");
-    }
-    /* [zone, {key, [field, cmpf}]*/
     n = lua_objlen(L, 2);
-    if (3 == n) {
-        is_getlfield = 1;
-    }
+    luaL_argcheck(L, 2 == n || 3 == n, 2, "expected 2 or 3 elements");
+    if (3 == n) {is_getlfield = 1;}
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    if (zone == NULL) {
-        return luaL_error(L, "bad \"zone\" argument");
-    }
-
+    zone = ngx_http_lua_shrbtree_luaL_checkzone(L, 1);
     ctx = zone->data;
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
-    ngx_http_lua_shrbtree_get_node(L, &srbtn, NULL);
+    ngx_http_lua_shrbtree_get_node(L, ctx, &srbtn, NULL);
     if (NULL == srbtn) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnil(L);
@@ -240,7 +274,7 @@ ngx_http_lua_shrbtree_get(lua_State *L)
         return 1;
     }
 
- getfield:
+/* getfield */
     if (LUA_TTABLE != srbtn->vtype) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnil(L);
@@ -250,9 +284,8 @@ ngx_http_lua_shrbtree_get(lua_State *L)
 
     /* field */
     lua_rawgeti(L, 2, 2);
-    num_of_result = ngx_http_lua_shrbtree_tolvalue(L, -1, &kdata, &ktype, &klen);
-    if (0 != num_of_result) {return num_of_result;}
-
+    rc = ngx_http_lua_shrbtree_tolvalue(L, -1, &kdata, &ktype, &klen);
+    if (0 != rc) {return rc;}
     ltable = (ngx_http_lua_shrbtree_ltable_t *)((&srbtn->data) + srbtn->klen);
     ngx_http_lua_shrbtree_get_lfield(ltable, kdata, klen, &lfield);
 
@@ -272,12 +305,11 @@ ngx_http_lua_shrbtree_get(lua_State *L)
 static int
 ngx_http_lua_shrbtree_insert(lua_State *L)
 {
-    ngx_int_t                    n;
+    ngx_int_t                    n, rc;
     ngx_shm_zone_t               *zone;
     ngx_http_lua_shrbtree_ctx_t  *ctx;
     ngx_rbtree_node_t            *node;
     ngx_http_lua_shrbtree_node_t *srbtn;
-    ngx_int_t                    num_of_result;
     u_char key[NGX_HTTP_LUA_SHRBTREE_LVALUE_SIZE];
     u_char value[NGX_HTTP_LUA_SHRBTREE_LVALUE_SIZE];
     u_char *kdata = &key[0];
@@ -286,38 +318,24 @@ ngx_http_lua_shrbtree_insert(lua_State *L)
     u_char ktype, vtype;
     void *p;
 
-    n = lua_gettop(L);
-    if (n != 2) {
-        return luaL_error(L, "expecting 2 arguments, "
-                          "but only seen %d", n);
-    }
+    ngx_http_lua_shrbtree_luaL_checknarg(L, 2);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_argcheck(L, 1 == lua_objlen(L, 1), 1, "expected 1 element");
+    luaL_argcheck(L, 3 == lua_objlen(L, 2), 2, "expected 3 elements");
 
-    if (!lua_istable(L, 2)) {
-      return luaL_error(L, "expecting table type of 2th argument");
-    }
-
-    if (3 != lua_objlen(L, 2)) {
-        return luaL_error(L, "expecting  3 elements(\"key\" \"value\" "
-                          "and \"compare function\") of 2th argument");
-    }
-
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    if (zone == NULL) {
-        return luaL_error(L, "bad \"zone\" argument");
-    }
+    zone = ngx_http_lua_shrbtree_luaL_checkzone(L, 1);
 
     ctx = zone->data;
 
     /* {key, value, cmpf} */
     lua_rawgeti(L, 2, 1); /* key */
-    num_of_result = ngx_http_lua_shrbtree_tolvalue(L, -1, &kdata, &ktype, &klen);
-    if (0 != num_of_result) {return num_of_result;}
+    rc = ngx_http_lua_shrbtree_tolvalue(L, -1, &kdata, &ktype, &klen);
+    if (0 != rc) {return rc;}
 
     lua_rawgeti(L, 2, 2); /* value */
-    num_of_result = ngx_http_lua_shrbtree_tolvalue(L, -1, &vdata, &vtype, &vlen);
-    if (0 != num_of_result) {return num_of_result;}
+    rc = ngx_http_lua_shrbtree_tolvalue(L, -1, &vdata, &vtype, &vlen);
+    if (0 != rc) {return rc;}
 
     /* start node alloc*/
     n = offsetof(ngx_rbtree_node_t, data)
@@ -349,7 +367,7 @@ ngx_http_lua_shrbtree_insert(lua_State *L)
 
     lua_pop(L, 2);
 
-    ngx_http_lua_shrbtree_insert_real(L, node);
+    ngx_http_lua_shrbtree_insert_real(L, ctx, node);
     ngx_shmtx_unlock(&ctx->shpool->mutex);
     /* end insert */
 
@@ -404,20 +422,14 @@ ngx_http_lua_shrbtree_get_lfield(ngx_http_lua_shrbtree_ltable_t *ltable,
 
 static void
 ngx_http_lua_shrbtree_get_node(lua_State *L,
+                               ngx_http_lua_shrbtree_ctx_t *ctx,
                                ngx_http_lua_shrbtree_node_t **srbtnp,
                                ngx_rbtree_node_t **nodep)
 {
     ngx_int_t                    rc;
     ngx_rbtree_node_t            *node, *sentinel;
-    ngx_http_lua_shrbtree_ctx_t  *ctx;
     ngx_http_lua_shrbtree_node_t *srbtn;
-    ngx_shm_zone_t *zone;
     ngx_int_t cmpf_index;
-
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    ctx = zone->data;
 
     node = ctx->sh->rbtree.root;
     sentinel = ctx->sh->rbtree.sentinel;
@@ -462,20 +474,13 @@ ngx_http_lua_shrbtree_rbtree_insert_value(ngx_rbtree_node_t *node1,
 
 static void
 ngx_http_lua_shrbtree_insert_real(lua_State *L,
+                                  ngx_http_lua_shrbtree_ctx_t *ctx,
                                   ngx_rbtree_node_t *node)
 {
     ngx_int_t                    rc;
     ngx_rbtree_node_t            **root, *temp, *sentinel;
     ngx_rbtree_node_t            **p;
-    ngx_http_lua_shrbtree_ctx_t  *ctx;
     ngx_http_lua_shrbtree_node_t *srbtn;
-    ngx_shm_zone_t *zone;
-    ngx_int_t n;
-
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    ctx = zone->data;
 
     root = &ctx->sh->rbtree.root;
     temp = *root;
@@ -552,8 +557,7 @@ ngx_http_lua_shrbtree_pushlvalue(lua_State *L,
         ngx_http_lua_shrbtree_pushltable(L, (ngx_http_lua_shrbtree_ltable_t *)data);
         break;
     default:
-        luaL_error(L, "bad type of value,"
-                      " expecting number string boolean or table type");
+        luaL_error(L, "bad type of value");
     }
 }
 
@@ -598,9 +602,7 @@ ngx_http_lua_shrbtree_tolvalue(lua_State *L,
                                size_t *len)
 {
 
-    int num_of_result;
     ngx_http_lua_shrbtree_ltable_t *ltable;
-    const char *str;
 
     switch (lua_type(L, index)) {
     case LUA_TBOOLEAN:
@@ -631,9 +633,7 @@ ngx_http_lua_shrbtree_tolvalue(lua_State *L,
         return ngx_http_lua_shrbtree_toltable(L, index, ltable);
 
     default:
-        lua_pushnil(L);
-        lua_pushliteral(L, "bad \"type\" argument");
-        return 2;
+        return luaL_error(L, "bad type value");
     }
     return 0;
 }
@@ -653,25 +653,22 @@ ngx_http_lua_shrbtree_toltable(lua_State *L,
     u_char value[NGX_HTTP_LUA_SHRBTREE_LVALUE_SIZE];
     u_char *kdata = &key[0];
     u_char *vdata = &value[0];
-    int num_of_result, n;
+    int rc, n;
     size_t klen, vlen;
     u_char ktype, vtype;
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shrbtree_luaL_checkzone(L, 1);
     ctx = zone->data;
-
 
     lua_pushnil(L);
     if (index < 0) {
         index -= 1;
     }
     while (lua_next(L, index)) {
-        num_of_result = ngx_http_lua_shrbtree_tolvalue(L, -2, &kdata, &ktype, &klen);
-        if (0 != num_of_result) {return num_of_result;}
-        num_of_result = ngx_http_lua_shrbtree_tolvalue(L, -1, &vdata, &vtype, &vlen);
-        if (0 != num_of_result) {return num_of_result;}
+        rc = ngx_http_lua_shrbtree_tolvalue(L, -2, &kdata, &ktype, &klen);
+        if (0 != rc) {return rc;}
+        rc = ngx_http_lua_shrbtree_tolvalue(L, -1, &vdata, &vtype, &vlen);
+        if (0 != rc) {return rc;}
 
         /* start alloc*/
         n = offsetof(ngx_rbtree_node_t, data)
@@ -716,36 +713,21 @@ ngx_http_lua_shrbtree_toltable(lua_State *L,
 static int
 ngx_http_lua_shrbtree_delete(lua_State *L)
 {
-    ngx_int_t                    n;
     ngx_shm_zone_t               *zone;
     ngx_http_lua_shrbtree_ctx_t  *ctx;
     ngx_rbtree_node_t            *node;
 
-    n = lua_gettop(L);
-    if (n != 2) {
-        return luaL_error(L, "expecting 2 arguments, "
-                          "but only seen %d", n);
-    }
+    ngx_http_lua_shrbtree_luaL_checknarg(L, 2);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_argcheck(L, 1 == lua_objlen(L, 1), 1, "expected 1 elements");
+    luaL_argcheck(L, 2 == lua_objlen(L, 2), 2, "expected 2 elements");
 
-    if (!lua_istable(L, 2)) {
-        return luaL_error(L, "expecting table of 2th argument");
-    }
-
-    if (2 != lua_objlen(L, 2)) {
-        return luaL_error(L, "expecting \"key\" and \"compare function\" of 2th argument");
-    }
-
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    if (zone == NULL) {
-        return luaL_error(L, "bad \"zone\" argument");
-    }
-
+    zone = ngx_http_lua_shrbtree_luaL_checkzone(L, 1);
     ctx = zone->data;
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
-    ngx_http_lua_shrbtree_get_node(L, NULL, &node);
+    ngx_http_lua_shrbtree_get_node(L, ctx, NULL, &node);
     if (NULL == node) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushboolean(L, 0);
