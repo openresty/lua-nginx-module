@@ -740,3 +740,19 @@ ok
 Bad bad bad
 --- skip_nginx: 4: < 1.7.1
 
+
+
+=== TEST 19: fake module calls ngx_http_conf_get_module_srv_conf in its merge_srv_conf callback (GitHub issue #554)
+This also affects merge_loc_conf
+--- http_config
+    init_worker_by_lua return;
+--- config
+    location = /t {
+        return 200 ok;
+    }
+--- request
+GET /t
+--- response_body chomp
+ok
+--- no_error_log
+[error]
