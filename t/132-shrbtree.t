@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 );
+plan tests => repeat_each(10) * (blocks() * 3);
 
 #no_diff();
 no_long_string();
