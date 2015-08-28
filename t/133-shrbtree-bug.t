@@ -19,7 +19,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: number key, table value
+=== TEST 1: number key, table value(It's no error to "curl localhost/test", when conf in "nginx.conf")
 --- http_config
     lua_shared_rbtree rbtree 1m;
 --- config
