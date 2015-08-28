@@ -64,6 +64,14 @@ static ngx_http_lua_shrbtree_lfield_t*
 ngx_http_lua_shrbtree_get_lfield(ngx_http_lua_shrbtree_ltable_t *ltable,
                                  void *kdata, size_t klen);
 
+static void
+ngx_http_lua_shrbtree_rdestroy_lfield(ngx_slab_pool_t *shpool,
+                                      ngx_rbtree_node_t *root,
+                                      ngx_rbtree_node_t *sentinel);
+static void
+ngx_http_lua_shrbtree_destroy_ltable(ngx_slab_pool_t *shpool,
+                                     ngx_http_lua_shrbtree_ltable_t *ltable);
+
 static int ngx_http_lua_shrbtree_luaL_checknarg(lua_State *L, int narg);
 
 static ngx_shm_zone_t*
@@ -686,12 +694,35 @@ ngx_http_lua_shrbtree_toltable(lua_State *L,
 }
 /* END tolvalue */
 
+static void
+ngx_http_lua_shrbtree_rdestroy_lfield(ngx_slab_pool_t *shpool,
+                                      ngx_rbtree_node_t *root,
+                                      ngx_rbtree_node_t *sentinel)
+{
+    if (root == sentinel) return;
+
+    ngx_http_lua_shrbtree_rdestroy_lfield(shpool, root->left, sentinel);
+    ngx_http_lua_shrbtree_rdestroy_lfield(shpool, root->right, sentinel);
+    ngx_slab_free_locked(shpool, root);
+}
+
+static void
+ngx_http_lua_shrbtree_destroy_ltable(ngx_slab_pool_t *shpool,
+                                     ngx_http_lua_shrbtree_ltable_t *ltable)
+{
+    return ngx_http_lua_shrbtree_rdestroy_lfield(shpool,
+                                                 ltable->rbtree.root,
+                                                 ltable->rbtree.sentinel);
+}
+
 static int
 ngx_http_lua_shrbtree_delete(lua_State *L)
 {
     ngx_shm_zone_t               *zone;
     ngx_http_lua_shrbtree_ctx_t  *ctx;
     ngx_rbtree_node_t            *node;
+    ngx_http_lua_shrbtree_node_t *srbtn;
+    ngx_http_lua_shrbtree_ltable_t *ltable;
 
     ngx_http_lua_shrbtree_luaL_checknarg(L, 2);
     luaL_checktype(L, 1, LUA_TTABLE);
@@ -709,6 +740,17 @@ ngx_http_lua_shrbtree_delete(lua_State *L)
         lua_pushboolean(L, 0);
         lua_pushliteral(L, "no exists");
         return 2;
+    }
+
+    /* first free table rbtree, if the key/value is a table */
+    srbtn = (ngx_http_lua_shrbtree_node_t *)&node->data;
+    if (LUA_TTABLE ==  srbtn->ktype) {
+        ltable = (ngx_http_lua_shrbtree_ltable_t *)&srbtn->data;
+        ngx_http_lua_shrbtree_destroy_ltable(ctx->shpool, ltable);
+    }
+    if (LUA_TTABLE ==  srbtn->vtype) {
+        ltable = (ngx_http_lua_shrbtree_ltable_t *)((&srbtn->data) + srbtn->klen);
+        ngx_http_lua_shrbtree_destroy_ltable(ctx->shpool, ltable);
     }
 
     ngx_rbtree_delete(&ctx->sh->rbtree, node);

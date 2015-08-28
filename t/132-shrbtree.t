@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each(10) * (blocks() * 3);
+plan tests => repeat_each(1) * (blocks() * 3);
 
 #no_diff();
 no_long_string();
@@ -624,5 +624,95 @@ GET /test
 2 number
 nil nil
 ok
+--- no_error_log
+[error]
+
+=== TEST 11: delete table type node
+--- http_config
+    lua_shared_rbtree rbtree 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local cmp = function(a, b)
+                local x
+                if type(a) == "table" then
+                    x = a[1]
+                else
+                    x= a
+                end
+
+                if x > b[2] then
+                    return 1
+
+                elseif x < b[1] then
+                    return -1
+
+                else
+                    return 0
+                end
+            end
+
+            local rbtree = ngx.shared.rbtree
+            local node = {}
+
+            node[1] = {1, 3}
+            node[2] = {1, 2, 3, "4", "5"}
+            node[3] = cmp
+            rbtree:insert(node)
+
+            node[1] = {4, 6}
+            node[2] = {k1 = "v1", k2="v2", k3="v3"}
+            node[3] = cmp
+            rbtree:insert(node)
+
+            node[1] = {7, 9}
+            node[2] = {1, "2", {3, "4", 5}}
+            node[3] = cmp
+            rbtree:insert(node)
+
+            node[1] = {11, 19}
+            node[2] = {{1, 2, 3}, {"1", "2", "3"}}
+            node[3] = cmp
+            rbtree:insert(node)
+
+            local val
+            val = rbtree:get{3, 4, cmp}
+            ngx.say(val, " ", type(val))
+            rbtree:delete{3, cmp}
+            val = rbtree:get{3, 4,  cmp}
+            ngx.say(val, " ", type(val))
+
+            val = rbtree:get{5, "k1", cmp}
+            ngx.say(val, " ", type(val))
+            rbtree:delete{5, cmp}
+            val = rbtree:get{{4, 6}, "k3", cmp}
+            ngx.say(val, " ", type(val))
+
+            val = rbtree:get{7, 3, cmp}
+            ngx.say(val[2], " ", type(val[2]))
+            rbtree:delete{7, cmp}
+            val = rbtree:get{9, 3, cmp}
+            ngx.say(val, " ", type(val))
+
+            val = rbtree:get{19, 1, cmp}
+            ngx.say(val[1], " ", type(val[1]))
+            rbtree:delete{19, cmp}
+            val = rbtree:get{19, cmp}
+            ngx.say(val, " ", type(val))
+
+
+        ';
+    }
+--- request
+GET /test
+--- response_body
+4 string
+nil nil
+v1 string
+nil nil
+4 string
+nil nil
+1 number
+nil nil
 --- no_error_log
 [error]
