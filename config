@@ -268,6 +268,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_pcrefix.c \
                 $ngx_addon_dir/src/ngx_http_lua_headerfilterby.c \
                 $ngx_addon_dir/src/ngx_http_lua_shdict.c \
+                $ngx_addon_dir/src/ngx_http_lua_shrbtree.c \
                 $ngx_addon_dir/src/ngx_http_lua_socket_tcp.c \
                 $ngx_addon_dir/src/ngx_http_lua_api.c \
                 $ngx_addon_dir/src/ngx_http_lua_logby.c \
@@ -320,6 +321,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_pcrefix.h \
                 $ngx_addon_dir/src/ngx_http_lua_headerfilterby.h \
                 $ngx_addon_dir/src/ngx_http_lua_shdict.h \
+                $ngx_addon_dir/src/ngx_http_lua_shrbtree.h \
                 $ngx_addon_dir/src/ngx_http_lua_socket_tcp.h \
                 $ngx_addon_dir/src/api/ngx_http_lua_api.h \
                 $ngx_addon_dir/src/ngx_http_lua_logby.h \
@@ -391,3 +393,7 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
 
+
+ngx_lua_dquote='"'
+CFLAGS="$CFLAGS -DLUA_DEFAULT_PATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.lua;/usr/local/openresty/lualib/?/init.lua$ngx_lua_dquote'"
+CFLAGS="$CFLAGS -DLUA_DEFAULT_CPATH='$ngx_lua_dquote/usr/local/openresty/lualib/?.so$ngx_lua_dquote'"

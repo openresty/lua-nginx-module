@@ -39,6 +39,7 @@ typedef struct {
     ngx_log_t                    *log;
 } ngx_http_lua_shdict_ctx_t;
 
+#define ngx_http_lua_module_shdict (ngx_http_lua_module.spare0)
 
 ngx_int_t ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 void ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,

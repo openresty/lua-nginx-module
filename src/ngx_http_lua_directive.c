@@ -24,6 +24,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_shrbtree.h"
 
 
 #if defined(NDK) && NDK
@@ -92,7 +93,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->log = &cf->cycle->new_log;
 
     zone = ngx_shared_memory_add(cf, &name, (size_t) size,
-                                 &ngx_http_lua_module);
+                                 &ngx_http_lua_module_shdict);
     if (zone == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -121,6 +122,90 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
+/* the same as ngx_http_lua_shared_dict() */
+char *
+ngx_http_lua_shared_rbtree(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t   *lmcf = conf;
+
+    ngx_str_t                  *value, name;
+    ngx_shm_zone_t             *zone;
+    ngx_shm_zone_t            **zp;
+    ngx_http_lua_shrbtree_ctx_t  *ctx;
+    ssize_t                     size;
+
+    if (lmcf->shm_zones == NULL) {
+        lmcf->shm_zones = ngx_palloc(cf->pool, sizeof(ngx_array_t));
+        if (lmcf->shm_zones == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (ngx_array_init(lmcf->shm_zones, cf->pool, 2,
+                           sizeof(ngx_shm_zone_t *))
+            != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    value = cf->args->elts;
+
+    ctx = NULL;
+
+    if (value[1].len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua shared rbtree name \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    name = value[1];
+
+    size = ngx_parse_size(&value[2]);
+
+    if (size <= 8191) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua shared rbtree size \"%V\"", &value[2]);
+        return NGX_CONF_ERROR;
+    }
+
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_shrbtree_ctx_t));
+    if (ctx == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    ctx->name = name;
+    ctx->main_conf = lmcf;
+    ctx->log = &cf->cycle->new_log;
+
+    zone = ngx_shared_memory_add(cf, &name, (size_t) size,
+                                 &ngx_http_lua_module_shrbtree);
+    if (zone == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (zone->data) {
+        ctx = zone->data;
+
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "lua_shared_rbtree \"%V\" is already defined as "
+                           "\"%V\"", &name, &ctx->name);
+        return NGX_CONF_ERROR;
+    }
+
+    zone->init = ngx_http_lua_shrbtree_init_zone;
+    zone->data = ctx;
+
+    zp = ngx_array_push(lmcf->shm_zones);
+    if (zp == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    *zp = zone;
+
+    lmcf->requires_shm = 1;
+
+    return NGX_CONF_OK;
+}
 
 char *
 ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
