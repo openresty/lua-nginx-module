@@ -372,6 +372,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
             lua_pushvalue(L, -3); /* shared mt key ud mt */
             lua_setmetatable(L, -2); /* shared mt key ud */
             lua_rawset(L, -4); /* shared mt */
+                /* name = {zone[i]} */
         }
 
         lua_pop(L, 1); /* shared */
