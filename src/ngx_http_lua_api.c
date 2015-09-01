@@ -11,16 +11,6 @@
 #include "ngx_http_lua_util.h"
 
 
-typedef struct ngx_http_lua_shm_zone_ctx_s {
-    ngx_log_t                *log;
-    ngx_http_lua_main_conf_t *lmcf;
-
-    u_char                    data; /* ngx_shm_zone_t */
-} ngx_http_lua_shm_zone_ctx_t;
-
-
-static ngx_int_t
-ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data);
 
 
 lua_State *
@@ -86,18 +76,14 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
     return NGX_OK;
 }
 
-
 ngx_shm_zone_t *
 ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
                                ngx_str_t *name,
                                size_t size,
                                void *tag)
 {
-    ngx_int_t                n;
     ngx_http_lua_main_conf_t *lmcf;
     ngx_shm_zone_t           **zp;
-    ngx_shm_zone_t           *zone;
-    ngx_http_lua_shm_zone_ctx_t *ctx;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
     if (lmcf == NULL) {
@@ -113,9 +99,14 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
         if (ngx_array_init(lmcf->shm_zones, cf->pool, 2,
                            sizeof(ngx_shm_zone_t *))
             != NGX_OK)
-        {
-            return NULL;
-        }
+            {
+                return NULL;
+            }
+    }
+
+    zone = ngx_http_lua_find_zone(name->data, name->len);
+    if (zone != NULL) {
+        return zone;
     }
 
     zone = ngx_shared_memory_add(cf, name, (size_t) size, tag);
@@ -123,86 +114,15 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
         return NULL;
     }
 
-    if (zone->data) {
-        ctx = (ngx_http_lua_shm_zone_ctx_t *)zone->data;
-        return (ngx_shm_zone_t *)&ctx->data;
-    }
-
-    n = offsetof(ngx_http_lua_shm_zone_ctx_t, data)
-        + sizeof(ngx_shm_zone_t);
-
-    ctx = ngx_pcalloc(cf->pool, n);
-    if (ctx == NULL) {
-        return NULL;
-    }
-
-    ctx->lmcf = lmcf;
-    ctx->log = &cf->cycle->new_log;
-    ngx_memcpy(&ctx->data, zone, sizeof(*zone));
-
     zp = ngx_array_push(lmcf->shm_zones);
     if (zp == NULL) {
         return NULL;
     }
 
-    *zp = (ngx_shm_zone_t *)&ctx->data;
-
-    /* set zone init */
-    zone->init = ngx_http_lua_shared_memory_init;
-    zone->data = ctx;
+    *zp = zone;
 
     lmcf->requires_shm = 1;
 
-    return *zp;
-}
-
-
-static ngx_int_t
-ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
-{
-    ngx_http_lua_shm_zone_ctx_t *octx = data;
-    ngx_shm_zone_t              *ozone;
-    void                        *odata;
-
-    ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_shm_zone_ctx_t *ctx;
-    ngx_shm_zone_t              *zone;
-
-    ctx = (ngx_http_lua_shm_zone_ctx_t *)shm_zone->data;
-    zone = (ngx_shm_zone_t *)&ctx->data;
-
-    odata = NULL;
-    if (octx) {
-        ozone = (ngx_shm_zone_t *)&octx->data;
-        odata = ozone->data;
-        zone->shm  = ozone->shm;
-        zone->noreuse = ozone->noreuse;
-
-    } else {
-        zone->shm = shm_zone->shm;
-        zone->noreuse = shm_zone->noreuse;
-    }
-
-    if (zone->init(zone, odata) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    lmcf = ctx->lmcf;
-    if (lmcf == NULL) {
-        return NGX_ERROR;
-    }
-
-    lmcf->shm_zones_inited++;
-
-    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
-        && lmcf->init_handler)
-    {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
-            /* an error happened */
-            return NGX_ERROR;
-        }
-    }
-
-    return NGX_OK;
+    return zone;
 }
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
