@@ -349,7 +349,6 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
             lua_pushvalue(L, -3); /* shared mt key ud mt */
             lua_setmetatable(L, -2); /* shared mt key ud */
             lua_rawset(L, -4); /* shared mt */
-                /* name = {zone[i]} */
         }
 
         lua_pop(L, 1); /* shared */
@@ -424,13 +423,11 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                           "but only seen %d", n);
     }
 
-    if (LUA_TTABLE != lua_type(L, 1)) {
+    if (lua_type(L, 1) != LUA_TTABLE ) {
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad \"zone\" argument");
     }
@@ -603,9 +600,7 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -652,9 +647,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -735,9 +728,7 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -875,13 +866,11 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
                           "but only seen %d", n);
     }
 
-    if (LUA_TTABLE != lua_type(L, 1)) {
+    if (lua_type(L, 1) != LUA_TTABLE) {
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad \"zone\" argument");
     }
@@ -1192,9 +1181,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-    lua_rawgeti(L, 1, 1);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
