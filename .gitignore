@@ -162,7 +162,3 @@ tthread
 addr2line
 hup
 theaders
-
-GTAGS
-GPATH
-GRTAGS
