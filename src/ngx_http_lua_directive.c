@@ -26,6 +26,7 @@
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
+#include "api/ngx_http_lua_api.h"
 
 
 typedef struct ngx_http_lua_block_parser_ctx_s
@@ -74,7 +75,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t                  *value, name;
     ngx_shm_zone_t             *zone;
-    ngx_shm_zone_t            **zp;
+    /* ngx_shm_zone_t            **zp; */
     ngx_http_lua_shdict_ctx_t  *ctx;
     ssize_t                     size;
 

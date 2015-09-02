@@ -64,7 +64,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_int_t                   rc;
     volatile ngx_cycle_t       *saved_cycle;
     ngx_http_lua_shdict_ctx_t  *ctx;
-    ngx_http_lua_main_conf_t   *lmcf;
+    /* ngx_http_lua_main_conf_t   *lmcf; */
 
     dd("init zone");
 
@@ -115,28 +115,22 @@ done:
 
     dd("get lmcf");
 
-    lmcf = ctx->main_conf;
+    /* lmcf = ctx->main_conf; */
 
     dd("lmcf->lua: %p", lmcf->lua);
 
-    lmcf->shm_zones_inited++;
+    /* lmcf->shm_zones_inited++; */
 
-    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
-        && lmcf->init_handler)
-    {
-        saved_cycle = ngx_cycle;
-        ngx_cycle = ctx->cycle;
+    /* if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts */
+    /*     && lmcf->init_handler) */
+    /* { */
+    /*     if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) { */
+    /*         /\* an error happened *\/ */
+    /*         return NGX_ERROR; */
+    /*     } */
+    /* } */
 
-        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
-
-        ngx_cycle = saved_cycle;
-
-        if (rc != NGX_OK) {
-            /* an error happened */
-            return NGX_ERROR;
-        }
-    }
-
+    /* return NGX_OK; */
     return NGX_OK;
 }
 
