@@ -53,7 +53,6 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     size_t                      len;
     ngx_http_lua_shdict_ctx_t  *ctx;
-    /* ngx_http_lua_main_conf_t   *lmcf; */
 
     dd("init zone");
 
@@ -63,7 +62,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
         ctx->sh = octx->sh;
         ctx->shpool = octx->shpool;
 
-        goto done;
+        return NGX_OK;
     }
 
     ctx->shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
@@ -71,7 +70,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     if (shm_zone->shm.exists) {
         ctx->sh = ctx->shpool->data;
 
-        goto done;
+        return NGX_OK;
     }
 
     ctx->sh = ngx_slab_alloc(ctx->shpool, sizeof(ngx_http_lua_shdict_shctx_t));
@@ -100,26 +99,6 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ctx->shpool->log_nomem = 0;
 #endif
 
-done:
-
-    dd("get lmcf");
-
-    /* lmcf = ctx->main_conf; */
-
-    dd("lmcf->lua: %p", lmcf->lua);
-
-    /* lmcf->shm_zones_inited++; */
-
-    /* if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts */
-    /*     && lmcf->init_handler) */
-    /* { */
-    /*     if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) { */
-    /*         /\* an error happened *\/ */
-    /*         return NGX_ERROR; */
-    /*     } */
-    /* } */
-
-    /* return NGX_OK; */
     return NGX_OK;
 }
 
