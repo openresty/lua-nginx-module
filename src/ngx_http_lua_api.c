@@ -124,9 +124,8 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
     }
 
     if (zone->data) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "share memory \"%V\" of ngx_lua is already defined" , name);
-        return NULL;
+        ctx = (ngx_http_lua_shm_zone_ctx_t *)zone->data;
+        return (ngx_shm_zone_t *)&ctx->data;
     }
 
     n = offsetof(ngx_http_lua_shm_zone_ctx_t, data)
@@ -156,31 +155,6 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
 
     return *zp;
 }
-
-
-/* ngx_int_t */
-/* ngx_http_lua_shared_memory_inited(ngx_log_t *log, ngx_conf_t *cf) */
-/* { */
-/*     ngx_http_lua_main_conf_t *lmcf; */
-
-    /* lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module); */
-    /* if (lmcf == NULL) { */
-    /*     return NGX_ERROR; */
-    /* } */
-
-    /* lmcf->shm_zones_inited++; */
-
-    /* if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts */
-    /*     && lmcf->init_handler) */
-    /* { */
-    /*     if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != NGX_OK) { */
-    /*         /\* an error happened *\/ */
-    /*         return NGX_ERROR; */
-    /*     } */
-    /* } */
-
-/*     return NGX_OK; */
-/* } */
 
 
 static ngx_int_t
