@@ -24,7 +24,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
-
+#include "api/ngx_http_lua_api.h"
 
 #if defined(NDK) && NDK
 #include "ngx_http_lua_setby.h"
@@ -44,7 +44,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t                  *value, name;
     ngx_shm_zone_t             *zone;
-    ngx_shm_zone_t            **zp;
+    /* ngx_shm_zone_t            **zp; */
     ngx_http_lua_shdict_ctx_t  *ctx;
     ssize_t                     size;
 
