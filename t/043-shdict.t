@@ -2298,3 +2298,100 @@ foo = nil
 --- no_error_log
 [error]
 
+
+
+=== TEST 86: the lightuserdata ngx.null hasn't methods of shared dicts.
+--- http_config
+--- config
+    location = /test {
+        content_by_lua '
+            local lightuserdata = ngx.null
+            lightuserdata:set("foo", 1)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- grep_error_log chop
+attempt to index local 'lightuserdata' (a userdata value)
+--- grep_error_log_out
+attempt to index local 'lightuserdata' (a userdata value)
+--- error_log
+[error]
+
+
+
+=== TEST 87: set bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.set({1}, "foo", 1)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad "zone" argument
+
+
+
+=== TEST 88: get bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.get({1}, "foo")
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad "zone" argument
+
+
+
+=== TEST 89: incr bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.incr({1}, "foo", 32)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+
+
+
+=== TEST 90: value is a table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local rc, err = dogs:set("foo", {1, 2})
+            ngx.say(rc, " ", err)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil bad value type
+--- no_error_log
+[error]
