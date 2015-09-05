@@ -162,3 +162,8 @@ tthread
 addr2line
 hup
 theaders
+
+GPATH
+GRTAGS
+src/GTAGS
+tmp/*
