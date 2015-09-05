@@ -280,8 +280,8 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
-    if (lmcf->shm_zones != NULL) {
-        lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
+    if (lmcf->shdict_shm_zones != NULL) {
+        lua_createtable(L, 0, lmcf->shdict_shm_zones->nelts /* nrec */);
                 /* ngx.shared */
 
         lua_createtable(L, 0 /* narr */, 13 /* nrec */); /* shared mt */
@@ -325,9 +325,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_pushvalue(L, -1); /* shared mt mt */
         lua_setfield(L, -2, "__index"); /* shared mt */
 
-        zone = lmcf->shm_zones->elts;
+        zone = lmcf->shdict_shm_zones->elts;
 
-        for (i = 0; i < lmcf->shm_zones->nelts; i++) {
+        for (i = 0; i < lmcf->shdict_shm_zones->nelts; i++) {
             ctx = zone[i]->data;
 
             lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
@@ -335,7 +335,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
             lua_createtable(L, 1 /* narr */, 0 /* nrec */); /* table of zone[i] */
             lua_pushlightuserdata(L, zone[i]); /* shared mt key ud */
-            lua_rawseti(L, -2, 1); /* {zone[i]} */
+            lua_rawseti(L, -2, SHDICT_USERDATA_INDEX); /* {zone[i]} */
             lua_pushvalue(L, -3); /* shared mt key ud mt */
             lua_setmetatable(L, -2); /* shared mt key ud */
             lua_rawset(L, -4); /* shared mt */
