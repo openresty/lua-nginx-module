@@ -779,6 +779,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->shm_zones = NULL;
+     *      lmcf->shdict_shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
      *      lmcf->shm_zones_inited = 0;

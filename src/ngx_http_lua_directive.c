@@ -75,9 +75,23 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t                  *value, name;
     ngx_shm_zone_t             *zone;
-    /* ngx_shm_zone_t            **zp; */
+    ngx_shm_zone_t            **zp;
     ngx_http_lua_shdict_ctx_t  *ctx;
     ssize_t                     size;
+
+    if (lmcf->shdict_shm_zones == NULL) {
+        lmcf->shdict_shm_zones = ngx_palloc(cf->pool, sizeof(ngx_array_t));
+        if (lmcf->shdict_shm_zones == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (ngx_array_init(lmcf->shdict_shm_zones, cf->pool, 2,
+                           sizeof(ngx_shm_zone_t *))
+            != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+    }
 
     value = cf->args->elts;
 
@@ -126,6 +140,13 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     zone->init = ngx_http_lua_shdict_init_zone;
     zone->data = ctx;
+
+    zp = ngx_array_push(lmcf->shdict_shm_zones);
+    if (zp == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    *zp = zone;
 
     return NGX_CONF_OK;
 }
