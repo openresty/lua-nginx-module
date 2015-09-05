@@ -38,17 +38,9 @@ static inline ngx_shm_zone_t* ngx_http_lua_shdict_get_zone(lua_State *L,
                                                            int index);
 
 
-static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
-                                                               int index);
-
-
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 #define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
-
-enum {
-    SHDICT_USERDATA_INDEX = 1,
-};
 
 enum {
     SHDICT_USERDATA_INDEX = 1,
@@ -374,17 +366,6 @@ ngx_http_lua_shdict_get_stale(lua_State *L)
     return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
 }
 
-static inline ngx_shm_zone_t *
-ngx_http_lua_shdict_get_zone(lua_State *L, int index)
-{
-    ngx_shm_zone_t *zone;
-
-    lua_rawgeti(L, index, SHDICT_USERDATA_INDEX);
-    zone = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    return zone;
-}
 
 static ngx_inline ngx_shm_zone_t *
 ngx_http_lua_shdict_get_zone(lua_State *L, int index)
