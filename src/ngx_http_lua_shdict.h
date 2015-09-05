@@ -44,8 +44,15 @@ typedef struct {
     ngx_str_t                     name;
     ngx_http_lua_main_conf_t     *main_conf;
     ngx_log_t                    *log;
-    ngx_cycle_t                  *cycle;
 } ngx_http_lua_shdict_ctx_t;
+
+
+typedef struct {
+    ngx_log_t                   *log;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_cycle_t                 *cycle;
+    ngx_shm_zone_t               zone;
+} ngx_http_lua_shm_zone_ctx_t;
 
 
 ngx_int_t ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
