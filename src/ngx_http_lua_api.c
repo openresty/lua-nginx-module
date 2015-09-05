@@ -19,8 +19,8 @@ typedef struct ngx_http_lua_shm_zone_ctx_s {
 } ngx_http_lua_shm_zone_ctx_t;
 
 
-static ngx_int_t
-ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data);
+static ngx_int_t ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone,
+                                                 void *data);
 
 
 lua_State *
@@ -88,16 +88,14 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
 
 
 ngx_shm_zone_t *
-ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
-                               ngx_str_t *name,
-                               size_t size,
+ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
                                void *tag)
 {
-    ngx_int_t                n;
-    ngx_http_lua_main_conf_t *lmcf;
-    ngx_shm_zone_t           **zp;
-    ngx_shm_zone_t           *zone;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_shm_zone_t              **zp;
+    ngx_shm_zone_t              *zone;
     ngx_http_lua_shm_zone_ctx_t *ctx;
+    ngx_int_t                   n;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
     if (lmcf == NULL) {
@@ -145,7 +143,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
         return NULL;
     }
 
-    *zp = (ngx_shm_zone_t *)&ctx->data;
+    *zp = zone;
 
     /* set zone init */
     zone->init = ngx_http_lua_shared_memory_init;
@@ -153,7 +151,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf,
 
     lmcf->requires_shm = 1;
 
-    return *zp;
+    return (ngx_shm_zone_t *)&ctx->data;
 }
 
 
