@@ -44,6 +44,7 @@ table
 [error]
 
 
+
 === TEST 2: index shm_zone
 --- http_config
     lua_fake_shm x1 1m;
@@ -61,6 +62,7 @@ GET /test
 table
 --- no_error_log
 [error]
+
 
 
 === TEST 3: get_info
@@ -89,6 +91,7 @@ isinit=true
 isold=false
 --- no_error_log
 [error]
+
 
 
 === TEST 4: multiply zones
@@ -143,6 +146,7 @@ isold=false
 [error]
 
 
+
 === TEST 5: duplicate zones
 --- http_config
     lua_fake_shm x1 1m;
@@ -151,14 +155,14 @@ isold=false
     location = /test {
         content_by_lua '
             local shm_zones = require("fake_shm_zones")
-            local name, size, isinit, isold
             local x1 = shm_zones.x1
-            local x2 = shm_zones.x2
-            ngx.say("ok")
+            ngx.say("error")
         ';
     }
 --- request
 GET /test
+--- request_body_unlike
+error
 --- must_die
 --- error_log
 lua_fake_shm "x1" is already defined as "x1"
