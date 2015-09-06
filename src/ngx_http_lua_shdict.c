@@ -34,8 +34,8 @@ static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
 static int ngx_http_lua_shdict_flush_expired(lua_State *L);
 static int ngx_http_lua_shdict_get_keys(lua_State *L);
-static inline ngx_shm_zone_t* ngx_http_lua_shdict_get_zone(lua_State *L,
-                                                           int index);
+static ngx_inline ngx_shm_zone_t* ngx_http_lua_shdict_get_zone(lua_State *L,
+                                                               int index);
 
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
@@ -333,7 +333,8 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
             lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
                 /* shared mt key */
 
-            lua_createtable(L, 1 /* narr */, 0 /* nrec */); /* table of zone[i] */
+            lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+                /* table of zone[i] */
             lua_pushlightuserdata(L, zone[i]); /* shared mt key ud */
             lua_rawseti(L, -2, SHDICT_USERDATA_INDEX); /* {zone[i]} */
             lua_pushvalue(L, -3); /* shared mt key ud mt */
@@ -402,7 +403,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                           "but only seen %d", n);
     }
 
-    if (lua_type(L, 1) != LUA_TTABLE ) {
+    if (lua_type(L, 1) != LUA_TTABLE) {
         return luaL_error(L, "bad \"zone\" argument");
     }
 
