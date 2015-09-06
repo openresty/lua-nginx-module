@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) helloyi
  */
@@ -253,10 +254,10 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
             lua_rawset(L, -4); /* shared mt */
         }
 
-        lua_pop(L, 1); /* shared */
+        lua_pop(L, 1);
 
     } else {
-        lua_newtable(L);    /* ngx.shared */
+        lua_newtable(L);
     }
 
     return 1;
