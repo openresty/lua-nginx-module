@@ -170,5 +170,5 @@ theaders
 
 GPATH
 GRTAGS
-src/GTAGS
+GTAGS
 tmp/*
