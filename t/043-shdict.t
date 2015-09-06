@@ -7,7 +7,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 18);
+plan tests => repeat_each() * (blocks() * 3 + 17);
 
 #no_diff();
 no_long_string();
@@ -2398,53 +2398,23 @@ type: table
 
 
 
-=== TEST 91: dogs, cat mixing
+=== TEST 91: duplicate zones
 --- http_config
     lua_shared_dict dogs 1m;
-    lua_shared_dict cats 1m;
---- config
-    location = /test {
-        content_by_lua '
-            local dogs = ngx.shared.dogs
-            dogs:set("foo", 32)
-            dogs:set("bah", 10502)
-            local val = dogs:get("foo")
-            ngx.say(val, " ", type(val))
-            val = dogs:get("bah")
-            ngx.say(val, " ", type(val))
-
-            local cats = ngx.shared.cats
-            val = cats:get("foo")
-            ngx.say(val or "nil")
-            val = cats:get("bah")
-            ngx.say(val or "nil")
-        ';
-    }
---- request
-GET /test
---- response_body
-32 number
-10502 number
-nil
-nil
---- no_error_log
-[error]
-
-
-
-=== TEST 92: invalid expire time
---- http_config
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
         content_by_lua '
             local dogs = ngx.shared.dogs
-            dogs:set("foo", 32, -1)
+            ngx.say("error")
         ';
     }
 --- request
 GET /test
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- request_body_unlike
+error
+--- must_die
 --- error_log
-bad "exptime" argument
+lua_shared_dict "dogs" is already defined as "dogs"
+--- error_log
+[emerg]
