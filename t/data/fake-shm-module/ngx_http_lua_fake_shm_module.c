@@ -73,7 +73,7 @@ ngx_module_t  ngx_http_lua_fake_shm_module = {
 
 typedef struct {
     ngx_str_t name;
-
+    size_t   size;
     ngx_int_t isold;
     ngx_int_t isinit;
 } ngx_http_lua_fake_shm_ctx_t;
@@ -144,6 +144,7 @@ ngx_http_lua_fake_shm(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     ctx->name = name;
+    ctx->size = size;
 
     zone = ngx_http_lua_shared_memory_add(cf, &name, (size_t)size,
                                           &ngx_http_lua_fake_shm_module);
@@ -186,7 +187,6 @@ ngx_http_lua_fake_shm_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     if (octx) {
         ctx->isold = 1;
         ctx->name = octx->name;
-        return NGX_OK;
     }
 
     ctx->isinit = 1;
@@ -219,9 +219,12 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
     cycle = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    hmcf_ctx = cycle->conf_ctx[ngx_http_module.index];
+    hmcf_ctx = (ngx_http_conf_ctx_t *)cycle->conf_ctx[ngx_http_module.index];
     lfsmcf = hmcf_ctx->main_conf[ngx_http_lua_fake_shm_module.ctx_index];
-    /* p *(ngx_http_lua_fake_shm_ctx_t*)((ngx_shm_zone_t **)((ngx_http_lua_fake_shm_main_conf_t*)(((ngx_http_conf_ctx_t*)cycle->conf_ctx[8])->main_conf[ngx_http_lua_fake_shm_module.ctx_index]))->shm_zones->elts)[0]->data */
+    /* *(ngx_http_lua_fake_shm_ctx_t*)((ngx_shm_zone_t **)
+       ((ngx_http_lua_fake_shm_main_conf_t*)(((ngx_http_conf_ctx_t*)
+       cycle->conf_ctx[8])->main_conf[ngx_http_lua_fake_shm_module.ctx_index]))
+       ->shm_zones->elts)[0]->data */
 
     if (lfsmcf->shm_zones != NULL) {
         lua_createtable(L, 0, lfsmcf->shm_zones->nelts /* nrec */);
@@ -265,6 +268,7 @@ ngx_http_lua_fake_shm_get_info(lua_State *L)
 {
     ngx_int_t      n;
     ngx_shm_zone_t *zone;
+    ngx_http_lua_fake_shm_ctx_t *ctx;
 
     n = lua_gettop(L);
 
@@ -283,8 +287,12 @@ ngx_http_lua_fake_shm_get_info(lua_State *L)
         return luaL_error(L, "bad \"zone\" argument");
     }
 
+    ctx = (ngx_http_lua_fake_shm_ctx_t *)zone->data;
+
     lua_pushlstring(L, (char *)zone->shm.name.data, zone->shm.name.len);
     lua_pushnumber(L, zone->shm.size);
+    lua_pushboolean(L, ctx->isinit);
+    lua_pushboolean(L, ctx->isold);
 
-    return 2;
+    return 4;
 }
