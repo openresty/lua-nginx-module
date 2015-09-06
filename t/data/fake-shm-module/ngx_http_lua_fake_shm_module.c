@@ -13,7 +13,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include "../../../src/api/ngx_http_lua_api.h"
+#include <ngx_http_lua_api.h>
 
 
 static void *ngx_http_lua_fake_shm_create_main_conf(ngx_conf_t *cf);
