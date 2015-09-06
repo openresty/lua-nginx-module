@@ -185,6 +185,7 @@ ngx_http_lua_fake_shm_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     if (octx) {
         ctx->isold = 1;
+        ctx->name = octx->name;
         return NGX_OK;
     }
 
