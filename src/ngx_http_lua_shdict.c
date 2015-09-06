@@ -34,7 +34,7 @@ static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
 static int ngx_http_lua_shdict_flush_expired(lua_State *L);
 static int ngx_http_lua_shdict_get_keys(lua_State *L);
-static ngx_inline ngx_shm_zone_t* ngx_http_lua_shdict_get_zone(lua_State *L,
+static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
                                                                int index);
 
 
