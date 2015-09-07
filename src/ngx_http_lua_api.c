@@ -89,7 +89,7 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
 
 ngx_shm_zone_t *
 ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
-                               void *tag)
+    void *tag)
 {
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_shm_zone_t              **zp;
