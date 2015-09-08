@@ -3980,4 +3980,84 @@ ngx_http_lua_get_raw_phase_context(lua_State *L)
     return 1;
 }
 
+
+ngx_http_cleanup_t *
+ngx_http_lua_cleanup_add(ngx_http_request_t *r, size_t size)
+{
+    ngx_http_cleanup_t  *cln;
+    ngx_http_lua_ctx_t  *ctx;
+
+    r = r->main;
+
+    if (size == 0) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+        if (ctx != NULL && ctx->free_cleanup) {
+            cln = ctx->free_cleanup;
+            ctx->free_cleanup = cln->next;
+
+            dd("reuse cleanup: %p", cln);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup reuse: %p", cln);
+
+            cln->handler = NULL;
+            cln->next = r->cleanup;
+
+            r->cleanup = cln;
+
+            return cln;
+        }
+    }
+
+    return ngx_http_cleanup_add(r, size);
+}
+
+
+void
+ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
+{
+    ngx_http_cleanup_t  *cln, *clnt;
+    ngx_http_lua_ctx_t  *ctx;
+
+    r = r->main;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    cln = (ngx_http_cleanup_t *)
+              ((u_char *) cleanup - offsetof(ngx_http_cleanup_t, handler));
+
+    dd("cln: %p, cln->handler: %p, &cln->handler: %p",
+        cln, cln->handler, &cln->handler);
+
+    if (r->cleanup == cln) {
+        r->cleanup = cln->next;
+        goto free;
+    }
+
+    clnt = r->cleanup;
+
+    while (clnt) {
+        if (clnt->next == cln) {
+            clnt->next = cln->next;
+
+free:
+
+            cln->next = ctx->free_cleanup;
+            ctx->free_cleanup = cln;
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup free: %p", cln);
+
+            return;
+        }
+
+        clnt = clnt->next;
+    }
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
