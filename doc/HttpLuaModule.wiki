@@ -198,6 +198,8 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [https://github.com/openresty/lua-resty-upload lua-resty-upload]
 * [https://github.com/openresty/lua-resty-websocket lua-resty-websocket]
 * [https://github.com/openresty/lua-resty-lock lua-resty-lock]
+* [https://github.com/cloudflare/lua-resty-logger-socket lua-resty-logger-socket]
+* [https://github.com/openresty/lua-resty-lrucache lua-resty-lrucache]
 * [https://github.com/openresty/lua-resty-string lua-resty-string]
 * [[HttpMemcModule|ngx_memc]]
 * [https://github.com/FRiCKLE/ngx_postgres ngx_postgres]

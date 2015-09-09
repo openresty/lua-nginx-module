@@ -254,6 +254,8 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [lua-resty-upload](https://github.com/openresty/lua-resty-upload)
 * [lua-resty-websocket](https://github.com/openresty/lua-resty-websocket)
 * [lua-resty-lock](https://github.com/openresty/lua-resty-lock)
+* [lua-resty-logger-socket](https://github.com/cloudflare/lua-resty-logger-socket)
+* [lua-resty-lrucache](https://github.com/openresty/lua-resty-lrucache)
 * [lua-resty-string](https://github.com/openresty/lua-resty-string)
 * [ngx_memc](http://github.com/openresty/memc-nginx-module)
 * [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
