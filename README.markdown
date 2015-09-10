@@ -3810,7 +3810,7 @@ will yield:
  a b: 1a 2
 ```
 
-Arguments without the `=<value>` parts are treated as boolean arguments. `GET /test?foo&bar` will yield:
+Arguments without the `=<value>` parts are treated as boolean arguments. `POST /test` with the request body `foo&bar` will yield:
 
 ```bash
 

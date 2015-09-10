@@ -3153,7 +3153,7 @@ will yield:
     a b: 1a 2
 </geshi>
 
-Arguments without the <code>=<value></code> parts are treated as boolean arguments. <code>GET /test?foo&bar</code> will yield:
+Arguments without the <code>=<value></code> parts are treated as boolean arguments. <code>POST /test</code> with the request body <code>foo&bar</code> will yield:
 
 <geshi lang="bash">
     foo: true
