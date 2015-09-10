@@ -3504,7 +3504,7 @@ ngx.req.set_method
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Overrides the current request's request method with the `request_id` argument. Currently only numerical [method constants](#http-method-constants) are supported, like `ngx.HTTP_POST` and `ngx.HTTP_GET`.
+Overrides the current request's request method with the `method_id` argument. Currently only numerical [method constants](#http-method-constants) are supported, like `ngx.HTTP_POST` and `ngx.HTTP_GET`.
 
 If the current request is an Nginx subrequest, then the subrequest's method will be overridden.
 
@@ -3569,7 +3569,7 @@ A more sophisticated example involving regex substitutions is as follows
 
  location /test {
      rewrite_by_lua '
-         local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "$1", "o")
+         local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "/$1", "o")
          ngx.req.set_uri(uri)
      ';
      proxy_pass http://my_backend;
