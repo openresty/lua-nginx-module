@@ -198,6 +198,8 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [https://github.com/openresty/lua-resty-upload lua-resty-upload]
 * [https://github.com/openresty/lua-resty-websocket lua-resty-websocket]
 * [https://github.com/openresty/lua-resty-lock lua-resty-lock]
+* [https://github.com/cloudflare/lua-resty-logger-socket lua-resty-logger-socket]
+* [https://github.com/openresty/lua-resty-lrucache lua-resty-lrucache]
 * [https://github.com/openresty/lua-resty-string lua-resty-string]
 * [[HttpMemcModule|ngx_memc]]
 * [https://github.com/FRiCKLE/ngx_postgres ngx_postgres]
@@ -1473,7 +1475,7 @@ Uses Lua code specified in <code><lua-script-str></code> to define an output hea
 Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
-* Control API functions (e.g., [[#ngx.exit|ngx.exit]] and [[#ngx.exec|ngx.exec]])
+* Control API functions (e.g., [[#ngx.redirect|ngx.redirect]] and [[#ngx.exec|ngx.exec]])
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 * Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 
