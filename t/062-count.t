@@ -438,3 +438,48 @@ worker: 2
 --- no_error_log
 [error]
 
+
+
+=== TEST 20: entries under ngx._reqsock_meta
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                local sock, err = ngx.req.socket()
+                for k, v in pairs(getmetatable(sock)) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            ';
+        }
+--- request
+POST /test
+hello world
+--- response_body
+n = 4
+--- no_error_log
+[error]
+
+
+
+
+=== TEST 21: entries under ngx._udp_meta
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                local sock, err = ngx.socket.udp()
+                for k, v in pairs(getmetatable(sock)) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            ';
+        }
+--- request
+GET /test
+--- response_body
+n = 6
+--- no_error_log
+[error]
+
+
