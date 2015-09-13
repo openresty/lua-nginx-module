@@ -784,7 +784,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 --- no_error_log
 [alert]
 --- error_log eval
-qr/send\(\) failed \(\d+: Connection refused\) while resolving/
+qr/(?:send|recv)\(\) failed \(\d+: Connection refused\) while resolving/
 
 
 

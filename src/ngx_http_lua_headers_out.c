@@ -385,7 +385,19 @@ static ngx_int_t
 ngx_http_set_content_type_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value)
 {
+    ngx_uint_t          i;
+
     r->headers_out.content_type_len = value->len;
+
+#if 1
+    for (i = 0; i < value->len; i++) {
+        if (value->data[i] == ';') {
+            r->headers_out.content_type_len = i;
+            break;
+        }
+    }
+#endif
+
     r->headers_out.content_type = *value;
     r->headers_out.content_type_hash = hv->hash;
     r->headers_out.content_type_lowcase = NULL;

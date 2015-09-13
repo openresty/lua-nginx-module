@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-# this file is mostly meant to be used by the author himself.
+# this script is for developers only.
+# dependent on the ngx-build script from the nginx-devel-utils repostory:
+#   https://github.com/openresty/nginx-devel-utils/blob/master/ngx-build
+# the resulting nginx is located at ./work/nginx/sbin/nginx
 
 root=`pwd`
 version=${1:-1.4.1}
@@ -46,6 +49,7 @@ time ngx-build $force $version \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \
+                --add-module=$root/t/data/fake-module \
                 --with-http_gunzip_module \
           --with-select_module \
           --with-poll_module \

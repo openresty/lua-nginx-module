@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 21);
+plan tests => repeat_each() * (2 * blocks() + 24);
 
 #no_diff();
 #no_long_string();
@@ -1440,3 +1440,70 @@ AAA: 678
 --- no_error_log
 [error]
 
+
+
+=== TEST 46: clear If-Match req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-match")
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-Match: abc
+--- response_body
+test
+--- no_error_log
+[error]
+
+
+
+=== TEST 47: clear If-Unmodified-Since req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-unmodified-since")
+            ngx.header["Last-Modified"] = "Tue, 30 Jun 2011 12:16:36 GMT"
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-Unmodified-Since: Tue, 28 Jun 2011 12:16:36 GMT
+--- response_body
+test
+--- no_error_log
+[error]
+
+
+
+=== TEST 48: clear If-None-Match req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-none-match")
+            -- ngx.header["etags"] = "abc"
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-None-Match: *
+--- response_body
+test
+--- no_error_log
+[error]

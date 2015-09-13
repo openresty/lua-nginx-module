@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 26);
+plan tests => repeat_each() * (blocks() * 3 + 38);
 
 #no_diff();
 no_long_string();
@@ -1237,6 +1237,8 @@ bar: baz
         header_filter_by_lua '
             local hs = ngx.resp.get_headers()
             print("my Content-Type: ", hs["Content-Type"])
+            print("my content-type: ", hs["content-type"])
+            print("my content_type: ", hs["content_type"])
         ';
     }
 --- request
@@ -1248,6 +1250,8 @@ hi
 [alert]
 --- error_log
 my Content-Type: text/plain
+my content-type: text/plain
+my content_type: text/plain
 
 
 
@@ -1262,6 +1266,8 @@ my Content-Type: text/plain
         header_filter_by_lua '
             local hs = ngx.resp.get_headers()
             print("my Content-Length: ", hs["Content-Length"])
+            print("my content-length: ", hs["content-length"])
+            print("my content_length: ", hs.content_length)
         ';
     }
 --- request
@@ -1273,6 +1279,8 @@ hi
 [alert]
 --- error_log
 my Content-Length: 3
+my content-length: 3
+my content_length: 3
 
 
 
@@ -1287,6 +1295,7 @@ my Content-Length: 3
         header_filter_by_lua '
             local hs = ngx.resp.get_headers()
             print("my Connection: ", hs["Connection"])
+            print("my connection: ", hs["connection"])
         ';
     }
 --- request
@@ -1298,6 +1307,7 @@ hi
 [alert]
 --- error_log
 my Connection: close
+my connection: close
 
 
 
@@ -1312,6 +1322,8 @@ my Connection: close
         body_filter_by_lua '
             local hs = ngx.resp.get_headers()
             print("my Transfer-Encoding: ", hs["Transfer-Encoding"])
+            print("my transfer-encoding: ", hs["transfer-encoding"])
+            print("my transfer_encoding: ", hs.transfer_encoding)
         ';
     }
 --- request
@@ -1323,6 +1335,7 @@ hi
 [alert]
 --- error_log
 my Transfer-Encoding: chunked
+my transfer-encoding: chunked
 
 
 
@@ -1337,6 +1350,8 @@ my Transfer-Encoding: chunked
         body_filter_by_lua '
             local hs = ngx.resp.get_headers()
             print("my Transfer-Encoding: ", hs["Transfer-Encoding"])
+            print("my transfer-encoding: ", hs["transfer-encoding"])
+            print("my transfer_encoding: ", hs.transfer_encoding)
         ';
     }
 --- request
@@ -1348,6 +1363,8 @@ hi
 [alert]
 --- error_log
 my Transfer-Encoding: nil
+my transfer-encoding: nil
+my transfer_encoding: nil
 
 
 
@@ -1387,3 +1404,46 @@ Location: http://test.com/foo/bar
 --- no_error_log
 [error]
 
+
+
+=== TEST 67: ngx.header["Content-Type"] with ngx_gzip
+--- config
+    gzip             on;
+    gzip_min_length  1;
+    location = /test2 {
+        content_by_lua '
+            ngx.header["Content-Type"] = "text/html; charset=utf-8"
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /test2
+--- more_headers
+Accept-Encoding: gzip
+--- response_headers
+Content-Encoding: gzip
+Content-Type: text/html; charset=utf-8
+--- response_body_like chomp
+[^[:ascii:]]+
+--- no_error_log
+[error]
+
+
+
+=== TEST 68: ngx.header["Content-Type"] with "; blah"
+--- config
+    location = /test2 {
+        content_by_lua '
+            ngx.header["Content-Type"] = "; blah"
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /test2
+--- response_headers
+!Content-Encoding
+Content-Type: ; blah
+--- response_body
+test
+--- no_error_log
+[error]

@@ -61,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.15](https://github.com/openresty/lua-nginx-module/tags) released on 18 February 2015.
+This document describes ngx_lua [v0.9.16](https://github.com/openresty/lua-nginx-module/tags) released on 22 June 2015.
 
 Synopsis
 ========
@@ -254,6 +254,8 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [lua-resty-upload](https://github.com/openresty/lua-resty-upload)
 * [lua-resty-websocket](https://github.com/openresty/lua-resty-websocket)
 * [lua-resty-lock](https://github.com/openresty/lua-resty-lock)
+* [lua-resty-logger-socket](https://github.com/cloudflare/lua-resty-logger-socket)
+* [lua-resty-lrucache](https://github.com/openresty/lua-resty-lrucache)
 * [lua-resty-string](https://github.com/openresty/lua-resty-string)
 * [ngx_memc](http://github.com/openresty/memc-nginx-module)
 * [ngx_postgres](https://github.com/FRiCKLE/ngx_postgres)
@@ -342,7 +344,7 @@ Build the source with this module:
 
  # Here we assume Nginx is to be installed under /opt/nginx/.
  ./configure --prefix=/opt/nginx \
-         --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
+         --with-ld-opt="-Wl,-rpath,/path/to/luajit-or-lua/lib" \
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
@@ -1770,7 +1772,7 @@ Uses Lua code specified in `<lua-script-str>` to define an output header filter.
 Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [ngx.say](#ngxsay) and [ngx.send_headers](#ngxsend_headers))
-* Control API functions (e.g., [ngx.exit](#ngxexit) and [ngx.exec](#ngxexec))
+* Control API functions (e.g., [ngx.redirect](#ngxredirect) and [ngx.exec](#ngxexec))
 * Subrequest API functions (e.g., [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi))
 * Cosocket API functions (e.g., [ngx.socket.tcp](#ngxsockettcp) and [ngx.req.socket](#ngxreqsocket)).
 
@@ -2791,7 +2793,6 @@ Consider the following example,
 
  location /test {
      rewrite_by_lua '
-         ngx.say("foo = ", ngx.ctx.foo)
          ngx.ctx.foo = 76
      ';
      access_by_lua '
@@ -2807,7 +2808,6 @@ Then `GET /test` will yield the output
 
 ```bash
 
- foo = nil
  79
 ```
 
@@ -2914,7 +2914,7 @@ Here is a basic example:
  res = ngx.location.capture(uri)
 ```
 
-Returns a Lua table with three slots (`res.status`, `res.header`, `res.body`, and `res.truncated`).
+Returns a Lua table with 4 slots: `res.status`, `res.header`, `res.body`, and `res.truncated`.
 
 `res.status` holds the response status code for the subrequest response.
 
@@ -3504,7 +3504,7 @@ ngx.req.set_method
 
 **context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
 
-Overrides the current request's request method with the `request_id` argument. Currently only numerical [method constants](#http-method-constants) are supported, like `ngx.HTTP_POST` and `ngx.HTTP_GET`.
+Overrides the current request's request method with the `method_id` argument. Currently only numerical [method constants](#http-method-constants) are supported, like `ngx.HTTP_POST` and `ngx.HTTP_GET`.
 
 If the current request is an Nginx subrequest, then the subrequest's method will be overridden.
 
@@ -3561,7 +3561,7 @@ or equivalently,
  ngx.req.set_uri("/foo")
 ```
 
-The `jump` can only be set to `true` in [rewrite_by_lua](#rewrite_by_lua) and [rewrite_by_lua_file](#rewrite_by_lua_file). Use of jump in other contexts is prohibited and will throw out a Lua exception.
+The `jump` argument can only be set to `true` in [rewrite_by_lua](#rewrite_by_lua) and [rewrite_by_lua_file](#rewrite_by_lua_file). Use of jump in other contexts is prohibited and will throw out a Lua exception.
 
 A more sophisticated example involving regex substitutions is as follows
 
@@ -3569,7 +3569,7 @@ A more sophisticated example involving regex substitutions is as follows
 
  location /test {
      rewrite_by_lua '
-         local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "$1", "o")
+         local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "/$1", "o")
          ngx.req.set_uri(uri)
      ';
      proxy_pass http://my_backend;
@@ -3810,7 +3810,7 @@ will yield:
  a b: 1a 2
 ```
 
-Arguments without the `=<value>` parts are treated as boolean arguments. `GET /test?foo&bar` will yield:
+Arguments without the `=<value>` parts are treated as boolean arguments. `POST /test` with the request body `foo&bar` will yield:
 
 ```bash
 
@@ -3895,14 +3895,14 @@ However, the optional `max_headers` function argument can be used to override th
 
 ```lua
 
- local args = ngx.req.get_headers(10)
+ local headers = ngx.req.get_headers(10)
 ```
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 ```lua
 
- local args = ngx.req.get_headers(0)
+ local headers = ngx.req.get_headers(0)
 ```
 
 Removing the `max_headers` cap is strongly discouraged.
@@ -6990,3 +6990,4 @@ Special PCRE Sequences
 ----------------------
 
 This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
+

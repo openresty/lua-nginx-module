@@ -10,7 +10,7 @@ Production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.15] released on 18 February 2015.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.16] released on 22 June 2015.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -198,6 +198,8 @@ At least the following Lua libraries and Nginx modules can be used with this ngx
 * [https://github.com/openresty/lua-resty-upload lua-resty-upload]
 * [https://github.com/openresty/lua-resty-websocket lua-resty-websocket]
 * [https://github.com/openresty/lua-resty-lock lua-resty-lock]
+* [https://github.com/cloudflare/lua-resty-logger-socket lua-resty-logger-socket]
+* [https://github.com/openresty/lua-resty-lrucache lua-resty-lrucache]
 * [https://github.com/openresty/lua-resty-string lua-resty-string]
 * [[HttpMemcModule|ngx_memc]]
 * [https://github.com/FRiCKLE/ngx_postgres ngx_postgres]
@@ -276,7 +278,7 @@ Build the source with this module:
  
     # Here we assume Nginx is to be installed under /opt/nginx/.
     ./configure --prefix=/opt/nginx \
-            --with-ld-opt='-Wl,-rpath,/path/to/luajit-or-lua/lib" \
+            --with-ld-opt="-Wl,-rpath,/path/to/luajit-or-lua/lib" \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
  
@@ -1473,7 +1475,7 @@ Uses Lua code specified in <code><lua-script-str></code> to define an output hea
 Note that the following API functions are currently disabled within this context:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
-* Control API functions (e.g., [[#ngx.exit|ngx.exit]] and [[#ngx.exec|ngx.exec]])
+* Control API functions (e.g., [[#ngx.redirect|ngx.redirect]] and [[#ngx.exec|ngx.exec]])
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 * Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 
@@ -2238,7 +2240,6 @@ Consider the following example,
 <geshi lang="nginx">
     location /test {
         rewrite_by_lua '
-            ngx.say("foo = ", ngx.ctx.foo)
             ngx.ctx.foo = 76
         ';
         access_by_lua '
@@ -2253,7 +2254,6 @@ Consider the following example,
 Then <code>GET /test</code> will yield the output
 
 <geshi lang="bash">
-    foo = nil
     79
 </geshi>
 
@@ -2351,7 +2351,7 @@ Here is a basic example:
     res = ngx.location.capture(uri)
 </geshi>
 
-Returns a Lua table with three slots (<code>res.status</code>, <code>res.header</code>, <code>res.body</code>, and <code>res.truncated</code>).
+Returns a Lua table with 4 slots: <code>res.status</code>, <code>res.header</code>, <code>res.body</code>, and <code>res.truncated</code>.
 
 <code>res.status</code> holds the response status code for the subrequest response.
 
@@ -2886,7 +2886,7 @@ See also [[#ngx.req.set_method|ngx.req.set_method]].
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
 
-Overrides the current request's request method with the <code>request_id</code> argument. Currently only numerical [[#HTTP method constants|method constants]] are supported, like <code>ngx.HTTP_POST</code> and <code>ngx.HTTP_GET</code>.
+Overrides the current request's request method with the <code>method_id</code> argument. Currently only numerical [[#HTTP method constants|method constants]] are supported, like <code>ngx.HTTP_POST</code> and <code>ngx.HTTP_GET</code>.
 
 If the current request is an Nginx subrequest, then the subrequest's method will be overridden.
 
@@ -2935,14 +2935,14 @@ or equivalently,
     ngx.req.set_uri("/foo")
 </geshi>
 
-The <code>jump</code> can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
+The <code>jump</code> argument can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
 
 A more sophisticated example involving regex substitutions is as follows
 
 <geshi lang="nginx">
     location /test {
         rewrite_by_lua '
-            local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "$1", "o")
+            local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "/$1", "o")
             ngx.req.set_uri(uri)
         ';
         proxy_pass http://my_backend;
@@ -3153,7 +3153,7 @@ will yield:
     a b: 1a 2
 </geshi>
 
-Arguments without the <code>=<value></code> parts are treated as boolean arguments. <code>GET /test?foo&bar</code> will yield:
+Arguments without the <code>=<value></code> parts are treated as boolean arguments. <code>POST /test</code> with the request body <code>foo&bar</code> will yield:
 
 <geshi lang="bash">
     foo: true
@@ -3226,13 +3226,13 @@ Note that a maximum of 100 request headers are parsed by default (including thos
 However, the optional <code>max_headers</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
-    local args = ngx.req.get_headers(10)
+    local headers = ngx.req.get_headers(10)
 </geshi>
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 <geshi lang="lua">
-    local args = ngx.req.get_headers(0)
+    local headers = ngx.req.get_headers(0)
 </geshi>
 
 Removing the <code>max_headers</code> cap is strongly discouraged.
@@ -5923,3 +5923,4 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
+
