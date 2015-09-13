@@ -241,19 +241,24 @@ n = 10
 
 
 === TEST 11: entries under ngx._reqsock_meta
---- SKIP
 --- config
         location = /test {
             content_by_lua '
                 local n = 0
-                for k, v in pairs(ngx._reqsock_meta) do
+                local sock, err = ngx.req.socket()
+                if not sock then
+                    ngx.say("failed to get the request socket: ", err)
+                end
+
+                for k, v in pairs(getmetatable(sock)) do
                     n = n + 1
                 end
                 ngx.say("n = ", n)
             ';
         }
 --- request
-GET /test
+POST /test
+hello world
 --- response_body
 n = 4
 --- no_error_log
@@ -440,35 +445,12 @@ worker: 2
 
 
 
-=== TEST 20: entries under ngx._reqsock_meta
+=== TEST 20: entries under ngx._udp_meta
 --- config
         location = /test {
             content_by_lua '
                 local n = 0
-                local sock, err = ngx.req.socket()
-                for k, v in pairs(getmetatable(sock)) do
-                    n = n + 1
-                end
-                ngx.say("n = ", n)
-            ';
-        }
---- request
-POST /test
-hello world
---- response_body
-n = 4
---- no_error_log
-[error]
-
-
-
-
-=== TEST 21: entries under ngx._udp_meta
---- config
-        location = /test {
-            content_by_lua '
-                local n = 0
-                local sock, err = ngx.socket.udp()
+                local sock = ngx.socket.udp()
                 for k, v in pairs(getmetatable(sock)) do
                     n = n + 1
                 end
@@ -483,3 +465,33 @@ n = 6
 [error]
 
 
+
+=== TEST 21: entries under ngx._rawreqsock_meta
+--- config
+        location = /test {
+            content_by_lua '
+                local n = 0
+                ngx.req.read_body()
+                local sock, err = ngx.req.socket(true)
+                if not sock then
+                    ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
+                    return
+                end
+
+                for k, v in pairs(getmetatable(sock)) do
+                    n = n + 1
+                end
+
+                local ok, err = sock:send("HTTP/1.1 200 OK\\r\\nContent-Length: 6\\r\\n\\r\\nn = "..n.."\\n")
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to send: ", err)
+                    return
+                end
+            ';
+        }
+--- request
+GET /test
+--- response_body
+n = 5
+--- no_error_log
+[error]
