@@ -82,7 +82,7 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
 
     /* udp socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
-    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_setpeername);
     lua_setfield(L, -2, "setpeername"); /* ngx socket mt */
