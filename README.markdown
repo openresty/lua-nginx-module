@@ -3895,14 +3895,14 @@ However, the optional `max_headers` function argument can be used to override th
 
 ```lua
 
- local args = ngx.req.get_headers(10)
+ local headers = ngx.req.get_headers(10)
 ```
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 ```lua
 
- local args = ngx.req.get_headers(0)
+ local headers = ngx.req.get_headers(0)
 ```
 
 Removing the `max_headers` cap is strongly discouraged.

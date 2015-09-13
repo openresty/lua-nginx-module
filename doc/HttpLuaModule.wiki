@@ -3226,13 +3226,13 @@ Note that a maximum of 100 request headers are parsed by default (including thos
 However, the optional <code>max_headers</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
-    local args = ngx.req.get_headers(10)
+    local headers = ngx.req.get_headers(10)
 </geshi>
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 <geshi lang="lua">
-    local args = ngx.req.get_headers(0)
+    local headers = ngx.req.get_headers(0)
 </geshi>
 
 Removing the <code>max_headers</code> cap is strongly discouraged.
