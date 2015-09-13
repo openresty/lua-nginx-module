@@ -1191,8 +1191,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     if (lua_type(L, 1) != LUA_TTABLE) {
         return luaL_error(L, "bad \"zone\" argument");
     }
-
-<<<<<<< HEAD
+	
     if (n >= 4) {
         if (!lua_isnil(L, 4)) {
             exptime = luaL_checknumber(L, 4);
@@ -1202,10 +1201,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
         }
     }
 
-    zone = lua_touserdata(L, 1);
-=======
     zone = ngx_http_lua_shdict_get_zone(L, 1);
->>>>>>> openresty/master
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
