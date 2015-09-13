@@ -240,7 +240,7 @@ n = 10
 
 
 
-=== TEST 11: entries under ngx._reqsock_meta
+=== TEST 11: entries under the metatable of req sockets
 --- config
         location = /test {
             content_by_lua '
@@ -445,7 +445,7 @@ worker: 2
 
 
 
-=== TEST 20: entries under ngx._udp_meta
+=== TEST 20: entries under the metatable of udp sockets
 --- config
         location = /test {
             content_by_lua '
@@ -466,7 +466,7 @@ n = 6
 
 
 
-=== TEST 21: entries under ngx._rawreqsock_meta
+=== TEST 21: entries under the metatable of req raw sockets
 --- config
         location = /test {
             content_by_lua '
