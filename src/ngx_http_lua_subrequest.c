@@ -116,7 +116,7 @@ static int
 ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 {
     ngx_http_request_t              *r;
-    ngx_http_request_t              *sr; /* subrequest object */
+    ngx_http_request_t              *sr = NULL; /* subrequest object */
     ngx_http_post_subrequest_t      *psr;
     ngx_http_lua_ctx_t              *sr_ctx;
     ngx_http_lua_ctx_t              *ctx;
