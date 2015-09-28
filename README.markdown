@@ -1430,7 +1430,7 @@ This directive can be freely mixed with all directives of the [ngx_http_rewrite_
 ```nginx
 
  set $foo 32;
- set_by_lua $bar 'tonumber(ngx.var.foo) + 1';
+ set_by_lua $bar 'return tonumber(ngx.var.foo) + 1';
  set $baz "bar: $bar";  # $baz == "bar: 33"
 ```
 
