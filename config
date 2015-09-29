@@ -339,6 +339,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_api.c \
                 $ngx_addon_dir/src/ngx_http_lua_logby.c \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.c \
+                $ngx_addon_dir/src/ngx_http_lua_semaphore.c\
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.c \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
                 $ngx_addon_dir/src/ngx_http_lua_initby.c \
@@ -392,6 +393,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/api/ngx_http_lua_api.h \
                 $ngx_addon_dir/src/ngx_http_lua_logby.h \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.h \
+                $ngx_addon_dir/src/ngx_http_lua_semaphore.h\
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.h \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
                 $ngx_addon_dir/src/ngx_http_lua_initby.h \
@@ -459,4 +461,5 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
 #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
+
 

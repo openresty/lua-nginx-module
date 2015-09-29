@@ -1050,6 +1050,7 @@ Directives
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
 * [lua_max_running_timers](#lua_max_running_timers)
+* [lua_semaphore_threshold](#lua_semaphore_threshold)
 
 
 [Back to TOC](#table-of-contents)
@@ -2635,6 +2636,20 @@ This directive was first introduced in the `v0.8.0` release.
 
 [Back to TOC](#directives)
 
+lua_semaphore_threshold
+-----------------------
+
+**syntax:** *lua_semaphore_threshold &lt;threshold&gt;*
+
+**default:** *lua_semaphore_threshold 100000*
+
+**context:** *http*
+
+The threshold of lua semaphore.
+
+
+[Back to TOC](#directives)
+
 Nginx API for Lua
 =================
 
@@ -2749,6 +2764,9 @@ Nginx API for Lua
 * [ngx.thread.spawn](#ngxthreadspawn)
 * [ngx.thread.wait](#ngxthreadwait)
 * [ngx.thread.kill](#ngxthreadkill)
+* [ngx.semaphore.new](#ngxsemaphorenew)
+* [ngx.semaphore.post](#ngxsemaphorepost)
+* [ngx.semaphore.wait](#ngxsemaphorewait)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
@@ -6870,6 +6888,83 @@ Kills a running "light thread" created by [ngx.thread.spawn](#ngxthreadspawn). R
 According to the current implementation, only the parent coroutine (or "light thread") can kill a thread. Also, a running "light thread" with pending NGINX subrequests (initiated by [ngx.location.capture](#ngxlocationcapture) for example) cannot be killed due to a limitation in the NGINX core.
 
 This API was first enabled in the `v0.9.9` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.semaphore.new
+-----------------
+**syntax:** *sem, err = ngx.semaphore.new(n)*
+
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+
+Create a semaphore that has n resource.
+
+```lua
+
+ require "resty.core.semaphore"
+ local print = ngx.print
+ local sem,err = ngx.semaphore.new(0)
+ if not sem then
+     print("create semaphore failed: "..err)
+ end
+```
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.semaphore.post
+------------------
+**syntax:** *ok, err = ngx.semaphore.post(sem)*
+
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew).release one resource to a semaphore.if one light wethread or coroutine is waiting on this semaphore,then it will be wake up.
+
+```lua
+
+ require "resty.core.semaphore"
+ local print = ngx.print
+ if not ngx.semaphore.test then
+     local sem,err = ngx.semaphore.new(0)
+     if not sem then
+         print("create semaphore failed: "..err)
+         ngx.exit(500)
+     end
+     ngx.semaphore.test = sem
+ end
+ local sem = ngx.semaphore.test
+ local ok,err = sem:post()
+ if not ok then
+     ngx.print(err)
+ end
+```
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.semaphore.wait
+------------------
+**syntax:** *ok, err = ngx.semaphore.wait(sem,timeout?)*
+
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew).wait on one semapohre.if there a resouce then it return immediately,else the light thread or main thread or coroutine will sleep,then it will be wake up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur.timeout default is 0,which means it will return nil,"busy" if there is no resource to use.
+
+```lua
+
+ require "resty.core.semaphore"
+ local print = ngx.print
+ if not ngx.semaphore.test then
+     local sem,err = ngx.semaphore.new(0)
+     if not sem then
+         print("create semaphore failed: "..err)
+         ngx.exit(500)
+     end
+     ngx.semaphore.test = sem
+ end
+ local sem = ngx.semaphore.test
+ local ok,err = sem:wait(1)
+ if not ok then
+     ngx.print(err)
+ end
+```
 
 [Back to TOC](#nginx-api-for-lua)
 

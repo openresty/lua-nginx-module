@@ -23,7 +23,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
-
+#include "ngx_http_lua_semaphore.h"
 
 #if !defined(nginx_version) || nginx_version < 8054
 #error "at least nginx 0.8.54 is required"
@@ -467,6 +467,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, use_default_type),
       NULL },
 
+      { ngx_string("lua_semaphore_threshold"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, semaphore_threshold),
+      NULL },
+
 #if (NGX_HTTP_SSL)
 
 #   if defined(nginx_version) && nginx_version >= 1001013
@@ -554,6 +561,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
+    ngx_pool_cleanup_t         *cln;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
@@ -631,6 +639,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
             return rc;
         }
     }
+
+    /*add the cleanup of semaphores after the lua_close */
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+    cln->data = NULL;
+    cln->handler = ngx_http_lua_cleanup_sem;
+
+    ngx_http_lua_ffi_set_semaphore_threshold(lmcf->semaphore_threshold);
 
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
@@ -725,6 +743,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->pool = cf->pool;
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
+    lmcf->semaphore_threshold = NGX_CONF_UNSET;
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
@@ -759,6 +778,10 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     if (lmcf->max_running_timers == NGX_CONF_UNSET) {
         lmcf->max_running_timers = 256;
+    }
+
+    if (lmcf->semaphore_threshold == NGX_CONF_UNSET) {
+        lmcf->semaphore_threshold = 100000;
     }
 
     lmcf->cycle = cf->cycle;

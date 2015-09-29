@@ -153,6 +153,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_uint_t                      shm_zones_inited;
 
+    ngx_int_t                  semaphore_threshold;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
@@ -303,6 +305,8 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_event_t              sleep;  /* used for ngx.sleep */
 
+    ngx_queue_t              sem_wait_queue;
+
 #ifdef NGX_LUA_USE_ASSERT
     int                      co_top; /* stack top after yielding/creation,
                                         only for sanity checks */
@@ -330,6 +334,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 thread_spawn_yielded:1; /* yielded from
                                                         the ngx.thread.spawn()
                                                         call */
+    unsigned                 sem_resume_status:1;
 };
 
 
