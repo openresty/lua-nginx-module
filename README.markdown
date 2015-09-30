@@ -6269,19 +6269,30 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.incr
 --------------------
-**syntax:** *newval, err = ngx.shared.DICT:incr(key, value)*
+**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
 Increments the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
 
-The key must already exist in the dictionary, otherwise it will return `nil` and `"not found"`.
+When the key does not exist or has already expired in the shared dictionary,
+
+1. if the `init` argument is not specified or takes the value `nil`, this method will return `nil` and the error string `"not found"`, or
+1. if the `init` argument takes a number value, this method will create a new `key` with the value `init + value`.
+
+Like the [add](#ngxshareddictadd) method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The `forcible` return value will always be `nil` when the `init` argument is not specified.
+
+If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, the `forcible` return value will be `true`. If it stores the item without forcibly removing other valid items, then the return value `forcible` will be `false`.
 
 If the original value is not a valid Lua number in the dictionary, it will return `nil` and `"not a number"`.
 
-The `value` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
+The `value` argument and `init` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
-This feature was first introduced in the `v0.3.1rc22` release.
+This method was first introduced in the `v0.3.1rc22` release.
+
+The optional `init` parameter was first added in the `v0.10.6` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
