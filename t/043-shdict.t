@@ -817,7 +817,7 @@ foo = hello
 
 
 
-=== TEST 31: incr key (key exists)
+=== TEST 31: replace key (key exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -951,7 +951,7 @@ foo = 10534
 
 
 
-=== TEST 36: replace key (key not exists)
+=== TEST 36: incr key (key not exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -974,7 +974,7 @@ foo = nil
 
 
 
-=== TEST 37: replace key (key expired)
+=== TEST 37: incr key (key expired)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -2396,3 +2396,169 @@ GET /test
 type: table
 --- no_error_log
 [error]
+
+
+
+=== TEST 91: incr key with init (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", 10502, 0)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 10534 nil
+foo = 10534
+--- no_error_log
+[error]
+
+
+
+=== TEST 92: incr key with init (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32)
+            local res, err = dogs:incr("foo", 2, 0)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 2 nil
+foo = 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 93: incr key with init (key expired)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 3, 0.001)
+            dogs:set("baz", 2, 0.001)
+            dogs:set("foo", 32, 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err = dogs:incr("foo", 10502, 0)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+incr: 10502 nil
+foo = 10502
+--- no_error_log
+[error]
+
+
+
+=== TEST 94: incr key with init (incr by 0)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:incr("foo", 0, 1)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 32 nil
+foo = 32
+--- no_error_log
+[error]
+
+
+
+=== TEST 95: incr key with init (incr by floating point number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local res, err = dogs:incr("foo", 0.14, 32)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: 32.14 nil
+foo = 32.14
+--- no_error_log
+[error]
+
+
+
+=== TEST 96: incr key with init (incr by negative numbers)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            local res, err = dogs:incr("foo", -0.14, -31.72)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: -31.86 nil
+foo = -31.86
+--- no_error_log
+[error]
+
+
+
+=== TEST 97: incr key (original value is not number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", true)
+            local res, err = dogs:incr("foo", -0.14, -31.72)
+            ngx.say("incr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+incr: nil not a number
+foo = true
+--- no_error_log
+[error]
+
