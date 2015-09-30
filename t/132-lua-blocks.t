@@ -311,6 +311,7 @@ hello, world
 --- must_die
 --- error_log eval
 qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
+--- no_check_leak
 
 
 
@@ -330,6 +331,7 @@ hello, world
 --- must_die
 --- error_log eval
 qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
+--- no_check_leak
 
 
 
@@ -350,6 +352,7 @@ hello, world
 --- error_log
 "events" directive is not allowed here
 --- must_die
+--- no_check_leak
 
 
 
@@ -381,3 +384,4 @@ GET /t
 --- error_log eval
 qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
 --- must_die
+--- no_check_leak
