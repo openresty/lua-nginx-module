@@ -310,7 +310,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:40/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
 
 
 
@@ -329,7 +329,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:40/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
 
 
 
@@ -379,5 +379,5 @@ GET /t
 --- no_error_log
 [error]
 --- error_log eval
-qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:40}
+qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
 --- must_die
