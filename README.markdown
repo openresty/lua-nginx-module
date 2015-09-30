@@ -6146,17 +6146,24 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.incr
 --------------------
-**syntax:** *newval, err = ngx.shared.DICT:incr(key, value)*
+**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;*
 
 Increments the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
 
-The key must already exist in the dictionary, otherwise it will return `nil` and `"not found"`.
+When the key does not exist in the dictionary and if the `init` argument
+
+1. is not specified, it will return `nil` and `"not found"`,
+1. is specified, it will create a new `key` with the new value: `value + init`.
+
+Like the [add](#ngxshareddictadd) method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The `forcible` return value will not be returned when `init` argument is not specified.
 
 If the original value is not a valid Lua number in the dictionary, it will return `nil` and `"not a number"`.
 
-The `value` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
+The `value` argument and `init` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
 This feature was first introduced in the `v0.3.1rc22` release.
 
