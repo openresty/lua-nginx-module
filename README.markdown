@@ -5594,11 +5594,13 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.replace
 -----------------------
-**syntax:** *success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)*
+**syntax:** *success, err, forcible, curr_flags? = ngx.shared.DICT:replace(key, value, exptime?, flags?, check_flags?)*
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Just like the [set](#ngxshareddictset) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if the key *does* exist.
+
+If current `user_flags` stored in the dictionary *does not* matched the `check_flags`, the `success` return value will be `false` and the `err` return value will be `"flags not matched"` and the `curr_flags` return value will be the current `user_flags` stored in the dictionary.
 
 If the `key` argument does *not* exist in the dictionary (or expired already), the `success` return value will be `false` and the `err` return value will be `"not found"`.
 

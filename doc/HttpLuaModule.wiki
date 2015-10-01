@@ -4685,11 +4685,13 @@ This feature was first introduced in the <code>v0.7.18</code> release.
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.shared.DICT.replace ==
-'''syntax:''' ''success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)''
+'''syntax:''' ''success, err, forcible, curr_flags? = ngx.shared.DICT:replace(key, value, exptime?, flags?, check_flags?)''
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
 Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if the key ''does'' exist.
+
+If current <code>user_flags</code> stored in the dictionary ''does not'' matched the <code>check_flags</code>, the <code>success</code> return value will be <code>false</code> and the <code>err</code> return value will be <code>"flags not matched"</code> and the <code>curr_flags</code> return value will be the current <code>user_flags</code> stored in the dictionary.
 
 If the <code>key</code> argument does ''not'' exist in the dictionary (or expired already), the <code>success</code> return value will be <code>false</code> and the <code>err</code> return value will be <code>"not found"</code>.
 

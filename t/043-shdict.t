@@ -2562,3 +2562,56 @@ foo = true
 --- no_error_log
 [error]
 
+
+
+=== TEST 98: replace key with check_flags (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, 0, 1)
+            local res, err, forcible, curr_flags = dogs:replace("foo", 10502, 0, 2, 1)
+            ngx.say("replace: ", res, " ", err, " ", forcible, " ", curr_flags)
+            ngx.say("foo = ", dogs:get("foo"))
+
+            local res, err, forcible, curr_flags = dogs:replace("foo", 105, 0, 2, 1)
+            ngx.say("replace: ", res, " ", err, " ", forcible, " ", curr_flags)
+            ngx.say("foo = ", dogs:get("foo"))
+
+        ';
+    }
+--- request
+GET /test
+--- response_body
+replace: true nil false nil
+foo = 105022
+replace: false flags not matched false 2
+foo = 105022
+--- no_error_log
+[error]
+
+
+
+=== TEST 99: replace key with check_flags (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32, 0, 1)
+            local res, err, forcible, curr_flags = dogs:replace("foo", 10502, 0, 2, 1)
+            ngx.say("replace: ", res, " ", err, " ", forcible, " ", curr_flags)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+replace: false not found false nil
+foo = nil
+--- no_error_log
+[error]
+

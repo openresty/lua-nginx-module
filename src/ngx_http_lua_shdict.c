@@ -864,7 +864,13 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     n = lua_gettop(L);
 
-    if (n != 3 && n != 4 && n != 5) {
+    if (flags & NGX_HTTP_LUA_SHDICT_REPLACE) {
+        if (n != 3 && n != 4 && n != 5 && n != 6) {
+            return luaL_error(L, "expecting 3, 4, 5 or 6 arguments, "
+                            "but only seen %d", n);
+        }
+
+    } else if (n != 3 && n != 4 && n != 5) {
         return luaL_error(L, "expecting 3, 4 or 5 arguments, "
                           "but only seen %d", n);
     }
@@ -944,7 +950,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
     }
 
-    if (n == 5) {
+    if (n >= 5) {
         user_flags = (uint32_t) luaL_checkinteger(L, 5);
     }
 
@@ -970,6 +976,20 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
         /* rc == NGX_OK */
+
+
+        if (n == 6 && sd->user_flags != (uint32_t) luaL_checkinteger(L, 6)) {
+            dd("current flags: %d, check flags: %d", (uint32_t) sd->user_flags,
+                    (uint32_t) luaL_checkinteger(L, 6));
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            lua_pushboolean(L, 0);
+            lua_pushliteral(L, "flags not matched");
+            lua_pushboolean(L, forcible);
+            lua_pushinteger(L, (lua_Integer) sd->user_flags);
+            return 4;
+        }
 
         goto replace;
     }
