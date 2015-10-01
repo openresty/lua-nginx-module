@@ -19,6 +19,13 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     ngx_feature_path="$LUAJIT_INC"
     ngx_lua_opt_I="-I$LUAJIT_INC"
     ngx_lua_opt_L="-L$LUAJIT_LIB"
+
+    # ensure that our -I$LUAJIT_INC and -L$LUAJIT_LIB is at the first.
+    SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+    CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+    SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+    NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
     if [ $NGX_RPATH = YES ]; then
         ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 -lm -ldl"
     else
@@ -27,12 +34,23 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
 
     . auto/feature
 
+    # clean up
+    CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+    NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+
     if [ $ngx_found = no ]; then
         # retry without -ldl
         ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
         ngx_feature_path="$LUAJIT_INC"
         ngx_lua_opt_I="-I$LUAJIT_INC"
         ngx_lua_opt_L="-L$LUAJIT_LIB"
+
+        # ensure that our -I$LUAJIT_INC and -L$LUAJIT_LIB is at the first.
+        SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+        CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+        SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+        NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
         if [ $NGX_RPATH = YES ]; then
             ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 -lm"
         else
@@ -40,6 +58,10 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
         fi
 
         . auto/feature
+
+        # clean up
+        CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+        NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
     fi
 
     if [ $ngx_found = no ]; then
@@ -72,6 +94,13 @@ else
         ngx_feature_path="$LUA_INC"
         ngx_lua_opt_I="-I$LUA_INC"
         ngx_lua_opt_L="-L$LUA_LIB"
+
+        # ensure that our -I$LUA_INC and -L$LUA_LIB is at the first.
+        SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+        CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+        SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+        NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
         if [ $NGX_RPATH = YES ]; then
             ngx_feature_libs="-R$LUA_LIB $ngx_lua_opt_L -llua -lm -ldl"
         else
@@ -80,12 +109,23 @@ else
 
         . auto/feature
 
+        # clean up
+        CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+        NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+
         if [ $ngx_found = no ]; then
             # retry without -ldl
 
             ngx_feature_path="$LUA_INC"
             ngx_lua_opt_I="-I$LUA_INC"
             ngx_lua_opt_L="-L$LUA_LIB"
+
+            # ensure that our -I$LUA_INC and -L$LUA_LIB is at the first.
+            SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+            CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+            SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+            NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
             if [ $NGX_RPATH = YES ]; then
                 ngx_feature_libs="-R$LUA_LIB $ngx_lua_opt_L -llua -lm"
             else
@@ -93,6 +133,10 @@ else
             fi
 
             . auto/feature
+
+            # clean up
+            CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+            NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
         fi
 
         if [ $ngx_found = no ]; then
