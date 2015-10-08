@@ -20,6 +20,7 @@ force=$2
             #--with-cc=gcc46 \
             #--with-cc=clang \
             #--without-http_referer_module \
+            #--with-http_v2_module \
 
 time ngx-build $force $version \
             --with-ipv6 \
