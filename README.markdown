@@ -5595,11 +5595,13 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.replace
 -----------------------
-**syntax:** *success, err, forcible = ngx.shared.DICT:replace(key, value, exptime?, flags?)*
+**syntax:** *success, err, forcible, curr_flags? = ngx.shared.DICT:replace(key, value, exptime?, flags?, check_flags?)*
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Just like the [set](#ngxshareddictset) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if the key *does* exist.
+
+If current `user_flags` stored in the dictionary *does not* matched the `check_flags`, the `success` return value will be `false` and the `err` return value will be `"flags not matched"` and the `curr_flags` return value will be the current `user_flags` stored in the dictionary.
 
 If the `key` argument does *not* exist in the dictionary (or expired already), the `success` return value will be `false` and the `err` return value will be `"not found"`.
 
@@ -5627,17 +5629,22 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.incr
 --------------------
-**syntax:** *newval, err = ngx.shared.DICT:incr(key, value)*
+**syntax:** *newval, err = ngx.shared.DICT:incr(key, value, init?)*
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
 Increments the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
 
-The key must already exist in the dictionary, otherwise it will return `nil` and `"not found"`.
+When the key is not exist in the dictionary and if `init` argument,
+
+1. is not specified, it will return `nil` and `"not found"`,
+1. is specified, it will create a new `key` with the new value: `value + init`.
+
+Like the [safe_add](#ngxshareddictsafe_add) method, it also never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
 
 If the original value is not a valid Lua number in the dictionary, it will return `nil` and `"not a number"`.
 
-The `value` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
+The `value` argument and `init` argument can be any valid Lua numbers, like negative numbers or floating-point numbers.
 
 This feature was first introduced in the `v0.3.1rc22` release.
 

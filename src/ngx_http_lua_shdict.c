@@ -864,7 +864,13 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     n = lua_gettop(L);
 
-    if (n != 3 && n != 4 && n != 5) {
+    if (flags & NGX_HTTP_LUA_SHDICT_REPLACE) {
+        if (n != 3 && n != 4 && n != 5 && n != 6) {
+            return luaL_error(L, "expecting 3, 4, 5 or 6 arguments, "
+                            "but only seen %d", n);
+        }
+
+    } else if (n != 3 && n != 4 && n != 5) {
         return luaL_error(L, "expecting 3, 4 or 5 arguments, "
                           "but only seen %d", n);
     }
@@ -944,7 +950,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
     }
 
-    if (n == 5) {
+    if (n >= 5) {
         user_flags = (uint32_t) luaL_checkinteger(L, 5);
     }
 
@@ -970,6 +976,20 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
         /* rc == NGX_OK */
+
+
+        if (n == 6 && sd->user_flags != (uint32_t) luaL_checkinteger(L, 6)) {
+            dd("current flags: %d, check flags: %d", (uint32_t) sd->user_flags,
+                    (uint32_t) luaL_checkinteger(L, 6));
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            lua_pushboolean(L, 0);
+            lua_pushliteral(L, "flags not matched");
+            lua_pushboolean(L, forcible);
+            lua_pushinteger(L, (lua_Integer) sd->user_flags);
+            return 4;
+        }
 
         goto replace;
     }
@@ -1173,11 +1193,12 @@ ngx_http_lua_shdict_incr(lua_State *L)
     u_char                      *p;
     ngx_shm_zone_t              *zone;
     double                       value;
+    ngx_rbtree_node_t           *node;
 
     n = lua_gettop(L);
 
-    if (n != 3) {
-        return luaL_error(L, "expecting 3 arguments, but only seen %d", n);
+    if (n != 3 && n != 4) {
+        return luaL_error(L, "expecting 3 or 4 arguments, but only seen %d", n);
     }
 
     if (lua_type(L, 1) != LUA_TTABLE) {
@@ -1229,6 +1250,22 @@ ngx_http_lua_shdict_incr(lua_State *L)
     dd("shdict lookup returned %d", (int) rc);
 
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        if (n == 4) {
+            num = value + luaL_checknumber(L, 4);
+
+            if (rc == NGX_DONE && sd->value_len == sizeof(double)) {
+                dd("go to allocated");
+
+                ngx_queue_remove(&sd->queue);
+                ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+
+                goto allocated;
+            }
+
+            dd("go to insert");
+            goto insert;
+        }
+
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushnil(L);
@@ -1256,6 +1293,57 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_memcpy(&num, p, sizeof(double));
     num += value;
 
+    ngx_memcpy(p, (double *) &num, sizeof(double));
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    lua_pushnumber(L, num);
+    lua_pushnil(L);
+    return 2;
+
+insert:
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
+                   "lua shared dict incr: creating a new entry");
+
+    n = offsetof(ngx_rbtree_node_t, color)
+        + offsetof(ngx_http_lua_shdict_node_t, data)
+        + key.len
+        + sizeof(double);
+
+    node = ngx_slab_alloc_locked(ctx->shpool, n);
+
+    if (node == NULL) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        lua_pushboolean(L, 0);
+        lua_pushliteral(L, "no memory");
+        return 2;
+    }
+
+    sd = (ngx_http_lua_shdict_node_t *) &node->color;
+
+    node->key = hash;
+
+    sd->key_len = (u_short) key.len;
+
+    sd->value_len = (uint32_t) sizeof(double);
+
+    ngx_rbtree_insert(&ctx->sh->rbtree, node);
+
+    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+
+allocated:
+
+    sd->user_flags = 0;
+
+    sd->expires = 0;
+
+    dd("setting value type to %d", LUA_TNUMBER);
+
+    sd->value_type = (uint8_t) LUA_TNUMBER;
+
+    p = ngx_copy(sd->data, key.data, key.len);
     ngx_memcpy(p, (double *) &num, sizeof(double));
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
