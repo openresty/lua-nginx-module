@@ -567,7 +567,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
         lmcf->postponed_to_rewrite_phase_end = 0;
     }
 
-	if (lmcf->postponed_to_access_phase_end == NGX_CONF_UNSET) {
+    if (lmcf->postponed_to_access_phase_end == NGX_CONF_UNSET) 
         lmcf->postponed_to_access_phase_end = 0;
     }
 
@@ -721,7 +721,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->regex_match_limit = NGX_CONF_UNSET;
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
-	lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
+    lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
     dd("nginx Lua module main config structure initialized!");
 
