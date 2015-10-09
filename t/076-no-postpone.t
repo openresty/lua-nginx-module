@@ -83,3 +83,69 @@ no foo: 1
 --- no_error_log
 [error]
 
+
+
+=== TEST 4: access no postpone on
+--- http_config
+    access_by_lua_no_postpone on;
+--- config
+    set $foo '';
+    location /t {
+        access_by_lua '
+            ngx.var.foo = 1
+        ';
+        if ($foo = 1) {
+            echo "foo: $foo";
+        }
+        echo "no foo: $foo";
+    }
+--- request
+GET /t
+--- response_body
+foo: 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: access no postpone explicitly off
+--- http_config
+    access_by_lua_no_postpone off;
+--- config
+    set $foo '';
+    location /t {
+        access_by_lua '
+            ngx.var.foo = 1
+        ';
+        if ($foo = 1) {
+            echo "foo: $foo";
+        }
+        echo "no foo: $foo";
+    }
+--- request
+GET /t
+--- response_body
+no foo: 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 6: access no postpone off by default
+--- config
+    set $foo '';
+    location /t {
+        access_by_lua '
+            ngx.var.foo = 1
+        ';
+        if ($foo = 1) {
+            echo "foo: $foo";
+        }
+        echo "no foo: $foo";
+    }
+--- request
+GET /t
+--- response_body
+no foo: 1
+--- no_error_log
+[error]
