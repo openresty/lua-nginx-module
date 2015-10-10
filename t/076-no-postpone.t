@@ -89,22 +89,20 @@ no foo: 1
 --- http_config
     access_by_lua_no_postpone on;
 --- config
-    set $foo '';
     location /t {
         access_by_lua '
-            ngx.var.foo = 1
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
         ';
-        if ($foo = 1) {
-            echo "foo: $foo";
-        }
-        echo "no foo: $foo";
+        content_by_lua 'return';
+        deny all;
     }
 --- request
 GET /t
---- response_body
-foo: 1
---- no_error_log
-[error]
+--- response_headers
+Location: http://www.taobao.com/foo
+--- response_body_like: 302 Found
+--- error_code: 302
 
 
 
@@ -112,40 +110,32 @@ foo: 1
 --- http_config
     access_by_lua_no_postpone off;
 --- config
-    set $foo '';
     location /t {
         access_by_lua '
-            ngx.var.foo = 1
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
         ';
-        if ($foo = 1) {
-            echo "foo: $foo";
-        }
-        echo "no foo: $foo";
+        content_by_lua 'return';
+        deny all;
     }
 --- request
 GET /t
---- response_body
-no foo: 1
---- no_error_log
-[error]
+--- response_body_like: 403 Forbidden
+--- error_code: 403
 
 
 
 === TEST 6: access no postpone off by default
 --- config
-    set $foo '';
     location /t {
         access_by_lua '
-            ngx.var.foo = 1
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
         ';
-        if ($foo = 1) {
-            echo "foo: $foo";
-        }
-        echo "no foo: $foo";
+        content_by_lua 'return';
+        deny all;
     }
 --- request
 GET /t
---- response_body
-no foo: 1
---- no_error_log
-[error]
+--- response_body_like: 403 Forbidden
+--- error_code: 403
