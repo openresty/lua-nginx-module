@@ -29,6 +29,7 @@ static int ngx_http_lua_shdict_set_helper(lua_State *L, int flags);
 static int ngx_http_lua_shdict_add(lua_State *L);
 static int ngx_http_lua_shdict_safe_add(lua_State *L);
 static int ngx_http_lua_shdict_replace(lua_State *L);
+static int ngx_http_lua_shdict_cas(lua_State *L);
 static int ngx_http_lua_shdict_incr(lua_State *L);
 static int ngx_http_lua_shdict_delete(lua_State *L);
 static int ngx_http_lua_shdict_flush_all(lua_State *L);
@@ -43,6 +44,7 @@ static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 #define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
+#define NGX_HTTP_LUA_SHDICT_CHECK       0x0008
 
 
 enum {
@@ -338,6 +340,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_replace);
         lua_setfield(L, -2, "replace");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_cas);
+        lua_setfield(L, -2, "cas");
 
         lua_pushcfunction(L, ngx_http_lua_shdict_incr);
         lua_setfield(L, -2, "incr");
@@ -835,6 +840,14 @@ ngx_http_lua_shdict_replace(lua_State *L)
 
 
 static int
+ngx_http_lua_shdict_cas(lua_State *L)
+{
+    return ngx_http_lua_shdict_set_helper(L, NGX_HTTP_LUA_SHDICT_REPLACE
+                                          |NGX_HTTP_LUA_SHDICT_CHECK);
+}
+
+
+static int
 ngx_http_lua_shdict_set(lua_State *L)
 {
     return ngx_http_lua_shdict_set_helper(L, 0);
@@ -852,6 +865,7 @@ static int
 ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 {
     int                          i, n;
+    ngx_str_t                    name;
     ngx_str_t                    key;
     uint32_t                     hash;
     ngx_int_t                    rc;
@@ -869,11 +883,28 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     int                          forcible = 0;
                          /* indicates whether to foricibly override other
                           * valid entries */
-    int32_t                      user_flags = 0;
+    uint32_t                     user_flags = 0;
+    ngx_str_t                    old_value;
+    double                       old_num;
+    u_char                       old_c;
+    int                          old_value_type;
+    uint32_t                     old_user_flags = 0;
 
     n = lua_gettop(L);
 
-    if (n != 3 && n != 4 && n != 5) {
+    if (flags & NGX_HTTP_LUA_SHDICT_CHECK) {
+        if (n != 6 && n != 7) {
+            return luaL_error(L, "expecting 6 or 7 arguments, "
+                              "but only seen %d", n);
+        }
+
+        if (n == 6 && lua_type(L, 6) == LUA_TNIL) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "old_value is nil and no old_flags");
+            return 2;
+        }
+
+    } else if (n != 3 && n != 4 && n != 5) {
         return luaL_error(L, "expecting 3, 4 or 5 arguments, "
                           "but only seen %d", n);
     }
@@ -931,7 +962,9 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         break;
 
     case LUA_TNIL:
-        if (flags & (NGX_HTTP_LUA_SHDICT_ADD|NGX_HTTP_LUA_SHDICT_REPLACE)) {
+        if (flags & (NGX_HTTP_LUA_SHDICT_ADD|NGX_HTTP_LUA_SHDICT_REPLACE)
+            && ! (flags & NGX_HTTP_LUA_SHDICT_CHECK))
+        {
             lua_pushnil(L);
             lua_pushliteral(L, "attempt to add or replace nil values");
             return 2;
@@ -953,7 +986,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
     }
 
-    if (n == 5) {
+    if (n >= 5) {
         user_flags = (uint32_t) luaL_checkinteger(L, 5);
     }
 
@@ -979,6 +1012,62 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
         }
 
         /* rc == NGX_OK */
+
+        if (flags & NGX_HTTP_LUA_SHDICT_CHECK) {
+            /* check current value flags */
+            old_value_type = lua_type(L, 6);
+
+            if (old_value_type != LUA_TNIL) {
+
+                if (sd->value_type != old_value_type) {
+                    dd("value type check failed");
+                    goto check_failed;
+                }
+
+                switch (old_value_type) {
+                case LUA_TSTRING:
+                    old_value.data = (u_char *) lua_tolstring(L, 6,
+                                                              &old_value.len);
+                    break;
+
+                case LUA_TNUMBER:
+                    old_value.len = sizeof(double);
+                    old_num = lua_tonumber(L, 6);
+                    old_value.data = (u_char *) &old_num;
+                    break;
+
+                case LUA_TBOOLEAN:
+                    old_value.len = sizeof(u_char);
+                    old_c = lua_toboolean(L, 6) ? 1 : 0;
+                    old_value.data = &old_c;
+                    break;
+                }
+
+                if (old_value.len != sd->value_len) {
+                    dd("value len check failed");
+                    goto check_failed;
+                }
+
+                if (ngx_memn2cmp(old_value.data, sd->data + sd->key_len,
+                                 old_value.len, sd->value_len) != 0)
+                {
+                    dd("value data check failed");
+                    goto check_failed;
+                }
+            }
+
+            if (n == 7) {
+
+                if (lua_type(L, 7) != LUA_TNIL) {
+                    old_user_flags = (uint32_t) luaL_checkinteger(L, 7);
+                }
+
+                if (sd->user_flags != old_user_flags) {
+                    dd("user_flags check failed");
+                    goto check_failed;
+                }
+            }
+        }
 
         goto replace;
     }
@@ -1166,6 +1255,80 @@ allocated:
     lua_pushnil(L);
     lua_pushboolean(L, forcible);
     return 3;
+
+check_failed:
+
+    name = ctx->name;
+
+    lua_pushboolean(L, 0);
+    lua_pushliteral(L, "not matched");
+    lua_pushboolean(L, forcible);
+
+    value_type = sd->value_type;
+
+    dd("data: %p", sd->data);
+    dd("key len: %d", (int) sd->key_len);
+
+    value.data = sd->data + sd->key_len;
+    value.len = (size_t) sd->value_len;
+
+    switch (value_type) {
+    case LUA_TSTRING:
+
+        lua_pushlstring(L, (char *) value.data, value.len);
+        break;
+
+    case LUA_TNUMBER:
+
+        if (value.len != sizeof(double)) {
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            return luaL_error(L, "bad lua number value size found for key %s "
+                              "in shared_dict %s: %lu", key.data, name.data,
+                              (unsigned long) value.len);
+        }
+
+        ngx_memcpy(&num, value.data, sizeof(double));
+
+        lua_pushnumber(L, num);
+        break;
+
+    case LUA_TBOOLEAN:
+
+        if (value.len != sizeof(u_char)) {
+
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            return luaL_error(L, "bad lua boolean value size found for key %s "
+                              "in shared_dict %s: %lu", key.data, name.data,
+                              (unsigned long) value.len);
+        }
+
+        c = *value.data;
+
+        lua_pushboolean(L, c ? 1 : 0);
+        break;
+
+    default:
+
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        return luaL_error(L, "bad value type found for key %s in "
+                          "shared_dict %s: %d", key.data, name.data,
+                          value_type);
+    }
+
+    user_flags = sd->user_flags;
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    if (user_flags) {
+        lua_pushinteger(L, (lua_Integer) user_flags);
+        return 5;
+    }
+
+    return 4;
 }
 
 
