@@ -5815,6 +5815,16 @@ Returns the count number of Nginx worker processes.
 
 This API was first introduced in the <code>0.9.17</code> release.
 
+== ngx.worker.id ==
+
+'''syntax:''' ''count = ngx.worker.id''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the series id of each Nginx worker processes. 
+
+This API was first introduced in the <code>0.9.17</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
