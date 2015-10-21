@@ -104,6 +104,12 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, expect),
                  ngx_http_set_builtin_header },
 
+#if defined(nginx_version) && nginx_version >= 1003013
+    { ngx_string("Upgrade"),
+                 offsetof(ngx_http_headers_in_t, upgrade),
+                 ngx_http_set_builtin_header },
+#endif
+
 #if (NGX_HTTP_GZIP)
     { ngx_string("Accept-Encoding"),
                  offsetof(ngx_http_headers_in_t, accept_encoding),
