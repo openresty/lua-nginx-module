@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 24);
+plan tests => repeat_each() * (2 * blocks() + 26);
 
 #no_diff();
 #no_long_string();
@@ -1506,3 +1506,29 @@ If-None-Match: *
 test
 --- no_error_log
 [error]
+
+
+
+=== TEST 48: set the Destination request header for WebDav
+--- config
+    location = /a.txt {
+        rewrite_by_lua_block {
+            ngx.req.set_header("Destination", "/b.txt")
+        }
+        dav_methods MOVE;
+        dav_access            all:rw;
+        root                  html;
+    }
+
+--- user_files
+>>> a.txt
+hello, world!
+
+--- request
+MOVE /a.txt
+
+--- response_body
+--- no_error_log
+client sent no "Destination" header
+[error]
+--- error_code: 204

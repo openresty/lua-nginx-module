@@ -128,6 +128,23 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  ngx_http_set_builtin_header },
 #endif
 
+#if (NGX_HTTP_DAV)
+    { ngx_string("Depth"),
+                 offsetof(ngx_http_headers_in_t, depth),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Destination"),
+                 offsetof(ngx_http_headers_in_t, destination),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Overwrite"),
+                 offsetof(ngx_http_headers_in_t, overwrite),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Date"), offsetof(ngx_http_headers_in_t, date),
+                 ngx_http_set_builtin_header },
+#endif
+
     { ngx_string("Cookie"),
                  0,
                  ngx_http_set_cookie_header },
