@@ -121,7 +121,7 @@ ngx_http_lua_fd_cleanup(ngx_http_lua_co_ctx_t *co_ctx)
             ngx_delete_posted_event(u->conn->write);
         }
 #endif
-        /* not sure what this line does, the 0 means non-reusable */
+        /* mark as non-reusable */
         ngx_reusable_connection(u->conn, 0);
 
         /* invalidate connection object */
