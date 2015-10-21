@@ -3041,6 +3041,11 @@ Nginx API for Lua
 * [ngx.shared.DICT.replace](#ngxshareddictreplace)
 * [ngx.shared.DICT.delete](#ngxshareddictdelete)
 * [ngx.shared.DICT.incr](#ngxshareddictincr)
+* [ngx.shared.DICT.lpush](#ngxshareddictlpush)
+* [ngx.shared.DICT.rpush](#ngxshareddictrpush)
+* [ngx.shared.DICT.lpop](#ngxshareddictlpop)
+* [ngx.shared.DICT.rpop](#ngxshareddictrpop)
+* [ngx.shared.DICT.llen](#ngxshareddictllen)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
@@ -6035,6 +6040,11 @@ The resulting object `dict` has the following methods:
 * [replace](#ngxshareddictreplace)
 * [delete](#ngxshareddictdelete)
 * [incr](#ngxshareddictincr)
+* [lpush](#ngxshareddictlpush)
+* [rpush](#ngxshareddictrpush)
+* [lpop](#ngxshareddictlpop)
+* [rpop](#ngxshareddictrpop)
+* [llen](#ngxshareddictllen)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
@@ -6093,7 +6103,7 @@ ngx.shared.DICT.get
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
-Retrieving the value in the dictionary [ngx.shared.DICT](#ngxshareddict) for the key `key`. If the key does not exist or has been expired, then `nil` will be returned.
+Retrieving the value in the dictionary [ngx.shared.DICT](#ngxshareddict) for the key `key`. If the key does not exist or has expired, then `nil` will be returned.
 
 In case of errors, `nil` and a string describing the error will be returned.
 
@@ -6293,6 +6303,86 @@ The `value` argument and `init` argument can be any valid Lua numbers, like nega
 This method was first introduced in the `v0.3.1rc22` release.
 
 The optional `init` parameter was first added in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.lpush
+---------------------
+**syntax:** *length, err = ngx.shared.DICT:lpush(key, value)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Inserts the specified (numerical or string) `value` at the head of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the number of elements in the list after the push operation.
+
+If `key` does not exist, it is created as an empty list before performing the push operations. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+
+It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
+
+This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.rpush
+---------------------
+**syntax:** *length, err = ngx.shared.DICT:rpush(key, value)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Similar to the [lpush](#ngxshareddictlpush) method, but inserts the specified (numerical or string) `value` at the tail of the list named `key`.
+
+This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.lpop
+--------------------
+**syntax:** *val, err = ngx.shared.DICT:lpop(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Removes and returns the first element of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+If `key` does not exist, it will return `nil`. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+
+This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.rpop
+--------------------
+**syntax:** *val, err = ngx.shared.DICT:rpop(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Removes and returns the last element of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+If `key` does not exist, it will return `nil`. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+
+This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.llen
+--------------------
+**syntax:** *len, err = ngx.shared.DICT:llen(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Returns the number of elements in the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+If key does not exist, it is interpreted as an empty list and 0 is returned. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+
+This feature was first introduced in the `v0.10.6` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
