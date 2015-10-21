@@ -143,7 +143,7 @@ ngx_http_lua_fd_wait(lua_State *L)
     ngx_http_lua_co_ctx_t *co_ctx;
     ngx_http_lua_udata_t  *u;
 
-    ngx_socket_t fd = luaL_optint(L, 1, -1); /* -1 is invalid fd */
+    ngx_socket_t fd = luaL_optinteger(L, 1, -1); /* -1 is invalid fd */
     const char *events = luaL_optstring(L, 2, "");
     int poll_mask = 0;
     double timeout = luaL_optnumber(L, 3, HUGE_VAL); /* default to infinite timeout */
