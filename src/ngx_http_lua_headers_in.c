@@ -44,10 +44,6 @@ static ngx_int_t ngx_http_lua_rm_header_helper(ngx_list_t *l,
 
 
 static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
-    { ngx_string("Content-Length"),
-                 offsetof(ngx_http_headers_in_t, content_length),
-                 ngx_http_set_content_length_header },
-
     { ngx_string("Host"),
                  offsetof(ngx_http_headers_in_t, host),
                  ngx_http_set_host_header },
@@ -83,6 +79,10 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
     { ngx_string("Referer"),
                  offsetof(ngx_http_headers_in_t, referer),
                  ngx_http_set_builtin_header },
+
+    { ngx_string("Content-Length"),
+                 offsetof(ngx_http_headers_in_t, content_length),
+                 ngx_http_set_content_length_header },
 
     { ngx_string("Content-Type"),
                  offsetof(ngx_http_headers_in_t, content_type),
