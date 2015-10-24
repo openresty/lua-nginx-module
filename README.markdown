@@ -13,7 +13,6 @@ ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 Table of Contents
 =================
 
-* [Name](#name)
 * [Status](#status)
 * [Version](#version)
 * [Synopsis](#synopsis)
@@ -1050,7 +1049,6 @@ Directives
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
 * [lua_max_running_timers](#lua_max_running_timers)
-* [lua_semaphore_threshold](#lua_semaphore_threshold)
 
 
 [Back to TOC](#table-of-contents)
@@ -2633,20 +2631,6 @@ Running timers are those timers whose user callback functions are still running.
 When exceeding this limit, Nginx will stop running the callbacks of newly expired timers and log an error message "N lua_max_running_timers are not enough" where "N" is the current value of this directive.
 
 This directive was first introduced in the `v0.8.0` release.
-
-[Back to TOC](#directives)
-
-lua_semaphore_threshold
------------------------
-
-**syntax:** *lua_semaphore_threshold &lt;threshold&gt;*
-
-**default:** *lua_semaphore_threshold 100000*
-
-**context:** *http*
-
-The threshold of lua semaphore.
-
 
 [Back to TOC](#directives)
 
@@ -6901,9 +6885,9 @@ Create a semaphore that has n resource.
 
 ```lua
 
- require "resty.core.semaphore"
+ local semaphore = require "resty.semaphore"
  local print = ngx.print
- local sem,err = ngx.semaphore.new(0)
+ local sem,err = semaphore.new(0)
  if not sem then
      print("create semaphore failed: "..err)
  end
@@ -6913,25 +6897,26 @@ Create a semaphore that has n resource.
 
 ngx.semaphore.post
 ------------------
-**syntax:** *ok, err = ngx.semaphore.post(sem)*
+**syntax:** *ok, err = sem:post()*
 
 **context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew).release one resource to a semaphore.if one light wethread or coroutine is waiting on this semaphore,then it will be wake up.
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Release one resource to a semaphore. If one light thread or coroutine is waiting on this semaphore, then it will be waked up.
 
 ```lua
 
- require "resty.core.semaphore"
+ local semaphore = require "resty.semaphore"
+ local shared =  getmetatable(_G).__index
  local print = ngx.print
- if not ngx.semaphore.test then
-     local sem,err = ngx.semaphore.new(0)
+ if not shared.test then
+     local sem,err = semaphore.new(0)
      if not sem then
          print("create semaphore failed: "..err)
          ngx.exit(500)
      end
-     ngx.semaphore.test = sem
+     shared.test = sem
  end
- local sem = ngx.semaphore.test
+ local sem = shared.test
  local ok,err = sem:post()
  if not ok then
      ngx.print(err)
@@ -6942,25 +6927,26 @@ The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew).release one res
 
 ngx.semaphore.wait
 ------------------
-**syntax:** *ok, err = ngx.semaphore.wait(sem,timeout?)*
+**syntax:** *ok, err = sem:wait(timeout?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew).wait on one semapohre.if there a resouce then it return immediately,else the light thread or main thread or coroutine will sleep,then it will be wake up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur.timeout default is 0,which means it will return nil,"busy" if there is no resource to use.
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Wait on one semapohre. If there a resouce then it return immediately, else the light thread or main thread or coroutine will sleep, then it will be waked up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur. The timeout default is 0,which means it will return nil,"busy" if there is no resource to use.
 
 ```lua
 
- require "resty.core.semaphore"
+ local semaphore = require "resty.semaphore"
+ local shared =  getmetatable(_G).__index
  local print = ngx.print
- if not ngx.semaphore.test then
-     local sem,err = ngx.semaphore.new(0)
+ if not shared.test then
+     local sem,err = semaphore.new(0)
      if not sem then
          print("create semaphore failed: "..err)
          ngx.exit(500)
      end
-     ngx.semaphore.test = sem
+     shared.test = sem
  end
- local sem = ngx.semaphore.test
- local ok,err = sem:wait(1)
+ local sem = shared.test
+ local ok,err = sem:wait(10)
  if not ok then
      ngx.print(err)
  end

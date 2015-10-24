@@ -153,7 +153,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_uint_t                      shm_zones_inited;
 
-    ngx_int_t                  semaphore_threshold;
+    ngx_int_t                       semaphore_threshold;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;

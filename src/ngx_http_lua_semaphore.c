@@ -5,6 +5,7 @@
 
 #ifndef NGX_LUA_NO_FFI_API
 
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -15,49 +16,57 @@
 #include "ngx_http_lua_semaphore.h"
 #include "ngx_http_lua_contentby.h"
 
+
 int ngx_http_lua_ffi_set_semaphore_threshold(ngx_int_t threshold);
-static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_sem(ngx_log_t *log);
-void ngx_http_lua_cleanup_sem(void *data);
-static void ngx_http_lua_free_sem(ngx_http_lua_semaphore_t *sem, ngx_log_t *log);
+static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_semaphore(ngx_log_t *log);
+void ngx_http_lua_cleanup_semaphore(void *data);
+static void ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem, ngx_log_t *log);
 static ngx_int_t ngx_http_lua_semaphore_resume(ngx_http_request_t *r);
-int ngx_http_lua_ffi_sem_new(ngx_http_lua_semaphore_t **psem, int n, char **errstr);
-int ngx_http_lua_ffi_sem_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr);
-int ngx_http_lua_ffi_sem_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
-                              int time, u_char *errstr, size_t *errlen);
+int ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem, int n, char **errstr);
+int ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr);
+int ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
+    int time, u_char *errstr, size_t *errlen);
 static void ngx_http_lua_ffi_semaphore_cleanup(void *data);
 static void ngx_http_lua_ffi_semaphore_handler(ngx_event_t *ev);
-static void ngx_http_lua_sem_timeout_handler(ngx_event_t *ev);
-void ngx_http_lua_ffi_sem_gc(ngx_http_lua_semaphore_t *sem);
+static void ngx_http_lua_semaphore_timeout_handler(ngx_event_t *ev);
+void ngx_http_lua_ffi_semaphore_gc(ngx_http_lua_semaphore_t *sem);
 
-static ngx_http_lua_semaphore_t *ngx_http_lua_sem_free_list = NULL;
+
+enum {
+    SEMAPHORE_WAIT_SUCC = 0,
+    SEMAPHORE_WAIT_TIMEOUT = 1
+};
+
+
+static ngx_http_lua_semaphore_t *ngx_http_lua_semaphore_free_list = NULL;
 static ngx_int_t ngx_http_lua_semaphore_threshold = 0;
-static ngx_int_t ngx_http_lua_sem_free_count = 0;
+static ngx_int_t ngx_http_lua_semaphore_free_count = 0;
 
 
 int
 ngx_http_lua_ffi_set_semaphore_threshold(ngx_int_t threshold)
 {
     ngx_http_lua_semaphore_threshold = threshold;
-    return (int)ngx_http_lua_semaphore_threshold;
+    return (int) ngx_http_lua_semaphore_threshold;
 }
 
 
 int
 ngx_http_lua_ffi_get_semaphore_threshold()
 {
-    return (int)ngx_http_lua_semaphore_threshold;
+    return (int) ngx_http_lua_semaphore_threshold;
 }
 
 
 static ngx_http_lua_semaphore_t *
-ngx_http_lua_alloc_sem(ngx_log_t *log)
+ngx_http_lua_alloc_semaphore(ngx_log_t *log)
 {
     ngx_http_lua_semaphore_t *sem;
 
-    if (ngx_http_lua_sem_free_list) {
-         sem = ngx_http_lua_sem_free_list;
-         ngx_http_lua_sem_free_list = ngx_http_lua_sem_free_list->next;
-         ngx_http_lua_sem_free_count--;
+    if (ngx_http_lua_semaphore_free_list) {
+         sem = ngx_http_lua_semaphore_free_list;
+         ngx_http_lua_semaphore_free_list = ngx_http_lua_semaphore_free_list->next;
+         ngx_http_lua_semaphore_free_count--;
 
     } else {
 
@@ -67,52 +76,52 @@ ngx_http_lua_alloc_sem(ngx_log_t *log)
         }
     }
 
-    dd("ngx_http_lua_alloc_sem sem:%p", sem);
+    dd("ngx_http_lua_alloc_semaphore sem:%p", sem);
 
     return sem;
 }
 
 
 void
-ngx_http_lua_cleanup_sem(void *data)
+ngx_http_lua_cleanup_semaphore(void *data)
 {
-    dd("ngx_http_lua_cleanup_sem");
+    dd("ngx_http_lua_cleanup_semaphore");
 
-    ngx_http_lua_semaphore_t * sem = ngx_http_lua_sem_free_list;
+    ngx_http_lua_semaphore_t *sem = ngx_http_lua_semaphore_free_list;
 
     while (sem != NULL)
     {
-         ngx_http_lua_sem_free_list = ngx_http_lua_sem_free_list->next;
+         ngx_http_lua_semaphore_free_list = ngx_http_lua_semaphore_free_list->next;
          ngx_free(sem);
-         sem = ngx_http_lua_sem_free_list;
+         sem = ngx_http_lua_semaphore_free_list;
     }
 }
 
 
 static void
-ngx_http_lua_free_sem(ngx_http_lua_semaphore_t *sem, ngx_log_t *log)
+ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem, ngx_log_t *log)
 {
     ngx_int_t n;
 
-    dd("ngx_http_lua_free_sem sem:%p", sem);
+    dd("ngx_http_lua_free_semaphore sem:%p", sem);
 
-    sem->next = ngx_http_lua_sem_free_list;
-    ngx_http_lua_sem_free_list = sem;
-    ngx_http_lua_sem_free_count++;
+    sem->next = ngx_http_lua_semaphore_free_list;
+    ngx_http_lua_semaphore_free_list = sem;
+    ngx_http_lua_semaphore_free_count++;
 
-    if (ngx_http_lua_sem_free_count >= ngx_http_lua_semaphore_threshold) {
+    if (ngx_http_lua_semaphore_free_count >= ngx_http_lua_semaphore_threshold) {
 
-         n = ngx_http_lua_sem_free_count >> 1;
-         ngx_http_lua_sem_free_count -= n;
+         n = ngx_http_lua_semaphore_free_count >> 1;
+         ngx_http_lua_semaphore_free_count -= n;
 
          while (n--) {
-             sem = ngx_http_lua_sem_free_list;
-             ngx_http_lua_sem_free_list = ngx_http_lua_sem_free_list->next;
+             sem = ngx_http_lua_semaphore_free_list;
+             ngx_http_lua_semaphore_free_list = ngx_http_lua_semaphore_free_list->next;
              ngx_free(sem);
          }
 
-         dd("ngx_http_lua_free_sem sem_count:%lld",
-                 (long long int) ngx_http_lua_sem_free_count);
+         dd("ngx_http_lua_free_semaphore sem_count:%lld",
+            (long long int) ngx_http_lua_semaphore_free_count);
     }
 }
 
@@ -122,7 +131,7 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
 {
     lua_State                   *vm;
     ngx_connection_t            *c;
-    ngx_int_t                   rc;
+    ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -135,7 +144,7 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
     c = r->connection;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    if (ctx->cur_co_ctx->sem_resume_status == 0) {
+    if (ctx->cur_co_ctx->sem_resume_status == SEMAPHORE_WAIT_SUCC) {
          lua_pushboolean(ctx->cur_co_ctx->co, 1);
          lua_pushnil(ctx->cur_co_ctx->co);
 
@@ -164,18 +173,18 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-     return rc;
+    return rc;
 }
 
 
 int
-ngx_http_lua_ffi_sem_new(ngx_http_lua_semaphore_t **psem, int n, char **errstr)
+ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem, int n, char **errstr)
 {
     ngx_http_lua_semaphore_t *sem;
 
-    sem = ngx_http_lua_alloc_sem(ngx_cycle->log);
+    sem = ngx_http_lua_alloc_semaphore(ngx_cycle->log);
     if (sem == NULL) {
-        *errstr = "ngx_http_lua_ffi_sem_new ngx_alloc failed";
+        *errstr = "ngx_http_lua_ffi_semaphore_new ngx_alloc failed";
         return NGX_ERROR;
     }
 
@@ -188,14 +197,14 @@ ngx_http_lua_ffi_sem_new(ngx_http_lua_semaphore_t **psem, int n, char **errstr)
     sem->log = ngx_cycle->log;
     *psem = sem;
 
-    dd("ngx_http_lua_ffi_sem_new semaphore %p value %d", sem, sem->count);
+    dd("ngx_http_lua_ffi_semaphore_new semaphore %p value %d", sem, sem->count);
 
     return NGX_OK;
 }
 
 
 int
-ngx_http_lua_ffi_sem_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr)
+ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr)
 {
     if (sem == NULL) {
         *errstr = "semaphore is null";
@@ -204,7 +213,7 @@ ngx_http_lua_ffi_sem_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr)
 
     sem->count += n;
 
-    dd("ngx_http_lua_ffi_sem_post semaphore %p value %d", sem, sem->count);
+    dd("ngx_http_lua_ffi_semaphore_post semaphore %p value %d", sem, sem->count);
 
     if (!sem->in_post_event && !ngx_queue_empty(&sem->wait_queue)) {
 
@@ -221,7 +230,7 @@ ngx_http_lua_ffi_sem_post(ngx_http_lua_semaphore_t *sem, int n, char **errstr)
 
 
 int
-ngx_http_lua_ffi_sem_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
+ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
                           int time,u_char *errstr, size_t *errlen)
 {
     ngx_http_lua_ctx_t           *ctx;
@@ -235,12 +244,12 @@ ngx_http_lua_ffi_sem_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
          return NGX_ERROR;
     }
 
-    dd("ngx_http_lua_ffi_sem_wait semaphore: %p"
+    dd("ngx_http_lua_ffi_semaphore_wait semaphore: %p"
        "value: %d in_post_event: %d", sem, sem->count, sem->in_post_event);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        *errlen = ngx_snprintf(errstr, *errlen,"ctx is null")
+        *errlen = ngx_snprintf(errstr, *errlen, "ctx is null")
                   - errstr;
         return NGX_ERROR;
     }
@@ -268,13 +277,13 @@ ngx_http_lua_ffi_sem_wait(ngx_http_request_t *r, ngx_http_lua_semaphore_t *sem,
     } else {
          sem->wait_count++;
          wait_co_ctx = ctx->cur_co_ctx;
-         wait_co_ctx->sleep.handler = ngx_http_lua_sem_timeout_handler;
+         wait_co_ctx->sleep.handler = ngx_http_lua_semaphore_timeout_handler;
          wait_co_ctx->sleep.data = ctx->cur_co_ctx;
          wait_co_ctx->sleep.log = r->connection->log;
 
          ngx_add_timer(&wait_co_ctx->sleep, (ngx_msec_t) time * 1000);
 
-         dd("ngx_http_lua_ffi_sem_wait add timer coctx:%p time:%d(s)",
+         dd("ngx_http_lua_ffi_semaphore_wait add timer coctx:%p time:%d(s)",
              wait_co_ctx, time);
 
          ngx_queue_insert_tail(&sem->wait_queue, &wait_co_ctx->sem_wait_queue);
@@ -292,6 +301,10 @@ ngx_http_lua_ffi_semaphore_cleanup(void *data)
     ngx_http_lua_co_ctx_t          *coctx = data;
     ngx_queue_t                    *q;
     ngx_http_lua_semaphore_t       *sem;
+
+    if (!coctx->sleep.timer_set) {
+        return;
+    }
 
     sem = coctx->data;
 
@@ -327,7 +340,7 @@ ngx_http_lua_ffi_semaphore_handler(ngx_event_t *ev)
          wait_co_ctx = ngx_queue_data(q, ngx_http_lua_co_ctx_t, sem_wait_queue);
 
          sem->count--;
-         sem->wait_count --;
+         sem->wait_count--;
          ngx_del_timer(&wait_co_ctx->sleep);
          wait_co_ctx->cleanup = NULL;
 
@@ -340,7 +353,7 @@ ngx_http_lua_ffi_semaphore_handler(ngx_event_t *ev)
 
          wait_co_ctx->cleanup = NULL;
          ctx->cur_co_ctx = wait_co_ctx;
-         wait_co_ctx->sem_resume_status = NGX_HTTP_LUA_SEM_WAIT_SUCC;
+         wait_co_ctx->sem_resume_status = SEMAPHORE_WAIT_SUCC;
          c = r->connection;
 
          if (ctx->entered_content_phase) {
@@ -352,17 +365,15 @@ ngx_http_lua_ffi_semaphore_handler(ngx_event_t *ev)
          }
 
          ngx_http_run_posted_requests(c);
-
     }
 
-    /* after dealing semaphore post event */
+    /* after dealing with emaphore post event */
     sem->in_post_event = 0;
-
 }
 
 
 static void
-ngx_http_lua_sem_timeout_handler(ngx_event_t *ev)
+ngx_http_lua_semaphore_timeout_handler(ngx_event_t *ev)
 {
     ngx_http_lua_co_ctx_t       *wait_co_ctx;
     ngx_http_request_t          *r;
@@ -374,7 +385,7 @@ ngx_http_lua_sem_timeout_handler(ngx_event_t *ev)
 
     r = ngx_http_lua_get_req(wait_co_ctx->co);
 
-    dd("ngx_http_lua_sem_timeout_handler timeout coctx:%p", wait_co_ctx);
+    dd("ngx_http_lua_semaphore_timeout_handler timeout coctx:%p", wait_co_ctx);
 
     sem = wait_co_ctx->data;
     sem->wait_count--;
@@ -388,7 +399,7 @@ ngx_http_lua_sem_timeout_handler(ngx_event_t *ev)
 
     ctx->cur_co_ctx = wait_co_ctx;
 
-    wait_co_ctx->sem_resume_status = NGX_HTTP_LUA_SEM_WAIT_TIMEOUT;
+    wait_co_ctx->sem_resume_status = SEMAPHORE_WAIT_TIMEOUT;
 
     c = r->connection;
 
@@ -405,23 +416,23 @@ ngx_http_lua_sem_timeout_handler(ngx_event_t *ev)
 
 
 void
-ngx_http_lua_ffi_sem_gc(ngx_http_lua_semaphore_t *sem)
+ngx_http_lua_ffi_semaphore_gc(ngx_http_lua_semaphore_t *sem)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-     "ngx_http_lua_ffi_sem_gc %p", sem);
+                   "ngx_http_lua_ffi_semaphore_gc %p", sem);
 
     if (sem == NULL){
         return;
     }
 
     if (!ngx_queue_empty(&sem->wait_queue)) {
-        ngx_log_debug1(NGX_LOG_ERR, ngx_cycle->log, 0,
-                       "ngx_http_lua_ffi_sem_gc wait queue is"
+        ngx_log_error(NGX_LOG_CRIT, ngx_cycle->log, 0,
+                       "ngx_http_lua_ffi_semaphore_gc wait queue is"
                        " not empty while the semaphore is "
                        "going to be destroyed", sem);
     }
 
-    ngx_http_lua_free_sem(sem,sem->log);
+    ngx_http_lua_free_semaphore(sem, sem->log);
 }
 
 

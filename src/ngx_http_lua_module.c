@@ -25,6 +25,7 @@
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
 
+
 #if !defined(nginx_version) || nginx_version < 8054
 #error "at least nginx 0.8.54 is required"
 #endif
@@ -467,7 +468,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, use_default_type),
       NULL },
 
-      { ngx_string("lua_semaphore_threshold"),
+    { ngx_string("lua_semaphore_threshold"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
@@ -640,13 +641,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
     }
 
-    /*add the cleanup of semaphores after the lua_close */
+    /* add the cleanup of semaphores after the lua_close */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
         return NGX_ERROR;
     }
     cln->data = NULL;
-    cln->handler = ngx_http_lua_cleanup_sem;
+    cln->handler = ngx_http_lua_cleanup_semaphore;
 
     ngx_http_lua_ffi_set_semaphore_threshold(lmcf->semaphore_threshold);
 
@@ -744,6 +745,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
     lmcf->semaphore_threshold = NGX_CONF_UNSET;
+
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
