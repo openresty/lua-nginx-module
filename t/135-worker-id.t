@@ -22,13 +22,13 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            ngx.say("workers: ", ngx.worker.id())
+            ngx.say("worker id: ", ngx.worker.id())
         ';
     }
 --- request
 GET /lua
 --- response_body_like chop
-^workers: \d+$
+^worker id: [0-1]$
 --- no_error_log
 [error]
 
