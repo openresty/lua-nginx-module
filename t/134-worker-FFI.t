@@ -65,7 +65,7 @@ worker pid is correct\.
 --- request
 GET /lua
 --- response_body_like
-worker id: \d+
+worker id: [0-2]
 --- no_error_log
 [error]
 
@@ -104,13 +104,13 @@ worker count: 3
             int ngx_http_lua_ffi_worker_exiting(void);
         ]]
         
-        local count = C.ngx_http_lua_ffi_worker_exiting()
-        ngx.say("worker count: ", count)
+        local exiting = C.ngx_http_lua_ffi_worker_exiting()
+        ngx.say("worker exiting: ", exiting)
         ';
     }
 --- request
 GET /lua
 --- response_body_like
-worker count: 0
+worker exiting: 0
 --- no_error_log
 [error]
