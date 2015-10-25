@@ -41,8 +41,8 @@ __DATA__
 --- request
 GET /lua
 --- response_body_like
-worker pid: \d+
-worker pid is correct\.
+^worker pid: \d+
+worker pid is correct\.$
 --- no_error_log
 [error]
 
@@ -65,7 +65,7 @@ worker pid is correct\.
 --- request
 GET /lua
 --- response_body_like
-worker id: [0-2]
+^worker id: [0-2]$
 --- no_error_log
 [error]
 
@@ -87,7 +87,7 @@ worker id: [0-2]
     }
 --- request
 GET /lua
---- response_body_like
+--- response_body
 worker count: 3
 --- no_error_log
 [error]
@@ -110,7 +110,7 @@ worker count: 3
     }
 --- request
 GET /lua
---- response_body_like
+--- response_body
 worker exiting: 0
 --- no_error_log
 [error]

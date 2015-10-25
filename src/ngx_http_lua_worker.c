@@ -68,6 +68,7 @@ static int
 ngx_http_lua_ngx_worker_count(lua_State *L)
 {
     ngx_core_conf_t   *ccf;
+    
     ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx, ngx_core_module);
 
     lua_pushinteger(L, (lua_Integer) ccf->worker_processes);
@@ -101,6 +102,7 @@ int
 ngx_http_lua_ffi_worker_count(void)
 {
     ngx_core_conf_t   *ccf;
+
     ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx, ngx_core_module);
     
     return (int) ccf->worker_processes;

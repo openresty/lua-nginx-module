@@ -27,8 +27,8 @@ __DATA__
     }
 --- request
 GET /lua
---- response_body_like chop
-^workers: 1$
+--- response_body
+workers: 1
 --- no_error_log
 [error]
 
