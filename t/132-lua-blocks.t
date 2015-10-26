@@ -381,3 +381,33 @@ GET /t
 --- error_log eval
 qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
 --- must_die
+
+
+
+=== TEST 15: simple set_by_lua_block (integer)
+--- config
+    location /lua {
+        set_by_lua_block $res { return 1+1 }
+        echo $res;
+    }
+--- request
+GET /lua
+--- response_body
+2
+--- no_error_log
+[error]
+
+
+
+=== TEST 16: set_by_lua_block with arguments
+--- config
+    location /lua {
+        set_by_lua $res "return ngx.arg[1] + ngx.arg[2]" $arg_a $arg_b;
+        echo $res;
+    }
+--- request
+GET /lua?a=1&b=2
+--- response_body
+3
+--- no_error_log
+[error]

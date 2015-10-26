@@ -206,6 +206,25 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #if defined(NDK) && NDK
 char *
+ngx_http_lua_set_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_set_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     u_char              *p;
@@ -1356,7 +1375,9 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 
                 dd("saved nelts: %d", (int) saved->nelts);
                 dd("temp nelts: %d", (int) cf->args->nelts);
+#if 0
                 ngx_http_lua_assert(saved->nelts == 1);
+#endif
 
                 dst = ngx_array_push(saved);
                 if (dst == NULL) {

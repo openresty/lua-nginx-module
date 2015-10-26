@@ -192,6 +192,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       (void *) ngx_http_lua_init_worker_by_file },
 
 #if defined(NDK) && NDK
+    /* set_by_lua $res { inline Lua code } [$arg1 [$arg2 [...]]] */
+    { ngx_string("set_by_lua_block"),
+      NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                       |NGX_CONF_1MORE|NGX_CONF_BLOCK,
+      ngx_http_lua_set_by_lua_block,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_filter_set_by_lua_inline },
+
     /* set_by_lua $res <inline script> [$arg1 [$arg2 [...]]] */
     { ngx_string("set_by_lua"),
       NGX_HTTP_SRV_CONF|NGX_HTTP_SIF_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
