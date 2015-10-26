@@ -649,7 +649,7 @@ ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data)
 
     if ((u_long) *np >= ngx_freebsd_net_inet_tcp_sendspace) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "\"fastcgi_send_lowat\" must be less than %d "
+                           "\"lua_send_lowat\" must be less than %d "
                            "(sysctl net.inet.tcp.sendspace)",
                            ngx_freebsd_net_inet_tcp_sendspace);
 
@@ -660,7 +660,7 @@ ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data)
     ssize_t *np = data;
 
     ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
-                       "\"fastcgi_send_lowat\" is not supported, ignored");
+                       "\"lua_send_lowat\" is not supported, ignored");
 
     *np = 0;
 
