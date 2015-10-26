@@ -6879,7 +6879,7 @@ ngx.semaphore.new
 -----------------
 **syntax:** *sem, err = ngx.semaphore.new(n)*
 
-**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
 Create a semaphore that has n resource.
 
@@ -6899,7 +6899,7 @@ ngx.semaphore.post
 ------------------
 **syntax:** *ok, err = sem:post()*
 
-**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
 The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Release one resource to a semaphore. If one light thread or coroutine is waiting on this semaphore, then it will be waked up.
 

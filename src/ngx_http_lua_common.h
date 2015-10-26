@@ -105,6 +105,9 @@ typedef struct {
 typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
 
 
+typedef struct ngx_http_lua_semaphore_mm_s ngx_http_lua_semaphore_mm_t;
+
+
 typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
         ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 
@@ -153,7 +156,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_uint_t                      shm_zones_inited;
 
-    ngx_int_t                       semaphore_threshold;
+    ngx_http_lua_semaphore_mm_t    *semaphore_mm;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;

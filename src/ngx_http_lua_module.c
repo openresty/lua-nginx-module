@@ -468,13 +468,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, use_default_type),
       NULL },
 
-    { ngx_string("lua_semaphore_threshold"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      NGX_HTTP_MAIN_CONF_OFFSET,
-      offsetof(ngx_http_lua_main_conf_t, semaphore_threshold),
-      NULL },
-
 #if (NGX_HTTP_SSL)
 
 #   if defined(nginx_version) && nginx_version >= 1001013
@@ -646,10 +639,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (cln == NULL) {
         return NGX_ERROR;
     }
-    cln->data = NULL;
+    cln->data = lmcf;
     cln->handler = ngx_http_lua_cleanup_semaphore;
-
-    ngx_http_lua_ffi_set_semaphore_threshold(lmcf->semaphore_threshold);
 
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
@@ -744,7 +735,6 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->pool = cf->pool;
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
-    lmcf->semaphore_threshold = NGX_CONF_UNSET;
 
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
@@ -752,6 +742,19 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
+
+
+    ngx_http_lua_semaphore_mm_t *mm = ngx_palloc(cf->pool,
+                                                 sizeof(ngx_http_lua_semaphore_mm_t));
+    if (mm == NULL) {
+        return NULL;
+    }
+    lmcf->semaphore_mm = mm;
+    mm->cur_epoch = 0;
+    ngx_queue_init(&mm->free_queue);
+    mm->total = 0;
+    mm->used = 0;
+    mm->num_per_block = NGX_CONF_UNSET_UINT;
 
     dd("nginx Lua module main config structure initialized!");
 
@@ -782,8 +785,8 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         lmcf->max_running_timers = 256;
     }
 
-    if (lmcf->semaphore_threshold == NGX_CONF_UNSET) {
-        lmcf->semaphore_threshold = 100000;
+    if (lmcf->semaphore_mm->num_per_block == NGX_CONF_UNSET_UINT) {
+        lmcf->semaphore_mm->num_per_block = 4094;
     }
 
     lmcf->cycle = cf->cycle;
