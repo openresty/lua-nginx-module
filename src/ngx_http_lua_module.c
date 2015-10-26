@@ -704,6 +704,7 @@ static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_semaphore_mm_t *mm;
 
     lmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_main_conf_t));
     if (lmcf == NULL) {
@@ -744,17 +745,19 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
 
-    ngx_http_lua_semaphore_mm_t *mm = ngx_palloc(cf->pool,
-                                                 sizeof(ngx_http_lua_semaphore_mm_t));
+    mm = ngx_palloc(cf->pool, sizeof(ngx_http_lua_semaphore_mm_t));
     if (mm == NULL) {
         return NULL;
     }
+
     lmcf->semaphore_mm = mm;
-    mm->cur_epoch = 0;
+
     ngx_queue_init(&mm->free_queue);
+    mm->cur_epoch = 0;
     mm->total = 0;
     mm->used = 0;
     mm->num_per_block = NGX_CONF_UNSET_UINT;
+    mm->lmcf = lmcf;
 
     dd("nginx Lua module main config structure initialized!");
 
