@@ -1509,7 +1509,7 @@ test
 
 
 
-=== TEST 48: set the Destination request header for WebDav
+=== TEST 49: set the Destination request header for WebDav
 --- config
     location = /a.txt {
         rewrite_by_lua_block {
