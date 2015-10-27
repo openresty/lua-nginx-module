@@ -1130,7 +1130,9 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 '''phase:''' ''rewrite''
 
-Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>. 
+**WARNING** Since the <code>v0.9.17</code> release, use of this directive is discouraged; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
+
+Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>.
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
@@ -1140,7 +1142,7 @@ This directive is implemented by injecting custom commands into the standard [[H
 At least the following API functions are currently disabled within the context of <code>set_by_lua</code>:
 
 * Output API functions (e.g., [[#ngx.say|ngx.say]] and [[#ngx.send_headers|ngx.send_headers]])
-* Control API functions (e.g., [[#ngx.exit|ngx.exit]]) 
+* Control API functions (e.g., [[#ngx.exit|ngx.exit]])
 * Subrequest API functions (e.g., [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]])
 * Cosocket API functions (e.g., [[#ngx.socket.tcp|ngx.socket.tcp]] and [[#ngx.req.socket|ngx.req.socket]]).
 * Sleeping API function [[#ngx.sleep|ngx.sleep]].
@@ -1175,6 +1177,32 @@ This directive can be freely mixed with all directives of the [[HttpRewriteModul
 As from the <code>v0.5.0rc29</code> release, Nginx variable interpolation is disabled in the <code><lua-script-str></code> argument of this directive and therefore, the dollar sign character (<code>$</code>) can be used directly.
 
 This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+
+== set_by_lua_block ==
+
+'''syntax:''' ''set_by_lua_block $res { lua-script }''
+
+'''context:''' ''server, server if, location, location if''
+
+'''phase:''' ''rewrite''
+
+Similar to the [[#set_by_lua|set_by_lua]] directive except that
+
+# this directive inlines the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping), and
+# this directive does not support extra arguments after the Lua script as in [[#set_by_lua|set_by_lua]].
+
+For example,
+
+<geshi lang="nginx">
+    set_by_lua_block $res { return 32 + math.cos(32) }
+    # $res now has the value "32.834223360507" or alike.
+</geshi>
+
+No special escaping is required in the Lua code block.
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == set_by_lua_file ==
 '''syntax:''' ''set_by_lua_file $res <path-to-lua-script-file> [$arg1 $arg2 ...]''

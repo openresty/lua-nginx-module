@@ -1071,6 +1071,7 @@ Directives
 * [init_worker_by_lua](#init_worker_by_lua)
 * [init_worker_by_lua_file](#init_worker_by_lua_file)
 * [set_by_lua](#set_by_lua)
+* [set_by_lua_block](#set_by_lua_block)
 * [set_by_lua_file](#set_by_lua_file)
 * [content_by_lua](#content_by_lua)
 * [content_by_lua_file](#content_by_lua_file)
@@ -1391,7 +1392,9 @@ set_by_lua
 
 **phase:** *rewrite*
 
-Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`. 
+**WARNING** Since the `v0.9.17` release, use of this directive is discouraged; use the new [set_by_lua_block](#set_by_lua_block) directive instead.
+
+Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`.
 The code in `<lua-script-str>` can make [API calls](#nginx-api-for-lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
 
 This directive is designed to execute short, fast running code blocks as the Nginx event loop is blocked during code execution. Time consuming code sequences should therefore be avoided.
@@ -1401,7 +1404,7 @@ This directive is implemented by injecting custom commands into the standard [ng
 At least the following API functions are currently disabled within the context of `set_by_lua`:
 
 * Output API functions (e.g., [ngx.say](#ngxsay) and [ngx.send_headers](#ngxsend_headers))
-* Control API functions (e.g., [ngx.exit](#ngxexit)) 
+* Control API functions (e.g., [ngx.exit](#ngxexit))
 * Subrequest API functions (e.g., [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi))
 * Cosocket API functions (e.g., [ngx.socket.tcp](#ngxsockettcp) and [ngx.req.socket](#ngxreqsocket)).
 * Sleeping API function [ngx.sleep](#ngxsleep).
@@ -1435,9 +1438,39 @@ This directive can be freely mixed with all directives of the [ngx_http_rewrite_
  set $baz "bar: $bar";  # $baz == "bar: 33"
 ```
 
-As from the `v0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
+As of the `v0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
 
 This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
+
+[Back to TOC](#directives)
+
+set_by_lua_block
+----------------
+
+**syntax:** *set_by_lua_block $res { lua-script }*
+
+**context:** *server, server if, location, location if*
+
+**phase:** *rewrite*
+
+Similar to the [set_by_lua](#set_by_lua) directive except that
+
+1. this directive inlines the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping), and
+1. this directive does not support extra arguments after the Lua script as in [set_by_lua](#set_by_lua).
+
+For example,
+
+```nginx
+
+ set_by_lua_block $res { return 32 + math.cos(32) }
+ # $res now has the value "32.834223360507" or alike.
+```
+
+No special escaping is required in the Lua code block.
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 
