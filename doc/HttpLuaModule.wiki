@@ -1282,10 +1282,36 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 
 '''phase:''' ''content''
 
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
+use the new [[#content_by_lua_block|content_by_lua_block]] directive instead.
+
 Acts as a "content handler" and executes Lua code string specified in <code><lua-script-str></code> for every request. 
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Do not use this directive and other content handler directives in the same location. For example, this directive and the [[HttpProxyModule#proxy_pass|proxy_pass]] directive should not be used in the same location.
+
+== content_by_lua_block ==
+
+'''syntax:''' ''content_by_lua_block { lua-script }''
+
+'''context:''' ''location, location if''
+
+'''phase:''' ''content''
+
+Similar to the [[#content_by_lua|content_by_lua]] directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+<geshi lang="nginx">
+    content_by_lua_block {
+        ngx.say("I need no extra escaping here, for example: \r\nblah")
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == content_by_lua_file ==
 

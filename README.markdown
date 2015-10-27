@@ -1076,6 +1076,7 @@ Directives
 * [set_by_lua_block](#set_by_lua_block)
 * [set_by_lua_file](#set_by_lua_file)
 * [content_by_lua](#content_by_lua)
+* [content_by_lua_block](#content_by_lua_block)
 * [content_by_lua_file](#content_by_lua_file)
 * [rewrite_by_lua](#rewrite_by_lua)
 * [rewrite_by_lua_file](#rewrite_by_lua_file)
@@ -1566,10 +1567,40 @@ content_by_lua
 
 **phase:** *content*
 
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
+use the new [content_by_lua_block](#content_by_lua_block) directive instead.
+
 Acts as a "content handler" and executes Lua code string specified in `<lua-script-str>` for every request. 
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
 Do not use this directive and other content handler directives in the same location. For example, this directive and the [proxy_pass](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass) directive should not be used in the same location.
+
+[Back to TOC](#directives)
+
+content_by_lua_block
+--------------------
+
+**syntax:** *content_by_lua_block { lua-script }*
+
+**context:** *location, location if*
+
+**phase:** *content*
+
+Similar to the [content_by_lua](#content_by_lua) directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+```nginx
+
+ content_by_lua_block {
+     ngx.say("I need no extra escaping here, for example: \r\nblah")
+ }
+```
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 
