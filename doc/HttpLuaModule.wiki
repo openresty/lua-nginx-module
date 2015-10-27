@@ -998,6 +998,8 @@ As from the <code>v0.5.0rc29</code> release, the special notation <code>$prefix<
 
 '''phase:''' ''loading-config''
 
+**WARNING** Since the <code>v0.9.17</code> release, use of this directive is *discouraged*; use the new [[#init_by_lua_block|init_by_lua_block]] directive instead.
+
 Runs the Lua code specified by the argument <code><lua-script-str></code> on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
 When Nginx receives the <code>HUP</code> signal and starts reloading the config file, the Lua VM will also be re-created and <code>init_by_lua</code> will run again on the new Lua VM. In case that the [[#lua_code_cache|lua_code_cache]] directive is turned off (default on), the <code>init_by_lua</code> handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
@@ -1054,6 +1056,29 @@ Basically you can safely use Lua libraries that do blocking I/O in this very con
 You should be very careful about potential security vulnerabilities in your Lua code registered in this context because the Nginx master process is often run under the <code>root</code> account.
 
 This directive was first introduced in the <code>v0.5.5</code> release.
+
+== init_by_lua_block ==
+
+'''syntax:''' ''init_by_lua_block { lua-script }''
+
+'''context:''' ''http''
+
+'''phase:''' ''loading-config''
+
+Similar to the [[#init_by_lua|init_by_lua]] directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+<geshi lang="nginx">
+    init_by_lua_block {
+        print("I need no extra escapings here, for example: \r\nblah")
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == init_by_lua_file ==
 
@@ -1130,7 +1155,7 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 '''phase:''' ''rewrite''
 
-**WARNING** Since the <code>v0.9.17</code> release, use of this directive is discouraged; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
+**WARNING** Since the <code>v0.9.17</code> release, use of this directive is *discouraged*; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
 
 Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>.
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).

@@ -1067,6 +1067,7 @@ Directives
 * [lua_package_path](#lua_package_path)
 * [lua_package_cpath](#lua_package_cpath)
 * [init_by_lua](#init_by_lua)
+* [init_by_lua_block](#init_by_lua_block)
 * [init_by_lua_file](#init_by_lua_file)
 * [init_worker_by_lua](#init_worker_by_lua)
 * [init_worker_by_lua_file](#init_worker_by_lua_file)
@@ -1245,6 +1246,8 @@ init_by_lua
 
 **phase:** *loading-config*
 
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*; use the new [init_by_lua_block](#init_by_lua_block) directive instead.
+
 Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
 When Nginx receives the `HUP` signal and starts reloading the config file, the Lua VM will also be re-created and `init_by_lua` will run again on the new Lua VM. In case that the [lua_code_cache](#lua_code_cache) directive is turned off (default on), the `init_by_lua` handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
@@ -1303,6 +1306,33 @@ Basically you can safely use Lua libraries that do blocking I/O in this very con
 You should be very careful about potential security vulnerabilities in your Lua code registered in this context because the Nginx master process is often run under the `root` account.
 
 This directive was first introduced in the `v0.5.5` release.
+
+[Back to TOC](#directives)
+
+init_by_lua_block
+-----------------
+
+**syntax:** *init_by_lua_block { lua-script }*
+
+**context:** *http*
+
+**phase:** *loading-config*
+
+Similar to the [init_by_lua](#init_by_lua) directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+```nginx
+
+ init_by_lua_block {
+     print("I need no extra escapings here, for example: \r\nblah")
+ }
+```
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 
@@ -1392,7 +1422,7 @@ set_by_lua
 
 **phase:** *rewrite*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is discouraged; use the new [set_by_lua_block](#set_by_lua_block) directive instead.
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*; use the new [set_by_lua_block](#set_by_lua_block) directive instead.
 
 Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`.
 The code in `<lua-script-str>` can make [API calls](#nginx-api-for-lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
@@ -1438,7 +1468,7 @@ This directive can be freely mixed with all directives of the [ngx_http_rewrite_
  set $baz "bar: $bar";  # $baz == "bar: 33"
 ```
 
-As of the `v0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
+As from the `v0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
 
 This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
 
