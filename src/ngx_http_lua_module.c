@@ -639,8 +639,9 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (cln == NULL) {
         return NGX_ERROR;
     }
+
     cln->data = lmcf;
-    cln->handler = ngx_http_lua_cleanup_semaphore;
+    cln->handler = ngx_http_lua_cleanup_semaphore_mm;
 
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");

@@ -32,19 +32,20 @@ typedef struct ngx_http_lua_semaphore_mm_s {
 
 
 typedef struct ngx_http_lua_semaphore_s {
-    ngx_queue_t            wait_queue;
-    ngx_queue_t            chain;
-    ngx_event_t            sem_event;
-    ngx_log_t             *log;
-    ngx_http_lua_semaphore_mm_block_t *block;
-    int                    count;
-    unsigned               in_post_event:1;
-    unsigned               wait_count:31;
+    ngx_queue_t                          wait_queue;
+    ngx_queue_t                          chain;
+    ngx_event_t                          sem_event;
+    ngx_log_t                           *log;
+    ngx_http_lua_semaphore_mm_block_t   *block;
+    int                                  resource_count;
+    unsigned                             in_post_event:1;
+    unsigned                             wait_count:31;
  } ngx_http_lua_semaphore_t;
 
 
-void ngx_http_lua_cleanup_semaphore(void *data);
+void ngx_http_lua_cleanup_semaphore_mm(void *data);
 
 
 #endif /* _NGX_HTTP_LUA_SEMAPHORE_H_INCLUDED_ */
 
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
