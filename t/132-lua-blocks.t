@@ -396,18 +396,3 @@ GET /lua
 2
 --- no_error_log
 [error]
-
-
-
-=== TEST 16: set_by_lua_block with arguments
---- config
-    location /lua {
-        set_by_lua $res "return ngx.arg[1] + ngx.arg[2]" $arg_a $arg_b;
-        echo $res;
-    }
---- request
-GET /lua?a=1&b=2
---- response_body
-3
---- no_error_log
-[error]
