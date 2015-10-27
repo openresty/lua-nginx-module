@@ -1091,6 +1091,7 @@ Directives
 * [body_filter_by_lua_block](#body_filter_by_lua_block)
 * [body_filter_by_lua_file](#body_filter_by_lua_file)
 * [log_by_lua](#log_by_lua)
+* [log_by_lua_block](#log_by_lua_block)
 * [log_by_lua_file](#log_by_lua_file)
 * [lua_need_request_body](#lua_need_request_body)
 * [lua_shared_dict](#lua_shared_dict)
@@ -1252,7 +1253,8 @@ init_by_lua
 
 **phase:** *loading-config*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*; use the new [init_by_lua_block](#init_by_lua_block) directive instead.
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
+use the new [init_by_lua_block](#init_by_lua_block) directive instead.
 
 Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
@@ -2172,7 +2174,10 @@ log_by_lua
 
 **phase:** *log*
 
-Run the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs after.
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
+use the new [log_by_lua_block](#log_by_lua_block) directive instead.
+
+Runs the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs after.
 
 Note that the following API functions are currently disabled within this context:
 
@@ -2225,6 +2230,33 @@ Here is an example of gathering average data for [$upstream_response_time](http:
 ```
 
 This directive was first introduced in the `v0.5.0rc31` release.
+
+[Back to TOC](#directives)
+
+log_by_lua_block
+----------------
+
+**syntax:** *log_by_lua_block { lua-script }*
+
+**context:** *http, server, location, location if*
+
+**phase:** *log*
+
+Similar to the [log_by_lua](#log_by_lua) directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+```nginx
+
+ log_by_lua_block {
+     print("I need no extra escaping here, for example: \r\nblah")
+ }
+```
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 
