@@ -74,42 +74,13 @@ Synopsis
  lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
 
  server {
-     location /inline_concat {
-         # MIME type determined by default_type:
-         default_type 'text/plain';
-
-         set $a "hello";
-         set $b "world";
-         # inline Lua script
-         set_by_lua $res "return ngx.arg[1]..ngx.arg[2]" $a $b;
-         echo $res;
-     }
-
-     location /rel_file_concat {
-         set $a "foo";
-         set $b "bar";
-         # script path relative to nginx prefix
-         # $ngx_prefix/conf/concat.lua contents:
-         #
-         #    return ngx.arg[1]..ngx.arg[2]
-         #
-         set_by_lua_file $res conf/concat.lua $a $b;
-         echo $res;
-     }
-
-     location /abs_file_concat {
-         set $a "fee";
-         set $b "baz";
-         # absolute script path not modified
-         set_by_lua_file $res /usr/nginx/conf/concat.lua $a $b;
-         echo $res;
-     }
-
      location /lua_content {
          # MIME type determined by default_type:
          default_type 'text/plain';
 
-         content_by_lua "ngx.say('Hello,world!')";
+         content_by_lua_block {
+             ngx.say('Hello,world!')
+         }
      }
 
      location /nginx_var {
@@ -117,84 +88,61 @@ Synopsis
          default_type 'text/plain';
 
          # try access /nginx_var?a=hello,world
-         content_by_lua "ngx.print(ngx.var['arg_a'], '\\n')";
+         content_by_lua_block {
+             ngx.say(ngx.var.arg_a)
+         }
      }
 
-     location /request_body {
-          # force reading request body (default off)
-          lua_need_request_body on;
-          client_max_body_size 50k;
-          client_body_buffer_size 50k;
+     location = /request_body {
+         client_max_body_size 50k;
+         client_body_buffer_size 50k;
 
-          content_by_lua 'ngx.print(ngx.var.request_body)';
+         content_by_lua_block {
+             ngx.req.read_body()  -- explicitly read the req body
+             local data = ngx.req.get_body_data()
+             if data then
+                 ngx.say("body data:")
+                 ngx.print(data)
+                 return
+             end
+
+             -- body may get buffered in a temp file:
+             local file = ngx.req.get_body_file()
+             if file then
+                 ngx.say("body is in file ", file)
+             else
+                 ngx.say("no body found")
+             end
+         }
      }
 
      # transparent non-blocking I/O in Lua via subrequests
-     location /lua {
+     # (well, a better way is to use cosockets)
+     location = /lua {
          # MIME type determined by default_type:
          default_type 'text/plain';
 
-         content_by_lua '
+         content_by_lua_block {
              local res = ngx.location.capture("/some_other_location")
-             if res.status == 200 then
+             if res then
+                 ngx.say("status: ", res.status)
+                 ngx.say("body:")
                  ngx.print(res.body)
              end';
+         }
      }
 
-     # GET /recur?num=5
-     location /recur {
-         # MIME type determined by default_type:
-         default_type 'text/plain';
-
-         content_by_lua '
-            local num = tonumber(ngx.var.arg_num) or 0
-
-            if num > 50 then
-                ngx.say("num too big")
-                return
-            end
-
-            ngx.say("num is: ", num)
-
-            if num > 0 then
-                res = ngx.location.capture("/recur?num=" .. tostring(num - 1))
-                ngx.print("status=", res.status, " ")
-                ngx.print("body=", res.body)
-            else
-                ngx.say("end")
-            end
-            ';
-     }
-
-     location /foo {
-         rewrite_by_lua '
+     location = /foo {
+         rewrite_by_lua_block {
              res = ngx.location.capture("/memc",
                  { args = { cmd = "incr", key = ngx.var.uri } }
              )
-         ';
+         }
 
          proxy_pass http://blah.blah.com;
      }
 
-     location /blah {
-         access_by_lua '
-             local res = ngx.location.capture("/auth")
-
-             if res.status == ngx.HTTP_OK then
-                 return
-             end
-
-             if res.status == ngx.HTTP_FORBIDDEN then
-                 ngx.exit(res.status)
-             end
-
-             ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-         ';
-
-         # proxy_pass/fastcgi_pass/postgres_pass/...
-     }
-
-     location /mixed {
+     location = /mixed {
          rewrite_by_lua_file /path/to/rewrite.lua;
          access_by_lua_file /path/to/access.lua;
          content_by_lua_file /path/to/content.lua;
@@ -209,26 +157,24 @@ Synopsis
      }
 
      location / {
-        lua_need_request_body on;
-
         client_max_body_size 100k;
         client_body_buffer_size 100k;
 
-        access_by_lua '
+        access_by_lua_block {
             -- check the client IP address is in our black list
             if ngx.var.remote_addr == "132.5.72.3" then
                 ngx.exit(ngx.HTTP_FORBIDDEN)
             end
 
-            -- check if the request body contains bad words
-            if ngx.var.request_body and
-                     string.match(ngx.var.request_body, "fsck")
+            -- check if the URI contains bad words
+            if ngx.var.uri and
+                   string.match(ngx.var.request_body, "evil")
             then
                 return ngx.redirect("/terms_of_use.html")
             end
 
             -- tests passed
-        ';
+        }
 
         # proxy_pass/fastcgi_pass/etc settings
      }
@@ -756,6 +702,10 @@ There exists a work-around, however, when the original context does *not* need t
 
 Special Escaping Sequences
 --------------------------
+
+**WARNING** We no longer suffer from this pitfall since the introduction of the
+`*_by_lua_block {}` configuration directives.
+
 PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in string literals, the backslash character, `\`, is stripped out by both the Lua language parser and by the Nginx config file parser before processing. So the following snippet will not work as expected:
 
 ```nginx
@@ -884,21 +834,6 @@ phases.
 TODO
 ====
 
-* add `*_by_lua_block` directives for existing `*_by_lua` directives so that we put literal Lua code directly in curly braces instead of an nginx literal string. For example,
-```nginx
-
- content_by_lua_block {
-     ngx.say("hello, world\r\n")
- }
-```
-	which is equivalent to
-```nginx
-
- content_by_lua '
-     ngx.say("hello, world\\r\\n")
- ';
-```
-	but the former is much cleaner and nicer.
 * cosocket: implement LuaSocket's unconnected UDP API.
 * add support for implementing general TCP servers instead of HTTP servers in Lua. For example,
 ```lua
