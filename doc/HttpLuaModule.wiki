@@ -1627,6 +1627,9 @@ Nginx variables are supported in the file path for dynamic dispatch just as in [
 
 '''phase:''' ''output-header-filter''
 
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
+use the new [[#header_filter_by_lua_block|header_filter_by_lua_block]] directive instead.
+
 Uses Lua code specified in <code><lua-script-str></code> to define an output header filter.
 
 Note that the following API functions are currently disabled within this context:
@@ -1646,6 +1649,29 @@ Here is an example of overriding a response header (or adding one if absent) in 
 </geshi>
 
 This directive was first introduced in the <code>v0.2.1rc20</code> release.
+
+== header_filter_by_lua_block ==
+
+'''syntax:''' ''header_filter_by_lua_block { lua-script }''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''output-header-filter''
+
+Similar to the [[#header_filter_by_lua|header_filter_by_lua]] directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+<geshi lang="nginx">
+    header_filter_by_lua_block {
+        ngx.header["content-length"] = nil
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == header_filter_by_lua_file ==
 
