@@ -1079,6 +1079,7 @@ Directives
 * [content_by_lua_block](#content_by_lua_block)
 * [content_by_lua_file](#content_by_lua_file)
 * [rewrite_by_lua](#rewrite_by_lua)
+* [rewrite_by_lua_block](#rewrite_by_lua_block)
 * [rewrite_by_lua_file](#rewrite_by_lua_file)
 * [access_by_lua](#access_by_lua)
 * [access_by_lua_file](#access_by_lua_file)
@@ -1649,6 +1650,9 @@ rewrite_by_lua
 
 **phase:** *rewrite tail*
 
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
+use the new [rewrite_by_lua_block](#rewrite_by_lua_block) directive instead.
+
 Acts as a rewrite phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
@@ -1761,6 +1765,33 @@ If the [ngx_http_rewrite_module](http://nginx.org/en/docs/http/ngx_http_rewrite_
 Here the Lua code `ngx.exit(503)` will never run. This will be the case if `rewrite ^ /bar last` is used as this will similarly initiate an internal redirection. If the `break` modifier is used instead, there will be no internal redirection and the `rewrite_by_lua` code will be executed.
 
 The `rewrite_by_lua` code will always run at the end of the `rewrite` request-processing phase unless [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone) is turned on.
+
+[Back to TOC](#directives)
+
+rewrite_by_lua_block
+--------------------
+
+**syntax:** *rewrite_by_lua_block { lua-script }*
+
+**context:** *http, server, location, location if*
+
+**phase:** *rewrite tail*
+
+Similar to the [rewrite_by_lua](#rewrite_by_lua) directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+```nginx
+
+ rewrite_by_lua_block {
+     do_something("hello, world!\nhiya\n")
+ }
+```
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 

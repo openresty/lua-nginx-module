@@ -1353,6 +1353,9 @@ But be very careful about malicious user inputs and always carefully validate or
 
 '''phase:''' ''rewrite tail''
 
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
+use the new [[#rewrite_by_lua_block|rewrite_by_lua_block]] directive instead.
+
 Acts as a rewrite phase handler and executes Lua code string specified in <code><lua-script-str></code> for every request.
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
@@ -1459,6 +1462,29 @@ If the [[HttpRewriteModule]]'s [[HttpRewriteModule#rewrite|rewrite]] directive i
 Here the Lua code <code>ngx.exit(503)</code> will never run. This will be the case if <code>rewrite ^ /bar last</code> is used as this will similarly initiate an internal redirection. If the <code>break</code> modifier is used instead, there will be no internal redirection and the <code>rewrite_by_lua</code> code will be executed.
 
 The <code>rewrite_by_lua</code> code will always run at the end of the <code>rewrite</code> request-processing phase unless [[#rewrite_by_lua_no_postpone|rewrite_by_lua_no_postpone]] is turned on.
+
+== rewrite_by_lua_block ==
+
+'''syntax:''' ''rewrite_by_lua_block { lua-script }''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''rewrite tail''
+
+Similar to the [[#rewrite_by_lua|rewrite_by_lua]] directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+<geshi lang="nginx">
+    rewrite_by_lua_block {
+        do_something("hello, world!\nhiya\n")
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == rewrite_by_lua_file ==
 
