@@ -1514,6 +1514,9 @@ Nginx variables are supported in the file path for dynamic dispatch just as in [
 
 '''phase:''' ''access tail''
 
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
+use the new [[#access_by_lua_block|access_by_lua_block]] directive instead.
+
 Acts as an access phase handler and executes Lua code string specified in <code><lua-script-str></code> for every request.
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
@@ -1572,6 +1575,29 @@ can be implemented in ngx_lua as:
 As with other access phase handlers, [[#access_by_lua|access_by_lua]] will ''not'' run in subrequests.
 
 Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#access_by_lua|access_by_lua]] handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#access_by_lua|access_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
+
+== access_by_lua_block ==
+
+'''syntax:''' ''access_by_lua_block { lua-script }''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''access tail''
+
+Similar to the [[#access_by_lua|access_by_lua]] directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+<geshi lang="nginx">
+    access_by_lua_block {
+        do_something("hello, world!\nhiya\n")
+    }
+</geshi>
+
+This directive was first introduced in the <code>v0.9.17</code> release.
 
 == access_by_lua_file ==
 

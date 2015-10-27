@@ -1082,6 +1082,7 @@ Directives
 * [rewrite_by_lua_block](#rewrite_by_lua_block)
 * [rewrite_by_lua_file](#rewrite_by_lua_file)
 * [access_by_lua](#access_by_lua)
+* [access_by_lua_block](#access_by_lua_block)
 * [access_by_lua_file](#access_by_lua_file)
 * [header_filter_by_lua](#header_filter_by_lua)
 * [header_filter_by_lua_file](#header_filter_by_lua_file)
@@ -1827,6 +1828,9 @@ access_by_lua
 
 **phase:** *access tail*
 
+**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
+use the new [access_by_lua_block](#access_by_lua_block) directive instead.
+
 Acts as an access phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
 
@@ -1888,6 +1892,33 @@ can be implemented in ngx_lua as:
 As with other access phase handlers, [access_by_lua](#access_by_lua) will *not* run in subrequests.
 
 Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](#access_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [access_by_lua](#access_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
+
+[Back to TOC](#directives)
+
+access_by_lua_block
+-------------------
+
+**syntax:** *access_by_lua_block { lua-script }*
+
+**context:** *http, server, location, location if*
+
+**phase:** *access tail*
+
+Similar to the [access_by_lua](#access_by_lua) directive except that this directive inlines
+the Lua source directly
+inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+special character escaping).
+
+For instance,
+
+```nginx
+
+ access_by_lua_block {
+     do_something("hello, world!\nhiya\n")
+ }
+```
+
+This directive was first introduced in the `v0.9.17` release.
 
 [Back to TOC](#directives)
 
