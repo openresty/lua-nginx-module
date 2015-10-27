@@ -998,7 +998,7 @@ As from the <code>v0.5.0rc29</code> release, the special notation <code>$prefix<
 
 '''phase:''' ''loading-config''
 
-**WARNING** Since the <code>v0.9.17</code> release, use of this directive is *discouraged*; use the new [[#init_by_lua_block|init_by_lua_block]] directive instead.
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged''; use the new [[#init_by_lua_block|init_by_lua_block]] directive instead.
 
 Runs the Lua code specified by the argument <code><lua-script-str></code> on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
@@ -1155,7 +1155,7 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 '''phase:''' ''rewrite''
 
-**WARNING** Since the <code>v0.9.17</code> release, use of this directive is *discouraged*; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
+'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged''; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
 
 Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>.
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).
