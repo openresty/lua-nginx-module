@@ -136,9 +136,8 @@ ngx_http_lua_cleanup_semaphore(void *data)
             dd("free semaphore block: %p at final",block);
         } else {
             ngx_log_error(NGX_LOG_CRIT, ngx_cycle->log, 0,
-               "ngx_http_lua_ffi_semaphore_gc wait queue is"
-               " not empty while the semaphore is "
-               "going to be destroyed", sem);
+               "ngx_http_lua_cleanup_semaphore when cleanup"
+               "block is still using by someone", sem);
         }
 
     }
