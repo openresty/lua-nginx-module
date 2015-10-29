@@ -310,8 +310,8 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
             list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
             for (lq = ngx_queue_head(list_queue);
-                lq != ngx_queue_sentinel(list_queue);
-                lq = ngx_queue_next(lq))
+                 lq != ngx_queue_sentinel(list_queue);
+                 lq = ngx_queue_next(lq))
             {
                 lnode = ngx_queue_data(lq, ngx_http_lua_shdict_list_node_t,
                                        queue);
@@ -552,6 +552,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
     value.len = (size_t) sd->value_len;
 
     switch (value_type) {
+
     case LUA_TSTRING:
 
         lua_pushlstring(L, (char *) value.data, value.len);
@@ -754,8 +755,8 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
                 list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
                 for (lq = ngx_queue_head(list_queue);
-                    lq != ngx_queue_sentinel(list_queue);
-                    lq = ngx_queue_next(lq))
+                     lq != ngx_queue_sentinel(list_queue);
+                     lq = ngx_queue_next(lq))
                 {
                     lnode = ngx_queue_data(lq, ngx_http_lua_shdict_list_node_t,
                                            queue);
@@ -989,6 +990,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     value_type = lua_type(L, 3);
 
     switch (value_type) {
+
     case LUA_TSTRING:
         value.data = (u_char *) lua_tolstring(L, 3, &value.len);
         break;
@@ -1090,7 +1092,8 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
 replace:
 
-        if (value.data && value.len == (size_t) sd->value_len
+        if (value.data
+            && value.len == (size_t) sd->value_len
             && sd->value_type != LUA_TTABLE)
         {
 
@@ -1141,8 +1144,8 @@ remove:
             queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
 
             for (q = ngx_queue_head(queue);
-                q != ngx_queue_sentinel(queue);
-                q = ngx_queue_next(q))
+                 q != ngx_queue_sentinel(queue);
+                 q = ngx_queue_next(q))
             {
                 p = (u_char *) ngx_queue_data(q,
                                               ngx_http_lua_shdict_list_node_t,
@@ -1534,6 +1537,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
     len = (size_t) sd->value_len;
 
     switch (value->type) {
+
     case LUA_TSTRING:
 
         if (value->value.s.data == NULL || value->value.s.len == 0) {
@@ -1669,6 +1673,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
     value_type = lua_type(L, 3);
 
     switch (value_type) {
+
     case LUA_TSTRING:
         value.data = (u_char *) lua_tolstring(L, 3, &value.len);
         break;
@@ -1729,8 +1734,8 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
         queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
 
         for (q = ngx_queue_head(queue);
-            q != ngx_queue_sentinel(queue);
-            q = ngx_queue_next(q))
+             q != ngx_queue_sentinel(queue);
+             q = ngx_queue_next(q))
         {
             /* TODO: reuse matched size list node */
             lnode = ngx_queue_data(q, ngx_http_lua_shdict_list_node_t, queue);
@@ -1821,11 +1826,12 @@ push_node:
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                    "lua shared dict list: creating a new list node");
 
-    n = sizeof(ngx_http_lua_shdict_list_node_t)
+    n = offsetof(ngx_http_lua_shdict_list_node_t, data)
         + value.len;
 
-    lnode = ngx_slab_alloc_locked(ctx->shpool,
-                                  sizeof(ngx_http_lua_shdict_list_node_t));
+    dd("list node length: %d", n);
+
+    lnode = ngx_slab_alloc_locked(ctx->shpool, n);
 
     if (lnode == NULL) {
 
@@ -1892,7 +1898,6 @@ ngx_http_lua_shdict_rpop(lua_State *L)
 {
     return ngx_http_lua_shdict_pop_helper(L, NGX_HTTP_LUA_SHDICT_RIGHT);
 }
-
 
 
 static int
@@ -2008,6 +2013,7 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
     value.len = (size_t) lnode->value_len;
 
     switch (value_type) {
+
     case LUA_TSTRING:
 
         lua_pushlstring(L, (char *) value.data, value.len);
@@ -2319,6 +2325,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     hash = ngx_crc32_short(key, key_len);
 
     switch (value_type) {
+
     case LUA_TSTRING:
         /* do nothing */
         break;
@@ -2367,6 +2374,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
             *errmsg = "not found";
             return NGX_DECLINED;
         }
+
         /* rc == NGX_OK */
 
         goto replace;
@@ -2401,7 +2409,8 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
 
 replace:
 
-        if (str_value_buf && str_value_len == (size_t) sd->value_len
+        if (str_value_buf
+            && str_value_len == (size_t) sd->value_len
             && sd->value_type != LUA_TTABLE)
         {
 
@@ -2450,8 +2459,8 @@ remove:
             queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
 
             for (q = ngx_queue_head(queue);
-                q != ngx_queue_sentinel(queue);
-                q = ngx_queue_next(q))
+                 q != ngx_queue_sentinel(queue);
+                 q = ngx_queue_next(q))
             {
                 p = (u_char *) ngx_queue_data(q,
                                               ngx_http_lua_shdict_list_node_t,
@@ -2628,6 +2637,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     }
 
     switch (*value_type) {
+
     case LUA_TSTRING:
         *str_value_len = value.len;
         ngx_memcpy(*str_value_buf, value.data, value.len);

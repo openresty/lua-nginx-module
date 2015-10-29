@@ -25,9 +25,9 @@ typedef struct {
 
 
 typedef struct {
-    uint8_t                      value_type;
-    uint32_t                     value_len;
     ngx_queue_t                  queue;
+    uint32_t                     value_len;
+    uint8_t                      value_type;
     u_char                       data[1];
 } ngx_http_lua_shdict_list_node_t;
 

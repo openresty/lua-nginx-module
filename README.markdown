@@ -6316,7 +6316,7 @@ ngx.shared.DICT.lpush
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Insert the specified (numerical or string) `value` at the head of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the length of the list after the push operations.
+Inserts the specified (numerical or string) `value` at the head of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the length of the list after the push operations.
 
 If `key` does not exist, it is created as empty list before performing the push operations. When key holds a value that is not a list, it will return `nil` and `"wrongtype operation"`.
 
@@ -6334,7 +6334,7 @@ ngx.shared.DICT.rpush
 
 **context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
 
-Similar to the [lpush](#ngxshareddictlpush) method, but insert the specified (numerical or string) `value` at the tail of the list named `key`.
+Similar to the [lpush](#ngxshareddictlpush) method, but inserts the specified (numerical or string) `value` at the tail of the list named `key`.
 
 This feature was first introduced in the `v0.*.*` release.
 

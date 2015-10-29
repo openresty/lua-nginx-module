@@ -678,3 +678,39 @@ keys number: 0
 --- no_error_log
 [error]
 
+
+
+=== TEST 17: long list node
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+
+            local long_str = string.rep("foo", 10)
+
+            for i = 1, 3 do
+                local len, err = dogs:lpush("list", long_str)
+                if not len then
+                    ngx.say("push err: ", err)
+                end
+            end
+
+            for i = 1, 3 do
+                local val, err = dogs:lpop("list")
+                if val then
+                    ngx.say(val)
+                end
+            end
+        }
+    }
+--- request
+GET /test
+--- response_body
+foofoofoofoofoofoofoofoofoofoo
+foofoofoofoofoofoofoofoofoofoo
+foofoofoofoofoofoofoofoofoofoo
+--- no_error_log
+[error]
+
