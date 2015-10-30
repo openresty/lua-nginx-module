@@ -1004,7 +1004,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
             rc = NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        if (rc >= 100) {
             pr_coctx->sr_statuses[ctx->index] = rc;
         }
     }
