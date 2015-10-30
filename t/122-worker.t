@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
-#workers(2);
+workers(2);
 #log_level('warn');
 
 repeat_each(2);
@@ -63,7 +63,7 @@ worker pid is correct\.
     ';
 --- config
     location /lua {
-        content_by_lua '
+        init_worker_by_lua '
             ngx.say("worker pid: ", my_pid)
             if my_pid ~= tonumber(ngx.var.pid) then
                 ngx.say("worker pid is wrong.")
@@ -77,6 +77,51 @@ GET /lua
 --- response_body_like
 worker pid: \d+
 worker pid is correct\.
+--- no_error_log
+[error]
+
+
+
+=== TEST 4: init_worker_by_lua + ngx.worker.processes
+--- config
+    location /lua {
+        init_worker_by_lua '
+            ngx.say("worker processes: ", processes)
+            if processes ~= tonumber(ngx.var.processes) then
+                ngx.say("worker processes is wrong.")
+            else
+                ngx.say("worker processes is correct.")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body_like
+worker processes: \d+
+worker processes is correct\.
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: content_by_lua + ngx.worker.processes
+--- http_config
+    content_by_lua '
+        processes = ngx.worker.processes()
+    ';
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.say("worker processes: ", processes)
+            if processes ~= tonumber(ngx.var.processes) then
+                ngx.say("worker processes is wrong.")
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+worker processes: 2
 --- no_error_log
 [error]
 
