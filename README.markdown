@@ -6881,11 +6881,11 @@ ngx.semaphore.new
 
 **context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
-Create a semaphore that has n resource.
+Create a semaphore that has n resource. LuaJIT's ffi is need by this api.
 
 ```lua
 
- local semaphore = require "resty.semaphore"
+ local semaphore = require "ngx.semaphore"
  local print = ngx.print
  local sem,err = semaphore.new(0)
  if not sem then
@@ -6901,11 +6901,11 @@ ngx.semaphore.post
 
 **context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
 
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Release one resource to a semaphore. If one light thread or coroutine is waiting on this semaphore, then it will be waked up.
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Release one resource to a semaphore. If one light thread or coroutine is waiting on this semaphore, then it will be waked up. LuaJIT's ffi is need by this api.
 
 ```lua
 
- local semaphore = require "resty.semaphore"
+ local semaphore = require "ngx.semaphore"
  local shared =  getmetatable(_G).__index
  local print = ngx.print
  if not shared.test then
@@ -6930,11 +6930,11 @@ ngx.semaphore.wait
 **syntax:** *ok, err = sem:wait(timeout?)*
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Wait on one semapohre. If there a resouce then it return immediately, else the light thread or main thread or coroutine will sleep, then it will be waked up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur. The timeout default is 0,which means it will return nil,"busy" if there is no resource to use.
+The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Wait on one semapohre. If there a resouce then it return immediately, else the light thread or main thread or coroutine will sleep, then it will be waked up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur. The timeout default is 0,which means it will return nil,"busy" if there is no resource to use. LuaJIT's ffi is need by this api.
 
 ```lua
 
- local semaphore = require "resty.semaphore"
+ local semaphore = require "ngx.semaphore"
  local shared =  getmetatable(_G).__index
  local print = ngx.print
  if not shared.test then
