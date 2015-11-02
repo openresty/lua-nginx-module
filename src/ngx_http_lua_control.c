@@ -312,7 +312,8 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER);
+                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                               | NGX_HTTP_LUA_CONTEXT_BALANCER);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
@@ -348,7 +349,9 @@ ngx_http_lua_ngx_exit(lua_State *L)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua exit with code %i", ctx->exit_code);
 
-    if (ctx->context & NGX_HTTP_LUA_CONTEXT_HEADER_FILTER) {
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                        | NGX_HTTP_LUA_CONTEXT_BALANCER))
+    {
         return 0;
     }
 

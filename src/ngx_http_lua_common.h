@@ -94,6 +94,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x040
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
+#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x200
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -102,11 +103,14 @@ typedef struct {
 #endif
 
 
-typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_srv_conf_s  ngx_http_lua_srv_conf_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
-        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+    ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
 
 
 typedef struct {
@@ -160,6 +164,16 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_access:1;
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
+};
+
+
+struct ngx_http_lua_srv_conf_s {
+    struct {
+        ngx_str_t           src;
+        u_char             *src_key;
+
+        ngx_http_lua_srv_conf_handler_pt  handler;
+    } balancer;
 };
 
 
@@ -429,6 +443,7 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         entered_rewrite_phase:1;
     unsigned         entered_access_phase:1;
     unsigned         entered_content_phase:1;
+    unsigned         entered_balancer_phase:1;
 
     unsigned         buffering:1; /* HTTP 1.0 response body buffering flag */
 
