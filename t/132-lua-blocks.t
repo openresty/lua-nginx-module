@@ -399,7 +399,7 @@ GET /lua
 
 
 
-=== TEST 16: content_by_lua_block (curly braces in long brackets with comment)
+=== TEST 16: content_by_lua_block (long brackets with comment)
 --- config
     location = /t {
         content_by_lua_block {

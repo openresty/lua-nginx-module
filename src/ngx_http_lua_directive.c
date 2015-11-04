@@ -52,6 +52,7 @@ struct ngx_http_lua_block_parser_ctx_s {
     int         expect_right_lbracket;
 };
 
+
 enum {
     FOUND_LEFT_CURLY = 0,
     FOUND_RIGHT_CURLY,
@@ -60,7 +61,8 @@ enum {
     FOUND_RIGHT_LBRACKET,
     FOUND_COMMENT_LINE,
     FOUND_DOUBLE_QUOTED,
-    FOUND_SINGLE_QUOTED
+    FOUND_SINGLE_QUOTED,
+    FOUND_DONTCARE
 };
 
 
@@ -1459,6 +1461,9 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 
             break;
 
+        case FOUND_DONTCARE:
+            break;
+
         default:
 
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -1604,7 +1609,8 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
         }
 
         if (ctx->expect_right_lbracket && rc == FOUND_COMMENT_LINE) {
-            b->pos += (ovec[0] + 2);
+            b->pos += ovec[0] + 2;
+            rc = FOUND_DONTCARE;
 
         } else {
             b->pos += ovec[1];
