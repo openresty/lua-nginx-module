@@ -6,7 +6,7 @@ Don't edit this file manually! Instead you should generate it by using:
 Name
 ====
 
-ngx_lua - Embed the power of Lua into Nginx
+ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 
 *This module is not distributed with the Nginx source.* See [the installation instructions](#installation).
 
@@ -61,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.17](https://github.com/openresty/lua-nginx-module/tags) released on 27 October 2015.
+This document describes ngx_lua [v0.9.18](https://github.com/openresty/lua-nginx-module/tags) released on 4 November 2015.
 
 Synopsis
 ========
