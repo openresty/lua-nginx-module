@@ -396,3 +396,19 @@ GET /lua
 2
 --- no_error_log
 [error]
+
+
+
+=== TEST 16: content_by_lua_block (long brackets with comment)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say([[ok--]])
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok--
+--- no_error_log
+[error]
