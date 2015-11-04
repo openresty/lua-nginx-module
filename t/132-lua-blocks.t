@@ -396,3 +396,25 @@ GET /lua
 2
 --- no_error_log
 [error]
+
+
+
+=== TEST 16: ambiguous line comments inside a long bracket string (GitHub #596)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say([[ok--]])
+            ngx.say([==[ok--]==])
+            ngx.say([==[ok-- ]==])
+            --[[ --]] ngx.say("done")
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok--
+ok--
+ok-- 
+done
+--- no_error_log
+[error]

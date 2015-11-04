@@ -53,6 +53,19 @@ struct ngx_http_lua_block_parser_ctx_s {
 };
 
 
+enum {
+    FOUND_LEFT_CURLY = 0,
+    FOUND_RIGHT_CURLY,
+    FOUND_LEFT_LBRACKET_STR,
+    FOUND_LEFT_LBRACKET_CMT,
+    FOUND_RIGHT_LBRACKET,
+    FOUND_COMMENT_LINE,
+    FOUND_DOUBLE_QUOTED,
+    FOUND_SINGLE_QUOTED,
+    FOUND_DONTCARE
+};
+
+
 char *
 ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1286,16 +1299,6 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
         parse_block = 0,
         parse_param
     } type;
-    enum {
-        found_left_curly = 0,
-        found_right_curly,
-        found_left_lbracket_str,
-        found_left_lbracket_cmt,
-        found_right_lbracket,
-        found_comment_line,
-        found_double_quoted,
-        found_single_quoted
-    };
 
     if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
@@ -1330,7 +1333,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
         case NGX_ERROR:
             goto done;
 
-        case found_left_curly:
+        case FOUND_LEFT_CURLY:
             if (ctx.expect_right_lbracket) {
                 break;
             }
@@ -1348,7 +1351,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             dd("seen block start: level=%d", (int) level);
             break;
 
-        case found_right_curly:
+        case FOUND_RIGHT_CURLY:
             if (ctx.expect_right_lbracket) {
                 break;
             }
@@ -1416,7 +1419,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 
             break;
 
-        case found_left_lbracket_str:
+        case FOUND_LEFT_LBRACKET_STR:
             if (ctx.expect_right_lbracket) {
                 break;
             }
@@ -1425,7 +1428,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             ctx.start_line = cf->conf_file->line;
             break;
 
-        case found_left_lbracket_cmt:
+        case FOUND_LEFT_LBRACKET_CMT:
             if (ctx.expect_right_lbracket) {
                 break;
             }
@@ -1434,7 +1437,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             ctx.start_line = cf->conf_file->line;
             break;
 
-        case found_right_lbracket:
+        case FOUND_RIGHT_LBRACKET:
             if (!ctx.expect_right_lbracket) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "unexpected lua closing long-bracket");
@@ -1449,13 +1452,16 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             ctx.expect_right_lbracket = 0;
             break;
 
-        case found_comment_line:
-        case found_double_quoted:
-        case found_single_quoted:
+        case FOUND_COMMENT_LINE:
+        case FOUND_DOUBLE_QUOTED:
+        case FOUND_SINGLE_QUOTED:
             if (ctx.expect_right_lbracket) {
                 break;
             }
 
+            break;
+
+        case FOUND_DONTCARE:
             break;
 
         default:
@@ -1602,9 +1608,15 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             }
         }
 
-        b->pos += ovec[1];
+        if (ctx->expect_right_lbracket && rc == FOUND_COMMENT_LINE) {
+            b->pos += ovec[0] + sizeof("--") - 1;
+            rc = FOUND_DONTCARE;
+            ctx->token_len = sizeof("--") - 1;
 
-        ctx->token_len = ovec[1] - ovec[0];
+        } else {
+            b->pos += ovec[1];
+            ctx->token_len = ovec[1] - ovec[0];
+        }
 
         break;
     }
