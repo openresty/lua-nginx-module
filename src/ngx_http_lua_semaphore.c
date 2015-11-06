@@ -147,9 +147,11 @@ ngx_http_lua_cleanup_semaphore_mm(void *data)
             ngx_free(block);
 
         } else {
-            ngx_log_error(NGX_LOG_CRIT, ngx_cycle->log, 0,
+            ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                "ngx_http_lua_cleanup_semaphore_mm when cleanup"
                " block: %p is still using by someone", block);
+            /* some thing go wrong just return directly */
+            return;
         }
     }
 
