@@ -44,12 +44,13 @@ static char *ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf,
     ngx_command_t *cmd);
 static ngx_int_t ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_http_lua_block_parser_ctx_t *ctx);
+static u_char *ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2,
+    size_t n);
 
 
 struct ngx_http_lua_block_parser_ctx_s {
     ngx_uint_t  start_line;
     int         token_len;
-    int         expect_right_lbracket;
 };
 
 
@@ -57,12 +58,13 @@ enum {
     FOUND_LEFT_CURLY = 0,
     FOUND_RIGHT_CURLY,
     FOUND_LEFT_LBRACKET_STR,
+    FOUND_LBRACKET_STR = FOUND_LEFT_LBRACKET_STR,
     FOUND_LEFT_LBRACKET_CMT,
+    FOUND_LBRACKET_CMT = FOUND_LEFT_LBRACKET_CMT,
     FOUND_RIGHT_LBRACKET,
     FOUND_COMMENT_LINE,
     FOUND_DOUBLE_QUOTED,
-    FOUND_SINGLE_QUOTED,
-    FOUND_DONTCARE
+    FOUND_SINGLE_QUOTED
 };
 
 
@@ -1316,7 +1318,6 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
     }
 
     ctx.token_len = 0;
-    ctx.expect_right_lbracket = 0;
     start_line = cf->conf_file->line;
 
     dd("init start line: %d", (int) start_line);
@@ -1334,9 +1335,6 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             goto done;
 
         case FOUND_LEFT_CURLY:
-            if (ctx.expect_right_lbracket) {
-                break;
-            }
 
             ctx.start_line = cf->conf_file->line;
 
@@ -1352,9 +1350,6 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             break;
 
         case FOUND_RIGHT_CURLY:
-            if (ctx.expect_right_lbracket) {
-                break;
-            }
 
             level--;
             dd("seen block done: level=%d", (int) level);
@@ -1419,49 +1414,24 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 
             break;
 
-        case FOUND_LEFT_LBRACKET_STR:
-            if (ctx.expect_right_lbracket) {
-                break;
-            }
+        case FOUND_LBRACKET_STR:
 
-            ctx.expect_right_lbracket = ctx.token_len;
-            ctx.start_line = cf->conf_file->line;
             break;
 
-        case FOUND_LEFT_LBRACKET_CMT:
-            if (ctx.expect_right_lbracket) {
-                break;
-            }
+        case FOUND_LBRACKET_CMT:
 
-            ctx.expect_right_lbracket = ctx.token_len - (sizeof("--") - 1);
-            ctx.start_line = cf->conf_file->line;
             break;
 
         case FOUND_RIGHT_LBRACKET:
-            if (!ctx.expect_right_lbracket) {
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "unexpected lua closing long-bracket");
-                goto failed;
-            }
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "unexpected lua closing long-bracket");
+            goto failed;
 
-            if (ctx.token_len != ctx.expect_right_lbracket) {
-                /* unmatched long brackets */
-                break;
-            }
-
-            ctx.expect_right_lbracket = 0;
             break;
 
         case FOUND_COMMENT_LINE:
         case FOUND_DOUBLE_QUOTED:
         case FOUND_SINGLE_QUOTED:
-            if (ctx.expect_right_lbracket) {
-                break;
-            }
-
-            break;
-
-        case FOUND_DONTCARE:
             break;
 
         default:
@@ -1495,7 +1465,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     };
     int          i, rc;
     int          ovec[OVEC_SIZE];
-    u_char      *start, ch;
+    u_char      *start, *p, *q, ch;
     off_t        file_size;
     size_t       len, buf_size;
     ssize_t      n, size;
@@ -1585,20 +1555,74 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
         rc = ngx_http_lua_lex(b->pos, b->last - b->pos, ovec);
 
         if (rc < 0) {  /* no match */
-            if (ctx->expect_right_lbracket) {
-                cf->conf_file->line = ctx->start_line;
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "Lua code block missing the closing "
-                                   "long bracket");
-
-            } else {
-                cf->conf_file->line = start_line;
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "Lua code block missing the \"}\" "
-                                   "character");
-            }
+            cf->conf_file->line = start_line;
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "Lua code block missing the \"}\" "
+                               "character");
 
             return NGX_ERROR;
+        }
+
+        if (rc == FOUND_LEFT_LBRACKET_STR || rc == FOUND_LEFT_LBRACKET_CMT) {
+
+            /* we update the line numbers for best error messages when the
+             * closing long bracket is missing */
+
+            for (i = 0; i < ovec[0]; i++) {
+                ch = b->pos[i];
+                if (ch == LF) {
+                    cf->conf_file->line++;
+                }
+            }
+
+            b->pos += ovec[0];
+            ovec[1] -= ovec[0];
+            ovec[0] = 0;
+
+            if (rc == FOUND_LEFT_LBRACKET_CMT) {
+                p = &b->pos[2];     /* we skip the leading "--" prefix */
+                rc = FOUND_LBRACKET_CMT;
+
+            } else {
+                p = b->pos;
+                rc = FOUND_LBRACKET_STR;
+            }
+
+            /* we temporarily rewrite [=*[ in the input buffer to ]=*] to
+             * construct the pattern for the corresponding closing long
+             * bracket without additional buffers. */
+
+            ngx_http_lua_assert(p[0] == '[');
+            p[0] = ']';
+
+            ngx_http_lua_assert(b->pos[ovec[1] - 1] == '[');
+            b->pos[ovec[1] - 1] = ']';
+
+            /* search for the corresponding closing bracket */
+
+            dd("search pattern for the closing long bracket: \"%.*s\" (len=%d)",
+               (int) (b->pos + ovec[1] - p), p, (int) (b->pos + ovec[1] - p));
+
+            q = ngx_http_lua_strlstrn(b->pos + ovec[1], b->last, p,
+                                      b->pos + ovec[1] - p - 1);
+
+            if (q == NULL) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "Lua code block missing the closing "
+                                   "long bracket \"%*s\"",
+                                   b->pos + ovec[1] - p, p);
+                return NGX_ERROR;
+            }
+
+            /* restore the original opening long bracket */
+
+            p[0] = '[';
+            b->pos[ovec[1] - 1] = '[';
+
+            ovec[1] = q - b->pos + b->pos + ovec[1] - p;
+
+            dd("found long bracket token: \"%.*s\"",
+               (int) (ovec[1] - ovec[0]), b->pos + ovec[0]);
         }
 
         for (i = 0; i < ovec[1]; i++) {
@@ -1608,15 +1632,8 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             }
         }
 
-        if (ctx->expect_right_lbracket && rc == FOUND_COMMENT_LINE) {
-            b->pos += ovec[0] + sizeof("--") - 1;
-            rc = FOUND_DONTCARE;
-            ctx->token_len = sizeof("--") - 1;
-
-        } else {
-            b->pos += ovec[1];
-            ctx->token_len = ovec[1] - ovec[0];
-        }
+        b->pos += ovec[1];
+        ctx->token_len = ovec[1] - ovec[0];
 
         break;
     }
@@ -1636,6 +1653,40 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     word->len = len;
 
     return rc;
+}
+
+
+/*
+ * ngx_http_lua_strlstrn() is intended to search for static substring
+ * with known length in string until the argument last. The argument n
+ * must be length of the second substring - 1.
+ */
+
+static u_char *
+ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2, size_t n)
+{
+    ngx_uint_t  c1, c2;
+
+    c2 = (ngx_uint_t) *s2++;
+    last -= n;
+
+    do {
+        do {
+            if (s1 >= last) {
+                return NULL;
+            }
+
+            c1 = (ngx_uint_t) *s1++;
+
+            dd("testing char '%c' vs '%c'", (int) c1, (int) c2);
+
+        } while (c1 != c2);
+
+        dd("testing against pattern \"%.*s\"", (int) n, s2);
+
+    } while (ngx_strncmp(s1, s2, n) != 0);
+
+    return --s1;
 }
 
 
