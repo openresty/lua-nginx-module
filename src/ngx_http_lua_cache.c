@@ -32,7 +32,7 @@
  *
  * */
 static ngx_int_t
-ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
+ngx_http_lua_cache_load_code(ngx_log_t *log, lua_State *L,
     const char *key)
 {
     int          rc;
@@ -68,7 +68,7 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
             err = (u_char *) "unknown error";
         }
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+        ngx_log_error(NGX_LOG_ERR, log, 0,
                       "lua: failed to run factory at key \"%s\": %s",
                       key, err);
         lua_pop(L, 2);
@@ -137,6 +137,15 @@ ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
     const u_char *src, size_t src_len, const u_char *cache_key,
     const char *name)
 {
+   return ngx_http_lua_cache_loadbuffer2(r->connection->log, L, src, src_len,
+                                         cache_key, name);
+}
+
+ngx_int_t
+ngx_http_lua_cache_loadbuffer2(ngx_log_t *log, lua_State *L,
+    const u_char *src, size_t src_len, const u_char *cache_key,
+    const char *name)
+{
     int          n;
     ngx_int_t    rc;
     const char  *err = NULL;
@@ -145,7 +154,7 @@ ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
 
     dd("XXX cache key: [%s]", cache_key);
 
-    rc = ngx_http_lua_cache_load_code(r, L, (char *) cache_key);
+    rc = ngx_http_lua_cache_load_code(log, L, (char *) cache_key);
     if (rc == NGX_OK) {
         /*  code chunk loaded from cache, sp++ */
         dd("Code cache hit! cache key='%s', stack top=%d, script='%.*s'",
@@ -194,7 +203,7 @@ ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
 
 error:
 
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+    ngx_log_error(NGX_LOG_ERR, log, 0,
                   "failed to load inlined Lua code: %s", err);
     lua_settop(L, n);
     return NGX_ERROR;
@@ -203,6 +212,14 @@ error:
 
 ngx_int_t
 ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
+    const u_char *script, const u_char *cache_key)
+{
+    return ngx_http_lua_cache_loadfile2(r->connection->log, L, script,
+                                        cache_key);
+}
+
+ngx_int_t
+ngx_http_lua_cache_loadfile2(ngx_log_t *log, lua_State *L,
     const u_char *script, const u_char *cache_key)
 {
     int              n;
@@ -229,7 +246,7 @@ ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
 
     dd("XXX cache key for file: [%s]", cache_key);
 
-    rc = ngx_http_lua_cache_load_code(r, L, (char *) cache_key);
+    rc = ngx_http_lua_cache_load_code(log, L, (char *) cache_key);
     if (rc == NGX_OK) {
         /*  code chunk loaded from cache, sp++ */
         dd("Code cache hit! cache key='%s', stack top=%d, file path='%s'",
@@ -286,7 +303,7 @@ ngx_http_lua_cache_loadfile(ngx_http_request_t *r, lua_State *L,
 
 error:
 
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+    ngx_log_error(NGX_LOG_ERR, log, 0,
                   "failed to load external Lua file \"%s\": %s", script, err);
 
     lua_settop(L, n);
