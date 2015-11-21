@@ -223,7 +223,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 3 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -242,7 +242,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 5 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -4081,6 +4081,12 @@ ngx_http_lua_req_socket(lua_State *L)
 #if (NGX_HTTP_SPDY)
     if (r->spdy_stream) {
         return luaL_error(L, "spdy not supported yet");
+    }
+#endif
+
+#if (NGX_HTTP_V2)
+    if (r->stream) {
+        return luaL_error(L, "http v2 not supported yet");
     }
 #endif
 

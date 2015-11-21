@@ -44,17 +44,6 @@ static ngx_int_t ngx_http_lua_rm_header_helper(ngx_list_t *l,
 
 
 static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
-
-#if (NGX_HTTP_GZIP)
-    { ngx_string("Accept-Encoding"),
-                 offsetof(ngx_http_headers_in_t, accept_encoding),
-                 ngx_http_set_builtin_header },
-
-    { ngx_string("Via"),
-                 offsetof(ngx_http_headers_in_t, via),
-                 ngx_http_set_builtin_header },
-#endif
-
     { ngx_string("Host"),
                  offsetof(ngx_http_headers_in_t, host),
                  ngx_http_set_host_header },
@@ -91,6 +80,10 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, referer),
                  ngx_http_set_builtin_header },
 
+    { ngx_string("Content-Length"),
+                 offsetof(ngx_http_headers_in_t, content_length),
+                 ngx_http_set_content_length_header },
+
     { ngx_string("Content-Type"),
                  offsetof(ngx_http_headers_in_t, content_type),
                  ngx_http_set_builtin_header },
@@ -111,6 +104,22 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, expect),
                  ngx_http_set_builtin_header },
 
+#if defined(nginx_version) && nginx_version >= 1003013
+    { ngx_string("Upgrade"),
+                 offsetof(ngx_http_headers_in_t, upgrade),
+                 ngx_http_set_builtin_header },
+#endif
+
+#if (NGX_HTTP_GZIP)
+    { ngx_string("Accept-Encoding"),
+                 offsetof(ngx_http_headers_in_t, accept_encoding),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Via"),
+                 offsetof(ngx_http_headers_in_t, via),
+                 ngx_http_set_builtin_header },
+#endif
+
     { ngx_string("Authorization"),
                  offsetof(ngx_http_headers_in_t, authorization),
                  ngx_http_set_builtin_header },
@@ -119,19 +128,32 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, keep_alive),
                  ngx_http_set_builtin_header },
 
-    { ngx_string("Content-Length"),
-                 offsetof(ngx_http_headers_in_t, content_length),
-                 ngx_http_set_content_length_header },
-
-    { ngx_string("Cookie"),
-                 0,
-                 ngx_http_set_cookie_header },
-
 #if (NGX_HTTP_REALIP)
     { ngx_string("X-Real-IP"),
                  offsetof(ngx_http_headers_in_t, x_real_ip),
                  ngx_http_set_builtin_header },
 #endif
+
+#if (NGX_HTTP_DAV)
+    { ngx_string("Depth"),
+                 offsetof(ngx_http_headers_in_t, depth),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Destination"),
+                 offsetof(ngx_http_headers_in_t, destination),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Overwrite"),
+                 offsetof(ngx_http_headers_in_t, overwrite),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Date"), offsetof(ngx_http_headers_in_t, date),
+                 ngx_http_set_builtin_header },
+#endif
+
+    { ngx_string("Cookie"),
+                 0,
+                 ngx_http_set_cookie_header },
 
     { ngx_null_string, 0, ngx_http_set_header }
 };

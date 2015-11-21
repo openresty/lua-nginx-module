@@ -116,7 +116,7 @@ static int
 ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 {
     ngx_http_request_t              *r;
-    ngx_http_request_t              *sr; /* subrequest object */
+    ngx_http_request_t              *sr = NULL; /* subrequest object */
     ngx_http_post_subrequest_t      *psr;
     ngx_http_lua_ctx_t              *sr_ctx;
     ngx_http_lua_ctx_t              *ctx;
@@ -1004,7 +1004,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
             rc = NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        if (rc >= 100) {
             pr_coctx->sr_statuses[ctx->index] = rc;
         }
     }
@@ -1487,6 +1487,10 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
 #if (NGX_HTTP_SPDY)
     sr->spdy_stream = r->spdy_stream;
+#endif
+
+#if (NGX_HTTP_V2)
+    sr->stream = r->stream;
 #endif
 
 #ifdef HAVE_ALLOW_REQUEST_BODY_UPDATING_PATCH

@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -2394,5 +2393,39 @@ GET /test
 GET /test
 --- response_body
 type: table
+--- no_error_log
+[error]
+
+
+
+=== TEST 91: dogs, cat mixing
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+
+            local cats = ngx.shared.cats
+            val = cats:get("foo")
+            ngx.say(val or "nil")
+            val = cats:get("bah")
+            ngx.say(val or "nil")
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32 number
+10502 number
+nil
+nil
 --- no_error_log
 [error]
