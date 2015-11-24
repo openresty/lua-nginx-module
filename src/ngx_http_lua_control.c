@@ -10,6 +10,7 @@
 #endif
 #include "ddebug.h"
 
+
 #include "ngx_http_lua_control.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_coroutine.h"
@@ -290,9 +291,9 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 static int
 ngx_http_lua_ngx_exit(lua_State *L)
 {
+    ngx_int_t                    rc;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_int_t                    rc;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -312,9 +313,29 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER);
+                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
+    if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_CERT) {
+
+#if (NGX_HTTP_SSL)
+
+        ctx->exit_code = rc;
+        ctx->exited = 1;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exit with code %i", rc);
+
+        return lua_yield(L, 0);
+
+#else
+
+        return luaL_error(L, "no SSL support");
+
+#endif
+    }
 
     if (ctx->no_abort
         && rc != NGX_ERROR
@@ -431,11 +452,31 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
-                                       | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER,
+                                       | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
                                        err, errlen)
         != NGX_OK)
     {
         return NGX_ERROR;
+    }
+
+    if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_CERT) {
+
+#if (NGX_HTTP_SSL)
+
+        ctx->exit_code = status;
+        ctx->exited = 1;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exit with code %d", status);
+
+        return NGX_OK;
+
+#else
+
+        return NGX_ERROR;
+
+#endif
     }
 
     if (ctx->no_abort
@@ -458,7 +499,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     {
         if (status != (ngx_int_t) r->headers_out.status) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
-                          "set status %i via ngx.exit after sending out the "
+                          "set status %d via ngx.exit after sending out the "
                           "response status %ui", status,
                           r->headers_out.status);
         }

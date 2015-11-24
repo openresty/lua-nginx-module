@@ -94,6 +94,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x040
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x200
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -103,10 +104,13 @@ typedef struct {
 
 
 typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_srv_conf_s ngx_http_lua_srv_conf_t;
 
 
-typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
-        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
+    ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
 
 
 typedef struct {
@@ -145,11 +149,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
 
-    ngx_http_lua_conf_handler_pt    init_handler;
-    ngx_str_t                       init_src;
+    ngx_http_lua_main_conf_handler_pt    init_handler;
+    ngx_str_t                            init_src;
 
-    ngx_http_lua_conf_handler_pt    init_worker_handler;
-    ngx_str_t                       init_worker_src;
+    ngx_http_lua_main_conf_handler_pt    init_worker_handler;
+    ngx_str_t                            init_worker_src;
 
     ngx_uint_t                      shm_zones_inited;
 
@@ -160,6 +164,15 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_access:1;
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
+};
+
+
+struct ngx_http_lua_srv_conf_s {
+#if (NGX_HTTP_SSL)
+    ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
+    ngx_str_t                            ssl_cert_src;
+    u_char                              *ssl_cert_src_key;
+#endif
 };
 
 
