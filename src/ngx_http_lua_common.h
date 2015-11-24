@@ -107,6 +107,9 @@ typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
 typedef struct ngx_http_lua_srv_conf_s  ngx_http_lua_srv_conf_t;
 
 
+typedef struct ngx_http_lua_balancer_peer_data_s ngx_http_lua_balancer_peer_data_t;
+
+
 typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
@@ -154,6 +157,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_conf_handler_pt    init_worker_handler;
     ngx_str_t                       init_worker_src;
+
+    ngx_http_lua_balancer_peer_data_t  *balancer_peer;
 
     ngx_uint_t                      shm_zones_inited;
 

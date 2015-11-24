@@ -7,9 +7,9 @@ use Test::Nginx::Socket::Lua;
 #workers(2);
 #log_level('warn');
 
-repeat_each(2);
+repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4 + 7);
+plan tests => repeat_each() * (blocks() * 4 + 9);
 
 #no_diff();
 no_long_string();
@@ -567,5 +567,89 @@ qr{connect\(\) failed .*?, upstream: "http://0\.0\.0\.0:80/t"},
 '[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
 qr{connect\(\) failed .*?, upstream: "http://127\.0\.0\.3:12345/t"},
 ]
+--- no_error_log
+[warn]
+
+
+
+=== TEST 17: keepalive before balancer
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;lua/?.lua;;";
+
+    upstream backend {
+        server 0.0.0.0;
+        keepalive 10;
+        balancer_by_lua_block {
+            print("hello from balancer by lua!")
+            local b = require "ngx.balancer"
+            assert(b.set_current_peer("127.0.0.3:12345"))
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- error_log eval
+[
+'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+qr{connect\(\) failed .*?, upstream: "http://127\.0\.0\.3:12345/t"},
+'load balancing method redefined in',
+]
+--- no_error_log
+[crit]
+
+
+
+=== TEST 18: keepalive after balancer
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;lua/?.lua;;";
+
+    upstream backend {
+        server 0.0.0.0;
+        balancer_by_lua_block {
+            local b = require "ngx.balancer"
+            assert(b.set_current_peer("127.0.0.1", tonumber(ngx.var.server_port)))
+        }
+        keepalive 1;
+    }
+--- config
+    location = /t {
+        content_by_lua_block {
+            local res0 = ngx.location.capture("/tt")
+            local res1 = ngx.location.capture("/tt")
+
+            local res2 = ngx.location.capture("/tt")
+
+            if res2.status == ngx.HTTP_OK then
+                ngx.print(res2.body)
+            end
+        }
+    }
+
+    location = /tt {
+        proxy_pass http://backend/back;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+
+    location = /back {
+        echo "hello keepalive!";
+    }
+--- request
+    GET /t
+--- response_body
+hello keepalive!
+--- error_code: 200
+--- grep_error_log eval: qr{\S+ keepalive peer:.*?connection}
+--- grep_error_log_out
+free keepalive peer: saving connection
+get keepalive peer: using connection
+free keepalive peer: saving connection
+get keepalive peer: using connection
+free keepalive peer: saving connection
 --- no_error_log
 [warn]
