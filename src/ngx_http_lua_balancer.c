@@ -16,7 +16,7 @@
 #include "ngx_http_lua_directive.h"
 
 
-typedef struct {
+struct ngx_http_lua_balancer_peer_data_s {
     /* the round robin data must be first */
     ngx_http_upstream_rr_peer_data_t    rrp;
 
@@ -35,7 +35,7 @@ typedef struct {
     in_port_t                           port;
 
     int                                 last_peer_state;
-} ngx_http_lua_balancer_peer_data_t;
+};
 
 
 static ngx_int_t ngx_http_lua_balancer_init(ngx_conf_t *cf,
@@ -248,6 +248,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     ngx_http_request_t                 *r;
     ngx_http_lua_ctx_t                 *ctx;
     ngx_http_lua_srv_conf_t            *lscf;
+    ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp = data;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
@@ -265,6 +266,14 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     bp->socklen = 0;
     bp->more_tries = 0;
     bp->total_tries++;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    lmcf->balancer_peer_data = bp;
+            /* balancer_by_lua do not support yield,
+             * there are no conflicts between concurrent requests,
+             * so, it is safe to store the peer data in the main conf
+             */
 
     rc = lscf->balancer.handler(r, lscf, L);
 
@@ -407,6 +416,7 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     ngx_http_upstream_t   *u;
 
     ngx_http_lua_balancer_peer_data_t  *bp;
+    ngx_http_lua_main_conf_t           *lmcf;
 
     if (r == NULL) {
         *err = "no request found";
@@ -420,15 +430,17 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    bp = u->peer.data;
-    if (bp == NULL) {
-        *err = "no upstream peer data found";
-        return NGX_ERROR;
-    }
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL || !ctx->entered_balancer_phase) {
         *err = "bad lua ctx";
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    bp = lmcf->balancer_peer_data;
+    if (bp == NULL) {
+        *err = "no upstream peer data found";
         return NGX_ERROR;
     }
 
@@ -479,6 +491,7 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     ngx_http_upstream_t   *u;
 
     ngx_http_lua_balancer_peer_data_t  *bp;
+    ngx_http_lua_main_conf_t           *lmcf;
 
     if (r == NULL) {
         *err = "no request found";
@@ -492,15 +505,17 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    bp = u->peer.data;
-    if (bp == NULL) {
-        *err = "no upstream peer data found";
-        return NGX_ERROR;
-    }
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL || !ctx->entered_balancer_phase) {
         *err = "bad lua ctx";
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    bp = lmcf->balancer_peer_data;
+    if (bp == NULL) {
+        *err = "no upstream peer data found";
         return NGX_ERROR;
     }
 
@@ -528,6 +543,7 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
     ngx_http_upstream_state_t  *state;
 
     ngx_http_lua_balancer_peer_data_t  *bp;
+    ngx_http_lua_main_conf_t           *lmcf;
 
     if (r == NULL) {
         *err = "no request found";
@@ -541,15 +557,17 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    bp = u->peer.data;
-    if (bp == NULL) {
-        *err = "no upstream peer data found";
-        return NGX_ERROR;
-    }
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL || !ctx->entered_balancer_phase) {
         *err = "bad lua ctx";
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    bp = lmcf->balancer_peer_data;
+    if (bp == NULL) {
+        *err = "no upstream peer data found";
         return NGX_ERROR;
     }
 
