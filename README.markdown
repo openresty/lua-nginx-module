@@ -6,7 +6,7 @@ Don't edit this file manually! Instead you should generate it by using:
 Name
 ====
 
-ngx_lua - Embed the power of Lua into Nginx
+ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 
 *This module is not distributed with the Nginx source.* See [the installation instructions](#installation).
 
@@ -61,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.17](https://github.com/openresty/lua-nginx-module/tags) released on 27 October 2015.
+This document describes ngx_lua [v0.9.19](https://github.com/openresty/lua-nginx-module/tags) released on 11 November 2015.
 
 Synopsis
 ========
@@ -2855,7 +2855,7 @@ many others are not, like `$query_string`, `$arg_PARAMETER`, and `$http_NAME`.
 Nginx regex group capturing variables `$1`, `$2`, `$3`, and etc, can be read by this
 interface as well, by writing `ngx.var[1]`, `ngx.var[2]`, `ngx.var[3]`, and etc.
 
-Setting `ngx.var.Foo` to a `nil` value will unset the `$Foo` Nginx variable. 
+Setting `ngx.var.Foo` to a `nil` value will unset the `$Foo` Nginx variable.
 
 ```lua
 
@@ -2871,6 +2871,8 @@ Setting `ngx.var.Foo` to a `nil` value will unset the `$Foo` Nginx variable.
 ```
 
 to prevent (temporary) memory leaking within the current request's lifetime. Another way of caching the result is to use the [ngx.ctx](#ngxctx) table.
+
+Undefined NGINX variables are evaluated to `nil` while uninitialized (but defined) NGINX variables are evaluated to an empty Lua string.
 
 This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 

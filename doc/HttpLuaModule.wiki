@@ -1,6 +1,6 @@
 = Name =
 
-ngx_lua - Embed the power of Lua into Nginx
+ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 
 ''This module is not distributed with the Nginx source.'' See [[#Installation|the installation instructions]].
 
@@ -10,7 +10,7 @@ Production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.17] released on 27 October 2015.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.9.19] released on 11 November 2015.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -2285,7 +2285,7 @@ many others are not, like <code>$query_string</code>, <code>$arg_PARAMETER</code
 Nginx regex group capturing variables <code>$1</code>, <code>$2</code>, <code>$3</code>, and etc, can be read by this
 interface as well, by writing <code>ngx.var[1]</code>, <code>ngx.var[2]</code>, <code>ngx.var[3]</code>, and etc.
 
-Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <code>$Foo</code> Nginx variable. 
+Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <code>$Foo</code> Nginx variable.
 
 <geshi lang="lua">
     ngx.var.args = nil
@@ -2299,6 +2299,8 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
 </geshi>
 
 to prevent (temporary) memory leaking within the current request's lifetime. Another way of caching the result is to use the [[#ngx.ctx|ngx.ctx]] table.
+
+Undefined NGINX variables are evaluated to `nil` while uninitialized (but defined) NGINX variables are evaluated to an empty Lua string.
 
 This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 

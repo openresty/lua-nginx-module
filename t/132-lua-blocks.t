@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 #no_diff();
 no_long_string();
@@ -310,11 +310,30 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]" in .*?\bnginx\.conf:41/
 
 
 
-=== TEST 11: missing ]] (comment)
+=== TEST 11: missing ]==] (string)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say([==[hello, world")
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello, world
+--- no_error_log
+[error]
+--- must_die
+--- error_log eval
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]==]" in .*?\bnginx\.conf:41/
+
+
+
+=== TEST 12: missing ]] (comment)
 --- config
     location = /t {
         content_by_lua_block {
@@ -329,11 +348,30 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]" in .*?\bnginx\.conf:41/
 
 
 
-=== TEST 12: missing }
+=== TEST 13: missing ]=] (comment)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say(--[=[hello, world")
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello, world
+--- no_error_log
+[error]
+--- must_die
+--- error_log eval
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]=]" in .*?\bnginx\.conf:41/
+
+
+
+=== TEST 14: missing }
 FIXME: we need better diagnostics by actually loading the inlined Lua code while parsing
 the *_by_lua_block directive.
 
@@ -353,7 +391,7 @@ hello, world
 
 
 
-=== TEST 13: content_by_lua_block (compact)
+=== TEST 15: content_by_lua_block (compact)
 --- config
     location = /t {
         content_by_lua_block {ngx.say("hello, world", {"!"})}
@@ -367,7 +405,7 @@ hello, world!
 
 
 
-=== TEST 14: content_by_lua_block (unexpected closing long brackets)
+=== TEST 16: content_by_lua_block (unexpected closing long brackets)
 --- config
     location = /t {
         content_by_lua_block {
@@ -384,7 +422,7 @@ qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
 
 
 
-=== TEST 15: simple set_by_lua_block (integer)
+=== TEST 17: simple set_by_lua_block (integer)
 --- config
     location /lua {
         set_by_lua_block $res { return 1+1 }
@@ -394,5 +432,144 @@ qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
 GET /lua
 --- response_body
 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: ambiguous line comments inside a long bracket string (GitHub #596)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say([[ok--]])
+            ngx.say([==[ok--]==])
+            ngx.say([==[ok-- ]==])
+            --[[ --]] ngx.say("done")
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok--
+ok--
+ok-- 
+done
+--- no_error_log
+[error]
+
+
+
+=== TEST 19: double quotes in long brackets
+--- config
+    location = /t {
+        rewrite_by_lua_block { print([[Hey, it is "!]]) } content_by_lua_block { ngx.say([["]]) }
+    }
+--- request
+GET /t
+--- response_body
+"
+--- error_log
+Hey, it is "!
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: single quotes in long brackets
+--- config
+    location = /t {
+        rewrite_by_lua_block { print([[Hey, it is '!]]) } content_by_lua_block { ngx.say([[']]) }
+    }
+--- request
+GET /t
+--- response_body
+'
+--- error_log
+Hey, it is '!
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: lexer no match due to incomplete data chunks in a fixed size buffer
+--- config
+        location /test1 {
+            content_by_lua_block {
+                ngx.say("1: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+        location /test2 {
+            content_by_lua_block {
+                ngx.say("2: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+
+        location /test3 {
+            content_by_lua_block {
+                ngx.say("3: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+--- request
+GET /test3
+--- response_body eval
+"3: " . ("this is just some random filler to cause an error" x 20) . "\n"
 --- no_error_log
 [error]
