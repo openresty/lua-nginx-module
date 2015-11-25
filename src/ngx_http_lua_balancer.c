@@ -269,7 +269,11 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    lmcf->balancer_peer = bp;
+    lmcf->balancer_peer_data = bp;
+            /* balancer_by_lua do not support yield,
+             * there are no conflicts between concurrent requests,
+             * so, it is safe to store the peer data in the main conf
+             */
 
     rc = lscf->balancer.handler(r, lscf, L);
 
@@ -434,7 +438,7 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    bp = lmcf->balancer_peer;
+    bp = lmcf->balancer_peer_data;
     if (bp == NULL) {
         *err = "no upstream peer data found";
         return NGX_ERROR;
@@ -509,7 +513,7 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    bp = lmcf->balancer_peer;
+    bp = lmcf->balancer_peer_data;
     if (bp == NULL) {
         *err = "no upstream peer data found";
         return NGX_ERROR;
@@ -561,7 +565,7 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    bp = lmcf->balancer_peer;
+    bp = lmcf->balancer_peer_data;
     if (bp == NULL) {
         *err = "no upstream peer data found";
         return NGX_ERROR;

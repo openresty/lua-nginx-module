@@ -107,7 +107,7 @@ typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
 typedef struct ngx_http_lua_srv_conf_s  ngx_http_lua_srv_conf_t;
 
 
-typedef struct ngx_http_lua_balancer_peer_data_s ngx_http_lua_balancer_peer_data_t;
+typedef struct ngx_http_lua_balancer_peer_data_s  ngx_http_lua_balancer_peer_data_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
@@ -158,7 +158,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_conf_handler_pt    init_worker_handler;
     ngx_str_t                       init_worker_src;
 
-    ngx_http_lua_balancer_peer_data_t  *balancer_peer;
+    ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
+            /* balancer_by_lua do not support yield,
+             * there are no conflicts between concurrent requests,
+             * so, it is safe to store the peer data in the main conf
+             */
 
     ngx_uint_t                      shm_zones_inited;
 
