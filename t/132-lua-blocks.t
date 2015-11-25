@@ -488,3 +488,88 @@ GET /t
 Hey, it is '!
 --- no_error_log
 [error]
+
+
+
+=== TEST 21: lexer no match due to incomplete data chunks in a fixed size buffer
+--- config
+        location /test1 {
+            content_by_lua_block {
+                ngx.say("1: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+        location /test2 {
+            content_by_lua_block {
+                ngx.say("2: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+
+        location /test3 {
+            content_by_lua_block {
+                ngx.say("3: this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error",
+                "this is just some random filler to cause an error")
+            }
+        }
+--- request
+GET /test3
+--- response_body eval
+"3: " . ("this is just some random filler to cause an error" x 20) . "\n"
+--- no_error_log
+[error]
