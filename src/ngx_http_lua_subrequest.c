@@ -1434,6 +1434,20 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     ngx_http_request_t            *sr;
     ngx_http_core_srv_conf_t      *cscf;
 
+#if nginx_version >= 1009005
+
+    if (r->subrequests == 0) {
+#if defined(NGX_DTRACE) && NGX_DTRACE
+        ngx_http_probe_subrequest_cycle(r, uri, args);
+#endif
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "lua subrequests cycle while processing \"%V\"", uri);
+        return NGX_ERROR;
+    }
+
+#else  /* nginx_version <= 1009004 */
+
     r->main->subrequests--;
 
     if (r->main->subrequests == 0) {
@@ -1442,10 +1456,12 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 #endif
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "subrequests cycle while processing \"%V\"", uri);
+                      "lua subrequests cycle while processing \"%V\"", uri);
         r->main->subrequests = 1;
         return NGX_ERROR;
     }
+
+#endif
 
     sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));
     if (sr == NULL) {
@@ -1508,7 +1524,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     }
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http subrequest \"%V?%V\"", uri, &sr->args);
+                   "lua http subrequest \"%V?%V\"", uri, &sr->args);
 
     sr->subrequest_in_memory = (flags & NGX_HTTP_SUBREQUEST_IN_MEMORY) != 0;
     sr->waited = (flags & NGX_HTTP_SUBREQUEST_WAITED) != 0;
@@ -1536,6 +1552,10 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     sr->main_filter_need_in_memory = r->main_filter_need_in_memory;
 
     sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
+
+#if nginx_version >= 1009005
+    sr->subrequests = r->subrequests - 1;
+#endif
 
     tp = ngx_timeofday();
     sr->start_sec = tp->sec;

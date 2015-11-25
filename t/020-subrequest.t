@@ -11,7 +11,7 @@ use Test::Nginx::Socket::Lua;
 no_root_location;
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 22);
+plan tests => repeat_each() * (blocks() * 3 + 23);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -42,6 +42,8 @@ __DATA__
 GET /lua
 --- response_body
 DELETE
+--- error_log
+lua http subrequest "/other?"
 --- no_error_log
 [error]
 
@@ -1059,7 +1061,7 @@ hello, world
     GET /t
 --- ignore_response
 --- error_log
-subrequests cycle while processing "/t"
+lua subrequests cycle while processing "/t"
 
 
 
