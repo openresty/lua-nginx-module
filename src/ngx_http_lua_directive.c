@@ -1571,7 +1571,20 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 
             len = b->last - b->pos;
 
-            ngx_memcpy(b->start, b->pos, len);
+            if (len == buf_size) {
+
+                cf->conf_file->line = start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "too long lua code block, probably "
+                                   "missing terminating characters");
+
+                return NGX_ERROR;
+            }
+
+            if (len) {
+                ngx_memcpy(b->start, b->pos, len);
+            }
 
             size = (ssize_t) (file_size - cf->conf_file->file.offset);
 
