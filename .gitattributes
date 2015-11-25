@@ -1,2 +1,1 @@
-t/*.t linguist-language=Text
-t/*/*.t linguist-language=Text
+*.t linguist-language=Text
