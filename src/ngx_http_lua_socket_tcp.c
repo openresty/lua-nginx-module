@@ -4347,7 +4347,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
     ngx_http_lua_socket_pool_t          *spool;
-    size_t                               size;
+    size_t                               size, key_len;
     ngx_str_t                            key;
     ngx_uint_t                           i;
     ngx_queue_t                         *q;
@@ -4477,7 +4477,9 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket connection pool size: %ui", pool_size);
 
-        size = sizeof(ngx_http_lua_socket_pool_t) + key.len
+        key_len = ngx_align(key.len + 1, sizeof(void *));
+
+        size = sizeof(ngx_http_lua_socket_pool_t) + key_len - 1
                + sizeof(ngx_http_lua_socket_pool_item_t)
                * pool_size;
 
@@ -4505,7 +4507,11 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         p = ngx_copy(spool->key, key.data, key.len);
         *p++ = '\0';
 
-        items = (ngx_http_lua_socket_pool_item_t *) p;
+        items = (ngx_http_lua_socket_pool_item_t *) (spool->key + key_len);
+
+        dd("items: %p", items);
+
+        ngx_http_lua_assert((void *) items == ngx_align_ptr(items, sizeof(void *)));
 
         for (i = 0; i < pool_size; i++) {
             ngx_queue_insert_head(&spool->free, &items[i].queue);
