@@ -2255,7 +2255,7 @@ Declares a shared memory zone, `<name>`, to serve as storage for the shm based L
 
 Shared memory zones are always shared by all the nginx worker processes in the current nginx server instance.
 
-The `<size>` argument accepts size units such as `k` and `m`:
+The `<size>` argument accepts size units such as `k` and `m`.the minimum threshold is 12KB.
 
 ```nginx
 
