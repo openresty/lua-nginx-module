@@ -4511,7 +4511,8 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         dd("items: %p", items);
 
-        ngx_http_lua_assert((void *) items == ngx_align_ptr(items, sizeof(void *)));
+        ngx_http_lua_assert((void *) items == ngx_align_ptr(items,
+                                                            sizeof(void *)));
 
         for (i = 0; i < pool_size; i++) {
             ngx_queue_insert_head(&spool->free, &items[i].queue);
