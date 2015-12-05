@@ -143,6 +143,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
     size_t                           sr_flags_len;
+    size_t                           ofs1, ofs2;
     unsigned                         custom_ctx;
     ngx_http_lua_co_ctx_t           *coctx;
 
@@ -527,22 +528,30 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             args.len = len;
         }
 
-        p = ngx_pnalloc(r->pool, sizeof(ngx_http_post_subrequest_t)
-                        + sizeof(ngx_http_lua_ctx_t)
-                        + sizeof(ngx_http_lua_post_subrequest_data_t));
+        ofs1 = ngx_align(sizeof(ngx_http_post_subrequest_t), sizeof(void *));
+        ofs2 = ngx_align(sizeof(ngx_http_lua_ctx_t), sizeof(void *));
+
+        p = ngx_palloc(r->pool, ofs1 + ofs2
+                       + sizeof(ngx_http_lua_post_subrequest_data_t));
         if (p == NULL) {
             return luaL_error(L, "no memory");
         }
 
         psr = (ngx_http_post_subrequest_t *) p;
 
-        p += sizeof(ngx_http_post_subrequest_t);
+        p += ofs1;
 
         sr_ctx = (ngx_http_lua_ctx_t *) p;
 
-        p += sizeof(ngx_http_lua_ctx_t);
+        ngx_http_lua_assert((void *) sr_ctx == ngx_align_ptr(sr_ctx,
+                                                             sizeof(void *)));
+
+        p += ofs2;
 
         psr_data = (ngx_http_lua_post_subrequest_data_t *) p;
+
+        ngx_http_lua_assert((void *) psr_data == ngx_align_ptr(psr_data,
+                                                               sizeof(void *)));
 
         ngx_memzero(sr_ctx, sizeof(ngx_http_lua_ctx_t));
 
