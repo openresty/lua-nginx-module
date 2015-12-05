@@ -405,8 +405,8 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
             dd("set variables with set_handler");
 
             if (value != NULL && value_len) {
-                vv = ngx_pnalloc(r->pool, sizeof(ngx_http_variable_value_t)
-                                 + value_len);
+                vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t)
+                                + value_len);
                 if (vv == NULL) {
                     goto nomem;
                 }
