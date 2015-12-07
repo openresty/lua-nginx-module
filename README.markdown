@@ -2748,9 +2748,6 @@ Nginx API for Lua
 * [ngx.thread.spawn](#ngxthreadspawn)
 * [ngx.thread.wait](#ngxthreadwait)
 * [ngx.thread.kill](#ngxthreadkill)
-* [ngx.semaphore.new](#ngxsemaphorenew)
-* [ngx.semaphore.post](#ngxsemaphorepost)
-* [ngx.semaphore.wait](#ngxsemaphorewait)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
@@ -6872,86 +6869,6 @@ Kills a running "light thread" created by [ngx.thread.spawn](#ngxthreadspawn). R
 According to the current implementation, only the parent coroutine (or "light thread") can kill a thread. Also, a running "light thread" with pending NGINX subrequests (initiated by [ngx.location.capture](#ngxlocationcapture) for example) cannot be killed due to a limitation in the NGINX core.
 
 This API was first enabled in the `v0.9.9` release.
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.semaphore.new
------------------
-**syntax:** *sem, err = ngx.semaphore.new(n)*
-
-**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
-
-Create a semaphore that has n resource. LuaJIT's ffi is need by this api.
-
-```lua
-
- local semaphore = require "ngx.semaphore"
- local print = ngx.print
- local sem,err = semaphore.new(0)
- if not sem then
-     print("create semaphore failed: "..err)
- end
-```
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.semaphore.post
-------------------
-**syntax:** *ok, err = sem:post()*
-
-**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
-
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Release one resource to a semaphore. If one light thread or coroutine is waiting on this semaphore, then it will be waked up. LuaJIT's ffi is need by this api.
-
-```lua
-
- local semaphore = require "ngx.semaphore"
- local shared =  getmetatable(_G).__index
- local print = ngx.print
- if not shared.test then
-     local sem,err = semaphore.new(0)
-     if not sem then
-         print("create semaphore failed: "..err)
-         ngx.exit(500)
-     end
-     shared.test = sem
- end
- local sem = shared.test
- local ok,err = sem:post()
- if not ok then
-     ngx.print(err)
- end
-```
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.semaphore.wait
-------------------
-**syntax:** *ok, err = sem:wait(timeout?)*
-
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.**
-The param sem is create by [ngx.semaphore.new](#ngxsemaphorenew). Wait on one semapohre. If there a resouce then it return immediately, else the light thread or main thread or coroutine will sleep, then it will be waked up when some one else call the post method[#ngx.semaphore.post|ngx.semaphore.post]] or timeout event occur. The timeout default is 0,which means it will return nil,"busy" if there is no resource to use. LuaJIT's ffi is need by this api.
-
-```lua
-
- local semaphore = require "ngx.semaphore"
- local shared =  getmetatable(_G).__index
- local print = ngx.print
- if not shared.test then
-     local sem,err = semaphore.new(0)
-     if not sem then
-         print("create semaphore failed: "..err)
-         ngx.exit(500)
-     end
-     shared.test = sem
- end
- local sem = shared.test
- local ok,err = sem:wait(10)
- if not ok then
-     ngx.print(err)
- end
-```
-
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.on_abort

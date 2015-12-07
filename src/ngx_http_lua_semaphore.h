@@ -35,8 +35,8 @@ typedef struct ngx_http_lua_semaphore_s {
     ngx_log_t                           *log;
     ngx_http_lua_semaphore_mm_block_t   *block;
     int                                  resource_count;
-    unsigned                             in_post_event:1;
     unsigned                             wait_count:31;
+    unsigned                             event_posted:1;
  } ngx_http_lua_semaphore_t;
 
 
