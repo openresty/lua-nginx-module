@@ -280,7 +280,7 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_request_t *r,
                                         | NGX_HTTP_LUA_CONTEXT_LOG
                                         | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                         | NGX_HTTP_LUA_CONTEXT_BODY_FILTER
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER   
+                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                         | NGX_HTTP_LUA_CONTEXT_INIT_WORKER),
                                         errstr, errlen);
 
