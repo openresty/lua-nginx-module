@@ -434,7 +434,7 @@ thread: 3
 --- request
 GET /test
 --- response_body
-worker: 2
+worker: 4
 --- no_error_log
 [error]
 
