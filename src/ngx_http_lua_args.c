@@ -113,6 +113,11 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
 
     lua_createtable(L, 0, 4);
 
+    if (r->args.len == 0) {
+        lua_createtable(L, 0, 0);
+        return 1;
+    }
+
     /* we copy r->args over to buf to simplify
      * unescaping query arg keys and values */
 
@@ -196,6 +201,11 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
     }
 
     dd("post body length: %d", (int) len);
+
+    if (len == 0) {
+        lua_createtable(L, 0, 0);
+        return 1;
+    }
 
     buf = ngx_palloc(r->pool, len);
     if (buf == NULL) {
