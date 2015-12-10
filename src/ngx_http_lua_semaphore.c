@@ -67,7 +67,7 @@ ngx_http_lua_alloc_semaphore(void)
         mm->used++;
         sem->sem_event.posted = 0;
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                       "free queue, alloc semaphore: %p", sem);
+                       "from head of free queue, alloc semaphore: %p", sem);
 
         return sem;
     }
@@ -77,13 +77,15 @@ ngx_http_lua_alloc_semaphore(void)
     n = sizeof(ngx_http_lua_semaphore_mm_block_t)
         + mm->num_per_block * sizeof(ngx_http_lua_semaphore_t);
 
+    dd("block size: %d, item size: %d",
+       (int) sizeof(ngx_http_lua_semaphore_mm_block_t),
+       (int) sizeof(ngx_http_lua_semaphore_t));
+
     block = ngx_alloc(n, ngx_cycle->log);
 
     if (block == NULL) {
         return NULL;
     }
-
-    dd("new block, alloc semaphore block: %p", block);
 
     mm->cur_epoch++;
     mm->total += mm->num_per_block;
@@ -158,8 +160,7 @@ static void
 ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem)
 {
     ngx_http_lua_semaphore_t            *iter;
-    ngx_int_t                            start_epoch;
-    ngx_uint_t                           i;
+    ngx_uint_t                           i, mid_epoch;
     ngx_http_lua_semaphore_mm_block_t   *block;
     ngx_http_lua_semaphore_mm_t         *mm;
 
@@ -169,29 +170,29 @@ ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem)
     mm = block->mm;
     mm->used--;
 
-    start_epoch = mm->cur_epoch - mm->total / mm->num_per_block;
+    mid_epoch = mm->cur_epoch - ((mm->total / mm->num_per_block) >> 1);
 
-    if (sem->block->used < (mm->num_per_block >> 1)
-        && block->epoch <= start_epoch + ((mm->cur_epoch - start_epoch) >> 1))
-    {
+    if (block->epoch < mid_epoch) {
         ngx_queue_insert_tail(&mm->free_queue, &sem->chain);
         ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "add to free queue tail semaphore: %p epoch: %d"
-                       "start_epoch: %d cur_epoch: %d", sem, (int) block->epoch,
-                       (int) start_epoch, (int) mm->cur_epoch);
+                       "mid_epoch: %d cur_epoch: %d", sem, (int) block->epoch,
+                       (int) mid_epoch, (int) mm->cur_epoch);
 
     } else {
         ngx_queue_insert_head(&mm->free_queue, &sem->chain);
         ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "add to free queue head semaphore: %p epoch: %d"
-                       "start_epoch: %d cur_epoch: %d", sem, (int) block->epoch,
-                       (int) start_epoch, (int) mm->cur_epoch);
+                       "mid_epoch: %d cur_epoch: %d", sem, (int) block->epoch,
+                       (int) mid_epoch, (int) mm->cur_epoch);
     }
 
+    dd("used: %d", (int) block->used);
+
     if (block->used == 0 && mm->used <= (mm->total >> 1)
-        && block->epoch <= (start_epoch + ((mm->cur_epoch-start_epoch) >> 1)))
+        && block->epoch < mid_epoch)
     {
-        /* load <= 50% and it's the older */
+        /* load <= 50% and it's on the older side */
         iter = (ngx_http_lua_semaphore_t *) (block + 1);
 
         for (i = 0; i < mm->num_per_block; i++, iter++) {
@@ -205,10 +206,6 @@ ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem)
 
         ngx_free(block);
     }
-
-    dd("ngx_http_lua_free_semaphore sem: %p "
-       "sem->chain.prev: %p sem->chain.next: %p",
-       sem, sem->chain.prev, sem->chain.next);
 }
 
 
