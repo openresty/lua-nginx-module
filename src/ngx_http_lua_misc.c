@@ -18,6 +18,7 @@
 
 static int ngx_http_lua_ngx_get(lua_State *L);
 static int ngx_http_lua_ngx_set(lua_State *L);
+static int ngx_http_lua_ngx_req_is_internal(lua_State *L);
 
 
 void
@@ -30,6 +31,28 @@ ngx_http_lua_inject_misc_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_set);
     lua_setfield(L, -2, "__newindex");
     lua_setmetatable(L, -2);
+}
+
+
+void
+ngx_http_lua_inject_req_misc_api(lua_State *L)
+{
+    lua_pushcfunction(L, ngx_http_lua_ngx_req_is_internal);
+    lua_setfield(L, -2, "is_internal");
+}
+
+
+static int
+ngx_http_lua_ngx_req_is_internal(lua_State *L)
+{
+    ngx_http_request_t *r;
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    lua_pushboolean(L, r->internal == 1);
+    return 1;
 }
 
 
