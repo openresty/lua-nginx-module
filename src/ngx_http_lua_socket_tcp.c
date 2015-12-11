@@ -600,6 +600,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* rc == NGX_DECLINED */
 
+    /* TODO: we should avoid this in-pool allocation */
+
     host.data = ngx_palloc(r->pool, len + 1);
     if (host.data == NULL) {
         return luaL_error(L, "no memory");

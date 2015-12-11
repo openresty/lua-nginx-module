@@ -3992,10 +3992,10 @@ ngx_http_lua_cleanup_add(ngx_http_request_t *r, size_t size)
     ngx_http_cleanup_t  *cln;
     ngx_http_lua_ctx_t  *ctx;
 
-    r = r->main;
-
     if (size == 0) {
         ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+        r = r->main;
 
         if (ctx != NULL && ctx->free_cleanup) {
             cln = ctx->free_cleanup;
@@ -4022,34 +4022,28 @@ ngx_http_lua_cleanup_add(ngx_http_request_t *r, size_t size)
 void
 ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
 {
-    ngx_http_cleanup_t  *cln, *clnt;
-    ngx_http_lua_ctx_t  *ctx;
-
-    r = r->main;
+    ngx_http_cleanup_t  **last;
+    ngx_http_cleanup_t   *cln;
+    ngx_http_lua_ctx_t   *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return;
     }
 
+    r = r->main;
+
     cln = (ngx_http_cleanup_t *)
               ((u_char *) cleanup - offsetof(ngx_http_cleanup_t, handler));
 
     dd("cln: %p, cln->handler: %p, &cln->handler: %p",
-        cln, cln->handler, &cln->handler);
+       cln, cln->handler, &cln->handler);
 
-    if (r->cleanup == cln) {
-        r->cleanup = cln->next;
-        goto free;
-    }
+    last = &r->cleanup;
 
-    clnt = r->cleanup;
-
-    while (clnt) {
-        if (clnt->next == cln) {
-            clnt->next = cln->next;
-
-free:
+    while (*last) {
+        if (*last == cln) {
+            *last = cln->next;
 
             cln->next = ctx->free_cleanup;
             ctx->free_cleanup = cln;
@@ -4060,7 +4054,7 @@ free:
             return;
         }
 
-        clnt = clnt->next;
+        last = &(*last)->next;
     }
 }
 
