@@ -1897,6 +1897,9 @@ The <code><size></code> argument accepts size units such as <code>k</code> and <
     }
 </geshi>
 
+The hard-coded minimum size is 8KB while the practical minimum size depends
+on actual user data set (some people start with 12KB).
+
 See [[#ngx.shared.DICT|ngx.shared.DICT]] for details.
 
 This directive was first introduced in the <code>v0.3.1rc22</code> release.

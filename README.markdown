@@ -2265,6 +2265,9 @@ The `<size>` argument accepts size units such as `k` and `m`:
  }
 ```
 
+The hard-coded minimum size is 8KB while the practical minimum size depends
+on actual user data set (some people start with 12KB).
+
 See [ngx.shared.DICT](#ngxshareddict) for details.
 
 This directive was first introduced in the `v0.3.1rc22` release.
