@@ -3010,6 +3010,18 @@ This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_heade
 
 This API was first introduced in the <code>v0.9.5</code> release.
 
+== ngx.req.is_internal ==
+'''syntax:''' ''is_internal = ngx.req.is_internal()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Returns a boolean indicating whether the current request is an "internal request", i.e.,
+a request initiated from inside the current nginx server instead of from the client side.
+
+Subrequests are all internal requests and so are requests after internal redirects.
+
+This API was first introduced in the <code>v0.9.20</code> release.
+
 == ngx.req.start_time ==
 '''syntax:''' ''secs = ngx.req.start_time()''
 

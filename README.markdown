@@ -2652,6 +2652,7 @@ Nginx API for Lua
 * [ngx.status](#ngxstatus)
 * [ngx.header.HEADER](#ngxheaderheader)
 * [ngx.resp.get_headers](#ngxrespget_headers)
+* [ngx.req.is_internal](#ngxreqis_internal)
 * [ngx.req.start_time](#ngxreqstart_time)
 * [ngx.req.http_version](#ngxreqhttp_version)
 * [ngx.req.raw_header](#ngxreqraw_header)
@@ -3660,6 +3661,21 @@ Returns a Lua table holding all the current response headers for the current req
 This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
 
 This API was first introduced in the `v0.9.5` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.req.is_internal
+-------------------
+**syntax:** *is_internal = ngx.req.is_internal()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a boolean indicating whether the current request is an "internal request", i.e.,
+a request initiated from inside the current nginx server instead of from the client side.
+
+Subrequests are all internal requests and so are requests after internal redirects.
+
+This API was first introduced in the `v0.9.20` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

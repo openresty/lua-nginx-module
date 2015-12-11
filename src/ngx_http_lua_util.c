@@ -2099,6 +2099,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_socket_api(L);
     ngx_http_lua_inject_req_method_api(L);
     ngx_http_lua_inject_req_time_api(L);
+    ngx_http_lua_inject_req_misc_api(L);
 
     lua_setfield(L, -2, "req");
 }
