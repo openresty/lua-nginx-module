@@ -446,16 +446,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
 
-    host.data = ngx_palloc(r->pool, len + 1);
-    if (host.data == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    host.len = len;
-
-    ngx_memcpy(host.data, p, len);
-    host.data[len] = '\0';
-
     key_index = 2;
     custom_pool = 0;
 
@@ -609,6 +599,18 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
+
+    /* TODO: we should avoid this in-pool allocation */
+
+    host.data = ngx_palloc(r->pool, len + 1);
+    if (host.data == NULL) {
+        return luaL_error(L, "no memory");
+    }
+
+    host.len = len;
+
+    ngx_memcpy(host.data, p, len);
+    host.data[len] = '\0';
 
     ngx_memzero(&url, sizeof(ngx_url_t));
 
@@ -1001,7 +1003,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     if (u->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_http_lua_cleanup_add(r, 0);
         if (cln == NULL) {
             u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
             lua_pushnil(L);
@@ -3332,6 +3334,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
     if (u->cleanup) {
         *u->cleanup = NULL;
+        ngx_http_lua_cleanup_free(r, u->cleanup);
         u->cleanup = NULL;
     }
 
@@ -4251,7 +4254,7 @@ ngx_http_lua_req_socket(lua_State *L)
     u->connect_timeout = u->conf->connect_timeout;
     u->send_timeout = u->conf->send_timeout;
 
-    cln = ngx_http_cleanup_add(r, 0);
+    cln = ngx_http_lua_cleanup_add(r, 0);
     if (cln == NULL) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
         lua_pushnil(L);
@@ -4695,7 +4698,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 #endif
 
         if (u->cleanup == NULL) {
-            cln = ngx_http_cleanup_add(r, 0);
+            cln = ngx_http_lua_cleanup_add(r, 0);
             if (cln == NULL) {
                 u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
                 lua_settop(L, top);

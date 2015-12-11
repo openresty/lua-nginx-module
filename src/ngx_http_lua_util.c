@@ -3610,10 +3610,15 @@ ngx_http_lua_free_fake_request(ngx_http_request_t *r)
         return;
     }
 
-    for (cln = r->cleanup; cln; cln = cln->next) {
+    cln = r->cleanup;
+    r->cleanup = NULL;
+
+    while (cln) {
         if (cln->handler) {
             cln->handler(cln->data);
         }
+
+        cln = cln->next;
     }
 
     r->request_line.len = 0;
@@ -3979,5 +3984,79 @@ ngx_http_lua_get_raw_phase_context(lua_State *L)
     lua_pushinteger(L, (int) ctx->context);
     return 1;
 }
+
+
+ngx_http_cleanup_t *
+ngx_http_lua_cleanup_add(ngx_http_request_t *r, size_t size)
+{
+    ngx_http_cleanup_t  *cln;
+    ngx_http_lua_ctx_t  *ctx;
+
+    if (size == 0) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+        r = r->main;
+
+        if (ctx != NULL && ctx->free_cleanup) {
+            cln = ctx->free_cleanup;
+            ctx->free_cleanup = cln->next;
+
+            dd("reuse cleanup: %p", cln);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup reuse: %p", cln);
+
+            cln->handler = NULL;
+            cln->next = r->cleanup;
+
+            r->cleanup = cln;
+
+            return cln;
+        }
+    }
+
+    return ngx_http_cleanup_add(r, size);
+}
+
+
+void
+ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
+{
+    ngx_http_cleanup_t  **last;
+    ngx_http_cleanup_t   *cln;
+    ngx_http_lua_ctx_t   *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    r = r->main;
+
+    cln = (ngx_http_cleanup_t *)
+              ((u_char *) cleanup - offsetof(ngx_http_cleanup_t, handler));
+
+    dd("cln: %p, cln->handler: %p, &cln->handler: %p",
+       cln, cln->handler, &cln->handler);
+
+    last = &r->cleanup;
+
+    while (*last) {
+        if (*last == cln) {
+            *last = cln->next;
+
+            cln->next = ctx->free_cleanup;
+            ctx->free_cleanup = cln;
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup free: %p", cln);
+
+            return;
+        }
+
+        last = &(*last)->next;
+    }
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
