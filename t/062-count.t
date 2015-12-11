@@ -323,7 +323,7 @@ ngx. entry count: 99
 --- request
 GET /test
 --- response_body
-n = 1
+n = 3
 --- no_error_log
 [error]
 
