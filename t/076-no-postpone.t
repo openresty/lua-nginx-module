@@ -82,3 +82,59 @@ no foo: 1
 --- no_error_log
 [error]
 
+
+
+=== TEST 4: access no postpone on
+--- http_config
+    access_by_lua_no_postpone on;
+--- config
+    location /t {
+        access_by_lua '
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
+        ';
+        content_by_lua 'return';
+        deny all;
+    }
+--- request
+GET /t
+--- response_headers
+Location: http://www.taobao.com/foo
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 5: access no postpone explicitly off
+--- http_config
+    access_by_lua_no_postpone off;
+--- config
+    location /t {
+        access_by_lua '
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
+        ';
+        content_by_lua 'return';
+        deny all;
+    }
+--- request
+GET /t
+--- response_body_like: 403 Forbidden
+--- error_code: 403
+
+
+
+=== TEST 6: access no postpone off by default
+--- config
+    location /t {
+        access_by_lua '
+            ngx.redirect("http://www.taobao.com/foo")
+            ngx.say("hi")
+        ';
+        content_by_lua 'return';
+        deny all;
+    }
+--- request
+GET /t
+--- response_body_like: 403 Forbidden
+--- error_code: 403
