@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 26);
+plan tests => repeat_each() * (2 * blocks() + 27);
 
 #no_diff();
 #no_long_string();
@@ -1532,3 +1532,27 @@ MOVE /a.txt
 client sent no "Destination" header
 [error]
 --- error_code: 204
+
+
+
+=== TEST 50: X-Forwarded-For
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.req.set_header("X-Forwarded-For", "8.8.8.8")
+        }
+        proxy_pass http://127.0.0.1:$server_port/back;
+        proxy_set_header Foo $proxy_add_x_forwarded_for;
+    }
+
+    location = /back {
+        echo "Foo: $http_foo";
+    }
+
+--- request
+GET /t
+
+--- response_body
+Foo: 8.8.8.8, 127.0.0.1
+--- no_error_log
+[error]
