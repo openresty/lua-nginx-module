@@ -1514,6 +1514,10 @@ As with other access phase handlers, [[#access_by_lua|access_by_lua]] will ''not
 
 Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#access_by_lua|access_by_lua]] handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#access_by_lua|access_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
 
+Starting from the <code>v0.9.20</code> release, you can use the [[#access_by_lua_no_postpone|access_by_lua_no_postpone]]
+directive to control when to run this handler inside the "access" request-processing phase
+of NGINX.
+
 == access_by_lua_block ==
 
 '''syntax:''' ''access_by_lua_block { lua-script }''
@@ -2108,9 +2112,21 @@ This directive was first introduced in the <code>v0.5.0rc19</code> release.
 
 '''context:''' ''http''
 
-Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
+Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]]* directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
 
 This directive was first introduced in the <code>v0.5.0rc29</code> release.
+
+== access_by_lua_no_postpone ==
+
+'''syntax:''' ''access_by_lua_no_postpone on|off''
+
+'''default:''' ''access_by_lua_no_postpone off''
+
+'''context:''' ''http''
+
+Controls whether or not to disable postponing [[#access_by_lua|access_by_lua]]* directives to run at the end of the <code>access</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>access</code> phase.
+
+This directive was first introduced in the <code>v0.9.20</code> release.
 
 == lua_transform_underscores_in_response_headers ==
 

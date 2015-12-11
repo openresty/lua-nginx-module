@@ -1045,6 +1045,7 @@ Directives
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
+* [access_by_lua_no_postpone](#access_by_lua_no_postpone)
 * [lua_transform_underscores_in_response_headers](#lua_transform_underscores_in_response_headers)
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
@@ -1832,6 +1833,10 @@ As with other access phase handlers, [access_by_lua](#access_by_lua) will *not* 
 
 Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](#access_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [access_by_lua](#access_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
+Starting from the `v0.9.20` release, you can use the [access_by_lua_no_postpone](#access_by_lua_no_postpone)
+directive to control when to run this handler inside the "access" request-processing phase
+of NGINX.
+
 [Back to TOC](#directives)
 
 access_by_lua_block
@@ -2521,9 +2526,24 @@ rewrite_by_lua_no_postpone
 
 **context:** *http*
 
-Controls whether or not to disable postponing [rewrite_by_lua](#rewrite_by_lua) and [rewrite_by_lua_file](#rewrite_by_lua_file) directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
+Controls whether or not to disable postponing [rewrite_by_lua](#rewrite_by_lua)* directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
 
 This directive was first introduced in the `v0.5.0rc29` release.
+
+[Back to TOC](#directives)
+
+access_by_lua_no_postpone
+-------------------------
+
+**syntax:** *access_by_lua_no_postpone on|off*
+
+**default:** *access_by_lua_no_postpone off*
+
+**context:** *http*
+
+Controls whether or not to disable postponing [access_by_lua](#access_by_lua)* directives to run at the end of the `access` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `access` phase.
+
+This directive was first introduced in the `v0.9.20` release.
 
 [Back to TOC](#directives)
 
