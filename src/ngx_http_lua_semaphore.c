@@ -22,12 +22,12 @@ static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_semaphore(void);
 void ngx_http_lua_cleanup_semaphore_mm(void *data);
 static void ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem);
 static ngx_int_t ngx_http_lua_semaphore_resume(ngx_http_request_t *r);
-int ngx_http_lua_ffi_semaphore_new(ngx_http_request_t *r,
-    ngx_http_lua_semaphore_t **psem, int n, u_char *errstr, size_t *errlen);
+int ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
+    int n, u_char *err, size_t *errlen);
 int ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem,
-    int n, char **errstr);
+    int n);
 int ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
-    ngx_http_lua_semaphore_t *sem, int wait_ms, u_char *errstr, size_t *errlen);
+    ngx_http_lua_semaphore_t *sem, int wait_ms, u_char *err, size_t *errlen);
 static void ngx_http_lua_semaphore_cleanup(void *data);
 static void ngx_http_lua_semaphore_handler(ngx_event_t *ev);
 static void ngx_http_lua_semaphore_timeout_handler(ngx_event_t *ev);
@@ -262,39 +262,14 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
 
 
 int
-ngx_http_lua_ffi_semaphore_new(ngx_http_request_t *r,
-    ngx_http_lua_semaphore_t **psem, int n, u_char *errstr, size_t *errlen)
+ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
+    int n, u_char *err, size_t *errlen)
 {
     ngx_http_lua_semaphore_t    *sem;
-    ngx_int_t                    rc;
-    ngx_http_lua_ctx_t          *ctx;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        *errlen = ngx_snprintf(errstr, *errlen, "ctx is null") - errstr;
-        return NGX_ERROR;
-    }
-
-    rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_SET
-                                        | NGX_HTTP_LUA_CONTEXT_REWRITE
-                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
-                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
-                                        | NGX_HTTP_LUA_CONTEXT_LOG
-                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
-                                        | NGX_HTTP_LUA_CONTEXT_BODY_FILTER
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER
-                                        | NGX_HTTP_LUA_CONTEXT_INIT_WORKER,
-                                        errstr, errlen);
-
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
-    }
 
     sem = ngx_http_lua_alloc_semaphore();
     if (sem == NULL) {
-        *errlen = ngx_snprintf(errstr, *errlen, "ngx_http_lua_ffi_semaphore_new"
-                               " ngx_alloc failed") - errstr;
-
+        *errlen = ngx_snprintf(err, *errlen, "no memory") - err;
         return NGX_ERROR;
     }
 
@@ -314,8 +289,7 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_request_t *r,
 
 
 int
-ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem,
-    int n, char **errstr)
+ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 {
     sem->resource_count += n;
 
@@ -337,7 +311,7 @@ ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem,
 
 int
 ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
-    ngx_http_lua_semaphore_t *sem, int wait_ms, u_char *errstr, size_t *errlen)
+    ngx_http_lua_semaphore_t *sem, int wait_ms, u_char *err, size_t *errlen)
 {
     ngx_http_lua_ctx_t           *ctx;
     ngx_http_lua_co_ctx_t        *wait_co_ctx;
@@ -349,7 +323,7 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        *errlen = ngx_snprintf(errstr, *errlen, "ctx is null") - errstr;
+        *errlen = ngx_snprintf(err, *errlen, "no request ctx found") - err;
         return NGX_ERROR;
     }
 
@@ -357,7 +331,7 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
                                         | NGX_HTTP_LUA_CONTEXT_ACCESS
                                         | NGX_HTTP_LUA_CONTEXT_CONTENT
                                         | NGX_HTTP_LUA_CONTEXT_TIMER,
-                                        errstr, errlen);
+                                        err, errlen);
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
