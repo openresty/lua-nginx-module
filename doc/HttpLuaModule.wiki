@@ -2545,7 +2545,7 @@ The <code>ngx.ctx</code> lookup requires relatively expensive metamethod calls a
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Issue a synchronous but still non-blocking ''Nginx Subrequest'' using <code>uri</code>.
+Issues a synchronous but still non-blocking ''Nginx Subrequest'' using <code>uri</code>.
 
 Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or ''any'' other nginx C modules like <code>ngx_proxy</code>, <code>ngx_fastcgi</code>, <code>ngx_memc</code>,
 <code>ngx_postgres</code>, <code>ngx_drizzle</code>, and even ngx_lua itself and etc etc etc.
@@ -2555,6 +2555,9 @@ Also note that subrequests just mimic the HTTP interface but there is ''no'' ext
 Subrequests are completely different from HTTP 301/302 redirection (via [[#ngx.redirect|ngx.redirect]]) and internal redirection (via [[#ngx.exec|ngx.exec]]).
 
 You should always read the request body (by either calling [[#ngx.req.read_body|ngx.req.read_body]] or configuring [[#lua_need_request_body|lua_need_request_body]] on) before initiating a subrequest.
+
+This API function (as well as [[#ngx.location.capture_multi|ngx.location.capture_multi]]) always buffers the whole response body of the subrequest in memory. Thus, you should use [[#ngx.socket.tcp|cosockets]]
+and streaming processing instead if you have to handle large subrequest responses.
 
 Here is a basic example:
 

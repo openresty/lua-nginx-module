@@ -3159,7 +3159,7 @@ ngx.location.capture
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Issue a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
+Issues a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
 
 Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`, `ngx_drizzle`, and even ngx_lua itself and etc etc etc.
@@ -3169,6 +3169,9 @@ Also note that subrequests just mimic the HTTP interface but there is *no* extra
 Subrequests are completely different from HTTP 301/302 redirection (via [ngx.redirect](#ngxredirect)) and internal redirection (via [ngx.exec](#ngxexec)).
 
 You should always read the request body (by either calling [ngx.req.read_body](#ngxreqread_body) or configuring [lua_need_request_body](#lua_need_request_body) on) before initiating a subrequest.
+
+This API function (as well as [ngx.location.capture_multi](#ngxlocationcapture_multi)) always buffers the whole response body of the subrequest in memory. Thus, you should use [cosockets](#ngxsockettcp)
+and streaming processing instead if you have to handle large subrequest responses.
 
 Here is a basic example:
 
