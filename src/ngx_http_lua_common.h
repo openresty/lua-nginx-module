@@ -372,6 +372,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_http_cleanup_pt     *cleanup;
 
+    ngx_http_cleanup_t      *free_cleanup; /* free list of cleanup records */
+
     ngx_chain_t             *body; /* buffered subrequest response body
                                       chains */
 
