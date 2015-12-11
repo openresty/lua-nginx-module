@@ -2734,6 +2734,8 @@ Nginx API for Lua
 * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
 * [ngx.worker.exiting](#ngxworkerexiting)
 * [ngx.worker.pid](#ngxworkerpid)
+* [ngx.worker.count](#ngxworkercount)
+* [ngx.worker.id](#ngxworkerid)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -7063,6 +7065,39 @@ ngx.worker.pid
 This function returns a Lua number for the process ID (PID) of the current Nginx worker process. This API is more efficient than `ngx.var.pid` and can be used in contexts where the [ngx.var.VARIABLE](#ngxvarvariable) API cannot be used (like [init_worker_by_lua](#init_worker_by_lua)).
 
 This API was first introduced in the `0.9.5` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.worker.count
+----------------
+
+**syntax:** *count = ngx.worker.count()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the total number of the Nginx worker processes (i.e., the value configured
+by the [worker_processes](http://nginx.org/en/docs/ngx_core_module.html#worker_processes)
+directive in `nginx.conf`).
+
+This API was first introduced in the `0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.worker.id
+-------------
+
+**syntax:** *count = ngx.worker.id()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the ordinal number of the current Nginx worker processes (starting from number 0).
+
+So if the total number of workers is `N`, then this method may return a number between 0
+and `N - 1` (inclusive).
+
+See also [ngx.worker.count](#ngxworkercount).
+
+This API was first introduced in the `0.9.20` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

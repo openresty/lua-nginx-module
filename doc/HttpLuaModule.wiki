@@ -5982,6 +5982,33 @@ This function returns a Lua number for the process ID (PID) of the current Nginx
 
 This API was first introduced in the <code>0.9.5</code> release.
 
+== ngx.worker.count ==
+
+'''syntax:''' ''count = ngx.worker.count()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the total number of the Nginx worker processes (i.e., the value configured
+by the [http://nginx.org/en/docs/ngx_core_module.html#worker_processes worker_processes]
+directive in `nginx.conf`).
+
+This API was first introduced in the <code>0.9.20</code> release.
+
+== ngx.worker.id ==
+
+'''syntax:''' ''count = ngx.worker.id()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the ordinal number of the current Nginx worker processes (starting from number 0).
+
+So if the total number of workers is `N`, then this method may return a number between 0
+and `N - 1` (inclusive).
+
+See also [[#ngx.worker.count|ngx.worker.count]].
+
+This API was first introduced in the <code>0.9.20</code> release.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
