@@ -23,7 +23,7 @@ void ngx_http_lua_cleanup_semaphore_mm(void *data);
 static void ngx_http_lua_free_semaphore(ngx_http_lua_semaphore_t *sem);
 static ngx_int_t ngx_http_lua_semaphore_resume(ngx_http_request_t *r);
 int ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
-    int n, u_char *err, size_t *errlen);
+    int n, char **errmsg);
 int ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem,
     int n);
 int ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
@@ -263,13 +263,13 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
 
 int
 ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
-    int n, u_char *err, size_t *errlen)
+    int n, char **errmsg)
 {
     ngx_http_lua_semaphore_t    *sem;
 
     sem = ngx_http_lua_alloc_semaphore();
     if (sem == NULL) {
-        *errlen = ngx_snprintf(err, *errlen, "no memory") - err;
+        *errmsg = "no memory";
         return NGX_ERROR;
     }
 
