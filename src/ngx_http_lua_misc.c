@@ -200,7 +200,7 @@ ngx_http_lua_ngx_set(lua_State *L)
 int
 ngx_http_lua_ffi_get_resp_status(ngx_http_request_t *r)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -222,7 +222,7 @@ ngx_http_lua_ffi_get_resp_status(ngx_http_request_t *r)
 int
 ngx_http_lua_ffi_set_resp_status(ngx_http_request_t *r, int status)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -254,7 +254,7 @@ ngx_http_lua_ffi_set_resp_status(ngx_http_request_t *r, int status)
 int
 ngx_http_lua_ffi_is_subrequest(ngx_http_request_t *r)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -272,7 +272,7 @@ ngx_http_lua_ffi_headers_sent(ngx_http_request_t *r)
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 

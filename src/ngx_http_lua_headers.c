@@ -989,7 +989,7 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max)
     int                           count;
     ngx_list_part_t              *part;
 
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -1082,7 +1082,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -1198,7 +1198,7 @@ ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
     ngx_str_t                    k;
     ngx_str_t                    v;
 
-    if (r->connection->fd == -1) {  /* fake request */
+    if (r->connection->fd == (ngx_socket_t) -1) {  /* fake request */
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -1253,7 +1253,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
 
     ngx_http_lua_loc_conf_t     *llcf;
 
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 

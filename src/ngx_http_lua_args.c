@@ -389,7 +389,7 @@ ngx_http_lua_ffi_req_get_uri_args_count(ngx_http_request_t *r, int max)
     int                      count;
     u_char                  *p, *last;
 
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 

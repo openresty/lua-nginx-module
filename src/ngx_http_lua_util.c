@@ -926,7 +926,7 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
 #if 1
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         /* being a fake request */
         lmcf->running_timers--;
     }
@@ -1480,7 +1480,9 @@ no_parent:
 
 done:
 
-    if (ctx->entered_content_phase && r->connection->fd != -1) {
+    if (ctx->entered_content_phase
+        && r->connection->fd != (ngx_socket_t) -1)
+    {
         rc = ngx_http_lua_send_chain_link(r, ctx,
                                           NULL /* last_buf */);
 
@@ -3524,7 +3526,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     }
 
-    if (r->connection->fd != -1) {
+    if (r->connection->fd != (ngx_socket_t) -1) {
         ngx_http_finalize_request(r, rc);
         return;
     }
