@@ -3351,7 +3351,7 @@ lua tcp socket connect timeout: 100
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
@@ -3364,7 +3364,7 @@ lua tcp socket connect timeout: 100
 
                 ngx.say("connected: ", ok)
 
-                local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
                 local bytes, err = sock:send(req)
                 if not bytes then
@@ -3385,7 +3385,7 @@ lua tcp socket connect timeout: 100
                 ok, err = sock:close()
                 ngx.say("close: ", ok, " ", err)
             end
-        ';
+        }
     }
 
     location /foo {
@@ -3416,7 +3416,7 @@ lua http cleanup reuse
         #set $port 5000;
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             local total_send_bytes = 0
             local port = ngx.var.port
 
@@ -3429,7 +3429,7 @@ lua http cleanup reuse
                     return
                 end
 
-                local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
                 local bytes, err = sock:send(req)
                 if not bytes then
@@ -3449,9 +3449,12 @@ lua http cleanup reuse
                 ok, err = sock:close()
             end
 
+            local done = false
+
             local function double_network()
                 network()
                 network()
+                done = true
             end
 
             local ok, err = ngx.timer.at(0, double_network)
@@ -3459,12 +3462,20 @@ lua http cleanup reuse
                 ngx.say("failed to create timer: ", err)
             end
 
-            ngx.sleep(0.2)
+            i = 1
+            while not done do
+                local time = 0.005 * i
+                if time > 0.1 then
+                    time = 0.1
+                end
+                ngx.sleep(time)
+                i = i + 1
+            end
 
             collectgarbage("collect")
 
             ngx.say("total_send_bytes: ", total_send_bytes)
-        ';
+        }
     }
 
     location /foo {
@@ -3481,14 +3492,14 @@ lua http cleanup reuse
 
 
 
-=== TEST 58: free cleanup in ngx.timer(without sock:close)
+=== TEST 58: free cleanup in ngx.timer (without sock:close)
 --- config
     server_tokens off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             local total_send_bytes = 0
             local port = ngx.var.port
 
@@ -3501,7 +3512,7 @@ lua http cleanup reuse
                     return
                 end
 
-                local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
                 local bytes, err = sock:send(req)
                 if not bytes then
@@ -3519,9 +3530,12 @@ lua http cleanup reuse
                 end
             end
 
+            local done = false
+
             local function double_network()
                 network()
                 network()
+                done = true
             end
 
             local ok, err = ngx.timer.at(0, double_network)
@@ -3529,12 +3543,20 @@ lua http cleanup reuse
                 ngx.say("failed to create timer: ", err)
             end
 
-            ngx.sleep(0.2)
+            i = 1
+            while not done do
+                local time = 0.005 * i
+                if time > 0.1 then
+                    time = 0.1
+                end
+                ngx.sleep(time)
+                i = i + 1
+            end
 
             collectgarbage("collect")
 
             ngx.say("total_send_bytes: ", total_send_bytes)
-        ';
+        }
     }
 
     location /foo {
