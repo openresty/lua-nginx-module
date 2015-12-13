@@ -7180,6 +7180,9 @@ Returns the ordinal number of the current Nginx worker processes (starting from 
 So if the total number of workers is `N`, then this method may return a number between 0
 and `N - 1` (inclusive).
 
+This function returns meaningful values only for NGINX 1.9.1+. With earlier versions of NGINX, it
+always returns `nil`.
+
 See also [ngx.worker.count](#ngxworkercount).
 
 This API was first introduced in the `0.9.20` release.
