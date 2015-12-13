@@ -30,3 +30,4 @@ GET /lua
 ^worker id: [0-1]$
 --- no_error_log
 [error]
+--- skip_nginx: 3: <=1.9.0

@@ -59,7 +59,11 @@ ngx_http_lua_ngx_worker_pid(lua_State *L)
 static int
 ngx_http_lua_ngx_worker_id(lua_State *L)
 {
+#if (nginx_version >= 1009001)
     lua_pushinteger(L, (lua_Integer) ngx_worker);
+#else
+    lua_pushnil(L);
+#endif
     return 1;
 }
 
@@ -88,7 +92,11 @@ ngx_http_lua_ffi_worker_pid(void)
 int
 ngx_http_lua_ffi_worker_id(void)
 {
+#if (nginx_version >= 1009001)
     return (int) ngx_worker;
+#else
+    return -1;
+#endif
 }
 
 
