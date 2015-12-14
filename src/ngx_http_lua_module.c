@@ -791,9 +791,9 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     if (lmcf->semaphore_mm->num_per_block == NGX_CONF_UNSET_UINT) {
         /* the origin is set to 4096, but it needs some space for
-         * ngx_http_lua_semaphore_mm_block_t, two is enough, so
-         * it is 4094 */
-        lmcf->semaphore_mm->num_per_block = 4094;
+         * ngx_http_lua_semaphore_mm_block_t, one is enough, so
+         * it is 4095 */
+        lmcf->semaphore_mm->num_per_block = 4095;
     }
 
     lmcf->cycle = cf->cycle;
