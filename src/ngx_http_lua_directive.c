@@ -354,7 +354,8 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, filter_data->script.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       filter_data->script.data,
                                        filter_data->script.len,
                                        filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
@@ -407,7 +408,8 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path, filter_data->key);
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     filter_data->key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
