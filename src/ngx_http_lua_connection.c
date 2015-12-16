@@ -86,8 +86,6 @@ static void ngx_http_lua_fd_rev_handler(ngx_event_t *ev) {
         /* queue/fire off handler */
         r->write_event_handler(r);
     }
-
-    ngx_http_run_posted_requests(r->connection);
 }
 
 
