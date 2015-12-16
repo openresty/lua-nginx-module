@@ -184,12 +184,12 @@ ngx_http_lua_connection_prep(ngx_http_request_t *r, ngx_connection_t *conn,
         *err ="no memory";
         return NGX_ERROR;
     }
-    if ((poll_mask & POLLIN) && ngx_handle_read_event(conn->read, NGX_LEVEL_EVENT) != NGX_OK) {
+    if ((poll_mask & POLLIN) && ngx_add_event(conn->read, NGX_READ_EVENT, NGX_LEVEL_EVENT) != NGX_OK) {
         ngx_free(u);
         *err ="unable to add to nginx main loop";
         return NGX_ERROR;
     }
-    if ((poll_mask & POLLOUT) && ngx_handle_write_event(conn->write, NGX_LEVEL_EVENT) != NGX_OK) {
+    if ((poll_mask & POLLOUT) && ngx_add_event(conn->write, NGX_WRITE_EVENT, NGX_LEVEL_EVENT) != NGX_OK) {
         if (poll_mask & POLLIN) {
             ngx_del_event(conn->read, NGX_READ_EVENT, 0);
         }
