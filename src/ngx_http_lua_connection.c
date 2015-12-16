@@ -184,6 +184,8 @@ ngx_http_lua_connection_prep(ngx_http_request_t *r, ngx_connection_t *conn,
         *err ="no memory";
         return NGX_ERROR;
     }
+    /* cleanup old events before adding new ones */
+    ngx_http_lua_cleanup_pending_operation(co_ctx);
     if ((poll_mask & POLLIN) && ngx_add_event(conn->read, NGX_READ_EVENT, NGX_LEVEL_EVENT) != NGX_OK) {
         ngx_free(u);
         *err ="unable to add to nginx main loop";
@@ -197,8 +199,6 @@ ngx_http_lua_connection_prep(ngx_http_request_t *r, ngx_connection_t *conn,
         *err ="unable to add to nginx main loop";
         return NGX_ERROR;
     }
-    /* only clean up pending after no failures are possible */
-    ngx_http_lua_cleanup_pending_operation(co_ctx);
     conn->data = u;
     u->request = r;
     u->co_ctx = co_ctx;
