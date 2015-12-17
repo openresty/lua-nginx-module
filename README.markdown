@@ -1045,6 +1045,7 @@ Directives
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
+* [access_by_lua_no_postpone](#access_by_lua_no_postpone)
 * [lua_transform_underscores_in_response_headers](#lua_transform_underscores_in_response_headers)
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
@@ -1832,6 +1833,10 @@ As with other access phase handlers, [access_by_lua](#access_by_lua) will *not* 
 
 Note that when calling `ngx.exit(ngx.OK)` within a [access_by_lua](#access_by_lua) handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [access_by_lua](#access_by_lua) handler, calling [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
 
+Starting from the `v0.9.20` release, you can use the [access_by_lua_no_postpone](#access_by_lua_no_postpone)
+directive to control when to run this handler inside the "access" request-processing phase
+of NGINX.
+
 [Back to TOC](#directives)
 
 access_by_lua_block
@@ -2265,6 +2270,9 @@ The `<size>` argument accepts size units such as `k` and `m`:
  }
 ```
 
+The hard-coded minimum size is 8KB while the practical minimum size depends
+on actual user data set (some people start with 12KB).
+
 See [ngx.shared.DICT](#ngxshareddict) for details.
 
 This directive was first introduced in the `v0.3.1rc22` release.
@@ -2518,9 +2526,24 @@ rewrite_by_lua_no_postpone
 
 **context:** *http*
 
-Controls whether or not to disable postponing [rewrite_by_lua](#rewrite_by_lua) and [rewrite_by_lua_file](#rewrite_by_lua_file) directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
+Controls whether or not to disable postponing [rewrite_by_lua](#rewrite_by_lua)* directives to run at the end of the `rewrite` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `rewrite` phase.
 
 This directive was first introduced in the `v0.5.0rc29` release.
+
+[Back to TOC](#directives)
+
+access_by_lua_no_postpone
+-------------------------
+
+**syntax:** *access_by_lua_no_postpone on|off*
+
+**default:** *access_by_lua_no_postpone off*
+
+**context:** *http*
+
+Controls whether or not to disable postponing [access_by_lua](#access_by_lua)* directives to run at the end of the `access` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `access` phase.
+
+This directive was first introduced in the `v0.9.20` release.
 
 [Back to TOC](#directives)
 
@@ -2629,6 +2652,7 @@ Nginx API for Lua
 * [ngx.status](#ngxstatus)
 * [ngx.header.HEADER](#ngxheaderheader)
 * [ngx.resp.get_headers](#ngxrespget_headers)
+* [ngx.req.is_internal](#ngxreqis_internal)
 * [ngx.req.start_time](#ngxreqstart_time)
 * [ngx.req.http_version](#ngxreqhttp_version)
 * [ngx.req.raw_header](#ngxreqraw_header)
@@ -2727,6 +2751,8 @@ Nginx API for Lua
 * [ngx.thread.kill](#ngxthreadkill)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
+* [ngx.timer.running_count](#ngxtimerrunning_count)
+* [ngx.timer.pending_count](#ngxtimerpending_count)
 * [ngx.config.debug](#ngxconfigdebug)
 * [ngx.config.prefix](#ngxconfigprefix)
 * [ngx.config.nginx_version](#ngxconfignginx_version)
@@ -2734,6 +2760,8 @@ Nginx API for Lua
 * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
 * [ngx.worker.exiting](#ngxworkerexiting)
 * [ngx.worker.pid](#ngxworkerpid)
+* [ngx.worker.count](#ngxworkercount)
+* [ngx.worker.id](#ngxworkerid)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -2936,23 +2964,40 @@ HTTP status constants
 
 ```nginx
 
+   value = ngx.HTTP_CONTINUE (100) (first added in the v0.9.20 release)
+   value = ngx.HTTP_SWITCHING_PROTOCOLS (101) (first added in the v0.9.20 release)
    value = ngx.HTTP_OK (200)
    value = ngx.HTTP_CREATED (201)
+   value = ngx.HTTP_ACCEPTED (202) (first added in the v0.9.20 release)
+   value = ngx.HTTP_NO_CONTENT (204) (first added in the v0.9.20 release)
+   value = ngx.HTTP_PARTIAL_CONTENT (206) (first added in the v0.9.20 release)
    value = ngx.HTTP_SPECIAL_RESPONSE (300)
    value = ngx.HTTP_MOVED_PERMANENTLY (301)
    value = ngx.HTTP_MOVED_TEMPORARILY (302)
    value = ngx.HTTP_SEE_OTHER (303)
    value = ngx.HTTP_NOT_MODIFIED (304)
+   value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
    value = ngx.HTTP_BAD_REQUEST (400)
    value = ngx.HTTP_UNAUTHORIZED (401)
+   value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
    value = ngx.HTTP_FORBIDDEN (403)
    value = ngx.HTTP_NOT_FOUND (404)
    value = ngx.HTTP_NOT_ALLOWED (405)
+   value = ngx.HTTP_NOT_ACCEPTABLE (406) (first added in the v0.9.20 release)
+   value = ngx.HTTP_REQUEST_TIMEOUT (408) (first added in the v0.9.20 release)
+   value = ngx.HTTP_CONFLICT (409) (first added in the v0.9.20 release)
    value = ngx.HTTP_GONE (410)
+   value = ngx.HTTP_UPGRADE_REQUIRED (426) (first added in the v0.9.20 release)
+   value = ngx.HTTP_TOO_MANY_REQUESTS (429) (first added in the v0.9.20 release)
+   value = ngx.HTTP_CLOSE (444) (first added in the v0.9.20 release)
+   value = ngx.HTTP_ILLEGAL (451) (first added in the v0.9.20 release)
    value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
    value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
+   value = ngx.HTTP_BAD_GATEWAY (502) (first added in the v0.9.20 release)
    value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
    value = ngx.HTTP_GATEWAY_TIMEOUT (504) (first added in the v0.3.1rc38 release)
+   value = ngx.HTTP_VERSION_NOT_SUPPORTED (505) (first added in the v0.9.20 release)
+   value = ngx.HTTP_INSUFFICIENT_STORAGE (507) (first added in the v0.9.20 release)
 ```
 
 [Back to TOC](#nginx-api-for-lua)
@@ -3114,7 +3159,7 @@ ngx.location.capture
 
 **context:** *rewrite_by_lua*, access_by_lua*, content_by_lua**
 
-Issue a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
+Issues a synchronous but still non-blocking *Nginx Subrequest* using `uri`.
 
 Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or *any* other nginx C modules like `ngx_proxy`, `ngx_fastcgi`, `ngx_memc`,
 `ngx_postgres`, `ngx_drizzle`, and even ngx_lua itself and etc etc etc.
@@ -3124,6 +3169,9 @@ Also note that subrequests just mimic the HTTP interface but there is *no* extra
 Subrequests are completely different from HTTP 301/302 redirection (via [ngx.redirect](#ngxredirect)) and internal redirection (via [ngx.exec](#ngxexec)).
 
 You should always read the request body (by either calling [ngx.req.read_body](#ngxreqread_body) or configuring [lua_need_request_body](#lua_need_request_body) on) before initiating a subrequest.
+
+This API function (as well as [ngx.location.capture_multi](#ngxlocationcapture_multi)) always buffers the whole response body of the subrequest in memory. Thus, you should use [cosockets](#ngxsockettcp)
+and streaming processing instead if you have to handle large subrequest responses.
 
 Here is a basic example:
 
@@ -3616,6 +3664,21 @@ Returns a Lua table holding all the current response headers for the current req
 This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
 
 This API was first introduced in the `v0.9.5` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.req.is_internal
+-------------------
+**syntax:** *is_internal = ngx.req.is_internal()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua**
+
+Returns a boolean indicating whether the current request is an "internal request", i.e.,
+a request initiated from inside the current nginx server instead of from the client side.
+
+Subrequests are all internal requests and so are requests after internal redirects.
+
+This API was first introduced in the `v0.9.20` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -6976,6 +7039,30 @@ This API was first introduced in the `v0.8.0` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.timer.running_count
+-----------------------
+**syntax:** *count = ngx.timer.running_count()*
+
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Returns the number of timers currently running.
+
+This directive was first introduced in the `v0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.pending_count
+-----------------------
+**syntax:** *count = ngx.timer.pending_count()*
+
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+
+Returns the number of pending timers.
+
+This directive was first introduced in the `v0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
 ngx.config.debug
 ----------------
 **syntax:** *debug = ngx.config.debug*
@@ -7063,6 +7150,42 @@ ngx.worker.pid
 This function returns a Lua number for the process ID (PID) of the current Nginx worker process. This API is more efficient than `ngx.var.pid` and can be used in contexts where the [ngx.var.VARIABLE](#ngxvarvariable) API cannot be used (like [init_worker_by_lua](#init_worker_by_lua)).
 
 This API was first introduced in the `0.9.5` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.worker.count
+----------------
+
+**syntax:** *count = ngx.worker.count()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the total number of the Nginx worker processes (i.e., the value configured
+by the [worker_processes](http://nginx.org/en/docs/ngx_core_module.html#worker_processes)
+directive in `nginx.conf`).
+
+This API was first introduced in the `0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.worker.id
+-------------
+
+**syntax:** *count = ngx.worker.id()*
+
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+
+Returns the ordinal number of the current Nginx worker processes (starting from number 0).
+
+So if the total number of workers is `N`, then this method may return a number between 0
+and `N - 1` (inclusive).
+
+This function returns meaningful values only for NGINX 1.9.1+. With earlier versions of NGINX, it
+always returns `nil`.
+
+See also [ngx.worker.count](#ngxworkercount).
+
+This API was first introduced in the `0.9.20` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

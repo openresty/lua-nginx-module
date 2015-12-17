@@ -719,7 +719,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 99 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 116 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -926,7 +926,7 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
 #if 1
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         /* being a fake request */
         lmcf->running_timers--;
     }
@@ -1480,7 +1480,9 @@ no_parent:
 
 done:
 
-    if (ctx->entered_content_phase && r->connection->fd != -1) {
+    if (ctx->entered_content_phase
+        && r->connection->fd != (ngx_socket_t) -1)
+    {
         rc = ngx_http_lua_send_chain_link(r, ctx,
                                           NULL /* last_buf */);
 
@@ -2090,7 +2092,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 23 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 24 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
     ngx_http_lua_inject_req_uri_api(log, L);
@@ -2099,6 +2101,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_socket_api(L);
     ngx_http_lua_inject_req_method_api(L);
     ngx_http_lua_inject_req_time_api(L);
+    ngx_http_lua_inject_req_misc_api(L);
 
     lua_setfield(L, -2, "req");
 }
@@ -3523,7 +3526,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
     }
 
-    if (r->connection->fd != -1) {
+    if (r->connection->fd != (ngx_socket_t) -1) {
         ngx_http_finalize_request(r, rc);
         return;
     }
@@ -3610,10 +3613,15 @@ ngx_http_lua_free_fake_request(ngx_http_request_t *r)
         return;
     }
 
-    for (cln = r->cleanup; cln; cln = cln->next) {
+    cln = r->cleanup;
+    r->cleanup = NULL;
+
+    while (cln) {
         if (cln->handler) {
             cln->handler(cln->data);
         }
+
+        cln = cln->next;
     }
 
     r->request_line.len = 0;
@@ -3979,5 +3987,79 @@ ngx_http_lua_get_raw_phase_context(lua_State *L)
     lua_pushinteger(L, (int) ctx->context);
     return 1;
 }
+
+
+ngx_http_cleanup_t *
+ngx_http_lua_cleanup_add(ngx_http_request_t *r, size_t size)
+{
+    ngx_http_cleanup_t  *cln;
+    ngx_http_lua_ctx_t  *ctx;
+
+    if (size == 0) {
+        ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+        r = r->main;
+
+        if (ctx != NULL && ctx->free_cleanup) {
+            cln = ctx->free_cleanup;
+            ctx->free_cleanup = cln->next;
+
+            dd("reuse cleanup: %p", cln);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup reuse: %p", cln);
+
+            cln->handler = NULL;
+            cln->next = r->cleanup;
+
+            r->cleanup = cln;
+
+            return cln;
+        }
+    }
+
+    return ngx_http_cleanup_add(r, size);
+}
+
+
+void
+ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
+{
+    ngx_http_cleanup_t  **last;
+    ngx_http_cleanup_t   *cln;
+    ngx_http_lua_ctx_t   *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    r = r->main;
+
+    cln = (ngx_http_cleanup_t *)
+              ((u_char *) cleanup - offsetof(ngx_http_cleanup_t, handler));
+
+    dd("cln: %p, cln->handler: %p, &cln->handler: %p",
+       cln, cln->handler, &cln->handler);
+
+    last = &r->cleanup;
+
+    while (*last) {
+        if (*last == cln) {
+            *last = cln->next;
+
+            cln->next = ctx->free_cleanup;
+            ctx->free_cleanup = cln;
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua http cleanup free: %p", cln);
+
+            return;
+        }
+
+        last = &(*last)->next;
+    }
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

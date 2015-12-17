@@ -209,12 +209,15 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     if (n == 2) {
         rc = (ngx_int_t) luaL_checknumber(L, 2);
 
-        if (rc != NGX_HTTP_MOVED_TEMPORARILY &&
-                rc != NGX_HTTP_MOVED_PERMANENTLY)
+        if (rc != NGX_HTTP_MOVED_TEMPORARILY
+            && rc != NGX_HTTP_MOVED_PERMANENTLY
+            && rc != NGX_HTTP_TEMPORARY_REDIRECT)
         {
-            return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY and "
-                              "ngx.HTTP_MOVED_PERMANENTLY are allowed");
+            return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY, "
+                              "ngx.HTTP_MOVED_PERMANENTLY, and "
+                              "ngx.HTTP_TEMPORARY_REDIRECT are allowed");
         }
+
     } else {
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }

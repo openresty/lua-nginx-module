@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 13);
+plan tests => repeat_each() * (blocks() * 3 + 11);
 
 #no_diff();
 no_long_string();
@@ -824,3 +824,16 @@ eof 2: true
 [error]
 [alert]
 
+
+
+=== TEST 26: no ngx.print
+--- config
+    location /lua {
+        echo ok;
+        body_filter_by_lua "ngx.print(32) return 1";
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+API disabled in the context of body_filter_by_lua*

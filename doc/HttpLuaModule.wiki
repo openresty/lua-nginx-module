@@ -1514,6 +1514,10 @@ As with other access phase handlers, [[#access_by_lua|access_by_lua]] will ''not
 
 Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#access_by_lua|access_by_lua]] handler, the nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#access_by_lua|access_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
 
+Starting from the <code>v0.9.20</code> release, you can use the [[#access_by_lua_no_postpone|access_by_lua_no_postpone]]
+directive to control when to run this handler inside the "access" request-processing phase
+of NGINX.
+
 == access_by_lua_block ==
 
 '''syntax:''' ''access_by_lua_block { lua-script }''
@@ -1897,6 +1901,9 @@ The <code><size></code> argument accepts size units such as <code>k</code> and <
     }
 </geshi>
 
+The hard-coded minimum size is 8KB while the practical minimum size depends
+on actual user data set (some people start with 12KB).
+
 See [[#ngx.shared.DICT|ngx.shared.DICT]] for details.
 
 This directive was first introduced in the <code>v0.3.1rc22</code> release.
@@ -2105,9 +2112,21 @@ This directive was first introduced in the <code>v0.5.0rc19</code> release.
 
 '''context:''' ''http''
 
-Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
+Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]]* directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
 
 This directive was first introduced in the <code>v0.5.0rc29</code> release.
+
+== access_by_lua_no_postpone ==
+
+'''syntax:''' ''access_by_lua_no_postpone on|off''
+
+'''default:''' ''access_by_lua_no_postpone off''
+
+'''context:''' ''http''
+
+Controls whether or not to disable postponing [[#access_by_lua|access_by_lua]]* directives to run at the end of the <code>access</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>access</code> phase.
+
+This directive was first introduced in the <code>v0.9.20</code> release.
 
 == lua_transform_underscores_in_response_headers ==
 
@@ -2352,23 +2371,40 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.capture
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*''
 
 <geshi lang="nginx">
+  value = ngx.HTTP_CONTINUE (100) (first added in the v0.9.20 release)
+  value = ngx.HTTP_SWITCHING_PROTOCOLS (101) (first added in the v0.9.20 release)
   value = ngx.HTTP_OK (200)
   value = ngx.HTTP_CREATED (201)
+  value = ngx.HTTP_ACCEPTED (202) (first added in the v0.9.20 release)
+  value = ngx.HTTP_NO_CONTENT (204) (first added in the v0.9.20 release)
+  value = ngx.HTTP_PARTIAL_CONTENT (206) (first added in the v0.9.20 release)
   value = ngx.HTTP_SPECIAL_RESPONSE (300)
   value = ngx.HTTP_MOVED_PERMANENTLY (301)
   value = ngx.HTTP_MOVED_TEMPORARILY (302)
   value = ngx.HTTP_SEE_OTHER (303)
   value = ngx.HTTP_NOT_MODIFIED (304)
+  value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
   value = ngx.HTTP_BAD_REQUEST (400)
   value = ngx.HTTP_UNAUTHORIZED (401)
+  value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
   value = ngx.HTTP_FORBIDDEN (403)
   value = ngx.HTTP_NOT_FOUND (404)
   value = ngx.HTTP_NOT_ALLOWED (405)
+  value = ngx.HTTP_NOT_ACCEPTABLE (406) (first added in the v0.9.20 release)
+  value = ngx.HTTP_REQUEST_TIMEOUT (408) (first added in the v0.9.20 release)
+  value = ngx.HTTP_CONFLICT (409) (first added in the v0.9.20 release)
   value = ngx.HTTP_GONE (410)
+  value = ngx.HTTP_UPGRADE_REQUIRED (426) (first added in the v0.9.20 release)
+  value = ngx.HTTP_TOO_MANY_REQUESTS (429) (first added in the v0.9.20 release)
+  value = ngx.HTTP_CLOSE (444) (first added in the v0.9.20 release)
+  value = ngx.HTTP_ILLEGAL (451) (first added in the v0.9.20 release)
   value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
   value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
+  value = ngx.HTTP_BAD_GATEWAY (502) (first added in the v0.9.20 release)
   value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
   value = ngx.HTTP_GATEWAY_TIMEOUT (504) (first added in the v0.3.1rc38 release)
+  value = ngx.HTTP_VERSION_NOT_SUPPORTED (505) (first added in the v0.9.20 release)
+  value = ngx.HTTP_INSUFFICIENT_STORAGE (507) (first added in the v0.9.20 release)
 </geshi>
 
 == Nginx log level constants ==
@@ -2509,7 +2545,7 @@ The <code>ngx.ctx</code> lookup requires relatively expensive metamethod calls a
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Issue a synchronous but still non-blocking ''Nginx Subrequest'' using <code>uri</code>.
+Issues a synchronous but still non-blocking ''Nginx Subrequest'' using <code>uri</code>.
 
 Nginx's subrequests provide a powerful way to make non-blocking internal requests to other locations configured with disk file directory or ''any'' other nginx C modules like <code>ngx_proxy</code>, <code>ngx_fastcgi</code>, <code>ngx_memc</code>,
 <code>ngx_postgres</code>, <code>ngx_drizzle</code>, and even ngx_lua itself and etc etc etc.
@@ -2519,6 +2555,9 @@ Also note that subrequests just mimic the HTTP interface but there is ''no'' ext
 Subrequests are completely different from HTTP 301/302 redirection (via [[#ngx.redirect|ngx.redirect]]) and internal redirection (via [[#ngx.exec|ngx.exec]]).
 
 You should always read the request body (by either calling [[#ngx.req.read_body|ngx.req.read_body]] or configuring [[#lua_need_request_body|lua_need_request_body]] on) before initiating a subrequest.
+
+This API function (as well as [[#ngx.location.capture_multi|ngx.location.capture_multi]]) always buffers the whole response body of the subrequest in memory. Thus, you should use [[#ngx.socket.tcp|cosockets]]
+and streaming processing instead if you have to handle large subrequest responses.
 
 Here is a basic example:
 
@@ -2973,6 +3012,18 @@ end
 This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_headers]] except getting response headers instead of request headers.
 
 This API was first introduced in the <code>v0.9.5</code> release.
+
+== ngx.req.is_internal ==
+'''syntax:''' ''is_internal = ngx.req.is_internal()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+
+Returns a boolean indicating whether the current request is an "internal request", i.e.,
+a request initiated from inside the current nginx server instead of from the client side.
+
+Subrequests are all internal requests and so are requests after internal redirects.
+
+This API was first introduced in the <code>v0.9.20</code> release.
 
 == ngx.req.start_time ==
 '''syntax:''' ''secs = ngx.req.start_time()''
@@ -5913,6 +5964,24 @@ You can pass most of the standard Lua values (nils, booleans, numbers, strings, 
 
 This API was first introduced in the <code>v0.8.0</code> release.
 
+== ngx.timer.running_count ==
+'''syntax:''' ''count = ngx.timer.running_count()''
+
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+Returns the number of timers currently running.
+
+This directive was first introduced in the <code>v0.9.20</code> release.
+
+== ngx.timer.pending_count ==
+'''syntax:''' ''count = ngx.timer.pending_count()''
+
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
+
+Returns the number of pending timers.
+
+This directive was first introduced in the <code>v0.9.20</code> release.
+
 == ngx.config.debug ==
 '''syntax:''' ''debug = ngx.config.debug''
 
@@ -5981,6 +6050,36 @@ This API was first introduced in the <code>0.9.3</code> release.
 This function returns a Lua number for the process ID (PID) of the current Nginx worker process. This API is more efficient than <code>ngx.var.pid</code> and can be used in contexts where the [[#ngx.var.VARIABLE|ngx.var.VARIABLE]] API cannot be used (like [[#init_worker_by_lua|init_worker_by_lua]]).
 
 This API was first introduced in the <code>0.9.5</code> release.
+
+== ngx.worker.count ==
+
+'''syntax:''' ''count = ngx.worker.count()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the total number of the Nginx worker processes (i.e., the value configured
+by the [http://nginx.org/en/docs/ngx_core_module.html#worker_processes worker_processes]
+directive in `nginx.conf`).
+
+This API was first introduced in the <code>0.9.20</code> release.
+
+== ngx.worker.id ==
+
+'''syntax:''' ''count = ngx.worker.id()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*''
+
+Returns the ordinal number of the current Nginx worker processes (starting from number 0).
+
+So if the total number of workers is `N`, then this method may return a number between 0
+and `N - 1` (inclusive).
+
+This function returns meaningful values only for NGINX 1.9.1+. With earlier versions of NGINX, it
+always returns `nil`.
+
+See also [[#ngx.worker.count|ngx.worker.count]].
+
+This API was first introduced in the <code>0.9.20</code> release.
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''

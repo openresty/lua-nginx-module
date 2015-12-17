@@ -1299,7 +1299,7 @@ ngx_http_lua_socket_udp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
-    if (c->fd != -1) {  /* not a fake connection */
+    if (c->fd != (ngx_socket_t) -1) {  /* not a fake connection */
         ctx = c->log->data;
         ctx->current_request = r;
     }
@@ -1358,7 +1358,7 @@ ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, &uc->log, 0, "UDP socket %d", s);
 
-    if (s == -1) {
+    if (s == (ngx_socket_t) -1) {
         ngx_log_error(NGX_LOG_ALERT, &uc->log, ngx_socket_errno,
                       ngx_socket_n " failed");
 

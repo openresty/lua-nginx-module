@@ -313,6 +313,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_access_handler_file },
 
+    { ngx_string("access_by_lua_no_postpone"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, postponed_to_access_phase_end),
+      NULL },
+
     /* content_by_lua_file rel/or/abs/path/to/script */
     { ngx_string("content_by_lua_file"),
       NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
@@ -569,6 +576,10 @@ ngx_http_lua_init(ngx_conf_t *cf)
         lmcf->postponed_to_rewrite_phase_end = 0;
     }
 
+    if (lmcf->postponed_to_access_phase_end == NGX_CONF_UNSET) {
+        lmcf->postponed_to_access_phase_end = 0;
+    }
+
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     if (lmcf->requires_rewrite) {
@@ -719,6 +730,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->regex_match_limit = NGX_CONF_UNSET;
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
+    lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
     dd("nginx Lua module main config structure initialized!");
 

@@ -354,7 +354,8 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, filter_data->script.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       filter_data->script.data,
                                        filter_data->script.len,
                                        filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
@@ -407,7 +408,8 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path, filter_data->key);
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     filter_data->key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -1555,12 +1557,63 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
         rc = ngx_http_lua_lex(b->pos, b->last - b->pos, ovec);
 
         if (rc < 0) {  /* no match */
-            cf->conf_file->line = start_line;
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "Lua code block missing the \"}\" "
-                               "character");
+            /* alas. the lexer does not yet support streaming processing. need
+             * more work below */
 
-            return NGX_ERROR;
+            if (cf->conf_file->file.offset >= file_size) {
+
+                cf->conf_file->line = ctx->start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "unexpected end of file, expecting "
+                                   "terminating characters for lua code "
+                                   "block");
+                return NGX_ERROR;
+            }
+
+            len = b->last - b->pos;
+
+            if (len == buf_size) {
+
+                cf->conf_file->line = start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "too long lua code block, probably "
+                                   "missing terminating characters");
+
+                return NGX_ERROR;
+            }
+
+            if (len) {
+                ngx_memcpy(b->start, b->pos, len);
+            }
+
+            size = (ssize_t) (file_size - cf->conf_file->file.offset);
+
+            if (size > b->end - (b->start + len)) {
+                size = b->end - (b->start + len);
+            }
+
+            n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
+                              cf->conf_file->file.offset);
+
+            if (n == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+
+            if (n != size) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   ngx_read_file_n " returned "
+                                   "only %z bytes instead of %z",
+                                   n, size);
+                return NGX_ERROR;
+            }
+
+            b->pos = b->start + len;
+            b->last = b->pos + n;
+            start = b->start;
+
+            continue;
         }
 
         if (rc == FOUND_LEFT_LBRACKET_STR || rc == FOUND_LEFT_LBRACKET_CMT) {
