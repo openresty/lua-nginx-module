@@ -13,6 +13,7 @@ ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 Table of Contents
 =================
 
+* [Name](#name)
 * [Status](#status)
 * [Version](#version)
 * [Synopsis](#synopsis)
@@ -6869,6 +6870,7 @@ Kills a running "light thread" created by [ngx.thread.spawn](#ngxthreadspawn). R
 According to the current implementation, only the parent coroutine (or "light thread") can kill a thread. Also, a running "light thread" with pending NGINX subrequests (initiated by [ngx.location.capture](#ngxlocationcapture) for example) cannot be killed due to a limitation in the NGINX core.
 
 This API was first enabled in the `v0.9.9` release.
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.on_abort

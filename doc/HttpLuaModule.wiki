@@ -5806,6 +5806,7 @@ Kills a running "light thread" created by [[#ngx.thread.spawn|ngx.thread.spawn]]
 According to the current implementation, only the parent coroutine (or "light thread") can kill a thread. Also, a running "light thread" with pending NGINX subrequests (initiated by [[#ngx.location.capture|ngx.location.capture]] for example) cannot be killed due to a limitation in the NGINX core.
 
 This API was first enabled in the <code>v0.9.9</code> release.
+
 == ngx.on_abort ==
 '''syntax:''' ''ok, err = ngx.on_abort(callback)''
 
