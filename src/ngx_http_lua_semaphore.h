@@ -1,6 +1,9 @@
 
 /*
+ * Copyright (C) Yichun Zhang (agentzh)
  * Copyright (C) cuiweixie
+ * I hereby assign copyright in this code to the lua-nginx-module project,
+ * to be licensed under the same terms as the rest of the code
  */
 
 
