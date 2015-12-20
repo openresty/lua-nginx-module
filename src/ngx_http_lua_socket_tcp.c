@@ -4945,7 +4945,10 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
 #endif
 
 #if (NGX_DTRACE)
-    ngx_http_lua_probe_socket_tcp_receive_done(r, u, lua_tostring(L, -1), size);
+    ngx_http_lua_probe_socket_tcp_receive_done(r, u,
+                                               (const u_char *)
+                                               lua_tostring(L, -1),
+                                               size);
 #endif
 
     if (nbufs > 1 && ll) {
