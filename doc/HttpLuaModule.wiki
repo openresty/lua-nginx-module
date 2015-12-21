@@ -4845,7 +4845,7 @@ Unconditionally sets a key-value pair into the shm-based dictionary [[#ngx.share
 
 The <code>value</code> argument inserted can be Lua booleans, numbers, strings, or <code>nil</code>. Their value type will also be stored into the dictionary and the same data type can be retrieved later via the [[#ngx.shared.DICT.get|get]] method.
 
-The optional <code>exptime</code> argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is <code>0.001</code> seconds. If the <code>exptime</code> takes the value <code>0</code> (which is the default), then the item will never be expired.
+The optional <code>exptime</code> argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is <code>0.001</code> seconds. If the <code>exptime</code> takes the value <code>0</code> (which is the default), then the item will never expire.
 
 The optional <code>flags</code> argument specifies a user flags value associated with the entry to be stored. It can also be retrieved later with the value. The user flags is stored as an unsigned 32-bit integer internally. Defaults to <code>0</code>. The user flags argument was first introduced in the <code>v0.5.0rc2</code> release.
 
