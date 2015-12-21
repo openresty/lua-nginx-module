@@ -251,7 +251,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path,
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
                                      llcf->content_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
@@ -280,7 +280,8 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, llcf->content_src.value.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       llcf->content_src.value.data,
                                        llcf->content_src.value.len,
                                        llcf->content_src_key,
                                        (const char *)

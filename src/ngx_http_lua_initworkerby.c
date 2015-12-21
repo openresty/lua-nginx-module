@@ -167,6 +167,8 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
                 return NGX_ERROR;
             }
 
+            http_ctx.srv_conf[ngx_modules[i]->ctx_index] = cur;
+
             if (module->merge_srv_conf) {
                 prev = module->create_srv_conf(&conf);
                 if (prev == NULL) {
@@ -178,8 +180,6 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
                     goto failed;
                 }
             }
-
-            http_ctx.srv_conf[ngx_modules[i]->ctx_index] = cur;
         }
 
         if (module->create_loc_conf) {
@@ -187,6 +187,8 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
             if (cur == NULL) {
                 return NGX_ERROR;
             }
+
+            http_ctx.loc_conf[ngx_modules[i]->ctx_index] = cur;
 
             if (module->merge_loc_conf) {
                 prev = module->create_loc_conf(&conf);
@@ -199,8 +201,6 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
                     goto failed;
                 }
             }
-
-            http_ctx.loc_conf[ngx_modules[i]->ctx_index] = cur;
         }
     }
 

@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -8,7 +7,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 17);
+plan tests => repeat_each() * (blocks() * 3 + 18);
 
 #no_diff();
 no_long_string();
@@ -2298,3 +2297,135 @@ foo = nil
 --- no_error_log
 [error]
 
+
+
+=== TEST 86: the lightuserdata ngx.null has no methods of shared dicts.
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local lightuserdata = ngx.null
+            lightuserdata:set("foo", 1)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- grep_error_log chop
+attempt to index local 'lightuserdata' (a userdata value)
+--- grep_error_log_out
+attempt to index local 'lightuserdata' (a userdata value)
+--- error_log
+[error]
+--- no_error_log
+bad "zone" argument
+
+
+
+=== TEST 87: set bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.set({1}, "foo", 1)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad "zone" argument
+
+
+
+=== TEST 88: get bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.get({1}, "foo")
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad "zone" argument
+
+
+
+=== TEST 89: incr bad zone table
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs.incr({1}, "foo", 32)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+
+
+
+=== TEST 90: check the type of the shdict object
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.say("type: ", type(ngx.shared.dogs))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+type: table
+--- no_error_log
+[error]
+
+
+
+=== TEST 91: dogs, cat mixing
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            dogs:set("bah", 10502)
+            local val = dogs:get("foo")
+            ngx.say(val, " ", type(val))
+            val = dogs:get("bah")
+            ngx.say(val, " ", type(val))
+
+            local cats = ngx.shared.cats
+            val = cats:get("foo")
+            ngx.say(val or "nil")
+            val = cats:get("bah")
+            ngx.say(val or "nil")
+        ';
+    }
+--- request
+GET /test
+--- response_body
+32 number
+10502 number
+nil
+nil
+--- no_error_log
+[error]

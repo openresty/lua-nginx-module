@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -361,3 +360,38 @@ foo: rc=-5
 --- no_error_log
 [error]
 
+
+
+=== TEST 7: find zone (multiple zones)
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict cats 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local ffi = require "ffi"
+
+            ffi.cdef[[
+                void *ngx_http_lua_find_zone(char *data, size_t len);
+            ]]
+
+            local buf = ffi.new("char[?]", 4)
+            ffi.copy(buf, "cats", 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local cats = tostring(zone)
+
+            ffi.copy(buf, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local dogs = tostring(zone)
+
+            ngx.say("dogs == cats ? ", dogs == cats)
+            -- ngx.say("dogs: ", dogs)
+            -- ngx.say("cats ", cats)
+        ';
+    }
+--- request
+GET /test
+--- response_body
+dogs == cats ? false
+--- no_error_log
+[error]

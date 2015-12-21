@@ -1,11 +1,10 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 175;
+plan tests => repeat_each() * 187;
 
 our $HtmlDir = html_dir;
 
@@ -3344,3 +3343,298 @@ failed to setkeepalive: closed
 lua tcp socket connect timeout: 100
 --- timeout: 10
 
+
+
+=== TEST 56: reuse cleanup
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            for i = 1, 2 do
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send request: ", err)
+                    return
+                end
+
+                ngx.say("request sent: ", bytes)
+
+                while true do
+                    local line, err, part = sock:receive()
+                    if not line then
+                        ngx.say("failed to receive a line: ", err, " [", part, "]")
+                        break
+                    end
+                end
+
+                ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end
+        }
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+failed to receive a line: closed []
+close: 1 nil
+connected: 1
+request sent: 57
+failed to receive a line: closed []
+close: 1 nil
+--- error_log
+lua http cleanup reuse
+
+
+
+=== TEST 57: reuse cleanup in ngx.timer (fake_request)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local total_send_bytes = 0
+            local port = ngx.var.port
+
+            local function network()
+                local sock = ngx.socket.tcp()
+
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to connect: ", err)
+                    return
+                end
+
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.log(ngx.ERR, "failed to send request: ", err)
+                    return
+                end
+
+                total_send_bytes = total_send_bytes + bytes
+
+                while true do
+                    local line, err, part = sock:receive()
+                    if not line then
+                        break
+                    end
+                end
+
+                ok, err = sock:close()
+            end
+
+            local done = false
+
+            local function double_network()
+                network()
+                network()
+                done = true
+            end
+
+            local ok, err = ngx.timer.at(0, double_network)
+            if not ok then
+                ngx.say("failed to create timer: ", err)
+            end
+
+            i = 1
+            while not done do
+                local time = 0.005 * i
+                if time > 0.1 then
+                    time = 0.1
+                end
+                ngx.sleep(time)
+                i = i + 1
+            end
+
+            collectgarbage("collect")
+
+            ngx.say("total_send_bytes: ", total_send_bytes)
+        }
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+total_send_bytes: 114
+--- error_log
+lua http cleanup reuse
+
+
+
+=== TEST 58: free cleanup in ngx.timer (without sock:close)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local total_send_bytes = 0
+            local port = ngx.var.port
+
+            local function network()
+                local sock = ngx.socket.tcp()
+
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to connect: ", err)
+                    return
+                end
+
+                local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.log(ngx.ERR, "failed to send request: ", err)
+                    return
+                end
+
+                total_send_bytes = total_send_bytes + bytes
+
+                while true do
+                    local line, err, part = sock:receive()
+                    if not line then
+                        break
+                    end
+                end
+            end
+
+            local done = false
+
+            local function double_network()
+                network()
+                network()
+                done = true
+            end
+
+            local ok, err = ngx.timer.at(0, double_network)
+            if not ok then
+                ngx.say("failed to create timer: ", err)
+            end
+
+            i = 1
+            while not done do
+                local time = 0.005 * i
+                if time > 0.1 then
+                    time = 0.1
+                end
+                ngx.sleep(time)
+                i = i + 1
+            end
+
+            collectgarbage("collect")
+
+            ngx.say("total_send_bytes: ", total_send_bytes)
+        }
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+total_send_bytes: 114
+--- no_error_log
+[error]
+
+
+
+=== TEST 59: reuse cleanup in subrequest
+--- config
+    server_tokens off;
+    location /t {
+        echo_location /tt;
+    }
+
+    location /tt {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            for i = 1, 2 do
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send request: ", err)
+                    return
+                end
+
+                ngx.say("request sent: ", bytes)
+
+                while true do
+                    local line, err, part = sock:receive()
+                    if not line then
+                        ngx.say("failed to receive a line: ", err, " [", part, "]")
+                        break
+                    end
+                end
+
+                ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end
+        ';
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+failed to receive a line: closed []
+close: 1 nil
+connected: 1
+request sent: 57
+failed to receive a line: closed []
+close: 1 nil
+--- error_log
+lua http cleanup reuse
