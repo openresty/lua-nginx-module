@@ -340,7 +340,11 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (!sem->event_posted && sem->resource_count > 0) {
+    /* we keep the order, will resume the older waited firtly
+     * in ngx_http_lua_semaphore_handler
+     */
+
+    if (ngx_queue_empty(&sem->wait_queue) && sem->resource_count > 0) {
         sem->resource_count--;
         return NGX_OK;
     }
