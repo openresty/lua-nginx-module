@@ -2183,7 +2183,7 @@ failed to create OCSP request: output buffer too small: 68 > 67
             local req, err = ssl.create_ocsp_request(cert_data, 67)
             if not req then
                 ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
-                return
+                return ngx.exit(ngx.ERROR)
             end
 
             ngx.log(ngx.WARN, "OCSP request created with length ", #req)
@@ -2242,7 +2242,7 @@ failed to create OCSP request: output buffer too small: 68 > 67
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+failed to do SSL handshake: handshake failed
 
 --- error_log
 lua ssl server name: "test.com"
@@ -2823,7 +2823,6 @@ OCSP response validation ok
 
 
 === TEST 28: fail to validate OCSP response - OCSP response returns revoked status
-
 --- http_config
     lua_package_path "t/lib/?.lua;lua/?.lua;../lua-resty-core/lib/?.lua;;";
 
@@ -2840,7 +2839,7 @@ OCSP response validation ok
             cert_data, err = ssl.cert_pem_to_der(cert_data)
             if not cert_data then
                 ngx.log(ngx.ERR, "failed to convert pem cert to der cert: ", err)
-                return
+                return ngx.exit(ngx.ERROR)
             end
 
             local f = assert(io.open("t/cert/ocsp/revoked-ocsp-resp.der"))
@@ -2850,7 +2849,7 @@ OCSP response validation ok
             local req, err = ssl.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
-                return
+                return ngx.exit(ngx.ERROR)
             end
 
             ngx.log(ngx.WARN, "OCSP response validation ok")
@@ -2904,7 +2903,7 @@ OCSP response validation ok
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+failed to do SSL handshake: handshake failed
 
 --- error_log
 lua ssl server name: "test.com"
