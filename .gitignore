@@ -154,6 +154,7 @@ src/timer.[ch]
 src/config.[ch]
 src/worker.[ch]
 src/sslcertby.[ch]
+src/lex.[ch]
 *.plist
 lua
 ttimer

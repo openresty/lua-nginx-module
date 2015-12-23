@@ -20,6 +20,8 @@ force=$2
             #--with-cc=gcc46 \
             #--with-cc=clang \
             #--without-http_referer_module \
+            #--with-http_v2_module \
+            #--with-http_spdy_module \
 
 time ngx-build $force $version \
             --with-ipv6 \
@@ -29,7 +31,6 @@ time ngx-build $force $version \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
             --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:/usr/local/lib" \
-            --with-http_spdy_module \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --with-http_image_filter_module \
@@ -49,7 +50,9 @@ time ngx-build $force $version \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \
+                --add-module=$root/t/data/fake-module \
                 --with-http_gunzip_module \
+                --with-http_dav_module \
           --with-select_module \
           --with-poll_module \
                 $opts \

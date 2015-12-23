@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -9,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 34);
+plan tests => repeat_each() * (blocks() * 3 + 38);
 
 #no_diff();
 no_long_string();
@@ -1404,3 +1403,46 @@ Location: http://test.com/foo/bar
 --- no_error_log
 [error]
 
+
+
+=== TEST 67: ngx.header["Content-Type"] with ngx_gzip
+--- config
+    gzip             on;
+    gzip_min_length  1;
+    location = /test2 {
+        content_by_lua '
+            ngx.header["Content-Type"] = "text/html; charset=utf-8"
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /test2
+--- more_headers
+Accept-Encoding: gzip
+--- response_headers
+Content-Encoding: gzip
+Content-Type: text/html; charset=utf-8
+--- response_body_like chomp
+[^[:ascii:]]+
+--- no_error_log
+[error]
+
+
+
+=== TEST 68: ngx.header["Content-Type"] with "; blah"
+--- config
+    location = /test2 {
+        content_by_lua '
+            ngx.header["Content-Type"] = "; blah"
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /test2
+--- response_headers
+!Content-Encoding
+Content-Type: ; blah
+--- response_body
+test
+--- no_error_log
+[error]
