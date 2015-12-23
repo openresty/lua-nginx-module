@@ -449,7 +449,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
         }
 
         dd("saving regex %p, ncaptures %d,  captures %p", re_comp.regex,
-                re_comp.captures, cap);
+           re_comp.captures, cap);
 
         re->regex = re_comp.regex;
         re->regex_sd = sd;
@@ -681,7 +681,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
     if (nargs != 2 && nargs != 3) {
         return luaL_error(L, "expecting two or three arguments, but got %d",
-                nargs);
+                          nargs);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -1321,7 +1321,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
     if (nargs != 3 && nargs != 4) {
         return luaL_error(L, "expecting three or four arguments, but got %d",
-                nargs);
+                          nargs);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -1820,7 +1820,7 @@ exec:
         }
 
         rc = ngx_http_lua_complex_value(r, &subj, cp_offset, rc, cap, ctpl,
-                &luabuf);
+                                        &luabuf);
 
         if (rc != NGX_OK) {
             msg = lua_pushfstring(L, "failed to eval the template for "
@@ -1972,16 +1972,16 @@ ngx_http_lua_regex_compile(ngx_http_lua_regex_compile_t *rc)
 
     if (re == NULL) {
         if ((size_t) erroff == rc->pattern.len) {
-           rc->err.len = ngx_snprintf(rc->err.data, rc->err.len,
-                                      "pcre_compile() failed: %s in \"%V\"",
+            rc->err.len = ngx_snprintf(rc->err.data, rc->err.len,
+                                       "pcre_compile() failed: %s in \"%V\"",
                                       errstr, &rc->pattern)
                          - rc->err.data;
 
         } else {
-           rc->err.len = ngx_snprintf(rc->err.data, rc->err.len,
-                                      "pcre_compile() failed: %s in \"%V\" "
-                                      "at \"%s\"", errstr, &rc->pattern,
-                                      rc->pattern.data + erroff)
+            rc->err.len = ngx_snprintf(rc->err.data, rc->err.len,
+                                       "pcre_compile() failed: %s in \"%V\" "
+                                       "at \"%s\"", errstr, &rc->pattern,
+                                       rc->pattern.data + erroff)
                          - rc->err.data;
         }
 

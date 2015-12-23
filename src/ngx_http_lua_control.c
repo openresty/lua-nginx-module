@@ -259,9 +259,9 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
 #if 0
     dd("location hash: %lu == %lu",
-            (unsigned long) h->hash,
-            (unsigned long) ngx_hash_key_lc((u_char *) "Location",
-            sizeof("Location") - 1));
+       (unsigned long) h->hash,
+       (unsigned long) ngx_hash_key_lc((u_char *) "Location",
+                                       sizeof("Location") - 1));
 #endif
 
     h->value.len = len;

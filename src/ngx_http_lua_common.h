@@ -102,7 +102,7 @@ typedef struct {
 #endif
 
 
-typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
@@ -453,7 +453,7 @@ typedef struct ngx_http_lua_ctx_s {
 } ngx_http_lua_ctx_t;
 
 
-typedef struct ngx_http_lua_header_val_s ngx_http_lua_header_val_t;
+typedef struct ngx_http_lua_header_val_s  ngx_http_lua_header_val_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_set_header_pt)(ngx_http_request_t *r,

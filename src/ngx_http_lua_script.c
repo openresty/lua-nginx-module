@@ -59,7 +59,7 @@ ngx_http_lua_compile_complex_value(ngx_http_lua_compile_complex_value_t *ccv)
     }
 
     n = nv * (2 * sizeof(ngx_http_lua_script_copy_code_t)
-                  + sizeof(ngx_http_lua_script_capture_code_t))
+              + sizeof(ngx_http_lua_script_capture_code_t))
         + sizeof(uintptr_t);
 
     if (ngx_array_init(&lengths, ccv->pool, n, 1) != NGX_OK) {
