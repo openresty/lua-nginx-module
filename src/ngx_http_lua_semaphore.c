@@ -305,6 +305,8 @@ ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
         sem->sem_event.data = sem;
         sem->sem_event.log = sem->log;
 
+        sem->event_posted = 1;
+
         ngx_post_event(&sem->sem_event, &ngx_posted_events);
     }
 
