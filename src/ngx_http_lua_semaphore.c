@@ -85,7 +85,6 @@ ngx_http_lua_alloc_semaphore(void)
        (int) sizeof(ngx_http_lua_semaphore_t));
 
     block = ngx_alloc(n, ngx_cycle->log);
-
     if (block == NULL) {
         return NULL;
     }
@@ -296,7 +295,7 @@ ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 {
     sem->resource_count += n;
 
-    dd("calling semp:post(%d) semaphore: %p, resource_count: %d",
+    dd("calling sem:post(%d) semaphore: %p, resource_count: %d",
        n, sem, sem->resource_count);
 
     if (!sem->event_posted && !ngx_queue_empty(&sem->wait_queue)) {

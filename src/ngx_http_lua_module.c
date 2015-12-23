@@ -737,7 +737,6 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->pool = cf->pool;
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
-
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
@@ -745,20 +744,23 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
-
     mm = ngx_palloc(cf->pool, sizeof(ngx_http_lua_semaphore_mm_t));
     if (mm == NULL) {
         return NULL;
     }
 
     lmcf->semaphore_mm = mm;
+    mm->lmcf = lmcf;
 
     ngx_queue_init(&mm->free_queue);
     mm->cur_epoch = 0;
     mm->total = 0;
     mm->used = 0;
-    mm->num_per_block = NGX_CONF_UNSET_UINT;
-    mm->lmcf = lmcf;
+
+    /* it's better to be 4096, but it needs some space for
+     * ngx_http_lua_semaphore_mm_block_t, one is enough, so it is 4095
+     */
+    mm->num_per_block = 4095;
 
     dd("nginx Lua module main config structure initialized!");
 
@@ -787,13 +789,6 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     if (lmcf->max_running_timers == NGX_CONF_UNSET) {
         lmcf->max_running_timers = 256;
-    }
-
-    if (lmcf->semaphore_mm->num_per_block == NGX_CONF_UNSET_UINT) {
-        /* the origin is set to 4096, but it needs some space for
-         * ngx_http_lua_semaphore_mm_block_t, one is enough, so
-         * it is 4095 */
-        lmcf->semaphore_mm->num_per_block = 4095;
     }
 
     lmcf->cycle = cf->cycle;
