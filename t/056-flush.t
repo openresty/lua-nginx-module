@@ -42,7 +42,7 @@ hiya
 --- no_error_log
 [error]
 --- error_log
-lua reuse free buf memory 13 >= 5
+lua reuse free buf chain, but reallocate memory because 5 >= 0
 
 
 
