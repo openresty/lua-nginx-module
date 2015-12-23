@@ -1849,6 +1849,26 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
         0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
     };
 
+                    /* not ALPHA, DIGIT, "-", ".", "_", "~" */
+
+    static uint32_t   uri_component[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0xfc00987d, /* 1111 1100 0000 0000  1001 1000 0111 1101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x78000001, /* 0111 1000 0000 0000  0000 0000 0000 0001 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0xb8000001, /* 1011 1000 0000 0000  0000 0000 0000 0001 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
                     /* " ", "#", """, "%", "'", %00-%1F, %7F-%FF */
 
     static uint32_t   html[] = {
@@ -1912,8 +1932,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
                     /* mail_auth is the same as memcached */
 
     static uint32_t  *map[] =
-        { uri, args, html, refresh, memcached, memcached };
-
+        { uri, args, uri_component, html, refresh, memcached, memcached };
 
     escape = map[type];
 
@@ -2320,7 +2339,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
         key = (u_char *) lua_tolstring(L, -2, &key_len);
 
         key_escape = 2 * ngx_http_lua_escape_uri(NULL, key, key_len,
-                                                 NGX_ESCAPE_URI);
+                                                 NGX_ESCAPE_URI_COMPONENT);
         total_escape += key_escape;
 
         switch (lua_type(L, -1)) {
@@ -2329,7 +2348,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             value = (u_char *) lua_tolstring(L, -1, &value_len);
 
             total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
-                    NGX_ESCAPE_URI);
+                    NGX_ESCAPE_URI_COMPONENT);
 
             len += key_len + value_len + (sizeof("=") - 1);
             n++;
@@ -2370,7 +2389,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                     total_escape +=
                         2 * ngx_http_lua_escape_uri(NULL, value,
                                                     value_len,
-                                                    NGX_ESCAPE_URI);
+                                                    NGX_ESCAPE_URI_COMPONENT);
 
                     len += key_len + value_len + (sizeof("=") - 1);
                 }
@@ -2427,7 +2446,8 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
             if (total_escape) {
                 p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                                                       NGX_ESCAPE_URI);
+                                                       NGX_ESCAPE_URI_COMPONENT
+                                                       );
 
             } else {
                 dd("shortcut: no escape required");
@@ -2441,7 +2461,8 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
             if (total_escape) {
                 p = (u_char *) ngx_http_lua_escape_uri(p, value, value_len,
-                                                       NGX_ESCAPE_URI);
+                                                       NGX_ESCAPE_URI_COMPONENT
+                                                       );
 
             } else {
                 p = ngx_copy(p, value, value_len);
@@ -2460,7 +2481,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             if (lua_toboolean(L, -1)) {
                 if (total_escape) {
                     p = (u_char *) ngx_http_lua_escape_uri(p, key, key_len,
-                                                           NGX_ESCAPE_URI);
+                                                NGX_ESCAPE_URI_COMPONENT);
 
                 } else {
                     dd("shortcut: no escape required");
@@ -2488,7 +2509,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                         if (total_escape) {
                             p = (u_char *) ngx_http_lua_escape_uri(p, key,
     key_len,
-    NGX_ESCAPE_URI);
+    NGX_ESCAPE_URI_COMPONENT);
 
                         } else {
                             dd("shortcut: no escape required");
@@ -2507,7 +2528,8 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                         p = (u_char *)
                                 ngx_http_lua_escape_uri(p, key,
                                                         key_len,
-                                                        NGX_ESCAPE_URI);
+                                                        NGX_ESCAPE_URI_COMPONENT
+                                                        );
 
                     } else {
                         dd("shortcut: no escape required");
@@ -2523,7 +2545,8 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                         p = (u_char *)
                                 ngx_http_lua_escape_uri(p, value,
                                                         value_len,
-                                                        NGX_ESCAPE_URI);
+                                                        NGX_ESCAPE_URI_COMPONENT
+                                                        );
 
                     } else {
                         p = ngx_copy(p, value, value_len);
