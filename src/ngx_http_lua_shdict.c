@@ -940,7 +940,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     if (n >= 4) {
         exptime = luaL_checknumber(L, 4);
         if (exptime < 0) {
-            exptime = 0;
+            return luaL_error(L, "bad \"exptime\" argument");
         }
     }
 
