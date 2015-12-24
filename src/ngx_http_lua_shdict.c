@@ -378,14 +378,14 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
 }
 
 
 static int
 ngx_http_lua_shdict_get_stale(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
 }
 
 

@@ -548,7 +548,7 @@ ngx_http_lua_ngx_crc32_short(lua_State *L)
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument, but got %d",
-                lua_gettop(L));
+                          lua_gettop(L));
     }
 
     p = (u_char *) luaL_checklstring(L, 1, &len);

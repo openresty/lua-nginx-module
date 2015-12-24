@@ -565,7 +565,7 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    dd("reset headers_in.content_length_n to %d", (int)len);
+    dd("reset headers_in.content_length_n to %d", (int) len);
 
     r->headers_in.content_length_n = len;
 

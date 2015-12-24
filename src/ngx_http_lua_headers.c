@@ -608,7 +608,7 @@ ngx_http_lua_ngx_header_get(lua_State *L)
     if (llcf->transform_underscores_in_resp_headers
         && memchr(p, '_', len) != NULL)
     {
-        key.data = (u_char*) lua_newuserdata(L, len);
+        key.data = (u_char *) lua_newuserdata(L, len);
         if (key.data == NULL) {
             return luaL_error(L, "no memory");
         }

@@ -139,7 +139,7 @@ ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
 
     /* XXX here we use some hack to simplify string manipulation */
     tmp_path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
-            LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
+                         LUA_PATH_SEP AUX_MARK LUA_PATH_SEP);
 
     lua_pushlstring(L, (char *) cycle->prefix.data, cycle->prefix.len);
     prefix = lua_tostring(L, -1);
@@ -2172,7 +2172,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     }
 
     dd("internal redirect to %.*s", (int) ctx->exec_uri.len,
-            ctx->exec_uri.data);
+       ctx->exec_uri.data);
 
     r->write_event_handler = ngx_http_request_empty_handler;
 
@@ -2185,7 +2185,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     rc = ngx_http_internal_redirect(r, &ctx->exec_uri, &ctx->exec_args);
 
     dd("internal redirect returned %d when in content phase? "
-            "%d", (int) rc, ctx->entered_content_phase);
+       "%d", (int) rc, ctx->entered_content_phase);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
@@ -2329,7 +2329,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
             value = (u_char *) lua_tolstring(L, -1, &value_len);
 
             total_escape += 2 * ngx_http_lua_escape_uri(NULL, value, value_len,
-                    NGX_ESCAPE_URI);
+                                                        NGX_ESCAPE_URI);
 
             len += key_len + value_len + (sizeof("=") - 1);
             n++;
@@ -2551,7 +2551,7 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
 
     if (p - args->data != (ssize_t) len) {
         luaL_error(L, "buffer error: %d != %d",
-                (int) (p - args->data), (int) len);
+                   (int) (p - args->data), (int) len);
         return;
     }
 }
@@ -3886,7 +3886,7 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));
+                               * sizeof(ngx_http_variable_value_t));
     if (r->variables == NULL) {
         goto failed;
     }

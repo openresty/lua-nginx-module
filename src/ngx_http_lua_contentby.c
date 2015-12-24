@@ -54,7 +54,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (co == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                     "lua: failed to create new coroutine to handle request");
+                      "lua: failed to create new coroutine to handle request");
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

@@ -135,7 +135,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
 
     luaL_argcheck(L, lua_isfunction(L, 2) && !lua_iscfunction(L, 2), 2,
-                 "Lua function expected");
+                  "Lua function expected");
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
