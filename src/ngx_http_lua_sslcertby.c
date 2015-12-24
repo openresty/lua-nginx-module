@@ -795,6 +795,52 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
 
 int
+ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
+    char **err)
+{
+    BIO         *in;
+    RSA         *rsa;
+    EVP_PKEY    *pkey;
+    int         len;
+
+    in = BIO_new_mem_buf((char *) pem, (int) pem_len);
+    if (in == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        return NGX_ERROR;
+    }
+
+    pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, NULL);
+    if (pkey == NULL) {
+        BIO_free(in);
+        *err = "PEM_read_bio_PrivateKey failed";
+        return NGX_ERROR;
+    }
+
+    BIO_free(in);
+
+    rsa = EVP_PKEY_get1_RSA(pkey);
+    if (rsa == NULL) {
+        EVP_PKEY_free(pkey);
+        *err = "EVP_PKEY_get1_RSA failed";
+        return NGX_ERROR;
+    }
+
+    EVP_PKEY_free(pkey);
+
+    len = i2d_RSAPrivateKey(rsa, &der);
+    if (len < 0) {
+        RSA_free(rsa);
+        *err = "i2d_RSAPrivateKey failed";
+        return NGX_ERROR;
+    }
+
+    RSA_free(rsa);
+
+    return len;
+}
+
+
+int
 ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
     const char *chain_data, size_t chain_len, unsigned char *out,
     size_t *out_size, char **err)
