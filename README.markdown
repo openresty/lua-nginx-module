@@ -7173,7 +7173,7 @@ ngx.worker.id
 
 **syntax:** *count = ngx.worker.id()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_worker_by_lua**
 
 Returns the ordinal number of the current Nginx worker processes (starting from number 0).
 
