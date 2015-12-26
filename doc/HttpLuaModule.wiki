@@ -6202,7 +6202,7 @@ This Lua module does not ship with this ngx_lua module itself rather it is shipp
 the
 [https://github.com/openresty/lua-resty-core lua-resty-core] library.
 
-Please refer to the [https://github.com/cuiweixie/lua-resty-core/blob/semaphore/lib/ngx/semaphore.md documentation]
+Please refer to the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md documentation]
 for this <code>ngx.semaphore</code> Lua module in [https://github.com/openresty/lua-resty-core lua-resty-core]
 for more details.
 
