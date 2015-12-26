@@ -7207,7 +7207,7 @@ Please refer to the [documentation](https://github.com/openresty/lua-resty-core/
 for this `ngx.semaphore` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
 for more details.
 
-This feature requires at least ngx_lua `v0.9.21`.
+This feature requires at least ngx_lua `v0.10.0`.
 
 [Back to TOC](#nginx-api-for-lua)
 

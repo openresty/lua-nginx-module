@@ -6097,7 +6097,7 @@ Please refer to the [https://github.com/openresty/lua-resty-core/blob/master/lib
 for this <code>ngx.semaphore</code> Lua module in [https://github.com/openresty/lua-resty-core lua-resty-core]
 for more details.
 
-This feature requires at least ngx_lua <code>v0.9.21</code>.
+This feature requires at least ngx_lua <code>v0.10.0</code>.
 
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
