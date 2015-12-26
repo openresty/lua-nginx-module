@@ -6081,6 +6081,24 @@ See also [[#ngx.worker.count|ngx.worker.count]].
 
 This API was first introduced in the <code>0.9.20</code> release.
 
+== ngx.semaphore ==
+'''syntax:''' ''local semaphore = require "ngx.semaphore"''
+
+This is a Lua module that implements a classic-style semaphore API for efficient synchronizations among
+different "light threads". Sharing the same semaphore among different "light threads" created in different (request)
+contexts are also supported as long as the "light threads" reside in the same NGINX worker process
+and the [[#lua_code_cache|lua_code_cache]] directive is turned on (which is the default).
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[https://github.com/openresty/lua-resty-core lua-resty-core] library.
+
+Please refer to the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md documentation]
+for this <code>ngx.semaphore</code> Lua module in [https://github.com/openresty/lua-resty-core lua-resty-core]
+for more details.
+
+This feature requires at least ngx_lua <code>v0.9.21</code>.
+
 == ndk.set_var.DIRECTIVE ==
 '''syntax:''' ''res = ndk.set_var.DIRECTIVE_NAME''
 
@@ -6189,24 +6207,6 @@ Identical to the standard Lua [http://www.lua.org/manual/5.1/manual.html#pdf-cor
 This API was first usable in the context of [[#init_by_lua|init_by_lua*]] since the <code>0.9.2</code>.
 
 This API was first enabled in the <code>v0.6.0</code> release.
-
-== ngx.semaphore ==
-'''syntax:''' ''local semaphore = require "ngx.semaphore"''
-
-This is a Lua module that implements a classic-style semaphore API for efficient synchronizations among
-different "light threads". Sharing the same semaphore among different "light threads" created in different (request)
-contexts are also supported as long as the "light threads" reside in the same NGINX worker process
-and the [[#lua_code_cache|lua_code_cache]] directive is turned on (which is the default).
-
-This Lua module does not ship with this ngx_lua module itself rather it is shipped with
-the
-[https://github.com/openresty/lua-resty-core lua-resty-core] library.
-
-Please refer to the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md documentation]
-for this <code>ngx.semaphore</code> Lua module in [https://github.com/openresty/lua-resty-core lua-resty-core]
-for more details.
-
-This feature requires at least ngx_lua <code>v0.9.21</code>.
 
 = Obsolete Sections =
 

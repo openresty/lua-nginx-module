@@ -2762,6 +2762,7 @@ Nginx API for Lua
 * [ngx.worker.pid](#ngxworkerpid)
 * [ngx.worker.count](#ngxworkercount)
 * [ngx.worker.id](#ngxworkerid)
+* [ngx.semaphore](#ngxsemaphore)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -2769,7 +2770,6 @@ Nginx API for Lua
 * [coroutine.wrap](#coroutinewrap)
 * [coroutine.running](#coroutinerunning)
 * [coroutine.status](#coroutinestatus)
-* [ngx.semaphore](#ngxsemaphore)
 
 
 [Back to TOC](#table-of-contents)
@@ -7190,6 +7190,27 @@ This API was first introduced in the `0.9.20` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.semaphore
+-------------
+**syntax:** *local semaphore = require "ngx.semaphore"*
+
+This is a Lua module that implements a classic-style semaphore API for efficient synchronizations among
+different "light threads". Sharing the same semaphore among different "light threads" created in different (request)
+contexts are also supported as long as the "light threads" reside in the same NGINX worker process
+and the [lua_code_cache](#lua_code_cache) directive is turned on (which is the default).
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md)
+for this `ngx.semaphore` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
+for more details.
+
+This feature requires at least ngx_lua `v0.9.21`.
+
+[Back to TOC](#nginx-api-for-lua)
+
 ndk.set_var.DIRECTIVE
 ---------------------
 **syntax:** *res = ndk.set_var.DIRECTIVE_NAME*
@@ -7318,27 +7339,6 @@ Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/m
 This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.semaphore
--------------
-**syntax:** *local semaphore = require "ngx.semaphore"*
-
-This is a Lua module that implements a classic-style semaphore API for efficient synchronizations among
-different "light threads". Sharing the same semaphore among different "light threads" created in different (request)
-contexts are also supported as long as the "light threads" reside in the same NGINX worker process
-and the [lua_code_cache](#lua_code_cache) directive is turned on (which is the default).
-
-This Lua module does not ship with this ngx_lua module itself rather it is shipped with
-the
-[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
-
-Please refer to the [documentation](https://github.com/cuiweixie/lua-resty-core/blob/semaphore/lib/ngx/semaphore.md)
-for this `ngx.semaphore` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
-for more details.
-
-This feature requires at least ngx_lua `v0.9.21`.
 
 [Back to TOC](#nginx-api-for-lua)
 
