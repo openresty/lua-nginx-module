@@ -31,6 +31,11 @@ static int ngx_http_lua_ngx_lfs_unlink(lua_State *L)
     return 0;
 }
 
+static int ngx_http_lua_ngx_lfs_truncate(lua_State *L)
+{
+    return 0;
+}
+
 static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 {
     return 0;
@@ -38,7 +43,7 @@ static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 
 void ngx_http_lua_inject_lfs_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 5 /* nrec */);    /* ngx.lfs. */
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */);    /* ngx.lfs. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_read);
     lua_setfield(L, -2, "read");
@@ -51,6 +56,9 @@ void ngx_http_lua_inject_lfs_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_unlink);
     lua_setfield(L, -2, "unlink");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_lfs_truncate);
+    lua_setfield(L, -2, "truncate");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_status);
     lua_setfield(L, -2, "status");
