@@ -20,8 +20,8 @@ typedef
         ngx_http_lua_socket_udp_upstream_t *u, lua_State *L);
 
 
-typedef void (*ngx_http_lua_socket_udp_upstream_handler_pt)(
-          ngx_http_request_t *r, ngx_http_lua_socket_udp_upstream_t *u);
+typedef void (*ngx_http_lua_socket_udp_upstream_handler_pt)
+    (ngx_http_request_t *r, ngx_http_lua_socket_udp_upstream_t *u);
 
 
 struct ngx_http_lua_socket_udp_upstream_s {

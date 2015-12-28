@@ -23,6 +23,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
+#include "ngx_http_lua_semaphore.h"
 
 
 #if !defined(nginx_version) || nginx_version < 8054
@@ -552,8 +553,12 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
+    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
+#ifndef NGX_LUA_NO_FFI_API
+    ngx_pool_cleanup_t         *cln;
+#endif
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
@@ -632,6 +637,19 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
     }
 
+#ifndef NGX_LUA_NO_FFI_API
+
+    /* add the cleanup of semaphores after the lua_close */
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+
+    cln->data = lmcf;
+    cln->handler = ngx_http_lua_cleanup_semaphore_mm;
+
+#endif
+
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
@@ -648,7 +666,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
-            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != NGX_OK) {
+            saved_cycle = ngx_cycle;
+            ngx_cycle = cf->cycle;
+
+            rc = lmcf->init_handler(cf->log, lmcf, lmcf->lua);
+
+            ngx_cycle = saved_cycle;
+
+            if (rc != NGX_OK) {
                 /* an error happened */
                 return NGX_ERROR;
             }
@@ -694,6 +719,7 @@ static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_semaphore_mm_t *mm;
 
     lmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_main_conf_t));
     if (lmcf == NULL) {
@@ -731,6 +757,24 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
+
+    mm = ngx_palloc(cf->pool, sizeof(ngx_http_lua_semaphore_mm_t));
+    if (mm == NULL) {
+        return NULL;
+    }
+
+    lmcf->semaphore_mm = mm;
+    mm->lmcf = lmcf;
+
+    ngx_queue_init(&mm->free_queue);
+    mm->cur_epoch = 0;
+    mm->total = 0;
+    mm->used = 0;
+
+    /* it's better to be 4096, but it needs some space for
+     * ngx_http_lua_semaphore_mm_block_t, one is enough, so it is 4095
+     */
+    mm->num_per_block = 4095;
 
     dd("nginx Lua module main config structure initialized!");
 

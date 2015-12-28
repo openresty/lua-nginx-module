@@ -345,7 +345,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 bad_type:
 
                 msg = lua_pushfstring(L, "bad data type %s found",
-                        lua_typename(L, type));
+                                      lua_typename(L, type));
                 return luaL_argerror(L, arg_i, msg);
         }
 
@@ -458,7 +458,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
     n = lua_gettop(L);
     if (n > 1) {
         return luaL_error(L, "attempt to pass %d arguments, but accepted 0 "
-                "or 1", n);
+                          "or 1", n);
     }
 
     r = ngx_http_lua_get_req(L);

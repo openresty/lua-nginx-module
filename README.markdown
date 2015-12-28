@@ -61,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.9.19](https://github.com/openresty/lua-nginx-module/tags) released on 11 November 2015.
+This document describes ngx_lua [v0.9.20](https://github.com/openresty/lua-nginx-module/tags) released on 19 December 2015.
 
 Synopsis
 ========
@@ -243,7 +243,7 @@ Nginx Compatibility
 ===================
 The latest module is compatible with the following versions of Nginx:
 
-* 1.9.x (last tested: 1.9.3)
+* 1.9.x (last tested: 1.9.7)
 * 1.7.x (last tested: 1.7.10)
 * 1.6.x
 * 1.5.x (last tested: 1.5.12)
@@ -273,9 +273,9 @@ Build the source with this module:
 
 ```bash
 
- wget 'http://nginx.org/download/nginx-1.9.3.tar.gz'
- tar -xzvf nginx-1.9.3.tar.gz
- cd nginx-1.9.3/
+ wget 'http://nginx.org/download/nginx-1.9.7.tar.gz'
+ tar -xzvf nginx-1.9.7.tar.gz
+ cd nginx-1.9.7/
 
  # tell nginx's build system where to find LuaJIT 2.0:
  export LUAJIT_LIB=/path/to/luajit/lib
@@ -2762,6 +2762,7 @@ Nginx API for Lua
 * [ngx.worker.pid](#ngxworkerpid)
 * [ngx.worker.count](#ngxworkercount)
 * [ngx.worker.id](#ngxworkerid)
+* [ngx.semaphore](#ngxsemaphore)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -5795,7 +5796,7 @@ Unconditionally sets a key-value pair into the shm-based dictionary [ngx.shared.
 
 The `value` argument inserted can be Lua booleans, numbers, strings, or `nil`. Their value type will also be stored into the dictionary and the same data type can be retrieved later via the [get](#ngxshareddictget) method.
 
-The optional `exptime` argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is `0.001` seconds. If the `exptime` takes the value `0` (which is the default), then the item will never be expired.
+The optional `exptime` argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is `0.001` seconds. If the `exptime` takes the value `0` (which is the default), then the item will never expire.
 
 The optional `flags` argument specifies a user flags value associated with the entry to be stored. It can also be retrieved later with the value. The user flags is stored as an unsigned 32-bit integer internally. Defaults to `0`. The user flags argument was first introduced in the `v0.5.0rc2` release.
 
@@ -7173,7 +7174,7 @@ ngx.worker.id
 
 **syntax:** *count = ngx.worker.id()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_worker_by_lua**
 
 Returns the ordinal number of the current Nginx worker processes (starting from number 0).
 
@@ -7186,6 +7187,27 @@ always returns `nil`.
 See also [ngx.worker.count](#ngxworkercount).
 
 This API was first introduced in the `0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.semaphore
+-------------
+**syntax:** *local semaphore = require "ngx.semaphore"*
+
+This is a Lua module that implements a classic-style semaphore API for efficient synchronizations among
+different "light threads". Sharing the same semaphore among different "light threads" created in different (request)
+contexts are also supported as long as the "light threads" reside in the same NGINX worker process
+and the [lua_code_cache](#lua_code_cache) directive is turned on (which is the default).
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md)
+for this `ngx.semaphore` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
+for more details.
+
+This feature requires at least ngx_lua `v0.10.0`.
 
 [Back to TOC](#nginx-api-for-lua)
 

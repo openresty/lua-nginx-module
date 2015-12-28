@@ -110,7 +110,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua start to read buffered request body");
+                   "lua start to read buffered request body");
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_req_body_post_read);
 
@@ -332,7 +332,7 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
        r->request_body->bufs->buf->memory,
        r->request_body->bufs->buf->temporary,
        (int) (r->request_body->bufs->buf->end -
-       r->request_body->bufs->buf->pos),
+              r->request_body->bufs->buf->pos),
        (int) ngx_buf_size(r->request_body->bufs->buf));
 
     lua_pushlstring(L, (char *) r->request_body->temp_file->file.name.data,
