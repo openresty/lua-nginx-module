@@ -1827,6 +1827,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     ngx_http_lua_shdict_node_t  *sd;
     double                       num;
     u_char                      *p;
+    ngx_time_t                  *tp;
 
     ctx = zone->data;
     hash = ngx_crc32_short(key, key_len);
