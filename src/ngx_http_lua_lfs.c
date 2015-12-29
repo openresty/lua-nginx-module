@@ -18,6 +18,7 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
     ssize_t size;
     off_t offset;
     u_char *buff;
+    ngx_http_lua_co_ctx_t *coctx;
 } ngx_http_lua_lfs_task_ctx_t;
 
 
@@ -35,6 +36,7 @@ enum {
 } TASK_OPS;
 
 
+#if 0
 static ngx_int_t ngx_http_lua_lfs_resume(ngx_http_request_t *r)
 {
     lua_State *vm;
@@ -44,7 +46,7 @@ static ngx_int_t ngx_http_lua_lfs_resume(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return NGX_ERROR;
-    }    
+    }
 
     ctx->resume_handler = ngx_http_lua_wev_handler;
 
@@ -54,32 +56,75 @@ static ngx_int_t ngx_http_lua_lfs_resume(ngx_http_request_t *r)
     rc = ngx_http_lua_run_thread(vm, r, ctx, 1);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run thread returned %d", rc); 
+            "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
         return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
-    }    
+    }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
         return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
-    }    
+    }
 
     if (ctx->entered_content_phase) {
-        ngx_http_lua_finalize_request(r, rc); 
+        ngx_http_lua_finalize_request(r, rc);
         return NGX_DONE;
-    }    
+    }
 
     return rc;
 }
+#endif
 
-static void ngx_http_lua_lfs_event_handler(ngx_event_t *ev)
+static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
 {
+    lua_State *vm;
+    ngx_int_t rc;
+    ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
+    ngx_http_request_t *r = task_ctx->r;
+    ngx_http_lua_ctx_t *ctx;
+    ngx_connection_t *c;
+
+    r->main->blocked --;
+    r->aio = 0;
+
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        return NGX_ERROR;
+    }
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+    ctx->cur_co_ctx = task_ctx->coctx;
+
+    c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
+
+    rc = ngx_http_lua_run_thread(vm, r, ctx, nrets);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+            "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_lua_finalize_request(r, NGX_DONE);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_lua_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
+
+
+#if 0
     ngx_connection_t        *c;
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_log_ctx_t      *log_ctx;
-    ngx_http_lua_co_ctx_t   *coctx;
 
     coctx = ev->data;
 
@@ -110,6 +155,7 @@ static void ngx_http_lua_lfs_event_handler(ngx_event_t *ev)
     }
 
     ngx_http_run_posted_requests(c);
+#endif
 }
 
 
@@ -120,13 +166,11 @@ void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
 void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
 {
     ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
-    ngx_http_request_t *r = task_ctx->r;
+    //ngx_http_request_t *r = task_ctx->r;
 
-    r->main->blocked --;
-    r->aio = 0;
 
-    lua_pushlstring(task_ctx->L, "From LFS", strlen("From LFS"));
-    ngx_http_lua_lfs_event_handler(ev);
+    lua_pushlstring(task_ctx->L, "From LFS---b", strlen("From LFS---b"));
+    ngx_http_lua_lfs_event_resume(ev, 1);
 }
 
 void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
@@ -155,7 +199,7 @@ static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_pool_t *pool, int ops
 {
     ngx_thread_task_t *task;
 
-    if ((task = ngx_thread_task_alloc(pool, 
+    if ((task = ngx_thread_task_alloc(pool,
                     sizeof(ngx_http_lua_lfs_task_ctx_t))) == NULL) {
         return NULL;
     }
@@ -195,6 +239,7 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
     ngx_http_lua_lfs_task_ctx_t *task_ctx;
     ngx_thread_task_t *task;
     ngx_str_t str;
+    ngx_http_lua_ctx_t *ctx;
 
     n = lua_gettop(L);
     if (n < 1 && n > 3) {
@@ -202,7 +247,7 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
     }
 
     if (!lua_isstring(L, 1)) {
-        return luaL_error(L, "string expected, argument 1");
+        return luaL_error(L, "the first argument is expected string");
     }
 
     str.data = (u_char*) lua_tolstring(L, 1, &str.len);
@@ -229,6 +274,11 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
         return luaL_error(L, "no request found");
     }
 
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+
     if ((task = ngx_http_lua_lfs_create_task(r->pool, TASK_READ)) == NULL) {
         return luaL_error(L, "can't create task");
     }
@@ -247,6 +297,7 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
     task_ctx->r = r;
     task_ctx->size = size;
     task_ctx->offset = offset;
+    task_ctx->coctx = ctx->cur_co_ctx;
 
     if (ngx_http_lua_lfs_post_task(task) != 0) {
         return luaL_error(L, "post task error.");
