@@ -17,7 +17,8 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
     u_char *filename;
     ssize_t size;
     off_t offset;
-    u_char *buff;
+    char *buff;
+    ssize_t length;
     ngx_http_lua_co_ctx_t *coctx;
 } ngx_http_lua_lfs_task_ctx_t;
 
@@ -36,12 +37,10 @@ enum {
 } TASK_OPS;
 
 
-static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
+static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
 {
     lua_State *vm;
     ngx_int_t rc;
-    ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
-    ngx_http_request_t *r = task_ctx->r;
     ngx_http_lua_ctx_t *ctx;
     ngx_connection_t *c;
 
@@ -53,7 +52,6 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
     }
 
     ctx->resume_handler = ngx_http_lua_wev_handler;
-    ctx->cur_co_ctx = task_ctx->coctx;
 
     c = r->connection;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
@@ -78,23 +76,59 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
     }
 
     return rc;
-
-
 }
 
 
 void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
 {
+    int fd;
+    ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
+
+    ngx_log_error(NGX_LOG_ERR, task_ctx->r->connection->log, 0, 
+            "[%s:%d] filename: %s", __FUNCTION__, __LINE__, task_ctx->filename);
+
+    if ((fd = ngx_open_file(task_ctx->filename, NGX_FILE_RDWR,
+                    NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS)) < 0) {
+        return;
+    }
+
+    task_ctx->length = pread(fd, task_ctx->buff, task_ctx->size, task_ctx->offset);
+
+    ngx_close_file(fd);
 }
 
 void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
 {
+    ngx_int_t nrets = 0;
     ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
-    //ngx_http_request_t *r = task_ctx->r;
+    ngx_http_request_t *r = task_ctx->r;
+    ngx_connection_t *c = r->connection;
+    ngx_http_log_ctx_t *log_ctx;
+    ngx_http_lua_ctx_t *ctx;
 
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        nrets = 2;
+        lua_pushnil(task_ctx->L);
+        lua_pushstring(task_ctx->L, "no ctx found.");
+    } else if (task_ctx->length > 0) {
+        nrets = 1;
+        lua_pushlstring(task_ctx->L, task_ctx->buff, task_ctx->length);
+    } else {
+        nrets = 2;
+        lua_pushnil(task_ctx->L);
+        lua_pushstring(task_ctx->L, "no data");
+    }
 
-    lua_pushlstring(task_ctx->L, "From LFS---b", strlen("From LFS---b"));
-    ngx_http_lua_lfs_event_resume(ev, 1);
+    task_ctx->coctx->cleanup = NULL;
+
+    if (c->fd != -1) {
+        log_ctx = c->log->data;
+        log_ctx->current_request = r;
+    }
+    ctx->cur_co_ctx = task_ctx->coctx;
+
+    ngx_http_lua_lfs_event_resume(r, nrets);
+    ngx_http_run_posted_requests(c);
 }
 
 void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
@@ -187,7 +221,7 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
         offset = 0;
     } else {
         size = (ssize_t) luaL_checknumber(L, 2);
-        offset = (off_t)  luaL_checknumber(L, 3);
+        offset = (off_t) luaL_checknumber(L, 3);
     }
 
     if (size < 0 || offset < 0) {
@@ -212,16 +246,25 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
         return luaL_error(L, "failed to allocate memory");
     }
     ngx_cpystrn(task_ctx->filename, str.data, str.len + 1);
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
+            "[%s:%d] filename: %s", __FUNCTION__, __LINE__, task_ctx->filename);
 
     if ((task_ctx->buff = ngx_palloc(r->pool, size)) == NULL) {
         return luaL_error(L, "failed to allocate memory");
     }
 
+    task_ctx->length = 0;
     task_ctx->L = L;
     task_ctx->r = r;
     task_ctx->size = size;
     task_ctx->offset = offset;
     task_ctx->coctx = ctx->cur_co_ctx;
+
+    r->main->blocked ++;
+    r->aio = 1;
+
+    ngx_http_lua_cleanup_pending_operation(task_ctx->coctx);
+    task_ctx->coctx->cleanup = NULL;
 
     if (ngx_http_lua_lfs_post_task(task) != 0) {
         return luaL_error(L, "post task error.");
@@ -256,7 +299,7 @@ static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 
 void ngx_http_lua_inject_lfs_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);    /* ngx.lfs. */
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */); /* ngx.lfs. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_read);
     lua_setfield(L, -2, "read");
