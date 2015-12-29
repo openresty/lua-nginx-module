@@ -464,7 +464,7 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     ngx_memcpy(url.url.data, addr, addr_len);
 
     url.url.len = addr_len;
-    url.default_port = port;
+    url.default_port = (in_port_t) port;
     url.uri_part = 0;
     url.no_resolve = 1;
 
