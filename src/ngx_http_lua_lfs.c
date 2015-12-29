@@ -36,46 +36,6 @@ enum {
 } TASK_OPS;
 
 
-#if 0
-static ngx_int_t ngx_http_lua_lfs_resume(ngx_http_request_t *r)
-{
-    lua_State *vm;
-    ngx_connection_t *c;
-    ngx_int_t rc;
-    ngx_http_lua_ctx_t *ctx;
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        return NGX_ERROR;
-    }
-
-    ctx->resume_handler = ngx_http_lua_wev_handler;
-
-    c = r->connection;
-    vm = ngx_http_lua_get_lua_vm(r, ctx);
-
-    rc = ngx_http_lua_run_thread(vm, r, ctx, 1);
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run thread returned %d", rc);
-
-    if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
-    }
-
-    if (rc == NGX_DONE) {
-        ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
-    }
-
-    if (ctx->entered_content_phase) {
-        ngx_http_lua_finalize_request(r, rc);
-        return NGX_DONE;
-    }
-
-    return rc;
-}
-#endif
-
 static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
 {
     lua_State *vm;
@@ -120,42 +80,6 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_event_t *ev, int nrets)
     return rc;
 
 
-#if 0
-    ngx_connection_t        *c;
-    ngx_http_request_t      *r;
-    ngx_http_lua_ctx_t      *ctx;
-    ngx_http_log_ctx_t      *log_ctx;
-
-    coctx = ev->data;
-
-    r = coctx->data;
-    c = r->connection;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    if (ctx == NULL) {
-        return;
-    }
-
-    if (c->fd != -1) {  /* not a fake connection */
-        log_ctx = c->log->data;
-        log_ctx->current_request = r;
-    }
-
-    coctx->cleanup = NULL;
-
-    ctx->cur_co_ctx = coctx;
-
-    if (ctx->entered_content_phase) {
-        (void) ngx_http_lua_lfs_resume(r);
-
-    } else {
-        ctx->resume_handler = ngx_http_lua_lfs_resume;
-        ngx_http_core_run_phases(r);
-    }
-
-    ngx_http_run_posted_requests(c);
-#endif
 }
 
 
