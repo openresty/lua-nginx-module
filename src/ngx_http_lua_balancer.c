@@ -409,7 +409,7 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
 
 int
 ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
-    const u_char *addr, size_t addr_len, int port, char **err)
+    const u_char *addr, size_t addr_len, in_port_t port, char **err)
 {
     ngx_url_t              url;
     ngx_http_lua_ctx_t    *ctx;
