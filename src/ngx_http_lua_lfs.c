@@ -23,6 +23,40 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
 } ngx_http_lua_lfs_task_ctx_t;
 
 
+
+
+/**
+ * for cached file descriptors 
+ **/
+typedef struct _lfs_cached_fd_note_s {
+    ngx_rbtree_node_t node;
+    int fd;
+} lfs_cached_fd_note_t;
+
+
+static ngx_rbtree_t lfs_cached_fd_map = { NULL, NULL, NULL };
+static ngx_rbtree_node_t lfs_cached_sentinel;
+
+static int ngx_http_lua_lfs_cached_fd_init(void)
+{
+    ngx_rbtree_sentinel_init(&lfs_cached_sentinel);
+    ngx_rbtree_init(&lfs_cached_fd_map, &lfs_cached_sentinel, ngx_rbtree_insert_value);
+    return 0;
+}
+
+static int ngx_http_lua_lfs_cached_fd_get(u_char *filename)
+{
+    return -1;
+}
+
+static int ngx_http_lua_lfs_cached_fd_put(u_char *filename)
+{
+    return -1;
+}
+
+/**
+ * all the operate functions
+ **/
 typedef void (*task_callback)(void *data, ngx_log_t *log);
 typedef void (*event_callback)(ngx_event_t *ev);
 
@@ -34,9 +68,13 @@ typedef struct _ngx_http_lua_lfs_ops_s {
 enum {
     TASK_READ = 0,
     TASK_WRITE,
+    TASK_COPY,
 } TASK_OPS;
 
 
+/**
+ * resume the lua VM, copied from ngx_http_lua_sleep.c
+ **/
 static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
 {
     lua_State *vm;
@@ -58,9 +96,6 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, nrets);
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua run thread returned %d", rc);
-
     if (rc == NGX_AGAIN) {
         return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
     }
@@ -79,25 +114,35 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
 }
 
 
-void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
+static void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
 {
     int fd;
     ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
 
-    ngx_log_error(NGX_LOG_ERR, task_ctx->r->connection->log, 0, 
-            "[%s:%d] filename: %s", __FUNCTION__, __LINE__, task_ctx->filename);
+    if (lfs_cached_fd.root == NULL) {
+        ngx_http_lua_lfs_cached_fd_init();
+    }
+
+    //ngx_log_error(NGX_LOG_ERR, task_ctx->r->connection->log, 0, 
+    //        "[%s:%d] filename: %s", __FUNCTION__, __LINE__, task_ctx->filename);
 
     if ((fd = ngx_open_file(task_ctx->filename, NGX_FILE_RDWR,
                     NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS)) < 0) {
         return;
     }
 
-    task_ctx->length = pread(fd, task_ctx->buff, task_ctx->size, task_ctx->offset);
+    //ngx_log_error(NGX_LOG_ERR, task_ctx->r->connection->log, 0, 
+    //        "[%s:%d] offset: %d", __FUNCTION__, __LINE__, task_ctx->offset);
+    if (task_ctx->offset == -1) {
+        task_ctx->length = read(fd, task_ctx->buff, task_ctx->size);
+    } else {
+        task_ctx->length = pread(fd, task_ctx->buff, task_ctx->size, task_ctx->offset);
+    }
 
     ngx_close_file(fd);
 }
 
-void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
+static void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
 {
     ngx_int_t nrets = 0;
     ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
@@ -131,11 +176,19 @@ void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
     ngx_http_run_posted_requests(c);
 }
 
-void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
+static void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
 {
 }
 
-void ngx_http_lua_lfs_task_write_event(ngx_event_t *ev)
+static void ngx_http_lua_lfs_task_write_event(ngx_event_t *ev)
+{
+}
+
+static void ngx_http_lua_lfs_task_copy(void *data, ngx_log_t *log)
+{
+}
+
+static void ngx_http_lua_lfs_task_copy_event(ngx_event_t *ev)
 {
 }
 
@@ -147,6 +200,10 @@ static ngx_http_lua_lfs_ops_t lfs_ops[] = {
     { /** TASK_WRITE **/
         .task_callback = ngx_http_lua_lfs_task_write,
         .event_callback = ngx_http_lua_lfs_task_write_event,
+    },
+    { /** TASK_COPY **/
+        .task_callback = ngx_http_lua_lfs_task_copy,
+        .event_callback = ngx_http_lua_lfs_task_copy_event,
     }
 };
 
@@ -215,16 +272,16 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
 
     if (n == 1) { /** n < 2 **/
         size = 65536;
-        offset = 0;
+        offset = -1;
     } else if (n == 2) {
         size = (ssize_t) luaL_checknumber(L, 2);
-        offset = 0;
+        offset = -1;
     } else {
         size = (ssize_t) luaL_checknumber(L, 2);
         offset = (off_t) luaL_checknumber(L, 3);
     }
 
-    if (size < 0 || offset < 0) {
+    if (size < 0 || offset < -1) {
         return luaL_error(L, "Invalid argument size(%d) or offset(%d)", size, offset);
     }
 
@@ -236,7 +293,6 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-
     if ((task = ngx_http_lua_lfs_create_task(r->pool, TASK_READ)) == NULL) {
         return luaL_error(L, "can't create task");
     }
@@ -246,8 +302,6 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
         return luaL_error(L, "failed to allocate memory");
     }
     ngx_cpystrn(task_ctx->filename, str.data, str.len + 1);
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
-            "[%s:%d] filename: %s", __FUNCTION__, __LINE__, task_ctx->filename);
 
     if ((task_ctx->buff = ngx_palloc(r->pool, size)) == NULL) {
         return luaL_error(L, "failed to allocate memory");
