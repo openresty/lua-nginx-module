@@ -12,9 +12,6 @@
 
 #include "ngx_http_lua_lfs_fdpool.h"
 
-
-static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_pool_t *pool, int ops);
-
 /**
  * ctx for task thread
  **/
@@ -31,38 +28,63 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
 } ngx_http_lua_lfs_task_ctx_t;
 
 
-static int ngx_http_lua_lfs_fdpool_add(ngx_http_request_t *r, u_char *filename, ngx_fd_t fd)
+/**
+ * create task
+ **/
+static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_http_request_t *r, lua_State *L, 
+        ngx_http_lua_ctx_t *ctx)
 {
-    ngx_http_lfs_cached_fd_t *cfd;
-    ngx_http_lua_ctx_t *ctx;
+    ngx_thread_task_t *task;
+    ngx_http_lua_lfs_task_ctx_t *task_ctx;
 
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+    if ((task = ngx_thread_task_alloc(r->pool,
+                    sizeof(ngx_http_lua_lfs_task_ctx_t))) == NULL) {
+        return NULL;
+    }
+
+    task_ctx = task->ctx;
+
+    task_ctx->size = 0xFFFF;
+    task_ctx->offset = -1;
+
+    task_ctx->length = 0;
+    task_ctx->L = L;
+    task_ctx->r = r;
+    task_ctx->coctx = ctx->cur_co_ctx;
+    task_ctx->pool = r->pool;
+
+    return task;
+}
+
+static int ngx_http_lua_lfs_post_task(ngx_thread_task_t *task)
+{
+    ngx_thread_pool_t *pool;
+    ngx_str_t poolname = ngx_string("luafs");
+    ngx_http_lua_lfs_task_ctx_t *task_ctx = task->ctx;
+
+    ngx_http_lua_cleanup_pending_operation(task_ctx->coctx);
+    task_ctx->coctx->cleanup = NULL;
+
+    if ((pool = ngx_thread_pool_get((ngx_cycle_t*) ngx_cycle, &poolname)) == NULL) {
         return -1;
     }
 
-    if ((cfd = ngx_array_push(ctx->lfs_post_closed)) == NULL) {
+    if (ngx_thread_task_post(pool, task) != NGX_OK) {
         return -1;
     }
-
-    if ((cfd->filename = ngx_palloc(r->pool, ngx_strlen(filename) + 1)) == NULL) {
-        return -1;
-    }
-    ngx_cpystrn(cfd->filename, filename, ngx_strlen(filename) + 1);
-    cfd->fd = fd;
-
 
     return 0;
 }
 
 
-
 /**
  * all the operate functions
  **/
+typedef int (*check_argument)(ngx_http_request_t *r, lua_State *L);
+typedef ngx_thread_task_t *(*task_create)(ngx_http_request_t *r, 
+        ngx_http_lua_ctx_t *ctx, lua_State *L);
 typedef void (*task_callback)(void *data, ngx_log_t *log);
 typedef void (*event_callback)(ngx_event_t *ev);
-typedef int (*check_argument)(ngx_http_request_t *r, lua_State *L);
-typedef ngx_thread_task_t *(*task_create)(ngx_http_request_t *r, lua_State *L);
 
 typedef struct _ngx_http_lua_lfs_ops_s {
     check_argument check_argument;
@@ -165,8 +187,6 @@ static int ngx_http_lua_lfs_open_file(u_char *pathname, int flags,
 }
 
 
-
-
 /**
  * check the arguments of read function
  **/
@@ -214,27 +234,19 @@ static int ngx_http_lua_lfs_write_check_argument(ngx_http_request_t *r, lua_Stat
 }
 
 
-
 static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *r, 
-        lua_State *L)
+        ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
     ngx_thread_task_t *task;
     ngx_http_lua_lfs_task_ctx_t *task_ctx;
-    ngx_http_lua_ctx_t *ctx;
     ngx_str_t filename;
 
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        return NULL;
-    }
-
-    if ((task = ngx_http_lua_lfs_create_task(r->pool, TASK_READ)) == NULL) {
+    if ((task = ngx_http_lua_lfs_create_task(r, L, ctx)) == NULL) {
         return NULL; //luaL_error(L, "can't create task");
     }
-    task_ctx = task->ctx;
 
-    task_ctx->size = 0xFFFF;
-    task_ctx->offset = -1;
+    task_ctx = task->ctx;
 
     if ((n = lua_gettop(L)) >= 2) {
         task_ctx->size = (ssize_t) luaL_checknumber(L, 2);
@@ -260,36 +272,22 @@ static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *
         ngx_http_lua_lfs_fdpool_add(r, filename.data, task_ctx->fd);
     }
 
-    task_ctx->length = 0;
-    task_ctx->L = L;
-    task_ctx->r = r;
-    task_ctx->coctx = ctx->cur_co_ctx;
-    task_ctx->pool = r->pool;
-
     return task;
 }
 
 
 static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t *r, 
-        lua_State *L)
+        ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
     ngx_thread_task_t *task;
     ngx_http_lua_lfs_task_ctx_t *task_ctx;
-    ngx_http_lua_ctx_t *ctx;
     ngx_str_t filename;
 
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        return NULL;
-    }
-
-    if ((task = ngx_http_lua_lfs_create_task(r->pool, TASK_WRITE)) == NULL) {
+    if ((task = ngx_http_lua_lfs_create_task(r, L, ctx)) == NULL) {
         return NULL; //luaL_error(L, "can't create task");
     }
     task_ctx = task->ctx;
-
-    //task_ctx->size = 0xFFFF;
-    task_ctx->offset = -1;
 
     if ((n = lua_gettop(L)) == 3) {
         task_ctx->offset = (off_t) luaL_checknumber(L, 3);
@@ -312,12 +310,6 @@ static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t 
         }
         ngx_http_lua_lfs_fdpool_add(r, filename.data, task_ctx->fd);
     }
-
-    task_ctx->length = 0;
-    task_ctx->L = L;
-    task_ctx->r = r;
-    task_ctx->coctx = ctx->cur_co_ctx;
-    task_ctx->pool = r->pool;
 
     return task;
 }
@@ -391,6 +383,7 @@ static void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
     ngx_pfree(task_ctx->pool, task_ctx->buff);
     ngx_pfree(task_ctx->pool, task_ctx);
 }
+
 static void ngx_http_lua_lfs_task_write_event(ngx_event_t *ev)
 {
     ngx_int_t nrets = 0;
@@ -450,56 +443,19 @@ static ngx_http_lua_lfs_ops_t lfs_ops[] = {
         .event_callback = ngx_http_lua_lfs_task_write_event,
     },
     { /** TASK_COPY **/
+        .check_argument = NULL, 
+        .task_create = NULL,
         .task_callback = ngx_http_lua_lfs_task_copy,
         .event_callback = ngx_http_lua_lfs_task_copy_event,
     }
 };
 
 
-/**
- * create task
- **/
-static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_pool_t *pool, int ops)
-{
-    ngx_thread_task_t *task;
-
-    if ((task = ngx_thread_task_alloc(pool,
-                    sizeof(ngx_http_lua_lfs_task_ctx_t))) == NULL) {
-        return NULL;
-    }
-
-    task->handler = lfs_ops[ops].task_callback;
-    task->event.data = task->ctx;
-    task->event.handler = lfs_ops[ops].event_callback;
-
-    return task;
-}
-
-static int ngx_http_lua_lfs_post_task(ngx_thread_task_t *task)
-{
-    ngx_thread_pool_t *pool;
-    ngx_str_t poolname = ngx_string("luafs");
-    ngx_http_lua_lfs_task_ctx_t *task_ctx = task->ctx;
-
-    ngx_http_lua_cleanup_pending_operation(task_ctx->coctx);
-    task_ctx->coctx->cleanup = NULL;
-
-    if ((pool = ngx_thread_pool_get((ngx_cycle_t*) ngx_cycle, &poolname)) == NULL) {
-        return -1;
-    }
-
-    if (ngx_thread_task_post(pool, task) != NGX_OK) {
-        return -1;
-    }
-
-    return 0;
-}
-
 static int ngx_http_lua_lfs_process(lua_State *L, int ops)
 {
     ngx_http_request_t *r;
-    ngx_thread_task_t *task;
     ngx_http_lua_ctx_t *ctx;
+    ngx_thread_task_t *task;
     ngx_int_t rc;
 
     if ((r = ngx_http_lua_get_req(L)) == NULL) {
@@ -518,9 +474,13 @@ static int ngx_http_lua_lfs_process(lua_State *L, int ops)
         return luaL_error(L, "create fd pool failed.");
     }
 
-    if ((task = lfs_ops[ops].task_create(r, L)) == NULL) {
+    if ((task = lfs_ops[ops].task_create(r, ctx, L)) == NULL) {
         return luaL_error(L, "create task error.");
     }
+
+    task->handler = lfs_ops[ops].task_callback;
+    task->event.data = task->ctx;
+    task->event.handler = lfs_ops[ops].event_callback;
 
     r->main->blocked ++;
     r->aio = 1;

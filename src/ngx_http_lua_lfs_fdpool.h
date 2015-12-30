@@ -21,6 +21,7 @@ typedef struct _ngx_http_lfs_cached_fd_s {
 void ngx_http_lua_lfs_fdpool_cleanup(void *data);
 int ngx_http_lua_lfs_fdpool_init(ngx_http_lua_ctx_t *ctx, ngx_http_request_t *r);
 ngx_fd_t ngx_http_lua_lfs_fdpool_get(ngx_http_request_t *r, u_char *filename);
+int ngx_http_lua_lfs_fdpool_add(ngx_http_request_t *r, u_char *filename, ngx_fd_t fd);
 
 #endif
 

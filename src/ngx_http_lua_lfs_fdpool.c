@@ -64,6 +64,28 @@ ngx_fd_t ngx_http_lua_lfs_fdpool_get(ngx_http_request_t *r, u_char *filename)
 }
 
 
+int ngx_http_lua_lfs_fdpool_add(ngx_http_request_t *r, u_char *filename, ngx_fd_t fd)
+{
+    ngx_http_lfs_cached_fd_t *cfd;
+    ngx_http_lua_ctx_t *ctx;
+
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        return -1;
+    }
+
+    if ((cfd = ngx_array_push(ctx->lfs_post_closed)) == NULL) {
+        return -1;
+    }
+
+    if ((cfd->filename = ngx_palloc(r->pool, ngx_strlen(filename) + 1)) == NULL) {
+        return -1;
+    }
+    ngx_cpystrn(cfd->filename, filename, ngx_strlen(filename) + 1);
+    cfd->fd = fd;
+
+
+    return 0;
+}
 
 #endif
 
