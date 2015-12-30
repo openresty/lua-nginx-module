@@ -177,6 +177,58 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
 }
 
 
+/**
+ * make direcotry
+ **/
+static int ngx_http_lua_lfs_make_directory(u_char *name, ngx_log_t *log)
+{
+    /** name = /data/cache/single/0/00/0000000000000000  **/
+    u_char *pos;
+    u_char tmpname[BUFSIZ];
+    ngx_log_error(NGX_LOG_ERR, log, 0, "[%s:%d] want mkdir: %s",
+            __FUNCTION__, __LINE__, name);
+    if ((pos = (u_char*)strrchr((char*)name, '/')) != NULL) {
+        ngx_cpystrn(tmpname, name, pos - name + 1);
+        tmpname[pos - name] = 0;
+
+        /** check directory **/
+        ngx_log_error(NGX_LOG_ERR, log, 0, "[%s:%d] mkdir: %s",
+                __FUNCTION__, __LINE__, tmpname);
+        if (ngx_create_dir(tmpname, 0755) < 0) {
+            if (errno != ENOENT) {
+                return -1;
+            }
+            ngx_http_lua_lfs_make_directory(tmpname, log);
+            if (ngx_create_dir(tmpname, 0755) < 0) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * open file
+ **/
+static int ngx_http_lua_lfs_open_file(u_char *pathname, int flags,
+        int create, mode_t mode, ngx_log_t *log)
+{
+    ngx_fd_t fd;
+
+    if ((fd = ngx_open_file(pathname, flags, create, mode)) < 0) {
+        if (errno != ENOENT) {
+            return -1;
+        }
+        if (ngx_http_lua_lfs_make_directory(pathname, log) != 0) {
+            return -1;
+        }
+        return ngx_open_file(pathname, flags, create, mode);
+    }
+    return fd;
+}
+
+
+
 static void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
 {
     ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
@@ -357,12 +409,10 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
     }
 
     if ((task_ctx->fd = ngx_http_lua_lfs_fdpool_get(r, filename.data)) < 0) {
-        if ((task_ctx->fd = ngx_open_file(filename.data, NGX_FILE_RDWR,
-                        NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS)) < 0) {
+        if ((task_ctx->fd = ngx_http_lua_lfs_open_file(filename.data, NGX_FILE_RDWR,
+                        NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS, r->connection->log)) < 0) {
             return luaL_error(L, "open file %s error", filename.data);
         }
-        //ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-        //        "[%s:%d] open fd: %d", __FUNCTION__, __LINE__, task_ctx->fd);
         ngx_http_lua_lfs_fdpool_add(r, filename.data, task_ctx->fd);
     }
 
