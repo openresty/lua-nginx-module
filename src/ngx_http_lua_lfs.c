@@ -94,10 +94,10 @@ typedef struct _ngx_http_lua_lfs_ops_s {
 } ngx_http_lua_lfs_ops_t;
 
 enum {
-    TASK_READ = 0,
-    TASK_WRITE,
-    TASK_COPY,
-} TASK_OPS;
+    LFS_READ = 0,
+    LFS_WRITE,
+    LFS_COPY,
+} LFS_OPS;
 
 
 /**
@@ -430,19 +430,19 @@ static void ngx_http_lua_lfs_task_copy_event(ngx_event_t *ev)
 }
 
 static ngx_http_lua_lfs_ops_t lfs_ops[] = {
-    { /** TASK_READ **/
+    { /** LFS_READ **/
         .check_argument = ngx_http_lua_lfs_read_check_argument,
         .task_create = ngx_http_lua_lfs_read_task_create,
         .task_callback = ngx_http_lua_lfs_task_read,
         .event_callback = ngx_http_lua_lfs_task_read_event,
     },
-    { /** TASK_WRITE **/
+    { /** LFS_WRITE **/
         .check_argument = ngx_http_lua_lfs_write_check_argument,
         .task_create = ngx_http_lua_lfs_write_task_create,
         .task_callback = ngx_http_lua_lfs_task_write,
         .event_callback = ngx_http_lua_lfs_task_write_event,
     },
-    { /** TASK_COPY **/
+    { /** LFS_COPY **/
         .check_argument = NULL, 
         .task_create = NULL,
         .task_callback = ngx_http_lua_lfs_task_copy,
@@ -498,7 +498,7 @@ static int ngx_http_lua_lfs_process(lua_State *L, int ops)
  **/
 static int ngx_http_lua_ngx_lfs_read(lua_State *L)
 {
-    return ngx_http_lua_lfs_process(L, TASK_READ);
+    return ngx_http_lua_lfs_process(L, LFS_READ);
 }
 
 /**
@@ -506,7 +506,7 @@ static int ngx_http_lua_ngx_lfs_read(lua_State *L)
  **/
 static int ngx_http_lua_ngx_lfs_write(lua_State *L)
 {
-    return ngx_http_lua_lfs_process(L, TASK_WRITE);
+    return ngx_http_lua_lfs_process(L, LFS_WRITE);
 }
 
 static int ngx_http_lua_ngx_lfs_copy(lua_State *L)
