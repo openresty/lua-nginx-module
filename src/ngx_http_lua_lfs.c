@@ -10,6 +10,8 @@
 
 #if (NGX_THREADS)
 
+#include "ngx_http_lua_lfs_fdpool.h"
+
 
 static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_pool_t *pool, int ops);
 
@@ -27,72 +29,6 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
     ssize_t length;
     ngx_http_lua_co_ctx_t *coctx;
 } ngx_http_lua_lfs_task_ctx_t;
-
-
-/**
- * cached file descriptor
- **/
-typedef struct _ngx_http_lfs_cached_fd_s {
-    u_char *filename;
-    ngx_fd_t fd;
-} ngx_http_lfs_cached_fd_t;
-
-static void ngx_http_lua_lfs_fdpool_cleanup(void *data)
-{
-    ngx_http_request_t *r = data;
-    ngx_http_lua_ctx_t *ctx;
-    ngx_http_lfs_cached_fd_t *cfd;
-    ngx_uint_t i;
-
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        return;
-    }
-    cfd = ctx->lfs_post_closed->elts;
-    for (i = 0; i < ctx->lfs_post_closed->nelts; i ++) {
-        ngx_close_file(cfd[i].fd);
-    }
-}
-
-
-static int ngx_http_lua_lfs_fdpool_init(ngx_http_lua_ctx_t *ctx,
-        ngx_http_request_t *r)
-{
-    ngx_http_cleanup_t *cln;
-    if (ctx->lfs_post_closed != NULL) {
-        return 0;
-    }
-
-    if ((cln = ngx_http_cleanup_add(r, 0)) == NULL) {
-        return -1;
-    }
-    cln->handler = ngx_http_lua_lfs_fdpool_cleanup;
-    cln->data = r;
-
-    ctx->lfs_post_closed = ngx_array_create(r->pool, 8, sizeof(ngx_http_lfs_cached_fd_t));
-    if (ctx->lfs_post_closed == NULL) {
-        return -1;
-    }
-
-    return 0;
-}
-
-static ngx_fd_t ngx_http_lua_lfs_fdpool_get(ngx_http_request_t *r, u_char *filename)
-{
-    ngx_http_lua_ctx_t *ctx;
-    ngx_http_lfs_cached_fd_t *cfd;
-    ngx_uint_t i;
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        return -1;
-    }
-
-    cfd = ctx->lfs_post_closed->elts;
-    for (i = 0; i < ctx->lfs_post_closed->nelts; i ++) {
-        if (ngx_strcmp(cfd[i].filename, filename) == 0) {
-            return cfd[i].fd;
-        }
-    }
-    return -1;
-}
 
 
 static int ngx_http_lua_lfs_fdpool_add(ngx_http_request_t *r, u_char *filename, ngx_fd_t fd)
@@ -189,18 +125,12 @@ static ngx_int_t ngx_http_lua_lfs_event_resume(ngx_http_request_t *r, int nrets)
  **/
 static int ngx_http_lua_lfs_make_directory(u_char *name, ngx_log_t *log)
 {
-    /** name = /data/cache/single/0/00/0000000000000000  **/
     u_char *pos;
     u_char tmpname[BUFSIZ];
-    ngx_log_error(NGX_LOG_ERR, log, 0, "[%s:%d] want mkdir: %s",
-            __FUNCTION__, __LINE__, name);
     if ((pos = (u_char*)strrchr((char*)name, '/')) != NULL) {
         ngx_cpystrn(tmpname, name, pos - name + 1);
         tmpname[pos - name] = 0;
 
-        /** check directory **/
-        ngx_log_error(NGX_LOG_ERR, log, 0, "[%s:%d] mkdir: %s",
-                __FUNCTION__, __LINE__, tmpname);
         if (ngx_create_dir(tmpname, 0755) < 0) {
             if (errno != ENOENT) {
                 return -1;
