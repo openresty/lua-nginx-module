@@ -1028,6 +1028,8 @@ Directives
 * [log_by_lua](#log_by_lua)
 * [log_by_lua_block](#log_by_lua_block)
 * [log_by_lua_file](#log_by_lua_file)
+* [balancer_by_lua_block](#balancer_by_lua_block)
+* [balancer_by_lua_file](#balancer_by_lua_file)
 * [lua_need_request_body](#lua_need_request_body)
 * [lua_shared_dict](#lua_shared_dict)
 * [lua_socket_connect_timeout](#lua_socket_connect_timeout)
@@ -2217,6 +2219,83 @@ This directive was first introduced in the `v0.5.0rc31` release.
 
 [Back to TOC](#directives)
 
+balancer_by_lua_block
+---------------------
+
+**syntax:** *balancer_by_lua_block { lua-script }*
+
+**context:** *upstream*
+
+**phase:** *content*
+
+This directive runs Lua code as an upstream balancer for any upstream entities defined
+by the `upstream {}` configuration block.
+
+For instance,
+
+```nginx
+
+ upstream foo {
+     server 127.0.0.1;
+     balancer_by_lua_block {
+         -- use Lua to do something interesting here
+         -- as a dynamic balancer
+     }
+ }
+
+ server {
+     location / {
+         proxy_pass http://foo;
+     }
+ }
+```
+
+The resulting Lua load balancer can work with any existing nginx upstream modules
+like [ngx_proxy](http://nginx.org/en/docs/http/ngx_http_proxy_module.html) and
+[ngx_fastcgi](http://nginx.org/en/docs/http/ngx_http_fastcgi_module.html).
+
+Also, the Lua load balancer can work with the standard upstream connection pool mechanism,
+i.e., the standard [keepalive](http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive) directive.
+Just ensure that the [keepalive](http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive) directive
+is used *after* this `balancer_by_lua_block` directive in a single `upstream {}` configuration block.
+
+The Lua load balancer can totally ignore the list of servers defined in the `upstream {}` block
+and select peer from a completely dynamic server list (even changing per request) via the
+[ngx.balancer](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/balancer.md) module
+from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+The Lua code handler registered by this directive might get called more than once in a single
+downstream request when the nginx upstream mechanism retries the request on conditions
+specified by directives like the [proxy_next_upstream](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream)
+directive.
+
+This Lua code execution context does not support yielding, so Lua APIs that may yield
+(like cosockets and "light threads") are disabled in this context. One can usually work
+around this limitation by doing such operations in an earlier phase handler (like
+[access_by_lua*](#access_by_lua)) and passing along the result into this context
+via the [ngx.ctx](#ngxctx) table.
+
+This directive was first introduced in the `v0.10.0` release.
+
+[Back to TOC](#directives)
+
+balancer_by_lua_file
+--------------------
+
+**syntax:** *balancer_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *upstream*
+
+**phase:** *content*
+
+Equivalent to [balancer_by_lua_block](#balancer_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+This directive was first introduced in the `v0.10.0` release.
+
+[Back to TOC](#directives)
+
 lua_need_request_body
 ---------------------
 
@@ -2763,6 +2842,7 @@ Nginx API for Lua
 * [ngx.worker.count](#ngxworkercount)
 * [ngx.worker.id](#ngxworkerid)
 * [ngx.semaphore](#ngxsemaphore)
+* [ngx.balancer](#ngxbalancer)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -3028,7 +3108,7 @@ print
 -----
 **syntax:** *print(...)*
 
-**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, ngx.balancer_by_lua**
 
 Writes argument values into the nginx `error.log` file with the `ngx.NOTICE` log level.
 
@@ -3047,7 +3127,7 @@ There is a hard coded `2048` byte limitation on error message lengths in the Ngi
 
 ngx.ctx
 -------
-**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.**
+**context:** *init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua**
 
 This table can be used to store per-request Lua context data and has a life time identical to the current request (as with the Nginx variables). 
 
@@ -3650,7 +3730,7 @@ ngx.resp.get_headers
 --------------------
 **syntax:** *headers = ngx.resp.get_headers(max_headers?, raw?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, balancer_by_lua**
 
 Returns a Lua table holding all the current response headers for the current request.
 
@@ -3768,7 +3848,7 @@ ngx.req.get_method
 ------------------
 **syntax:** *method_name = ngx.req.get_method()*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, balancer_by_lua**
 
 Retrieves the current request's request method name. Strings like `"GET"` and `"POST"` are returned instead of numerical [method constants](#http-method-constants).
 
@@ -3936,7 +4016,7 @@ ngx.req.get_uri_args
 --------------------
 **syntax:** *args = ngx.req.get_uri_args(max_args?)*
 
-**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua**
+**context:** *set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, balancer_by_lua**
 
 Returns a Lua table holding all the current request URL query arguments.
 
@@ -4725,7 +4805,7 @@ ngx.log
 -------
 **syntax:** *ngx.log(log_level, ...)*
 
-**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua**
 
 Log arguments concatenated to error.log with the given logging level.
 
@@ -4761,7 +4841,7 @@ ngx.exit
 --------
 **syntax:** *ngx.exit(status)*
 
-**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, ngx.timer.**
+**context:** *rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, ngx.timer.*, balancer_by_lua**
 
 When `status >= 200` (i.e., `ngx.HTTP_OK` and above), it will interrupt the execution of the current request and return status code to nginx.
 
@@ -7205,6 +7285,25 @@ the
 
 Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/semaphore.md)
 for this `ngx.semaphore` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
+for more details.
+
+This feature requires at least ngx_lua `v0.10.0`.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.balancer
+------------
+**syntax:** *local balancer = require "ngx.balancer"*
+
+This is a Lua module that provides a Lua API to allow defining completely dynamic load balancers
+in pure Lua.
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/balancer.md)
+for this `ngx.balancer` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
 for more details.
 
 This feature requires at least ngx_lua `v0.10.0`.

@@ -24,6 +24,7 @@
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
+#include "ngx_http_lua_balancer.h"
 
 
 #if !defined(nginx_version) || nginx_version < 8054
@@ -33,6 +34,9 @@
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf);
+static void *ngx_http_lua_create_srv_conf(ngx_conf_t *cf);
+static char *ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent,
+    void *child);
 static void *ngx_http_lua_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -388,6 +392,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_body_filter_file },
 
+    { ngx_string("balancer_by_lua_block"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_balancer_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_handler_inline },
+
+    { ngx_string("balancer_by_lua_file"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_balancer_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_handler_file },
+
     { ngx_string("lua_socket_keepalive_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
           |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
@@ -522,8 +540,8 @@ ngx_http_module_t ngx_http_lua_module_ctx = {
     ngx_http_lua_create_main_conf,    /*  create main configuration */
     ngx_http_lua_init_main_conf,      /*  init main configuration */
 
-    NULL,                             /*  create server configuration */
-    NULL,                             /*  merge server configuration */
+    ngx_http_lua_create_srv_conf,     /*  create server configuration */
+    ngx_http_lua_merge_srv_conf,      /*  merge server configuration */
 
     ngx_http_lua_create_loc_conf,     /*  create location configuration */
     ngx_http_lua_merge_loc_conf       /*  merge location configuration */
@@ -807,6 +825,33 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 
     lmcf->cycle = cf->cycle;
 
+    return NGX_CONF_OK;
+}
+
+
+static void *
+ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
+{
+    ngx_http_lua_srv_conf_t     *lscf;
+
+    lscf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_srv_conf_t));
+    if (lscf == NULL) {
+        return NULL;
+    }
+
+    /* set by ngx_pcalloc:
+     *      lscf->balancer.handler = NULL;
+     *      lscf->balancer.src = { 0, NULL };
+     *      lscf->balancer.src_key = NULL;
+     */
+
+    return lscf;
+}
+
+
+static char *
+ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
+{
     return NGX_CONF_OK;
 }
 
