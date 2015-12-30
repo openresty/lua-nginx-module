@@ -98,6 +98,7 @@ enum {
     LFS_WRITE,
     LFS_COPY,
     LFS_STATUS,
+    LFS_TRUNCATE,
 } LFS_OPS;
 
 
@@ -246,6 +247,21 @@ static int ngx_http_lua_lfs_status_check_argument(ngx_http_request_t *r, lua_Sta
     return 0;
 }
 
+static int ngx_http_lua_lfs_truncate_check_argument(ngx_http_request_t *r, lua_State *L)
+{
+    ngx_int_t n = lua_gettop(L);
+    if (n < 1 || n > 2) {
+        return luaL_error(L, "expected 1 or 2 arguments, but seen %d", n);
+    }
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "the first argument is expected string");
+    }
+
+    if (n == 2 && !lua_isnumber(L, 2)) {
+        return luaL_error(L, "the second argument is expected number");
+    }
+    return 0;
+}
 
 static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *r, 
         ngx_http_lua_ctx_t *ctx, lua_State *L)
@@ -464,6 +480,9 @@ static ngx_http_lua_lfs_ops_t lfs_ops[] = {
     { /** LFS_STATUS **/
         .check_argument = ngx_http_lua_lfs_status_check_argument,
     },
+    { /** LFS_TRUNCATE **/
+        .check_argument = ngx_http_lua_lfs_truncate_check_argument,
+    },
 };
 
 
@@ -530,14 +549,55 @@ static int ngx_http_lua_ngx_lfs_copy(lua_State *L)
     return 0;
 }
 
-static int ngx_http_lua_ngx_lfs_unlink(lua_State *L)
-{
-    return 0;
-}
-
 static int ngx_http_lua_ngx_lfs_truncate(lua_State *L)
 {
-    return 0;
+    ngx_http_request_t *r;
+    ngx_http_lua_ctx_t *ctx;
+    ngx_int_t rc;
+    ngx_fd_t fd;
+    ngx_str_t filename;
+    off_t offset;
+
+    if ((r = ngx_http_lua_get_req(L)) == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    if ((rc = lfs_ops[LFS_TRUNCATE].check_argument(r, L)) != 0) {
+        return rc;
+    }
+
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ngx_http_lua_lfs_fdpool_init(ctx, r) != 0) {
+        return luaL_error(L, "create fd pool failed.");
+    }
+
+    filename.data = (u_char*) lua_tolstring(L, 1, &filename.len);
+    if (filename.len <= 0) {
+        return luaL_error(L, "the first argument is error.");
+    }
+
+    offset = (off_t) luaL_checknumber(L, 2);
+    if (offset < 0) {
+        offset = 0;
+    }
+
+    if ((fd = ngx_http_lua_lfs_fdpool_get(r, filename.data)) < 0) {
+        if ((fd = ngx_http_lua_lfs_open_file(filename.data, NGX_FILE_RDWR,
+                        NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS, r->connection->log)) < 0) {
+            return luaL_error(L, "open file %s error", filename.data);
+        }
+        ngx_http_lua_lfs_fdpool_add(r, filename.data, fd);
+    }
+
+    if (ftruncate(fd, offset) == 0) {
+        lua_pushboolean(L, 1);
+    } else {
+        lua_pushboolean(L, 0);
+    }
+    return 1;
 }
 
 static int ngx_http_lua_ngx_lfs_status(lua_State *L)
@@ -589,7 +649,7 @@ static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 
 void ngx_http_lua_inject_lfs_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */); /* ngx.lfs. */
+    lua_createtable(L, 0 /* narr */, 5 /* nrec */); /* ngx.lfs. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_read);
     lua_setfield(L, -2, "read");
@@ -599,9 +659,6 @@ void ngx_http_lua_inject_lfs_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_copy);
     lua_setfield(L, -2, "copy");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_lfs_unlink);
-    lua_setfield(L, -2, "unlink");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_truncate);
     lua_setfield(L, -2, "truncate");
