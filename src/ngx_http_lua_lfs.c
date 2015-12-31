@@ -39,7 +39,7 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
 /**
  * create task
  **/
-static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_http_request_t *r, lua_State *L, 
+static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_ctx_t *ctx)
 {
     ngx_thread_task_t *task;
@@ -89,7 +89,7 @@ static int ngx_http_lua_lfs_post_task(ngx_thread_task_t *task)
  * all the operate functions
  **/
 typedef int (*check_argument)(ngx_http_request_t *r, lua_State *L);
-typedef ngx_thread_task_t *(*task_create)(ngx_http_request_t *r, 
+typedef ngx_thread_task_t *(*task_create)(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, lua_State *L);
 typedef void (*task_callback)(void *data, ngx_log_t *log);
 typedef void (*event_callback)(ngx_event_t *ev);
@@ -271,7 +271,7 @@ static int ngx_http_lua_lfs_truncate_check_argument(ngx_http_request_t *r, lua_S
     return 0;
 }
 
-static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *r, 
+static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
@@ -313,7 +313,7 @@ static ngx_thread_task_t *ngx_http_lua_lfs_read_task_create(ngx_http_request_t *
 }
 
 
-static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t *r, 
+static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
@@ -351,7 +351,7 @@ static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t 
     return task;
 }
 
-static ngx_thread_task_t *ngx_http_lua_lfs_status_task_create(ngx_http_request_t *r, 
+static ngx_thread_task_t *ngx_http_lua_lfs_status_task_create(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
@@ -548,7 +548,7 @@ static ngx_http_lua_lfs_ops_t lfs_ops[] = {
         .event_callback = ngx_http_lua_lfs_task_write_event,
     },
     { /** LFS_COPY **/
-        .check_argument = NULL, 
+        .check_argument = NULL,
         .task_create = NULL,
         .task_callback = ngx_http_lua_lfs_task_copy,
         .event_callback = ngx_http_lua_lfs_task_copy_event,
