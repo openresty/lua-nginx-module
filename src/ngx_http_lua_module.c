@@ -896,7 +896,15 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
             return NGX_CONF_ERROR;
         }
 
+#if OPENSSL_VERSION_NUMBER >= 0x1000205fL
+
         SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
+
+#else
+
+        return NGX_CONF_ERROR;
+
+#endif
     }
 
     return NGX_CONF_OK;

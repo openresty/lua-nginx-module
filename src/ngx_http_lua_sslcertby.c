@@ -27,6 +27,10 @@ static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
+#ifdef NGX_HTTP_LUA_USE_OCSP
+static int ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn,
+    void *data);
+#endif
 
 
 ngx_int_t
@@ -75,12 +79,20 @@ char *
 ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
+#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+
+    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                  "at least OpenSSL 1.0.2e required but found "
+                  OPENSSL_VERSION_TEXT);
+
+    return NGX_CONF_ERROR;
+
+#else
+
     u_char                      *p;
     u_char                      *name;
     ngx_str_t                   *value;
     ngx_http_lua_srv_conf_t    *lscf = conf;
-
-    dd("enter");
 
     /*  must specifiy a content handler */
     if (cmd->post == NULL) {
@@ -136,6 +148,8 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     }
 
     return NGX_CONF_OK;
+
+#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
 }
 
 
@@ -443,6 +457,13 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 int
 ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 {
+#ifndef TLS1_get_version
+
+    *err = "no TLS1 support";
+    return NGX_ERROR;
+
+#else
+
     ngx_ssl_conn_t    *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -459,12 +480,21 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
     dd("tls1 ver: %d", (int) TLS1_get_version(ssl_conn));
 
     return (int) TLS1_get_version(ssl_conn);
+
+#endif
 }
 
 
 int
 ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 {
+#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+
+    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
+    return NGX_ERROR;
+
+#else
+
     ngx_ssl_conn_t    *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -480,6 +510,8 @@ ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 
     SSL_certs_clear(ssl_conn);
     return NGX_OK;
+
+#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
 }
 
 
@@ -487,6 +519,13 @@ int
 ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
     const char *data, size_t len, char **err)
 {
+#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+
+    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
+    return NGX_ERROR;
+
+#else
+
     BIO               *bio = NULL;
     X509              *x509 = NULL;
     ngx_ssl_conn_t    *ssl_conn;
@@ -561,6 +600,8 @@ failed:
     }
 
     return NGX_ERROR;
+
+#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
 }
 
 
@@ -711,6 +752,8 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
         return NGX_ERROR;
     }
 
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+
     *name = (char *) SSL_get_servername(ssl_conn, TLSEXT_NAMETYPE_host_name);
 
     if (*name) {
@@ -719,6 +762,13 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     }
 
     return NGX_DECLINED;
+
+#else
+
+    *err = "no TLS extension support";
+    return NGX_ERROR;
+
+#endif
 }
 
 
@@ -799,6 +849,13 @@ ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
     const char *chain_data, size_t chain_len, unsigned char *out,
     size_t *out_size, char **err)
 {
+#ifndef NGX_HTTP_LUA_USE_OCSP
+
+    *err = "no OCSP support";
+    return NGX_ERROR;
+
+#else
+
     int                        rc = NGX_OK;
     BIO                       *bio = NULL;
     char                      *s;
@@ -830,7 +887,11 @@ ngx_http_lua_ffi_ssl_get_ocsp_responder_from_der_chain(
         goto done;
     }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
     s = sk_OPENSSL_STRING_value(aia, 0);
+#else
+    s = sk_value(aia, 0);
+#endif
     if (s == NULL) {
         rc = NGX_DECLINED;
         goto done;
@@ -897,6 +958,8 @@ done:
     }
 
     return rc;
+
+#endif  /* NGX_HTTP_LUA_USE_OCSP */
 }
 
 
@@ -904,6 +967,13 @@ int
 ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
     size_t chain_len, unsigned char *out, size_t *out_size, char **err)
 {
+#ifndef NGX_HTTP_LUA_USE_OCSP
+
+    *err = "no OCSP support";
+    return NGX_ERROR;
+
+#else
+
     int                        rc = NGX_ERROR;
     BIO                       *bio = NULL;
     X509                      *cert = NULL, *issuer = NULL;
@@ -1000,6 +1070,8 @@ failed:
     }
 
     return rc;
+
+#endif  /* NGX_HTTP_LUA_USE_OCSP */
 }
 
 
@@ -1008,6 +1080,14 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
     size_t resp_len, const char *chain_data, size_t chain_len,
     u_char *errbuf, size_t *errbuf_size)
 {
+#ifndef NGX_HTTP_LUA_USE_OCSP
+
+    *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                "no OCSP support") - errbuf;
+    return NGX_ERROR;
+
+#else
+
     int                    n;
     BIO                   *bio = NULL;
     X509                  *cert = NULL, *issuer = NULL;
@@ -1162,20 +1242,31 @@ error:
     ERR_clear_error();
 
     return NGX_ERROR;
+
+#endif  /* NGX_HTTP_LUA_USE_OCSP */
 }
 
 
+#ifdef NGX_HTTP_LUA_USE_OCSP
 static int
 ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn, void *data)
 {
     return SSL_TLSEXT_ERR_OK;
 }
+#endif
 
 
 int
 ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
     const u_char *resp, size_t resp_len, char **err)
 {
+#ifndef NGX_HTTP_LUA_USE_OCSP
+
+    *err = "no OCSP support";
+    return NGX_ERROR;
+
+#else
+
     u_char                  *p;
     SSL_CTX                 *ctx;
     ngx_ssl_conn_t          *ssl_conn;
@@ -1216,6 +1307,8 @@ ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
     ssl_conn->tlsext_status_expected = 1;
 
     return NGX_OK;
+
+#endif  /* NGX_HTTP_LUA_USE_OCSP */
 }
 
 #endif  /* NGX_LUA_NO_FFI_API */
