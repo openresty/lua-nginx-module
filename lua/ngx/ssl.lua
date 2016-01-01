@@ -1,4 +1,4 @@
--- Copyright (C) 2014 Yichun Zhang
+-- Copyright (C) Yichun Zhang (agentzh)
 
 
 local ffi = require "ffi"
