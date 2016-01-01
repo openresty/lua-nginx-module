@@ -1317,12 +1317,11 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
                 if (n >= 5) {
                     if (lua_toboolean(L, 5)) {
-#ifdef TLSEXT_STATUSTYPE_ocsp
+#ifdef NGX_HTTP_LUA_USE_OCSP
                         SSL_set_tlsext_status_type(c->ssl->connection,
                                                    TLSEXT_STATUSTYPE_ocsp);
 #else
-                        return luaL_error(L, "lack of status request support"
-                                             " in OpenSSL");
+                        return luaL_error(L, "no OCSP support");
 #endif
                     }
                 }
@@ -1370,7 +1369,9 @@ new_ssl_name:
     u->write_co_ctx = coctx;
 
 #if 0
+#ifdef NGX_HTTP_LUA_USE_OCSP
     SSL_set_tlsext_status_type(c->ssl->connection, TLSEXT_STATUSTYPE_ocsp);
+#endif
 #endif
 
     rc = ngx_ssl_handshake(c);

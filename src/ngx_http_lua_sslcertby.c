@@ -94,7 +94,7 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_str_t                   *value;
     ngx_http_lua_srv_conf_t    *lscf = conf;
 
-    /*  must specifiy a content handler */
+    /*  must specifiy a concrete handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -396,7 +396,7 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (co == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                     "lua: failed to create new coroutine to handle request");
+                      "lua: failed to create new coroutine to handle request");
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -543,7 +543,7 @@ ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
 
     bio = BIO_new_mem_buf((char *) data, len);
     if (bio == NULL) {
-       *err = " BIO_new_mem_buf() failed";
+        *err = " BIO_new_mem_buf() failed";
         goto failed;
     }
 
@@ -708,8 +708,8 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
         saun = (struct sockaddr_un *) c->local_sockaddr;
 
         /* on Linux sockaddr might not include sun_path at all */
-        if (c->local_socklen <=
-                         (socklen_t) offsetof(struct sockaddr_un, sun_path))
+        if (c->local_socklen <= (socklen_t)
+            offsetof(struct sockaddr_un, sun_path))
         {
             *addr = "";
             *addrlen = 0;
