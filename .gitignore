@@ -155,6 +155,7 @@ src/config.[ch]
 src/worker.[ch]
 src/lex.[ch]
 src/balancer.[ch]
+src/semaphore.[ch]
 *.plist
 lua
 ttimer
