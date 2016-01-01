@@ -36,8 +36,8 @@ ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
     ngx_int_t           rc;
 
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
-                                     lscf->ssl_cert_src.data,
-                                     lscf->ssl_cert_src_key);
+                                     lscf->ssl.cert_src.data,
+                                     lscf->ssl.cert_src_key);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -56,9 +56,9 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     ngx_int_t           rc;
 
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       lscf->ssl_cert_src.data,
-                                       lscf->ssl_cert_src.len,
-                                       lscf->ssl_cert_src_key,
+                                       lscf->ssl.cert_src.data,
+                                       lscf->ssl.cert_src.len,
+                                       lscf->ssl.cert_src_key,
                                        "=ssl_certificate_by_lua");
     if (rc != NGX_OK) {
         return rc;
@@ -87,13 +87,13 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    if (lscf->ssl_cert_handler) {
+    if (lscf->ssl.cert_handler) {
         return "is duplicate";
     }
 
     value = cf->args->elts;
 
-    lscf->ssl_cert_handler = (ngx_http_lua_srv_conf_handler_pt) cmd->post;
+    lscf->ssl.cert_handler = (ngx_http_lua_srv_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_ssl_cert_handler_file) {
         /* Lua code in an external file */
@@ -104,15 +104,15 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
-        lscf->ssl_cert_src.data = name;
-        lscf->ssl_cert_src.len = ngx_strlen(name);
+        lscf->ssl.cert_src.data = name;
+        lscf->ssl.cert_src.len = ngx_strlen(name);
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        lscf->ssl_cert_src_key = p;
+        lscf->ssl.cert_src_key = p;
 
         p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -121,14 +121,14 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     } else {
         /* inlined Lua code */
 
-        lscf->ssl_cert_src = value[1];
+        lscf->ssl.cert_src = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        lscf->ssl_cert_src_key = p;
+        lscf->ssl.cert_src_key = p;
 
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -224,7 +224,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     c->log->action = "loading SSL certificate by lua";
 
-    rc = lscf->ssl_cert_handler(r, lscf, L);
+    rc = lscf->ssl.cert_handler(r, lscf, L);
 
     if (rc >= NGX_OK || rc == NGX_ERROR) {
         cctx->done = 1;

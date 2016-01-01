@@ -775,7 +775,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
 static ngx_int_t
 ngx_http_lua_subrequest_add_extra_vars(ngx_http_request_t *sr,
-   ngx_array_t *extra_vars)
+    ngx_array_t *extra_vars)
 {
     ngx_http_core_main_conf_t   *cmcf;
     ngx_http_variable_t         *v;
@@ -1164,11 +1164,11 @@ ngx_http_lua_set_content_length_header(ngx_http_request_t *r, off_t len)
 #if 0
     dd("content length hash: %lu == %lu", (unsigned long) h->hash,
        ngx_hash_key_lc((u_char *) "Content-Length",
-       sizeof("Content-Length") - 1));
+                       sizeof("Content-Length") - 1));
 #endif
 
     dd("r content length: %.*s",
-       (int)r->headers_in.content_length->value.len,
+       (int) r->headers_in.content_length->value.len,
        r->headers_in.content_length->value.data);
 
     pr = r->parent;
@@ -1302,7 +1302,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             }
 
             dd("checking sr header %.*s", (int) header[i].key.len,
-                    header[i].key.data);
+               header[i].key.data);
 
 #if 1
             if (header[i].hash == 0) {
@@ -1313,7 +1313,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             header[i].hash = 0;
 
             dd("pushing sr header %.*s", (int) header[i].key.len,
-                    header[i].key.data);
+               header[i].key.data);
 
             lua_pushlstring(co, (char *) header[i].key.data,
                             header[i].key.len); /* header key */

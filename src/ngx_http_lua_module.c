@@ -23,6 +23,8 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
+#include "ngx_http_lua_semaphore.h"
+#include "ngx_http_lua_balancer.h"
 #include "ngx_http_lua_sslcertby.h"
 #include <openssl/ssl.h>
 
@@ -393,6 +395,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_body_filter_file },
 
+    { ngx_string("balancer_by_lua_block"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_balancer_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_handler_inline },
+
+    { ngx_string("balancer_by_lua_file"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_balancer_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_handler_file },
+
     { ngx_string("lua_socket_keepalive_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
           |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
@@ -576,8 +592,12 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
+    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
+#ifndef NGX_LUA_NO_FFI_API
+    ngx_pool_cleanup_t         *cln;
+#endif
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
@@ -656,6 +676,19 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
     }
 
+#ifndef NGX_LUA_NO_FFI_API
+
+    /* add the cleanup of semaphores after the lua_close */
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+
+    cln->data = lmcf;
+    cln->handler = ngx_http_lua_cleanup_semaphore_mm;
+
+#endif
+
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
@@ -672,7 +705,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
-            if (lmcf->init_handler(cf->log, lmcf, lmcf->lua) != NGX_OK) {
+            saved_cycle = ngx_cycle;
+            ngx_cycle = cf->cycle;
+
+            rc = lmcf->init_handler(cf->log, lmcf, lmcf->lua);
+
+            ngx_cycle = saved_cycle;
+
+            if (rc != NGX_OK) {
                 /* an error happened */
                 return NGX_ERROR;
             }
@@ -718,6 +758,7 @@ static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_semaphore_mm_t *mm;
 
     lmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_main_conf_t));
     if (lmcf == NULL) {
@@ -755,6 +796,24 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
+
+    mm = ngx_palloc(cf->pool, sizeof(ngx_http_lua_semaphore_mm_t));
+    if (mm == NULL) {
+        return NULL;
+    }
+
+    lmcf->semaphore_mm = mm;
+    mm->lmcf = lmcf;
+
+    ngx_queue_init(&mm->free_queue);
+    mm->cur_epoch = 0;
+    mm->total = 0;
+    mm->used = 0;
+
+    /* it's better to be 4096, but it needs some space for
+     * ngx_http_lua_semaphore_mm_block_t, one is enough, so it is 4095
+     */
+    mm->num_per_block = 4095;
 
     dd("nginx Lua module main config structure initialized!");
 
@@ -802,9 +861,12 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     }
 
     /* set by ngx_pcalloc:
-     *      lscf->ssl_cert_handler = NULL;
-     *      lscf->ssl_cert_src = { 0, NULL };
-     *      lscf->ssl_cert_src_key = NULL;
+     *      lscf->ssl.cert_handler = NULL;
+     *      lscf->ssl.cert_src = { 0, NULL };
+     *      lscf->ssl.cert_src_key = NULL;
+     *      lscf->balancer.handler = NULL;
+     *      lscf->balancer.src = { 0, NULL };
+     *      lscf->balancer.src_key = NULL;
      */
 
     return lscf;
@@ -820,12 +882,12 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
     dd("merge srv conf");
 
-    if (conf->ssl_cert_src.len == 0) {
-        conf->ssl_cert_src = prev->ssl_cert_src;
-        conf->ssl_cert_handler = prev->ssl_cert_handler;
+    if (conf->ssl.cert_src.len == 0) {
+        conf->ssl.cert_src = prev->ssl.cert_src;
+        conf->ssl.cert_handler = prev->ssl.cert_handler;
     }
 
-    if (conf->ssl_cert_src.len) {
+    if (conf->ssl.cert_src.len) {
         sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
         if (sscf == NULL || sscf->ssl.ctx == NULL) {
             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,

@@ -808,7 +808,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         u->write_prepare_retvals =
                                 ngx_http_lua_socket_conn_error_retval_handler;
         ngx_http_lua_socket_handle_conn_error(r, u,
-                                             NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
+                                              NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
 
         if (waiting) {
             ngx_http_run_posted_requests(c);
@@ -1093,7 +1093,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
         if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
             ngx_http_lua_socket_handle_conn_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle write event");
             return 2;
@@ -1101,7 +1101,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
         if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
             ngx_http_lua_socket_handle_conn_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle read event");
             return 2;
@@ -1533,7 +1533,7 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
         return 1;
     }
 
-    ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t*));
+    ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t *));
 
     c = u->peer.connection;
 
@@ -1545,8 +1545,8 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
         *ud = ssl_session;
 
        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua ssl save session: %p:%d", ssl_session,
-                       ssl_session->references);
+                      "lua ssl save session: %p:%d", ssl_session,
+                      ssl_session->references);
 
         /* set up the __gc metamethod */
         lua_pushlightuserdata(L, &ngx_http_lua_ssl_session_metatable_key);
@@ -1965,8 +1965,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
 #endif
 
     dd("already read: %p: %.*s", u->buf_in,
-            (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
-            u->buf_in->buf->pos);
+       (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
+       u->buf_in->buf->pos);
 
     dd("data read: %.*s", (int) bytes, b->pos);
 
@@ -1985,8 +1985,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
             u->buf_in->buf->last = dst;
 
             dd("read a line: %p: %.*s", u->buf_in,
-                    (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
-                    u->buf_in->buf->pos);
+               (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
+               u->buf_in->buf->pos);
 
             return NGX_OK;
 
@@ -2262,7 +2262,7 @@ success:
         if (n == NGX_ERROR) {
             u->socket_errno = ngx_socket_errno;
             ngx_http_lua_socket_handle_read_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
         }
 
@@ -2795,7 +2795,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
         }
 
         ngx_http_lua_socket_handle_write_error(r, u,
-                                              NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
+                                               NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
         return;
     }
 
@@ -2822,7 +2822,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         ngx_http_lua_socket_handle_write_error(r, u,
-                                         NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                               NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
 
@@ -3444,7 +3444,7 @@ ngx_http_lua_socket_test_connect(ngx_http_request_t *r, ngx_connection_t *c)
 
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT)  {
         dd("pending eof: (%p)%d (%p)%d", c->write, c->write->pending_eof,
-            c->read, c->read->pending_eof);
+           c->read, c->read->pending_eof);
 
         if (c->write->pending_eof) {
             ev = c->write;

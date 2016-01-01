@@ -41,8 +41,6 @@ static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 
 static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
-static char *ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf,
-    ngx_command_t *cmd);
 static ngx_int_t ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_http_lua_block_parser_ctx_t *ctx);
 static u_char *ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2,
@@ -1287,7 +1285,7 @@ found:
 
 
 /* a specialized version of the standard ngx_conf_parse() function */
-static char *
+char *
 ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 {
     ngx_http_lua_block_parser_ctx_t     ctx;

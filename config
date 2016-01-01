@@ -339,6 +339,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_api.c \
                 $ngx_addon_dir/src/ngx_http_lua_logby.c \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.c \
+                $ngx_addon_dir/src/ngx_http_lua_semaphore.c\
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.c \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
                 $ngx_addon_dir/src/ngx_http_lua_initby.c \
@@ -352,6 +353,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_worker.c \
                 $ngx_addon_dir/src/ngx_http_lua_sslcertby.c \
                 $ngx_addon_dir/src/ngx_http_lua_lex.c \
+                $ngx_addon_dir/src/ngx_http_lua_balancer.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -393,6 +395,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/api/ngx_http_lua_api.h \
                 $ngx_addon_dir/src/ngx_http_lua_logby.h \
                 $ngx_addon_dir/src/ngx_http_lua_sleep.h \
+                $ngx_addon_dir/src/ngx_http_lua_semaphore.h\
                 $ngx_addon_dir/src/ngx_http_lua_coroutine.h \
                 $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
                 $ngx_addon_dir/src/ngx_http_lua_initby.h \
@@ -407,6 +410,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/src/ngx_http_lua_worker.h \
                 $ngx_addon_dir/src/ngx_http_lua_sslcertby.h \
                 $ngx_addon_dir/src/ngx_http_lua_lex.h \
+                $ngx_addon_dir/src/ngx_http_lua_balancer.h \
                 "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
