@@ -10,6 +10,7 @@
 #endif
 #include "ddebug.h"
 
+
 #include "ngx_http_lua_control.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_coroutine.h"
@@ -464,7 +465,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     {
         if (status != (ngx_int_t) r->headers_out.status) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
-                          "set status %i via ngx.exit after sending out the "
+                          "set status %d via ngx.exit after sending out the "
                           "response status %ui", status,
                           r->headers_out.status);
         }
