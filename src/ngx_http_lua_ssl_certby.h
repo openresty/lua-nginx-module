@@ -11,6 +11,9 @@
 #include "ngx_http_lua_common.h"
 
 
+#if (NGX_HTTP_SSL)
+
+
 typedef struct {
     ngx_connection_t        *connection; /* original true connection */
     ngx_http_request_t      *request;    /* fake request */
@@ -31,6 +34,9 @@ char *ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
 int ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data);
+
+
+#endif  /* NGX_HTTP_SSL */
 
 
 #endif /* _NGX_HTTP_LUA_SSL_CERTBY_H_INCLUDED_ */

@@ -876,6 +876,8 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+#if (NGX_HTTP_SSL)
+
     ngx_http_lua_srv_conf_t *prev = parent;
     ngx_http_lua_srv_conf_t *conf = child;
     ngx_http_ssl_srv_conf_t *sscf;
@@ -907,6 +909,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 #endif
     }
 
+#endif  /* NGX_HTTP_SSL */
     return NGX_CONF_OK;
 }
 
