@@ -4191,7 +4191,7 @@ a.lua:1: ssl cert by lua is running!
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_certificate_by_lua '
+        ssl_certificate_by_lua_block {
             local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
 
             local function f()
@@ -4208,14 +4208,14 @@ a.lua:1: ssl cert by lua is running!
                 print("co resume, status: ", coroutine.status(c))
                 cr(c)
             end
-        ';
+        }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
 
         server_tokens off;
         location /foo {
             default_type 'text/plain';
-            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
             more_clear_headers Date;
         }
     }
@@ -4228,7 +4228,7 @@ a.lua:1: ssl cert by lua is running!
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             do
                 local sock = ngx.socket.tcp()
 
@@ -4250,7 +4250,7 @@ a.lua:1: ssl cert by lua is running!
 
                 ngx.say("ssl handshake: ", type(sess))
 
-                local req = "GET /foo HTTP/1.0\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -4273,7 +4273,7 @@ a.lua:1: ssl cert by lua is running!
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             -- collectgarbage()
-        ';
+        }
     }
 
 --- request
@@ -4316,7 +4316,7 @@ lua ssl server name: "test.com"
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_certificate_by_lua '
+        ssl_certificate_by_lua_block {
             function f()
                 ngx.sleep(0.01)
                 print("uthread: hello in thread")
@@ -4338,14 +4338,14 @@ lua ssl server name: "test.com"
             end
 
             print("uthread: ", res)
-        ';
+        }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
 
         server_tokens off;
         location /foo {
             default_type 'text/plain';
-            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
             more_clear_headers Date;
         }
     }
@@ -4358,7 +4358,7 @@ lua ssl server name: "test.com"
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             do
                 local sock = ngx.socket.tcp()
 
@@ -4380,7 +4380,7 @@ lua ssl server name: "test.com"
 
                 ngx.say("ssl handshake: ", type(sess))
 
-                local req = "GET /foo HTTP/1.0\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -4403,7 +4403,7 @@ lua ssl server name: "test.com"
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             -- collectgarbage()
-        ';
+        }
     }
 
 --- request
