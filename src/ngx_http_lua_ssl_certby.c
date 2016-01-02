@@ -18,7 +18,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_ssl_module.h"
 #include "ngx_http_lua_contentby.h"
-#include "ngx_http_lua_sslcertby.h"
+#include "ngx_http_lua_ssl_certby.h"
 
 
 static void ngx_http_lua_ssl_cert_done(void *data);

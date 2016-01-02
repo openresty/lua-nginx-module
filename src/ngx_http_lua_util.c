@@ -49,7 +49,7 @@
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_worker.h"
 #include "ngx_http_lua_socket_tcp.h"
-#include "ngx_http_lua_sslcertby.h"
+#include "ngx_http_lua_ssl_certby.h"
 
 
 #if 1

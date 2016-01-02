@@ -24,7 +24,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
-#include "ngx_http_lua_sslcertby.h"
+#include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
 
 

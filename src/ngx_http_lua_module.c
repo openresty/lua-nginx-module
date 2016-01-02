@@ -25,7 +25,7 @@
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
 #include "ngx_http_lua_balancer.h"
-#include "ngx_http_lua_sslcertby.h"
+#include "ngx_http_lua_ssl_certby.h"
 #include <openssl/ssl.h>
 
 
