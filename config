@@ -352,6 +352,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_http_lua_config.c \
                 $ngx_addon_dir/src/ngx_http_lua_worker.c \
                 $ngx_addon_dir/src/ngx_http_lua_ssl_certby.c \
+                $ngx_addon_dir/src/ngx_http_lua_ssl_ocsp.c \
                 $ngx_addon_dir/src/ngx_http_lua_lex.c \
                 $ngx_addon_dir/src/ngx_http_lua_balancer.c \
                 "
