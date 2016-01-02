@@ -511,9 +511,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 #if (NGX_HTTP_SSL)
 
-    { ngx_string("ssl_certificate_by_lua"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-      ngx_http_lua_ssl_cert_by_lua,
+    { ngx_string("ssl_certificate_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_ssl_cert_by_lua_block,
       NGX_HTTP_SRV_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_ssl_cert_handler_inline },

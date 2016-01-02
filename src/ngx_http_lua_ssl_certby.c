@@ -19,6 +19,7 @@
 #include "ngx_http_ssl_module.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_ssl_certby.h"
+#include "ngx_http_lua_directive.h"
 
 
 static void ngx_http_lua_ssl_cert_done(void *data);
@@ -68,6 +69,25 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     ngx_http_lua_assert(lua_isfunction(L, -1));
 
     return ngx_http_lua_ssl_cert_by_chunk(L, r);
+}
+
+
+char *
+ngx_http_lua_ssl_cert_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_ssl_cert_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
 }
 
 
