@@ -1516,6 +1516,7 @@ lua ssl server name: "test.com"
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -1527,7 +1528,7 @@ lua ssl server name: "test.com"
                 return
             end
 
-            local url, err = ssl.get_ocsp_responder_from_der_chain(cert_data)
+            local url, err = ocsp.get_ocsp_responder_from_der_chain(cert_data)
             if not url then
                 ngx.log(ngx.ERR, "failed to get OCSP responder: ", err)
                 return
@@ -1606,6 +1607,7 @@ OCSP url found: http://127.0.0.1:8888/ocsp?foo=1,
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/chain/chain.pem"))
             local cert_data = f:read("*a")
@@ -1617,7 +1619,7 @@ OCSP url found: http://127.0.0.1:8888/ocsp?foo=1,
                 return
             end
 
-            local url, err = ssl.get_ocsp_responder_from_der_chain(cert_data)
+            local url, err = ocsp.get_ocsp_responder_from_der_chain(cert_data)
             if not url then
                 if err then
                     ngx.log(ngx.ERR, "failed to get OCSP responder: ", err)
@@ -1700,6 +1702,7 @@ OCSP responder not found
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/test-com.crt"))
             local cert_data = f:read("*a")
@@ -1711,7 +1714,7 @@ OCSP responder not found
                 return
             end
 
-            local url, err = ssl.get_ocsp_responder_from_der_chain(cert_data)
+            local url, err = ocsp.get_ocsp_responder_from_der_chain(cert_data)
             if not url then
                 if err then
                     ngx.log(ngx.ERR, "failed to get OCSP responder: ", err)
@@ -1793,6 +1796,7 @@ failed to get OCSP responder: no issuer certificate in chain
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/wrong-issuer-order-chain.pem"))
             local cert_data = f:read("*a")
@@ -1804,7 +1808,7 @@ failed to get OCSP responder: no issuer certificate in chain
                 return
             end
 
-            local url, err = ssl.get_ocsp_responder_from_der_chain(cert_data)
+            local url, err = ocsp.get_ocsp_responder_from_der_chain(cert_data)
             if not url then
                 if err then
                     ngx.log(ngx.ERR, "failed to get OCSP responder: ", err)
@@ -1886,6 +1890,7 @@ failed to get OCSP responder: issuer certificate not next to leaf
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -1897,8 +1902,7 @@ failed to get OCSP responder: issuer certificate not next to leaf
                 return
             end
 
-            local url, err = ssl.get_ocsp_responder_from_der_chain(cert_data,
-                                    6)
+            local url, err = ocsp.get_ocsp_responder_from_der_chain(cert_data, 6)
             if not url then
                 if err then
                     ngx.log(ngx.ERR, "failed to get OCSP responder: ", err)
@@ -1986,6 +1990,7 @@ still get an error: truncated
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -1997,7 +2002,7 @@ still get an error: truncated
                 return
             end
 
-            local req, err = ssl.create_ocsp_request(cert_data)
+            local req, err = ocsp.create_ocsp_request(cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
                 return
@@ -2083,6 +2088,7 @@ OCSP request created with length 68
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -2094,7 +2100,7 @@ OCSP request created with length 68
                 return
             end
 
-            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            local req, err = ocsp.create_ocsp_request(cert_data, 67)
             if not req then
                 ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
                 return
@@ -2177,9 +2183,10 @@ failed to create OCSP request: output buffer too small: 68 > 67
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local cert_data = ""
-            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            local req, err = ocsp.create_ocsp_request(cert_data, 67)
             if not req then
                 ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
                 return ngx.exit(ngx.ERROR)
@@ -2262,6 +2269,7 @@ failed to create OCSP request: d2i_X509_bio() failed
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/test-com.crt"))
             local cert_data = f:read("*a")
@@ -2273,7 +2281,7 @@ failed to create OCSP request: d2i_X509_bio() failed
                 return
             end
 
-            local req, err = ssl.create_ocsp_request(cert_data, 67)
+            local req, err = ocsp.create_ocsp_request(cert_data, 67)
             if not req then
                 ngx.log(ngx.ERR, "failed to create OCSP request: ", err)
                 return
@@ -2356,6 +2364,7 @@ failed to create OCSP request: no issuer certificate in chain
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -2371,7 +2380,7 @@ failed to create OCSP request: no issuer certificate in chain
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return
@@ -2450,6 +2459,7 @@ OCSP response validation ok
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/test-com.crt"))
             local cert_data = f:read("*a")
@@ -2465,7 +2475,7 @@ OCSP response validation ok
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return
@@ -2544,6 +2554,7 @@ OCSP response validation ok
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -2559,7 +2570,7 @@ OCSP response validation ok
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return
@@ -2641,6 +2652,7 @@ FIXME: we should complain in this case.
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -2656,7 +2668,7 @@ FIXME: we should complain in this case.
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return
@@ -2736,6 +2748,7 @@ OCSP response validation ok
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/chain.pem"))
             local cert_data = f:read("*a")
@@ -2751,7 +2764,7 @@ OCSP response validation ok
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return
@@ -2830,6 +2843,7 @@ OCSP response validation ok
         server_name   test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/revoked-chain.pem"))
             local cert_data = f:read("*a")
@@ -2845,7 +2859,7 @@ OCSP response validation ok
             local resp = f:read("*a")
             f:close()
 
-            local req, err = ssl.validate_ocsp_response(resp, cert_data)
+            local req, err = ocsp.validate_ocsp_response(resp, cert_data)
             if not req then
                 ngx.log(ngx.ERR, "failed to validate OCSP response: ", err)
                 return ngx.exit(ngx.ERROR)
@@ -2925,6 +2939,7 @@ FIXME: check the OCSP staple actually received by the ssl client
         server_name test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/ocsp-resp.der"))
             local resp = assert(f:read("*a"))
@@ -2932,7 +2947,7 @@ FIXME: check the OCSP staple actually received by the ssl client
 
             print("resp len: ", #resp)
 
-            local ok, err = ssl.set_ocsp_status_resp(resp)
+            local ok, err = ocsp.set_ocsp_status_resp(resp)
             if not ok then
                 ngx.log(ngx.ERR, "failed to set ocsp status resp: ", err)
                 return
@@ -3010,6 +3025,7 @@ ocsp status resp set ok: nil,
         server_name test.com;
         ssl_certificate_by_lua_block {
             local ssl = require "ngx.ssl"
+            local ocsp = require "ngx.ocsp"
 
             local f = assert(io.open("t/cert/ocsp/ocsp-resp.der"))
             local resp = assert(f:read("*a"))
@@ -3017,7 +3033,7 @@ ocsp status resp set ok: nil,
 
             print("resp len: ", #resp)
 
-            local ok, err = ssl.set_ocsp_status_resp(resp)
+            local ok, err = ocsp.set_ocsp_status_resp(resp)
             if not ok then
                 ngx.log(ngx.ERR, "failed to set ocsp status resp: ", err)
                 return
