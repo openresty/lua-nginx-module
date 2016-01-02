@@ -30,6 +30,9 @@ static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
 
 
+int  ngx_http_lua_ssl_ctx_index = -1;
+
+
 ngx_int_t
 ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L)
@@ -119,6 +122,17 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return "is duplicate";
     }
 
+    if (ngx_http_lua_ssl_ctx_index == -1) {
+        ngx_http_lua_ssl_ctx_index = SSL_get_ex_new_index(0, NULL, NULL,
+                                                          NULL, NULL);
+
+        if (ngx_ssl_connection_index == -1) {
+            ngx_ssl_error(NGX_LOG_ALERT, cf->log, 0,
+                          "lua: SSL_get_ex_new_index() failed");
+            return NGX_CONF_ERROR;
+        }
+    }
+
     value = cf->args->elts;
 
     lscf->ssl.cert_handler = (ngx_http_lua_srv_conf_handler_pt) cmd->post;
@@ -185,7 +199,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     dd("c = %p", c);
 
-    cctx = c->ssl->lua_ctx;
+    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
     dd("ssl cert handler, cert-ctx=%p", cctx);
 
@@ -245,7 +259,13 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     dd("setting cctx");
 
-    c->ssl->lua_ctx = cctx;
+    if (SSL_set_ex_data(c->ssl->connection, ngx_http_lua_ssl_ctx_index, cctx)
+        == 0)
+    {
+        ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_ex_data() failed");
+        goto failed;
+        return NGX_ERROR;
+    }
 
     lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
 

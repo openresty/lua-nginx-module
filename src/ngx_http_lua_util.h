@@ -129,6 +129,9 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     }
 
 
+#define ngx_http_lua_ssl_get_ctx(ssl_conn)                                   \
+    SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
+
 lua_State *ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln);
@@ -429,6 +432,7 @@ ngx_http_lua_get_flush_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
+extern int         ngx_http_lua_ssl_ctx_index;
 
 
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */

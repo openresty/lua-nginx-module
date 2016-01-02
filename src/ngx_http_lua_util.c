@@ -3569,9 +3569,11 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
             if (ssl_conn) {
                 c = ngx_ssl_get_connection(ssl_conn);
 
-                if (c && c->ssl && c->ssl->lua_ctx) {
-                    cctx = c->ssl->lua_ctx;
-                    cctx->exit_code = 0;
+                if (c && c->ssl) {
+                    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
+                    if (cctx != NULL) {
+                        cctx->exit_code = 0;
+                    }
                 }
             }
         }
