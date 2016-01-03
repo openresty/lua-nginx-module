@@ -471,7 +471,7 @@ static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
     ngx_http_lua_ctx_t *ctx;
 
     if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        /** TODO **/
+        return; /** FIXME **/
     }
 
     task_ctx->coctx->cleanup = NULL;
