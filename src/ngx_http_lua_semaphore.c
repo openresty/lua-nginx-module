@@ -285,8 +285,9 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
     sem->log = ngx_cycle->log;
     *psem = sem;
 
-    dd("ngx_http_lua_ffi_semaphore_new semaphore: %p, resource_count: %d",
-       sem, sem->resource_count);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, sem->log, 0,
+                   "http lua semaphore new: %p, resources: %d",
+                   sem, sem->resource_count);
 
     return NGX_OK;
 }
@@ -295,10 +296,11 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
 int
 ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 {
-    sem->resource_count += n;
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, sem->log, 0,
+                   "http lua semaphore post: %p, n: %d, resources: %d",
+                   sem, n, sem->resource_count);
 
-    dd("calling sem:post(%d) semaphore: %p, resource_count: %d",
-       n, sem, sem->resource_count);
+    sem->resource_count += n;
 
     if (!sem->event_posted && !ngx_queue_empty(&sem->wait_queue)) {
 
@@ -323,9 +325,10 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t        *wait_co_ctx;
     ngx_int_t                     rc;
 
-    dd("ngx_http_lua_ffi_semaphore_wait semaphore: %p"
-       "value: %d, event_posted: %d",
-       sem, sem->resource_count, sem->event_posted);
+    ngx_log_debug4(NGX_LOG_DEBUG_HTTP, sem->log, 0,
+                   "http lua semaphore wait: %p, timeout: %d, "
+                   "resources: %d, event posted: %d",
+                   sem, wait_ms, sem->resource_count, sem->event_posted);
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
