@@ -111,18 +111,44 @@ enum {
 } LFS_OPS;
 
 
+static ngx_int_t ngx_http_lua_lfs_read_event(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_lfs_task_ctx_t *task_ctx)
+{
+    ngx_int_t nrets = 0;
+    if (task_ctx->length > 0) {
+        nrets = 1;
+        lua_pushlstring(task_ctx->L, (char*)task_ctx->desc.buff, task_ctx->length);
+    } else {
+        nrets = 2;
+        lua_pushnil(task_ctx->L);
+        lua_pushstring(task_ctx->L, "no data");
+    }
+    return nrets;
+}
+
+static ngx_int_t ngx_http_lua_lfs_write_event(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_lfs_task_ctx_t *task_ctx)
+{
+    ngx_int_t nrets = 0;
+    if (task_ctx->length > 0) {
+        nrets = 1;
+        lua_pushboolean(task_ctx->L, 1);
+    } else {
+        nrets = 2;
+        lua_pushboolean(task_ctx->L, 0);
+        lua_pushstring(task_ctx->L, "write data failed");
+    }
+
+    return nrets;
+
+}
+
 static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx)
 {
     ngx_int_t nrets = 0;
 
-    ngx_http_lua_ctx_t *ctx;
-
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        nrets = 2;
-        lua_pushboolean(task_ctx->L, 0);
-        lua_pushstring(task_ctx->L, "no ctx found.");
-    } else if (task_ctx->used >= 0) {
+    if (task_ctx->used >= 0) {
         nrets = 2;
         lua_pushnumber(task_ctx->L, task_ctx->size);
         lua_pushnumber(task_ctx->L, task_ctx->used);
@@ -577,13 +603,13 @@ static ngx_http_lua_lfs_op_t lfs_op[] = {
         .check_argument = ngx_http_lua_lfs_read_check_argument,
         .task_create = ngx_http_lua_lfs_read_task_create,
         .task_callback = ngx_http_lua_lfs_task_read,
-        //.event_callback = ngx_http_lua_lfs_task_read_event,
+        .event_callback = ngx_http_lua_lfs_read_event,
     },
     { /** LFS_WRITE **/
         .check_argument = ngx_http_lua_lfs_write_check_argument,
         .task_create = ngx_http_lua_lfs_write_task_create,
         .task_callback = ngx_http_lua_lfs_task_write,
-        //.event_callback = ngx_http_lua_lfs_task_write_event,
+        .event_callback = ngx_http_lua_lfs_write_event,
     },
     { /** LFS_COPY **/
         .check_argument = NULL,
