@@ -354,7 +354,7 @@ static ngx_thread_task_t *ngx_http_lua_lfs_write_task_create(ngx_http_request_t 
 static ngx_thread_task_t *ngx_http_lua_lfs_status_task_create(ngx_http_request_t *r,
         ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
-    ngx_int_t n;
+    //ngx_int_t n;
     ngx_thread_task_t *task;
     ngx_http_lua_lfs_task_ctx_t *task_ctx;
 
@@ -410,7 +410,7 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
 
     if (ngx_is_dir(&st)) {
         struct statfs stfs;
-        if (statfs(filename, &stfs) != 0) {
+        if (statfs((char*)filename, &stfs) != 0) {
             return;
         }
         task_ctx->size = stfs.f_bsize * (stfs.f_blocks - stfs.f_bfree);
