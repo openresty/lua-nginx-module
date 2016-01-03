@@ -163,7 +163,6 @@ static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State 
         lua_pushnumber(task_ctx->L, task_ctx->size);
     }
 
-    task_ctx->coctx->cleanup = NULL;
 
     return nrets;
 }
