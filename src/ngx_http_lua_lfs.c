@@ -67,7 +67,7 @@ static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_http_request_t *r, lu
 static int ngx_http_lua_lfs_post_task(ngx_thread_task_t *task)
 {
     ngx_thread_pool_t *pool;
-    ngx_str_t poolname = ngx_string("luafs");
+    ngx_str_t poolname = ngx_string("luafs"); /** TODO: luafs **/
     ngx_http_lua_lfs_task_ctx_t *task_ctx = task->ctx;
 
     ngx_http_lua_cleanup_pending_operation(task_ctx->coctx);
@@ -483,82 +483,6 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
     task_ctx->size = st.st_size;
 }
 
-
-/**
- * read event function in main thread
- **/
-#if 0
-static void ngx_http_lua_lfs_task_read_event(ngx_event_t *ev)
-{
-    ngx_int_t nrets = 0;
-    ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
-    ngx_http_request_t *r = task_ctx->r;
-    ngx_connection_t *c = r->connection;
-    ngx_http_log_ctx_t *log_ctx;
-    ngx_http_lua_ctx_t *ctx;
-
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        nrets = 2;
-        lua_pushnil(task_ctx->L);
-        lua_pushstring(task_ctx->L, "no ctx found.");
-    } else if (task_ctx->length > 0) {
-        nrets = 1;
-        lua_pushlstring(task_ctx->L, (char*)task_ctx->desc.buff, task_ctx->length);
-    } else {
-        nrets = 2;
-        lua_pushnil(task_ctx->L);
-        lua_pushstring(task_ctx->L, "no data");
-    }
-
-    task_ctx->coctx->cleanup = NULL;
-
-    if (c->fd != -1) {
-        log_ctx = c->log->data;
-        log_ctx->current_request = r;
-    }
-    ctx->cur_co_ctx = task_ctx->coctx;
-
-    ngx_http_lua_lfs_event_resume(r, nrets);
-    ngx_http_run_posted_requests(c);
-}
-#endif
-
-#if 0
-static void ngx_http_lua_lfs_task_write_event(ngx_event_t *ev)
-{
-    ngx_int_t nrets = 0;
-    ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
-    ngx_http_request_t *r = task_ctx->r;
-    ngx_connection_t *c = r->connection;
-    ngx_http_log_ctx_t *log_ctx;
-    ngx_http_lua_ctx_t *ctx;
-
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        nrets = 2;
-        lua_pushboolean(task_ctx->L, 0);
-        lua_pushstring(task_ctx->L, "no ctx found.");
-    } else if (task_ctx->length > 0) {
-        nrets = 1;
-        lua_pushboolean(task_ctx->L, 1);
-    } else {
-        nrets = 2;
-        lua_pushboolean(task_ctx->L, 0);
-        lua_pushstring(task_ctx->L, "write data failed");
-    }
-
-    task_ctx->coctx->cleanup = NULL;
-
-    if (c->fd != -1) {
-        log_ctx = c->log->data;
-        log_ctx->current_request = r;
-    }
-    ctx->cur_co_ctx = task_ctx->coctx;
-
-    ngx_http_lua_lfs_event_resume(r, nrets);
-    ngx_http_run_posted_requests(c);
-}
-#endif
-
 static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
 {
     ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
@@ -568,7 +492,7 @@ static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
     ngx_http_lua_ctx_t *ctx;
 
     if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        /** FIXME **/
+        /** TODO **/
     }
 
     task_ctx->coctx->cleanup = NULL;
@@ -590,11 +514,6 @@ static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
 }
 
 static void ngx_http_lua_lfs_task_copy(void *data, ngx_log_t *log)
-{
-}
-
-    __attribute__((unused))
-static void ngx_http_lua_lfs_task_copy_event(ngx_event_t *ev)
 {
 }
 
