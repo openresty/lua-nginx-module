@@ -377,6 +377,9 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     wait_co_ctx->data = sem;
     wait_co_ctx->cleanup = ngx_http_lua_semaphore_cleanup;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, sem->log, 0,
+                   "http lua semaphore wait yielding");
+
     return NGX_AGAIN;
 }
 
