@@ -91,10 +91,6 @@ static int ngx_http_lua_lfs_post_task(ngx_thread_task_t *task)
 typedef ngx_int_t (*check_argument)(ngx_http_request_t *r, lua_State *L);
 typedef ngx_int_t (*task_init)(ngx_http_lua_lfs_task_ctx_t *task_ctx,
         ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L);
-#if 0
-typedef ngx_thread_task_t *(*task_create)(ngx_http_request_t *r,
-        ngx_http_lua_ctx_t *ctx, lua_State *L);
-#endif
 typedef void (*task_callback)(void *data, ngx_log_t *log);
 typedef ngx_int_t (*event_callback)(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx);
@@ -342,17 +338,7 @@ static ngx_int_t ngx_http_lua_lfs_read_task_init(ngx_http_lua_lfs_task_ctx_t *ta
         ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     ngx_int_t n;
-    //ngx_thread_task_t *task;
-    //ngx_http_lua_lfs_task_ctx_t *task_ctx;
     ngx_str_t filename;
-
-#if 0
-    if ((task = ngx_http_lua_lfs_create_task(r, L, ctx)) == NULL) {
-        return NULL; //luaL_error(L, "can't create task");
-    }
-
-    task_ctx = task->ctx;
-#endif
 
     if ((n = lua_gettop(L)) >= 2) {
         task_ctx->size = (ssize_t) luaL_checknumber(L, 2);
