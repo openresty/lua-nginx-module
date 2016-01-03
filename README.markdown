@@ -2339,18 +2339,19 @@ SSL (https) connections.
 
 It is particularly useful for setting the SSL certificate chain and the corresponding private key on a per-request
 basis. It is also useful to load such handshake configurations nonblockingly from the remote (for example,
-with the [#ngx.socket.tcp](http://wiki.nginx.org/cosocket) API). And one can also do per-request OCSP stapling handling in pure
+with the [cosocket](#ngxsockettcp) API). And one can also do per-request OCSP stapling handling in pure
 Lua here as well.
 
 Another typical use case is to do SSL handshake traffic control nonblockingly in this context,
-with the help of the [lua-resty-limit-traffic](https://github.com/openresty/lua-resty-limit-traffic) library, for example.
+with the help of the [lua-resty-limit-traffic#readme](https://github.com/openresty/lua-resty-limit-traffic)
+library, for example.
 
 One can also do interesting things with the SSL handshake requests from the client side, like
 rejecting old SSL clients using the SSLv3 protocol or even below selectively.
 
 The [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
 and [ngx.ocsp](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ocsp.md) Lua modules
-provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/tree/ssl-cert-by-lua-2)
+provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/tree/ssl-cert-by-lua-2#readme)
 library are particularly useful in this context. You can use the Lua API offered by these two Lua modules
 to manipulate the SSL certificate chain and private key for the current SSL connection
 being initiated.
