@@ -859,7 +859,6 @@ TODO
      }
  }
 ```
-* ssl: implement directives `ssl_certificate_by_lua` and `ssl_certificate_by_lua_file` to allow using Lua to dynamically serve SSL certificates and keys for downstream SSL handshake. (already done in CloudFlare's private branch and powering CloudFlare's SSL gateway of its global network. expected to be opensourced in March 2015.)
 * shm: implement a "shared queue API" to complement the existing [shared dict](#lua_shared_dict) API.
 * cosocket: add support in the context of [init_by_lua*](#init_by_lua).
 * cosocket: implement the `bind()` method for stream-typed cosockets.
