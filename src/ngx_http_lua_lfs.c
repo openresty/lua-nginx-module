@@ -143,6 +143,12 @@ static ngx_int_t ngx_http_lua_lfs_write_event(ngx_http_request_t *r, lua_State *
 
 }
 
+static ngx_int_t ngx_http_lua_lfs_copy_event(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_lfs_task_ctx_t *task_ctx)
+{
+    return 0;
+}
+
 static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx)
 {
@@ -513,14 +519,13 @@ static ngx_http_lua_lfs_op_t lfs_op[] = {
         .check_argument = NULL,
         .task_init = NULL,
         .task_callback = ngx_http_lua_lfs_task_copy,
-        //.event_callback = ngx_http_lua_lfs_task_copy_event,
+        .event_callback = ngx_http_lua_lfs_copy_event,
     },
     { /** LFS_STATUS **/
         .check_argument = ngx_http_lua_lfs_status_check_argument,
         .task_init = ngx_http_lua_lfs_status_task_init,
         .task_callback = ngx_http_lua_lfs_task_status,
         .event_callback = ngx_http_lua_lfs_status_event,
-
     },
     { /** LFS_TRUNCATE **/
         .check_argument = ngx_http_lua_lfs_truncate_check_argument,
