@@ -2940,6 +2940,8 @@ Nginx API for Lua
 * [ngx.worker.id](#ngxworkerid)
 * [ngx.semaphore](#ngxsemaphore)
 * [ngx.balancer](#ngxbalancer)
+* [ngx.ssl](#ngxssl)
+* [ngx.ocsp](#ngxocsp)
 * [ndk.set_var.DIRECTIVE](#ndkset_vardirective)
 * [coroutine.create](#coroutinecreate)
 * [coroutine.resume](#coroutineresume)
@@ -7402,6 +7404,46 @@ the
 Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/balancer.md)
 for this `ngx.balancer` Lua module in [lua-resty-core](https://github.com/openresty/lua-resty-core)
 for more details.
+
+This feature requires at least ngx_lua `v0.10.0`.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.ssl
+-------
+**syntax:** *local ssl = require "ngx.ssl"*
+
+This Lua module provides API functions to control the SSL handshake process in contexts like
+[ssl_certificate_by_lua*](https://github.com/openresty/lua-nginx-module/tree/ssl-cert-by-lua-2/#ssl_certificate_by_lua_block).
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
+for this `ngx.ssl` Lua module for more details.
+
+This feature requires at least ngx_lua `v0.10.0`.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.ocsp
+--------
+**syntax:** *local ocsp = require "ngx.ocsp"*
+
+This Lua module provides API to perform OCSP queries, OCSP response validations, and
+OCSP stapling planting.
+
+Usually, this module is used together with the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
+module in the
+context of [ssl_certificate_by_lua*](https://github.com/openresty/lua-nginx-module/tree/ssl-cert-by-lua-2/#ssl_certificate_by_lua_block).
+
+This Lua module does not ship with this ngx_lua module itself rather it is shipped with
+the
+[lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/ocsp-cert-by-lua-2/lib/ngx/ocsp.md)
+for this `ngx.ocsp` Lua module for more details.
 
 This feature requires at least ngx_lua `v0.10.0`.
 
