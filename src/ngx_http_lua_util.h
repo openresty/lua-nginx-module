@@ -132,6 +132,7 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
 #define ngx_http_lua_ssl_get_ctx(ssl_conn)                                   \
     SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
 
+
 lua_State *ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln);
