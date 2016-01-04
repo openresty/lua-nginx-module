@@ -43,6 +43,11 @@ typedef struct _ngx_http_lua_lfs_task_status_ctx_s {
     ngx_int_t used;
 } ngx_http_lua_lfs_task_status_ctx_t;
 
+typedef struct _ngx_http_lua_lfs_task_delete_ctx_s {
+    int fd;
+    ngx_str_t filename;
+} ngx_http_lua_lfs_task_delete_ctx_t;
+
 typedef struct _ngx_http_lua_lfs_task_ctx_s {
     ngx_int_t op;
     lua_State *L;
@@ -55,6 +60,7 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
         ngx_http_lua_lfs_task_write_ctx_t write;
         ngx_http_lua_lfs_task_copy_ctx_t copy;
         ngx_http_lua_lfs_task_status_ctx_t status;
+        ngx_http_lua_lfs_task_delete_ctx_t delete;
     };
 } ngx_http_lua_lfs_task_ctx_t;
 
@@ -75,11 +81,6 @@ static ngx_thread_task_t *ngx_http_lua_lfs_create_task(ngx_http_request_t *r, lu
 
     task_ctx = task->ctx;
 
-#if 0
-    task_ctx->size = 0xFFFF;
-    task_ctx->offset = -1;
-    task_ctx->length = -1;
-#endif
     task_ctx->L = L;
     task_ctx->r = r;
     task_ctx->coctx = ctx->cur_co_ctx;
@@ -195,6 +196,13 @@ static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State 
     lua_pushnumber(task_ctx->L, task_ctx->status.used);
 
     return 3;
+}
+
+static ngx_int_t ngx_http_lua_lfs_delete_event(ngx_http_request_t *r, lua_State *L,
+        ngx_http_lua_lfs_task_ctx_t *task_ctx)
+{
+    lua_pushboolean(task_ctx->L, 1);
+    return 1; /** FIXME **/
 }
 
 
@@ -478,10 +486,6 @@ static ngx_int_t ngx_http_lua_lfs_copy_task_init(ngx_http_lua_lfs_task_ctx_t *ta
 {
     ngx_str_t src, dst;
 
-    //task_ctx->copy.size = 0xFFFF;
-    //task_ctx->copy.offset = -1;
-    //task_ctx->copy.length = -1;
-
     src.data = (u_char*) lua_tolstring(L, 1, &src.len);
     dst.data = (u_char*) lua_tolstring(L, 2, &dst.len);
 
@@ -508,12 +512,27 @@ static ngx_int_t ngx_http_lua_lfs_status_task_init(ngx_http_lua_lfs_task_ctx_t *
         ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
     task_ctx->status.size = 0xFFFF;
-    //task_ctx->status.offset = -1;
-    //task_ctx->status.length = -1;
 
     task_ctx->status.filename.data = (u_char*)lua_tolstring(L, 1, &task_ctx->status.filename.len);
     if (task_ctx->status.filename.len <= 0) {
         return luaL_error(L, "the first argument is error.");
+    }
+
+    return 0;
+}
+
+static ngx_int_t ngx_http_lua_lfs_delete_task_init(ngx_http_lua_lfs_task_ctx_t *task_ctx,
+        ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
+{
+    task_ctx->delete.filename.data = (u_char*)lua_tolstring(L, 1, &task_ctx->delete.filename.len);
+    if (task_ctx->delete.filename.len <= 0) {
+        return luaL_error(L, "the first argument is error.");
+    }
+
+    if ((task_ctx->copy.fd = ngx_http_lua_lfs_fdpool_get(r, task_ctx->delete.filename.data)) >= 0) {
+        if (ftruncate(task_ctx->copy.fd, 0) != 0) {
+            /** FIXME **/
+        }
     }
 
     return 0;
@@ -600,6 +619,74 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
     task_ctx->status.size = st.st_size;
 }
 
+static ngx_int_t ngx_http_lua_lfs_task_delete_path(u_char *pathname)
+{
+    ngx_dir_t dir;
+    ngx_str_t path;
+
+    path.data = pathname;
+    path.len = ngx_strlen(pathname);
+
+    if (ngx_open_dir(&path, &dir) != NGX_OK) {
+        return -1;
+    }
+
+    for (;;) {
+        u_char *name;
+        size_t len;
+        if (ngx_read_dir(&dir) != NGX_OK) {
+            break;
+        }
+        len = ngx_de_namelen(&dir);
+        name = ngx_de_name(&dir);
+
+        if (len == 1 && name[0] == '.') {
+            continue;
+        } else if (len == 2 && name[0] == '.' && name[1] == '.') {
+            continue;
+        }
+
+#if 0
+        if (!dir.valid_info) {
+            if (ngx_de_info(name, &dir) != NGX_OK) {
+                /** FIXME **/
+            }
+        }
+#endif
+
+        u_char tmpname[path.len + len + 2];
+        ngx_snprintf(tmpname, path.len + len + 1, "%s/%s", path.data, name);
+        tmpname[path.len + len + 1] = 0;
+        if (ngx_de_is_dir(&dir)) {
+            ngx_http_lua_lfs_task_delete_path(tmpname);
+        } else {
+            ngx_delete_file(tmpname);
+        }
+    }
+
+    ngx_close_dir(&dir);
+
+    ngx_delete_dir(path.data);
+    
+    return 0;
+}
+
+static void ngx_http_lua_lfs_task_delete(void *data, ngx_log_t *log)
+{
+    ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
+    u_char *filename = task_ctx->delete.filename.data;
+    ngx_file_info_t st;
+
+    if (ngx_file_info(filename, &st) != 0) {
+        return;
+    }
+
+    if (ngx_is_dir(&st)) {
+        ngx_http_lua_lfs_task_delete_path(filename);
+    }
+    ngx_delete_file(filename);
+}
+
 static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
 {
     ngx_http_lua_lfs_task_ctx_t *task_ctx = ev->data;
@@ -661,6 +748,9 @@ static ngx_http_lua_lfs_op_t lfs_op[] = {
     },
     { /** LFS_DELETE **/
         .check_argument = ngx_http_lua_lfs_delete_check_argument,
+        .task_init = ngx_http_lua_lfs_delete_task_init,
+        .task_callback = ngx_http_lua_lfs_task_delete,
+        .event_callback = ngx_http_lua_lfs_delete_event,
     },
 };
 
@@ -802,40 +892,7 @@ static int ngx_http_lua_ngx_lfs_truncate(lua_State *L)
 
 static int ngx_http_lua_ngx_lfs_delete(lua_State *L)
 {
-    ngx_http_request_t *r;
-    ngx_http_lua_ctx_t *ctx;
-    ngx_int_t rc;
-    ngx_fd_t fd;
-    ngx_str_t filename;
-
-    if ((r = ngx_http_lua_get_req(L)) == NULL) {
-        return luaL_error(L, "no request found");
-    }
-
-    if ((rc = lfs_op[LFS_DELETE].check_argument(r, L)) != 0) {
-        return rc;
-    }
-
-    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
-        return luaL_error(L, "no request ctx found");
-    }
-
-    if (ngx_http_lua_lfs_fdpool_init(ctx, r) != 0) {
-        return luaL_error(L, "create fd pool failed.");
-    }
-
-    filename.data = (u_char*) lua_tolstring(L, 1, &filename.len);
-    if (filename.len <= 0) {
-        return luaL_error(L, "the first argument is error.");
-    }
-
-    if ((fd = ngx_http_lua_lfs_fdpool_get(r, filename.data)) >= 0) {
-        if (ftruncate(fd, 0) != 0) { /** FIXME **/ }
-    }
-
-    ngx_delete_file(filename.data); // FIXME
-    lua_pushboolean(L, 1);
-    return 1;
+    return ngx_http_lua_lfs_process(L, LFS_DELETE);
 }
 
 
