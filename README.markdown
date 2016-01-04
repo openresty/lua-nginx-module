@@ -6440,7 +6440,7 @@ This method was first introduced in the `v0.5.0rc1` release.
 
 tcpsock:sslhandshake
 --------------------
-**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?)*
+**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;*
 
@@ -6472,6 +6472,9 @@ directive to control how deep we should follow along the certificate chain.
 Also, when the `ssl_verify` argument is true and the
 `server_name` argument is also specified, the latter will be used
 to validate the server name in the server certificate.
+
+The optional `send_status_req` argument takes a boolean that controls whether to send
+the OCSP status request in the SSL handshake request (which is for requesting OCSP stapling).
 
 For connections that have already done SSL/TLS handshake, this method returns
 immediately.
