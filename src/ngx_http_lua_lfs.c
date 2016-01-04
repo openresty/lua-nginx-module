@@ -23,7 +23,10 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
     union {
         struct {
             ngx_fd_t fd;
-            u_char *buff;
+            union {
+                ngx_fd_t fd2;
+                u_char *buff;
+            };
         } desc;
         ngx_str_t filename;
     };
@@ -146,7 +149,8 @@ static ngx_int_t ngx_http_lua_lfs_write_event(ngx_http_request_t *r, lua_State *
 static ngx_int_t ngx_http_lua_lfs_copy_event(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx)
 {
-    return 0;
+    lua_pushboolean(task_ctx->L, 1);
+    return 1; /** FIXME **/
 }
 
 static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State *L,
@@ -311,6 +315,23 @@ static ngx_int_t ngx_http_lua_lfs_write_check_argument(ngx_http_request_t *r, lu
     return 0;
 }
 
+/**
+ * check the arguments of copy function
+ **/
+static ngx_int_t ngx_http_lua_lfs_copy_check_argument(ngx_http_request_t *r, lua_State *L)
+{
+    ngx_int_t n = lua_gettop(L);
+    if (n != 2) {
+        return luaL_error(L, "expected 2 arguments, but seen %d", n);
+    }
+
+    if (!lua_isstring(L, 1) || !lua_isstring(L, 2)) {
+        return luaL_error(L, "the first and second arguments are expected string");
+    }
+
+    return 0;
+}
+
 static ngx_int_t ngx_http_lua_lfs_status_check_argument(ngx_http_request_t *r, lua_State *L)
 {
     ngx_int_t n = lua_gettop(L);
@@ -404,6 +425,33 @@ static ngx_int_t ngx_http_lua_lfs_write_task_init(ngx_http_lua_lfs_task_ctx_t *t
     return 0;
 }
 
+static ngx_int_t ngx_http_lua_lfs_copy_task_init(ngx_http_lua_lfs_task_ctx_t *task_ctx,
+        ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
+{
+    ngx_str_t src, dst;
+
+    src.data = (u_char*) lua_tolstring(L, 1, &src.len);
+    dst.data = (u_char*) lua_tolstring(L, 2, &dst.len);
+
+    if ((task_ctx->desc.fd = ngx_http_lua_lfs_fdpool_get(r, src.data)) < 0) {
+        if ((task_ctx->desc.fd = ngx_http_lua_lfs_open_file(src.data, NGX_FILE_RDWR,
+                        NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS, r->connection->log)) < 0) {
+            return luaL_error(L, "open file %s error", src.data);
+        }
+        ngx_http_lua_lfs_fdpool_add(r, src.data, task_ctx->desc.fd);
+    }
+
+    if ((task_ctx->desc.fd2 = ngx_http_lua_lfs_fdpool_get(r, dst.data)) < 0) {
+        if ((task_ctx->desc.fd2 = ngx_http_lua_lfs_open_file(dst.data, NGX_FILE_RDWR,
+                        NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS, r->connection->log)) < 0) {
+            return luaL_error(L, "open file %s error", dst.data);
+        }
+        ngx_http_lua_lfs_fdpool_add(r, dst.data, task_ctx->desc.fd2);
+    }
+
+    return 0;
+}
+
 static ngx_int_t ngx_http_lua_lfs_status_task_init(ngx_http_lua_lfs_task_ctx_t *task_ctx,
         ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
@@ -439,6 +487,30 @@ static void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
         task_ctx->length = write(fd, task_ctx->desc.buff, task_ctx->size);
     } else {
         task_ctx->length = pwrite(fd, task_ctx->desc.buff, task_ctx->size, task_ctx->offset);
+    }
+}
+
+
+static void ngx_http_lua_lfs_task_copy(void *data, ngx_log_t *log)
+{
+    ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
+    ngx_fd_t fd_src = task_ctx->desc.fd;
+    ngx_fd_t fd_dst = task_ctx->desc.fd2;
+    off_t offset = 0;
+    u_char buff[BUFSIZ*4];
+    ngx_int_t ret;
+
+    if (ftruncate(fd_dst, 0) != 0) {
+        /** TODO **/
+    }
+
+    while (1) {
+        ret = pread(fd_src, buff, BUFSIZ*4, offset);
+        if (ret <= 0) {
+            break;
+        }
+        ret = pwrite(fd_dst, buff, ret, offset); /** FIXME, loop-write **/
+        offset += ret;
     }
 }
 
@@ -497,9 +569,6 @@ static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
     ngx_http_run_posted_requests(c);
 }
 
-static void ngx_http_lua_lfs_task_copy(void *data, ngx_log_t *log)
-{
-}
 
 static ngx_http_lua_lfs_op_t lfs_op[] = {
     { /** LFS_READ **/
@@ -515,8 +584,8 @@ static ngx_http_lua_lfs_op_t lfs_op[] = {
         .event_callback = ngx_http_lua_lfs_write_event,
     },
     { /** LFS_COPY **/
-        .check_argument = NULL,
-        .task_init = NULL,
+        .check_argument = ngx_http_lua_lfs_copy_check_argument,
+        .task_init = ngx_http_lua_lfs_copy_task_init,
         .task_callback = ngx_http_lua_lfs_task_copy,
         .event_callback = ngx_http_lua_lfs_copy_event,
     },
@@ -613,7 +682,7 @@ static int ngx_http_lua_ngx_lfs_write(lua_State *L)
 
 static int ngx_http_lua_ngx_lfs_copy(lua_State *L)
 {
-    return 0;
+    return ngx_http_lua_lfs_process(L, LFS_COPY);
 }
 
 static int ngx_http_lua_ngx_lfs_truncate(lua_State *L)
