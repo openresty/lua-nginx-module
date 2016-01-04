@@ -132,6 +132,7 @@ enum {
     LFS_COPY,
     LFS_STATUS,
     LFS_TRUNCATE,
+    LFS_DELETE,
 } LFS_OPS;
 
 
@@ -177,17 +178,23 @@ static ngx_int_t ngx_http_lua_lfs_copy_event(ngx_http_request_t *r, lua_State *L
 static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx)
 {
-    ngx_int_t nrets = 2;
-
-    lua_pushnumber(task_ctx->L, task_ctx->status.size);
-    lua_pushnumber(task_ctx->L, task_ctx->status.atime);
-
-    if (task_ctx->status.used >= 0) {
-        nrets = 3;
-        lua_pushnumber(task_ctx->L, task_ctx->status.used);
+    if (task_ctx->status.size < 0) {
+        lua_pushnil(task_ctx->L);
+        return 1;
     }
 
-    return nrets;
+    lua_pushnumber(task_ctx->L, task_ctx->status.size);
+    if (task_ctx->status.atime < 0) {
+        return 1;
+    }
+    lua_pushnumber(task_ctx->L, task_ctx->status.atime);
+
+    if (task_ctx->status.used < 0) {
+        return 2;
+    }
+    lua_pushnumber(task_ctx->L, task_ctx->status.used);
+
+    return 3;
 }
 
 
@@ -379,6 +386,20 @@ static ngx_int_t ngx_http_lua_lfs_truncate_check_argument(ngx_http_request_t *r,
     return 0;
 }
 
+static ngx_int_t ngx_http_lua_lfs_delete_check_argument(ngx_http_request_t *r, lua_State *L)
+{
+    ngx_int_t n = lua_gettop(L);
+    if (n != 1) {
+        return luaL_error(L, "expected 1 argument, but seen %d", n);
+    }
+
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "the first argument is expected string");
+    }
+
+    return 0;
+}
+
 static ngx_int_t ngx_http_lua_lfs_read_task_init(ngx_http_lua_lfs_task_ctx_t *task_ctx,
         ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, lua_State *L)
 {
@@ -559,6 +580,7 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
 
     task_ctx->status.used = -1;
     task_ctx->status.size = -1;
+    task_ctx->status.atime = -1;
 
     if (ngx_file_info(filename, &st) != 0) {
         return;
@@ -636,6 +658,9 @@ static ngx_http_lua_lfs_op_t lfs_op[] = {
     },
     { /** LFS_TRUNCATE **/
         .check_argument = ngx_http_lua_lfs_truncate_check_argument,
+    },
+    { /** LFS_DELETE **/
+        .check_argument = ngx_http_lua_lfs_delete_check_argument,
     },
 };
 
@@ -775,6 +800,45 @@ static int ngx_http_lua_ngx_lfs_truncate(lua_State *L)
     return 1;
 }
 
+static int ngx_http_lua_ngx_lfs_delete(lua_State *L)
+{
+    ngx_http_request_t *r;
+    ngx_http_lua_ctx_t *ctx;
+    ngx_int_t rc;
+    ngx_fd_t fd;
+    ngx_str_t filename;
+
+    if ((r = ngx_http_lua_get_req(L)) == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    if ((rc = lfs_op[LFS_DELETE].check_argument(r, L)) != 0) {
+        return rc;
+    }
+
+    if ((ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module)) == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    if (ngx_http_lua_lfs_fdpool_init(ctx, r) != 0) {
+        return luaL_error(L, "create fd pool failed.");
+    }
+
+    filename.data = (u_char*) lua_tolstring(L, 1, &filename.len);
+    if (filename.len <= 0) {
+        return luaL_error(L, "the first argument is error.");
+    }
+
+    if ((fd = ngx_http_lua_lfs_fdpool_get(r, filename.data)) >= 0) {
+        if (ftruncate(fd, 0) != 0) { /** FIXME **/ }
+    }
+
+    ngx_delete_file(filename.data); // FIXME
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+
 static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 {
     return ngx_http_lua_lfs_process(L, LFS_STATUS);
@@ -782,7 +846,7 @@ static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 
 void ngx_http_lua_inject_lfs_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 5 /* nrec */); /* ngx.lfs. */
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */); /* ngx.lfs. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_read);
     lua_setfield(L, -2, "read");
@@ -795,6 +859,9 @@ void ngx_http_lua_inject_lfs_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_truncate);
     lua_setfield(L, -2, "truncate");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_lfs_delete);
+    lua_setfield(L, -2, "delete");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_lfs_status);
     lua_setfield(L, -2, "status");
