@@ -31,7 +31,10 @@ typedef struct _ngx_http_lua_lfs_task_ctx_s {
         ngx_str_t filename;
     };
     ssize_t size;
-    off_t offset;
+    union {
+        off_t offset;
+        time_t atime;
+    };
     union {
         ssize_t length;
         ssize_t used;
@@ -156,17 +159,15 @@ static ngx_int_t ngx_http_lua_lfs_copy_event(ngx_http_request_t *r, lua_State *L
 static ngx_int_t ngx_http_lua_lfs_status_event(ngx_http_request_t *r, lua_State *L,
         ngx_http_lua_lfs_task_ctx_t *task_ctx)
 {
-    ngx_int_t nrets = 0;
+    ngx_int_t nrets = 2;
+
+    lua_pushnumber(task_ctx->L, task_ctx->size);
+    lua_pushnumber(task_ctx->L, task_ctx->atime);
 
     if (task_ctx->used >= 0) {
-        nrets = 2;
-        lua_pushnumber(task_ctx->L, task_ctx->size);
+        nrets = 3;
         lua_pushnumber(task_ctx->L, task_ctx->used);
-    } else {
-        nrets = 1;
-        lua_pushnumber(task_ctx->L, task_ctx->size);
     }
-
 
     return nrets;
 }
@@ -527,6 +528,8 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
         return;
     }
 
+    task_ctx->atime = st.st_atime;
+
     if (ngx_is_dir(&st)) {
         struct statfs stfs;
         if (statfs((char*)filename, &stfs) != 0) {
@@ -740,7 +743,6 @@ static int ngx_http_lua_ngx_lfs_status(lua_State *L)
 {
     return ngx_http_lua_lfs_process(L, LFS_STATUS);
 }
-
 
 void ngx_http_lua_inject_lfs_api(lua_State *L)
 {
