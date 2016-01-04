@@ -22,6 +22,13 @@
 #include "ngx_http_lua_directive.h"
 
 
+enum {
+    NGX_HTTP_LUA_ADDR_TYPE_UNIX  = 0,
+    NGX_HTTP_LUA_ADDR_TYPE_INET  = 1,
+    NGX_HTTP_LUA_ADDR_TYPE_INET6 = 2
+};
+
+
 static void ngx_http_lua_ssl_cert_done(void *data);
 static void ngx_http_lua_ssl_cert_aborted(void *data);
 static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
@@ -734,7 +741,7 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
         sin6 = (struct sockaddr_in6 *) c->local_sockaddr;
         *addrlen = 16;
         *addr = (char *) &sin6->sin6_addr.s6_addr;
-        *addrtype = AF_INET6;
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_INET6;
 
         break;
 #endif
@@ -755,7 +762,7 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
             *addrlen = ngx_strlen(saun->sun_path);
         }
 
-        *addrtype = AF_UNIX;
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_UNIX;
         break;
 #endif
 
@@ -763,7 +770,7 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
         sin = (struct sockaddr_in *) c->local_sockaddr;
         *addr = (char *) &sin->sin_addr.s_addr;
         *addrlen = 4;
-        *addrtype = AF_INET;
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_INET;
         break;
     }
 
