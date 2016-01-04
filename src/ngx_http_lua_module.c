@@ -25,6 +25,8 @@
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
 #include "ngx_http_lua_balancer.h"
+#include "ngx_http_lua_ssl_certby.h"
+#include <openssl/ssl.h>
 
 
 #if !defined(nginx_version) || nginx_version < 8054
@@ -38,6 +40,7 @@ static void *ngx_http_lua_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static void *ngx_http_lua_create_loc_conf(ngx_conf_t *cf);
+
 static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
@@ -506,6 +509,24 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_ciphers),
       NULL },
 
+#if (NGX_HTTP_SSL)
+
+    { ngx_string("ssl_certificate_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_ssl_cert_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_cert_handler_inline },
+
+    { ngx_string("ssl_certificate_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_ssl_cert_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_cert_handler_file },
+
+#endif  /* NGX_HTTP_SSL */
+
     { ngx_string("lua_ssl_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -840,6 +861,9 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     }
 
     /* set by ngx_pcalloc:
+     *      lscf->ssl.cert_handler = NULL;
+     *      lscf->ssl.cert_src = { 0, NULL };
+     *      lscf->ssl.cert_src_key = NULL;
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
      *      lscf->balancer.src_key = NULL;
@@ -852,6 +876,40 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+#if (NGX_HTTP_SSL)
+
+    ngx_http_lua_srv_conf_t *prev = parent;
+    ngx_http_lua_srv_conf_t *conf = child;
+    ngx_http_ssl_srv_conf_t *sscf;
+
+    dd("merge srv conf");
+
+    if (conf->ssl.cert_src.len == 0) {
+        conf->ssl.cert_src = prev->ssl.cert_src;
+        conf->ssl.cert_handler = prev->ssl.cert_handler;
+    }
+
+    if (conf->ssl.cert_src.len) {
+        sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
+        if (sscf == NULL || sscf->ssl.ctx == NULL) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no ssl configured for the server");
+
+            return NGX_CONF_ERROR;
+        }
+
+#if OPENSSL_VERSION_NUMBER >= 0x1000205fL
+
+        SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
+
+#else
+
+        return NGX_CONF_ERROR;
+
+#endif
+    }
+
+#endif  /* NGX_HTTP_SSL */
     return NGX_CONF_OK;
 }
 
