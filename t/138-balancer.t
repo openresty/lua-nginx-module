@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 7);
+plan tests => repeat_each() * (blocks() * 4 + 8);
 
 #no_diff();
 no_long_string();
@@ -276,3 +276,29 @@ qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disable
 --- error_code: 500
 --- error_log eval
 qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+
+
+
+=== TEST 11: get_phase
+--- http_config
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            print("I am in phase ", ngx.get_phase())
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- grep_error_log eval: qr/I am in phase \w+/
+--- grep_error_log_out
+I am in phase balancer
+--- error_log eval
+qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"}
+--- no_error_log
+[error]
