@@ -600,7 +600,7 @@ static void ngx_http_lua_lfs_task_read(void *data, ngx_log_t *log)
     if (task_ctx->read.offset == -1) {
         task_ctx->read.length = read(fd, task_ctx->read.buff, task_ctx->read.size);
     } else {
-        task_ctx->read.length = pread(fd, task_ctx->read.buff, task_ctx->read.size, 
+        task_ctx->read.length = pread(fd, task_ctx->read.buff, task_ctx->read.size,
                 task_ctx->read.offset);
     }
 }
@@ -613,7 +613,7 @@ static void ngx_http_lua_lfs_task_write(void *data, ngx_log_t *log)
     if (task_ctx->write.offset == -1) {
         task_ctx->write.length = write(fd, task_ctx->write.buff, task_ctx->write.size);
     } else {
-        task_ctx->write.length = pwrite(fd, task_ctx->write.buff, task_ctx->write.size, 
+        task_ctx->write.length = pwrite(fd, task_ctx->write.buff, task_ctx->write.size,
                 task_ctx->write.offset);
     }
 }
@@ -642,6 +642,20 @@ static void ngx_http_lua_lfs_task_copy(void *data, ngx_log_t *log)
     }
 }
 
+
+ngx_int_t ngx_http_lua_lfs_get_directory_info(u_char *path,
+        ssize_t *size, ngx_int_t *used)
+{
+    struct statfs stfs;
+    if (statfs((char*)path, &stfs) != 0) {
+        return -1;
+    }
+    *size = stfs.f_bsize * (stfs.f_blocks - stfs.f_bfree);
+    *used = (stfs.f_blocks - stfs.f_bfree) * 100 / stfs.f_blocks;
+    return 0;
+}
+
+
 static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
 {
     ngx_http_lua_lfs_task_ctx_t *task_ctx = data;
@@ -659,12 +673,8 @@ static void ngx_http_lua_lfs_task_status(void *data, ngx_log_t *log)
     task_ctx->status.atime = st.st_atime;
 
     if (ngx_is_dir(&st)) {
-        struct statfs stfs;
-        if (statfs((char*)filename, &stfs) != 0) {
-            return;
-        }
-        task_ctx->status.size = stfs.f_bsize * (stfs.f_blocks - stfs.f_bfree);
-        task_ctx->status.used = (stfs.f_blocks - stfs.f_bfree) * 100 / stfs.f_blocks;
+        ngx_http_lua_lfs_get_directory_info(filename, &task_ctx->status.size,
+                &task_ctx->status.used);
         return;
     }
     task_ctx->status.size = st.st_size;
@@ -697,14 +707,6 @@ static ngx_int_t ngx_http_lua_lfs_task_delete_path(u_char *pathname)
             continue;
         }
 
-#if 0
-        if (!dir.valid_info) {
-            if (ngx_de_info(name, &dir) != NGX_OK) {
-                /** FIXME **/
-            }
-        }
-#endif
-
         u_char tmpname[path.len + len + 2];
         ngx_snprintf(tmpname, path.len + len + 1, "%s/%s", path.data, name);
         tmpname[path.len + len + 1] = 0;
@@ -734,8 +736,105 @@ static void ngx_http_lua_lfs_task_delete(void *data, ngx_log_t *log)
 
     if (ngx_is_dir(&st)) {
         ngx_http_lua_lfs_task_delete_path(filename);
+    } else {
+        ngx_delete_file(filename);
     }
-    ngx_delete_file(filename);
+}
+
+
+static time_t ngx_http_lua_lfs_task_expires_get_lru_path(u_char *pathname, 
+        ngx_int_t depth, u_char *out)
+{
+    ngx_dir_t dir;
+    ngx_str_t path;
+
+    time_t tmpatime = 0xFFFFFFFF;
+
+    path.data = pathname;
+    path.len = ngx_strlen(pathname);
+
+    if (ngx_open_dir(&path, &dir) != NGX_OK) {
+        return -1;
+    }
+
+    for (;;) {
+        u_char *name;
+        size_t len;
+        if (ngx_read_dir(&dir) != NGX_OK) {
+            break;
+        }
+        len = ngx_de_namelen(&dir);
+        name = ngx_de_name(&dir);
+
+        if (len == 1 && name[0] == '.') {
+            continue;
+        } else if (len == 2 && name[0] == '.' && name[1] == '.') {
+            continue;
+        }
+
+        u_char tmpname[path.len + len + 2];
+        ngx_snprintf(tmpname, path.len + len + 1, "%s/%s", path.data, name);
+        tmpname[path.len + len + 1] = 0;
+
+        if (ngx_de_info(tmpname, &dir) != 0) {
+            continue; /** FIXME **/
+        }
+
+        if (depth == 1 && dir.info.st_atime < tmpatime) {
+            ngx_memcpy(out, tmpname, path.len + len + 1);
+            out[path.len + len + 1] = 0;
+            tmpatime = dir.info.st_atime;
+        }
+
+        if (depth != 1 && ngx_de_is_dir(&dir)) {
+            u_char subname[BUFSIZ];
+            time_t subtime = ngx_http_lua_lfs_task_expires_get_lru_path(tmpname, depth - 1, subname);
+            if (subtime < tmpatime) {
+                ngx_cpystrn(out, subname, ngx_strlen(subname) + 1);
+                tmpatime = subtime;
+            }
+        }
+    }
+
+    ngx_close_dir(&dir);
+
+    return tmpatime;
+}
+
+static ngx_int_t ngx_http_lua_lfs_task_expires_path(u_char *pathname,
+        ngx_int_t percent, ngx_int_t depth)
+{
+    u_char lru_name[BUFSIZ];
+    ngx_int_t cur_percent;
+    ssize_t nouse;
+
+
+    while (1) {
+        if (ngx_http_lua_lfs_get_directory_info(pathname, &nouse, &cur_percent) < 0) {
+            break;
+        }
+
+        if (cur_percent < percent) {
+            break;
+        }
+
+        if (ngx_http_lua_lfs_task_expires_get_lru_path(pathname, depth, lru_name) == 0xFFFFFFFF) {
+            break;
+        }
+
+        ngx_file_info_t st;
+        ngx_file_info(lru_name, &st);
+
+        if (ngx_is_dir(&st)) {
+            ngx_http_lua_lfs_task_delete_path(lru_name);
+        } else {
+            ngx_delete_file(lru_name);
+        }
+    }
+
+
+
+    return 0;
 }
 
 static void ngx_http_lua_lfs_task_expires(void *data, ngx_log_t *log)
@@ -752,7 +851,8 @@ static void ngx_http_lua_lfs_task_expires(void *data, ngx_log_t *log)
         return;
     }
 
-    /** TODO **/
+    ngx_http_lua_lfs_task_expires_path(filename, task_ctx->expires.percent,
+            task_ctx->expires.depth);
 }
 
 static void ngx_http_lua_lfs_task_event(ngx_event_t *ev)
