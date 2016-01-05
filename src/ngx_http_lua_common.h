@@ -31,6 +31,11 @@
 #endif
 
 
+#if (!defined OPENSSL_NO_OCSP && defined SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB)
+#   define NGX_HTTP_LUA_USE_OCSP 1
+#endif
+
+
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
 #endif
@@ -95,6 +100,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
 #define NGX_HTTP_LUA_CONTEXT_BALANCER       0x200
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x400
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -104,7 +110,7 @@ typedef struct {
 
 
 typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
-typedef struct ngx_http_lua_srv_conf_s  ngx_http_lua_srv_conf_t;
+typedef union ngx_http_lua_srv_conf_u  ngx_http_lua_srv_conf_t;
 
 
 typedef struct ngx_http_lua_balancer_peer_data_s
@@ -114,7 +120,7 @@ typedef struct ngx_http_lua_balancer_peer_data_s
 typedef struct ngx_http_lua_semaphore_mm_s  ngx_http_lua_semaphore_mm_t;
 
 
-typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
+typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
@@ -156,11 +162,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
 
-    ngx_http_lua_conf_handler_pt    init_handler;
-    ngx_str_t                       init_src;
+    ngx_http_lua_main_conf_handler_pt    init_handler;
+    ngx_str_t                            init_src;
 
-    ngx_http_lua_conf_handler_pt    init_worker_handler;
-    ngx_str_t                       init_worker_src;
+    ngx_http_lua_main_conf_handler_pt    init_worker_handler;
+    ngx_str_t                            init_worker_src;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
                     /* balancer_by_lua does not support yielding and
@@ -182,7 +188,15 @@ struct ngx_http_lua_main_conf_s {
 };
 
 
-struct ngx_http_lua_srv_conf_s {
+union ngx_http_lua_srv_conf_u {
+#if (NGX_HTTP_SSL)
+    struct {
+        ngx_http_lua_srv_conf_handler_pt     cert_handler;
+        ngx_str_t                            cert_src;
+        u_char                              *cert_src_key;
+    } ssl;
+#endif
+
     struct {
         ngx_str_t           src;
         u_char             *src_key;
