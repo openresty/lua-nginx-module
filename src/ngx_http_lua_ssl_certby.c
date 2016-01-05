@@ -271,7 +271,6 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     {
         ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_ex_data() failed");
         goto failed;
-        return NGX_ERROR;
     }
 
     lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
