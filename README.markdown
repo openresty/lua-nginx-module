@@ -2395,7 +2395,7 @@ This directive currently requires the following NGINX core patch to work correct
 
 <http://mailman.nginx.org/pipermail/nginx-devel/2016-January/007748.html>
 
-The bundled version of hte NGINX core in OpenResty 1.9.7.2 or above already has this
+The bundled version of the NGINX core in OpenResty 1.9.7.2 (or above) already has this
 patch applied.
 
 Furthermore, one needs at least OpenSSL 1.0.2e for this directive to work.
