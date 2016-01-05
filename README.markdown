@@ -2349,9 +2349,9 @@ library, for example.
 One can also do interesting things with the SSL handshake requests from the client side, like
 rejecting old SSL clients using the SSLv3 protocol or even below selectively.
 
-The [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
-and [ngx.ocsp](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ocsp.md) Lua modules
-provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/tree/ssl-cert-by-lua-2#readme)
+The [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
+and [ngx.ocsp](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ocsp.md) Lua modules
+provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
 library are particularly useful in this context. You can use the Lua API offered by these two Lua modules
 to manipulate the SSL certificate chain and private key for the current SSL connection
 being initiated.
@@ -2361,7 +2361,7 @@ the SSL session via SSL session IDs or TLS session tickets for the current SSL c
 other words, this Lua handler only runs when NGINX has to initiate a full SSL handshake.
 
 Below is a trivial example using the
-[ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md) module
+[ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module
 at the same time:
 
 ```nginx
@@ -2380,8 +2380,8 @@ at the same time:
  }
 ```
 
-See more complicated examples in the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
-and [ngx.ocsp](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ocsp.md)
+See more complicated examples in the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
+and [ngx.ocsp](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ocsp.md)
 Lua modules' official documentation.
 
 Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
@@ -7417,13 +7417,13 @@ ngx.ssl
 **syntax:** *local ssl = require "ngx.ssl"*
 
 This Lua module provides API functions to control the SSL handshake process in contexts like
-[ssl_certificate_by_lua*](https://github.com/openresty/lua-nginx-module/tree/ssl-cert-by-lua-2/#ssl_certificate_by_lua_block).
+[ssl_certificate_by_lua*](#ssl_certificate_by_lua_block).
 
 This Lua module does not ship with this ngx_lua module itself rather it is shipped with
 the
 [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
-Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
 for this `ngx.ssl` Lua module for more details.
 
 This feature requires at least ngx_lua `v0.10.0`.
@@ -7437,9 +7437,9 @@ ngx.ocsp
 This Lua module provides API to perform OCSP queries, OCSP response validations, and
 OCSP stapling planting.
 
-Usually, this module is used together with the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/ssl-cert-by-lua-2/lib/ngx/ssl.md)
+Usually, this module is used together with the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
 module in the
-context of [ssl_certificate_by_lua*](https://github.com/openresty/lua-nginx-module/tree/ssl-cert-by-lua-2/#ssl_certificate_by_lua_block).
+context of [ssl_certificate_by_lua*](#ssl_certificate_by_lua_block).
 
 This Lua module does not ship with this ngx_lua module itself rather it is shipped with
 the
