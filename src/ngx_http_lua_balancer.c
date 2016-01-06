@@ -532,6 +532,7 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+#if (nginx_version >= 1007005)
     max_tries = r->upstream->conf->next_upstream_tries;
 
     if (bp->total_tries + count > max_tries) {
@@ -541,6 +542,9 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     } else {
         *err = NULL;
     }
+#else
+    *err = NULL;
+#endif
 
     bp->more_tries = count;
     return NGX_OK;

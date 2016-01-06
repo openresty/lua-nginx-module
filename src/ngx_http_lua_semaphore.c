@@ -337,7 +337,7 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
                    "http lua semaphore wait: %p, timeout: %d, "
                    "resources: %d, event posted: %d",
                    sem, wait_ms, sem->resource_count,
-#if nginx_version >= 1007005
+#if (nginx_version >= 1007005)
                    (int) sem->sem_event.posted
 #else
                    sem->sem_event.prev ? 1 : 0
