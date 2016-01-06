@@ -2215,7 +2215,19 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    "lua thread aborting request with status %d",
                    ctx->exit_code);
 
-    if (r->connection->fd == -1) {  /* fake request */
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
+
+    ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
+
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+
+    if (r->filter_finalize) {
+        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+    }
+
+    ngx_http_lua_request_cleanup(ctx, 0);
+
+    if (r->connection->fd == (ngx_socket_t) -1) {  /* fake request */
         return ctx->exit_code;
     }
 
@@ -2228,18 +2240,6 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         r->headers_out.status = ctx->exit_code;
     }
 #endif
-
-    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
-
-    ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
-
-    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
-
-    if (r->filter_finalize) {
-        ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
-    }
-
-    ngx_http_lua_request_cleanup(ctx, 0);
 
     if (ctx->buffering
         && r->headers_out.status
