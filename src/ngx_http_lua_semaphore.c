@@ -310,7 +310,11 @@ ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 
         sem->event_posted = 1;
 
-        ngx_post_event(&sem->sem_event, &ngx_posted_events);
+        /* we need the extra paranthese around the first argument of
+         * ngx_post_event() just to work around macro issues in nginx
+         * cores older than nginx 1.7.12 (exclusive).
+         */
+        ngx_post_event((&sem->sem_event), &ngx_posted_events);
     }
 
     return NGX_OK;
