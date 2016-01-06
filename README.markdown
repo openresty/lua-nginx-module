@@ -241,19 +241,15 @@ The Lua state (Lua VM instance) is shared across all the requests handled by a s
 
 Nginx Compatibility
 ===================
-The latest module is compatible with the following versions of Nginx:
+
+The latest version of this module is compatible with the following versions of Nginx:
 
 * 1.9.x (last tested: 1.9.7)
+* 1.8.x
 * 1.7.x (last tested: 1.7.10)
 * 1.6.x
-* 1.5.x (last tested: 1.5.12)
-* 1.4.x (last tested: 1.4.4)
-* 1.3.x (last tested: 1.3.11)
-* 1.2.x (last tested: 1.2.9)
-* 1.1.x (last tested: 1.1.5)
-* 1.0.x (last tested: 1.0.15)
-* 0.9.x (last tested: 0.9.4)
-* 0.8.x >= 0.8.54 (last tested: 0.8.54)
+
+Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 
 [Back to TOC](#table-of-contents)
 

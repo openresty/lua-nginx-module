@@ -21,6 +21,12 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+
+#if !defined(nginx_version) || (nginx_version < 1006000)
+#error at least nginx 1.6.0 is required but found an older version
+#endif
+
+
 #if defined(NDK) && NDK
 #include <ndk.h>
 #endif

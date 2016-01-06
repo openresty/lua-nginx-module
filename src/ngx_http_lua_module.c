@@ -28,11 +28,6 @@
 #include "ngx_http_lua_ssl_certby.h"
 
 
-#if !defined(nginx_version) || nginx_version < 8054
-#error "at least nginx 0.8.54 is required"
-#endif
-
-
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_http_lua_create_srv_conf(ngx_conf_t *cf);
