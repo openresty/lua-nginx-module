@@ -68,8 +68,10 @@ ngx_http_lua_alloc_semaphore(void)
         sem = ngx_queue_data(q, ngx_http_lua_semaphore_t, chain);
         sem->block->used++;
 
+        ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
+
         mm->used++;
-        sem->sem_event.posted = 0;
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "from head of free queue, alloc semaphore: %p", sem);
 
@@ -100,7 +102,8 @@ ngx_http_lua_alloc_semaphore(void)
     sem = (ngx_http_lua_semaphore_t *) (block + 1);
     sem->block = block;
     sem->block->used = 1;
-    sem->sem_event.posted = 0;
+
+    ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
 
     for (iter = sem + 1, i = 1; i < mm->num_per_block; i++, iter++) {
         iter->block = block;
