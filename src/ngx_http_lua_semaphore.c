@@ -66,9 +66,14 @@ ngx_http_lua_alloc_semaphore(void)
         ngx_queue_remove(q);
 
         sem = ngx_queue_data(q, ngx_http_lua_semaphore_t, chain);
+
         sem->block->used++;
 
         ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
+
+        sem->sem_event.handler = ngx_http_lua_semaphore_handler;
+        sem->sem_event.data = sem;
+        sem->sem_event.log = ngx_cycle->log;
 
         mm->used++;
 
@@ -104,6 +109,10 @@ ngx_http_lua_alloc_semaphore(void)
     sem->block->used = 1;
 
     ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
+
+    sem->sem_event.handler = ngx_http_lua_semaphore_handler;
+    sem->sem_event.data = sem;
+    sem->sem_event.log = ngx_cycle->log;
 
     for (iter = sem + 1, i = 1; i < mm->num_per_block; i++, iter++) {
         iter->block = block;
@@ -284,7 +293,6 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
 
     sem->resource_count = n;
     sem->wait_count = 0;
-    sem->event_posted = 0;
     sem->log = ngx_cycle->log;
     *psem = sem;
 
@@ -305,14 +313,7 @@ ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 
     sem->resource_count += n;
 
-    if (!sem->event_posted && !ngx_queue_empty(&sem->wait_queue)) {
-
-        sem->sem_event.handler = ngx_http_lua_semaphore_handler;
-        sem->sem_event.data = sem;
-        sem->sem_event.log = sem->log;
-
-        sem->event_posted = 1;
-
+    if (!ngx_queue_empty(&sem->wait_queue)) {
         /* we need the extra paranthese around the first argument of
          * ngx_post_event() just to work around macro issues in nginx
          * cores older than nginx 1.7.12 (exclusive).
@@ -335,7 +336,13 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, sem->log, 0,
                    "http lua semaphore wait: %p, timeout: %d, "
                    "resources: %d, event posted: %d",
-                   sem, wait_ms, sem->resource_count, sem->event_posted);
+                   sem, wait_ms, sem->resource_count,
+#if nginx_version >= 1007005
+                   (int) sem->sem_event.posted
+#else
+                   sem->sem_event.prev ? 1 : 0
+#endif
+                   );
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -470,9 +477,6 @@ ngx_http_lua_semaphore_handler(ngx_event_t *ev)
 
         ngx_http_run_posted_requests(c);
     }
-
-    /* after dealing with semaphore post event */
-    sem->event_posted = 0;
 }
 
 
