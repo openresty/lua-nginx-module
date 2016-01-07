@@ -2387,6 +2387,16 @@ This Lua code execution context *does* support yielding, so Lua APIs that may yi
 (like cosockets, sleeping, and "light threads")
 are enabled in this context.
 
+Note, however, you still need to configure the [ssl_certificate](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate) and
+[ssl_certificate_key](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key)
+directives even though you will not use this static certificate and private key at all. This is
+because the NGINX core requires their appearance otherwise you are seeing the following error
+while starting NGINX:
+
+
+    nginx: [emerg] no ssl configured for the server
+
+
 This directive currently requires the following NGINX core patch to work correctly:
 
 <http://mailman.nginx.org/pipermail/nginx-devel/2016-January/007748.html>
