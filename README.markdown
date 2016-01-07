@@ -3325,7 +3325,26 @@ Overriding `ngx.ctx` with a new Lua table is also supported, for example,
 
 When being used in the context of [init_worker_by_lua*](#init_worker_by_lua), this table just has the same lifetime of the current Lua handler.
 
-The `ngx.ctx` lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact. And because of the metamethod magic, never "local" the `ngx.ctx` table outside your function scope.
+The `ngx.ctx` lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact.
+
+Because of the metamethod magic, never "local" the `ngx.ctx` table outside your Lua function scope on the Lua module level level due to [worker-level data sharing](#data-sharing-within-an-nginx-worker). For example, the following is bad:
+
+```lua
+
+ -- mymodule.lua
+ local _M = {}
+
+ -- this following line is bad since ngx.ctx is a per-request
+ -- data while this `ctx` variable is on the Lua module level
+ -- and thus is per-nginx-worker.
+ local ctx = ngx.ctx
+
+ function _M.main()
+     ctx.foo = "bar"
+ end
+
+ return _M
+```
 
 [Back to TOC](#nginx-api-for-lua)
 
