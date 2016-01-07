@@ -3334,7 +3334,7 @@ Because of the metamethod magic, never "local" the `ngx.ctx` table outside your 
  -- mymodule.lua
  local _M = {}
 
- -- this following line is bad since ngx.ctx is a per-request
+ -- the following line is bad since ngx.ctx is a per-request
  -- data while this `ctx` variable is on the Lua module level
  -- and thus is per-nginx-worker.
  local ctx = ngx.ctx
@@ -3345,6 +3345,22 @@ Because of the metamethod magic, never "local" the `ngx.ctx` table outside your 
 
  return _M
 ```
+
+Use the following instead:
+
+```lua
+
+ -- mymodule.lua
+ local _M = {}
+
+ function _M.main(ctx)
+     ctx.foo = "bar"
+ end
+
+ return _M
+```
+
+That is, let the caller pass the `ctx` table explicitly via a function argument.
 
 [Back to TOC](#nginx-api-for-lua)
 
