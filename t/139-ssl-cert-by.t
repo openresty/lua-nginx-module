@@ -986,7 +986,7 @@ ssl-cert-by-lua: after sleeping
 --- no_error_log
 [error]
 [alert]
---- wait: 0.3
+--- wait: 0.6
 
 
 
