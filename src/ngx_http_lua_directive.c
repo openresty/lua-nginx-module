@@ -120,6 +120,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->name = name;
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
+    ctx->cycle = cf->cycle;
 
     zone = ngx_shared_memory_add(cf, &name, (size_t) size,
                                  &ngx_http_lua_module);

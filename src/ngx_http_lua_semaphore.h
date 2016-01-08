@@ -35,7 +35,6 @@ typedef struct ngx_http_lua_semaphore_s {
     ngx_queue_t                          wait_queue;
     ngx_queue_t                          chain;
     ngx_event_t                          sem_event;
-    ngx_log_t                           *log;
     ngx_http_lua_semaphore_mm_block_t   *block;
     int                                  resource_count;
     unsigned                             wait_count;
