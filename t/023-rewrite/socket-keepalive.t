@@ -817,7 +817,7 @@ lua tcp socket keepalive timeout: unlimited
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
     server {
-        listen unix:nginx.sock;
+        listen unix:$::HtmlDir/nginx.sock;
         default_type 'text/plain';
 
         server_tokens off;
@@ -832,7 +832,7 @@ lua tcp socket keepalive timeout: unlimited
         set $port $TEST_NGINX_MEMCACHED_PORT;
         rewrite_by_lua '
             local test = require "test"
-            local path = "nginx.sock";
+            local path = "$TEST_NGINX_HTML_DIR/nginx.sock";
             local port = ngx.var.port
             test.go(path, port)
             test.go(path, port)

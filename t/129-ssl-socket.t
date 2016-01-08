@@ -1633,7 +1633,7 @@ attempt to call method 'sslhandshake' (a nil value)
 === TEST 21: unix domain ssl cosocket (no verify)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -1656,7 +1656,7 @@ attempt to call method 'sslhandshake' (a nil value)
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1736,7 +1736,7 @@ SSL reused session
 === TEST 22: unix domain ssl cosocket (verify)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -1761,7 +1761,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1842,7 +1842,7 @@ SSL reused session
 === TEST 23: unix domain ssl cosocket (no ssl on server)
 --- http_config
     server {
-        listen unix:nginx.sock;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         server_name   test.com;
 
         server_tokens off;
@@ -1865,7 +1865,7 @@ SSL reused session
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1932,7 +1932,7 @@ SSL reused session
 === TEST 24: lua_ssl_crl
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -1960,7 +1960,7 @@ SSL reused session
 
                 sock:settimeout(3000)
 
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2169,7 +2169,7 @@ SSL reused session
 === TEST 27: unix domain ssl cosocket (no gen session)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -2192,7 +2192,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2240,7 +2240,7 @@ SSL reused session
 === TEST 28: unix domain ssl cosocket (gen session, true)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -2263,7 +2263,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2314,7 +2314,7 @@ SSL reused session
 === TEST 29: unix domain ssl cosocket (keepalive)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -2337,7 +2337,7 @@ SSL reused session
             local sock = ngx.socket.tcp()
             sock:settimeout(3000)
             for i = 1, 2 do
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2391,7 +2391,7 @@ SSL reused session
 === TEST 30: unix domain ssl cosocket (verify cert but no host name check, passed)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -2416,7 +2416,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2496,7 +2496,7 @@ SSL reused session
 === TEST 31: unix domain ssl cosocket (verify cert but no host name check, NOT passed)
 --- http_config
     server {
-        listen unix:nginx.sock ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate ../html/test.crt;
         ssl_certificate_key ../html/test.key;
@@ -2521,7 +2521,7 @@ SSL reused session
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(3000)
-                local ok, err = sock:connect("unix:nginx.sock")
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
