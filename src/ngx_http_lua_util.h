@@ -85,6 +85,8 @@ extern char ngx_http_lua_headers_metatable_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_BODY_FILTER ? "body_filter_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_TIMER ? "ngx.timer"                       \
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
+     : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"      \
      : "(unknown)")
 
 
@@ -125,6 +127,10 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
         return luaL_error(L, "API disabled in the context of %s",            \
                           ngx_http_lua_context_name((ctx)->context));        \
     }
+
+
+#define ngx_http_lua_ssl_get_ctx(ssl_conn)                                   \
+    SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
 
 
 lua_State *ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
@@ -216,6 +222,8 @@ void ngx_http_lua_finalize_fake_request(ngx_http_request_t *r,
     ngx_int_t rc);
 
 void ngx_http_lua_close_fake_connection(ngx_connection_t *c);
+
+void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 
 void ngx_http_lua_release_ngx_ctx_table(ngx_log_t *log, lua_State *L,
     ngx_http_lua_ctx_t *ctx);
@@ -425,6 +433,7 @@ ngx_http_lua_get_flush_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
+extern int         ngx_http_lua_ssl_ctx_index;
 
 
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */

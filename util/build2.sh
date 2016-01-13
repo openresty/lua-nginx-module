@@ -25,12 +25,12 @@ force=$2
 
 time ngx-build $force $version \
             --with-ipv6 \
-            --with-cc-opt="-I$PCRE_INC" \
+            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_realip_module \
-        --with-http_ssl_module \
+            --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:/usr/local/lib" \
+            --with-ld-opt="-L$PCRE_LIB -L$OPENSSL_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB:$OPENSSL_LIB" \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --with-http_image_filter_module \

@@ -24,6 +24,7 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
 
 
@@ -40,8 +41,6 @@ static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 
 static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
-static char *ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf,
-    ngx_command_t *cmd);
 static ngx_int_t ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_http_lua_block_parser_ctx_t *ctx);
 static u_char *ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2,
@@ -121,6 +120,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->name = name;
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
+    ctx->cycle = cf->cycle;
 
     zone = ngx_shared_memory_add(cf, &name, (size_t) size,
                                  &ngx_http_lua_module);
@@ -1128,7 +1128,7 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    lmcf->init_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
@@ -1188,7 +1188,7 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     value = cf->args->elts;
 
-    lmcf->init_worker_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_worker_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_worker_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
@@ -1286,7 +1286,7 @@ found:
 
 
 /* a specialized version of the standard ngx_conf_parse() function */
-static char *
+char *
 ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 {
     ngx_http_lua_block_parser_ctx_t     ctx;
