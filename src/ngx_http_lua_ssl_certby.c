@@ -892,7 +892,6 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
 {
     int          len;
     BIO         *in;
-    RSA         *rsa;
     EVP_PKEY    *pkey;
 
     in = BIO_new_mem_buf((char *) pem, (int) pem_len);
@@ -910,23 +909,14 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
 
     BIO_free(in);
 
-    rsa = EVP_PKEY_get1_RSA(pkey);
-    if (rsa == NULL) {
+    len = i2d_PrivateKey(pkey, &der);
+    if (len < 0) {
         EVP_PKEY_free(pkey);
-        *err = "EVP_PKEY_get1_RSA failed";
+        *err = "i2d_PrivateKey failed";
         return NGX_ERROR;
     }
 
     EVP_PKEY_free(pkey);
-
-    len = i2d_RSAPrivateKey(rsa, &der);
-    if (len < 0) {
-        RSA_free(rsa);
-        *err = "i2d_RSAPrivateKey failed";
-        return NGX_ERROR;
-    }
-
-    RSA_free(rsa);
 
     return len;
 }
