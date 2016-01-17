@@ -61,7 +61,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.0](https://github.com/openresty/lua-nginx-module/tags) released on 11 January 2016.
+This document describes ngx_lua [v0.10.0](https://github.com/openresty/lua-nginx-module/tags) released on 11 January 2015.
 
 Synopsis
 ========
