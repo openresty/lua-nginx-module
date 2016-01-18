@@ -837,6 +837,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
     total = i2d_X509(x509, &der);
     if (total < 0) {
+        *err = "i2d_X509() failed";
         X509_free(x509);
         BIO_free(bio);
         return NGX_ERROR;
