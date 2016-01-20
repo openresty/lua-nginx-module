@@ -160,11 +160,11 @@ d41d8cd98f00b204e9800998ecf8427e
             s = string.gsub(s, ".", function (c)
                     return string.format("%02x", string.byte(c))
                 end)
-            return s
+            ngx.say(s)
 
         ';
     }
 --- request
 GET /t
 --- response_body
-
+6c8349cc7260ae62e3b1396831a8398f
