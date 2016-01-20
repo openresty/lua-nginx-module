@@ -409,7 +409,7 @@ error: .*?unknown flag "H" \(flags "Hm"\)
     GET /re
 --- response_body
 hello
-nil
+false
 hello
 
 
@@ -814,7 +814,7 @@ hello-1234
 
 
 
-=== TEST 38: named captures are nil
+=== TEST 38: named captures are false
 --- config
     location /re {
         content_by_lua '
@@ -834,10 +834,10 @@ hello-1234
     GET /re
 --- response_body
 hello
-nil
+false
 hello
-nil
-nil
+false
+false
 
 
 
@@ -1147,4 +1147,25 @@ failed to match
 --- response_body
 1234
 --- SKIP
+
+
+
+=== TEST 49: trailing captures are false
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello", "(hello)(.+)?")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+hello
+false
 

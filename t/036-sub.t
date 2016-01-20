@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 18);
+plan tests => repeat_each() * (blocks() * 2 + 19);
 
 #no_diff();
 no_long_string();
@@ -732,3 +732,26 @@ GET /t
 bad argument type
 NYI
 
+
+
+=== TEST 33: function replace (false for groups)
+--- config
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                print("group 1: ", m[2])
+                return "[" .. m[0] .. "] [" .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.sub("hello, 34", "([0-9])|(world)", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, [3] [3]4
+1
+--- error_log
+group 1: false

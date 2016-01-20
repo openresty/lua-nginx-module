@@ -861,7 +861,6 @@ TODO
 * cosocket: pool-based backend concurrency level control: implement automatic `connect` queueing when the backend concurrency exceeds its connection pool limit.
 * cosocket: review and merge aviramc's [patch](https://github.com/openresty/lua-nginx-module/pull/290) for adding the `bsdrecv` method.
 * add new API function `ngx.resp.add_header` to emulate the standard `add_header` config directive.
-* [ngx.re](#ngxrematch) API: use `false` instead of `nil` in the resulting match table to indicate non-existent submatch captures, such that we can avoid "holes" in the array table.
 * review and apply Jader H. Silva's patch for `ngx.re.split()`.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](#ngxreqset_header), [ngx.header.HEADER](#ngxheaderheader), and etc.
@@ -5524,16 +5523,16 @@ and are returned in the same Lua table as key-value pairs as the numbered captur
  -- m["remaining"] == "234"
 ```
 
-Unmatched subpatterns will have `nil` values in their `captures` table fields.
+Unmatched subpatterns will have `false` values in their `captures` table fields.
 
 ```lua
 
  local m, err = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
  -- m[0] == "hello"
- -- m[1] == nil
+ -- m[1] == false
  -- m[2] == "hello"
- -- m[3] == nil
- -- m["named"] == nil
+ -- m[3] == false
+ -- m["named"] == false
 ```
 
 Specify `options` to control how the match operation will be performed. The following option characters are supported:
