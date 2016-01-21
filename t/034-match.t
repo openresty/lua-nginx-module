@@ -901,15 +901,15 @@ matched: 章
             -- Note the D here
             local m = ngx.re.match(target, regex, 'D')
 
-            ngx.say(m.group1[1])
-            ngx.say(m.group2[1])
+            ngx.say(type(m.group1))
+            ngx.say(type(m.group2))
         ";
     }
 --- request
 GET /t
 --- response_body
-false
-false
+nil
+nil
 --- no_error_log
 [error]
 
