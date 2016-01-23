@@ -140,7 +140,7 @@ void
 ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t          **p;
+    ngx_rbtree_node_t           **p;
     ngx_http_lua_shdict_node_t   *sdn, *sdnt;
 
     for ( ;; ) {
