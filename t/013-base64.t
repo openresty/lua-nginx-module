@@ -14,7 +14,6 @@ plan tests => repeat_each() * (blocks() * 2 + 4);
 #no_long_string();
 run_tests();
 
-
 __DATA__
 
 === TEST 1: base64 encode hello

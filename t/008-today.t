@@ -1,4 +1,4 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua;
 
@@ -6,7 +6,7 @@ use Test::Nginx::Socket::Lua;
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(1);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 
