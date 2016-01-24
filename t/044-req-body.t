@@ -7,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 51);
+plan tests => repeat_each() * (blocks() * 4 + 52 );
 
 #no_diff();
 no_long_string();
@@ -1617,7 +1617,7 @@ hiya, world"]
             ngx.say(ngx.req.get_body_data())
         }
         log_by_lua_block {
-            ngx.log(ngx.ERR, "request body:", ngx.req.get_body_data())
+            ngx.log(ngx.WARN, "request body:", ngx.req.get_body_data())
         }
     }
 --- request
@@ -1625,7 +1625,8 @@ POST /test
 hello, world
 --- response_body
 hello, world
---- error_log eval
-qr/request body:hello, world/
+--- error_log
+request body:hello, world
 --- no_error_log
+[error]
 [alert]
