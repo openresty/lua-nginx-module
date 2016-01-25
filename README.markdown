@@ -256,7 +256,7 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 Installation
 ============
 
-It is highly recommended to use the [ngx_openresty bundle](http://openresty.org) that bundles Nginx, ngx_lua,  LuaJIT 2.0/2.1 (or the optional standard Lua 5.1 interpreter), as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: `./configure --with-luajit && make && make install`.
+It is highly recommended to use the [OpenResty bundle](http://openresty.org) that bundles Nginx, ngx_lua,  LuaJIT 2.0/2.1 (or the optional standard Lua 5.1 interpreter), as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: `./configure --with-luajit && make && make install`.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
@@ -591,7 +591,7 @@ If server-wide data sharing is required, then use one or more of the following a
 
 1. Use the [ngx.shared.DICT](#ngxshareddict) API provided by this module.
 1. Use only a single nginx worker and a single server (this is however not recommended when there is a multi core CPU or multiple CPUs in a single machine).
-1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The ngx_openresty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules and Lua libraries that provide interfaces with these data storage mechanisms.
+1. Use data storage mechanisms such as `memcached`, `redis`, `MySQL` or `PostgreSQL`. [The OpenResty bundle](http://openresty.org) associated with this module comes with a set of companion Nginx modules and Lua libraries that provide interfaces with these data storage mechanisms.
 
 [Back to TOC](#table-of-contents)
 
@@ -876,7 +876,7 @@ TODO
 Changes
 =======
 
-The changes of every release of this module can be obtained from the ngx_openresty bundle's change logs:
+The changes of every release of this module can be obtained from the OpenResty bundle's change logs:
 
 <http://openresty.org/#Changes>
 
@@ -982,7 +982,7 @@ See Also
 * [drizzle-nginx-module](http://github.com/openresty/drizzle-nginx-module)
 * [postgres-nginx-module](https://github.com/FRiCKLE/ngx_postgres)
 * [memc-nginx-module](http://github.com/openresty/memc-nginx-module)
-* [The ngx_openresty bundle](http://openresty.org)
+* [The OpenResty bundle](http://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/openresty/nginx-systemtap-toolkit)
 
 [Back to TOC](#table-of-contents)
@@ -5623,7 +5623,7 @@ Note that, the `options` argument is not optional when the `ctx` argument is spe
 
 This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
-To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the `--with-debug` option to Nginx or ngx_openresty's `./configure` script. Then, enable the "debug" error log level in `error_log` directive. The following message will be generated if PCRE JIT is enabled:
+To confirm that PCRE JIT is enabled, activate the Nginx debug log by adding the `--with-debug` option to Nginx or OpenResty's `./configure` script. Then, enable the "debug" error log level in `error_log` directive. The following message will be generated if PCRE JIT is enabled:
 
 
     pcre JIT compiling result: 1
