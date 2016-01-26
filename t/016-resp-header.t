@@ -1226,7 +1226,6 @@ bar: baz
 
 
 === TEST 60: built-in Content-Type header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1255,7 +1254,6 @@ my content_type: text/plain
 
 
 === TEST 61: built-in Content-Length header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1284,7 +1282,6 @@ my content_length: 3
 
 
 === TEST 62: built-in Connection header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1311,7 +1308,6 @@ my connection: close
 
 
 === TEST 63: built-in Transfer-Encoding header (chunked)
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1339,7 +1335,6 @@ my transfer-encoding: chunked
 
 
 === TEST 64: built-in Transfer-Encoding header (none)
---- main_config
 --- config
     location = /t {
         content_by_lua '

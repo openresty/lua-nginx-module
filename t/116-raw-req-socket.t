@@ -783,7 +783,6 @@ server: failed to get raw req socket: pending request body reading in some other
 
 
 === TEST 15: read chunked request body with raw req socket
---- main_config
 --- config
     location = /t {
         content_by_lua '
