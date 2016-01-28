@@ -262,7 +262,24 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
     ngx_http_lua_assert(lscf->balancer.handler && r);
 
-    L = ngx_http_lua_get_lua_vm(r, NULL);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    if (ctx == NULL) {
+        ctx = ngx_http_lua_create_ctx(r);
+        if (ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        L = ngx_http_lua_get_lua_vm(r, ctx);
+
+    } else {
+        L = ngx_http_lua_get_lua_vm(r, ctx);
+
+        dd("reset ctx");
+        ngx_http_lua_reset_ctx(r, L, ctx);
+    }
+
+    ctx->context = NGX_HTTP_LUA_CONTEXT_BALANCER;
 
     bp->sockaddr = NULL;
     bp->socklen = 0;
@@ -282,8 +299,6 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx->exited && ctx->exit_code != NGX_OK) {
         rc = ctx->exit_code;
@@ -321,22 +336,6 @@ ngx_http_lua_balancer_by_chunk(lua_State *L, ngx_http_request_t *r)
     u_char                  *err_msg;
     size_t                   len;
     ngx_int_t                rc;
-    ngx_http_lua_ctx_t      *ctx;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    if (ctx == NULL) {
-        ctx = ngx_http_lua_create_ctx(r);
-        if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-    } else {
-        dd("reset ctx");
-        ngx_http_lua_reset_ctx(r, L, ctx);
-    }
-
-    ctx->context = NGX_HTTP_LUA_CONTEXT_BALANCER;
 
     /* init nginx context in Lua VM */
     ngx_http_lua_set_req(L, r);
