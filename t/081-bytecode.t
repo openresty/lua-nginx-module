@@ -314,3 +314,60 @@ ngx.status = 201 ngx.say("hello from Lua!")
 [error]
 --- error_code: 201
 
+
+
+=== TEST 9: bytecode (not stripped)
+--- config
+    location = /t {
+        content_by_lua_block {
+            local f = assert(loadstring("a = a and a + 1 or 1 ngx.say('a = ', a)", "=code"))
+            local bc = string.dump(f)
+            local f = assert(io.open("t/servroot/html/a.luac", "w"))
+            f:write(bc)
+            f:close()
+        }
+    }
+
+    location = /t2 {
+        content_by_lua_file html/a.luac;
+    }
+
+    location = /main {
+        echo_location /t;
+        echo_location /t2;
+    }
+--- request
+GET /main
+--- response_body
+a = 1
+--- no_error_log
+[error]
+
+
+
+=== TEST 10: bytecode (stripped)
+--- config
+    location = /t {
+        content_by_lua_block {
+            local f = assert(loadstring("a = a and a + 1 or 1 ngx.say('a = ', a)", "=code"))
+            local bc = string.dump(f, true)
+            local f = assert(io.open("t/servroot/html/a.luac", "w"))
+            f:write(bc)
+            f:close()
+        }
+    }
+
+    location = /t2 {
+        content_by_lua_file html/a.luac;
+    }
+
+    location = /main {
+        echo_location /t;
+        echo_location /t2;
+    }
+--- request
+GET /main
+--- response_body
+a = 1
+--- no_error_log
+[error]
