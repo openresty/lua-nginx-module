@@ -306,7 +306,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
         rev = r->connection->read;
 
-        if ((ngx_event_flags & NGX_USE_LEVEL_EVENT) && !rev->active) {
+        if (!rev->active) {
             if (ngx_add_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
                 return NGX_ERROR;
             }
