@@ -420,6 +420,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -882,6 +883,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -1565,6 +1567,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -2208,6 +2211,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -2286,6 +2290,7 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re->ncaptures = 0;
 
     } else {
         ovecsize = (re->ncaptures + 1) * 3;
