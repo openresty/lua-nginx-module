@@ -592,7 +592,8 @@ exec:
     }
 
     if (res_tb_idx == 0) {
-        lua_createtable(L, re_comp.captures || 1 /* narr */, name_count /* nrec */);
+        lua_createtable(L, re_comp.captures || 1 /* narr */,
+                        name_count /* nrec */);
         res_tb_idx = lua_gettop(L);
     }
 
@@ -1750,7 +1751,8 @@ exec:
         if (func) {
             lua_pushvalue(L, 3);
 
-            lua_createtable(L, re_comp.captures || 1 /* narr */, name_count /* nrec */);
+            lua_createtable(L, re_comp.captures || 1 /* narr */,
+                            name_count /* nrec */);
 
             for (i = 0, n = 0; i <= re_comp.captures; i++, n += 2) {
                 dd("capture %d: %d %d", (int) i, cap[n], cap[n + 1]);
