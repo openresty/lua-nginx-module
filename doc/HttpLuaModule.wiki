@@ -5326,6 +5326,13 @@ Settings done by this method takes priority over those config directives, like [
 
 This feature was first introduced in the <code>v0.5.7</code> release.
 
+== ngx.socket.stream ==
+
+Just an alias to [[#ngx.socket.tcp|ngx.socket.tcp]]. If the stream-typed cosocket may also connect to a unix domain
+socket, then this API name is preferred.
+
+This API function was first added to the <code>v0.10.1</code> release.
+
 == ngx.socket.tcp ==
 '''syntax:''' ''tcpsock = ngx.socket.tcp()''
 

@@ -2914,6 +2914,7 @@ Nginx API for Lua
 * [udpsock:receive](#udpsockreceive)
 * [udpsock:close](#udpsockclose)
 * [udpsock:settimeout](#udpsocksettimeout)
+* [ngx.socket.stream](#ngxsocketstream)
 * [ngx.socket.tcp](#ngxsockettcp)
 * [tcpsock:connect](#tcpsockconnect)
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
@@ -6350,6 +6351,16 @@ Set the timeout value in milliseconds for subsequent socket operations (like [re
 Settings done by this method takes priority over those config directives, like [lua_socket_read_timeout](#lua_socket_read_timeout).
 
 This feature was first introduced in the `v0.5.7` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.socket.stream
+-----------------
+
+Just an alias to [ngx.socket.tcp](#ngxsockettcp). If the stream-typed cosocket may also connect to a unix domain
+socket, then this API name is preferred.
+
+This API function was first added to the `v0.10.1` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
