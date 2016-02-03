@@ -2115,7 +2115,7 @@ log_by_lua
 **WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
 use the new [log_by_lua_block](#log_by_lua_block) directive instead.
 
-Runs the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs after.
+Runs the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs before.
 
 Note that the following API functions are currently disabled within this context:
 
