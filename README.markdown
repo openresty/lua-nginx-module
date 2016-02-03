@@ -6116,11 +6116,11 @@ ngx.shared.DICT.cas
 -------------------
 **syntax:** *success, err, forcible, current_value?, current_flags? = ngx.shared.DICT:cas(key, value, exptime, flags, old_value, old_flags?)*
 
-**context:** *init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.**
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, certificate_by_lua&#42;*
 
-Just like the [replace](#ngxshareddictreplace) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if the `old_value` argument and `old_flags` argument *does* match the value and flags in the dictionary [ngx.shared.DICT](#ngxshareddict) (or one of them).
+Just like the [replace](#ngxshareddictreplace) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if and only if the `old_value` argument and `old_flags` argument *do* match the value and flags in the dictionary [ngx.shared.DICT](#ngxshareddict).
 
-The `old_value` argument can be `nil` only when `old_flags` argument is specified, only `flags` will be checked.
+The `old_value` argument can be `nil` only when `old_flags` argument is specified, in which case only `flags` will be checked.
 
 If `old_flags` argument is not specified, only `value` will be checked.
 
@@ -6128,7 +6128,7 @@ The optional `old_flags` argument can be `nil`, and it means `0`.
 
 If they do *not* match, the `success` return value will be `false` and the `err` return value will be `"not matched"`. The `current_value` return value and `current_flags` return value will be the current `value` and current `flags` in the dictionary [ngx.shared.DICT](#ngxshareddict), just like [get](#ngxshareddictget) does.
 
-And below is an example:
+This function is often used to avoid race condition between [get](#ngxshareddictget) and [set](#ngxshareddictset) across multipe nginx worker processes, and below is an example:
 
 ```lua
 
@@ -6141,7 +6141,9 @@ And below is an example:
      local newvalue = calculate(old_value) -- some logic
      local newflags = (old_flags or 0) + 1
 
-     local success, err, forcibly, current_value, current_flags = cats:cas("foo", newvalue, 0, newflags, old_value, old_flags)
+     local success, err, forcibly, current_value, current_flags
+         = cats:cas("foo", newvalue, 0, newflags, old_value, old_flags)
+
      if success then
          break
 
