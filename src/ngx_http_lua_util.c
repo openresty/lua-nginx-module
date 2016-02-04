@@ -49,6 +49,7 @@
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_worker.h"
 #include "ngx_http_lua_socket_tcp.h"
+#include "ngx_http_lua_ssl_certby.h"
 
 
 #if 1
@@ -111,7 +112,6 @@ static void ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     lua_State *L, ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t *coctx);
 static ngx_int_t ngx_http_lua_on_abort_resume(ngx_http_request_t *r);
 static void ngx_http_lua_close_fake_request(ngx_http_request_t *r);
-static void ngx_http_lua_free_fake_request(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static ngx_int_t
@@ -1694,6 +1694,8 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
                    c->buffered);
 
     if (ctx->busy_bufs) {
+        /* FIXME since cosockets also share this busy_bufs chain, this condition
+         * might not be strong enough. better use separate busy_bufs chains. */
         rc = ngx_http_lua_output_filter(r, NULL);
 
     } else {
@@ -2215,16 +2217,6 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
                    "lua thread aborting request with status %d",
                    ctx->exit_code);
 
-#if 1
-    if (!r->header_sent
-        && !ctx->header_sent
-        && r->headers_out.status == 0
-        && ctx->exit_code >= NGX_HTTP_OK)
-    {
-        r->headers_out.status = ctx->exit_code;
-    }
-#endif
-
     ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
 
     ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
@@ -2236,6 +2228,20 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     }
 
     ngx_http_lua_request_cleanup(ctx, 0);
+
+    if (r->connection->fd == (ngx_socket_t) -1) {  /* fake request */
+        return ctx->exit_code;
+    }
+
+#if 1
+    if (!r->header_sent
+        && !ctx->header_sent
+        && r->headers_out.status == 0
+        && ctx->exit_code >= NGX_HTTP_OK)
+    {
+        r->headers_out.status = ctx->exit_code;
+    }
+#endif
 
     if (ctx->buffering
         && r->headers_out.status
@@ -3539,6 +3545,11 @@ void
 ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
 {
     ngx_connection_t          *c;
+#if (NGX_HTTP_SSL)
+    ngx_ssl_conn_t            *ssl_conn;
+
+    ngx_http_lua_ssl_cert_ctx_t     *cctx;
+#endif
 
     c = r->connection;
 
@@ -3552,6 +3563,25 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
     }
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+
+#if (NGX_HTTP_SSL)
+
+        if (r->connection->ssl) {
+            ssl_conn = r->connection->ssl->connection;
+            if (ssl_conn) {
+                c = ngx_ssl_get_connection(ssl_conn);
+
+                if (c && c->ssl) {
+                    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
+                    if (cctx != NULL) {
+                        cctx->exit_code = 0;
+                    }
+                }
+            }
+        }
+
+#endif
+
         ngx_http_lua_close_fake_request(r);
         return;
     }
@@ -3596,7 +3626,7 @@ ngx_http_lua_close_fake_request(ngx_http_request_t *r)
 }
 
 
-static void
+void
 ngx_http_lua_free_fake_request(ngx_http_request_t *r)
 {
     ngx_log_t                 *log;
@@ -3636,8 +3666,8 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
     ngx_pool_t          *pool;
     ngx_connection_t    *saved_c = NULL;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http lua close fake http connection");
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http lua close fake http connection %p", c);
 
     c->destroyed = 1;
 
@@ -3754,8 +3784,9 @@ ngx_http_lua_cleanup_vm(void *data)
 #endif
 
     if (state) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
-                       "the reference count for Lua VM: %i", state->count);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua decrementing the reference count for Lua VM: %i",
+                       state->count);
 
         if (--state->count == 0) {
             L = state->vm;
@@ -3826,6 +3857,8 @@ ngx_http_lua_create_fake_connection(ngx_pool_t *pool)
 #endif
 
     c->error = 1;
+
+    dd("created fake connection: %p", c);
 
     return c;
 
@@ -3912,6 +3945,8 @@ ngx_http_lua_create_fake_request(ngx_connection_t *c)
 
     r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
     r->discard_body = 1;
+
+    dd("created fake request %p", r);
 
     return r;
 }

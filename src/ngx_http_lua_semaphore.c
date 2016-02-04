@@ -66,10 +66,17 @@ ngx_http_lua_alloc_semaphore(void)
         ngx_queue_remove(q);
 
         sem = ngx_queue_data(q, ngx_http_lua_semaphore_t, chain);
+
         sem->block->used++;
 
+        ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
+
+        sem->sem_event.handler = ngx_http_lua_semaphore_handler;
+        sem->sem_event.data = sem;
+        sem->sem_event.log = ngx_cycle->log;
+
         mm->used++;
-        sem->sem_event.posted = 0;
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "from head of free queue, alloc semaphore: %p", sem);
 
@@ -100,7 +107,12 @@ ngx_http_lua_alloc_semaphore(void)
     sem = (ngx_http_lua_semaphore_t *) (block + 1);
     sem->block = block;
     sem->block->used = 1;
-    sem->sem_event.posted = 0;
+
+    ngx_memzero(&sem->sem_event, sizeof(ngx_event_t));
+
+    sem->sem_event.handler = ngx_http_lua_semaphore_handler;
+    sem->sem_event.data = sem;
+    sem->sem_event.log = ngx_cycle->log;
 
     for (iter = sem + 1, i = 1; i < mm->num_per_block; i++, iter++) {
         iter->block = block;
@@ -281,12 +293,11 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
 
     sem->resource_count = n;
     sem->wait_count = 0;
-    sem->event_posted = 0;
-    sem->log = ngx_cycle->log;
     *psem = sem;
 
-    dd("ngx_http_lua_ffi_semaphore_new semaphore: %p, resource_count: %d",
-       sem, sem->resource_count);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "http lua semaphore new: %p, resources: %d",
+                   sem, sem->resource_count);
 
     return NGX_OK;
 }
@@ -295,20 +306,18 @@ ngx_http_lua_ffi_semaphore_new(ngx_http_lua_semaphore_t **psem,
 int
 ngx_http_lua_ffi_semaphore_post(ngx_http_lua_semaphore_t *sem, int n)
 {
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "http lua semaphore post: %p, n: %d, resources: %d",
+                   sem, n, sem->resource_count);
+
     sem->resource_count += n;
 
-    dd("calling sem:post(%d) semaphore: %p, resource_count: %d",
-       n, sem, sem->resource_count);
-
-    if (!sem->event_posted && !ngx_queue_empty(&sem->wait_queue)) {
-
-        sem->sem_event.handler = ngx_http_lua_semaphore_handler;
-        sem->sem_event.data = sem;
-        sem->sem_event.log = sem->log;
-
-        sem->event_posted = 1;
-
-        ngx_post_event(&sem->sem_event, &ngx_posted_events);
+    if (!ngx_queue_empty(&sem->wait_queue)) {
+        /* we need the extra paranthese around the first argument of
+         * ngx_post_event() just to work around macro issues in nginx
+         * cores older than nginx 1.7.12 (exclusive).
+         */
+        ngx_post_event((&sem->sem_event), &ngx_posted_events);
     }
 
     return NGX_OK;
@@ -323,9 +332,16 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t        *wait_co_ctx;
     ngx_int_t                     rc;
 
-    dd("ngx_http_lua_ffi_semaphore_wait semaphore: %p"
-       "value: %d, event_posted: %d",
-       sem, sem->resource_count, sem->event_posted);
+    ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "http lua semaphore wait: %p, timeout: %d, "
+                   "resources: %d, event posted: %d",
+                   sem, wait_ms, sem->resource_count,
+#if (nginx_version >= 1007005)
+                   (int) sem->sem_event.posted
+#else
+                   sem->sem_event.prev ? 1 : 0
+#endif
+                   );
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -336,7 +352,8 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                         | NGX_HTTP_LUA_CONTEXT_ACCESS
                                         | NGX_HTTP_LUA_CONTEXT_CONTENT
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER,
+                                        | NGX_HTTP_LUA_CONTEXT_TIMER
+                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
                                         err, errlen);
 
     if (rc != NGX_OK) {
@@ -373,6 +390,9 @@ ngx_http_lua_ffi_semaphore_wait(ngx_http_request_t *r,
     wait_co_ctx->data = sem;
     wait_co_ctx->cleanup = ngx_http_lua_semaphore_cleanup;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "http lua semaphore wait yielding");
+
     return NGX_AGAIN;
 }
 
@@ -393,7 +413,7 @@ ngx_http_lua_semaphore_cleanup(void *data)
 
     sem = coctx->data;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, sem->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "http lua semaphore cleanup");
 
     if (coctx->sleep.timer_set) {
@@ -456,9 +476,6 @@ ngx_http_lua_semaphore_handler(ngx_event_t *ev)
 
         ngx_http_run_posted_requests(c);
     }
-
-    /* after dealing with semaphore post event */
-    sem->event_posted = 0;
 }
 
 

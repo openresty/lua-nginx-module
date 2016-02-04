@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #no_diff();
 no_long_string();
@@ -198,3 +198,38 @@ s: a好
 --- no_error_log
 [error]
 
+
+
+=== TEST 9: sub with d
+--- config
+    location /re {
+        content_by_lua '
+            ngx.say(ngx.re.sub("hello", "(he|hell)", function (m) ngx.say(m[0]) ngx.say(m[1]) return "x" end, "d"))
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hell
+nil
+xo1
+--- no_error_log
+[error]
+
+
+
+=== TEST 10: sub with d + o
+--- config
+    location /re {
+        content_by_lua '
+            ngx.say(ngx.re.sub("hello", "(he|hell)", function (m) ngx.say(m[0]) ngx.say(m[1]) return "x" end, "do"))
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hell
+nil
+xo1
+--- no_error_log
+[error]

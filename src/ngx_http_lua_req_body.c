@@ -619,9 +619,9 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_str_t                   body;
-    size_t                      size, rest;
-    size_t                      offset = 0;
+    ngx_str_t                    body;
+    size_t                       size, rest;
+    size_t                       offset = 0;
 
     n = lua_gettop(L);
 
@@ -683,10 +683,10 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     int                          n;
     ngx_http_request_body_t     *rb;
     ngx_buf_t                   *b;
-    size_t                      size;
-    ngx_str_t                   value;
-    ngx_str_t                   key;
-    ngx_int_t                   rc;
+    size_t                       size;
+    ngx_str_t                    value;
+    ngx_str_t                    key;
+    ngx_int_t                    rc;
 
     n = lua_gettop(L);
 

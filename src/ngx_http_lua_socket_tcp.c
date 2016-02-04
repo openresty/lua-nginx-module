@@ -197,10 +197,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 {
     ngx_int_t         rc;
 
-    lua_createtable(L, 0, 3 /* nrec */);    /* ngx.socket */
+    lua_createtable(L, 0, 4 /* nrec */);    /* ngx.socket */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp);
-    lua_setfield(L, -2, "tcp");
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -3, "tcp");
+    lua_setfield(L, -2, "stream");
 
     {
         const char  buf[] = "local sock = ngx.socket.tcp()"
@@ -383,7 +385,8 @@ ngx_http_lua_socket_tcp(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER);
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
@@ -440,7 +443,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER);
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -1312,6 +1316,17 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
             if (n >= 4) {
                 u->ssl_verify = lua_toboolean(L, 4);
+
+                if (n >= 5) {
+                    if (lua_toboolean(L, 5)) {
+#ifdef NGX_HTTP_LUA_USE_OCSP
+                        SSL_set_tlsext_status_type(c->ssl->connection,
+                                                   TLSEXT_STATUSTYPE_ocsp);
+#else
+                        return luaL_error(L, "no OCSP support");
+#endif
+                    }
+                }
             }
         }
     }
@@ -1354,6 +1369,12 @@ new_ssl_name:
     }
 
     u->write_co_ctx = coctx;
+
+#if 0
+#ifdef NGX_HTTP_LUA_USE_OCSP
+    SSL_set_tlsext_status_type(c->ssl->connection, TLSEXT_STATUSTYPE_ocsp);
+#endif
+#endif
 
     rc = ngx_ssl_handshake(c);
 
