@@ -160,6 +160,10 @@ The Lua interpreter or LuaJIT instance is shared across all the requests in a si
 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint in Lua even when under heavy loads.
 
+This module is plugged into NGINX's "http" subsystem so it can only speaks downstream communication protocols in the HTTP family (HTTP 0.9/1.0/1.1/2.0, WebSockets, and etc).
+If you want to do generic TCP communications with the downstream clients, then you should use the [https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua] module instead
+which has a compatible Lua API.
+
 = Typical Uses =
 
 Just to name a few:
@@ -788,6 +792,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 = See Also =
 
+* [https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module] for an official port of this module for the NGINX "stream" subsystem (doing generic downstream TCP communications).
 * [https://github.com/openresty/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket.
 * [https://github.com/openresty/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket.
 * [https://github.com/openresty/lua-resty-mysql lua-resty-mysql] library based on ngx_lua cosocket.
