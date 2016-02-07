@@ -6193,6 +6193,16 @@ Returns the number of pending timers.
 
 This directive was first introduced in the <code>v0.9.20</code> release.
 
+== ngx.config.subsystem ==
+'''syntax:''' ''subsystem = ngx.config.subsystem''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua*''
+
+This string field indicates the current NGINX subsystem the current Lua environment is based on. For this module, this field always takes the string value `"http"`. For
+[https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module], however, this field takes the value `"stream"`.
+
+This field was first introduced in the <code>0.10.1</code>.
+
 == ngx.config.debug ==
 '''syntax:''' ''debug = ngx.config.debug''
 

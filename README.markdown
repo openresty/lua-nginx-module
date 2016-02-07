@@ -921,7 +921,7 @@ filtering chain determines the final output, for example. The correct adding ord
 	* memcached: listening on the default port, 11211.
 	* redis: listening on the default port, 6379.
 
-See also the [developer build script](https://github.com/openresty/lua-nginx-module/blob/master/util/build.sh) for more details on setting up the testing environment.
+See also the [developer build script](https://github.com/openresty/lua-nginx-module/blob/master/util/build2.sh) for more details on setting up the testing environment.
 
 To run the whole test suite in the default testing mode:
 
@@ -2940,6 +2940,7 @@ Nginx API for Lua
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
 * [ngx.timer.pending_count](#ngxtimerpending_count)
+* [ngx.config.subsystem](#ngxconfigsubsystem)
 * [ngx.config.debug](#ngxconfigdebug)
 * [ngx.config.prefix](#ngxconfigprefix)
 * [ngx.config.nginx_version](#ngxconfignginx_version)
@@ -7299,6 +7300,19 @@ ngx.timer.pending_count
 Returns the number of pending timers.
 
 This directive was first introduced in the `v0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.config.subsystem
+--------------------
+**syntax:** *subsystem = ngx.config.subsystem*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_by_lua&#42;, init_worker_by_lua&#42;*
+
+This string field indicates the current NGINX subsystem the current Lua environment is based on. For this module, this field always takes the string value `"http"`. For
+[ngx_stream_lua_module](https://github.com/openresty/stream-lua-nginx-module#readme), however, this field takes the value `"stream"`.
+
+This field was first introduced in the `0.10.1`.
 
 [Back to TOC](#nginx-api-for-lua)
 

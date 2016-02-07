@@ -1,4 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
+
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -30,3 +31,18 @@ GET /t
 --- no_error_log
 [error]
 
+
+
+=== TEST 2: ngx.config.subystem
+--- config
+    location /t {
+        content_by_lua '
+            ngx.say("subsystem: ", ngx.config.subsystem)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+subsystem: http
+--- no_error_log
+[error]
