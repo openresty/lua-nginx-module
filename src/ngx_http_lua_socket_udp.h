@@ -31,7 +31,7 @@ struct ngx_http_lua_socket_udp_upstream_s {
     ngx_http_lua_loc_conf_t         *conf;
     ngx_http_cleanup_pt             *cleanup;
     ngx_http_request_t              *request;
-    ngx_udp_connection_t             udp_connection;
+    ngx_resolver_connection_t        udp_connection;
 
     ngx_msec_t                       read_timeout;
 
