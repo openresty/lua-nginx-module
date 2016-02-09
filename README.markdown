@@ -4528,7 +4528,7 @@ ngx.req.discard_body
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
-Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately. Please note that ignoring request body is not the right way to discard it, and that this function must be called to avoid breaking things under HTTP 1.1 keepalive or HTTP 1.1 pipelining.
+Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately (without using the request body by any means).
 
 This function is an asynchronous call and returns immediately.
 
