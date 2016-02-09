@@ -249,7 +249,7 @@ ngx_http_lua_semaphore_resume(ngx_http_request_t *r)
 
     } else {
         lua_pushboolean(ctx->cur_co_ctx->co, 0);
-        lua_pushstring(ctx->cur_co_ctx->co, "timeout");
+        lua_pushliteral(ctx->cur_co_ctx->co, "timeout");
     }
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, 2);
