@@ -6320,7 +6320,7 @@ Timeout for the reading operation is controlled by the [lua_socket_read_timeout]
  sock:settimeout(1000)  -- one second timeout
  local data, err = sock:receive()
  if not data then
-     ngx.say("failed to read a packet: ", data)
+     ngx.say("failed to read a packet: ", err)
      return
  end
  ngx.say("successfully read a packet: ", data)
