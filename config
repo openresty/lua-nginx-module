@@ -300,7 +300,6 @@ END
 fi
 
 ngx_addon_name=ngx_http_lua_module
-HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES ngx_http_lua_module"
 HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_script.c \
             $ngx_addon_dir/src/ngx_http_lua_log.c \
@@ -464,6 +463,7 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 
 . auto/feature
 
+HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES $ngx_addon_name"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $HTTP_LUA_SRCS"
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS $HTTP_LUA_DEPS"
 
