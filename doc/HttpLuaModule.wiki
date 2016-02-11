@@ -3258,7 +3258,7 @@ See also [[#ngx.now|ngx.now]] and [[#ngx.update_time|ngx.update_time]].
 
 Returns the HTTP version number for the current request as a Lua number.
 
-Current possible values are 1.0, 1.1, and 0.9. Returns <code>nil</code> for unrecognized values.
+Current possible values are 2.0, 1.0, 1.1, and 0.9. Returns <code>nil</code> for unrecognized values.
 
 This method was first introduced in the <code>v0.7.17</code> release.
 
