@@ -299,6 +299,14 @@ Build the source with this module:
  make install
 ```
 
+Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the
+`./configure` command line above. And then you can explicitly load the module in your `nginx.conf` via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
+directive, for example,
+
+```nginx
+load_module /path/to/modules/ngx_http_lua_module.so;
+```
+
 [Back to TOC](#table-of-contents)
 
 C Macro Configurations
