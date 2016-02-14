@@ -5765,6 +5765,8 @@ Retrieves the current running phase name. Possible return values are
 : for the context of [[#init_by_lua|init_by_lua]] or [[#init_by_lua_file|init_by_lua_file]].
 * <code>init_worker</code>
 : for the context of [[#init_worker_by_lua|init_worker_by_lua]] or [[#init_worker_by_lua_file|init_worker_by_lua_file]].
+* <code>ssl_cert</code>
+: for the context of [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua_block]] or [[#ssl_certificate_by_lua_file|ssl_certificate_by_lua_file]].
 * <code>set</code>
 : for the context of [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]].
 * <code>rewrite</code>
