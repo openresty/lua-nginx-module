@@ -6845,6 +6845,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of [init_by_lua](#init_by_lua) or [init_by_lua_file](#init_by_lua_file).
 * `init_worker`
 	for the context of [init_worker_by_lua](#init_worker_by_lua) or [init_worker_by_lua_file](#init_worker_by_lua_file).
+* `ssl_cert`
+	for the context of [ssl_certificate_by_lua](#ssl_certificate_by_lua) or [ssl_certificate_by_lua_file](#ssl_certificate_by_lua_file).
 * `set`
 	for the context of [set_by_lua](#set_by_lua) or [set_by_lua_file](#set_by_lua_file).
 * `rewrite`
