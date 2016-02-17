@@ -530,12 +530,19 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 int
 ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 {
-#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+#ifdef LIBRESSL_VERSION_NUMBER
+
+    *err = "LibreSSL not supported";
+    return NGX_ERROR;
+
+#else
+
+#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
     *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
-#else
+#   else
 
     ngx_ssl_conn_t    *ssl_conn;
 
@@ -553,7 +560,8 @@ ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
     SSL_certs_clear(ssl_conn);
     return NGX_OK;
 
-#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#endif
 }
 
 
@@ -561,12 +569,19 @@ int
 ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
     const char *data, size_t len, char **err)
 {
-#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+#ifdef LIBRESSL_VERSION_NUMBER
+
+    *err = "LibreSSL not supported";
+    return NGX_ERROR;
+
+#else
+
+#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
     *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
-#else
+#   else
 
     BIO               *bio = NULL;
     X509              *x509 = NULL;
@@ -643,7 +658,8 @@ failed:
 
     return NGX_ERROR;
 
-#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#endif
 }
 
 
