@@ -682,20 +682,10 @@ phases.
 = TODO =
 
 * cosocket: implement LuaSocket's unconnected UDP API.
-* add support for implementing general TCP servers instead of HTTP servers in Lua. For example,
+* port this module to the "datagram" subsystem of NGINX for implementing general UDP servers instead of HTTP
+servers in Lua. For example,
 <geshi lang="lua">
-    tcp {
-        server {
-            listen 11212;
-            handler_by_lua '
-                -- custom Lua code implementing the special TCP server...
-            ';
-        }
-    }
-</geshi>
-* add support for implementing general UDP servers instead of HTTP servers in Lua. For example,
-<geshi lang="lua">
-    udp {
+    datagram {
         server {
             listen 1953;
             handler_by_lua '
@@ -718,6 +708,7 @@ phases.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add <code>stat</code> mode similar to [https://httpd.apache.org/docs/trunk/mod/mod_lua.html mod_lua].
+* cosocket: add client SSL certificiate support.
 
 = Changes =
 
