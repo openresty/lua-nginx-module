@@ -28,6 +28,7 @@
 
 
 static int ngx_http_lua_socket_udp(lua_State *L);
+static int ngx_http_lua_socket_udp_bind(lua_State *L);
 static int ngx_http_lua_socket_udp_setpeername(lua_State *L);
 static int ngx_http_lua_socket_udp_send(lua_State *L);
 static int ngx_http_lua_socket_udp_receive(lua_State *L);
@@ -54,7 +55,7 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
-static ngx_int_t ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc);
+static ngx_int_t ngx_http_lua_udp_connect(lua_State *L, ngx_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_udp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_udp_resolve_cleanup(void *data);
@@ -63,7 +64,8 @@ static void ngx_http_lua_udp_socket_cleanup(void *data);
 
 enum {
     SOCKET_CTX_INDEX = 1,
-    SOCKET_TIMEOUT_INDEX = 2
+    SOCKET_TIMEOUT_INDEX = 2,
+    SOCKET_BIND_IP_INDEX = 3
 };
 
 
@@ -82,7 +84,10 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
 
     /* udp socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
+
+    lua_pushcfunction(L, ngx_http_lua_socket_udp_bind);
+    lua_setfield(L, -2, "bind");    
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_setpeername);
     lua_setfield(L, -2, "setpeername"); /* ngx socket mt */
@@ -151,6 +156,13 @@ ngx_http_lua_socket_udp(lua_State *L)
     dd("top: %d", lua_gettop(L));
 
     return 1;
+}
+
+
+static int
+ngx_http_lua_socket_udp_bind(lua_State *L)
+{
+    return ngx_http_lua_socket_bind_ip(L, SOCKET_BIND_IP_INDEX);
 }
 
 
@@ -670,7 +682,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         return 2;
     }
 
-    rc = ngx_http_lua_udp_connect(uc);
+    rc = ngx_http_lua_udp_connect(L, uc);
 
     if (rc != NGX_OK) {
         u->socket_errno = ngx_socket_errno;
@@ -1348,11 +1360,12 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc)
+ngx_http_lua_udp_connect(lua_State *L, ngx_udp_connection_t *uc)
 {
     int                rc;
     ngx_int_t          event;
     ngx_event_t       *rev, *wev;
+    ngx_addr_t        *local;
     ngx_socket_t       s;
     ngx_connection_t  *c;
 
@@ -1422,6 +1435,19 @@ ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc)
         }
     }
 #endif
+    
+    lua_rawgeti(L, 1, SOCKET_BIND_IP_INDEX);
+    local = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (local && (uc->sockaddr->sa_family == AF_INET 
+        || uc->sockaddr->sa_family == AF_INET6)) {
+        if (bind(uc->connection->fd, local->sockaddr, local->socklen) != 0) {
+            ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
+                          "bind (%V) failed", &local->name);
+            return NGX_ERROR;
+        }
+    }
 
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, &uc->log, 0,
                    "connect to %V, fd:%d #%d", &uc->server, s, c->number);

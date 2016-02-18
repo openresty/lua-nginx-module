@@ -149,6 +149,7 @@ typedef struct {
 void ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L);
 void ngx_http_lua_inject_req_socket_api(lua_State *L);
 void ngx_http_lua_cleanup_conn_pools(lua_State *L);
+int  ngx_http_lua_socket_bind_ip(lua_State *L, int index);
 
 
 #endif /* _NGX_HTTP_LUA_SOCKET_TCP_H_INCLUDED_ */
