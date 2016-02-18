@@ -54,7 +54,7 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
-static ngx_int_t ngx_http_lua_udp_connect(ngx_udp_connection_t *uc);
+static ngx_int_t ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_udp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_udp_resolve_cleanup(void *data);
@@ -170,10 +170,10 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     ngx_url_t                    url;
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
-    ngx_udp_connection_t        *uc;
     int                          timeout;
     ngx_http_lua_co_ctx_t       *coctx;
 
+    ngx_http_lua_udp_connection_t           *uc;
     ngx_http_lua_socket_udp_upstream_t      *u;
 
     /*
@@ -642,11 +642,11 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 {
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_co_ctx_t           *coctx;
-    ngx_udp_connection_t            *uc;
     ngx_connection_t                *c;
     ngx_http_cleanup_t              *cln;
     ngx_http_upstream_resolved_t    *ur;
     ngx_int_t                        rc;
+    ngx_http_lua_udp_connection_t   *uc;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket resolve retval handler");
@@ -1348,7 +1348,7 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_udp_connect(ngx_udp_connection_t *uc)
+ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc)
 {
     int                rc;
     ngx_int_t          event;

@@ -1649,6 +1649,8 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
 
             if (coctx[i].flushing) {
                 coctx[i].flushing = 0;
+                ctx->flushing_coros--;
+                n--;
                 ctx->cur_co_ctx = &coctx[i];
 
                 rc = ngx_http_lua_flush_resume_helper(r, ctx);
@@ -1658,8 +1660,6 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
 
                 /* rc == NGX_DONE */
 
-                ctx->flushing_coros--;
-                n--;
                 if (n == 0) {
                     return NGX_DONE;
                 }

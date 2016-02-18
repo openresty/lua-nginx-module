@@ -30,3 +30,49 @@ GET /lua
 worker count: 5
 --- no_error_log
 [error]
+
+
+
+=== TEST 2: init_by_lua
+--- http_config
+    init_by_lua_block {
+        package.loaded.count = ngx.worker.count()
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("workers: ", package.loaded.count)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+workers: 5
+--- no_error_log
+[error]
+
+
+
+=== TEST 3: init_by_lua + module (github #681)
+--- http_config
+    lua_package_path "t/servroot/html/?.lua;;";
+
+    init_by_lua_block {
+        local blah = require "file"
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("ok")
+        }
+    }
+--- user_files
+>>> file.lua
+local timer_interval = 1
+local time_factor = timer_interval / (ngx.worker.count() * 60)
+--- request
+GET /lua
+--- response_body
+ok
+--- no_error_log
+[error]

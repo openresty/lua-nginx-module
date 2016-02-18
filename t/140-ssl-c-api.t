@@ -33,6 +33,8 @@ __DATA__
         server_name   test.com;
 
         ssl_certificate_by_lua_block {
+            collectgarbage()
+
             local ffi = require "ffi"
 
             ffi.cdef[[
@@ -200,6 +202,8 @@ lua ssl server name: "test.com"
         server_name   test.com;
 
         ssl_certificate_by_lua_block {
+            collectgarbage()
+
             local ffi = require "ffi"
 
             ffi.cdef[[

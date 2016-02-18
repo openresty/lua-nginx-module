@@ -53,6 +53,12 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         lua_pushnumber(L, 1.1);
         break;
 
+#ifdef NGX_HTTP_VERSION_20
+    case NGX_HTTP_VERSION_20:
+        lua_pushnumber(L, 2.0);
+        break;
+#endif
+
     default:
         lua_pushnil(L);
         break;

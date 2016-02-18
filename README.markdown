@@ -216,6 +216,10 @@ The Lua interpreter or LuaJIT instance is shared across all the requests in a si
 
 Loaded Lua modules persist in the nginx worker process level resulting in a small memory footprint in Lua even when under heavy loads.
 
+This module is plugged into NGINX's "http" subsystem so it can only speaks downstream communication protocols in the HTTP family (HTTP 0.9/1.0/1.1/2.0, WebSockets, and etc).
+If you want to do generic TCP communications with the downstream clients, then you should use the [ngx_stream_lua](https://github.com/openresty/stream-lua-nginx-module#readme) module instead
+which has a compatible Lua API.
+
 [Back to TOC](#table-of-contents)
 
 Typical Uses
@@ -260,7 +264,7 @@ It is highly recommended to use the [OpenResty bundle](http://openresty.org) tha
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-1. Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuaJIT can be downloaded from the [the LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuaJIT and/or Lua.
+1. Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuaJIT can be downloaded from the [LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuaJIT and/or Lua.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simpl/ngx_devel_kit/tags).
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
@@ -293,6 +297,14 @@ Build the source with this module:
 
  make -j2
  make install
+```
+
+Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the
+`./configure` command line above. And then you can explicitly load the module in your `nginx.conf` via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
+directive, for example,
+
+```nginx
+load_module /path/to/modules/ngx_http_lua_module.so;
 ```
 
 [Back to TOC](#table-of-contents)
@@ -831,22 +843,11 @@ TODO
 ====
 
 * cosocket: implement LuaSocket's unconnected UDP API.
-* add support for implementing general TCP servers instead of HTTP servers in Lua. For example,
+* port this module to the "datagram" subsystem of NGINX for implementing general UDP servers instead of HTTP
+servers in Lua. For example,
 ```lua
 
- tcp {
-     server {
-         listen 11212;
-         handler_by_lua '
-             -- custom Lua code implementing the special TCP server...
-         ';
-     }
- }
-```
-* add support for implementing general UDP servers instead of HTTP servers in Lua. For example,
-```lua
-
- udp {
+ datagram {
      server {
          listen 1953;
          handler_by_lua '
@@ -869,6 +870,7 @@ TODO
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
+* cosocket: add client SSL certificiate support.
 
 [Back to TOC](#table-of-contents)
 
@@ -944,9 +946,9 @@ Copyright and License
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2015, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2016, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2015, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
+Copyright (C) 2009-2016, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
 
 All rights reserved.
 
@@ -963,6 +965,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
+* [ngx_stream_lua_module](https://github.com/openresty/stream-lua-nginx-module#readme) for an official port of this module for the NGINX "stream" subsystem (doing generic downstream TCP communications).
 * [lua-resty-memcached](https://github.com/openresty/lua-resty-memcached) library based on ngx_lua cosocket.
 * [lua-resty-redis](https://github.com/openresty/lua-resty-redis) library based on ngx_lua cosocket.
 * [lua-resty-mysql](https://github.com/openresty/lua-resty-mysql) library based on ngx_lua cosocket.
@@ -2935,6 +2938,7 @@ Nginx API for Lua
 * [ngx.timer.at](#ngxtimerat)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
 * [ngx.timer.pending_count](#ngxtimerpending_count)
+* [ngx.config.subsystem](#ngxconfigsubsystem)
 * [ngx.config.debug](#ngxconfigdebug)
 * [ngx.config.prefix](#ngxconfigprefix)
 * [ngx.config.nginx_version](#ngxconfignginx_version)
@@ -3932,7 +3936,7 @@ ngx.req.http_version
 
 Returns the HTTP version number for the current request as a Lua number.
 
-Current possible values are 1.0, 1.1, and 0.9. Returns `nil` for unrecognized values.
+Current possible values are 2.0, 1.0, 1.1, and 0.9. Returns `nil` for unrecognized values.
 
 This method was first introduced in the `v0.7.17` release.
 
@@ -4522,7 +4526,7 @@ ngx.req.discard_body
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
-Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately. Please note that ignoring request body is not the right way to discard it, and that this function must be called to avoid breaking things under HTTP 1.1 keepalive or HTTP 1.1 pipelining.
+Explicitly discard the request body, i.e., read the data on the connection and throw it away immediately (without using the request body by any means).
 
 This function is an asynchronous call and returns immediately.
 
@@ -6314,7 +6318,7 @@ Timeout for the reading operation is controlled by the [lua_socket_read_timeout]
  sock:settimeout(1000)  -- one second timeout
  local data, err = sock:receive()
  if not data then
-     ngx.say("failed to read a packet: ", data)
+     ngx.say("failed to read a packet: ", err)
      return
  end
  ngx.say("successfully read a packet: ", data)
@@ -6831,6 +6835,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of [init_by_lua](#init_by_lua) or [init_by_lua_file](#init_by_lua_file).
 * `init_worker`
 	for the context of [init_worker_by_lua](#init_worker_by_lua) or [init_worker_by_lua_file](#init_worker_by_lua_file).
+* `ssl_cert`
+	for the context of [ssl_certificate_by_lua_block](#ssl_certificate_by_lua_block) or [ssl_certificate_by_lua_file](#ssl_certificate_by_lua_file).
 * `set`
 	for the context of [set_by_lua](#set_by_lua) or [set_by_lua_file](#set_by_lua_file).
 * `rewrite`
@@ -7294,6 +7300,19 @@ ngx.timer.pending_count
 Returns the number of pending timers.
 
 This directive was first introduced in the `v0.9.20` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.config.subsystem
+--------------------
+**syntax:** *subsystem = ngx.config.subsystem*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_by_lua&#42;, init_worker_by_lua&#42;*
+
+This string field indicates the current NGINX subsystem the current Lua environment is based on. For this module, this field always takes the string value `"http"`. For
+[ngx_stream_lua_module](https://github.com/openresty/stream-lua-nginx-module#readme), however, this field takes the value `"stream"`.
+
+This field was first introduced in the `0.10.1`.
 
 [Back to TOC](#nginx-api-for-lua)
 
