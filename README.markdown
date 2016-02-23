@@ -6841,6 +6841,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of [set_by_lua](#set_by_lua) or [set_by_lua_file](#set_by_lua_file).
 * `rewrite`
 	for the context of [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file).
+* `balancer`
+    for the context of [balancer_by_lua_block](#balancer_by_lua_block) or [balancer_by_lua_file](#balancer_by_lua_file).
 * `access`
 	for the context of [access_by_lua](#access_by_lua) or [access_by_lua_file](#access_by_lua_file).
 * `content`
