@@ -493,7 +493,10 @@ int
 ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     int count, char **err)
 {
+#if (nginx_version >= 1007005)
     ngx_uint_t             max_tries;
+#endif
+
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
 
