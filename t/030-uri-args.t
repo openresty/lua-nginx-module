@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 17);
+plan tests => repeat_each() * (blocks() * 2 + 20);
 
 no_root_location();
 
@@ -1390,3 +1390,74 @@ GET /lua
 --- response_body_like
 ^HTTP/1.0 (a=3&b|b&a=3)$
 
+
+
+=== TEST 57: get_uri_args truncated metatable (limited)
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_uri_args(2)
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+GET /lua?foo=3&bar=4&baz=2
+--- response_body
+true
+--- error_log
+lua hit query args limit 2
+--- log_level: debug
+
+
+
+=== TEST 58: get_uri_args truncated metatable (not limited)
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_uri_args()
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+GET /lua?foo=3&bar=4&baz=2
+--- no_error_log
+lua hit query args limit 2
+--- response_body
+false
+
+
+
+=== TEST 59: ngx.decode_args truncated metatable (limited)
+--- config
+    location /lua {
+        content_by_lua '
+            local arg_string = "a=bar&b=foo"
+            local args = ngx.decode_args(arg_string, 1)
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+true
+
+
+=== TEST 60: ngx.decode_args truncated metatable (not limited)
+--- config
+    location /lua {
+        content_by_lua '
+            local arg_string  = "a=bar&b=foo"
+            local args = ngx.decode_args(arg_string)
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+GET /lua
+--- no_error_log
+lua hit query args limit 2
+--- response_body
+false

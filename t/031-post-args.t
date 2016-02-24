@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #no_diff();
 #no_long_string();
@@ -323,3 +323,42 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 
+
+
+=== TEST 10: get_post_args truncated metatable (limited)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args(2)
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+POST /lua
+foo=3&bar=4&baz=2
+--- response_body
+true
+--- error_log
+lua hit query args limit 2
+
+
+
+=== TEST 11: get_post_args truncated metatable (not limited)
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.req.read_body();
+            local args = ngx.req.get_post_args()
+            local truncated = (getmetatable(args) ~= nil)
+            ngx.say(truncated)
+        ';
+    }
+--- request
+POST /lua
+foo=3&bar=4&baz=2
+--- response_body
+false
+--- no_error_log
+lua hit query args limit 2

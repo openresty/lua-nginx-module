@@ -4232,7 +4232,7 @@ Here the `args` table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are discarded to guard against potential denial of service attacks.
 
 However, the optional `max_args` function argument can be used to override this limit:
 
@@ -4250,11 +4250,13 @@ This argument can be set to zero to remove the limit and to process all request 
 
 Removing the `max_args` cap is strongly discouraged.
 
+When arguments have been truncated the return table has an empty metatable applied.
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_post_args
 ---------------------
-**syntax:** *args, err = ngx.req.get_post_args(max_args?)*
+**syntax:** *args = ngx.req.get_post_args(max_args?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua, log_by_lua&#42;*
 
@@ -4265,11 +4267,7 @@ Returns a Lua table holding all the current request POST query arguments (of the
  location = /test {
      content_by_lua '
          ngx.req.read_body()
-         local args, err = ngx.req.get_post_args()
-         if not args then
-             ngx.say("failed to get post args: ", err)
-             return
-         end
+         local args = ngx.req.get_post_args()
          for key, val in pairs(args) do
              if type(val) == "table" then
                  ngx.say(key, ": ", table.concat(val, ", "))
@@ -4334,7 +4332,7 @@ That is, they will take Lua boolean values `true`. However, they are different f
 
 Empty key arguments are discarded. `POST /test` with body `=hello&=world` will yield empty outputs for instance.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.  
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are discarded to guard against potential denial of service attacks.
 
 However, the optional `max_args` function argument can be used to override this limit:
 
@@ -4351,6 +4349,8 @@ This argument can be set to zero to remove the limit and to process all request 
 ```
 
 Removing the `max_args` cap is strongly discouraged.
+
+When arguments have been truncated the return table has an empty metatable applied.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -5183,7 +5183,7 @@ ngx.decode_args
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [ngx.encode_args](#ngxencode_args).
 
-The optional `max_args` argument can be used to specify the maximum number of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+The optional `max_args` argument can be used to specify the maximum number of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are discarded to guard against potential denial of service attacks.
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
@@ -5193,6 +5193,8 @@ This argument can be set to zero to remove the limit and to process all request 
 ```
 
 Removing the `max_args` cap is strongly discouraged.
+
+When arguments have been truncated the return table has an empty metatable applied.
 
 This method was introduced in the `v0.5.0rc29`.
 
