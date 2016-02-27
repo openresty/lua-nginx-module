@@ -323,3 +323,34 @@ for my $k (@k) {
 CORE::join("", @k);
 --- timeout: 4
 
+
+
+
+=== TEST 10: request body in temp file
+--- config
+    location /lua {
+        lua_need_request_body on;
+        client_body_in_file_only clean;
+        content_by_lua '
+            local args, err = ngx.req.get_post_args()
+
+            if not args then
+                ngx.say(err)
+            else
+                local keys = {}
+                for key, val in pairs(args) do
+                    table.insert(keys, key)
+                end
+
+                table.sort(keys)
+                for i, key in ipairs(keys) do
+                    ngx.say(key, " = ", args[key])
+                end
+            end
+        ';
+    }
+--- request
+POST /lua
+a=3&b=4&c
+--- response_body
+requesty body in temp file not supported
