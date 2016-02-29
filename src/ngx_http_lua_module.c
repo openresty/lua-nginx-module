@@ -675,7 +675,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
     cln->data = lmcf;
-    cln->handler = ngx_http_lua_cleanup_semaphore_mm;
+    cln->handler = ngx_http_lua_cleanup_sema_mm;
 
 #endif
 
@@ -748,7 +748,7 @@ static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_semaphore_mm_t *mm;
+    ngx_int_t                    rc;
 
     lmcf = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_main_conf_t));
     if (lmcf == NULL) {
@@ -787,24 +787,10 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
-    mm = ngx_palloc(cf->pool, sizeof(ngx_http_lua_semaphore_mm_t));
-    if (mm == NULL) {
+    rc = ngx_http_lua_sema_mm_int(cf, lmcf);
+    if (rc != NGX_OK) {
         return NULL;
     }
-
-    lmcf->semaphore_mm = mm;
-    mm->lmcf = lmcf;
-
-    ngx_queue_init(&mm->free_queue);
-    mm->cur_epoch = 0;
-    mm->total = 0;
-    mm->used = 0;
-
-    /* it's better to be 4096, but it needs some space for
-     * ngx_http_lua_semaphore_mm_block_t, one is enough, so it is 4095
-     */
-    mm->num_per_block = 4095;
-
     dd("nginx Lua module main config structure initialized!");
 
     return lmcf;
