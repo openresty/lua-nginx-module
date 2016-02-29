@@ -123,7 +123,7 @@ typedef struct ngx_http_lua_balancer_peer_data_s
     ngx_http_lua_balancer_peer_data_t;
 
 
-typedef struct ngx_http_lua_semaphore_mm_s  ngx_http_lua_semaphore_mm_t;
+typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
@@ -182,7 +182,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_uint_t                      shm_zones_inited;
 
-    ngx_http_lua_semaphore_mm_t    *semaphore_mm;
+    ngx_http_lua_sema_mm_t         *sema_mm;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
