@@ -21,7 +21,7 @@
 #include "ngx_http_lua_contentby.h"
 
 
-ngx_int_t ngx_http_lua_sema_mm_int(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
+ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
 static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_sema(void);
 void ngx_http_lua_cleanup_sema_mm(void *data);
 static void ngx_http_lua_free_sema(ngx_http_lua_semaphore_t *sem);
