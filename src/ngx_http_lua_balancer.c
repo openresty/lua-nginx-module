@@ -254,7 +254,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     ngx_http_lua_balancer_peer_data_t  *bp = data;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
-                   "lua balancer peer, try: %ui", pc->tries);
+                   "lua balancer peer, tries: %ui", pc->tries);
 
     lscf = bp->conf;
 
@@ -315,6 +315,9 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
         pc->name = &bp->host;
+        pc->cached = 0;
+        pc->connection = NULL;
+
         bp->rrp.peers->single = 0;
 
         if (bp->more_tries) {
@@ -387,6 +390,9 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
     ngx_uint_t state)
 {
     ngx_http_lua_balancer_peer_data_t  *bp = data;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
+                   "lua balancer free peer, tries: %ui", pc->tries);
 
     if (bp->sockaddr && bp->socklen) {
         bp->last_peer_state = (int) state;
