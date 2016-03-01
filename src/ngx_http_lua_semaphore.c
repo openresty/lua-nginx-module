@@ -44,7 +44,7 @@ enum {
 };
 
 
-ngx_int_t ngx_http_lua_sema_mm_int(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
+ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     ngx_http_lua_semaphore_mm_t *mm;
 
