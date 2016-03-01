@@ -324,7 +324,6 @@ CORE::join("", @k);
 
 
 
-
 === TEST 10: request body in temp file
 --- config
     location /lua {
