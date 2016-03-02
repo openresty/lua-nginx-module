@@ -846,12 +846,14 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
     bio = BIO_new_mem_buf((char *) pem, (int) pem_len);
     if (bio == NULL) {
         *err = "BIO_new_mem_buf() failed";
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
     x509 = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
     if (x509 == NULL) {
         *err = "PEM_read_bio_X509_AUX() failed";
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
@@ -860,6 +862,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
         *err = "i2d_X509() failed";
         X509_free(x509);
         BIO_free(bio);
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
@@ -885,6 +888,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
             *err = "PEM_read_bio_X509() failed";
             BIO_free(bio);
+            ERR_clear_error();
             return NGX_ERROR;
         }
 
@@ -893,6 +897,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
             *err = "i2d_X509() failed";
             X509_free(x509);
             BIO_free(bio);
+            ERR_clear_error();
             return NGX_ERROR;
         }
 
@@ -918,6 +923,7 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
     in = BIO_new_mem_buf((char *) pem, (int) pem_len);
     if (in == NULL) {
         *err = "BIO_new_mem_buf() failed";
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
@@ -925,6 +931,7 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
     if (pkey == NULL) {
         BIO_free(in);
         *err = "PEM_read_bio_PrivateKey failed";
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
@@ -934,6 +941,7 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
     if (len < 0) {
         EVP_PKEY_free(pkey);
         *err = "i2d_PrivateKey failed";
+        ERR_clear_error();
         return NGX_ERROR;
     }
 
