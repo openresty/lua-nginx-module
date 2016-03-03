@@ -23,8 +23,6 @@ struct ngx_http_lua_balancer_peer_data_s {
     ngx_http_lua_srv_conf_t            *conf;
     ngx_http_request_t                 *request;
 
-    ngx_event_get_peer_pt               get_rr_peer;
-
     ngx_uint_t                          more_tries;
     ngx_uint_t                          total_tries;
 
@@ -38,6 +36,10 @@ struct ngx_http_lua_balancer_peer_data_s {
 };
 
 
+static ngx_int_t ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc,
+    void *data);
+static void ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc,
+    void *data);
 static ngx_int_t ngx_http_lua_balancer_init(ngx_conf_t *cf,
     ngx_http_upstream_srv_conf_t *us);
 static ngx_int_t ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
@@ -232,10 +234,14 @@ ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
     r->upstream->peer.get = ngx_http_lua_balancer_get_peer;
     r->upstream->peer.free = ngx_http_lua_balancer_free_peer;
 
+#if (NGX_HTTP_SSL)
+    r->upstream->peer.set_session = ngx_http_lua_balancer_set_session;
+    r->upstream->peer.save_session = ngx_http_lua_balancer_save_session;
+#endif
+
     bcf = ngx_http_conf_upstream_srv_conf(us, ngx_http_lua_module);
 
     bp->conf = bcf;
-    bp->get_rr_peer = ngx_http_upstream_get_round_robin_peer;
     bp->request = r;
 
     return NGX_OK;
@@ -329,7 +335,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         return NGX_OK;
     }
 
-    return bp->get_rr_peer(pc, &bp->rrp);
+    return ngx_http_upstream_get_round_robin_peer(pc, &bp->rrp);
 }
 
 
@@ -408,6 +414,39 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
 
     ngx_http_upstream_free_round_robin_peer(pc, data, state);
 }
+
+
+#if (NGX_HTTP_SSL)
+
+static ngx_int_t
+ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc, void *data)
+{
+    ngx_http_lua_balancer_peer_data_t  *bp = data;
+
+    if (bp->sockaddr && bp->socklen) {
+        /* TODO */
+        return NGX_OK;
+    }
+
+    return ngx_http_upstream_set_round_robin_peer_session(pc, &bp->rrp);
+}
+
+
+static void
+ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc, void *data)
+{
+    ngx_http_lua_balancer_peer_data_t  *bp = data;
+
+    if (bp->sockaddr && bp->socklen) {
+        /* TODO */
+        return;
+    }
+
+    ngx_http_upstream_save_round_robin_peer_session(pc, &bp->rrp);
+    return;
+}
+
+#endif
 
 
 #ifndef NGX_LUA_NO_FFI_API
