@@ -21,15 +21,15 @@
 #include "ngx_http_lua_contentby.h"
 
 
-ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf);
-static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_sema(void);
+ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf,
+    ngx_http_lua_main_conf_t *lmcf);
 void ngx_http_lua_cleanup_sema_mm(void *data);
+static ngx_http_lua_semaphore_t *ngx_http_lua_alloc_sema(void);
 static void ngx_http_lua_free_sema(ngx_http_lua_semaphore_t *sem);
 static ngx_int_t ngx_http_lua_sema_resume(ngx_http_request_t *r);
 int ngx_http_lua_ffi_sema_new(ngx_http_lua_semaphore_t **psem,
     int n, char **errmsg);
-int ngx_http_lua_ffi_sema_post(ngx_http_lua_semaphore_t *sem,
-    int n);
+int ngx_http_lua_ffi_sema_post(ngx_http_lua_semaphore_t *sem, int n);
 int ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
     ngx_http_lua_semaphore_t *sem, int wait_ms, u_char *err, size_t *errlen);
 static void ngx_http_lua_sema_cleanup(void *data);
@@ -44,7 +44,8 @@ enum {
 };
 
 
-ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
+ngx_int_t
+ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lmcf)
 {
     ngx_http_lua_semaphore_mm_t *mm;
 
@@ -65,7 +66,7 @@ ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf, ngx_http_lua_main_conf_t *lm
      * ngx_http_lua_semaphore_mm_block_t, one is enough, so it is 4095
      */
     mm->num_per_block = 4095;
-    
+
     return NGX_OK;
 }
 
