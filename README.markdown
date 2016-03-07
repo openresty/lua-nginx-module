@@ -129,7 +129,7 @@ Synopsis
                  ngx.say("status: ", res.status)
                  ngx.say("body:")
                  ngx.print(res.body)
-             end';
+             end
          }
      }
 
