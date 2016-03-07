@@ -491,7 +491,7 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
 
 int
 ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
-    int connect_timeout, int send_timeout, int read_timeout)
+    int connect_timeout, int send_timeout, int read_timeout, char **err)
 {
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
@@ -527,6 +527,21 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
     bp = lmcf->balancer_peer_data;
     if (bp == NULL) {
         *err = "no upstream peer data found";
+        return NGX_ERROR;
+    }
+
+    if (connect_timeout < 0) {
+        *err = "connect_timeout must be greater than zero";
+        return NGX_ERROR;
+    }
+
+    if (send_timeout < 0) {
+        *err = "send_timeout must be greater than zero";
+        return NGX_ERROR;
+    }
+
+    if (read_timeout < 0) {
+        *err = "read_timeout must be greater than zero";
         return NGX_ERROR;
     }
 
