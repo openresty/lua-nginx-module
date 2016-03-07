@@ -489,6 +489,53 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     return NGX_OK;
 }
 
+int
+ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
+    int connect_timeout, int send_timeout, int read_timeout)
+{
+    ngx_http_lua_ctx_t    *ctx;
+    ngx_http_upstream_t   *u;
+
+    ngx_http_lua_main_conf_t           *lmcf;
+    ngx_http_lua_balancer_peer_data_t  *bp;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        *err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    bp = lmcf->balancer_peer_data;
+    if (bp == NULL) {
+        *err = "no upstream peer data found";
+        return NGX_ERROR;
+    }
+
+    u->conf->connect_timeout = connect_timeout;
+    u->conf->send_timeout = send_timeout;
+    u->conf->read_timeout = read_timeout;
+
+    return NGX_OK;
+}
 
 int
 ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
