@@ -498,6 +498,7 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
 
     ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp;
+    ngx_http_upstream_conf_t           *ucf;
 
     if (r == NULL) {
         *err = "no request found";
@@ -545,9 +546,20 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    u->conf->connect_timeout = connect_timeout;
-    u->conf->send_timeout = send_timeout;
-    u->conf->read_timeout = read_timeout;
+    ucf = ngx_palloc(r->pool, sizeof(ngx_http_upstream_conf_t));
+
+    if (ucf == NULL) {
+        *err = "alloc memory failed";
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(ucf, u->conf, sizeof(ngx_http_upstream_conf_t));
+
+    ucf->connect_timeout = connect_timeout;
+    ucf->send_timeout = send_timeout;
+    ucf->read_timeout = read_timeout;
+
+    u->conf = ucf;
 
     return NGX_OK;
 }
