@@ -532,24 +532,24 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
     }
 
     if (connect_timeout < 0) {
-        *err = "connect_timeout must be greater than zero";
+        *err = "connect_timeout must be equals or greater than zero";
         return NGX_ERROR;
     }
 
     if (send_timeout < 0) {
-        *err = "send_timeout must be greater than zero";
+        *err = "send_timeout must be equals or greater than zero";
         return NGX_ERROR;
     }
 
     if (read_timeout < 0) {
-        *err = "read_timeout must be greater than zero";
+        *err = "read_timeout must be equals or greater than zero";
         return NGX_ERROR;
     }
 
     ucf = ngx_palloc(r->pool, sizeof(ngx_http_upstream_conf_t));
 
     if (ucf == NULL) {
-        *err = "alloc memory failed";
+        *err = "no memory";
         return NGX_ERROR;
     }
 
