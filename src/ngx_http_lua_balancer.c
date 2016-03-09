@@ -36,10 +36,12 @@ struct ngx_http_lua_balancer_peer_data_s {
 };
 
 
+#if (NGX_HTTP_SSL)
 static ngx_int_t ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc,
     void *data);
 static void ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc,
     void *data);
+#endif
 static ngx_int_t ngx_http_lua_balancer_init(ngx_conf_t *cf,
     ngx_http_upstream_srv_conf_t *us);
 static ngx_int_t ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
