@@ -489,6 +489,7 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     return NGX_OK;
 }
 
+
 int
 ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
     int connect_timeout, int send_timeout, int read_timeout, char **err)
@@ -563,6 +564,7 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
 
     return NGX_OK;
 }
+
 
 int
 ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
