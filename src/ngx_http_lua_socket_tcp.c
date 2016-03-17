@@ -434,7 +434,7 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
     lua_rawgeti(L, 1, index);
     local = lua_touserdata(L, -1);
     lua_pop(L, 1);
-    
+
     if (local == NULL) {
         local = lua_newuserdata(L, sizeof(ngx_addr_t));
         if (local == NULL) {
@@ -443,7 +443,7 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
 
         lua_rawseti(L, 1, index);
     }
-    
+
     if (ngx_parse_addr(r->pool, local, ip, len) != NGX_OK) {
         lua_pushnil(L);
         lua_pushfstring(L, "bad ip: %s", ip);
