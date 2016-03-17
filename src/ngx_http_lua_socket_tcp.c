@@ -140,7 +140,7 @@ enum {
     SOCKET_CTX_INDEX = 1,
     SOCKET_TIMEOUT_INDEX = 2,
     SOCKET_KEY_INDEX = 3,
-    SOCKET_BIND_IP_INDEX = 4
+    SOCKET_BIND_INDEX = 4
 };
 
 
@@ -405,20 +405,19 @@ ngx_http_lua_socket_tcp(lua_State *L)
 
 
 int
-ngx_http_lua_socket_bind_ip(lua_State *L, int index)
+ngx_http_lua_socket_bind(lua_State *L, int index)
 {
     ngx_http_request_t   *r;
+    ngx_http_lua_ctx_t   *ctx;
     int                   n;
     u_char               *ip;
     size_t                len;
-
     ngx_addr_t           *local;
 
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket bind: expecting at least 2 "
-                          "arguments (including the object) but seen %d",
+        return luaL_error(L, "expecting 2 arguments, but got %d",
                           lua_gettop(L));
     }
 
@@ -426,6 +425,17 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
     if (r == NULL) {
         return luaL_error(L, "no request found");
     }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -446,7 +456,7 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
 
     if (ngx_parse_addr(r->pool, local, ip, len) != NGX_OK) {
         lua_pushnil(L);
-        lua_pushfstring(L, "bad ip: %s", ip);
+        lua_pushfstring(L, "bad address");
         return 2;
     }
 
@@ -457,6 +467,7 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
 
     local->name.len = len;
     ngx_memcpy(local->name.data, ip, len);
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket bind ip: %V", &local->name);
 
@@ -468,7 +479,7 @@ ngx_http_lua_socket_bind_ip(lua_State *L, int index)
 static int
 ngx_http_lua_socket_tcp_bind(lua_State *L)
 {
-    return ngx_http_lua_socket_bind_ip(L, SOCKET_BIND_IP_INDEX);
+    return ngx_http_lua_socket_bind(L, SOCKET_BIND_INDEX);
 }
 
 
@@ -648,17 +659,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     dd("lua peer connection log: %p", pc->log);
 
-    lua_rawgeti(L, 1, SOCKET_BIND_IP_INDEX);
+    lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
     local = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
     if (local) {
-        u->peer.local = ngx_palloc(r->pool, sizeof(ngx_addr_t));
-        if (u->peer.local == NULL) {
-            return luaL_error(L, "no memory");
-        }
-
-        ngx_memcpy(u->peer.local, local, sizeof(ngx_addr_t));
+        u->peer.local = local;
     }
 
     lua_rawgeti(L, 1, SOCKET_TIMEOUT_INDEX);

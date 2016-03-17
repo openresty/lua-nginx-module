@@ -56,7 +56,7 @@ static void ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
 static void ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
     ngx_http_lua_socket_udp_upstream_t *u);
 static ngx_int_t ngx_http_lua_udp_connect(lua_State *L,
-    ngx_udp_connection_t *uc);
+    ngx_http_lua_udp_connection_t *uc);
 static int ngx_http_lua_socket_udp_close(lua_State *L);
 static ngx_int_t ngx_http_lua_socket_udp_resume(ngx_http_request_t *r);
 static void ngx_http_lua_udp_resolve_cleanup(void *data);
@@ -66,7 +66,7 @@ static void ngx_http_lua_udp_socket_cleanup(void *data);
 enum {
     SOCKET_CTX_INDEX = 1,
     SOCKET_TIMEOUT_INDEX = 2,
-    SOCKET_BIND_IP_INDEX = 3
+    SOCKET_BIND_INDEX = 3
 };
 
 
@@ -163,7 +163,7 @@ ngx_http_lua_socket_udp(lua_State *L)
 static int
 ngx_http_lua_socket_udp_bind(lua_State *L)
 {
-    return ngx_http_lua_socket_bind_ip(L, SOCKET_BIND_IP_INDEX);
+    return ngx_http_lua_socket_bind(L, SOCKET_BIND_INDEX);
 }
 
 
@@ -1361,7 +1361,7 @@ ngx_http_lua_socket_udp_handle_success(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_lua_udp_connect(lua_State *L, ngx_udp_connection_t *uc)
+ngx_http_lua_udp_connect(lua_State *L, ngx_http_lua_udp_connection_t *uc)
 {
     int                rc;
     ngx_int_t          event;
@@ -1437,7 +1437,7 @@ ngx_http_lua_udp_connect(lua_State *L, ngx_udp_connection_t *uc)
     }
 #endif
 
-    lua_rawgeti(L, 1, SOCKET_BIND_IP_INDEX);
+    lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
     local = lua_touserdata(L, -1);
     lua_pop(L, 1);
 

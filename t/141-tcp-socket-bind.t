@@ -298,6 +298,6 @@ failed to connect: cannot assign requested address
 --- request
 GET /t
 --- response_body
-failed to bind: bad ip: 127.0.0.1:8899
+failed to bind: bad address
 --- no_error_log
 [error]
