@@ -4,13 +4,14 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 7);
+plan tests => repeat_each() * (blocks() * 3 + 7);
 
 our $HtmlDir = html_dir;
 
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
-$ENV{TEST_NOT_EXIST_IP} ||= '8.8.8.8';
-$ENV{TEST_INVALID_IP} ||= '127.0.0.1:8899';
+$ENV{TEST_NGINX_NOT_EXIST_IP} ||= '8.8.8.8';
+$ENV{TEST_NGINX_INVALID_IP} ||= '127.0.0.1:8899';
+$ENV{TEST_NGINX_SERVER_IP} = '172.17.11.75'; # need to fix
 
 $ENV{LUA_PATH} ||=
     '/usr/local/openresty-debug/lualib/?.lua;/usr/local/openresty/lualib/?.lua;;';
@@ -32,7 +33,7 @@ __DATA__
    server_tokens off;
    location /t {
         set $port $TEST_NGINX_SERVER_PORT;
-        content_by_lua '
+        content_by_lua_block {
             local ip = "127.0.0.1"
             local port = ngx.var.port
 
@@ -51,7 +52,7 @@ __DATA__
 
             ngx.say("connected: ", ok)
 
-            local bytes, err = sock:send("GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n")
+            local bytes, err = sock:send("GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n")
             if not bytes then
                 ngx.say("failed to send request: ", err)
                 return
@@ -59,7 +60,7 @@ __DATA__
 
             ngx.say("request sent")
 
-            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
             local data, err = reader()
 
             if not data then
@@ -71,18 +72,12 @@ __DATA__
             local remote_ip = string.match(data, "(bind: %d+%.%d+%.%d+%.%d+)")
             ngx.say(remote_ip)
 
-            ngx.location.capture("/sleep")
-
             ngx.say("done")
-        ';
+        }
     }
 
     location /foo {
-        echo bind: $remote_addr
-    }
-
-    location /sleep {
-        echo_sleep 1;
+        echo bind: $remote_addr;
     }
 --- request
 GET /t
@@ -105,8 +100,8 @@ done
    server_tokens off;
    location /t {
         set $port $TEST_NGINX_SERVER_PORT;
-        content_by_lua '
-            local ip = $TEST_NGINX_SERVER_IP
+        content_by_lua_block {
+            local ip = "$TEST_NGINX_SERVER_IP"
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -124,7 +119,7 @@ done
 
             ngx.say("connected: ", ok)
 
-            local bytes, err = sock:send("GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n")
+            local bytes, err = sock:send("GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n")
             if not bytes then
                 ngx.say("failed to send request: ", err)
                 return
@@ -132,7 +127,7 @@ done
 
             ngx.say("request sent")
 
-            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
             local data, err = reader()
 
             if not data then
@@ -142,19 +137,16 @@ done
 
             ngx.say("received response")	
             local remote_ip = string.match(data, "(bind: %d+%.%d+%.%d+%.%d+)")
-            ngx.say(remote_ip)
-
-            ngx.location.capture("/sleep")
+            if remote_ip == "bind: $TEST_NGINX_SERVER_IP" then
+                ngx.say("ip matched")
+            end
 
             ngx.say("done")
-        ';
+        }
     }
 
     location /foo {
-        echo bind: $remote_addr
-    }
-    location /sleep {
-        echo_sleep 1;
+        echo bind: $remote_addr;
     }
 --- request
 GET /t
@@ -162,7 +154,7 @@ GET /t
 connected: 1
 request sent
 received response
-bind: $ENV{TEST_NGINX_SERVER_IP}
+ip matched
 done
 --- no_error_log
 ["[error]",
@@ -179,17 +171,18 @@ done
    server_tokens off;
    location /t {
         set $port $TEST_NGINX_SERVER_PORT;
-        content_by_lua '
+        content_by_lua_block {
             local test = require "test"
-            test.go()
-            test.go()
-        ';
+            local t1 = test.go()
+            local t2 = test.go()
+            ngx.say("t2 - t1: ", t2 - t1)
+        }
     }
 --- user_files
 >>> test.lua
-module("test", package.seeall)
+local _M = {}
 
-function go()
+function _M.go()
     local ip = "127.0.0.1"
     local port = ngx.var.port
 
@@ -208,13 +201,19 @@ function go()
         return
     end
 
-    ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
+    ngx.say("connected: ", ok)
+
+    local reused = sock:getreusedtimes()
 
     local ok, err = sock:setkeepalive()
     if not ok then
         ngx.say("failed to set reusable: ", err)
     end
+
+    return reused
 end
+
+return _M
 --- request
 GET /t
 --- response_body
@@ -222,6 +221,7 @@ bind: 127.0.0.1
 connected: 1
 bind: 127.0.0.1
 connected: 1
+t2 - t1: 1
 --- no_error_log
 ["[error]",
 "bind(127.0.0.1) failed"]
@@ -235,8 +235,8 @@ connected: 1
    server_tokens off;
    location /t {
         set $port $TEST_NGINX_SERVER_PORT;
-        content_by_lua '
-            local ip = $TEST_NOT_EXIST_IP
+        content_by_lua_block {
+            local ip = "$TEST_NGINX_NOT_EXIST_IP"
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -255,16 +255,16 @@ connected: 1
             end
 
             ngx.say("connected: ", ok)
-        ';
+        }
     }
 --- request
 GET /t
 --- response_body
 bind: 8.8.8.8
 failed to connect: cannot assign requested address
---- error_log
+--- error_log eval
 ["bind(8.8.8.8) failed",
-"lua tcp socket bind ip: 8.8.8.8"
+"lua tcp socket bind ip: 8.8.8.8"]
 
 
 
@@ -273,8 +273,8 @@ failed to connect: cannot assign requested address
    server_tokens off;
    location /t {
         set $port $TEST_NGINX_SERVER_PORT;
-        content_by_lua '
-            local ip = $TEST_INVALID_IP
+        content_by_lua_block {
+            local ip = "$TEST_NGINX_INVALID_IP"
             local port = ngx.var.port
 
             local sock = ngx.socket.tcp()
@@ -293,10 +293,11 @@ failed to connect: cannot assign requested address
             end
 
             ngx.say("connected: ", ok)
-        ';
+        }
     }
 --- request
 GET /t
 --- response_body
-failed to bind: bad ip: "127.0.0.1:8899"
-
+failed to bind: bad ip: 127.0.0.1:8899
+--- no_error_log
+[error]
