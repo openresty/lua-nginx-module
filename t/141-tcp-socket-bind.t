@@ -2,7 +2,8 @@
 
 use Test::Nginx::Socket::Lua;
 
-repeat_each(2);
+# more times than usual(2) for test case 6
+repeat_each(4);
 
 plan tests => repeat_each() * (blocks() * 3 + 7);
 
@@ -299,5 +300,60 @@ failed to connect: cannot assign requested address
 GET /t
 --- response_body
 failed to bind: bad address
+--- no_error_log
+[error]
+
+
+
+=== TEST 6: tcpsock across request after bind
+--- http_config
+    init_worker_by_lua_block {
+        -- this is not the recommend way, just for test
+        local function tcp()
+            local sock = ngx.socket.tcp()
+
+            ---[[
+            local ok, err = sock:bind("127.0.0.1")
+            if not ok then
+                ngx.log(ngx.ERR, "failed to bind")
+            end
+            --]]
+
+            package.loaded.share_sock = sock
+        end
+
+        local ok, err = ngx.timer.at(0, tcp)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to create timer")
+        end
+    }
+--- config
+   server_tokens off;
+   location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local port = ngx.var.port
+
+            -- make sure share_sock is created
+            ngx.sleep(0.002)
+
+            local sock = package.loaded.share_sock
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:close()
+            collectgarbage("collect")
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
 --- no_error_log
 [error]

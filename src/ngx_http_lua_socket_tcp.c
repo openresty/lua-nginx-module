@@ -410,7 +410,7 @@ ngx_http_lua_socket_bind(lua_State *L, int index)
     ngx_http_request_t   *r;
     ngx_http_lua_ctx_t   *ctx;
     int                   n;
-    u_char               *ip;
+    u_char               *text;
     size_t                len;
     ngx_addr_t           *local;
 
@@ -439,34 +439,17 @@ ngx_http_lua_socket_bind(lua_State *L, int index)
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    ip = (u_char *) luaL_checklstring(L, 2, &len);
+    text = (u_char *) luaL_checklstring(L, 2, &len);
 
-    lua_rawgeti(L, 1, index);
-    local = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
+    local = ngx_http_lua_parse_addr(L, text, len);
     if (local == NULL) {
-        local = lua_newuserdata(L, sizeof(ngx_addr_t));
-        if (local == NULL) {
-            return luaL_error(L, "no memory");
-        }
-
-        lua_rawseti(L, 1, index);
-    }
-
-    if (ngx_parse_addr(r->pool, local, ip, len) != NGX_OK) {
         lua_pushnil(L);
         lua_pushfstring(L, "bad address");
         return 2;
     }
 
-    local->name.data = ngx_palloc(r->pool, len);
-    if (local->name.data == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    local->name.len = len;
-    ngx_memcpy(local->name.data, ip, len);
+    // TODO: we may reuse the userdata here
+    lua_rawseti(L, 1, index);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket bind ip: %V", &local->name);
