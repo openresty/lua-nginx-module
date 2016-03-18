@@ -140,7 +140,7 @@ enum {
     SOCKET_CTX_INDEX = 1,
     SOCKET_TIMEOUT_INDEX = 2,
     SOCKET_KEY_INDEX = 3,
-    SOCKET_BIND_INDEX = 4   // only in upstream cosocket
+    SOCKET_BIND_INDEX = 4   /* only in upstream cosocket */
 };
 
 
@@ -448,7 +448,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
         return 2;
     }
 
-    // TODO: we may reuse the userdata here
+    /* TODO: we may reuse the userdata here */
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
