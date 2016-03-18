@@ -9,13 +9,14 @@ plan tests => repeat_each() * (blocks() * 3 + 7);
 
 our $HtmlDir = html_dir;
 
+# we'd better find a better way to get local ip
+my $local_ip = `ifconfig | grep -oE '([0-9]{1,3}\\.?){4}' | grep '\\.' | grep -v '127.0.0.1' | head -n 1`;
+chomp $local_ip;
+
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 $ENV{TEST_NGINX_NOT_EXIST_IP} ||= '8.8.8.8';
 $ENV{TEST_NGINX_INVALID_IP} ||= '127.0.0.1:8899';
-$ENV{TEST_NGINX_SERVER_IP} = '172.17.11.75'; # need to fix
-
-$ENV{LUA_PATH} ||=
-    '/usr/local/openresty-debug/lualib/?.lua;/usr/local/openresty/lualib/?.lua;;';
+$ENV{TEST_NGINX_SERVER_IP} ||= $local_ip;
 
 no_long_string();
 #no_diff();
@@ -157,9 +158,9 @@ request sent
 received response
 ip matched
 done
---- no_error_log
+--- no_error_log eval
 ["[error]",
-"bind(127.0.0.1) failed"]
+"bind($ENV{TEST_NGINX_SERVER_IP}) failed"]
 --- error_log eval
 "lua tcp socket bind ip: $ENV{TEST_NGINX_SERVER_IP}"
 
