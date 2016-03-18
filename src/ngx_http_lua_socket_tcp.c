@@ -140,7 +140,7 @@ enum {
     SOCKET_CTX_INDEX = 1,
     SOCKET_TIMEOUT_INDEX = 2,
     SOCKET_KEY_INDEX = 3,
-    SOCKET_BIND_INDEX = 4
+    SOCKET_BIND_INDEX = 4   // only in upstream cosocket
 };
 
 
@@ -393,7 +393,7 @@ ngx_http_lua_socket_tcp(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_TIMER
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */);
+    lua_createtable(L, 4 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
@@ -404,8 +404,8 @@ ngx_http_lua_socket_tcp(lua_State *L)
 }
 
 
-int
-ngx_http_lua_socket_bind(lua_State *L, int index)
+static int
+ngx_http_lua_socket_tcp_bind(lua_State *L)
 {
     ngx_http_request_t   *r;
     ngx_http_lua_ctx_t   *ctx;
@@ -449,20 +449,13 @@ ngx_http_lua_socket_bind(lua_State *L, int index)
     }
 
     // TODO: we may reuse the userdata here
-    lua_rawseti(L, 1, index);
+    lua_rawseti(L, 1, SOCKET_BIND_INDEX);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket bind ip: %V", &local->name);
 
-    lua_pushinteger(L, 1);
+    lua_pushboolean(L, 1);
     return 1;
-}
-
-
-static int
-ngx_http_lua_socket_tcp_bind(lua_State *L)
-{
-    return ngx_http_lua_socket_bind(L, SOCKET_BIND_INDEX);
 }
 
 
