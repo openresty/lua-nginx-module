@@ -5397,6 +5397,7 @@ Here is an example for connecting to a TCP server from the specified local IP ad
     location /test {
         content_by_lua_block {
             local sock = ngx.socket.tcp()
+            -- assume "192.168.1.10" is the local ip address
             local ok, err = sock:bind("192.168.1.10")
             if not ok then
                 ngx.say("failed to bind")
