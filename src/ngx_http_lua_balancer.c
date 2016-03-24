@@ -299,7 +299,16 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     if (bp->sockaddr && bp->socklen) {
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
-        pc->name = &bp->host;
+
+        /* return a copy pointer of bp->host to pc, in case upstream_addr
+         * always use the last peer name
+         */
+        ngx_str_t *peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
+        peer_name->data = ngx_palloc(r->pool, bp->host.len);
+        ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
+        peer_name->len = bp->host.len;
+        pc->name = peer_name;
+
         bp->rrp.peers->single = 0;
 
         if (bp->more_tries) {
