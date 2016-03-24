@@ -255,6 +255,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 {
     lua_State                          *L;
     ngx_int_t                           rc;
+    ngx_str_t                          *peer_name;
     ngx_http_request_t                 *r;
     ngx_http_lua_ctx_t                 *ctx;
     ngx_http_lua_srv_conf_t            *lscf;
@@ -322,9 +323,32 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     if (bp->sockaddr && bp->socklen) {
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
-        pc->name = &bp->host;
         pc->cached = 0;
         pc->connection = NULL;
+
+        /*
+         * our dynamic balancers have no real peer actually, it just creates
+         * one virtual peer when necessary. because the
+         * peer_name is returned as a pointer, its content can change after
+         * invoking balancer_by_lua*. if we just save the pointer,
+         * nginx might always use the last peer_name. To address this issue,
+         * we always create a copy of bp->host and save it as pc->name.
+         */
+
+        peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
+        if (peer_name == NULL) {
+            return NGX_ERROR;
+        }
+
+        peer_name->data = ngx_palloc(r->pool, bp->host.len);
+        if (peer_name->data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
+        peer_name->len = bp->host.len;
+
+        pc->name = peer_name;
 
         bp->rrp.peers->single = 0;
 
