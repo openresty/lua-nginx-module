@@ -304,10 +304,22 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
          * always use the last peer name
          */
         ngx_str_t *peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
-        peer_name->data = ngx_palloc(r->pool, bp->host.len);
-        ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
-        peer_name->len = bp->host.len;
-        pc->name = peer_name;
+        if (peer_name == NULL) {
+            pc->name = &bp->host;
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "failed to malloc mem from request pool, upstream addr may not correct");
+        } else {
+            peer_name->data = ngx_palloc(r->pool, bp->host.len);
+            if (peer_name->data == NULL) {
+                pc->name = &bp->host;
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "failed to malloc mem from request pool, upstream addr may not correct");
+            } else {
+                ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
+                peer_name->len = bp->host.len;
+                pc->name = peer_name;
+            }
+        }
 
         bp->rrp.peers->single = 0;
 
