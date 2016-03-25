@@ -2429,3 +2429,22 @@ nil
 nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 92: invalid expire time
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32, -1)
+        ';
+    }
+--- request
+GET /test
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+bad "exptime" argument

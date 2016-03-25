@@ -302,3 +302,106 @@ I am in phase balancer
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"}
 --- no_error_log
 [error]
+
+
+
+=== TEST 12: code cache off
+--- http_config
+    lua_package_path "t/servroot/html/?.lua;;";
+
+    lua_code_cache off;
+
+    upstream backend {
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        balancer_by_lua_block {
+            require("test")
+        }
+    }
+--- config
+    location = /t {
+        echo_location /main;
+        echo_location /update;
+        echo_location /main;
+    }
+
+    location = /update {
+        content_by_lua_block {
+            -- os.execute("(echo HERE; pwd) > /dev/stderr")
+            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            f:write("print('me: ', 101)")
+            f:close()
+            ngx.say("updated")
+        }
+    }
+
+    location = /main {
+        proxy_pass http://backend/back;
+    }
+
+    location = /back {
+        echo ok;
+    }
+--- request
+    GET /t
+--- user_files
+>>> test.lua
+print("me: ", 32)
+return {}
+--- response_body
+ok
+updated
+ok
+--- grep_error_log eval: qr/\bme: \w+/
+--- grep_error_log_out
+me: 32
+me: 101
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: lua subrequests
+--- http_config
+    lua_package_path "t/servroot/html/?.lua;;";
+
+    lua_code_cache off;
+
+    upstream backend {
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        balancer_by_lua_block {
+            print("ctx counter: ", ngx.ctx.count)
+            if not ngx.ctx.count then
+                ngx.ctx.count = 1
+            else
+                ngx.ctx.count = ngx.ctx.count + 1
+            end
+        }
+    }
+--- config
+    location = /t {
+        content_by_lua_block {
+            local res = ngx.location.capture("/main")
+            ngx.print(res.body)
+            res = ngx.location.capture("/main")
+            ngx.print(res.body)
+        }
+    }
+
+    location = /main {
+        proxy_pass http://backend/back;
+    }
+
+    location = /back {
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body
+ok
+ok
+--- grep_error_log eval: qr/\bctx counter: \w+/
+--- grep_error_log_out
+ctx counter: nil
+ctx counter: nil
+--- no_error_log
+[error]

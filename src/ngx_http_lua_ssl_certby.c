@@ -530,12 +530,19 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 int
 ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
 {
-#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+#ifdef LIBRESSL_VERSION_NUMBER
+
+    *err = "LibreSSL not supported";
+    return NGX_ERROR;
+
+#else
+
+#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
     *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
-#else
+#   else
 
     ngx_ssl_conn_t    *ssl_conn;
 
@@ -553,7 +560,8 @@ ngx_http_lua_ffi_ssl_clear_certs(ngx_http_request_t *r, char **err)
     SSL_certs_clear(ssl_conn);
     return NGX_OK;
 
-#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#endif
 }
 
 
@@ -561,12 +569,19 @@ int
 ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
     const char *data, size_t len, char **err)
 {
-#if OPENSSL_VERSION_NUMBER < 0x1000205fL
+#ifdef LIBRESSL_VERSION_NUMBER
+
+    *err = "LibreSSL not supported";
+    return NGX_ERROR;
+
+#else
+
+#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
     *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
-#else
+#   else
 
     BIO               *bio = NULL;
     X509              *x509 = NULL;
@@ -585,24 +600,24 @@ ngx_http_lua_ffi_ssl_set_der_certificate(ngx_http_request_t *r,
 
     bio = BIO_new_mem_buf((char *) data, len);
     if (bio == NULL) {
-        *err = " BIO_new_mem_buf() failed";
+        *err = "BIO_new_mem_buf() failed";
         goto failed;
     }
 
     x509 = d2i_X509_bio(bio, NULL);
     if (x509 == NULL) {
-        *err = " d2i_X509_bio() failed";
+        *err = "d2i_X509_bio() failed";
         goto failed;
     }
 
     if (SSL_use_certificate(ssl_conn, x509) == 0) {
-        *err = " SSL_use_certificate() failed";
+        *err = "SSL_use_certificate() failed";
         goto failed;
     }
 
 #if 0
     if (SSL_set_ex_data(ssl_conn, ngx_ssl_certificate_index, x509) == 0) {
-        *err = " SSL_set_ex_data() failed";
+        *err = "SSL_set_ex_data() failed";
         goto failed;
     }
 #endif
@@ -643,7 +658,8 @@ failed:
 
     return NGX_ERROR;
 
-#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
+#endif
 }
 
 
@@ -837,6 +853,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
     total = i2d_X509(x509, &der);
     if (total < 0) {
+        *err = "i2d_X509() failed";
         X509_free(x509);
         BIO_free(bio);
         return NGX_ERROR;
@@ -892,7 +909,6 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
 {
     int          len;
     BIO         *in;
-    RSA         *rsa;
     EVP_PKEY    *pkey;
 
     in = BIO_new_mem_buf((char *) pem, (int) pem_len);
@@ -910,23 +926,14 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
 
     BIO_free(in);
 
-    rsa = EVP_PKEY_get1_RSA(pkey);
-    if (rsa == NULL) {
+    len = i2d_PrivateKey(pkey, &der);
+    if (len < 0) {
         EVP_PKEY_free(pkey);
-        *err = "EVP_PKEY_get1_RSA failed";
+        *err = "i2d_PrivateKey failed";
         return NGX_ERROR;
     }
 
     EVP_PKEY_free(pkey);
-
-    len = i2d_RSAPrivateKey(rsa, &der);
-    if (len < 0) {
-        RSA_free(rsa);
-        *err = "i2d_RSAPrivateKey failed";
-        return NGX_ERROR;
-    }
-
-    RSA_free(rsa);
 
     return len;
 }

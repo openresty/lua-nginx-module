@@ -384,7 +384,7 @@ error: pcre_compile() failed: missing ) in "(abc"
     GET /re
 --- response_body
 hello
-nil
+false
 hello
 
 
@@ -716,7 +716,7 @@ hello-1234
 
 
 
-=== TEST 33: named captures are nil
+=== TEST 33: named captures are false
 --- config
     location /re {
         content_by_lua '
@@ -736,8 +736,8 @@ hello-1234
     GET /re
 --- response_body
 hello
-nil
+false
 hello
-nil
-nil
+false
+false
 

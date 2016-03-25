@@ -420,6 +420,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -592,14 +593,15 @@ exec:
     }
 
     if (res_tb_idx == 0) {
-        lua_createtable(L, rc /* narr */, 0 /* nrec */);
+        lua_createtable(L, re_comp.captures || 1 /* narr */,
+                        name_count /* nrec */);
         res_tb_idx = lua_gettop(L);
     }
 
-    for (i = 0, n = 0; i < rc; i++, n += 2) {
+    for (i = 0, n = 0; i <= re_comp.captures; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
-        if (cap[n] < 0) {
-            lua_pushnil(L);
+        if (i >= rc || cap[n] < 0) {
+            lua_pushboolean(L, 0);
 
         } else {
             lua_pushlstring(L, (char *) &subj.data[cap[n]],
@@ -881,6 +883,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -1116,12 +1119,12 @@ ngx_http_lua_ngx_re_gmatch_iterator(lua_State *L)
 
     dd("rc = %d", (int) rc);
 
-    lua_createtable(L, rc /* narr */, 0 /* nrec */);
+    lua_createtable(L, ctx->ncaptures || 1 /* narr */, name_count /* nrec */);
 
-    for (i = 0, n = 0; i < rc; i++, n += 2) {
+    for (i = 0, n = 0; i <= ctx->ncaptures; i++, n += 2) {
         dd("capture %d: %d %d", i, cap[n], cap[n + 1]);
-        if (cap[n] < 0) {
-            lua_pushnil(L);
+        if (i >= rc || cap[n] < 0) {
+            lua_pushboolean(L, 0);
 
         } else {
             lua_pushlstring(L, (char *) &subj.data[cap[n]],
@@ -1564,6 +1567,7 @@ ngx_http_lua_ngx_re_sub_helper(lua_State *L, unsigned global)
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -1750,12 +1754,13 @@ exec:
         if (func) {
             lua_pushvalue(L, 3);
 
-            lua_createtable(L, rc - 1 /* narr */, 1 /* nrec */);
+            lua_createtable(L, re_comp.captures || 1 /* narr */,
+                            name_count /* nrec */);
 
-            for (i = 0, n = 0; i < rc; i++, n += 2) {
+            for (i = 0, n = 0; i <= re_comp.captures; i++, n += 2) {
                 dd("capture %d: %d %d", (int) i, cap[n], cap[n + 1]);
-                if (cap[n] < 0) {
-                    lua_pushnil(L);
+                if (i >= rc || cap[n] < 0) {
+                    lua_pushboolean(L, 0);
 
                 } else {
                     lua_pushlstring(L, (char *) &subj.data[cap[n]],
@@ -2071,6 +2076,11 @@ ngx_http_lua_re_collect_named_captures(lua_State *L, int res_tb_idx,
         }
 
         if (flags & NGX_LUA_RE_MODE_DUPNAMES) {
+            /* unmatched groups are not stored in tables in DUPNAMES mode */
+            if (!lua_toboolean(L, -1)) {
+                lua_pop(L, 1);
+                continue;
+            }
 
             lua_getfield(L, -2, name); /* big_tb cap small_tb */
 
@@ -2201,6 +2211,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re_comp.captures = 0;
 
     } else {
         ovecsize = (re_comp.captures + 1) * 3;
@@ -2279,6 +2290,7 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
         ovecsize = 2;
+        re->ncaptures = 0;
 
     } else {
         ovecsize = (re->ncaptures + 1) * 3;

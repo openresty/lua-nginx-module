@@ -7,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 51);
+plan tests => repeat_each() * (blocks() * 4 + 52 );
 
 #no_diff();
 no_long_string();
@@ -1603,6 +1603,30 @@ hiya, world"]
 ]
 --- error_code eval
 [404, 404]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 49: get body data at log phase
+--- config
+    location = /test {
+        content_by_lua_block {
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        }
+        log_by_lua_block {
+            ngx.log(ngx.WARN, "request body:", ngx.req.get_body_data())
+        }
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+hello, world
+--- error_log
+request body:hello, world
 --- no_error_log
 [error]
 [alert]

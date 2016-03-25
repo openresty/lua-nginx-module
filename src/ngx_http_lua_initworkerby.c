@@ -26,6 +26,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_uint_t                   i;
     ngx_conf_t                   conf;
     ngx_cycle_t                 *fake_cycle;
+    ngx_module_t               **modules;
     ngx_open_file_t             *file, *ofile;
     ngx_list_part_t             *part;
     ngx_connection_t            *c = NULL;
@@ -46,7 +47,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
-    conf_ctx = ((ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index]);
+    conf_ctx = (ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index];
     http_ctx.main_conf = conf_ctx->main_conf;
 
     top_clcf = conf_ctx->loc_conf[ngx_http_core_module.ctx_index];
@@ -154,12 +155,18 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
-    for (i = 0; ngx_modules[i]; i++) {
-        if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
+#if defined(nginx_version) && nginx_version >= 1009011
+    modules = cycle->modules;
+#else
+    modules = ngx_modules;
+#endif
+
+    for (i = 0; modules[i]; i++) {
+        if (modules[i]->type != NGX_HTTP_MODULE) {
             continue;
         }
 
-        module = ngx_modules[i]->ctx;
+        module = modules[i]->ctx;
 
         if (module->create_srv_conf) {
             cur = module->create_srv_conf(&conf);
@@ -167,7 +174,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
                 return NGX_ERROR;
             }
 
-            http_ctx.srv_conf[ngx_modules[i]->ctx_index] = cur;
+            http_ctx.srv_conf[modules[i]->ctx_index] = cur;
 
             if (module->merge_srv_conf) {
                 prev = module->create_srv_conf(&conf);
@@ -188,7 +195,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
                 return NGX_ERROR;
             }
 
-            http_ctx.loc_conf[ngx_modules[i]->ctx_index] = cur;
+            http_ctx.loc_conf[modules[i]->ctx_index] = cur;
 
             if (module->merge_loc_conf) {
                 prev = module->create_loc_conf(&conf);

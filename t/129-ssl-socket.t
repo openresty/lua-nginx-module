@@ -846,7 +846,7 @@ lua ssl server name: "iscribblet.org"
 lua ssl certificate verify error
 SSL reused session
 [alert]
---- timeout: 5
+--- timeout: 7
 
 
 

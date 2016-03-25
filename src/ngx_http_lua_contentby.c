@@ -27,6 +27,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     int                      co_ref;
     ngx_int_t                rc;
     lua_State               *co;
+    ngx_event_t             *rev;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
 
@@ -95,6 +96,14 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (llcf->check_client_abort) {
         r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+
+        rev = r->connection->read;
+
+        if (!rev->active) {
+            if (ngx_add_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
 
     } else {
         r->read_event_handler = ngx_http_block_reading;

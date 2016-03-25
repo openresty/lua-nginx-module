@@ -503,8 +503,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_ciphers),
       NULL },
 
-#if (NGX_HTTP_SSL)
-
     { ngx_string("ssl_certificate_by_lua_block"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
       ngx_http_lua_ssl_cert_by_lua_block,
@@ -518,8 +516,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_SRV_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_ssl_cert_handler_file },
-
-#endif  /* NGX_HTTP_SSL */
 
     { ngx_string("lua_ssl_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
@@ -892,13 +888,25 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
             return NGX_CONF_ERROR;
         }
 
-#if OPENSSL_VERSION_NUMBER >= 0x1000205fL
+#ifdef LIBRESSL_VERSION_NUMBER
 
-        SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "LibreSSL does not support ssl_ceritificate_by_lua*");
+        return NGX_CONF_ERROR;
 
 #else
 
+#   if OPENSSL_VERSION_NUMBER >= 0x1000205fL
+
+        SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
+
+#   else
+
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "OpenSSL too old to support ssl_ceritificate_by_lua*");
         return NGX_CONF_ERROR;
+
+#   endif
 
 #endif
     }
@@ -941,11 +949,11 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->body_filter_src_key = NULL
      *      conf->body_filter_handler = NULL;
      *
-     *     conf->ssl = 0;
-     *     conf->ssl_protocols = 0;
-     *     conf->ssl_ciphers = { 0, NULL };
-     *     conf->ssl_trusted_certificate = { 0, NULL };
-     *     conf->ssl_crl = { 0, NULL };
+     *      conf->ssl = 0;
+     *      conf->ssl_protocols = 0;
+     *      conf->ssl_ciphers = { 0, NULL };
+     *      conf->ssl_trusted_certificate = { 0, NULL };
+     *      conf->ssl_crl = { 0, NULL };
      */
 
     conf->force_read_body    = NGX_CONF_UNSET;

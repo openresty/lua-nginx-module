@@ -4,11 +4,11 @@ use Test::Nginx::Socket::Lua;
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('warn');
+#log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 16);
+plan tests => repeat_each() * (blocks() * 2 + 17);
 
 #no_diff();
 no_long_string();
@@ -674,3 +674,26 @@ GET /t
 --- no_error_log
 [error]
 
+
+
+=== TEST 29: function replace (false for groups)
+--- config
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                print("group 1: ", m[2])
+                return "[" .. m[0] .. "] [" .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.gsub("hello, 34", "([0-9])|(world)", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, [3] [3][4] [4]
+2
+--- error_log
+group 1: false
