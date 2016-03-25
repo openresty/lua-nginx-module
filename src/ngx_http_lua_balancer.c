@@ -582,17 +582,17 @@ ngx_http_lua_ffi_balancer_set_peer_timeout(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (ngx_strncmp("read", type, 4)) {
+    if (ngx_strncmp("read", type, 4) == 0) {
         u->read_timeout = timeout;
         return NGX_OK;
     }
 
-    if (ngx_strncmp("send", type, 4)) {
+    if (ngx_strncmp("send", type, 4) == 0) {
         u->send_timeout = timeout;
         return NGX_OK;
     }
 
-    if (ngx_strncmp("connect", type, 7)) {
+    if (ngx_strncmp("connect", type, 7) == 0) {
         u->connect_timeout = timeout;
         return NGX_OK;
     }
