@@ -537,15 +537,14 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
 
 
 int
-ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
-    int connect_timeout, int send_timeout, int read_timeout, char **err)
+ngx_http_lua_ffi_balancer_set_peer_timeout(ngx_http_request_t *r,
+    const u_char *type, int timeout, char **err)
 {
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
 
     ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp;
-    ngx_http_upstream_conf_t           *ucf;
 
     if (r == NULL) {
         *err = "no request found";
@@ -578,37 +577,28 @@ ngx_http_lua_ffi_balancer_set_timeout(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (connect_timeout < 0) {
-        *err = "connect_timeout must be equals or greater than zero";
+    if (timeout < 0) {
+        *err = "timeout must be equals or greater than zero";
         return NGX_ERROR;
     }
 
-    if (send_timeout < 0) {
-        *err = "send_timeout must be equals or greater than zero";
-        return NGX_ERROR;
+    if (ngx_strncmp("read", type, 4)) {
+        u->read_timeout = timeout;
+        return NGX_OK;
     }
 
-    if (read_timeout < 0) {
-        *err = "read_timeout must be equals or greater than zero";
-        return NGX_ERROR;
+    if (ngx_strncmp("send", type, 4)) {
+        u->send_timeout = timeout;
+        return NGX_OK;
     }
 
-    ucf = ngx_palloc(r->pool, sizeof(ngx_http_upstream_conf_t));
-
-    if (ucf == NULL) {
-        *err = "no memory";
-        return NGX_ERROR;
+    if (ngx_strncmp("connect", type, 7)) {
+        u->connect_timeout = timeout;
+        return NGX_OK;
     }
 
-    ngx_memcpy(ucf, u->conf, sizeof(ngx_http_upstream_conf_t));
-
-    ucf->connect_timeout = connect_timeout;
-    ucf->send_timeout = send_timeout;
-    ucf->read_timeout = read_timeout;
-
-    u->conf = ucf;
-
-    return NGX_OK;
+    *err = "unknow timeout type";
+    return NGX_ERROR;
 }
 
 
