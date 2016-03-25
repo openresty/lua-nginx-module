@@ -252,6 +252,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     ngx_http_lua_srv_conf_t            *lscf;
     ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp = data;
+    ngx_str_t                          *peer_name;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "lua balancer peer, try: %ui", pc->tries);
@@ -303,17 +304,20 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         /* return a copy pointer of bp->host to pc, in case upstream_addr
          * always use the last peer name
          */
-        ngx_str_t *peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
+        peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
         if (peer_name == NULL) {
-            pc->name = &bp->host;
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "failed to malloc mem from request pool, upstream addr may not correct");
+                          "failed to malloc mem from request pool");
+            return NGX_ERROR;
+
         } else {
+            ngx_memzero(peer_name, sizeof(ngx_str_t));
             peer_name->data = ngx_palloc(r->pool, bp->host.len);
             if (peer_name->data == NULL) {
-                pc->name = &bp->host;
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "failed to malloc mem from request pool, upstream addr may not correct");
+                              "failed to malloc mem from request pool");
+                return NGX_ERROR;
+
             } else {
                 ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
                 peer_name->len = bp->host.len;
