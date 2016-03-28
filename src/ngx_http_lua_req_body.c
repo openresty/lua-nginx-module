@@ -642,7 +642,7 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
     }
 
     rb = r->request_body;
@@ -705,7 +705,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
     }
 
     rb = r->request_body;
