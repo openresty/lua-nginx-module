@@ -185,7 +185,7 @@ ngx_http_lua_var_set(lua_State *L)
 
         val = ngx_palloc(r->pool, len);
         if (val == NULL) {
-            return luaL_error(L, "memory allocation erorr");
+            return luaL_error(L, "memory allocation error");
         }
 
         ngx_memcpy(val, p, len);
