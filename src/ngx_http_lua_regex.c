@@ -555,7 +555,7 @@ exec:
 
     dd("rc = %d", (int) rc);
 
-    if (nargs == 4) { /* having ctx table */
+    if (nargs >= 4) { /* having ctx table */
         pos = cap[1];
         lua_pushinteger(L, (lua_Integer) (pos + 1));
         lua_setfield(L, 4, "pos");
