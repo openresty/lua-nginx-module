@@ -733,7 +733,7 @@ done
     GET /re
 --- response_body
 pos: 1
-m: 
+m:
 --- no_error_log
 [error]
 
@@ -1169,3 +1169,21 @@ hello
 hello
 false
 
+
+=== TEST 50: Bug #719 5th arg blind 4th arg
+--- config
+    location /re {
+        content_by_lua '
+            local ctx, m = { pos = 5 }, {};
+            local _, err = ngx.re.match("20172016-11-3 03:07:09", [=[(\d\d\d\d)]=], "", ctx, m);
+            if m then
+                ngx.say(m[0], " ", _[0], " ", ctx.pos)
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+2016 2016 9
