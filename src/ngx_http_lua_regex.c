@@ -184,7 +184,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     if (nargs >= 3) {
         opts.data = (u_char *) luaL_checklstring(L, 3, &opts.len);
 
-        if (nargs == 4) {
+        if (nargs >= 4) {
             luaL_checktype(L, 4, LUA_TTABLE);
             lua_getfield(L, 4, "pos");
             if (lua_isnumber(L, -1)) {
