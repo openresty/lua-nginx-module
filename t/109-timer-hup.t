@@ -12,7 +12,6 @@ BEGIN {
     }
 }
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 
@@ -362,7 +361,7 @@ lua found 100 pending timers
             -- Get Headers
             repeat
                 local line, err = sock:receive("*l")
-            until string.find(line, "^%s*$")
+            until not line or string.find(line, "^%s*$")
 
             function foo()
                 repeat

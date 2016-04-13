@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
@@ -569,6 +568,7 @@ delete timer 12000
 delete thread 1
 free request
 
+--- wait: 0.1
 --- response_body
 before
 hello in thread
@@ -1083,8 +1083,6 @@ after
     }
 --- request
 POST /lua
---- more_headers
-Content-Length: 1024
 --- stap2 eval: $::StapScript
 --- stap eval
 <<'_EOC_' . $::GCScript;
@@ -1165,8 +1163,6 @@ attempt to abort with pending subrequests
     }
 --- request
 POST /lua
---- more_headers
-Content-Length: 1024
 --- stap2 eval: $::StapScript
 --- stap eval
 <<'_EOC_' . $::GCScript;
@@ -1257,8 +1253,6 @@ attempt to abort with pending subrequests
     }
 --- request
 POST /lua
---- more_headers
-Content-Length: 1024
 --- stap2 eval: $::StapScript
 --- stap eval
 <<'_EOC_' . $::GCScript;

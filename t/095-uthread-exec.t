@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
@@ -255,6 +254,7 @@ delete timer 1000
 delete thread 3
 free request
 
+--- wait: 0.1
 --- response_body
 hello foo
 --- no_error_log
@@ -288,8 +288,6 @@ hello foo
     }
 --- request
 POST /lua
---- more_headers
-Content-Length: 1024
 --- stap2 eval: $::StapScript
 --- stap eval
 <<'_EOC_' . $::GCScript;

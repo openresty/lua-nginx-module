@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
@@ -120,3 +119,22 @@ hello
 --- no_error_log
 [error]
 
+
+
+=== TEST 6: lua_use_default_type on does not set content type on 304
+--- config
+    lua_use_default_type on;
+    location /lua {
+        default_type text/plain;
+        content_by_lua '
+            ngx.status = ngx.HTTP_NOT_MODIFIED
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+--- response_headers
+!Content-Type
+--- no_error_log
+[error]
+--- error_code: 304

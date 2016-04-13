@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -385,7 +384,7 @@ error: pcre_compile() failed: missing ) in "(abc"
     GET /re
 --- response_body
 hello
-nil
+false
 hello
 
 
@@ -717,7 +716,7 @@ hello-1234
 
 
 
-=== TEST 33: named captures are nil
+=== TEST 33: named captures are false
 --- config
     location /re {
         content_by_lua '
@@ -737,8 +736,8 @@ hello-1234
     GET /re
 --- response_body
 hello
-nil
+false
 hello
-nil
-nil
+false
+false
 

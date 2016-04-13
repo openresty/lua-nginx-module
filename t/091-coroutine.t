@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
@@ -897,12 +896,13 @@ chunk: true
     }
 --- request
 GET /t
---- response_body
-child: resume: falsecontent_by_lua:4: bad
+--- response_body eval
+qr/^child: resume: falsecontent_by_lua\(nginx\.conf:\d+\):4: bad
 child: status: dead
 parent: status: running
---- error_log
-lua coroutine: runtime error: content_by_lua:4: bad
+$/s
+--- error_log eval
+qr/lua coroutine: runtime error: content_by_lua\(nginx\.conf:\d+\):4: bad/
 
 
 

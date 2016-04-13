@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -9,12 +8,11 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
 run_tests();
-
 
 __DATA__
 
@@ -196,3 +194,52 @@ nil
 --- no_error_log
 [error]
 
+
+
+=== TEST 15: base64 encode without padding (explicit true to no_padding)
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("hello", true))';
+    }
+--- request
+GET /t
+--- response_body
+aGVsbG8
+
+
+
+=== TEST 16: base64 encode short string
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w"))';
+    }
+--- request
+GET /t
+--- response_body
+dw==
+
+
+
+=== TEST 17: base64 encode short string with padding (explicit false to no_padding)
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w", false))';
+    }
+--- request
+GET /t
+--- response_body
+dw==
+
+
+
+=== TEST 18: base64 encode with wrong 2nd parameter
+--- config
+    location = /t {
+        content_by_lua 'ngx.say(ngx.encode_base64("w", 0))';
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/bad argument \#2 to 'encode_base64' \(boolean expected, got number\)|\[error\] .*? boolean argument only/

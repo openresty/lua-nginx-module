@@ -1,15 +1,14 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_on();
 #workers(2);
-log_level('warn');
+#log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 14);
+plan tests => repeat_each() * (blocks() * 2 + 17);
 
 #no_diff();
 no_long_string();
@@ -573,3 +572,128 @@ ngx.say("gsub: ", cnt)
 gsub: 0
 --- timeout: 10
 
+
+
+=== TEST 25: bug: gsub incorrectly swallowed a character is the first character
+Original bad result: estCase
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("TestCase", "^ *", "", "o")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+TestCase
+
+
+
+=== TEST 26: bug: gsub incorrectly swallowed a character is not the first character
+Original bad result: .b.d
+--- config
+    location /re {
+        content_by_lua '
+            local s, n = ngx.re.gsub("abcd", "a|(?=c)", ".")
+            if s then
+                ngx.say(s)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+.b.cd
+
+
+
+=== TEST 27: use of ngx.req.get_headers in the user callback
+--- config
+
+location = /t {
+    content_by_lua '
+        local data = [[
+            INNER
+            INNER
+]]
+
+        -- ngx.say(data)
+
+        local res =  ngx.re.gsub(data, "INNER", function(inner_matches)
+            local header = ngx.req.get_headers()["Host"]
+            -- local header = ngx.var["http_HEADER"]
+            return "INNER_REPLACED"
+        end, "s")
+
+        ngx.print(res)
+    ';
+}
+
+--- request
+GET /t
+--- response_body
+            INNER_REPLACED
+            INNER_REPLACED
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 28: use of ngx.var in the user callback
+--- config
+
+location = /t {
+    content_by_lua '
+        local data = [[
+            INNER
+            INNER
+]]
+
+        -- ngx.say(data)
+
+        local res =  ngx.re.gsub(data, "INNER", function(inner_matches)
+            -- local header = ngx.req.get_headers()["Host"]
+            local header = ngx.var["http_HEADER"]
+            return "INNER_REPLACED"
+        end, "s")
+
+        ngx.print(res)
+    ';
+}
+
+--- request
+GET /t
+--- response_body
+            INNER_REPLACED
+            INNER_REPLACED
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 29: function replace (false for groups)
+--- config
+    location /re {
+        content_by_lua '
+            local repl = function (m)
+                print("group 1: ", m[2])
+                return "[" .. m[0] .. "] [" .. m[1] .. "]"
+            end
+
+            local s, n = ngx.re.gsub("hello, 34", "([0-9])|(world)", repl)
+            ngx.say(s)
+            ngx.say(n)
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello, [3] [3][4] [4]
+2
+--- error_log
+group 1: false

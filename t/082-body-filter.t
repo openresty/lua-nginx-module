@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -11,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 13);
+plan tests => repeat_each() * (blocks() * 3 + 11);
 
 #no_diff();
 no_long_string();
@@ -700,8 +699,10 @@ F(ngx_http_write_filter) {
     }
 }
 
---- stap_out eval
-("seen flush buf.\n" x 10) . "seen last buf.\n"
+--- stap_out_like eval
+qr/^(?:seen flush buf\.
+){10,}seen last buf\.
+$/
 
 --- stap2
 global active = 1
@@ -823,3 +824,16 @@ eof 2: true
 [error]
 [alert]
 
+
+
+=== TEST 26: no ngx.print
+--- config
+    location /lua {
+        echo ok;
+        body_filter_by_lua "ngx.print(32) return 1";
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+API disabled in the context of body_filter_by_lua*

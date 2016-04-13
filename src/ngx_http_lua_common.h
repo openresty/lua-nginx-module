@@ -21,6 +21,12 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+
+#if !defined(nginx_version) || (nginx_version < 1006000)
+#error at least nginx 1.6.0 is required but found an older version
+#endif
+
+
 #if defined(NDK) && NDK
 #include <ndk.h>
 #endif
@@ -28,6 +34,11 @@
 
 #if LUA_VERSION_NUM != 501
 #   error unsupported Lua language version
+#endif
+
+
+#if (!defined OPENSSL_NO_OCSP && defined SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB)
+#   define NGX_HTTP_LUA_USE_OCSP 1
 #endif
 
 
@@ -94,6 +105,8 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x040
 #define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
 #define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
+#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x200
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x400
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -102,11 +115,21 @@ typedef struct {
 #endif
 
 
-typedef struct ngx_http_lua_main_conf_s ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
+typedef union ngx_http_lua_srv_conf_u  ngx_http_lua_srv_conf_t;
 
 
-typedef ngx_int_t (*ngx_http_lua_conf_handler_pt)(ngx_log_t *log,
-        ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef struct ngx_http_lua_balancer_peer_data_s
+    ngx_http_lua_balancer_peer_data_t;
+
+
+typedef struct ngx_http_lua_semaphore_mm_s  ngx_http_lua_semaphore_mm_t;
+
+
+typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
+    ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
 
 
 typedef struct {
@@ -145,13 +168,21 @@ struct ngx_http_lua_main_conf_s {
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
 
-    ngx_http_lua_conf_handler_pt    init_handler;
-    ngx_str_t                       init_src;
+    ngx_http_lua_main_conf_handler_pt    init_handler;
+    ngx_str_t                            init_src;
 
-    ngx_http_lua_conf_handler_pt    init_worker_handler;
-    ngx_str_t                       init_worker_src;
+    ngx_http_lua_main_conf_handler_pt    init_worker_handler;
+    ngx_str_t                            init_worker_src;
+
+    ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
+                    /* balancer_by_lua does not support yielding and
+                     * there cannot be any conflicts among concurrent requests,
+                     * thus it is safe to store the peer data in the main conf.
+                     */
 
     ngx_uint_t                      shm_zones_inited;
+
+    ngx_http_lua_semaphore_mm_t    *semaphore_mm;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
@@ -160,6 +191,24 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_access:1;
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
+};
+
+
+union ngx_http_lua_srv_conf_u {
+#if (NGX_HTTP_SSL)
+    struct {
+        ngx_http_lua_srv_conf_handler_pt     cert_handler;
+        ngx_str_t                            cert_src;
+        u_char                              *cert_src_key;
+    } ssl;
+#endif
+
+    struct {
+        ngx_str_t           src;
+        u_char             *src_key;
+
+        ngx_http_lua_srv_conf_handler_pt  handler;
+    } balancer;
 };
 
 
@@ -189,18 +238,21 @@ typedef struct {
 
     ngx_http_output_body_filter_pt         body_filter_handler;
 
+    u_char                  *rewrite_chunkname;
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
                                                 inline script/script
                                                 file path */
 
-    u_char                 *rewrite_src_key; /* cached key for rewrite_src */
+    u_char                  *rewrite_src_key; /* cached key for rewrite_src */
 
+    u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua
                                                 inline script/script
                                                 file path */
 
     u_char                  *access_src_key; /* cached key for access_src */
 
+    u_char                  *content_chunkname;
     ngx_http_complex_value_t content_src;    /*  content_by_lua
                                                 inline script/script
                                                 file path */
@@ -208,6 +260,7 @@ typedef struct {
     u_char                 *content_src_key; /* cached key for content_src */
 
 
+    u_char                      *log_chunkname;
     ngx_http_complex_value_t     log_src;     /* log_by_lua inline script/script
                                                  file path */
 
@@ -283,9 +336,6 @@ struct ngx_http_lua_co_ctx_s {
 
     ngx_http_cleanup_pt      cleanup;
 
-    unsigned                 nsubreqs;  /* number of subrequests of the
-                                         * current request */
-
     ngx_int_t               *sr_statuses; /* all capture subrequest statuses */
 
     ngx_http_headers_out_t **sr_headers;
@@ -294,10 +344,15 @@ struct ngx_http_lua_co_ctx_s {
 
     uint8_t                 *sr_flags;
 
+    unsigned                 nsubreqs;  /* number of subrequests of the
+                                         * current request */
+
     unsigned                 pending_subreqs; /* number of subrequests being
                                                  waited */
 
     ngx_event_t              sleep;  /* used for ngx.sleep */
+
+    ngx_queue_t              sem_wait_queue;
 
 #ifdef NGX_LUA_USE_ASSERT
     int                      co_top; /* stack top after yielding/creation,
@@ -326,6 +381,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 thread_spawn_yielded:1; /* yielded from
                                                         the ngx.thread.spawn()
                                                         call */
+    unsigned                 sem_resume_status:1;
 };
 
 
@@ -361,15 +417,14 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned                 flushing_coros; /* number of coroutines waiting on
                                                 ngx.flush(true) */
 
-    int                      uthreads; /* number of active user threads */
-
     ngx_chain_t             *out;  /* buffered output chain for HTTP 1.0 */
     ngx_chain_t             *free_bufs;
     ngx_chain_t             *busy_bufs;
     ngx_chain_t             *free_recv_bufs;
-    ngx_chain_t             *flush_buf;
 
     ngx_http_cleanup_pt     *cleanup;
+
+    ngx_http_cleanup_t      *free_cleanup; /* free list of cleanup records */
 
     ngx_chain_t             *body; /* buffered subrequest response body
                                       chains */
@@ -381,14 +436,17 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_int_t                exit_code;
 
-    ngx_http_lua_co_ctx_t   *downstream_co_ctx; /* co ctx for the coroutine
-                                                   reading the request body */
+    void                    *downstream;  /* can be either
+                                             ngx_http_lua_socket_tcp_upstream_t
+                                             or ngx_http_lua_co_ctx_t */
 
     ngx_uint_t               index;              /* index of the current
                                                     subrequest in its parent
                                                     request */
 
     ngx_http_lua_posted_thread_t   *posted_threads;
+
+    int                      uthreads; /* number of active user threads */
 
     uint16_t                 context;   /* the current running directive context
                                            (or running phase) for the current
@@ -431,6 +489,13 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         no_abort:1; /* prohibit "world abortion" via ngx.exit()
                                     and etc */
 
+    unsigned         header_sent:1; /* r->header_sent is not sufficient for
+                                     * this because special header filters
+                                     * like ngx_image_filter may intercept
+                                     * the header. so we should always test
+                                     * both flags. see the test case in
+                                     * t/020-subrequest.t */
+
     unsigned         seen_last_in_filter:1;  /* used by body_filter_by_lua* */
     unsigned         seen_last_for_subreq:1; /* used by body capture filter */
     unsigned         writing_raw_req_socket:1; /* used by raw downstream
@@ -440,7 +505,7 @@ typedef struct ngx_http_lua_ctx_s {
 } ngx_http_lua_ctx_t;
 
 
-typedef struct ngx_http_lua_header_val_s ngx_http_lua_header_val_t;
+typedef struct ngx_http_lua_header_val_s  ngx_http_lua_header_val_t;
 
 
 typedef ngx_int_t (*ngx_http_lua_set_header_pt)(ngx_http_request_t *r,

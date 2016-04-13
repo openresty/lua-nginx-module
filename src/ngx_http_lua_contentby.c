@@ -27,6 +27,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     int                      co_ref;
     ngx_int_t                rc;
     lua_State               *co;
+    ngx_event_t             *rev;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
 
@@ -54,7 +55,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (co == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                     "lua: failed to create new coroutine to handle request");
+                      "lua: failed to create new coroutine to handle request");
 
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -95,6 +96,14 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     if (llcf->check_client_abort) {
         r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+
+        rev = r->connection->read;
+
+        if (!rev->active) {
+            if (ngx_add_event(rev, NGX_READ_EVENT, 0) != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
 
     } else {
         r->read_event_handler = ngx_http_block_reading;
@@ -180,7 +189,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         r->request_body_in_clean_file = 1;
 
         rc = ngx_http_read_client_request_body(r,
-                                       ngx_http_lua_content_phase_post_read);
+                                        ngx_http_lua_content_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
 #if (nginx_version < 1002006) ||                                             \
@@ -242,7 +251,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     }
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
-            eval_src.len);
+                                           eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
@@ -251,7 +260,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path,
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
                                      llcf->content_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
@@ -280,10 +289,12 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, llcf->content_src.value.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       llcf->content_src.value.data,
                                        llcf->content_src.value.len,
                                        llcf->content_src_key,
-                                       "=content_by_lua");
+                                       (const char *)
+                                       llcf->content_chunkname);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

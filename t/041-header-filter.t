@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -11,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 91;
+plan tests => repeat_each() * 94;
 
 #no_diff();
 #no_long_string();
@@ -766,4 +765,29 @@ GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
 qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
+
+
+
+=== TEST 41: filter finalize
+--- config
+    error_page 582 = /bar;
+    location = /t {
+        echo ok;
+        header_filter_by_lua '
+            return ngx.exit(582)
+        ';
+    }
+
+    location = /bar {
+        echo hi;
+        header_filter_by_lua '
+            return ngx.exit(302)
+        ';
+    }
+--- request
+GET /t
+--- response_body_like: 302 Found
+--- error_code: 302
+--- no_error_log
+[error]
 

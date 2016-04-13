@@ -149,7 +149,7 @@ ngx_http_lua_ngx_req_set_method(lua_State *L)
 int
 ngx_http_lua_ffi_req_get_method(ngx_http_request_t *r)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -161,7 +161,7 @@ int
 ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r, char *buf,
     size_t *len)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
@@ -174,7 +174,7 @@ ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r, char *buf,
 int
 ngx_http_lua_ffi_req_set_method(ngx_http_request_t *r, int method)
 {
-    if (r->connection->fd == -1) {
+    if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 

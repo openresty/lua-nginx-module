@@ -8,6 +8,7 @@
 #define _DDEBUG_H_INCLUDED_
 
 
+#include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
 
@@ -27,7 +28,8 @@
 
 #include <stdarg.h>
 
-static void dd(const char *fmt, ...) {
+static ngx_inline void
+dd(const char *fmt, ...) {
 }
 
 #    endif
@@ -42,7 +44,8 @@ static void dd(const char *fmt, ...) {
 
 #include <stdarg.h>
 
-static void dd(const char *fmt, ...) {
+static ngx_inline void
+dd(const char *fmt, ...) {
 }
 
 #   endif

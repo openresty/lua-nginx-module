@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -65,8 +64,8 @@ M(http-subrequest-start) {
 --- request
 GET /lua
 --- response_body_like: 500 Internal Server Error
---- error_log chop
-variable "dog" cannot be assigned a value (maybe you forgot to define it first?)
+--- error_log eval
+qr/variable "(dog|cat)" cannot be assigned a value \(maybe you forgot to define it first\?\)/
 --- error_code: 500
 
 

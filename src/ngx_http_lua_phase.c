@@ -40,6 +40,10 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
     }
 
     switch (ctx->context) {
+    case NGX_HTTP_LUA_CONTEXT_INIT_WORKER:
+        lua_pushliteral(L, "init_worker");
+        break;
+
     case NGX_HTTP_LUA_CONTEXT_SET:
         lua_pushliteral(L, "set");
         break;
@@ -70,6 +74,14 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
 
     case NGX_HTTP_LUA_CONTEXT_TIMER:
         lua_pushliteral(L, "timer");
+        break;
+
+    case NGX_HTTP_LUA_CONTEXT_BALANCER:
+        lua_pushliteral(L, "balancer");
+        break;
+
+    case NGX_HTTP_LUA_CONTEXT_SSL_CERT:
+        lua_pushliteral(L, "ssl_cert");
         break;
 
     default:

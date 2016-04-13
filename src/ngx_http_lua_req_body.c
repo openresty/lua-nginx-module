@@ -110,7 +110,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-            "lua start to read buffered request body");
+                   "lua start to read buffered request body");
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_req_body_post_read);
 
@@ -142,7 +142,7 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
                        "interruptions");
 
         ctx->waiting_more_body = 1;
-        ctx->downstream_co_ctx = coctx;
+        ctx->downstream = coctx;
 
         ngx_http_lua_cleanup_pending_operation(coctx);
         coctx->cleanup = ngx_http_lua_req_body_cleanup;
@@ -176,7 +176,7 @@ ngx_http_lua_req_body_post_read(ngx_http_request_t *r)
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
 
-        coctx = ctx->downstream_co_ctx;
+        coctx = ctx->downstream;
         ctx->cur_co_ctx = coctx;
 
         coctx->cleanup = NULL;
@@ -332,7 +332,7 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
        r->request_body->bufs->buf->memory,
        r->request_body->bufs->buf->temporary,
        (int) (r->request_body->bufs->buf->end -
-       r->request_body->bufs->buf->pos),
+              r->request_body->bufs->buf->pos),
        (int) ngx_buf_size(r->request_body->bufs->buf));
 
     lua_pushlstring(L, (char *) r->request_body->temp_file->file.name.data,
@@ -619,9 +619,9 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_str_t                   body;
-    size_t                      size, rest;
-    size_t                      offset = 0;
+    ngx_str_t                    body;
+    size_t                       size, rest;
+    size_t                       offset = 0;
 
     n = lua_gettop(L);
 
@@ -642,7 +642,7 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
     }
 
     rb = r->request_body;
@@ -683,10 +683,10 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     int                          n;
     ngx_http_request_body_t     *rb;
     ngx_buf_t                   *b;
-    size_t                      size;
-    ngx_str_t                   value;
-    ngx_str_t                   key;
-    ngx_int_t                   rc;
+    size_t                       size;
+    ngx_str_t                    value;
+    ngx_str_t                    key;
+    ngx_int_t                    rc;
 
     n = lua_gettop(L);
 
@@ -705,7 +705,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
     }
 
     rb = r->request_body;

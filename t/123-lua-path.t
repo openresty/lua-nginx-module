@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -24,6 +23,10 @@ run_tests();
 __DATA__
 
 === TEST 1: LUA_PATH & LUA_CPATH env (code cache on)
+--- main_config
+env LUA_PATH;
+env LUA_CPATH;
+
 --- config
     location /lua {
         content_by_lua '
@@ -43,6 +46,10 @@ GET /lua
 
 
 === TEST 2: LUA_PATH & LUA_CPATH env (code cache off)
+--- main_config
+env LUA_PATH;
+env LUA_CPATH;
+
 --- config
     lua_code_cache off;
     location /lua {

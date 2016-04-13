@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
@@ -304,11 +303,13 @@ lua req cleanup
 --- abort
 --- wait: 0.6
 --- ignore_response
---- error_log
-client prematurely closed connection
-on abort called
-lua user thread aborted: runtime error: access_by_lua:4: attempt to abort with pending subrequests
-main handler done
+--- error_log eval
+[
+'client prematurely closed connection',
+'on abort called',
+qr/lua user thread aborted: runtime error: access_by_lua\(nginx\.conf:\d+\):4: attempt to abort with pending subrequests/,
+'main handler done',
+]
 
 
 

@@ -1,5 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
+
 use Test::Nginx::Socket::Lua;
 
 #master_on();
@@ -8,9 +8,10 @@ use Test::Nginx::Socket::Lua;
 #log_level('warn');
 #master_process_enabled(1);
 
+no_root_location;
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 21);
+plan tests => repeat_each() * (blocks() * 3 + 23);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -41,6 +42,8 @@ __DATA__
 GET /lua
 --- response_body
 DELETE
+--- error_log
+lua http subrequest "/other?"
 --- no_error_log
 [error]
 
@@ -1058,7 +1061,7 @@ hello, world
     GET /t
 --- ignore_response
 --- error_log
-subrequests cycle while processing "/t"
+lua subrequests cycle while processing "/t"
 
 
 
@@ -2463,7 +2466,6 @@ capture body filter
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }
@@ -2534,7 +2536,6 @@ qr/Assertion .*? failed/
           end
         ";
 
-        resolver 8.8.8.8;
         proxy_http_version 1.1;
         proxy_pass $_url;
     }
@@ -2760,3 +2761,115 @@ $
 --- no_error_log
 [error]
 
+
+
+=== TEST 74: image_filter + ngx.location.capture
+ngx_http_image_filter_module's header filter intercepts
+the header filter chain so the r->header_sent flag won't
+get set right after the header filter chain is first invoked.
+
+--- config
+
+location = /back {
+    empty_gif;
+}
+
+location = /t {
+    image_filter rotate 90;
+
+    content_by_lua '
+        local res = ngx.location.capture("/back")
+        for k, v in pairs(res.header) do
+            ngx.header[k] = v
+        end
+        ngx.status = res.status
+        ngx.print(res.body)
+    ';
+}
+
+--- request
+GET /t
+--- response_body_like: .
+--- stap
+F(ngx_http_image_header_filter) {
+    println("image header filter")
+}
+--- stap_out
+image header filter
+
+--- no_error_log
+[error]
+
+
+
+=== TEST 75: WebDAV + MOVE
+--- config
+    location = /t {
+        content_by_lua_block {
+            local file1 = "/file1.txt"
+            local file2 = "/file2.txt"
+            ngx.req.set_header( "Destination", file2 )
+            local res = ngx.location.capture(
+                file1, { method = ngx.HTTP_MOVE }
+            )
+
+            ngx.say(
+                "MOVE ", file1, " -> ", file2,
+                ", response status: ", res.status
+            )
+        }
+    }
+
+    location / {
+        dav_methods MOVE;
+    }
+
+--- user_files
+>>> file1.txt
+hello, world!
+
+--- request
+GET /t
+
+--- response_body
+MOVE /file1.txt -> /file2.txt, response status: 204
+
+--- no_error_log
+[error]
+--- error_code: 200
+
+
+
+=== TEST 76: WebDAV + DELETE
+--- config
+    location = /t {
+        content_by_lua_block {
+            local file = "/file.txt"
+            local res = ngx.location.capture(
+                file, { method = ngx.HTTP_DELETE }
+            )
+
+            ngx.say(
+                "DELETE ", file,
+                ", response status: ", res.status
+            )
+        }
+    }
+
+    location / {
+        dav_methods DELETE;
+    }
+
+--- user_files
+>>> file.txt
+hello, world!
+
+--- request
+GET /t
+
+--- response_body
+DELETE /file.txt, response status: 204
+
+--- no_error_log
+[error]
+--- error_code: 200

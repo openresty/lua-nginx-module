@@ -10,6 +10,7 @@
 #endif
 #include "ddebug.h"
 
+
 #include "ngx_http_lua_control.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_coroutine.h"
@@ -170,7 +171,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         }
     }
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         return luaL_error(L, "attempt to call ngx.exec after "
                           "sending out response headers");
     }
@@ -195,6 +196,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     u_char                      *p;
     u_char                      *uri;
     size_t                       len;
+    ngx_table_elt_t             *h;
     ngx_http_request_t          *r;
 
     n = lua_gettop(L);
@@ -208,12 +210,15 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     if (n == 2) {
         rc = (ngx_int_t) luaL_checknumber(L, 2);
 
-        if (rc != NGX_HTTP_MOVED_TEMPORARILY &&
-                rc != NGX_HTTP_MOVED_PERMANENTLY)
+        if (rc != NGX_HTTP_MOVED_TEMPORARILY
+            && rc != NGX_HTTP_MOVED_PERMANENTLY
+            && rc != NGX_HTTP_TEMPORARY_REDIRECT)
         {
-            return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY and "
-                              "ngx.HTTP_MOVED_PERMANENTLY are allowed");
+            return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY, "
+                              "ngx.HTTP_MOVED_PERMANENTLY, and "
+                              "ngx.HTTP_TEMPORARY_REDIRECT are allowed");
         }
+
     } else {
         rc = NGX_HTTP_MOVED_TEMPORARILY;
     }
@@ -234,7 +239,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (r->header_sent) {
+    if (r->header_sent || ctx->header_sent) {
         return luaL_error(L, "attempt to call ngx.redirect after sending out "
                           "the headers");
     }
@@ -246,23 +251,23 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_memcpy(uri, p, len);
 
-    r->headers_out.location = ngx_list_push(&r->headers_out.headers);
-    if (r->headers_out.location == NULL) {
+    h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
         return luaL_error(L, "no memory");
     }
 
-    r->headers_out.location->hash = ngx_http_lua_location_hash;
+    h->hash = ngx_http_lua_location_hash;
 
 #if 0
     dd("location hash: %lu == %lu",
-            (unsigned long) r->headers_out.location->hash,
-            (unsigned long) ngx_hash_key_lc((u_char *) "Location",
-            sizeof("Location") - 1));
+       (unsigned long) h->hash,
+       (unsigned long) ngx_hash_key_lc((u_char *) "Location",
+                                       sizeof("Location") - 1));
 #endif
 
-    r->headers_out.location->value.len = len;
-    r->headers_out.location->value.data = uri;
-    ngx_str_set(&r->headers_out.location->key, "Location");
+    h->value.len = len;
+    h->value.data = uri;
+    ngx_str_set(&h->key, "Location");
 
     r->headers_out.status = rc;
 
@@ -271,7 +276,16 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua redirect to \"%V\" with code %i",
-                   &r->headers_out.location->value, ctx->exit_code);
+                   &h->value, ctx->exit_code);
+
+    if (len && uri[0] != '/') {
+        r->headers_out.location = h;
+    }
+
+    /*
+     * we do not set r->headers_out.location here to avoid the handling
+     * the local redirects without a host name by ngx_http_header_filter()
+     */
 
     return lua_yield(L, 0);
 }
@@ -280,9 +294,9 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 static int
 ngx_http_lua_ngx_exit(lua_State *L)
 {
+    ngx_int_t                    rc;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_int_t                    rc;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
@@ -302,9 +316,30 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER);
+                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                               | NGX_HTTP_LUA_CONTEXT_BALANCER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
+    if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_CERT) {
+
+#if (NGX_HTTP_SSL)
+
+        ctx->exit_code = rc;
+        ctx->exited = 1;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exit with code %i", rc);
+
+        return lua_yield(L, 0);
+
+#else
+
+        return luaL_error(L, "no SSL support");
+
+#endif
+    }
 
     if (ctx->no_abort
         && rc != NGX_ERROR
@@ -315,7 +350,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "attempt to abort with pending subrequests");
     }
 
-    if (r->header_sent
+    if ((r->header_sent || ctx->header_sent)
         && rc >= NGX_HTTP_SPECIAL_RESPONSE
         && rc != NGX_HTTP_REQUEST_TIME_OUT
         && rc != NGX_HTTP_CLIENT_CLOSED_REQUEST
@@ -338,7 +373,9 @@ ngx_http_lua_ngx_exit(lua_State *L)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua exit with code %i", ctx->exit_code);
 
-    if (ctx->context & NGX_HTTP_LUA_CONTEXT_HEADER_FILTER) {
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                        | NGX_HTTP_LUA_CONTEXT_BALANCER))
+    {
         return 0;
     }
 
@@ -421,11 +458,31 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
-                                       | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER,
+                                       | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
                                        err, errlen)
         != NGX_OK)
     {
         return NGX_ERROR;
+    }
+
+    if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_CERT) {
+
+#if (NGX_HTTP_SSL)
+
+        ctx->exit_code = status;
+        ctx->exited = 1;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exit with code %d", status);
+
+        return NGX_OK;
+
+#else
+
+        return NGX_ERROR;
+
+#endif
     }
 
     if (ctx->no_abort
@@ -440,7 +497,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
         return NGX_ERROR;
     }
 
-    if (r->header_sent
+    if ((r->header_sent || ctx->header_sent)
         && status >= NGX_HTTP_SPECIAL_RESPONSE
         && status != NGX_HTTP_REQUEST_TIME_OUT
         && status != NGX_HTTP_CLIENT_CLOSED_REQUEST
@@ -448,7 +505,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     {
         if (status != (ngx_int_t) r->headers_out.status) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "attempt to "
-                          "set status %i via ngx.exit after sending out the "
+                          "set status %d via ngx.exit after sending out the "
                           "response status %ui", status,
                           r->headers_out.status);
         }

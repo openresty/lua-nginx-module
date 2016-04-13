@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
@@ -469,7 +468,7 @@ receive: nil closed
 send: nil closed
 close: nil closed
 getreusedtimes: nil closed
-setkeepalive: nil socket busy connecting
+setkeepalive: nil closed
 connect: nil socket busy connecting
 connect: nil some2.agentzh.org could not be resolved (110: Operation timed out)
 close: nil closed

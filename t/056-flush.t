@@ -4,7 +4,6 @@ BEGIN {
     $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
 }
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -14,7 +13,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 55;
+plan tests => repeat_each() * 60;
 
 #no_diff();
 no_long_string();
@@ -43,7 +42,7 @@ hiya
 --- no_error_log
 [error]
 --- error_log
-lua reuse free buf memory 13 >= 5
+lua reuse free buf chain, but reallocate memory because 5 >= 0
 
 
 
@@ -488,4 +487,37 @@ GET /test
 --- ignore_response
 --- no_error_log
 [error]
+
+
+
+=== TEST 17: limit_rate
+--- config
+    location /test {
+        limit_rate 150;
+        content_by_lua '
+            local begin = ngx.now()
+            for i = 1, 2 do
+                ngx.print(string.rep("a", 100))
+                local ok, err = ngx.flush(true)
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to flush: ", err)
+                end
+            end
+            local elapsed = ngx.now() - begin
+            ngx.log(ngx.WARN, "lua writes elapsed ", elapsed, " sec")
+        ';
+    }
+--- request
+GET /test
+--- response_body eval
+"a" x 200
+--- error_log eval
+[
+qr/lua writes elapsed [12](?:\.\d+)? sec/,
+qr/lua flush requires waiting: buffered 0x[0-9a-f]+, delayed:1/,
+]
+
+--- no_error_log
+[error]
+--- timeout: 4
 
