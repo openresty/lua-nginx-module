@@ -754,7 +754,10 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_timer_api(L);
     ngx_http_lua_inject_config_api(L);
     ngx_http_lua_inject_worker_api(L);
+
+#if (NGX_STAT_STUB)
     ngx_http_lua_inject_stub_status_api(L);
+#endif
 
     ngx_http_lua_inject_misc_api(L);
 

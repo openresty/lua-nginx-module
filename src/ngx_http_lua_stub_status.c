@@ -1,6 +1,7 @@
 #include <ngx_core.h>
 #include "ngx_http_lua_stub_status.h"
 
+#if (NGX_STAT_STUB)
 
 static int ngx_http_lua_stub_status(lua_State *L);
 
@@ -13,37 +14,30 @@ ngx_http_lua_inject_stub_status_api(lua_State *L) {
 
 static int
 ngx_http_lua_stub_status(lua_State *L) {
-    ngx_atomic_int_t   ap, hn, ac, rq, rd, wr, wa;
-    ap = *ngx_stat_accepted;
-    hn = *ngx_stat_handled;
-    ac = *ngx_stat_active;
-    rq = *ngx_stat_requests;
-    rd = *ngx_stat_reading;
-    wr = *ngx_stat_writing;
-    wa = *ngx_stat_waiting;
-
     lua_createtable(L, 0, 7);
 
-    lua_pushinteger(L, ap);
-    lua_setfield(L, -2, "accepted");
-
-    lua_pushinteger(L, hn);
-    lua_setfield(L, -2, "handled");
-
-    lua_pushinteger(L, ac);
+    lua_pushinteger(L, *ngx_stat_active);
     lua_setfield(L, -2, "active");
 
-    lua_pushinteger(L, rq);
+    lua_pushinteger(L, *ngx_stat_accepted);
+    lua_setfield(L, -2, "accepted");
+
+    lua_pushinteger(L, *ngx_stat_handled);
+    lua_setfield(L, -2, "handled");
+
+    lua_pushinteger(L, *ngx_stat_requests);
     lua_setfield(L, -2, "requests");
 
-    lua_pushinteger(L, rd);
+    lua_pushinteger(L, *ngx_stat_reading);
     lua_setfield(L, -2, "reading");
 
-    lua_pushinteger(L, wr);
+    lua_pushinteger(L, *ngx_stat_writing);
     lua_setfield(L, -2, "writing");
 
-    lua_pushinteger(L, wa);
+    lua_pushinteger(L, *ngx_stat_waiting);
     lua_setfield(L, -2, "waiting");
 
     return 1;
 }
+
+#endif
