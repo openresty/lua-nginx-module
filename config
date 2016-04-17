@@ -357,6 +357,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl_ocsp.c \
             $ngx_addon_dir/src/ngx_http_lua_lex.c \
             $ngx_addon_dir/src/ngx_http_lua_balancer.c \
+            $ngx_addon_dir/src/ngx_http_lua_req_keepalive.c \
             "
 
 HTTP_LUA_DEPS=" \
@@ -414,6 +415,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl_certby.h \
             $ngx_addon_dir/src/ngx_http_lua_lex.h \
             $ngx_addon_dir/src/ngx_http_lua_balancer.h \
+            $ngx_addon_dir/src/ngx_http_lua_req_keepalive.h \
             "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
