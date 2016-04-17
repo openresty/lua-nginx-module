@@ -40,6 +40,8 @@ typedef struct {
 
 
 static int ngx_http_lua_ngx_timer_at(lua_State *L);
+static int ngx_http_lua_ngx_timer_running_count(lua_State *L);
+static int ngx_http_lua_ngx_timer_pending_count(lua_State *L);
 static void ngx_http_lua_timer_handler(ngx_event_t *ev);
 static u_char *ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf,
     size_t len);
@@ -49,12 +51,56 @@ static void ngx_http_lua_abort_pending_timers(ngx_event_t *ev);
 void
 ngx_http_lua_inject_timer_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */);    /* ngx.timer. */
+    lua_createtable(L, 0 /* narr */, 3 /* nrec */);    /* ngx.timer. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_timer_at);
     lua_setfield(L, -2, "at");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_timer_running_count);
+    lua_setfield(L, -2, "running_count");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_timer_pending_count);
+    lua_setfield(L, -2, "pending_count");
+
     lua_setfield(L, -2, "timer");
+}
+
+
+static int
+ngx_http_lua_ngx_timer_running_count(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request");
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    lua_pushnumber(L, lmcf->running_timers);
+
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_timer_pending_count(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request");
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    lua_pushnumber(L, lmcf->pending_timers);
+
+    return 1;
 }
 
 
@@ -89,7 +135,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
 
     luaL_argcheck(L, lua_isfunction(L, 2) && !lua_iscfunction(L, 2), 2,
-                 "Lua function expected");
+                  "Lua function expected");
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
@@ -350,7 +396,15 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
 #if defined(nginx_version) && nginx_version >= 1003014
 
+#   if nginx_version >= 1009000
+
+    ngx_set_connection_log(r->connection, clcf->error_log);
+
+#   else
+
     ngx_http_set_connection_log(r->connection, clcf->error_log);
+
+#   endif
 
 #else
 

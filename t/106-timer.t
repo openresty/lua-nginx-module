@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 use t::StapThread;
 
@@ -2142,7 +2141,6 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])
             end
             ngx.say("registered timer")
         ';
-        log_by_lua return;
     }
 --- request
 GET /t

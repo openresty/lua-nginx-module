@@ -36,9 +36,18 @@ static int ngx_http_lua_shdict_flush_expired(lua_State *L);
 static int ngx_http_lua_shdict_get_keys(lua_State *L);
 
 
+static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
+                                                               int index);
+
+
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 #define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
+
+
+enum {
+    SHDICT_USERDATA_INDEX = 1,
+};
 
 
 ngx_int_t
@@ -47,6 +56,8 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_http_lua_shdict_ctx_t  *octx = data;
 
     size_t                      len;
+    ngx_int_t                   rc;
+    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_lua_shdict_ctx_t  *ctx;
     ngx_http_lua_main_conf_t   *lmcf;
 
@@ -108,7 +119,14 @@ done:
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
         && lmcf->init_handler)
     {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
+        saved_cycle = ngx_cycle;
+        ngx_cycle = ctx->cycle;
+
+        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
+
+        ngx_cycle = saved_cycle;
+
+        if (rc != NGX_OK) {
             /* an error happened */
             return NGX_ERROR;
         }
@@ -122,7 +140,7 @@ void
 ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t          **p;
+    ngx_rbtree_node_t           **p;
     ngx_http_lua_shdict_node_t   *sdn, *sdnt;
 
     for ( ;; ) {
@@ -347,7 +365,10 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
             lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
                 /* shared mt key */
 
+            lua_createtable(L, 1 /* narr */, 0 /* nrec */);
+                /* table of zone[i] */
             lua_pushlightuserdata(L, zone[i]); /* shared mt key ud */
+            lua_rawseti(L, -2, SHDICT_USERDATA_INDEX); /* {zone[i]} */
             lua_pushvalue(L, -3); /* shared mt key ud mt */
             lua_setmetatable(L, -2); /* shared mt key ud */
             lua_rawset(L, -4); /* shared mt */
@@ -366,14 +387,27 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
 }
 
 
 static int
 ngx_http_lua_shdict_get_stale(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
+}
+
+
+static ngx_inline ngx_shm_zone_t *
+ngx_http_lua_shdict_get_zone(lua_State *L, int index)
+{
+    ngx_shm_zone_t      *zone;
+
+    lua_rawgeti(L, index, SHDICT_USERDATA_INDEX);
+    zone = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    return zone;
 }
 
 
@@ -401,7 +435,11 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
                           "but only seen %d", n);
     }
 
-    zone = lua_touserdata(L, 1);
+    if (lua_type(L, 1) != LUA_TTABLE) {
+        return luaL_error(L, "bad \"zone\" argument");
+    }
+
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad \"zone\" argument");
     }
@@ -572,9 +610,9 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
         return luaL_error(L, "expecting 1 argument, but seen %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checktype(L, 1, LUA_TTABLE);
 
-    zone = lua_touserdata(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -619,9 +657,9 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
         return luaL_error(L, "expecting 1 or 2 argument(s), but saw %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checktype(L, 1, LUA_TTABLE);
 
-    zone = lua_touserdata(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -700,9 +738,9 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
                           "but saw %d", n);
     }
 
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checktype(L, 1, LUA_TTABLE);
 
-    zone = lua_touserdata(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -840,7 +878,11 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
                           "but only seen %d", n);
     }
 
-    zone = lua_touserdata(L, 1);
+    if (lua_type(L, 1) != LUA_TTABLE) {
+        return luaL_error(L, "bad \"zone\" argument");
+    }
+
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad \"zone\" argument");
     }
@@ -907,7 +949,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     if (n >= 4) {
         exptime = luaL_checknumber(L, 4);
         if (exptime < 0) {
-            exptime = 0;
+            return luaL_error(L, "bad \"exptime\" argument");
         }
     }
 
@@ -1013,7 +1055,7 @@ replace:
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                       "lua shared dict set: found old entry bug value size "
+                       "lua shared dict set: found old entry but value size "
                        "NOT matched, removing it first");
 
 remove:
@@ -1147,11 +1189,11 @@ ngx_http_lua_shdict_incr(lua_State *L)
         return luaL_error(L, "expecting 3 arguments, but only seen %d", n);
     }
 
-    if (lua_type(L, 1) != LUA_TLIGHTUSERDATA) {
+    if (lua_type(L, 1) != LUA_TTABLE) {
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-    zone = lua_touserdata(L, 1);
+    zone = ngx_http_lua_shdict_get_zone(L, 1);
     if (zone == NULL) {
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
@@ -1366,7 +1408,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
         if (name->len == name_len
             && ngx_strncmp(name->data, name_data, name_len) == 0)
         {
-            return zone;
+            return &zone[i];
         }
     }
 
@@ -1522,7 +1564,7 @@ replace:
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                       "lua shared dict set: found old entry bug value size "
+                       "lua shared dict set: found old entry but value size "
                        "NOT matched, removing it first");
 
 remove:

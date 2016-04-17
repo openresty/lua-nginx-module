@@ -20,7 +20,6 @@ BEGIN {
     $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'get helloworld';
 }
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 use t::StapThread;
 

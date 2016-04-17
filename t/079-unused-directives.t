@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -10,7 +9,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 120;
+plan tests => repeat_each() * 110;
 
 #no_diff();
 #no_long_string();
@@ -264,6 +263,9 @@ lua log handler, uri:"/t"
 
 
 === TEST 11: header_filter_by_lua with multiple http blocks (github issue #294)
+This test case won't run with nginx 1.9.3+ since duplicate http {} blocks
+have been prohibited since then.
+--- SKIP
 --- config
     location = /t {
         echo ok;
@@ -289,6 +291,9 @@ ok
 
 
 === TEST 12: body_filter_by_lua in multiple http blocks (github issue #294)
+This test case won't run with nginx 1.9.3+ since duplicate http {} blocks
+have been prohibited since then.
+--- SKIP
 --- config
     location = /t {
         echo -n ok;
@@ -312,6 +317,9 @@ okay
 
 
 === TEST 13: capture filter with multiple http blocks (github issue #294)
+This test case won't run with nginx 1.9.3+ since duplicate http {} blocks
+have been prohibited since then.
+--- SKIP
 --- config
     location = /t {
         content_by_lua '

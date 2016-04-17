@@ -197,10 +197,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 {
     ngx_int_t         rc;
 
-    lua_createtable(L, 0, 3 /* nrec */);    /* ngx.socket */
+    lua_createtable(L, 0, 4 /* nrec */);    /* ngx.socket */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp);
-    lua_setfield(L, -2, "tcp");
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -3, "tcp");
+    lua_setfield(L, -2, "stream");
 
     {
         const char  buf[] = "local sock = ngx.socket.tcp()"
@@ -223,7 +225,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 3 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -242,7 +244,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 5 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -383,7 +385,8 @@ ngx_http_lua_socket_tcp(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER);
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
@@ -440,21 +443,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER);
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
     p = (u_char *) luaL_checklstring(L, 2, &len);
-
-    host.data = ngx_palloc(r->pool, len + 1);
-    if (host.data == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    host.len = len;
-
-    ngx_memcpy(host.data, p, len);
-    host.data[len] = '\0';
 
     key_index = 2;
     custom_pool = 0;
@@ -609,6 +603,18 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
+
+    /* TODO: we should avoid this in-pool allocation */
+
+    host.data = ngx_palloc(r->pool, len + 1);
+    if (host.data == NULL) {
+        return luaL_error(L, "no memory");
+    }
+
+    host.len = len;
+
+    ngx_memcpy(host.data, p, len);
+    host.data[len] = '\0';
 
     ngx_memzero(&url, sizeof(ngx_url_t));
 
@@ -804,7 +810,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
         u->write_prepare_retvals =
                                 ngx_http_lua_socket_conn_error_retval_handler;
         ngx_http_lua_socket_handle_conn_error(r, u,
-                                             NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
+                                              NGX_HTTP_LUA_SOCKET_FT_RESOLVER);
 
         if (waiting) {
             ngx_http_run_posted_requests(c);
@@ -1001,7 +1007,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     if (u->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_http_lua_cleanup_add(r, 0);
         if (cln == NULL) {
             u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
             lua_pushnil(L);
@@ -1089,7 +1095,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
         if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
             ngx_http_lua_socket_handle_conn_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle write event");
             return 2;
@@ -1097,7 +1103,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
 
         if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
             ngx_http_lua_socket_handle_conn_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             lua_pushnil(L);
             lua_pushliteral(L, "failed to handle read event");
             return 2;
@@ -1310,6 +1316,17 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
             if (n >= 4) {
                 u->ssl_verify = lua_toboolean(L, 4);
+
+                if (n >= 5) {
+                    if (lua_toboolean(L, 5)) {
+#ifdef NGX_HTTP_LUA_USE_OCSP
+                        SSL_set_tlsext_status_type(c->ssl->connection,
+                                                   TLSEXT_STATUSTYPE_ocsp);
+#else
+                        return luaL_error(L, "no OCSP support");
+#endif
+                    }
+                }
             }
         }
     }
@@ -1352,6 +1369,12 @@ new_ssl_name:
     }
 
     u->write_co_ctx = coctx;
+
+#if 0
+#ifdef NGX_HTTP_LUA_USE_OCSP
+    SSL_set_tlsext_status_type(c->ssl->connection, TLSEXT_STATUSTYPE_ocsp);
+#endif
+#endif
 
     rc = ngx_ssl_handshake(c);
 
@@ -1513,7 +1536,7 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
         return 1;
     }
 
-    ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t*));
+    ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t *));
 
     c = u->peer.connection;
 
@@ -1525,8 +1548,8 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
         *ud = ssl_session;
 
        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua ssl save session: %p:%d", ssl_session,
-                       ssl_session->references);
+                      "lua ssl save session: %p:%d", ssl_session,
+                      ssl_session->references);
 
         /* set up the __gc metamethod */
         lua_pushlightuserdata(L, &ngx_http_lua_ssl_session_metatable_key);
@@ -1842,7 +1865,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     dd("setting data to %p, coctx:%p", u, coctx);
 
     if (u->raw_downstream || u->body_downstream) {
-        ctx->downstream_co_ctx = coctx;
+        ctx->downstream = u;
     }
 
     return lua_yield(L, 0);
@@ -1945,8 +1968,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
 #endif
 
     dd("already read: %p: %.*s", u->buf_in,
-            (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
-            u->buf_in->buf->pos);
+       (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
+       u->buf_in->buf->pos);
 
     dd("data read: %.*s", (int) bytes, b->pos);
 
@@ -1965,8 +1988,8 @@ ngx_http_lua_socket_read_line(void *data, ssize_t bytes)
             u->buf_in->buf->last = dst;
 
             dd("read a line: %p: %.*s", u->buf_in,
-                    (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
-                    u->buf_in->buf->pos);
+               (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
+               u->buf_in->buf->pos);
 
             return NGX_OK;
 
@@ -2242,7 +2265,7 @@ success:
         if (n == NGX_ERROR) {
             u->socket_errno = ngx_socket_errno;
             ngx_http_lua_socket_handle_read_error(r, u,
-                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                                  NGX_HTTP_LUA_SOCKET_FT_ERROR);
             return NGX_ERROR;
         }
 
@@ -2687,7 +2710,7 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
-    if (c->fd != -1) {  /* not a fake connection */
+    if (c->fd != (ngx_socket_t) -1) {  /* not a fake connection */
         ctx = c->log->data;
         ctx->current_request = r;
     }
@@ -2775,7 +2798,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
         }
 
         ngx_http_lua_socket_handle_write_error(r, u,
-                                              NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
+                                               NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
         return;
     }
 
@@ -2802,7 +2825,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         ngx_http_lua_socket_handle_write_error(r, u,
-                                         NGX_HTTP_LUA_SOCKET_FT_ERROR);
+                                               NGX_HTTP_LUA_SOCKET_FT_ERROR);
         return NGX_ERROR;
     }
 
@@ -2853,6 +2876,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
     }
 
     if (n == NGX_ERROR) {
+        c->error = 1;
         u->socket_errno = ngx_socket_errno;
         ngx_http_lua_socket_handle_write_error(r, u,
                                                NGX_HTTP_LUA_SOCKET_FT_ERROR);
@@ -3332,6 +3356,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
     if (u->cleanup) {
         *u->cleanup = NULL;
+        ngx_http_lua_cleanup_free(r, u->cleanup);
         u->cleanup = NULL;
     }
 
@@ -3423,7 +3448,7 @@ ngx_http_lua_socket_test_connect(ngx_http_request_t *r, ngx_connection_t *c)
 
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT)  {
         dd("pending eof: (%p)%d (%p)%d", c->write, c->write->pending_eof,
-            c->read, c->read->pending_eof);
+           c->read, c->read->pending_eof);
 
         if (c->write->pending_eof) {
             ev = c->write;
@@ -3722,7 +3747,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     dd("setting data to %p", u);
 
     if (u->raw_downstream || u->body_downstream) {
-        ctx->downstream_co_ctx = coctx;
+        ctx->downstream = u;
     }
 
     return lua_yield(L, 0);
@@ -4084,6 +4109,12 @@ ngx_http_lua_req_socket(lua_State *L)
     }
 #endif
 
+#if (NGX_HTTP_V2)
+    if (r->stream) {
+        return luaL_error(L, "http v2 not supported yet");
+    }
+#endif
+
 #if nginx_version >= 1003009
     if (!raw && r->headers_in.chunked) {
         lua_pushnil(L);
@@ -4245,7 +4276,7 @@ ngx_http_lua_req_socket(lua_State *L)
     u->connect_timeout = u->conf->connect_timeout;
     u->send_timeout = u->conf->send_timeout;
 
-    cln = ngx_http_cleanup_add(r, 0);
+    cln = ngx_http_lua_cleanup_add(r, 0);
     if (cln == NULL) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
         lua_pushnil(L);
@@ -4267,7 +4298,7 @@ ngx_http_lua_req_socket(lua_State *L)
     dd("setting data to %p", u);
 
     coctx->data = u;
-    ctx->downstream_co_ctx = coctx;
+    ctx->downstream = u;
 
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
@@ -4288,7 +4319,6 @@ static void
 ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 {
     ngx_http_lua_ctx_t                  *ctx;
-    ngx_http_lua_co_ctx_t               *coctx;
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -4299,9 +4329,7 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
         return;
     }
 
-    coctx = ctx->downstream_co_ctx;
-    u = coctx->data;
-
+    u = ctx->downstream;
     if (u) {
         u->read_event_handler(r, u);
     }
@@ -4344,7 +4372,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
     ngx_connection_t                    *c;
     ngx_http_lua_socket_pool_t          *spool;
-    size_t                               size;
+    size_t                               size, key_len;
     ngx_str_t                            key;
     ngx_uint_t                           i;
     ngx_queue_t                         *q;
@@ -4474,7 +4502,9 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua tcp socket connection pool size: %ui", pool_size);
 
-        size = sizeof(ngx_http_lua_socket_pool_t) + key.len
+        key_len = ngx_align(key.len + 1, sizeof(void *));
+
+        size = sizeof(ngx_http_lua_socket_pool_t) + key_len - 1
                + sizeof(ngx_http_lua_socket_pool_item_t)
                * pool_size;
 
@@ -4502,7 +4532,12 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         p = ngx_copy(spool->key, key.data, key.len);
         *p++ = '\0';
 
-        items = (ngx_http_lua_socket_pool_item_t *) p;
+        items = (ngx_http_lua_socket_pool_item_t *) (spool->key + key_len);
+
+        dd("items: %p", items);
+
+        ngx_http_lua_assert((void *) items == ngx_align_ptr(items,
+                                                            sizeof(void *)));
 
         for (i = 0; i < pool_size; i++) {
             ngx_queue_insert_head(&spool->free, &items[i].queue);
@@ -4685,7 +4720,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 #endif
 
         if (u->cleanup == NULL) {
-            cln = ngx_http_cleanup_add(r, 0);
+            cln = ngx_http_lua_cleanup_add(r, 0);
             if (cln == NULL) {
                 u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
                 lua_settop(L, top);
@@ -4890,83 +4925,52 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
 {
     ngx_chain_t             *cl;
     ngx_chain_t            **ll;
-    size_t                   size;
+#if (DDEBUG) || (NGX_DTRACE)
+    size_t                   size = 0;
+#endif
+    size_t                   chunk_size;
     ngx_buf_t               *b;
     size_t                   nbufs;
-    u_char                  *p;
-    u_char                  *last;
-
-    if (!u->bufs_in) {
-        lua_pushliteral(L, "");
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, (u_char *) "", 0);
-        return NGX_OK;
-    }
+    luaL_Buffer              luabuf;
 
     dd("bufs_in: %p, buf_in: %p", u->bufs_in, u->buf_in);
 
-    size = 0;
     nbufs = 0;
     ll = NULL;
 
+    luaL_buffinit(L, &luabuf);
+
     for (cl = u->bufs_in; cl; cl = cl->next) {
         b = cl->buf;
-        size += b->last - b->pos;
+        chunk_size = b->last - b->pos;
+
+        dd("copying input data chunk from %p: \"%.*s\"", cl,
+           (int) chunk_size, b->pos);
+
+        luaL_addlstring(&luabuf, (char *) b->pos, chunk_size);
 
         if (cl->next) {
             ll = &cl->next;
         }
 
+#if (DDEBUG) || (NGX_DTRACE)
+        size += chunk_size;
+#endif
+
         nbufs++;
     }
 
+    luaL_pushresult(&luabuf);
+
+#if (DDEBUG)
     dd("size: %d, nbufs: %d", (int) size, (int) nbufs);
+#endif
 
-    if (size == 0) {
-        lua_pushliteral(L, "");
-
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, (u_char *) "", 0);
-
-        goto done;
-    }
-
-    if (nbufs == 1) {
-        b = u->buf_in->buf;
-
-        lua_pushlstring(L, (char *) b->pos, size);
-
-        dd("copying input data chunk from %p: \"%.*s\"", u->buf_in, (int) size,
-                b->pos);
-
-        ngx_http_lua_probe_socket_tcp_receive_done(r, u, b->pos, size);
-
-        goto done;
-    }
-
-    /* nbufs > 1 */
-
-    dd("WARN: allocate a big memory: %d", (int) size);
-
-    p = ngx_palloc(r->pool, size);
-    if (p == NULL) {
-        return NGX_ERROR;
-    }
-
-    last = p;
-    for (cl = u->bufs_in; cl; cl = cl->next) {
-        b = cl->buf;
-        last = ngx_copy(last, b->pos, b->last - b->pos);
-
-        dd("copying input data chunk from %p: \"%.*s\"", cl,
-           (int) (b->last - b->pos), b->pos);
-    }
-
-    lua_pushlstring(L, (char *) p, size);
-
-    ngx_http_lua_probe_socket_tcp_receive_done(r, u, p, size);
-
-    ngx_pfree(r->pool, p);
-
-done:
+#if (NGX_DTRACE)
+    ngx_http_lua_probe_socket_tcp_receive_done(r, u,
+                                               (u_char *) lua_tostring(L, -1),
+                                               size);
+#endif
 
     if (nbufs > 1 && ll) {
         dd("recycle buffers: %d", (int) (nbufs - 1));
@@ -4982,8 +4986,10 @@ done:
         u->buffer.last = u->buffer.start;
     }
 
-    u->buf_in->buf->last = u->buffer.pos;
-    u->buf_in->buf->pos = u->buffer.pos;
+    if (u->bufs_in) {
+        u->buf_in->buf->last = u->buffer.pos;
+        u->buf_in->buf->pos = u->buffer.pos;
+    }
 
     return NGX_OK;
 }

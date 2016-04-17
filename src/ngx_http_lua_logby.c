@@ -113,7 +113,8 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, llcf->log_src.value.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       llcf->log_src.value.data,
                                        llcf->log_src.value.len,
                                        llcf->log_src_key,
                                        (const char *) llcf->log_chunkname);
@@ -150,7 +151,8 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path, llcf->log_src_key);
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     llcf->log_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

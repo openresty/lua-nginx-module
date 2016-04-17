@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -9,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 21);
+plan tests => repeat_each() * (2 * blocks() + 28);
 
 #no_diff();
 #no_long_string();
@@ -1440,3 +1439,146 @@ AAA: 678
 --- no_error_log
 [error]
 
+
+
+=== TEST 46: clear If-Match req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-match")
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-Match: abc
+--- response_body
+test
+--- no_error_log
+[error]
+
+
+
+=== TEST 47: clear If-Unmodified-Since req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-unmodified-since")
+            ngx.header["Last-Modified"] = "Tue, 30 Jun 2011 12:16:36 GMT"
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-Unmodified-Since: Tue, 28 Jun 2011 12:16:36 GMT
+--- response_body
+test
+--- no_error_log
+[error]
+
+
+
+=== TEST 48: clear If-None-Match req header
+--- config
+    location /t {
+        content_by_lua '
+            ngx.req.clear_header("if-none-match")
+            -- ngx.header["etags"] = "abc"
+            if not ngx.send_headers() then
+                return
+            end
+            ngx.say("test")
+        ';
+    }
+--- request
+GET /t
+--- more_headers
+If-None-Match: *
+--- response_body
+test
+--- no_error_log
+[error]
+
+
+
+=== TEST 49: set the Destination request header for WebDav
+--- config
+    location = /a.txt {
+        rewrite_by_lua_block {
+            ngx.req.set_header("Destination", "/b.txt")
+        }
+        dav_methods MOVE;
+        dav_access            all:rw;
+        root                  html;
+    }
+
+--- user_files
+>>> a.txt
+hello, world!
+
+--- request
+MOVE /a.txt
+
+--- response_body
+--- no_error_log
+client sent no "Destination" header
+[error]
+--- error_code: 204
+
+
+
+=== TEST 50: X-Forwarded-For
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.req.set_header("X-Forwarded-For", "8.8.8.8")
+        }
+        proxy_pass http://127.0.0.1:$server_port/back;
+        proxy_set_header Foo $proxy_add_x_forwarded_for;
+    }
+
+    location = /back {
+        echo "Foo: $http_foo";
+    }
+
+--- request
+GET /t
+
+--- response_body
+Foo: 8.8.8.8, 127.0.0.1
+--- no_error_log
+[error]
+
+
+
+=== TEST 51: X-Forwarded-For
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.req.clear_header("X-Forwarded-For")
+        }
+        proxy_pass http://127.0.0.1:$server_port/back;
+        proxy_set_header Foo $proxy_add_x_forwarded_for;
+    }
+
+    location = /back {
+        echo "Foo: $http_foo";
+    }
+
+--- request
+GET /t
+
+--- more_headers
+X-Forwarded-For: 8.8.8.8
+--- response_body
+Foo: 127.0.0.1
+--- no_error_log
+[error]
