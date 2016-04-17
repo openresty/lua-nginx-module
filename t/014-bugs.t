@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -784,7 +783,7 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 --- no_error_log
 [alert]
 --- error_log eval
-qr/send\(\) failed \(\d+: Connection refused\) while resolving/
+qr/(?:send|recv)\(\) failed \(\d+: Connection refused\) while resolving/
 
 
 

@@ -368,7 +368,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
         dd("==LJ_BT_HEADER==");
         size_t i;
         for (i = 0; i < LJ_HEADERSIZE; i++) {
-            dd("%ld: 0x%02X", i, (unsigned)(u_char)lf->begin_code.str[i]);
+            dd("%ld: 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
         }
         dd("==LJ_BT_HEADER_END==");
         }
@@ -471,7 +471,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
         dd("==LUA_BT_HEADER==");
         size_t i;
         for (i = 0; i < LUAC_HEADERSIZE; i++) {
-            dd("%ld, 0x%02X", i, (unsigned)(u_char)lf->begin_code.str[i]);
+            dd("%ld, 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
         }
         dd("==LUA_BT_HEADER_END==");
         }

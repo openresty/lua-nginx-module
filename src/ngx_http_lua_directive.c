@@ -24,6 +24,12 @@
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_shdict.h"
+#include "ngx_http_lua_ssl_certby.h"
+#include "ngx_http_lua_lex.h"
+
+
+typedef struct ngx_http_lua_block_parser_ctx_s
+    ngx_http_lua_block_parser_ctx_t;
 
 
 #if defined(NDK) && NDK
@@ -35,6 +41,30 @@ static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 
 static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
+static ngx_int_t ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
+    ngx_http_lua_block_parser_ctx_t *ctx);
+static u_char *ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2,
+    size_t n);
+
+
+struct ngx_http_lua_block_parser_ctx_s {
+    ngx_uint_t  start_line;
+    int         token_len;
+};
+
+
+enum {
+    FOUND_LEFT_CURLY = 0,
+    FOUND_RIGHT_CURLY,
+    FOUND_LEFT_LBRACKET_STR,
+    FOUND_LBRACKET_STR = FOUND_LEFT_LBRACKET_STR,
+    FOUND_LEFT_LBRACKET_CMT,
+    FOUND_LBRACKET_CMT = FOUND_LEFT_LBRACKET_CMT,
+    FOUND_RIGHT_LBRACKET,
+    FOUND_COMMENT_LINE,
+    FOUND_DOUBLE_QUOTED,
+    FOUND_SINGLE_QUOTED
+};
 
 
 char *
@@ -90,6 +120,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->name = name;
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
+    ctx->cycle = cf->cycle;
 
     zone = ngx_shared_memory_add(cf, &name, (size_t) size,
                                  &ngx_http_lua_module);
@@ -189,6 +220,25 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 #if defined(NDK) && NDK
+char *
+ngx_http_lua_set_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_set_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
 char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -304,7 +354,8 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadbuffer(r, L, filter_data->script.data,
+    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
+                                       filter_data->script.data,
                                        filter_data->script.len,
                                        filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
@@ -357,7 +408,8 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_http_lua_cache_loadfile(r, L, script_path, filter_data->key);
+    rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     filter_data->key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -370,6 +422,25 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
     return NGX_OK;
 }
 #endif /* defined(NDK) && NDK */
+
+
+char *
+ngx_http_lua_rewrite_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_rewrite_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
 
 
 char *
@@ -468,6 +539,25 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 char *
+ngx_http_lua_access_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_access_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
 ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     u_char                      *p, *chunkname;
@@ -559,6 +649,25 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 char *
+ngx_http_lua_content_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_content_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
 ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     u_char                      *p;
@@ -582,6 +691,9 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     value = cf->args->elts;
+
+    dd("value[0]: %.*s", (int) value[0].len, value[0].data);
+    dd("value[1]: %.*s", (int) value[1].len, value[1].data);
 
     if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
@@ -656,6 +768,25 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     clcf->handler = ngx_http_lua_content_handler;
 
     return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_log_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_log_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
 }
 
 
@@ -750,6 +881,25 @@ ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 char *
+ngx_http_lua_header_filter_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_header_filter_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
 ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
@@ -827,6 +977,25 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     lmcf->requires_header_filter = 1;
 
     return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_body_filter_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_body_filter_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
 }
 
 
@@ -913,6 +1082,25 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 
 char *
+ngx_http_lua_init_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_init_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
 ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
@@ -940,7 +1128,7 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    lmcf->init_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
@@ -957,6 +1145,25 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     }
 
     return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_init_worker_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_init_worker_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
 }
 
 
@@ -981,7 +1188,7 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     value = cf->args->elts;
 
-    lmcf->init_worker_handler = (ngx_http_lua_conf_handler_pt) cmd->post;
+    lmcf->init_worker_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
     if (cmd->post == ngx_http_lua_init_worker_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
@@ -1075,6 +1282,464 @@ found:
                  p, cf->conf_file->line);
 
     return out;
+}
+
+
+/* a specialized version of the standard ngx_conf_parse() function */
+char *
+ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
+{
+    ngx_http_lua_block_parser_ctx_t     ctx;
+
+    int               level = 1;
+    char             *rv;
+    u_char           *p;
+    size_t            len;
+    ngx_str_t        *src, *dst;
+    ngx_int_t         rc;
+    ngx_uint_t        i, start_line;
+    ngx_array_t      *saved;
+    enum {
+        parse_block = 0,
+        parse_param
+    } type;
+
+    if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
+
+        type = parse_block;
+
+    } else {
+        type = parse_param;
+    }
+
+    saved = cf->args;
+
+    cf->args = ngx_array_create(cf->temp_pool, 4, sizeof(ngx_str_t));
+    if (cf->args == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    ctx.token_len = 0;
+    start_line = cf->conf_file->line;
+
+    dd("init start line: %d", (int) start_line);
+
+    ctx.start_line = start_line;
+
+    for ( ;; ) {
+        rc = ngx_http_lua_conf_read_lua_token(cf, &ctx);
+
+        dd("parser start line: %d", (int) start_line);
+
+        switch (rc) {
+
+        case NGX_ERROR:
+            goto done;
+
+        case FOUND_LEFT_CURLY:
+
+            ctx.start_line = cf->conf_file->line;
+
+            if (type == parse_param) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "block directives are not supported "
+                                   "in -g option");
+                goto failed;
+            }
+
+            level++;
+            dd("seen block start: level=%d", (int) level);
+            break;
+
+        case FOUND_RIGHT_CURLY:
+
+            level--;
+            dd("seen block done: level=%d", (int) level);
+
+            if (type != parse_block || level < 0) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "unexpected \"}\": level %d, "
+                                   "starting at line %ui", level,
+                                   start_line);
+                goto failed;
+            }
+
+            if (level == 0) {
+                ngx_http_lua_assert(cf->handler);
+
+                src = cf->args->elts;
+
+                for (len = 0, i = 0; i < cf->args->nelts; i++) {
+                    len += src[i].len;
+                }
+
+                dd("saved nelts: %d", (int) saved->nelts);
+                dd("temp nelts: %d", (int) cf->args->nelts);
+#if 0
+                ngx_http_lua_assert(saved->nelts == 1);
+#endif
+
+                dst = ngx_array_push(saved);
+                if (dst == NULL) {
+                    return NGX_CONF_ERROR;
+                }
+                dst->len = len;
+                dst->len--;  /* skip the trailing '}' block terminator */
+
+                p = ngx_palloc(cf->pool, len);
+                if (p == NULL) {
+                    return NGX_CONF_ERROR;
+                }
+                dst->data = p;
+
+                for (i = 0; i < cf->args->nelts; i++) {
+                    p = ngx_copy(p, src[i].data, src[i].len);
+                }
+
+                p[-1] = '\0';  /* override the last '}' char to null */
+
+                cf->args = saved;
+
+                rv = (*cf->handler)(cf, cmd, cf->handler_conf);
+                if (rv == NGX_CONF_OK) {
+                    goto done;
+                }
+
+                if (rv == NGX_CONF_ERROR) {
+                    goto failed;
+                }
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, rv);
+
+                goto failed;
+            }
+
+            break;
+
+        case FOUND_LBRACKET_STR:
+
+            break;
+
+        case FOUND_LBRACKET_CMT:
+
+            break;
+
+        case FOUND_RIGHT_LBRACKET:
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "unexpected lua closing long-bracket");
+            goto failed;
+
+            break;
+
+        case FOUND_COMMENT_LINE:
+        case FOUND_DOUBLE_QUOTED:
+        case FOUND_SINGLE_QUOTED:
+            break;
+
+        default:
+
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "unknown return value from the lexer: %i", rc);
+            goto failed;
+        }
+    }
+
+failed:
+
+    rc = NGX_ERROR;
+
+done:
+
+    if (rc == NGX_ERROR) {
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
+    ngx_http_lua_block_parser_ctx_t *ctx)
+{
+    enum {
+        OVEC_SIZE = 2
+    };
+    int          i, rc;
+    int          ovec[OVEC_SIZE];
+    u_char      *start, *p, *q, ch;
+    off_t        file_size;
+    size_t       len, buf_size;
+    ssize_t      n, size;
+    ngx_uint_t   start_line;
+    ngx_str_t   *word;
+    ngx_buf_t   *b;
+#if nginx_version >= 1009002
+    ngx_buf_t   *dump;
+#endif
+
+    b = cf->conf_file->buffer;
+#if nginx_version >= 1009002
+    dump = cf->conf_file->dump;
+#endif
+    start = b->pos;
+    start_line = cf->conf_file->line;
+    buf_size = b->end - b->start;
+
+    dd("lexer start line: %d", (int) start_line);
+
+    file_size = ngx_file_size(&cf->conf_file->file.info);
+
+    for ( ;; ) {
+
+        if (b->pos >= b->last) {
+
+            if (cf->conf_file->file.offset >= file_size) {
+
+                cf->conf_file->line = ctx->start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "unexpected end of file, expecting "
+                                   "terminating characters for lua code "
+                                   "block");
+                return NGX_ERROR;
+            }
+
+            len = b->pos - start;
+
+            if (len == buf_size) {
+
+                cf->conf_file->line = start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "too long lua code block, probably "
+                                   "missing terminating characters");
+
+                return NGX_ERROR;
+            }
+
+            if (len) {
+                ngx_memmove(b->start, start, len);
+            }
+
+            size = (ssize_t) (file_size - cf->conf_file->file.offset);
+
+            if (size > b->end - (b->start + len)) {
+                size = b->end - (b->start + len);
+            }
+
+            n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
+                              cf->conf_file->file.offset);
+
+            if (n == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+
+            if (n != size) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   ngx_read_file_n " returned "
+                                   "only %z bytes instead of %z",
+                                   n, size);
+                return NGX_ERROR;
+            }
+
+            b->pos = b->start + len;
+            b->last = b->pos + n;
+            start = b->start;
+
+#if nginx_version >= 1009002
+            if (dump) {
+                dump->last = ngx_cpymem(dump->last, b->pos, size);
+            }
+#endif
+        }
+
+        rc = ngx_http_lua_lex(b->pos, b->last - b->pos, ovec);
+
+        if (rc < 0) {  /* no match */
+            /* alas. the lexer does not yet support streaming processing. need
+             * more work below */
+
+            if (cf->conf_file->file.offset >= file_size) {
+
+                cf->conf_file->line = ctx->start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "unexpected end of file, expecting "
+                                   "terminating characters for lua code "
+                                   "block");
+                return NGX_ERROR;
+            }
+
+            len = b->last - b->pos;
+
+            if (len == buf_size) {
+
+                cf->conf_file->line = start_line;
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "too long lua code block, probably "
+                                   "missing terminating characters");
+
+                return NGX_ERROR;
+            }
+
+            if (len) {
+                ngx_memcpy(b->start, b->pos, len);
+            }
+
+            size = (ssize_t) (file_size - cf->conf_file->file.offset);
+
+            if (size > b->end - (b->start + len)) {
+                size = b->end - (b->start + len);
+            }
+
+            n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
+                              cf->conf_file->file.offset);
+
+            if (n == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+
+            if (n != size) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   ngx_read_file_n " returned "
+                                   "only %z bytes instead of %z",
+                                   n, size);
+                return NGX_ERROR;
+            }
+
+            b->pos = b->start + len;
+            b->last = b->pos + n;
+            start = b->start;
+
+            continue;
+        }
+
+        if (rc == FOUND_LEFT_LBRACKET_STR || rc == FOUND_LEFT_LBRACKET_CMT) {
+
+            /* we update the line numbers for best error messages when the
+             * closing long bracket is missing */
+
+            for (i = 0; i < ovec[0]; i++) {
+                ch = b->pos[i];
+                if (ch == LF) {
+                    cf->conf_file->line++;
+                }
+            }
+
+            b->pos += ovec[0];
+            ovec[1] -= ovec[0];
+            ovec[0] = 0;
+
+            if (rc == FOUND_LEFT_LBRACKET_CMT) {
+                p = &b->pos[2];     /* we skip the leading "--" prefix */
+                rc = FOUND_LBRACKET_CMT;
+
+            } else {
+                p = b->pos;
+                rc = FOUND_LBRACKET_STR;
+            }
+
+            /* we temporarily rewrite [=*[ in the input buffer to ]=*] to
+             * construct the pattern for the corresponding closing long
+             * bracket without additional buffers. */
+
+            ngx_http_lua_assert(p[0] == '[');
+            p[0] = ']';
+
+            ngx_http_lua_assert(b->pos[ovec[1] - 1] == '[');
+            b->pos[ovec[1] - 1] = ']';
+
+            /* search for the corresponding closing bracket */
+
+            dd("search pattern for the closing long bracket: \"%.*s\" (len=%d)",
+               (int) (b->pos + ovec[1] - p), p, (int) (b->pos + ovec[1] - p));
+
+            q = ngx_http_lua_strlstrn(b->pos + ovec[1], b->last, p,
+                                      b->pos + ovec[1] - p - 1);
+
+            if (q == NULL) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "Lua code block missing the closing "
+                                   "long bracket \"%*s\"",
+                                   b->pos + ovec[1] - p, p);
+                return NGX_ERROR;
+            }
+
+            /* restore the original opening long bracket */
+
+            p[0] = '[';
+            b->pos[ovec[1] - 1] = '[';
+
+            ovec[1] = q - b->pos + b->pos + ovec[1] - p;
+
+            dd("found long bracket token: \"%.*s\"",
+               (int) (ovec[1] - ovec[0]), b->pos + ovec[0]);
+        }
+
+        for (i = 0; i < ovec[1]; i++) {
+            ch = b->pos[i];
+            if (ch == LF) {
+                cf->conf_file->line++;
+            }
+        }
+
+        b->pos += ovec[1];
+        ctx->token_len = ovec[1] - ovec[0];
+
+        break;
+    }
+
+    word = ngx_array_push(cf->args);
+    if (word == NULL) {
+        return NGX_ERROR;
+    }
+
+    word->data = ngx_pnalloc(cf->temp_pool, b->pos - start);
+    if (word->data == NULL) {
+        return NGX_ERROR;
+    }
+
+    len = b->pos - start;
+    ngx_memcpy(word->data, start, len);
+    word->len = len;
+
+    return rc;
+}
+
+
+/*
+ * ngx_http_lua_strlstrn() is intended to search for static substring
+ * with known length in string until the argument last. The argument n
+ * must be length of the second substring - 1.
+ */
+
+static u_char *
+ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2, size_t n)
+{
+    ngx_uint_t  c1, c2;
+
+    c2 = (ngx_uint_t) *s2++;
+    last -= n;
+
+    do {
+        do {
+            if (s1 >= last) {
+                return NULL;
+            }
+
+            c1 = (ngx_uint_t) *s1++;
+
+            dd("testing char '%c' vs '%c'", (int) c1, (int) c2);
+
+        } while (c1 != c2);
+
+        dd("testing against pattern \"%.*s\"", (int) n, s2);
+
+    } while (ngx_strncmp(s1, s2, n) != 0);
+
+    return --s1;
 }
 
 

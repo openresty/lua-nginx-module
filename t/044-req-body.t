@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -8,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 35);
+plan tests => repeat_each() * (blocks() * 4 + 52 );
 
 #no_diff();
 no_long_string();
@@ -140,7 +139,7 @@ hiya, world"]
 
 
 
-=== TEST 6: not discard body
+=== TEST 6: not discard body (content_by_lua falls through)
 --- config
     location = /foo {
         content_by_lua '
@@ -161,9 +160,10 @@ hello, world",
 hiya, world"]
 --- response_body eval
 ["body: nil\n",
-qr/400 Bad Request/]
+"body: hiya, world\n",
+]
 --- error_code eval
-[200, 400]
+[200, 200]
 --- no_error_log
 [error]
 [alert]
@@ -1482,3 +1482,151 @@ Will you change this world?
 [error]
 [alert]
 
+
+
+=== TEST 45: not discard body (content_by_lua exit 200)
+--- config
+    location = /foo {
+        content_by_lua '
+            -- ngx.req.discard_body()
+            ngx.say("body: ", ngx.var.request_body)
+            ngx.exit(200)
+        ';
+    }
+    location = /bar {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /bar
+hiya, world"]
+--- response_body eval
+["body: nil\n",
+"body: hiya, world\n",
+]
+--- error_code eval
+[200, 200]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 46: not discard body (content_by_lua exit 201)
+--- config
+    location = /foo {
+        content_by_lua '
+            -- ngx.req.discard_body()
+            ngx.say("body: ", ngx.var.request_body)
+            ngx.exit(201)
+        ';
+    }
+    location = /bar {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /bar
+hiya, world"]
+--- response_body eval
+["body: nil\n",
+"body: hiya, world\n",
+]
+--- error_code eval
+[200, 200]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 47: not discard body (content_by_lua exit 302)
+--- config
+    location = /foo {
+        content_by_lua '
+            -- ngx.req.discard_body()
+            -- ngx.say("body: ", ngx.var.request_body)
+            ngx.redirect("/blah")
+        ';
+    }
+    location = /bar {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.say("body: ", ngx.var.request_body)
+        ';
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /bar
+hiya, world"]
+--- response_body eval
+[qr/302 Found/,
+"body: hiya, world\n",
+]
+--- error_code eval
+[302, 200]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 48: not discard body (custom error page)
+--- config
+    error_page 404 = /err;
+
+    location = /foo {
+        content_by_lua '
+            ngx.exit(404)
+        ';
+    }
+    location = /err {
+        content_by_lua 'ngx.say("error")';
+    }
+--- pipelined_requests eval
+["POST /foo
+hello, world",
+"POST /foo
+hiya, world"]
+--- response_body eval
+["error\n",
+"error\n",
+]
+--- error_code eval
+[404, 404]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 49: get body data at log phase
+--- config
+    location = /test {
+        content_by_lua_block {
+            ngx.req.read_body()
+            ngx.say(ngx.req.get_body_data())
+        }
+        log_by_lua_block {
+            ngx.log(ngx.WARN, "request body:", ngx.req.get_body_data())
+        }
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+hello, world
+--- error_log
+request body:hello, world
+--- no_error_log
+[error]
+[alert]
