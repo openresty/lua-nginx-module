@@ -12,7 +12,6 @@ BEGIN {
     }
 }
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);

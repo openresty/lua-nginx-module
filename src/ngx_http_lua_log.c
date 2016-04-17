@@ -160,6 +160,16 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
 
                 break;
 
+            case LUA_TTABLE:
+                if (!luaL_callmeta(L, i, "__tostring")) {
+                    return luaL_argerror(L, i, "expected table to have "
+                                         "__tostring metamethod");
+                }
+
+                lua_tolstring(L, -1, &len);
+                size += len;
+                break;
+
             case LUA_TLIGHTUSERDATA:
                 if (lua_touserdata(L, i) == NULL) {
                     size += sizeof("null") - 1;
@@ -225,6 +235,12 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
                     *p++ = 'e';
                 }
 
+                break;
+
+            case LUA_TTABLE:
+                luaL_callmeta(L, i, "__tostring");
+                q = (u_char *) lua_tolstring(L, -1, &len);
+                p = ngx_copy(p, q, len);
                 break;
 
             case LUA_TLIGHTUSERDATA:

@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4 + 1);
+plan tests => repeat_each() * (blocks() * 4);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
@@ -740,3 +740,19 @@ ok
 Bad bad bad
 --- skip_nginx: 4: < 1.7.1
 
+
+
+=== TEST 19: fake module calls ngx_http_conf_get_module_srv_conf in its merge_srv_conf callback (GitHub issue #554)
+This also affects merge_loc_conf
+--- http_config
+    init_worker_by_lua return;
+--- config
+    location = /t {
+        return 200 ok;
+    }
+--- request
+GET /t
+--- response_body chomp
+ok
+--- no_error_log
+[error]

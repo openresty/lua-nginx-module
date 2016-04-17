@@ -1,12 +1,12 @@
-# vim:set ft=perl ts=4 sw=4 et fdm=marker:
-use lib 'lib';
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #master_process_enabled(1);
 log_level('warn');
 
-repeat_each(1);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 2);
 

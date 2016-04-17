@@ -31,8 +31,8 @@ typedef
         ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 
 
-typedef void (*ngx_http_lua_socket_tcp_upstream_handler_pt)(
-          ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u);
+typedef void (*ngx_http_lua_socket_tcp_upstream_handler_pt)
+    (ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u);
 
 
 typedef struct {
@@ -111,7 +111,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 };
 
 
-typedef struct ngx_http_lua_dfa_edge_s ngx_http_lua_dfa_edge_t;
+typedef struct ngx_http_lua_dfa_edge_s  ngx_http_lua_dfa_edge_t;
 
 
 struct ngx_http_lua_dfa_edge_s {
