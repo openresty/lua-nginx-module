@@ -301,21 +301,22 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
 
-        /* return a copy pointer of bp->host to pc, in case upstream_addr
+        /* balancer module has no peer actually, it just create one virtual peer
+         * when necessary, 
+         * at the same time, because the peer_name is returned as a pointer, its
+         * content changed after using balancer_by_lua, if we just returned the pointer,
+         * nginx may always use the last peer_name, so we return a copy pointer of
+         * bp->host to pc, in case upstream_addr
          * always use the last peer name
          */
         peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
         if (peer_name == NULL) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "failed to malloc mem from request pool");
             return NGX_ERROR;
 
         } else {
             ngx_memzero(peer_name, sizeof(ngx_str_t));
             peer_name->data = ngx_palloc(r->pool, bp->host.len);
             if (peer_name->data == NULL) {
-                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                              "failed to malloc mem from request pool");
                 return NGX_ERROR;
 
             } else {
