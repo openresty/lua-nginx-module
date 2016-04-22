@@ -1181,7 +1181,7 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
     /* Lua function arguments: self [,session] [,host] [,verify] */
 
     n = lua_gettop(L);
-    if (n < 1 && n > 4) {
+    if (n < 1 || n > 4) {
         return luaL_error(L, "ngx.socket connect: expecting 1 ~ 4 "
                           "arguments (including the object), but seen %d", n);
     }
