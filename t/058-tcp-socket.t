@@ -3298,6 +3298,7 @@ failed to receive a line: closed []
 close: 1 nil
 --- no_error_log
 [error]
+--- skip_eval: 3: system("ping6 -c 1 ::1 >/dev/null 2>&1") ne 0
 
 
 
