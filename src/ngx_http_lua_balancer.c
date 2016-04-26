@@ -312,19 +312,17 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
         if (peer_name == NULL) {
             return NGX_ERROR;
-
-        } else {
-            ngx_memzero(peer_name, sizeof(ngx_str_t));
-            peer_name->data = ngx_palloc(r->pool, bp->host.len);
-            if (peer_name->data == NULL) {
-                return NGX_ERROR;
-
-            } else {
-                ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
-                peer_name->len = bp->host.len;
-                pc->name = peer_name;
-            }
         }
+
+        ngx_memzero(peer_name, sizeof(ngx_str_t));
+        peer_name->data = ngx_palloc(r->pool, bp->host.len);
+        if (peer_name->data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
+        peer_name->len = bp->host.len;
+        pc->name = peer_name;
 
         bp->rrp.peers->single = 0;
 
