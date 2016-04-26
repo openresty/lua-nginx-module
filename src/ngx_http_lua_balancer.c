@@ -252,6 +252,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     ngx_http_lua_srv_conf_t            *lscf;
     ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp = data;
+    ngx_str_t                          *peer_name;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "lua balancer peer, try: %ui", pc->tries);
@@ -299,7 +300,30 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     if (bp->sockaddr && bp->socklen) {
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
-        pc->name = &bp->host;
+
+        /* balancer module has no peer actually, it just create one virtual peer
+         * when necessary, 
+         * at the same time, because the peer_name is returned as a pointer, its
+         * content changed after using balancer_by_lua, if we just returned the pointer,
+         * nginx may always use the last peer_name, so we return a copy pointer of
+         * bp->host to pc, in case upstream_addr
+         * always use the last peer name
+         */
+        peer_name = ngx_palloc(r->pool, sizeof(ngx_str_t));
+        if (peer_name == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memzero(peer_name, sizeof(ngx_str_t));
+        peer_name->data = ngx_palloc(r->pool, bp->host.len);
+        if (peer_name->data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(peer_name->data, bp->host.data, bp->host.len);
+        peer_name->len = bp->host.len;
+        pc->name = peer_name;
+
         bp->rrp.peers->single = 0;
 
         if (bp->more_tries) {
