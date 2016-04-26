@@ -656,6 +656,8 @@ failed:
         X509_free(x509);
     }
 
+    ERR_clear_error();
+
     return NGX_ERROR;
 
 #   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
@@ -713,6 +715,8 @@ failed:
     if (bio) {
         BIO_free(bio);
     }
+
+    ERR_clear_error();
 
     return NGX_ERROR;
 }
