@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 3);
 
 #no_diff();
 no_long_string();
@@ -405,7 +405,7 @@ hello, world!
 
 
 
-=== TEST 16: content_by_lua_block (unexpected closing long brackets)
+=== TEST 16: content_by_lua_block unexpected closing long brackets must FAIL
 --- config
     location = /t {
         content_by_lua_block {
@@ -414,15 +414,30 @@ hello, world!
     }
 --- request
 GET /t
+--- error_code: 500
+--- error_log eval
+qr{\[error\] .*? unexpected symbol near ']'}
+
+
+
+=== TEST 17: content_by_lua_block unexpected closing long brackets ignored (GitHub #748)
+--- config
+    location = /t {
+        content_by_lua_block {
+            local t1, t2 = {"hello world"}, {1}
+            ngx.say(t1[t2[1]])
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello world
 --- no_error_log
 [error]
---- error_log eval
-qr{\[emerg\] .*? unexpected lua closing long-bracket in .*?/nginx\.conf:41}
---- must_die
 
 
 
-=== TEST 17: simple set_by_lua_block (integer)
+=== TEST 18: simple set_by_lua_block (integer)
 --- config
     location /lua {
         set_by_lua_block $res { return 1+1 }
@@ -437,7 +452,7 @@ GET /lua
 
 
 
-=== TEST 18: ambiguous line comments inside a long bracket string (GitHub #596)
+=== TEST 19: ambiguous line comments inside a long bracket string (GitHub #596)
 --- config
     location = /t {
         content_by_lua_block {
@@ -459,7 +474,7 @@ done
 
 
 
-=== TEST 19: double quotes in long brackets
+=== TEST 20: double quotes in long brackets
 --- config
     location = /t {
         rewrite_by_lua_block { print([[Hey, it is "!]]) } content_by_lua_block { ngx.say([["]]) }
@@ -475,7 +490,7 @@ Hey, it is "!
 
 
 
-=== TEST 20: single quotes in long brackets
+=== TEST 21: single quotes in long brackets
 --- config
     location = /t {
         rewrite_by_lua_block { print([[Hey, it is '!]]) } content_by_lua_block { ngx.say([[']]) }
@@ -491,7 +506,7 @@ Hey, it is '!
 
 
 
-=== TEST 21: lexer no match due to incomplete data chunks in a fixed size buffer
+=== TEST 22: lexer no match due to incomplete data chunks in a fixed size buffer
 --- config
         location /test1 {
             content_by_lua_block {
