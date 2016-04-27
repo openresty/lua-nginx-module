@@ -460,6 +460,7 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
                 if (p == NULL) {
                     goto nomem;
                 }
+
                 ngx_memcpy(p, value, value_len);
                 value = p;
 
