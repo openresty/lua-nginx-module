@@ -1470,7 +1470,6 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 #if nginx_version >= 1009002
     dump = cf->conf_file->dump;
 #endif
-    start = b->pos;
     start_line = cf->conf_file->line;
     buf_size = b->end - b->start;
 
@@ -1478,205 +1477,136 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 
     file_size = ngx_file_size(&cf->conf_file->file.info);
 
-    for ( ;; ) {
+    if (cf->conf_file->file.offset >= file_size && b->pos == b->last) {
 
-        if (b->pos >= b->last) {
+        cf->conf_file->line = ctx->start_line;
 
-            if (cf->conf_file->file.offset >= file_size) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "unexpected end of file, expecting "
+                           "terminating characters for lua code block");
+        return NGX_ERROR;
+    }
 
-                cf->conf_file->line = ctx->start_line;
+    len = b->last - b->pos;
 
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "unexpected end of file, expecting "
-                                   "terminating characters for lua code "
-                                   "block");
-                return NGX_ERROR;
-            }
+    if (len) {
+        ngx_memmove(b->start, b->pos, len);
+    }
 
-            len = b->pos - start;
+    size = (ssize_t) (file_size - cf->conf_file->file.offset);
 
-            if (len == buf_size) {
+    if (size > b->end - (b->start + len)) {
+        size = b->end - (b->start + len);
+    }
 
-                cf->conf_file->line = start_line;
+    n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
+                      cf->conf_file->file.offset);
 
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "too long lua code block, probably "
-                                   "missing terminating characters");
+    if (n == NGX_ERROR) {
+        return NGX_ERROR;
+    }
 
-                return NGX_ERROR;
-            }
+    if (n != size) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           ngx_read_file_n " returned only %z bytes "
+                           "instead of %z", n, size);
+        return NGX_ERROR;
+    }
 
-            if (len) {
-                ngx_memmove(b->start, start, len);
-            }
-
-            size = (ssize_t) (file_size - cf->conf_file->file.offset);
-
-            if (size > b->end - (b->start + len)) {
-                size = b->end - (b->start + len);
-            }
-
-            n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
-                              cf->conf_file->file.offset);
-
-            if (n == NGX_ERROR) {
-                return NGX_ERROR;
-            }
-
-            if (n != size) {
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   ngx_read_file_n " returned "
-                                   "only %z bytes instead of %z",
-                                   n, size);
-                return NGX_ERROR;
-            }
-
-            b->pos = b->start + len;
-            b->last = b->pos + n;
-            start = b->start;
+    b->pos = b->start;
+    b->last = b->pos + n + len;
+    start = b->start;
 
 #if nginx_version >= 1009002
-            if (dump) {
-                dump->last = ngx_cpymem(dump->last, b->pos, size);
-            }
+    if (dump) {
+        dump->last = ngx_cpymem(dump->last, b->pos, size);
+    }
 #endif
-        }
 
-        rc = ngx_http_lua_lex(b->pos, b->last - b->pos, ovec);
+    rc = ngx_http_lua_lex(b->pos, b->last - b->pos, ovec);
 
-        if (rc < 0) {  /* no match */
-            /* alas. the lexer does not yet support streaming processing. need
-             * more work below */
+    if (rc == FOUND_LEFT_LBRACKET_STR || rc == FOUND_LEFT_LBRACKET_CMT) {
 
-            if (cf->conf_file->file.offset >= file_size) {
+        /* we update the line numbers for best error messages when the
+            * closing long bracket is missing */
 
-                cf->conf_file->line = ctx->start_line;
-
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "unexpected end of file, expecting "
-                                   "terminating characters for lua code "
-                                   "block");
-                return NGX_ERROR;
-            }
-
-            len = b->last - b->pos;
-
-            if (len == buf_size) {
-
-                cf->conf_file->line = start_line;
-
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "too long lua code block, probably "
-                                   "missing terminating characters");
-
-                return NGX_ERROR;
-            }
-
-            if (len) {
-                ngx_memcpy(b->start, b->pos, len);
-            }
-
-            size = (ssize_t) (file_size - cf->conf_file->file.offset);
-
-            if (size > b->end - (b->start + len)) {
-                size = b->end - (b->start + len);
-            }
-
-            n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
-                              cf->conf_file->file.offset);
-
-            if (n == NGX_ERROR) {
-                return NGX_ERROR;
-            }
-
-            if (n != size) {
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   ngx_read_file_n " returned "
-                                   "only %z bytes instead of %z",
-                                   n, size);
-                return NGX_ERROR;
-            }
-
-            b->pos = b->start + len;
-            b->last = b->pos + n;
-            start = b->start;
-
-            continue;
-        }
-
-        if (rc == FOUND_LEFT_LBRACKET_STR || rc == FOUND_LEFT_LBRACKET_CMT) {
-
-            /* we update the line numbers for best error messages when the
-             * closing long bracket is missing */
-
-            for (i = 0; i < ovec[0]; i++) {
-                ch = b->pos[i];
-                if (ch == LF) {
-                    cf->conf_file->line++;
-                }
-            }
-
-            b->pos += ovec[0];
-            ovec[1] -= ovec[0];
-            ovec[0] = 0;
-
-            if (rc == FOUND_LEFT_LBRACKET_CMT) {
-                p = &b->pos[2];     /* we skip the leading "--" prefix */
-                rc = FOUND_LBRACKET_CMT;
-
-            } else {
-                p = b->pos;
-                rc = FOUND_LBRACKET_STR;
-            }
-
-            /* we temporarily rewrite [=*[ in the input buffer to ]=*] to
-             * construct the pattern for the corresponding closing long
-             * bracket without additional buffers. */
-
-            ngx_http_lua_assert(p[0] == '[');
-            p[0] = ']';
-
-            ngx_http_lua_assert(b->pos[ovec[1] - 1] == '[');
-            b->pos[ovec[1] - 1] = ']';
-
-            /* search for the corresponding closing bracket */
-
-            dd("search pattern for the closing long bracket: \"%.*s\" (len=%d)",
-               (int) (b->pos + ovec[1] - p), p, (int) (b->pos + ovec[1] - p));
-
-            q = ngx_http_lua_strlstrn(b->pos + ovec[1], b->last, p,
-                                      b->pos + ovec[1] - p - 1);
-
-            if (q == NULL) {
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "Lua code block missing the closing "
-                                   "long bracket \"%*s\"",
-                                   b->pos + ovec[1] - p, p);
-                return NGX_ERROR;
-            }
-
-            /* restore the original opening long bracket */
-
-            p[0] = '[';
-            b->pos[ovec[1] - 1] = '[';
-
-            ovec[1] = q - b->pos + b->pos + ovec[1] - p;
-
-            dd("found long bracket token: \"%.*s\"",
-               (int) (ovec[1] - ovec[0]), b->pos + ovec[0]);
-        }
-
-        for (i = 0; i < ovec[1]; i++) {
+        for (i = 0; i < ovec[0]; i++) {
             ch = b->pos[i];
             if (ch == LF) {
                 cf->conf_file->line++;
             }
         }
 
-        b->pos += ovec[1];
-        ctx->token_len = ovec[1] - ovec[0];
+        b->pos += ovec[0];
+        ovec[1] -= ovec[0];
+        ovec[0] = 0;
 
-        break;
+        if (rc == FOUND_LEFT_LBRACKET_CMT) {
+            p = &b->pos[2];     /* we skip the leading "--" prefix */
+            rc = FOUND_LBRACKET_CMT;
+
+        } else {
+            p = b->pos;
+            rc = FOUND_LBRACKET_STR;
+        }
+
+        /* we temporarily rewrite [=*[ in the input buffer to ]=*] to
+            * construct the pattern for the corresponding closing long
+            * bracket without additional buffers. */
+
+        ngx_http_lua_assert(p[0] == '[');
+        p[0] = ']';
+
+        ngx_http_lua_assert(b->pos[ovec[1] - 1] == '[');
+        b->pos[ovec[1] - 1] = ']';
+
+        /* search for the corresponding closing bracket */
+
+        dd("search pattern for the closing long bracket: \"%.*s\" (len=%d)",
+           (int) (b->pos + ovec[1] - p), p, (int) (b->pos + ovec[1] - p));
+
+        q = ngx_http_lua_strlstrn(b->pos + ovec[1], b->last, p,
+                                  b->pos + ovec[1] - p - 1);
+
+        if (q == NULL) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "Lua code block missing the closing "
+                               "long bracket \"%*s\"",
+                               b->pos + ovec[1] - p, p);
+            return NGX_ERROR;
+        }
+
+        /* restore the original opening long bracket */
+
+        p[0] = '[';
+        b->pos[ovec[1] - 1] = '[';
+
+        ovec[1] = q - b->pos + b->pos + ovec[1] - p;
+
+        dd("found long bracket token: \"%.*s\"",
+           (int) (ovec[1] - ovec[0]), b->pos + ovec[0]);
+    }
+
+    for (i = 0; i < ovec[1]; i++) {
+        ch = b->pos[i];
+        if (ch == LF) {
+            cf->conf_file->line++;
+        }
+    }
+
+    b->pos += ovec[1];
+    ctx->token_len = ovec[1] - ovec[0];
+
+    len = b->pos - start;
+    if (len == buf_size) {
+
+        cf->conf_file->line = start_line;
+
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "too long lua code block, probably "
+                           "missing terminating characters");
+
+        return NGX_ERROR;
     }
 
     word = ngx_array_push(cf->args);
@@ -1684,12 +1614,11 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
         return NGX_ERROR;
     }
 
-    word->data = ngx_pnalloc(cf->temp_pool, b->pos - start);
+    word->data = ngx_pnalloc(cf->temp_pool, len);
     if (word->data == NULL) {
         return NGX_ERROR;
     }
 
-    len = b->pos - start;
     ngx_memcpy(word->data, start, len);
     word->len = len;
 
