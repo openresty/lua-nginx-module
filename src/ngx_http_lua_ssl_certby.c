@@ -853,6 +853,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
     x509 = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
     if (x509 == NULL) {
         *err = "PEM_read_bio_X509_AUX() failed";
+        BIO_free(bio);
         ERR_clear_error();
         return NGX_ERROR;
     }
