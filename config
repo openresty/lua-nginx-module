@@ -466,6 +466,53 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 
 . auto/feature
 
+ngx_feature="mmap(sbrk(0))"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_MMAP_SBRK"
+ngx_feature_run=yes
+ngx_feature_incs="#include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/mman.h>
+#define align_ptr(p, a)                                                   \
+    (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
+"
+ngx_feature_test="
+#if defined(__x86_64__)
+exit(mmap(align_ptr(sbrk(0), getpagesize()), 1, PROT_READ,
+          MAP_FIXED|MAP_PRIVATE|MAP_ANON, -1, 0) < (void *) 0x40000000LL
+          ? 0 : 1);
+#else
+exit(1);
+#endif
+"
+SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
+
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
+ngx_feature="__attribute__(constructor)"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_CONSTRUCTOR"
+ngx_feature_run=yes
+ngx_feature_incs="#include <stdlib.h>
+int a = 2;
+__attribute__((constructor))
+static void foo(void)
+{
+    a = 0;
+}
+"
+ngx_feature_test="exit(a);"
+SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
+
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
 if test -n "$ngx_module_link"; then
     ngx_module_type=HTTP_AUX_FILTER
     ngx_module_name=$ngx_addon_name

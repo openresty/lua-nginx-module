@@ -43,6 +43,13 @@ static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
 #endif
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)
+/* we cannot use "static" for this function since it may lead to compiler warnings */
+void ngx_http_lua_limit_data_segment(void);
+#   if !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
+#   endif
+#endif
 
 
 static ngx_conf_post_t  ngx_http_lua_lowat_post =
@@ -545,7 +552,11 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+    ngx_http_lua_pre_config,          /*  preconfiguration */
+#else
     NULL,                             /*  preconfiguration */
+#endif
     ngx_http_lua_init,                /*  postconfiguration */
 
     ngx_http_lua_create_main_conf,    /*  create main configuration */
@@ -1157,5 +1168,34 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 }
 
 #endif  /* NGX_HTTP_SSL */
+
+
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+static ngx_int_t
+ngx_http_lua_pre_config(ngx_conf_t *cf)
+{
+    ngx_http_lua_limit_data_segment();
+    return NGX_OK;
+}
+#endif
+
+
+/*
+ * we simply assume that LuaJIT is used. it does little harm when the
+ * standard Lua 5.1 interpreter is used instead.
+ */
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)
+#   if (NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+__attribute__((constructor))
+#   endif
+void
+ngx_http_lua_limit_data_segment(void)
+{
+    if (sbrk(0) < (void *) 0x40000000LL) {
+        mmap(ngx_align_ptr(sbrk(0), getpagesize()), 1, PROT_READ,
+             MAP_FIXED|MAP_PRIVATE|MAP_ANON, -1, 0);
+    }
+}
+#endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
