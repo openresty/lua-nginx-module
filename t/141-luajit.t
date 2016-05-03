@@ -25,9 +25,11 @@ This is to maximize the address space that can be used by LuaJIT.
             local ffi = require "ffi"
             ffi.cdef[[
                 void *malloc(size_t size);
+                void free(void *p);
             ]]
             local p = ffi.C.malloc(1);
             local num = tonumber(ffi.cast("uintptr_t", p))
+            ffi.C.free(p)
             if ffi.abi("64bit") then
                 if num < 2^31 then
                     ngx.say("fail: ", string.format("p = %#x", num))
