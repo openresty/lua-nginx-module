@@ -60,7 +60,9 @@ static int
 ngx_http_lua_ngx_worker_id(lua_State *L)
 {
 #if (nginx_version >= 1009001)
-    if (ngx_process != NGX_PROCESS_WORKER) {
+    if (ngx_process != NGX_PROCESS_WORKER
+        && ngx_process != NGX_PROCESS_SINGLE)
+    {
         lua_pushnil(L);
         return 1;
     }
@@ -98,7 +100,9 @@ int
 ngx_http_lua_ffi_worker_id(void)
 {
 #if (nginx_version >= 1009001)
-    if (ngx_process != NGX_PROCESS_WORKER) {
+    if (ngx_process != NGX_PROCESS_WORKER
+        && ngx_process != NGX_PROCESS_SINGLE)
+    {
         return -1;
     }
 
