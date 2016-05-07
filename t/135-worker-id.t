@@ -60,4 +60,5 @@ worker id nil
 worker id nil
 --- no_error_log
 [error]
+--- wait: 0.2
 --- skip_nginx: 3: <=1.9.0
