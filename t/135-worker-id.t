@@ -53,13 +53,20 @@ GET /lua
     location = /t {
         content_by_lua_block {
             local counters = ngx.shared.counters
-            for i = 1, 1000 do
-                if counters:get("c") >= 4 then
+            local ok, c
+            for i = 1, 1500 do
+                c = counters:get("c")
+                if c >= 4 then
+                    ok = true
                     break
                 end
                 ngx.sleep(0.001)
             end
-            ngx.say("ok")
+            if ok then
+                ngx.say("ok")
+            else
+                ngx.say("not ok: c=", c)
+            end
         }
     }
     location /cache {
@@ -76,5 +83,6 @@ worker id nil
 worker id nil
 --- no_error_log
 [error]
+--- wait: 0.1
 --- skip_nginx: 3: <=1.9.0
 --- log_level: info
