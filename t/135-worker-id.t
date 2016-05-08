@@ -39,12 +39,28 @@ GET /lua
     proxy_cache_path conf/cache levels=1:2 keys_zone=my-cache:8m max_size=10m inactive=60m;
     proxy_temp_path conf/temp;
 
+    lua_shared_dict counters 1m;
+
+    init_by_lua_block {
+        ngx.shared.counters:set("c", 0)
+    }
+
     init_worker_by_lua_block {
+        ngx.shared.counters:incr("c", 1)
         ngx.log(ngx.INFO, ngx.worker.pid(), ": worker id ", ngx.worker.id());
     }
 --- config
     location = /t {
-        echo ok;
+        content_by_lua_block {
+            local counters = ngx.shared.counters
+            for i = 1, 1000 do
+                if counters:get("c") >= 4 then
+                    break
+                end
+                ngx.sleep(0.001)
+            end
+            ngx.say("ok")
+        }
     }
     location /cache {
         proxy_pass http://127.0.0.1:$server_port;
@@ -60,5 +76,5 @@ worker id nil
 worker id nil
 --- no_error_log
 [error]
---- wait: 0.2
 --- skip_nginx: 3: <=1.9.0
+--- log_level: info
