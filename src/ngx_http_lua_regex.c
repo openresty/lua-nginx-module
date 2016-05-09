@@ -184,7 +184,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     if (nargs >= 3) {
         opts.data = (u_char *) luaL_checklstring(L, 3, &opts.len);
 
-        if (nargs == 4) {
+        if (nargs >= 4) {
             luaL_checktype(L, 4, LUA_TTABLE);
             lua_getfield(L, 4, "pos");
             if (lua_isnumber(L, -1)) {
@@ -555,7 +555,7 @@ exec:
 
     dd("rc = %d", (int) rc);
 
-    if (nargs == 4) { /* having ctx table */
+    if (nargs >= 4) { /* having ctx table */
         pos = cap[1];
         lua_pushinteger(L, (lua_Integer) (pos + 1));
         lua_setfield(L, 4, "pos");
