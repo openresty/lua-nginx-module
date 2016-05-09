@@ -85,7 +85,6 @@ static char *ngx_http_fake_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf
         return NGX_CONF_ERROR;
     }
 
-    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "merge srv conf ok");
     return NGX_CONF_OK;
 }
 
@@ -116,6 +115,5 @@ static char *ngx_http_fake_merge_loc_conf(ngx_conf_t *cf, void *prev, void *conf
         return NGX_CONF_ERROR;
     }
 
-    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "merge loc conf ok");
     return NGX_CONF_OK;
 }
