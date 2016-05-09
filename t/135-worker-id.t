@@ -54,13 +54,17 @@ GET /lua
         content_by_lua_block {
             local counters = ngx.shared.counters
             local ok, c
-            for i = 1, 1500 do
+            for i = 1, 65 do
                 c = counters:get("c")
                 if c >= 4 then
                     ok = true
                     break
                 end
-                ngx.sleep(0.001)
+                local delay = 0.001 * i
+                if delay > 0.1 then
+                    delay = 0.1
+                end
+                ngx.sleep(delay)
             end
             if ok then
                 ngx.say("ok")
@@ -86,3 +90,4 @@ worker id nil
 --- wait: 0.1
 --- skip_nginx: 3: <=1.9.0
 --- log_level: info
+--- timeout: 5
