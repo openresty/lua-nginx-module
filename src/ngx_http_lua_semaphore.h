@@ -42,7 +42,9 @@ typedef struct ngx_http_lua_semaphore_s {
 
 
 #ifndef NGX_LUA_NO_FFI_API
-void ngx_http_lua_cleanup_semaphore_mm(void *data);
+void ngx_http_lua_cleanup_sema_mm(void *data);
+ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf,
+    ngx_http_lua_main_conf_t *lmcf);
 #endif
 
 
