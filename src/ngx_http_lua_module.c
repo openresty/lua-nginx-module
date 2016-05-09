@@ -44,7 +44,8 @@ static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
 #endif
 #if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)
-/* we cannot use "static" for this function since it may lead to compiler warnings */
+/* we cannot use "static" for this function since it may lead to compiler
+ * warnings */
 void ngx_http_lua_limit_data_segment(void);
 #   if !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
 static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);

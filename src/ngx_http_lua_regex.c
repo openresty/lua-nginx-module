@@ -204,8 +204,9 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
                     pos = 0;
 
                 } else {
-                    msg = lua_pushfstring(L, "bad pos field type in the ctx table "
-                                          "argument: %s", luaL_typename(L, -1));
+                    msg = lua_pushfstring(L, "bad pos field type in the ctx "
+                                          "table argument: %s",
+                                          luaL_typename(L, -1));
 
                     return luaL_argerror(L, 4, msg);
                 }
