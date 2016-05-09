@@ -54,7 +54,7 @@ GET /lua
         content_by_lua_block {
             local counters = ngx.shared.counters
             local ok, c
-            for i = 1, 65 do
+            for i = 1, 80 do
                 c = counters:get("c")
                 if c >= 4 then
                     ok = true
@@ -90,4 +90,4 @@ worker id nil
 --- wait: 0.1
 --- skip_nginx: 3: <=1.9.0
 --- log_level: info
---- timeout: 5
+--- timeout: 7
