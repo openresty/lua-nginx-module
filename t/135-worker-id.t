@@ -90,3 +90,4 @@ worker id nil
 --- wait: 0.1
 --- skip_nginx: 3: <=1.9.0
 --- log_level: info
+--- timeout: 6
