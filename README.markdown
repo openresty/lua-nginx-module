@@ -2906,6 +2906,7 @@ Nginx API for Lua
 * [ngx.shared.DICT.add](#ngxshareddictadd)
 * [ngx.shared.DICT.safe_add](#ngxshareddictsafe_add)
 * [ngx.shared.DICT.replace](#ngxshareddictreplace)
+* [ngx.shared.DICT.cas](#ngxshareddictcas)
 * [ngx.shared.DICT.delete](#ngxshareddictdelete)
 * [ngx.shared.DICT.incr](#ngxshareddictincr)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
@@ -5896,6 +5897,7 @@ The resulting object `dict` has the following methods:
 * [add](#ngxshareddictadd)
 * [safe_add](#ngxshareddictsafe_add)
 * [replace](#ngxshareddictreplace)
+* [cas](#ngxshareddictcas)
 * [delete](#ngxshareddictdelete)
 * [incr](#ngxshareddictincr)
 * [flush_all](#ngxshareddictflush_all)
@@ -6109,6 +6111,62 @@ Just like the [set](#ngxshareddictset) method, but only stores the key-value pai
 If the `key` argument does *not* exist in the dictionary (or expired already), the `success` return value will be `false` and the `err` return value will be `"not found"`.
 
 This feature was first introduced in the `v0.3.1rc22` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.cas
+-------------------
+**syntax:** *success, err, forcible, current_value?, current_flags? = ngx.shared.DICT:cas(key, value, exptime, flags, old_value, old_flags?)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, certificate_by_lua&#42;*
+
+Just like the [replace](#ngxshareddictreplace) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if and only if the `old_value` argument and `old_flags` argument *do* match the value and flags in the dictionary [ngx.shared.DICT](#ngxshareddict).
+
+The `old_value` argument can be `nil` only when `old_flags` argument is specified, in which case only `flags` will be checked.
+
+If `old_flags` argument is not specified, only `value` will be checked.
+
+The optional `old_flags` argument can be `nil`, and it means `0`.
+
+If they do *not* match, the `success` return value will be `false` and the `err` return value will be `"not matched"`. The `current_value` return value and `current_flags` return value will be the current `value` and current `flags` in the dictionary [ngx.shared.DICT](#ngxshareddict), just like [get](#ngxshareddictget) does.
+
+This function is often used to avoid race condition between [get](#ngxshareddictget) and [set](#ngxshareddictset) across multipe nginx worker processes, and below is an example:
+
+```lua
+
+ local cats = ngx.shared.cats
+ cats:set("foo", 1, 1)
+
+ local old_value, old_flags = cats:get("foo")
+
+ while true do
+     local newvalue = calculate(old_value) -- some logic
+     local newflags = (old_flags or 0) + 1
+
+     local success, err, forcibly, current_value, current_flags
+         = cats:cas("foo", newvalue, 0, newflags, old_value, old_flags)
+
+     if success then
+         break
+
+     elseif err == "not matched" then
+         old_value = current_value
+         old_flags = current_flags
+
+     elseif err == "not found" then
+         -- add or some other handle
+         cats:add("foo", newvalue, 0, newflags)
+         break
+
+     else
+         -- "no memory" or some other error
+         -- just log or some other handle
+         break
+     end
+ end
+```
 
 See also [ngx.shared.DICT](#ngxshareddict).
 

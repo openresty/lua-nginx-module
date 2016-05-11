@@ -4934,6 +4934,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.add|add]]
 * [[#ngx.shared.DICT.safe_add|safe_add]]
 * [[#ngx.shared.DICT.replace|replace]]
+* [[#ngx.shared.DICT.cas|cas]]
 * [[#ngx.shared.DICT.delete|delete]]
 * [[#ngx.shared.DICT.incr|incr]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
@@ -5120,6 +5121,58 @@ Just like the [[#ngx.shared.DICT.set|set]] method, but only stores the key-value
 If the <code>key</code> argument does ''not'' exist in the dictionary (or expired already), the <code>success</code> return value will be <code>false</code> and the <code>err</code> return value will be <code>"not found"</code>.
 
 This feature was first introduced in the <code>v0.3.1rc22</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.cas ==
+'''syntax:''' ''success, err, forcible, current_value?, current_flags? = ngx.shared.DICT:cas(key, value, exptime, flags, old_value, old_flags?)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, certificate_by_lua*''
+
+Just like the [[#ngx.shared.DICT.replace|replace]] method, but only stores the key-value pair into the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] if and only if the <code>old_value</code> argument and <code>old_flags</code> argument ''do'' match the value and flags in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+The <code>old_value</code> argument can be <code>nil</code> only when <code>old_flags</code> argument is specified, in which case only <code>flags</code> will be checked.
+
+If <code>old_flags</code> argument is not specified, only <code>value</code> will be checked.
+
+The optional <code>old_flags</code> argument can be <code>nil</code>, and it means <code>0</code>.
+
+If they do ''not'' match, the <code>success</code> return value will be <code>false</code> and the <code>err</code> return value will be <code>"not matched"</code>. The <code>current_value</code> return value and <code>current_flags</code> return value will be the current <code>value</code> and current <code>flags</code> in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]], just like [[#ngx.shared.DICT.get|get]] does.
+
+This function is often used to avoid race condition between [[#ngx.shared.DICT.get|get]] and [[#ngx.shared.DICT.set|set]] across multipe nginx worker processes, and below is an example:
+
+<geshi lang="lua">
+    local cats = ngx.shared.cats
+    cats:set("foo", 1, 1)
+
+    local old_value, old_flags = cats:get("foo")
+
+    while true do
+        local newvalue = calculate(old_value) -- some logic
+        local newflags = (old_flags or 0) + 1
+
+        local success, err, forcibly, current_value, current_flags
+            = cats:cas("foo", newvalue, 0, newflags, old_value, old_flags)
+
+        if success then
+            break
+
+        elseif err == "not matched" then
+            old_value = current_value
+            old_flags = current_flags
+
+        elseif err == "not found" then
+            -- add or some other handle
+            cats:add("foo", newvalue, 0, newflags)
+            break
+
+        else
+            -- "no memory" or some other error
+            -- just log or some other handle
+            break
+        end
+    end
+</geshi>
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
