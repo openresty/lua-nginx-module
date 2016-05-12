@@ -152,6 +152,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     int                          nargs;
     int                         *cap = NULL;
     int                          ovecsize;
+    int                          has_ctx = 0;
     ngx_uint_t                   flags;
     ngx_pool_t                  *pool, *old_pool;
     ngx_http_lua_main_conf_t    *lmcf;
@@ -184,29 +185,34 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
     if (nargs >= 3) {
         opts.data = (u_char *) luaL_checklstring(L, 3, &opts.len);
 
-        if (nargs == 4) {
-            luaL_checktype(L, 4, LUA_TTABLE);
-            lua_getfield(L, 4, "pos");
-            if (lua_isnumber(L, -1)) {
-                pos = (ngx_int_t) lua_tointeger(L, -1);
-                if (pos <= 0) {
+        if (nargs >= 4) {
+            if (!lua_isnil(L, 4)) {
+                luaL_checktype(L, 4, LUA_TTABLE);
+                has_ctx = 1;
+
+                lua_getfield(L, 4, "pos");
+                if (lua_isnumber(L, -1)) {
+                    pos = (ngx_int_t) lua_tointeger(L, -1);
+                    if (pos <= 0) {
+                        pos = 0;
+
+                    } else {
+                        pos--;  /* 1-based on the Lua land */
+                    }
+
+                } else if (lua_isnil(L, -1)) {
                     pos = 0;
 
                 } else {
-                    pos--;  /* 1-based on the Lua land */
+                    msg = lua_pushfstring(L, "bad pos field type in the ctx "
+                                          "table argument: %s",
+                                          luaL_typename(L, -1));
+
+                    return luaL_argerror(L, 4, msg);
                 }
 
-            } else if (lua_isnil(L, -1)) {
-                pos = 0;
-
-            } else {
-                msg = lua_pushfstring(L, "bad pos field type in the ctx table "
-                                      "argument: %s", luaL_typename(L, -1));
-
-                return luaL_argerror(L, 4, msg);
+                lua_pop(L, 1);
             }
-
-            lua_pop(L, 1);
         }
 
     } else {
@@ -555,7 +561,7 @@ exec:
 
     dd("rc = %d", (int) rc);
 
-    if (nargs == 4) { /* having ctx table */
+    if (has_ctx) { /* having ctx table */
         pos = cap[1];
         lua_pushinteger(L, (lua_Integer) (pos + 1));
         lua_setfield(L, 4, "pos");

@@ -2039,6 +2039,7 @@ resolve name done
 === TEST 34: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
     resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 5s;
 
     location = /sub {
         content_by_lua '
@@ -2053,7 +2054,7 @@ resolve name done
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect(server, 80)
             if not ok then
-                ngx.say("failed to connect to agentzh.org: ", err)
+                ngx.say("failed to connect to ", server, ": ", err)
                 return
             end
             ngx.say("successfully connected to xxx!")
@@ -3298,6 +3299,7 @@ failed to receive a line: closed []
 close: 1 nil
 --- no_error_log
 [error]
+--- skip_eval: 3: system("ping6 -c 1 ::1 >/dev/null 2>&1") ne 0
 
 
 

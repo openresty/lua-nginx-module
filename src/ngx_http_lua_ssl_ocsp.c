@@ -137,6 +137,10 @@ done:
         BIO_free(bio);
     }
 
+    if (rc == NGX_ERROR) {
+        ERR_clear_error();
+    }
+
     return rc;
 
 #endif  /* NGX_HTTP_LUA_USE_OCSP */
@@ -228,6 +232,8 @@ ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
     X509_free(issuer);
     X509_free(cert);
     BIO_free(bio);
+
+    ERR_clear_error();
 
     return NGX_OK;
 

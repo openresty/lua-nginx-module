@@ -907,16 +907,16 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     ngx_http_request_t          *r;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    r = ctx->request;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua request cleanup: forcible=%d", forcible);
-
     /*  force coroutine handling the request quit */
     if (ctx == NULL) {
         dd("ctx is NULL");
         return;
     }
+
+    r = ctx->request;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua request cleanup: forcible=%d", forcible);
 
     if (ctx->cleanup) {
         *ctx->cleanup = NULL;

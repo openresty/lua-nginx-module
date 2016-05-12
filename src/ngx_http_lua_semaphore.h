@@ -14,14 +14,14 @@
 #include "ngx_http_lua_common.h"
 
 
-typedef struct ngx_http_lua_semaphore_mm_block_s {
+typedef struct ngx_http_lua_sema_mm_block_s {
     ngx_uint_t                       used;
-    ngx_http_lua_semaphore_mm_t     *mm;
+    ngx_http_lua_sema_mm_t          *mm;
     ngx_uint_t                       epoch;
-} ngx_http_lua_semaphore_mm_block_t;
+} ngx_http_lua_sema_mm_block_t;
 
 
-struct ngx_http_lua_semaphore_mm_s {
+struct ngx_http_lua_sema_mm_s {
     ngx_queue_t                  free_queue;
     ngx_uint_t                   total;
     ngx_uint_t                   used;
@@ -31,18 +31,20 @@ struct ngx_http_lua_semaphore_mm_s {
 };
 
 
-typedef struct ngx_http_lua_semaphore_s {
+typedef struct ngx_http_lua_sema_s {
     ngx_queue_t                          wait_queue;
     ngx_queue_t                          chain;
     ngx_event_t                          sem_event;
-    ngx_http_lua_semaphore_mm_block_t   *block;
+    ngx_http_lua_sema_mm_block_t        *block;
     int                                  resource_count;
     unsigned                             wait_count;
-} ngx_http_lua_semaphore_t;
+} ngx_http_lua_sema_t;
 
 
 #ifndef NGX_LUA_NO_FFI_API
-void ngx_http_lua_cleanup_semaphore_mm(void *data);
+void ngx_http_lua_sema_mm_cleanup(void *data);
+ngx_int_t ngx_http_lua_sema_mm_init(ngx_conf_t *cf,
+    ngx_http_lua_main_conf_t *lmcf);
 #endif
 
 

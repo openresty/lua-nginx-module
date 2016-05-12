@@ -359,7 +359,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
     ngx_free(ev);
-    ev = NULL;
 
     lmcf = tctx.lmcf;
 

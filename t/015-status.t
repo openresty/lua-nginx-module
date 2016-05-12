@@ -9,7 +9,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 9);
 
 #no_diff();
 #no_long_string();
@@ -270,3 +270,24 @@ ngx.status = 502
 --- no_error_log
 [error]
 
+
+
+=== TEST 16: ngx.status assignmnt should clear r->err_status
+--- config
+location = /t {
+    return 502;
+    header_filter_by_lua_block {
+        if ngx.status == 502 then
+            ngx.status = 654
+            ngx.log(ngx.WARN, "ngx.status: ", ngx.status)
+        end
+    }
+}
+--- request
+GET /t
+--- response_body_like: Bad Gateway
+--- error_log
+ngx.status: 654
+--- no_error_log
+[error]
+--- error_code: 654

@@ -1417,20 +1417,8 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
             break;
 
         case FOUND_LBRACKET_STR:
-
-            break;
-
         case FOUND_LBRACKET_CMT:
-
-            break;
-
         case FOUND_RIGHT_LBRACKET:
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "unexpected lua closing long-bracket");
-            goto failed;
-
-            break;
-
         case FOUND_COMMENT_LINE:
         case FOUND_DOUBLE_QUOTED:
         case FOUND_SINGLE_QUOTED:

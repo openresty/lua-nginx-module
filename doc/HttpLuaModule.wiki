@@ -10,7 +10,7 @@ Production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.0] released on 11 January 2016.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.2] released on 8 March 2016.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -75,7 +75,7 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
                     ngx.say("status: ", res.status)
                     ngx.say("body:")
                     ngx.print(res.body)
-                end';
+                end
             }
         }
  
@@ -233,11 +233,14 @@ Build the source with this module:
     make install
 </geshi>
 
+== Building as a dynamic module ==
+
 Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the
 `./configure` command line above. And then you can explicitly load the module in your `nginx.conf` via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
 directive, for example,
 
 ```nginx
+load_module /path/to/modules/ndk_http_module.so;  # assuming NDK is built as a dynamic module too
 load_module /path/to/modules/ngx_http_lua_module.so;
 ```
 
@@ -5815,6 +5818,8 @@ Retrieves the current running phase name. Possible return values are
 : for the context of [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]].
 * <code>rewrite</code>
 : for the context of [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]].
+* <code>balancer</code>
+: for the context of [[#balancer_by_lua_block|balancer_by_lua_block]] or [[#balancer_by_lua_file|balancer_by_lua_file]].
 * <code>access</code>
 : for the context of [[#access_by_lua|access_by_lua]] or [[#access_by_lua_file|access_by_lua_file]].
 * <code>content</code>

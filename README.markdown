@@ -21,6 +21,7 @@ Table of Contents
 * [Typical Uses](#typical-uses)
 * [Nginx Compatibility](#nginx-compatibility)
 * [Installation](#installation)
+    * [Building as a dynamic module](#building-as-a-dynamic-module)
     * [C Macro Configurations](#c-macro-configurations)
     * [Installation on Ubuntu 11.10](#installation-on-ubuntu-1110)
 * [Community](#community)
@@ -61,7 +62,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.0](https://github.com/openresty/lua-nginx-module/tags) released on 11 January 2016.
+This document describes ngx_lua [v0.10.2](https://github.com/openresty/lua-nginx-module/tags) released on 8 March 2016.
 
 Synopsis
 ========
@@ -128,7 +129,7 @@ Synopsis
                  ngx.say("status: ", res.status)
                  ngx.say("body:")
                  ngx.print(res.body)
-             end';
+             end
          }
      }
 
@@ -299,11 +300,17 @@ Build the source with this module:
  make install
 ```
 
+[Back to TOC](#table-of-contents)
+
+Building as a dynamic module
+----------------------------
+
 Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the
 `./configure` command line above. And then you can explicitly load the module in your `nginx.conf` via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
 directive, for example,
 
 ```nginx
+load_module /path/to/modules/ndk_http_module.so;  # assuming NDK is built as a dynamic module too
 load_module /path/to/modules/ngx_http_lua_module.so;
 ```
 
@@ -6899,6 +6906,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of [set_by_lua](#set_by_lua) or [set_by_lua_file](#set_by_lua_file).
 * `rewrite`
 	for the context of [rewrite_by_lua](#rewrite_by_lua) or [rewrite_by_lua_file](#rewrite_by_lua_file).
+* `balancer`
+	for the context of [balancer_by_lua_block](#balancer_by_lua_block) or [balancer_by_lua_file](#balancer_by_lua_file).
 * `access`
 	for the context of [access_by_lua](#access_by_lua) or [access_by_lua_file](#access_by_lua_file).
 * `content`
