@@ -1459,10 +1459,19 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     ngx_memcpy(p, (double *) &num, sizeof(double));
 
+    user_flags = sd->user_flags;
+
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     lua_pushnumber(L, num);
     lua_pushnil(L);
+	
+	if (user_flags) {
+		lua_pushinteger(L, (lua_Integer) user_flags);
+	} else {
+		lua_pushnil(L);
+	}
+	
     return 2;
 }
 
