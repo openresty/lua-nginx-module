@@ -108,10 +108,10 @@ sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -185,10 +185,10 @@ received: HTTP/1.1 401 Unauthorized
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -262,10 +262,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -349,13 +349,13 @@ sent http request: 59 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl set session: \1:2
-lua ssl save session: \1:3
-lua ssl free session: \1:2
-lua ssl free session: \1:1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl set session: \1
+lua ssl save session: \1
+lua ssl free session: \1
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -437,7 +437,7 @@ failed to do SSL handshake: certificate host mismatch
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "blah.agentzh.org"
@@ -517,7 +517,7 @@ failed to do SSL handshake: certificate host mismatch
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "blah.agentzh.org"
@@ -592,10 +592,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -677,10 +677,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]++/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -759,7 +759,7 @@ failed to do SSL handshake: 20: unable to get local issuer certificate
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -838,7 +838,7 @@ failed to do SSL handshake: 20: unable to get local issuer certificate
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -928,10 +928,10 @@ sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "www.google.com"
@@ -1018,7 +1018,7 @@ GET /t
 connected: 1
 failed to do SSL handshake: 20: unable to get local issuer certificate
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "www.google.com"
@@ -1100,10 +1100,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -1179,10 +1179,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -1259,10 +1259,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -1339,10 +1339,10 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -1417,7 +1417,7 @@ failed to do SSL handshake: handshake failed
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
 [
@@ -1493,10 +1493,10 @@ ssl handshake: userdata
 set keepalive: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: \1:2
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -1569,14 +1569,14 @@ ssl handshake: userdata
 set keepalive: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl save session: \1:3
-lua ssl save session: \1:4
-lua ssl free session: \1:4
-lua ssl free session: \1:3
-lua ssl free session: \1:2
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl save session: \1
+lua ssl save session: \1
+lua ssl free session: \1
+lua ssl free session: \1
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -1620,7 +1620,7 @@ hello world
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 attempt to call method 'sslhandshake' (a nil value)
@@ -1719,10 +1719,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -1824,10 +1824,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "test.com"
@@ -1917,7 +1917,7 @@ failed to do SSL handshake: handshake failed
 ">>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
 qr/SSL_do_handshake\(\) failed .*?unknown protocol/
@@ -2016,7 +2016,7 @@ $::TestCertificate
 >>> test.crl
 $::TestCRL"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "test.com"
@@ -2095,12 +2095,12 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl save session: ([0-9A-F]+):3
-lua ssl free session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -2154,7 +2154,7 @@ connected: 1
 failed to do SSL handshake: timeout
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "iscribblet.org"
@@ -2226,7 +2226,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- no_error_log
 lua ssl server name:
@@ -2297,10 +2297,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -2377,7 +2377,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- no_error_log
 lua ssl server name:
@@ -2479,10 +2479,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 --- no_error_log
@@ -2575,7 +2575,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl certificate verify error: (18: self signed certificate)
