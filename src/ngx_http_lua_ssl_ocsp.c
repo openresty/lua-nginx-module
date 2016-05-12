@@ -490,7 +490,6 @@ ngx_http_lua_ffi_ssl_set_ocsp_status_resp(ngx_http_request_t *r,
 
     dd("set ocsp resp: resp_len=%d", (int) resp_len);
     (void) SSL_set_tlsext_status_ocsp_resp(ssl_conn, p, resp_len);
-    ssl_conn->tlsext_status_expected = 1;
 
     return NGX_OK;
 
