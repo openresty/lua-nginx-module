@@ -55,3 +55,16 @@ GET /test
 --- response_body
 0
 
+
+
+=== TEST 4: update sanity
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.say(ngx.crc32_update(0, "hello, world"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+2222896213
