@@ -7,7 +7,7 @@ language: c
 
 compiler:
   - gcc
-  - clang
+#  - clang
 
 addons:
   apt:
@@ -26,7 +26,7 @@ env:
     - LUA_CMODULE_DIR=/lib
   matrix:
     - NGINX_VERSION=1.9.15
-    - NGINX_VERSION=1.10.0
+#    - NGINX_VERSION=1.10.0
 
 services: 
  - memcache
