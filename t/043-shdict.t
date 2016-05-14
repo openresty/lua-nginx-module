@@ -1584,7 +1584,7 @@ cur value:  hello hello hello hello hello hello hello hello hello hello1
         content_by_lua '
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32, 0.01)
-            dogs:set("blah", 33, 0.1)
+            dogs:set("blah", 33, 0.3)
             ngx.sleep(0.02)
             local val, flags, stale = dogs:get_stale("foo")
             ngx.say(val, ", ", flags, ", ", stale)
