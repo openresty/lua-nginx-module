@@ -926,7 +926,7 @@ filtering chain determines the final output, for example. The correct adding ord
 	* memcached: listening on the default port, 11211.
 	* redis: listening on the default port, 6379.
 
-See also the [developer build script](https://github.com/openresty/lua-nginx-module/blob/master/util/build2.sh) for more details on setting up the testing environment.
+See also the [developer build script](https://github.com/openresty/lua-nginx-module/blob/master/util/build.sh) for more details on setting up the testing environment.
 
 To run the whole test suite in the default testing mode:
 
