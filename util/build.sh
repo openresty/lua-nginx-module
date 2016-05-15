@@ -39,7 +39,7 @@ time ngx-build $force $version \
             --without-http_memcached_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
-                --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
+            --with-http_auth_request_module \
                 --add-module=$root/../echo-nginx-module \
                 --add-module=$root/../memc-nginx-module \
                 --add-module=$root/../srcache-nginx-module \

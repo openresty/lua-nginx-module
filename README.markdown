@@ -1060,6 +1060,11 @@ Directives
 * [lua_max_running_timers](#lua_max_running_timers)
 
 
+The basic building blocks of scripting Nginx with Lua are directives. Directives are used to specify when the user Lua code is run and
+how the result will be used. Below is a diagram showing the order in which directives are executed.
+
+![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
+
 [Back to TOC](#table-of-contents)
 
 lua_use_default_type
