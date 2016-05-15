@@ -1063,7 +1063,7 @@ Directives
 The basic building blocks of scripting Nginx with Lua are directives. Directives are used to specify when the user Lua code is run and
 how the result will be used. Below is a diagram showing the order in which directives are executed.
 
-![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15237510/7307da18-189c-11e6-8f6d-c07cf48abdb4.png)
+![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
 [Back to TOC](#table-of-contents)
 
