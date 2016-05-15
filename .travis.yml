@@ -38,7 +38,7 @@ before_install:
 install:
   - if [ ! -d download-cache ]; then mkdir download-cache; fi
   - if [ ! -f download-cache/drizzle7-2011.07.21.tar.gz ]; then wget -O download-cache/drizzle7-2011.07.21.tar.gz http://openresty.org/download/drizzle7-2011.07.21.tar.gz; fi
-  - wget http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-8.33.tar.gz
+  - if [ ! -f download-cache/pcre-8.33.tar.gz ]; then wget -O download-cache/pcre-8.33.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-8.33.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
@@ -63,16 +63,16 @@ before_script:
 
 script:
   - tar xzf download-cache/drizzle7-2011.07.21.tar.gz && cd drizzle7-2011.07.21
-  - ./configure --prefix=/usr --without-server > build.log 2>&1 || cat build.log
-  - sudo make libdrizzle-1.0 install-libdrizzle-1.0 > build.log 2>&1 || cat build.log
+  - ./configure --prefix=/usr --without-server > build.log 2>&1 || (cat build.log && exit 1)
+  - sudo make libdrizzle-1.0 install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - cd mockeagain && make && cd ..
   - cd test-nginx && sudo cpanm . && cd ..
   - cd lua-cjson && make && sudo make install && cd ..
-  - tar zxf pcre-8.33.tar.gz
+  - tar zxf download-cache/pcre-8.33.tar.gz
   - cd pcre-8.33
-  - ./configure --prefix=/usr --enable-jit --enable-utf --enable-pcre16 --enable-pcre32 --enable-unicode-properties > build.log 2>&1 || cat build.log
-  - make > build.log 2>&1 || cat build.log
+  - ./configure --prefix=/usr --enable-jit --enable-utf --enable-pcre16 --enable-pcre32 --enable-unicode-properties > build.log 2>&1 || (cat build.log && exit 1)
+  - make > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install
   - cd ..
   - export PATH=$PATH:`pwd`/nginx-devel-utils
