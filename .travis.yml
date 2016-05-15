@@ -79,6 +79,4 @@ script:
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - export PATH=$PATH:`pwd`/work/nginx/sbin
   - export LD_PRELOAD=`pwd`/mockeagain/mockeagain.so
-  - prove -lv t
-
-
+  - prove -r t
