@@ -42,7 +42,6 @@ install:
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
-  - git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git ~/work/nginx/ngx_http_auth_request_module-0.2
   - git clone https://github.com/openresty/nginx-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
   - git clone https://github.com/openresty/lua-cjson.git
