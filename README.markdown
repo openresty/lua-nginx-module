@@ -999,6 +999,10 @@ See Also
 Directives
 ==========
 
+The basic building blocks of scripting Nginx with Lua is directives. Directives are used to specify when code is run and how the result is used. Below is a diagram showing the order in which directives are executed.
+
+![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15237510/7307da18-189c-11e6-8f6d-c07cf48abdb4.png)
+
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_code_cache](#lua_code_cache)
 * [lua_regex_cache_max_entries](#lua_regex_cache_max_entries)
