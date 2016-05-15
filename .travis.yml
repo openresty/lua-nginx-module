@@ -7,7 +7,7 @@ language: c
 
 compiler:
   - gcc
-#  - clang
+  - clang
 
 addons:
   apt:
@@ -64,16 +64,16 @@ before_script:
 script:
   - tar xzf download-cache/drizzle7-2011.07.21.tar.gz && cd drizzle7-2011.07.21
   - ./configure --prefix=/usr --without-server > build.log 2>&1 || (cat build.log && exit 1)
-  - sudo make libdrizzle-1.0 install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
+  - sudo PATH=$PATH make libdrizzle-1.0 install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - cd mockeagain && make && cd ..
   - cd test-nginx && sudo cpanm . && cd ..
-  - cd lua-cjson && make && sudo make install && cd ..
+  - cd lua-cjson && make && sudo PATH=$PATH make install && cd ..
   - tar zxf download-cache/pcre-8.33.tar.gz
   - cd pcre-8.33
   - ./configure --prefix=/usr --enable-jit --enable-utf --enable-pcre16 --enable-pcre32 --enable-unicode-properties > build.log 2>&1 || (cat build.log && exit 1)
   - make > build.log 2>&1 || (cat build.log && exit 1)
-  - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
+  - sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - export PATH=$PATH:`pwd`/nginx-devel-utils
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
