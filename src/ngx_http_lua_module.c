@@ -877,6 +877,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
     if (conf->ssl.cert_src.len == 0) {
         conf->ssl.cert_src = prev->ssl.cert_src;
+        conf->ssl.cert_src_key = prev->ssl.cert_src_key;
         conf->ssl.cert_handler = prev->ssl.cert_handler;
     }
 
