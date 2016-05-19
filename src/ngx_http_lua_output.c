@@ -147,7 +147,13 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     }
 
     if (size == 0) {
-        /* do nothing for empty strings */
+        rc = ngx_http_lua_send_header_if_needed(r, ctx);
+        if (rc == NGX_ERROR || rc > NGX_OK) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "nginx output filter error");
+            return 2;
+        }
+
         lua_pushinteger(L, 1);
         return 1;
     }
