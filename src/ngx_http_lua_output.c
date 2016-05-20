@@ -520,7 +520,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
 #if 1
     if ((!r->header_sent && !ctx->header_sent)
-        || !ctx->seen_body_data)
+        || (!ctx->seen_body_data && !wait))
     {
         lua_pushnil(L);
         lua_pushliteral(L, "nothing to flush");
