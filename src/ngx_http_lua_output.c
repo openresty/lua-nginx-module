@@ -158,6 +158,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         return 1;
     }
 
+    ctx->seen_body_data = 1;
+
     cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
                                          &ctx->free_bufs, size);
 
@@ -517,7 +519,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 
 #if 1
-    if (!r->header_sent && !ctx->header_sent) {
+    if ((!r->header_sent && !ctx->header_sent)
+        || !ctx->seen_body_data)
+    {
         lua_pushnil(L);
         lua_pushliteral(L, "nothing to flush");
         return 2;
