@@ -1349,6 +1349,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
                          /* indicates whether to set the entries
                           * exptime property, <0 meaning do not set */
     ngx_time_t                  *tp;
+	uint32_t                     user_flags = 0;
 
     n = lua_gettop(L);
 
