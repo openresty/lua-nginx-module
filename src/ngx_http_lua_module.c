@@ -43,7 +43,7 @@ static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
 #endif
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && (NGX_LINUX)
 /* we cannot use "static" for this function since it may lead to compiler
  * warnings */
 void ngx_http_lua_limit_data_segment(void);
@@ -553,7 +553,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)                                            \
+    && (NGX_LINUX)                                                           \
+    && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
     ngx_http_lua_pre_config,          /*  preconfiguration */
 #else
     NULL,                             /*  preconfiguration */
@@ -875,6 +877,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
     if (conf->ssl.cert_src.len == 0) {
         conf->ssl.cert_src = prev->ssl.cert_src;
+        conf->ssl.cert_src_key = prev->ssl.cert_src_key;
         conf->ssl.cert_handler = prev->ssl.cert_handler;
     }
 
@@ -1158,7 +1161,9 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 #endif  /* NGX_HTTP_SSL */
 
 
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)                                            \
+    && (NGX_LINUX)                                                           \
+    && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
 static ngx_int_t
 ngx_http_lua_pre_config(ngx_conf_t *cf)
 {
@@ -1172,7 +1177,7 @@ ngx_http_lua_pre_config(ngx_conf_t *cf)
  * we simply assume that LuaJIT is used. it does little harm when the
  * standard Lua 5.1 interpreter is used instead.
  */
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)
+#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && (NGX_LINUX)
 #   if (NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
 __attribute__((constructor))
 #   endif

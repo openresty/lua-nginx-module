@@ -245,3 +245,17 @@ access cached: hello
 
 --- log_level: info
 
+
+
+=== TEST 7: I/O in access shortcuts content automatically
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.print("")
+        }
+
+        echo ok;
+    }
+--- request
+    GET /t
+--- response_body

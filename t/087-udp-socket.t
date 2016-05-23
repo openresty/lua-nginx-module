@@ -710,7 +710,7 @@ resolve name done
 === TEST 13: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
     resolver $TEST_NGINX_RESOLVER;
-    resolver_timeout 3s;
+    resolver_timeout 5s;
 
     location = /sub {
         content_by_lua '
@@ -725,7 +725,7 @@ resolve name done
             local sock = ngx.socket.udp()
             local ok, err = sock:setpeername(server, 80)
             if not ok then
-                ngx.say("failed to connect to agentzh.org: ", err)
+                ngx.say("failed to connect to ", server, ": ", err)
                 return
             end
             ngx.say("successfully connected to xxx!")

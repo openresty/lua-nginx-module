@@ -239,6 +239,10 @@ ngx_http_lua_ffi_set_resp_status(ngx_http_request_t *r, int status)
 
     r->headers_out.status = status;
 
+    if (r->err_status) {
+        r->err_status = 0;
+    }
+
     if (status == 101) {
         /*
          * XXX work-around a bug in the Nginx core older than 1.5.5
