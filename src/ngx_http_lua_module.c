@@ -835,6 +835,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
+    lmcf->jit_stack = pcre_jit_stack_alloc(32*1024, 32*1024);
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;

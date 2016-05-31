@@ -363,6 +363,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -825,6 +826,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -2477,6 +2479,22 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
         return 0;
     }
     return (uint32_t) lmcf->regex_cache_max_entries;
+}
+
+void
+ngx_http_lua_ffi_set_jit_stack_size(int size)
+{
+    int                          min_size;
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    min_size = MIN(32 * 1024, size);
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+    if (lmcf == NULL) {
+        return;
+    }
+    pcre_jit_stack_free(lmcf->jit_stack);
+    lmcf->jit_stack = pcre_jit_stack_alloc(min_size, size);
 }
 #endif /* NGX_LUA_NO_FFI_API */
 
