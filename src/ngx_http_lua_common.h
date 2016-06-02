@@ -22,6 +22,19 @@
 #include <lauxlib.h>
 
 
+#if (NGX_PCRE)
+
+#include <pcre.h>
+
+#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
+#   define LUA_HAVE_PCRE_JIT 1
+#else
+#   define LUA_HAVE_PCRE_JIT 0
+#endif
+
+#endif
+
+
 #if !defined(nginx_version) || (nginx_version < 1006000)
 #error at least nginx 1.6.0 is required but found an older version
 #endif
@@ -168,7 +181,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
     ngx_int_t            regex_match_limit;
-    pcre_jit_stack       jit_stack;
+
+#if (LUA_HAVE_PCRE_JIT)
+    pcre_jit_stack      *jit_stack;
+#endif
+
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */

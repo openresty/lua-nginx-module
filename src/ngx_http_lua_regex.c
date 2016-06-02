@@ -42,6 +42,8 @@
 
 #define NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT (100)
 
+#define NGX_LUA_RE_MIN_JIT_STACK_SIZE 32 * 1024
+
 
 typedef struct {
 #ifndef NGX_LUA_NO_FFI_API
@@ -2481,20 +2483,21 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
     return (uint32_t) lmcf->regex_cache_max_entries;
 }
 
+
 void
 ngx_http_lua_ffi_set_jit_stack_size(int size)
 {
-    int                          min_size;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    min_size = MIN(32 * 1024, size);
-    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
-                                               ngx_http_lua_module);
-    if (lmcf == NULL) {
+    if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
         return;
     }
+
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
     pcre_jit_stack_free(lmcf->jit_stack);
-    lmcf->jit_stack = pcre_jit_stack_alloc(min_size, size);
+    lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
+                                           size);
 }
 #endif /* NGX_LUA_NO_FFI_API */
 
