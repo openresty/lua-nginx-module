@@ -20,12 +20,12 @@ force=$2
             #--with-cc=gcc46 \
             #--with-cc=clang \
             #--without-http_referer_module \
-            #--with-http_v2_module \
             #--with-http_spdy_module \
 
 time ngx-build $force $version \
             --with-ipv6 \
             --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
+            --with-http_v2_module \
             --with-http_realip_module \
             --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
