@@ -375,7 +375,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             always_forward_body = lua_toboolean(L, -1);
             lua_pop(L, 1);
 
-            dd("always foward body: %d", always_forward_body);
+            dd("always forward body: %d", always_forward_body);
 
             /* check the "method" option */
 

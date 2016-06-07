@@ -82,7 +82,7 @@ __DATA__
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -180,7 +180,7 @@ ssl_certificate_by_lua:1: ssl cert by lua is running!
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -285,7 +285,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -403,7 +403,7 @@ my timer run!
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1108,7 +1108,7 @@ print("ssl cert by lua is running!")
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1219,7 +1219,7 @@ a.lua:1: ssl cert by lua is running!
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1343,7 +1343,7 @@ lua ssl server name: "test.com"
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1439,7 +1439,7 @@ GitHub openresty/lua-resty-core#42
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 

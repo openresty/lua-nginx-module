@@ -86,7 +86,7 @@ __DATA__
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -162,7 +162,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -239,7 +239,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -320,7 +320,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -412,7 +412,7 @@ The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.o
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -492,7 +492,7 @@ The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.o
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -569,7 +569,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -650,7 +650,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -734,7 +734,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -813,7 +813,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -902,7 +902,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -995,7 +995,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1072,7 +1072,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1156,7 +1156,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1236,7 +1236,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1316,7 +1316,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1396,7 +1396,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1684,7 +1684,7 @@ attempt to call method 'sslhandshake' (a nil value)
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1789,7 +1789,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1893,7 +1893,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1987,7 +1987,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -2071,7 +2071,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -2444,7 +2444,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -2549,7 +2549,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
