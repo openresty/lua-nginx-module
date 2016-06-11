@@ -2214,6 +2214,10 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
 
+    if (sd) {
+        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+    }
+
     if (sd && lmcf && lmcf->regex_match_limit > 0) {
         sd->flags |= PCRE_EXTRA_MATCH_LIMIT;
         sd->match_limit = lmcf->regex_match_limit;
@@ -2490,7 +2494,7 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
     ngx_http_lua_main_conf_t    *lmcf;
 
     if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
-        return;
+        size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
     }
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
