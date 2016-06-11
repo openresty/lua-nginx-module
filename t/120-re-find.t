@@ -69,7 +69,7 @@ matched: 1234
 --- response_body
 from: 1
 to: 0
-matched:
+matched: 
 --- no_error_log
 [error]
 
