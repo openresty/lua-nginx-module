@@ -2526,7 +2526,7 @@ ngx_http_lua_set_jit_stack_size(int size)
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
-    pcre_jit_stack_free(lmcf->jit_stack);
+    // pcre_jit_stack_free(lmcf->jit_stack); // Y U NO WORK?
     lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
                                            size);
 }
