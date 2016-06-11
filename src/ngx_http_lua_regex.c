@@ -1926,12 +1926,35 @@ error:
 }
 
 
+static int
+ngx_http_lua_ngx_re_opt(lua_State *L)
+{
+    ngx_str_t     option;
+    int           nargs;
+    int           value = 0;
+
+    nargs = lua_gettop(L);
+    if (nargs != 2) {
+        return luaL_error(L, "expecting two arguments, but got %d", nargs);
+    }
+
+    option.data = (u_char *) luaL_checklstring(L, 1, &option.len);
+    value = luaL_checkint(L, 2);
+
+    if (strcmp(option.data, "jit_stack_size") == 0) {
+        ngx_http_lua_set_jit_stack_size(value);
+    }
+
+    return 0;
+}
+
+
 void
 ngx_http_lua_inject_regex_api(lua_State *L)
 {
     /* ngx.re */
 
-    lua_createtable(L, 0, 5 /* nrec */);    /* .re */
+    lua_createtable(L, 0, 6 /* nrec */);    /* .re */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_re_find);
     lua_setfield(L, -2, "find");
@@ -1947,6 +1970,9 @@ ngx_http_lua_inject_regex_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
     lua_setfield(L, -2, "gsub");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_re_opt);
+    lua_setfield(L, -2, "opt");
 
     lua_setfield(L, -2, "re");
 }
@@ -2486,10 +2512,11 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
     }
     return (uint32_t) lmcf->regex_cache_max_entries;
 }
+#endif /* NGX_LUA_NO_FFI_API */
 
 
 void
-ngx_http_lua_ffi_set_jit_stack_size(int size)
+ngx_http_lua_set_jit_stack_size(int size)
 {
     ngx_http_lua_main_conf_t    *lmcf;
 
@@ -2503,7 +2530,6 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
     lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
                                            size);
 }
-#endif /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_PCRE */
