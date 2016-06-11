@@ -1926,10 +1926,27 @@ error:
 }
 
 
+void
+ngx_http_lua_set_jit_stack_size(int size)
+{
+    ngx_http_lua_main_conf_t    *lmcf;
+
+    if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
+        size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
+    }
+
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+    // pcre_jit_stack_free(lmcf->jit_stack); // Y U NO WORK?
+    lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
+                                           size);
+}
+
+
 static int
 ngx_http_lua_ngx_re_opt(lua_State *L)
 {
-    ngx_str_t     option;
+    const char   *option;
     int           nargs;
     int           value = 0;
 
@@ -1938,10 +1955,10 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
         return luaL_error(L, "expecting two arguments, but got %d", nargs);
     }
 
-    option.data = (u_char *) luaL_checklstring(L, 1, &option.len);
+    option = luaL_checklstring(L, 1, NULL);
     value = luaL_checkint(L, 2);
 
-    if (strcmp(option.data, "jit_stack_size") == 0) {
+    if (strcmp(option, "jit_stack_size") == 0) {
         ngx_http_lua_set_jit_stack_size(value);
     }
 
@@ -2513,23 +2530,6 @@ ngx_http_lua_ffi_max_regex_cache_size(void)
     return (uint32_t) lmcf->regex_cache_max_entries;
 }
 #endif /* NGX_LUA_NO_FFI_API */
-
-
-void
-ngx_http_lua_set_jit_stack_size(int size)
-{
-    ngx_http_lua_main_conf_t    *lmcf;
-
-    if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
-        size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
-    }
-
-    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
-                                               ngx_http_lua_module);
-    // pcre_jit_stack_free(lmcf->jit_stack); // Y U NO WORK?
-    lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
-                                           size);
-}
 
 
 #endif /* NGX_PCRE */
