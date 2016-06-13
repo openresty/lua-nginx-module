@@ -133,9 +133,9 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         ngx_http_lua_ssl_ctx_index = SSL_get_ex_new_index(0, NULL, NULL,
                                                           NULL, NULL);
 
-        if (ngx_ssl_connection_index == -1) {
+        if (ngx_http_lua_ssl_ctx_index == -1) {
             ngx_ssl_error(NGX_LOG_ALERT, cf->log, 0,
-                          "lua: SSL_get_ex_new_index() failed");
+                          "lua: SSL_get_ex_new_index() for ctx failed");
             return NGX_CONF_ERROR;
         }
     }
