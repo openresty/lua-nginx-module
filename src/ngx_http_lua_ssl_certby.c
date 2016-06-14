@@ -200,6 +200,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     ngx_pool_cleanup_t              *cln;
     ngx_http_connection_t           *hc;
     ngx_http_lua_srv_conf_t         *lscf;
+    ngx_http_core_loc_conf_t        *clcf;
     ngx_http_lua_ssl_cert_ctx_t     *cctx;
 
     c = ngx_ssl_get_connection(ssl_conn);
@@ -254,6 +255,30 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     fc->log->file = c->log->file;
     fc->log->log_level = c->log->log_level;
     fc->ssl = c->ssl;
+
+    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+#if defined(nginx_version) && nginx_version >= 1003014
+
+#   if nginx_version >= 1009000
+
+    ngx_set_connection_log(fc, clcf->error_log);
+
+#   else
+
+    ngx_http_set_connection_log(fc, clcf->error_log);
+
+#   endif
+
+#else
+
+    fc->log->file = clcf->error_log->file;
+
+    if (!(fc->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
+        fc->log->log_level = clcf->error_log->log_level;
+    }
+
+#endif
 
     cctx = ngx_pcalloc(c->pool, sizeof(ngx_http_lua_ssl_cert_ctx_t));
     if (cctx == NULL) {
