@@ -365,7 +365,10 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
-        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+
+        if (lmcf->jit_stack) {
+            pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+        }
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -828,7 +831,10 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
-        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+
+        if (lmcf->jit_stack) {
+            pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+        }
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -1926,7 +1932,7 @@ error:
 }
 
 
-void
+static ngx_int_t
 ngx_http_lua_set_jit_stack_size(int size)
 {
     ngx_http_lua_main_conf_t    *lmcf;
@@ -1937,9 +1943,19 @@ ngx_http_lua_set_jit_stack_size(int size)
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
-    // pcre_jit_stack_free(lmcf->jit_stack); // Y U NO WORK?
+
+    if (lmcf->jit_stack) {
+        pcre_jit_stack_free(lmcf->jit_stack);
+    }
+
     lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
                                            size);
+
+    if (!lmcf->jit_stack) {
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
 }
 
 
@@ -1949,6 +1965,7 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
     const char   *option;
     int           nargs;
     int           value = 0;
+    int           result;
 
     nargs = lua_gettop(L);
     if (nargs != 2) {
@@ -1958,11 +1975,17 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
     option = luaL_checklstring(L, 1, NULL);
     value = luaL_checkint(L, 2);
 
-    if (strcmp(option, "jit_stack_size") == 0) {
-        ngx_http_lua_set_jit_stack_size(value);
+    if (ngx_strcmp(option, "jit_stack_size") == 0) {
+        result = ngx_http_lua_set_jit_stack_size(value);
+
+        if (result != NGX_OK) {
+            return luaL_error(L, "PCRE jit stack allocation failed");
+        }
+
+        return 0;
     }
 
-    return 0;
+    return luaL_error(L, "unrecognized option name");
 }
 
 
@@ -2257,7 +2280,7 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
 
-    if (sd) {
+    if (sd && lmcf->jit_stack) {
         pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
     }
 

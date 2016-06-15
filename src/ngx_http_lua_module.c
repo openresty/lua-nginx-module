@@ -31,18 +31,6 @@
 #include "ngx_http_lua_headers.h"
 
 
-#if (NGX_PCRE)
-
-#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
-#   define LUA_HAVE_PCRE_JIT 1
-#   define NGX_LUA_RE_MIN_JIT_STACK_SIZE 32 * 1024
-#else
-#   define LUA_HAVE_PCRE_JIT 0
-#endif
-
-#endif
-
-
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
 static char *ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_http_lua_create_srv_conf(ngx_conf_t *cf);
@@ -847,12 +835,6 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
-
-#if (LUA_HAVE_PCRE_JIT)
-    lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
-                                           NGX_LUA_RE_MIN_JIT_STACK_SIZE);
-#endif
-
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
