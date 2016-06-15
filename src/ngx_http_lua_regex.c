@@ -1932,7 +1932,7 @@ error:
 }
 
 
-static ngx_int_t
+ngx_int_t
 ngx_http_lua_set_jit_stack_size(int size)
 {
     ngx_http_lua_main_conf_t    *lmcf;
