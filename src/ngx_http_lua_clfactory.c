@@ -100,7 +100,7 @@
  * | [is_var_arg]      | main function always set to VARARG_ISVARARG (2)
  * ---------------------
  * | Char              | Maximum stack size this function used
- * | [maxstacksize]    | Intially set to 2
+ * | [maxstacksize]    | Initially set to 2
  * ---------------------
  * | Vector(instr)     | Code instructions of this function
  * | [code]            |

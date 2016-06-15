@@ -6125,7 +6125,7 @@ Here is a simple example:
     }
 </geshi>
 
-One can also create infinite re-occuring timers, for instance, a timer getting triggered every <code>5</code> seconds, by calling <code>ngx.timer.at</code> recursively in the timer callback function. Here is such an example,
+One can also create infinite re-occurring timers, for instance, a timer getting triggered every <code>5</code> seconds, by calling <code>ngx.timer.at</code> recursively in the timer callback function. Here is such an example,
 
 <geshi lang="lua">
     local delay = 5
