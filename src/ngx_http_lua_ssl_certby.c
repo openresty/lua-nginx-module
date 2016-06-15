@@ -120,7 +120,7 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_str_t                   *value;
     ngx_http_lua_srv_conf_t    *lscf = conf;
 
-    /*  must specifiy a concrete handler */
+    /*  must specify a concrete handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }

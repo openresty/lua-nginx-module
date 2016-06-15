@@ -530,7 +530,7 @@ Hellofoo, baz
 
 
 
-=== TEST 27: get non-existant header
+=== TEST 27: get non-existent header
 --- config
     location /lua {
         content_by_lua '
@@ -546,7 +546,7 @@ nil
 
 
 
-=== TEST 28: get non-existant header
+=== TEST 28: get non-existent header
 --- config
     location /lua {
         content_by_lua '

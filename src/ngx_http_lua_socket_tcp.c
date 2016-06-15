@@ -4902,7 +4902,7 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
 {
     ngx_http_lua_socket_tcp_upstream_t     *u;
 
-    dd("downstream destory");
+    dd("downstream destroy");
 
     u = lua_touserdata(L, 1);
     if (u == NULL) {

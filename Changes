@@ -19,7 +19,7 @@
 
 * fixed ngx.exit(status) where status >= 200 and status < 300 for access_by_lua* and rewrite_by_lua*: it should quit the whole request altegother and skip all those subsequent phase handlers (if any). thanks moodydeath for reporting it.
 
-* fixed github issue #39: setting differnt response headers in Lua with common prefix might interfere with each other. thanks moodydeath.
+* fixed github issue #39: setting different response headers in Lua with common prefix might interfere with each other. thanks moodydeath.
 
 * fixed GitHub issue #38: request headers did not forward to subrequests when the "method" or "body" option is explicitly specified by a non-nil value for ngx.location.capture(). thanks Richard Kearsley.
 
