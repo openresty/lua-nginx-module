@@ -17,14 +17,6 @@
 #include "ngx_http_lua_script.h"
 #include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_util.h"
-#include <pcre.h>
-
-
-#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
-#   define LUA_HAVE_PCRE_JIT 1
-#else
-#   define LUA_HAVE_PCRE_JIT 0
-#endif
 
 
 #if (PCRE_MAJOR >= 6)
