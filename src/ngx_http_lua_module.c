@@ -681,7 +681,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
 #ifndef NGX_LUA_NO_FFI_API
-
     /* add the cleanup of semaphores after the lua_close */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
@@ -690,7 +689,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     cln->data = lmcf;
     cln->handler = ngx_http_lua_sema_mm_cleanup;
-
 #endif
 
     if (lmcf->lua == NULL) {
@@ -761,7 +759,9 @@ ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data)
 static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
+#ifndef NGX_LUA_NO_FFI_API
     ngx_int_t       rc;
+#endif
 
     ngx_http_lua_main_conf_t    *lmcf;
 
@@ -802,11 +802,14 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
+#ifndef NGX_LUA_NO_FFI_API
     rc = ngx_http_lua_sema_mm_init(cf, lmcf);
     if (rc != NGX_OK) {
         return NULL;
     }
+
     dd("nginx Lua module main config structure initialized!");
+#endif
 
     return lmcf;
 }
