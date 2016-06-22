@@ -13,8 +13,18 @@ addons:
   apt:
     packages:
     - mysql-server
+    - axel
+    - cpanminus
+    - libtest-base-perl
+    - libtext-diff-perl
+    - liburi-perl
+    - libwww-perl
+    - libtest-longstring-perl
+    - liblist-moreutils-perl
+    - libgd-dev
 
 cache:
+  apt: true
   directories:
   - download-cache
 
@@ -48,9 +58,6 @@ env:
 services:
  - memcache
  - redis-server
-
-before_install:
-  - sudo apt-get install -y axel cpanminus libtest-base-perl libtext-diff-perl liburi-perl libwww-perl libtest-longstring-perl liblist-moreutils-perl libgd-dev
 
 install:
   - if [ ! -d download-cache ]; then mkdir download-cache; fi
@@ -89,8 +96,7 @@ script:
   - ./configure --prefix=$LIBDRIZZLE_PREFIX --without-server > build.log 2>&1 || (cat build.log && exit 1)
   - make libdrizzle-1.0 -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
-  - cd ..
-  - cd mockeagain/ && make CC=$CC -j$JOBS && cd ..
+  - cd ../mockeagain/ && make CC=$CC -j$JOBS && cd ..
   - cd test-nginx/ && sudo cpanm . && cd ..
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
   - tar zxf download-cache/pcre-$PCRE_VER.tar.gz
