@@ -645,6 +645,78 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r,
 }
 
 
+static    ngx_hash_init_t             lua_req_header_hash;
+static    u_char header_string[512];
+ngx_int_t
+lua_req_set_header_hash_init(void)
+{
+    ngx_int_t                   rc;
+    ngx_uint_t                  i;
+    ngx_uint_t                  pos = 0;
+    ngx_uint_t                  key_max_len = 0;
+    ngx_str_t                   tmp_key = {0, &header_string[0]};
+    ngx_hash_keys_arrays_t      ha;
+    ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
+
+    ngx_memzero(&ha, sizeof(ngx_hash_keys_arrays_t));
+
+    ha.temp_pool = ngx_create_pool(NGX_DEFAULT_POOL_SIZE, ngx_cycle->log);
+    if (ha.temp_pool == NULL) {
+        return NGX_ERROR;
+    }
+
+    ha.pool = ngx_create_pool(NGX_DEFAULT_POOL_SIZE, ngx_cycle->log);
+    if (ha.pool == NULL) {
+        goto failed;
+    }
+
+    if (ngx_hash_keys_array_init(&ha, 50) != NGX_OK) {
+        goto failed;
+    }
+
+    for (i = 0; handlers[i].name.len; i++) {
+        tmp_key.len = handlers[i].name.len;
+        if (tmp_key.len > key_max_len) {
+            key_max_len = tmp_key.len;
+        }
+        if (pos + tmp_key.len + 1 >= sizeof(header_string)) {
+            goto failed;
+        }
+        tmp_key.data = &header_string[pos];
+        strcpy((char *)tmp_key.data, (char *)handlers[i].name.data);
+        pos += tmp_key.len + 1;
+
+        rc = ngx_hash_add_key(&ha, &tmp_key, (void *)(i+1), 0);
+        dd("add key=%.*s len=%d idx=%d", (int)tmp_key.len, tmp_key.data, (int)tmp_key.len, (int)i);
+        if (rc == NGX_ERROR) {
+            return NGX_ERROR;
+        }
+    }
+
+    lua_req_header_hash.key = ngx_hash_key_lc;
+    lua_req_header_hash.max_size = 100;
+    lua_req_header_hash.bucket_size = key_max_len + 3 * sizeof(void *);
+    lua_req_header_hash.name = "req_set_header_hash";
+    lua_req_header_hash.pool = ha.pool;
+
+    if (ha.keys.nelts) {
+        lua_req_header_hash.hash = NULL;
+        lua_req_header_hash.temp_pool = NULL;
+
+        if (ngx_hash_init(&lua_req_header_hash, ha.keys.elts, ha.keys.nelts) != NGX_OK) {
+            goto failed;
+        }
+    }
+
+    return NGX_OK;
+failed:
+    ngx_destroy_pool(ha.temp_pool);
+    if(ha.pool != NULL) {
+        ngx_destroy_pool(ha.pool);
+    }
+    return NGX_ERROR;
+}
+
 ngx_int_t
 ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     ngx_str_t value, unsigned override)
@@ -653,6 +725,8 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
 
     ngx_uint_t                        i;
+    u_char                            uc[64];
+    void                              *v;
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
@@ -663,6 +737,7 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     hv.no_override = !override;
     hv.handler = NULL;
 
+#if 0
     for (i = 0; handlers[i].name.len; i++) {
         if (hv.key.len != handlers[i].name.len
             || ngx_strncasecmp(hv.key.data, handlers[i].name.data,
@@ -693,6 +768,22 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     }
 #endif
 
+#endif
+    i = sizeof(ngx_http_lua_set_handlers)/sizeof(ngx_http_lua_set_header_t) - 1;
+    if (key.len < 64) {
+        ngx_strlow(&uc[0], key.data, key.len);
+        v = ngx_hash_find(lua_req_header_hash.hash, hv.hash, &uc[0], key.len);
+        if (v != NULL) {
+            i = (ngx_uint_t)v - 1;
+        }
+    }
+
+    hv.offset = handlers[i].offset;
+    hv.handler = handlers[i].handler;
+
+    if (hv.handler == NULL) {
+        return NGX_ERROR;
+    }
     return hv.handler(r, &hv, &value);
 }
 
