@@ -694,8 +694,8 @@ lua_req_set_header_hash_init(void)
     }
 
     lua_req_header_hash.key = ngx_hash_key_lc;
-    lua_req_header_hash.max_size = 100;
-    lua_req_header_hash.bucket_size = key_max_len + 3 * sizeof(void *);
+    lua_req_header_hash.max_size = 512;
+    lua_req_header_hash.bucket_size = ngx_align((key_max_len + 3 * sizeof(void *)), sizeof(void *));
     lua_req_header_hash.name = "req_set_header_hash";
     lua_req_header_hash.pool = ha.pool;
 
