@@ -3302,6 +3302,8 @@ outputs something like this:
 
 This method was first introduced in the <code>v0.7.17</code> release.
 
+This method does not work in HTTP/2 requests yet.
+
 == ngx.req.get_method ==
 '''syntax:''' ''method_name = ngx.req.get_method()''
 

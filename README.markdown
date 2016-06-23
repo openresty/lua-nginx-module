@@ -3998,6 +3998,8 @@ outputs something like this:
 
 This method was first introduced in the `v0.7.17` release.
 
+This method does not work in HTTP/2 requests yet.
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_method
