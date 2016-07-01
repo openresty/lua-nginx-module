@@ -276,7 +276,7 @@ done
 
 
 
-=== TEST 10: empty key, but non-emtpy values
+=== TEST 10: empty key, but non-empty values
 --- config
     location /lua {
         content_by_lua '
@@ -818,7 +818,7 @@ lua hit query args limit 2
 
 
 
-=== TEST 36: max args (limited after an empty key, but non-emtpy values)
+=== TEST 36: max args (limited after an empty key, but non-empty values)
 --- config
     location /lua {
         content_by_lua '

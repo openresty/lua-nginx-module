@@ -147,10 +147,18 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     }
 
     if (size == 0) {
-        /* do nothing for empty strings */
+        rc = ngx_http_lua_send_header_if_needed(r, ctx);
+        if (rc == NGX_ERROR || rc > NGX_OK) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "nginx output filter error");
+            return 2;
+        }
+
         lua_pushinteger(L, 1);
         return 1;
     }
+
+    ctx->seen_body_data = 1;
 
     cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
                                          &ctx->free_bufs, size);
@@ -511,7 +519,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 
 #if 1
-    if (!r->header_sent && !ctx->header_sent) {
+    if ((!r->header_sent && !ctx->header_sent)
+        || (!ctx->seen_body_data && !wait))
+    {
         lua_pushnil(L);
         lua_pushliteral(L, "nothing to flush");
         return 2;

@@ -548,7 +548,7 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
 
     if (n == 1) {
         num = luaL_checkinteger(L, 1);
-        if (num <= 0) {
+        if (num < 0) {
             return luaL_error(L, "bad size argument: %d", (int) num);
         }
 
@@ -558,13 +558,10 @@ ngx_http_lua_ngx_req_init_body(lua_State *L)
 
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
         size = clcf->client_body_buffer_size;
+    }
 
-        size += size >> 2;
-
-        /* avoid allocating an unnecessary large buffer */
-        if (size > (size_t) r->headers_in.content_length_n) {
-            size = (size_t) r->headers_in.content_length_n;
-        }
+    if (size == 0) {
+        r->request_body_in_file_only = 1;
     }
 
     rb = r->request_body;
@@ -619,9 +616,11 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
     ngx_http_request_t          *r;
     int                          n;
     ngx_http_request_body_t     *rb;
-    ngx_str_t                   body;
-    size_t                      size, rest;
-    size_t                      offset = 0;
+    ngx_str_t                    body;
+    size_t                       size, rest;
+    size_t                       offset = 0;
+    ngx_chain_t                  chain;
+    ngx_buf_t                    buf;
 
     n = lua_gettop(L);
 
@@ -642,7 +641,25 @@ ngx_http_lua_ngx_req_append_body(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
+    }
+
+    if (r->request_body_in_file_only) {
+        buf.start = body.data;
+        buf.pos = buf.start;
+        buf.last = buf.start + body.len;
+        buf.end = buf.last;
+        buf.temporary = 1;
+
+        chain.buf = &buf;
+        chain.next = NULL;
+
+        if (ngx_http_lua_write_request_body(r, &chain) != NGX_OK) {
+            return luaL_error(L, "fail to write file");
+        }
+
+        r->headers_in.content_length_n += body.len;
+        return 0;
     }
 
     rb = r->request_body;
@@ -683,10 +700,10 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
     int                          n;
     ngx_http_request_body_t     *rb;
     ngx_buf_t                   *b;
-    size_t                      size;
-    ngx_str_t                   value;
-    ngx_str_t                   key;
-    ngx_int_t                   rc;
+    size_t                       size;
+    ngx_str_t                    value;
+    ngx_str_t                    key;
+    ngx_int_t                    rc;
 
     n = lua_gettop(L);
 
@@ -705,7 +722,7 @@ ngx_http_lua_ngx_req_body_finish(lua_State *L)
         || r->request_body->buf == NULL
         || r->request_body->bufs == NULL)
     {
-        return luaL_error(L, "request_body not initalized");
+        return luaL_error(L, "request_body not initialized");
     }
 
     rb = r->request_body;

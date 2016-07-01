@@ -166,7 +166,7 @@ ngx_http_lua_cache_loadbuffer(ngx_log_t *log, lua_State *L,
     rc = ngx_http_lua_clfactory_loadbuffer(L, (char *) src, src_len, name);
 
     if (rc != 0) {
-        /*  Oops! error occured when loading Lua script */
+        /*  Oops! error occurred when loading Lua script */
         if (rc == LUA_ERRMEM) {
             err = "memory allocation error";
 
@@ -252,7 +252,7 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
     dd("loadfile returns %d (%d)", (int) rc, LUA_ERRFILE);
 
     if (rc != 0) {
-        /*  Oops! error occured when loading Lua script */
+        /*  Oops! error occurred when loading Lua script */
         switch (rc) {
         case LUA_ERRMEM:
             err = "memory allocation error";

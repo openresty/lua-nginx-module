@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 14);
+plan tests => repeat_each() * (blocks() * 2 + 15);
 
 #no_diff();
 no_long_string();
@@ -409,7 +409,7 @@ error: .*?unknown flag "H" \(flags "Hm"\)
     GET /re
 --- response_body
 hello
-nil
+false
 hello
 
 
@@ -814,7 +814,7 @@ hello-1234
 
 
 
-=== TEST 38: named captures are nil
+=== TEST 38: named captures are false
 --- config
     location /re {
         content_by_lua '
@@ -834,10 +834,10 @@ hello-1234
     GET /re
 --- response_body
 hello
-nil
+false
 hello
-nil
-nil
+false
+false
 
 
 
@@ -1124,6 +1124,8 @@ failed to match
 1: res size: 2
 2: m size: 2
 2: res size: 2
+--- no_error_log
+[error]
 
 
 
@@ -1148,3 +1150,43 @@ failed to match
 1234
 --- SKIP
 
+
+
+=== TEST 49: trailing captures are false
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("hello", "(hello)(.+)?")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hello
+hello
+false
+
+
+
+=== TEST 50: the 5th argument hides the 4th (GitHub #719)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx, m = { pos = 5 }, {};
+            local _, err = ngx.re.match("20172016-11-3 03:07:09", [=[(\d\d\d\d)]=], "", ctx, m);
+            if m then
+                ngx.say(m[0], " ", _[0], " ", ctx.pos)
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+2016 2016 9

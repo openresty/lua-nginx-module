@@ -111,8 +111,6 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    lua_createtable(L, 0, 4);
-
     if (r->args.len == 0) {
         lua_createtable(L, 0, 0);
         return 1;
@@ -125,6 +123,8 @@ ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
     if (buf == NULL) {
         return luaL_error(L, "no memory");
     }
+
+    lua_createtable(L, 0, 4);
 
     ngx_memcpy(buf, r->args.data, r->args.len);
 
@@ -183,12 +183,13 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
     }
 
     if (r->request_body->temp_file) {
-        return luaL_error(L, "requesty body in temp file not supported");
+        lua_pushnil(L);
+        lua_pushliteral(L, "requesty body in temp file not supported");
+        return 2;
     }
 
-    lua_createtable(L, 0, 4);
-
     if (r->request_body->bufs == NULL) {
+        lua_createtable(L, 0, 0);
         return 1;
     }
 
@@ -211,6 +212,8 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
     if (buf == NULL) {
         return luaL_error(L, "no memory");
     }
+
+    lua_createtable(L, 0, 4);
 
     p = buf;
     for (cl = r->request_body->bufs; cl; cl = cl->next) {

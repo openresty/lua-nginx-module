@@ -140,7 +140,7 @@ void
 ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t          **p;
+    ngx_rbtree_node_t           **p;
     ngx_http_lua_shdict_node_t   *sdn, *sdnt;
 
     for ( ;; ) {
@@ -949,7 +949,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     if (n >= 4) {
         exptime = luaL_checknumber(L, 4);
         if (exptime < 0) {
-            exptime = 0;
+            return luaL_error(L, "bad \"exptime\" argument");
         }
     }
 

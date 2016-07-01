@@ -53,6 +53,12 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         lua_pushnumber(L, 1.1);
         break;
 
+#ifdef NGX_HTTP_VERSION_20
+    case NGX_HTTP_VERSION_20:
+        lua_pushnumber(L, 2.0);
+        break;
+#endif
+
     default:
         lua_pushnil(L);
         break;
@@ -92,6 +98,12 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     mr = r->main;
     hc = mr->http_connection;
     c = mr->connection;
+
+#if (NGX_HTTP_V2)
+    if (mr->stream) {
+        return luaL_error(L, "http v2 not supported yet");
+    }
+#endif
 
 #if 1
     dd("hc->nbusy: %d", (int) hc->nbusy);

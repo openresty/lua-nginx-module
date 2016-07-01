@@ -409,7 +409,7 @@ cached: hello
 
 
 
-=== TEST 14: emtpy args option table
+=== TEST 14: empty args option table
 --- config
     location /foo {
         echo $query_string;

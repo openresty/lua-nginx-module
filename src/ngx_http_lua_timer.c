@@ -359,7 +359,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
     ngx_free(ev);
-    ev = NULL;
 
     lmcf = tctx.lmcf;
 
@@ -604,7 +603,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
 
     cur = ngx_event_timer_rbtree.root;
 
-    /* XXX nginx does not guarentee the parent of root is meaningful,
+    /* XXX nginx does not guarantee the parent of root is meaningful,
      * so we temporarily override it to simplify tree traversal. */
     temp = cur->parent;
     cur->parent = NULL;

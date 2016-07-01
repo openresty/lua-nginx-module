@@ -160,6 +160,10 @@ ngx_http_lua_ngx_set(lua_State *L)
             return 0;
         }
 
+        if (r->err_status) {
+            r->err_status = 0;
+        }
+
         ngx_http_lua_check_fake_request(L, r);
 
         /* get the value */
@@ -234,6 +238,10 @@ ngx_http_lua_ffi_set_resp_status(ngx_http_request_t *r, int status)
     }
 
     r->headers_out.status = status;
+
+    if (r->err_status) {
+        r->err_status = 0;
+    }
 
     if (status == 101) {
         /*

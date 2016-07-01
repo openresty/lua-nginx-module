@@ -116,7 +116,7 @@ ngx_http_lua_body_filter_by_chunk(lua_State *L, ngx_http_request_t *r,
 
     if (rc != 0) {
 
-        /*  error occured */
+        /*  error occurred */
         err_msg = (u_char *) lua_tolstring(L, -1, &len);
 
         if (err_msg == NULL) {

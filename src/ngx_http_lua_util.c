@@ -907,16 +907,16 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
     ngx_http_request_t          *r;
     ngx_http_lua_main_conf_t    *lmcf;
 
-    r = ctx->request;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua request cleanup: forcible=%d", forcible);
-
     /*  force coroutine handling the request quit */
     if (ctx == NULL) {
         dd("ctx is NULL");
         return;
     }
+
+    r = ctx->request;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua request cleanup: forcible=%d", forcible);
 
     if (ctx->cleanup) {
         *ctx->cleanup = NULL;
@@ -1649,6 +1649,8 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
 
             if (coctx[i].flushing) {
                 coctx[i].flushing = 0;
+                ctx->flushing_coros--;
+                n--;
                 ctx->cur_co_ctx = &coctx[i];
 
                 rc = ngx_http_lua_flush_resume_helper(r, ctx);
@@ -1658,8 +1660,6 @@ ngx_http_lua_process_flushing_coroutines(ngx_http_request_t *r,
 
                 /* rc == NGX_DONE */
 
-                ctx->flushing_coros--;
-                n--;
                 if (n == 0) {
                     return NGX_DONE;
                 }
@@ -1694,6 +1694,8 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
                    c->buffered);
 
     if (ctx->busy_bufs) {
+        /* FIXME since cosockets also share this busy_bufs chain, this condition
+         * might not be strong enough. better use separate busy_bufs chains. */
         rc = ngx_http_lua_output_filter(r, NULL);
 
     } else {
@@ -3289,6 +3291,12 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
         return NGX_HTTP_CLIENT_CLOSED_REQUEST;
     }
 
+#if (NGX_HTTP_V2)
+    if (r->stream) {
+        return NGX_OK;
+    }
+#endif
+
 #if (NGX_HAVE_KQUEUE)
 
     if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
@@ -3782,8 +3790,9 @@ ngx_http_lua_cleanup_vm(void *data)
 #endif
 
     if (state) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0, "decrementing "
-                       "the reference count for Lua VM: %i", state->count);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua decrementing the reference count for Lua VM: %i",
+                       state->count);
 
         if (--state->count == 0) {
             L = state->vm;

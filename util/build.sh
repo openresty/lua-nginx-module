@@ -20,12 +20,12 @@ force=$2
             #--with-cc=gcc46 \
             #--with-cc=clang \
             #--without-http_referer_module \
-            #--with-http_v2_module \
             #--with-http_spdy_module \
 
 time ngx-build $force $version \
             --with-ipv6 \
             --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
+            --with-http_v2_module \
             --with-http_realip_module \
             --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
@@ -39,7 +39,7 @@ time ngx-build $force $version \
             --without-http_memcached_module \
             --without-http_auth_basic_module \
             --without-http_userid_module \
-                --add-module=$home/work/nginx/ngx_http_auth_request_module-0.2 \
+            --with-http_auth_request_module \
                 --add-module=$root/../echo-nginx-module \
                 --add-module=$root/../memc-nginx-module \
                 --add-module=$root/../srcache-nginx-module \

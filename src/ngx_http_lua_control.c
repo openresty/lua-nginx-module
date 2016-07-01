@@ -459,6 +459,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                                       | NGX_HTTP_LUA_CONTEXT_BALANCER
                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
                                        err, errlen)
         != NGX_OK)
@@ -519,7 +520,9 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua exit with code %i", ctx->exit_code);
 
-    if (ctx->context & NGX_HTTP_LUA_CONTEXT_HEADER_FILTER) {
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                        | NGX_HTTP_LUA_CONTEXT_BALANCER))
+    {
         return NGX_DONE;
     }
 

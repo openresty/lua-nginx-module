@@ -198,7 +198,7 @@ ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r)
 #endif
 
         if (rc != 0) {
-            /*  error occured when running loaded code */
+            /*  error occurred when running loaded code */
             err_msg = (u_char *) lua_tolstring(L, -1, &len);
 
             if (err_msg == NULL) {
