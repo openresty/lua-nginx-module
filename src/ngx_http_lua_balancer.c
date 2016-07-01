@@ -33,6 +33,10 @@ struct ngx_http_lua_balancer_peer_data_s {
     in_port_t                           port;
 
     int                                 last_peer_state;
+
+#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+    unsigned                            cloned_upstream_conf;  /* :1 */
+#endif
 };
 
 
@@ -530,6 +534,101 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     } else {
         *err = "no host allowed";
         return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
+    long connect_timeout, long send_timeout, long read_timeout,
+    char **err)
+{
+    ngx_http_lua_ctx_t    *ctx;
+    ngx_http_upstream_t   *u;
+
+#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+    ngx_http_upstream_conf_t           *ucf;
+#endif
+    ngx_http_lua_main_conf_t           *lmcf;
+    ngx_http_lua_balancer_peer_data_t  *bp;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        *err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    bp = lmcf->balancer_peer_data;
+    if (bp == NULL) {
+        *err = "no upstream peer data found";
+        return NGX_ERROR;
+    }
+
+#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+    if (!bp->cloned_upstream_conf) {
+        /* we clone the upstream conf for the current request so that
+         * we do not affect other requests at all. */
+
+        ucf = ngx_palloc(r->pool, sizeof(ngx_http_upstream_conf_t));
+
+        if (ucf == NULL) {
+            *err = "no memory";
+            return NGX_ERROR;
+        }
+
+        ngx_memcpy(ucf, u->conf, sizeof(ngx_http_upstream_conf_t));
+
+        u->conf = ucf;
+        bp->cloned_upstream_conf = 1;
+
+    } else {
+        ucf = u->conf;
+    }
+#endif
+
+    if (connect_timeout > 0) {
+#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+        u->connect_timeout = (ngx_msec_t) connect_timeout;
+#else
+        ucf->connect_timeout = (ngx_msec_t) connect_timeout;
+#endif
+    }
+
+    if (send_timeout > 0) {
+#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+        u->send_timeout = (ngx_msec_t) send_timeout;
+#else
+        ucf->send_timeout = (ngx_msec_t) send_timeout;
+#endif
+    }
+
+    if (read_timeout > 0) {
+#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+        u->read_timeout = (ngx_msec_t) read_timeout;
+#else
+        ucf->read_timeout = (ngx_msec_t) read_timeout;
+#endif
     }
 
     return NGX_OK;
