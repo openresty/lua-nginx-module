@@ -776,7 +776,84 @@ qr/lua tcp socket connection pool size: 30\b/]
 
 
 
-=== TEST 11: sanity (uds)
+=== TEST 11: lua_socket_keepalive_timeout nil args
+--- config
+   server_tokens off;
+   location /t {
+       keepalive_timeout 60s;
+       lua_socket_keepalive_timeout 100ms;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua '
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: keepalive\\r\\n\\r\\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\\r\\n0\\r\\n\\r\\n")
+            local data, res = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            local ok, err = sock:setkeepalive(nil, nil)
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("done")
+        ';
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 61
+received response of 156 bytes
+done
+--- no_error_log
+[error]
+--- error_log eval
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 100 ms",
+qr/lua tcp socket connection pool size: 30\b/]
+--- timeout: 4
+
+
+
+=== TEST 12: sanity (uds)
 --- http_config eval
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
@@ -858,7 +935,7 @@ received response of 119 bytes
 
 
 
-=== TEST 12: github issue #108: ngx.locaiton.capture + redis.set_keepalive
+=== TEST 13: github issue #108: ngx.locaiton.capture + redis.set_keepalive
 --- http_config eval
     qq{
         lua_package_path "$::HtmlDir/?.lua;;";
@@ -905,7 +982,7 @@ lua tcp socket get keepalive peer: using connection
 
 
 
-=== TEST 13: github issue #110: ngx.exit with HTTP_NOT_FOUND causes worker process to exit
+=== TEST 14: github issue #110: ngx.exit with HTTP_NOT_FOUND causes worker process to exit
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -964,7 +1041,7 @@ Not found, dear...
 
 
 
-=== TEST 14: custom pools (different pool for the same host:port) - tcp
+=== TEST 15: custom pools (different pool for the same host:port) - tcp
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1012,7 +1089,7 @@ lua tcp socket keepalive create connection pool for key "B"
 
 
 
-=== TEST 15: custom pools (same pool for different host:port) - tcp
+=== TEST 16: custom pools (same pool for different host:port) - tcp
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1059,7 +1136,7 @@ lua tcp socket get keepalive peer: using connection
 
 
 
-=== TEST 16: custom pools (different pool for the same host:port) - unix
+=== TEST 17: custom pools (different pool for the same host:port) - unix
 --- http_config eval
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
@@ -1119,7 +1196,7 @@ lua tcp socket keepalive create connection pool for key "B"
 
 
 
-=== TEST 17: custom pools (same pool for the same path) - unix
+=== TEST 18: custom pools (same pool for the same path) - unix
 --- http_config eval
 "
     lua_package_path '$::HtmlDir/?.lua;./?.lua';
@@ -1174,7 +1251,7 @@ lua tcp socket get keepalive peer: using connection
 
 
 
-=== TEST 18: numeric pool option value
+=== TEST 19: numeric pool option value
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1221,7 +1298,7 @@ lua tcp socket get keepalive peer: using connection
 
 
 
-=== TEST 19: nil pool option value
+=== TEST 20: nil pool option value
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1264,7 +1341,7 @@ connected: 1, reused: 0
 
 
 
-=== TEST 20: (bad) table pool option value
+=== TEST 21: (bad) table pool option value
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1305,7 +1382,7 @@ bad argument #3 to 'connect' (bad "pool" option type: table)
 
 
 
-=== TEST 21: (bad) boolean pool option value
+=== TEST 22: (bad) boolean pool option value
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
@@ -1346,7 +1423,7 @@ bad argument #3 to 'connect' (bad "pool" option type: boolean)
 
 
 
-=== TEST 22: clear the redis store
+=== TEST 23: clear the redis store
 --- config
     location /t {
         redis2_query flushall;
@@ -1363,7 +1440,7 @@ bad argument #3 to 'connect' (bad "pool" option type: boolean)
 
 
 
-=== TEST 23: bug in send(): clear the chain writer ctx
+=== TEST 24: bug in send(): clear the chain writer ctx
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
