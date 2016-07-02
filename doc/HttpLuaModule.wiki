@@ -5160,7 +5160,9 @@ When the key does not exist in the dictionary and if the <code>init</code> argum
 
 Like the [[#ngx.shared.DICT.add|add]] method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
 
-The <code>forcible</code> return value will not be returned when <code>init</code> argument is not specified.
+The <code>forcible</code> return value will always be <code>nil</code> when the <code>init</code> argument is not specified.
+
+If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, the <code>forcible</code> return value will be <code>true</code>. If it stores the item without forcibly removing other valid items, then the return value <code>forcible</code> will be <code>false</code>.
 
 If the original value is not a valid Lua number in the dictionary, it will return <code>nil</code> and <code>"not a number"</code>.
 

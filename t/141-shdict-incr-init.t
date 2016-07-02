@@ -6,7 +6,7 @@ use Test::Nginx::Socket::Lua;
 #master_process_enabled(1);
 #log_level('warn');
 
-#repeat_each(2);
+repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 + 0);
 
@@ -24,13 +24,13 @@ __DATA__
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:incr("foo", 10502, 1)
             ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -47,13 +47,14 @@ foo = 10534
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
+            dogs:flush_all()
             dogs:set("bah", 32)
             local res, err = dogs:incr("foo", 10502, 1)
             ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -70,7 +71,7 @@ foo = 10503
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             for i = 1, 20 do
                 dogs:set("bar" .. i, i, 0.001)
@@ -80,7 +81,7 @@ foo = 10503
             local res, err = dogs:incr("foo", 10502, 0)
             ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
     location ~ ^/sleep/(.+) {
         echo_sleep $1;
@@ -100,7 +101,7 @@ foo = 10502
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             for i = 1, 20 do
                 dogs:set("bar" .. i, i, 0.001)
@@ -110,7 +111,7 @@ foo = 10502
             local res, err = dogs:incr("foo", 10502, 0)
             ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
     location ~ ^/sleep/(.+) {
         echo_sleep $1;
@@ -130,7 +131,7 @@ foo = 10502
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:flush_all()
             local long_prefix = string.rep("1234567890", 100)
@@ -146,7 +147,7 @@ foo = 10502
             local res, err, forcible = dogs:incr(long_prefix .. "foo", 10502, 0)
             ngx.say("incr: ", res, " ", err, " ", forcible)
             ngx.say("foo = ", dogs:get(long_prefix .. "foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -164,13 +165,13 @@ foo = 10502
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 1)
             local res, err, forcible = dogs:incr("foo", 1)
             ngx.say("incr: ", res, " ", err, " ", forcible)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -187,13 +188,13 @@ foo = 2
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", true)
             local res, err = dogs:incr("foo", 1, 0)
             ngx.say("incr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -202,3 +203,24 @@ incr: nil not a number
 foo = true
 --- no_error_log
 [error]
+
+
+
+=== TEST 6: init is not number
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+            local res, err, forcible = dogs:incr("foo", 1, "bar")
+            ngx.say("incr: ", res, " ", err, " ", forcible)
+            ngx.say("foo = ", dogs:get("foo"))
+        }
+    }
+--- request
+GET /test
+--- error_code: 500
+--- response_body_like: 500
+--- error_log
+number expected, got string

@@ -6159,7 +6159,9 @@ When the key does not exist in the dictionary and if the `init` argument
 
 Like the [add](#ngxshareddictadd) method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
 
-The `forcible` return value will not be returned when `init` argument is not specified.
+The `forcible` return value will always be `nil` when the `init` argument is not specified.
+
+If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, the `forcible` return value will be `true`. If it stores the item without forcibly removing other valid items, then the return value `forcible` will be `false`.
 
 If the original value is not a valid Lua number in the dictionary, it will return `nil` and `"not a number"`.
 
