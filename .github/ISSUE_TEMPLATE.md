@@ -4,19 +4,15 @@ discussions, please join the openresty-en mailing list instead: https://openrest
 Ensure you have provided the following details while reporting a problem:
 
 * The exact version of the related software, including but not limited to the OpenResty version
-(if any), the NGINX core version, the ngx_lua module version,
+(if any), the NGINX core version, the `ngx_lua` module version,
 and your operating system version.
-
 * A minimal and standalone test case that others can easily run on their side and
 reproduce the issue you are seeing.
-
 * Do not simply say "something is broken" or "something does not work". Always provide
 as much details as possible. Always describe the symptoms and your expected results.
-
 * You can (temporarily) enable the nginx debugging logs to see the internal workings
-of NGINX in your nginx''s C<error.log> file. See http://nginx.org/en/docs/debugging_log.html
+of NGINX in your nginx''s `error.log` file. See http://nginx.org/en/docs/debugging_log.html
 The same instructions apply equally well to OpenResty.
-
 * If you are seeing crashes, please provide the full backtrace for the crash. See
 https://www.nginx.com/resources/wiki/start/topics/tutorials/debugging/#core-dump
 for more details.
