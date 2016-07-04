@@ -153,6 +153,11 @@ src/uthread.[ch]
 src/timer.[ch]
 src/config.[ch]
 src/worker.[ch]
+src/certby.[ch]
+src/ocsp.c
+src/lex.[ch]
+src/balancer.[ch]
+src/semaphore.[ch]
 *.plist
 lua
 ttimer

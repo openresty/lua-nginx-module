@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -9,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 24);
+plan tests => repeat_each() * (2 * blocks() + 30);
 
 #no_diff();
 #no_long_string();
@@ -1505,5 +1504,119 @@ GET /t
 If-None-Match: *
 --- response_body
 test
+--- no_error_log
+[error]
+
+
+
+=== TEST 49: set the Destination request header for WebDav
+--- config
+    location = /a.txt {
+        rewrite_by_lua_block {
+            ngx.req.set_header("Destination", "/b.txt")
+        }
+        dav_methods MOVE;
+        dav_access            all:rw;
+        root                  html;
+    }
+
+--- user_files
+>>> a.txt
+hello, world!
+
+--- request
+MOVE /a.txt
+
+--- response_body
+--- no_error_log
+client sent no "Destination" header
+[error]
+--- error_code: 204
+
+
+
+=== TEST 50: X-Forwarded-For
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.req.set_header("X-Forwarded-For", "8.8.8.8")
+        }
+        proxy_pass http://127.0.0.1:$server_port/back;
+        proxy_set_header Foo $proxy_add_x_forwarded_for;
+    }
+
+    location = /back {
+        echo "Foo: $http_foo";
+    }
+
+--- request
+GET /t
+
+--- response_body
+Foo: 8.8.8.8, 127.0.0.1
+--- no_error_log
+[error]
+
+
+
+=== TEST 51: X-Forwarded-For
+--- config
+    location = /t {
+        access_by_lua_block {
+            ngx.req.clear_header("X-Forwarded-For")
+        }
+        proxy_pass http://127.0.0.1:$server_port/back;
+        proxy_set_header Foo $proxy_add_x_forwarded_for;
+    }
+
+    location = /back {
+        echo "Foo: $http_foo";
+    }
+
+--- request
+GET /t
+
+--- more_headers
+X-Forwarded-For: 8.8.8.8
+--- response_body
+Foo: 127.0.0.1
+--- no_error_log
+[error]
+
+
+
+=== TEST 52: for bad requests (bad request method letter case)
+--- config
+    error_page 400 = /err;
+
+    location = /err {
+        content_by_lua_block {
+            ngx.req.set_header("Foo", "bar")
+            ngx.say("ok")
+        }
+    }
+--- raw_request
+GeT / HTTP/1.1
+--- response_body
+ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 53: for bad requests (bad request method names)
+--- config
+    error_page 400 = /err;
+
+    location = /err {
+        content_by_lua_block {
+            ngx.req.set_header("Foo", "bar")
+            ngx.say("ok")
+        }
+    }
+--- raw_request
+GET x HTTP/1.1
+--- response_body
+ok
 --- no_error_log
 [error]

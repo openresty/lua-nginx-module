@@ -29,7 +29,7 @@ static ngx_int_t ngx_http_set_connection_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_set_content_length_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
-static ngx_int_t ngx_http_set_cookie_header(ngx_http_request_t *r,
+static ngx_int_t ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 static ngx_int_t ngx_http_clear_builtin_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value);
@@ -44,17 +44,6 @@ static ngx_int_t ngx_http_lua_rm_header_helper(ngx_list_t *l,
 
 
 static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
-
-#if (NGX_HTTP_GZIP)
-    { ngx_string("Accept-Encoding"),
-                 offsetof(ngx_http_headers_in_t, accept_encoding),
-                 ngx_http_set_builtin_header },
-
-    { ngx_string("Via"),
-                 offsetof(ngx_http_headers_in_t, via),
-                 ngx_http_set_builtin_header },
-#endif
-
     { ngx_string("Host"),
                  offsetof(ngx_http_headers_in_t, host),
                  ngx_http_set_host_header },
@@ -91,6 +80,10 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, referer),
                  ngx_http_set_builtin_header },
 
+    { ngx_string("Content-Length"),
+                 offsetof(ngx_http_headers_in_t, content_length),
+                 ngx_http_set_content_length_header },
+
     { ngx_string("Content-Type"),
                  offsetof(ngx_http_headers_in_t, content_type),
                  ngx_http_set_builtin_header },
@@ -111,6 +104,22 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, expect),
                  ngx_http_set_builtin_header },
 
+#if defined(nginx_version) && nginx_version >= 1003013
+    { ngx_string("Upgrade"),
+                 offsetof(ngx_http_headers_in_t, upgrade),
+                 ngx_http_set_builtin_header },
+#endif
+
+#if (NGX_HTTP_GZIP)
+    { ngx_string("Accept-Encoding"),
+                 offsetof(ngx_http_headers_in_t, accept_encoding),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Via"),
+                 offsetof(ngx_http_headers_in_t, via),
+                 ngx_http_set_builtin_header },
+#endif
+
     { ngx_string("Authorization"),
                  offsetof(ngx_http_headers_in_t, authorization),
                  ngx_http_set_builtin_header },
@@ -119,19 +128,39 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_in_t, keep_alive),
                  ngx_http_set_builtin_header },
 
-    { ngx_string("Content-Length"),
-                 offsetof(ngx_http_headers_in_t, content_length),
-                 ngx_http_set_content_length_header },
+#if (NGX_HTTP_X_FORWARDED_FOR)
+    { ngx_string("X-Forwarded-For"),
+                 offsetof(ngx_http_headers_in_t, x_forwarded_for),
+                 ngx_http_set_builtin_multi_header },
 
-    { ngx_string("Cookie"),
-                 0,
-                 ngx_http_set_cookie_header },
+#endif
 
 #if (NGX_HTTP_REALIP)
     { ngx_string("X-Real-IP"),
                  offsetof(ngx_http_headers_in_t, x_real_ip),
                  ngx_http_set_builtin_header },
 #endif
+
+#if (NGX_HTTP_DAV)
+    { ngx_string("Depth"),
+                 offsetof(ngx_http_headers_in_t, depth),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Destination"),
+                 offsetof(ngx_http_headers_in_t, destination),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Overwrite"),
+                 offsetof(ngx_http_headers_in_t, overwrite),
+                 ngx_http_set_builtin_header },
+
+    { ngx_string("Date"), offsetof(ngx_http_headers_in_t, date),
+                 ngx_http_set_builtin_header },
+#endif
+
+    { ngx_string("Cookie"),
+                 offsetof(ngx_http_headers_in_t, cookies),
+                 ngx_http_set_builtin_multi_header },
 
     { ngx_null_string, 0, ngx_http_set_header }
 };
@@ -233,6 +262,11 @@ retry:
     }
 
 new_header:
+
+    if (r->headers_in.headers.last == NULL) {
+        /* must be 400 bad request */
+        return NGX_OK;
+    }
 
     h = ngx_list_push(&r->headers_in.headers);
 
@@ -536,7 +570,7 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    dd("reset headers_in.content_length_n to %d", (int)len);
+    dd("reset headers_in.content_length_n to %d", (int) len);
 
     r->headers_in.content_length_n = len;
 
@@ -545,27 +579,30 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
 
 
 static ngx_int_t
-ngx_http_set_cookie_header(ngx_http_request_t *r,
+ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
     ngx_http_lua_header_val_t *hv, ngx_str_t *value)
 {
-    ngx_table_elt_t  **cookie, *h;
+    ngx_array_t       *headers;
+    ngx_table_elt_t  **v, *h;
 
-    if (!hv->no_override && r->headers_in.cookies.nelts > 0) {
-        ngx_array_destroy(&r->headers_in.cookies);
+    headers = (ngx_array_t *) ((char *) &r->headers_in + hv->offset);
 
-        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+    if (!hv->no_override && headers->nelts > 0) {
+        ngx_array_destroy(headers);
+
+        if (ngx_array_init(headers, r->pool, 2,
                            sizeof(ngx_table_elt_t *))
             != NGX_OK)
         {
             return NGX_ERROR;
         }
 
-        dd("clear headers in cookies: %d", (int) r->headers_in.cookies.nelts);
+        dd("clear multi-value headers: %d", (int) headers->nelts);
     }
 
 #if 1
-    if (r->headers_in.cookies.nalloc == 0) {
-        if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+    if (headers->nalloc == 0) {
+        if (ngx_array_init(headers, r->pool, 2,
                            sizeof(ngx_table_elt_t *))
             != NGX_OK)
         {
@@ -582,14 +619,14 @@ ngx_http_set_cookie_header(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    dd("new cookie header: %p", h);
+    dd("new multi-value header: %p", h);
 
-    cookie = ngx_array_push(&r->headers_in.cookies);
-    if (cookie == NULL) {
+    v = ngx_array_push(headers);
+    if (v == NULL) {
         return NGX_ERROR;
     }
 
-    *cookie = h;
+    *v = h;
     return NGX_OK;
 }
 

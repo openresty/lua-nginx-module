@@ -93,14 +93,14 @@
  * | Char              | Number of upvalues referenced by this function
  * | [nups]            |
  * ---------------------
- * | Char              | Number of paramters of this function
+ * | Char              | Number of parameters of this function
  * | [numparams]       |
  * ---------------------
  * | Char              | Does this function has variable number of arguments?
  * | [is_var_arg]      | main function always set to VARARG_ISVARARG (2)
  * ---------------------
  * | Char              | Maximum stack size this function used
- * | [maxstacksize]    | Intially set to 2
+ * | [maxstacksize]    | Initially set to 2
  * ---------------------
  * | Vector(instr)     | Code instructions of this function
  * | [code]            |
@@ -177,7 +177,7 @@
  * | Char              | F(ffi) | V(vararg)| C(has internal funcs)
  * | [func flag]       |
  * ---------------------
- * | Char              | Number of paramters of this function
+ * | Char              | Number of parameters of this function
  * | [numparams]       |
  * ---------------------
  * | Char              |
@@ -368,7 +368,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
         dd("==LJ_BT_HEADER==");
         size_t i;
         for (i = 0; i < LJ_HEADERSIZE; i++) {
-            dd("%ld: 0x%02X", i, (unsigned)(u_char)lf->begin_code.str[i]);
+            dd("%ld: 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
         }
         dd("==LJ_BT_HEADER_END==");
         }
@@ -471,7 +471,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
         dd("==LUA_BT_HEADER==");
         size_t i;
         for (i = 0; i < LUAC_HEADERSIZE; i++) {
-            dd("%ld, 0x%02X", i, (unsigned)(u_char)lf->begin_code.str[i]);
+            dd("%ld, 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
         }
         dd("==LUA_BT_HEADER_END==");
         }
@@ -498,7 +498,7 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
                     sizeof(size_t) + sizeof(int) * 2);
         /* number of upvalues */
         *(lf->begin_code.str + POS_NUM_OF_UPVS) = 0;
-        /* number of paramters */
+        /* number of parameters */
         *(lf->begin_code.str + POS_NUM_OF_PARA) = 0;
         /* is var-argument function? */
         *(lf->begin_code.str + POS_IS_VAR_ARG) = 2;

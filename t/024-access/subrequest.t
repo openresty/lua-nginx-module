@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -410,7 +409,7 @@ cached: hello
 
 
 
-=== TEST 14: emtpy args option table
+=== TEST 14: empty args option table
 --- config
     location /foo {
         echo $query_string;

@@ -1,11 +1,10 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 7);
+plan tests => repeat_each() * 219;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -87,7 +86,7 @@ __DATA__
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -163,7 +162,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -240,7 +239,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -321,7 +320,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -372,11 +371,12 @@ lua ssl free session
 
 
 === TEST 5: certificate does not match host name (verify)
+The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
     lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_ssl_verify_depth 2;
+    lua_ssl_verify_depth 5;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -394,14 +394,14 @@ lua ssl free session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "agentzh.org", true)
+                local session, err = sock:sslhandshake(nil, "blah.agentzh.org", true)
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                 else
                     ngx.say("ssl handshake: ", type(session))
                 end
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -412,7 +412,7 @@ lua ssl free session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -440,8 +440,8 @@ failed to send http request: closed
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
 --- grep_error_log_out
 --- error_log
-lua ssl server name: "agentzh.org"
-lua ssl certificate does not match host "agentzh.org"
+lua ssl server name: "blah.agentzh.org"
+lua ssl certificate does not match host "blah.agentzh.org"
 --- no_error_log
 SSL reused session
 [alert]
@@ -450,6 +450,7 @@ SSL reused session
 
 
 === TEST 6: certificate does not match host name (verify, no log socket errors)
+The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER;
@@ -473,14 +474,14 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "agentzh.org", true)
+                local session, err = sock:sslhandshake(nil, "blah.agentzh.org", true)
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                 else
                     ngx.say("ssl handshake: ", type(session))
                 end
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: blah.agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -491,7 +492,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -519,7 +520,7 @@ failed to send http request: closed
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
 --- grep_error_log_out
 --- error_log
-lua ssl server name: "agentzh.org"
+lua ssl server name: "blah.agentzh.org"
 --- no_error_log
 lua ssl certificate does not match host
 SSL reused session
@@ -568,7 +569,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -649,7 +650,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -733,7 +734,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -812,7 +813,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -845,7 +846,7 @@ lua ssl server name: "iscribblet.org"
 lua ssl certificate verify error
 SSL reused session
 [alert]
---- timeout: 5
+--- timeout: 7
 
 
 
@@ -901,7 +902,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -994,7 +995,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1071,7 +1072,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1155,7 +1156,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1235,7 +1236,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1315,7 +1316,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1395,7 +1396,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -1683,7 +1684,7 @@ attempt to call method 'sslhandshake' (a nil value)
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1788,7 +1789,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1892,7 +1893,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -1986,7 +1987,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -2070,7 +2071,7 @@ SSL reused session
 
                 local line, err = sock:receive()
                 if not line then
-                    ngx.say("failed to recieve response status line: ", err)
+                    ngx.say("failed to receive response status line: ", err)
                     return
                 end
 
@@ -2443,7 +2444,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -2548,7 +2549,7 @@ SSL reused session
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -2583,3 +2584,37 @@ SSL reused session
 [alert]
 --- timeout: 5
 
+
+
+=== TEST 32: handshake, too many arguments
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            local ok, err = sock:connect("g.sregex.org", 443)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local session, err = sock.sslhandshake()
+        }
+    }
+
+--- request
+GET /t
+--- ignore_response
+--- error_log eval
+qr/\[error\] .* ngx.socket connect: expecting 1 ~ 5 arguments \(including the object\), but seen 0/
+--- no_error_log
+[alert]
+--- timeout: 5

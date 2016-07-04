@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -277,7 +276,7 @@ done
 
 
 
-=== TEST 10: empty key, but non-emtpy values
+=== TEST 10: empty key, but non-empty values
 --- config
     location /lua {
         content_by_lua '
@@ -819,7 +818,7 @@ lua hit query args limit 2
 
 
 
-=== TEST 36: max args (limited after an empty key, but non-emtpy values)
+=== TEST 36: max args (limited after an empty key, but non-empty values)
 --- config
     location /lua {
         content_by_lua '

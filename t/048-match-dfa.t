@@ -1,5 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -24,6 +23,8 @@ __DATA__
             m = ngx.re.match("hello", "(he|hell)", "d")
             if m then
                 ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
             else
                 ngx.say("not matched!")
             end
@@ -33,10 +34,35 @@ __DATA__
     GET /re
 --- response_body
 hell
+nil
+nil
 
 
 
-=== TEST 2: matched with d + j
+=== TEST 2: matched with d + o
+--- config
+    location /re {
+        content_by_lua '
+            m = ngx.re.match("hello", "(he|hell)", "do")
+            if m then
+                ngx.say(m[0])
+                ngx.say(m[1])
+                ngx.say(m[2])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+hell
+nil
+nil
+
+
+
+=== TEST 3: matched with d + j
 --- config
     location /re {
         content_by_lua '
@@ -55,7 +81,7 @@ hell
 
 
 
-=== TEST 3: not matched with j
+=== TEST 4: not matched with j
 --- config
     location /re {
         content_by_lua '
@@ -74,7 +100,7 @@ not matched!
 
 
 
-=== TEST 4: matched with do
+=== TEST 5: matched with do
 --- config
     location /re {
         content_by_lua '
@@ -97,7 +123,7 @@ nil
 
 
 
-=== TEST 5: not matched with do
+=== TEST 6: not matched with do
 --- config
     location /re {
         content_by_lua '
@@ -116,7 +142,7 @@ not matched!
 
 
 
-=== TEST 6: UTF-8 mode without UTF-8 sequence checks
+=== TEST 7: UTF-8 mode without UTF-8 sequence checks
 --- config
     location /re {
         content_by_lua '
@@ -150,7 +176,7 @@ exec opts: 2000
 
 
 
-=== TEST 7: UTF-8 mode with UTF-8 sequence checks
+=== TEST 8: UTF-8 mode with UTF-8 sequence checks
 --- config
     location /re {
         content_by_lua '

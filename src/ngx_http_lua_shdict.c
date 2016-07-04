@@ -56,6 +56,8 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_http_lua_shdict_ctx_t  *octx = data;
 
     size_t                      len;
+    ngx_int_t                   rc;
+    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_lua_shdict_ctx_t  *ctx;
     ngx_http_lua_main_conf_t   *lmcf;
 
@@ -117,7 +119,14 @@ done:
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
         && lmcf->init_handler)
     {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
+        saved_cycle = ngx_cycle;
+        ngx_cycle = ctx->cycle;
+
+        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
+
+        ngx_cycle = saved_cycle;
+
+        if (rc != NGX_OK) {
             /* an error happened */
             return NGX_ERROR;
         }
@@ -131,7 +140,7 @@ void
 ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t          **p;
+    ngx_rbtree_node_t           **p;
     ngx_http_lua_shdict_node_t   *sdn, *sdnt;
 
     for ( ;; ) {
@@ -378,14 +387,14 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 static int
 ngx_http_lua_shdict_get(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 0 /* stale */);
 }
 
 
 static int
 ngx_http_lua_shdict_get_stale(lua_State *L)
 {
-  return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
+    return ngx_http_lua_shdict_get_helper(L, 1 /* stale */);
 }
 
 
@@ -940,7 +949,7 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
     if (n >= 4) {
         exptime = luaL_checknumber(L, 4);
         if (exptime < 0) {
-            exptime = 0;
+            return luaL_error(L, "bad \"exptime\" argument");
         }
     }
 
@@ -1399,7 +1408,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
         if (name->len == name_len
             && ngx_strncmp(name->data, name_data, name_len) == 0)
         {
-            return zone;
+            return &zone[i];
         }
     }
 

@@ -1,6 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -531,7 +530,7 @@ Hellofoo, baz
 
 
 
-=== TEST 27: get non-existant header
+=== TEST 27: get non-existent header
 --- config
     location /lua {
         content_by_lua '
@@ -547,7 +546,7 @@ nil
 
 
 
-=== TEST 28: get non-existant header
+=== TEST 28: get non-existent header
 --- config
     location /lua {
         content_by_lua '
@@ -1227,7 +1226,6 @@ bar: baz
 
 
 === TEST 60: built-in Content-Type header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1256,7 +1254,6 @@ my content_type: text/plain
 
 
 === TEST 61: built-in Content-Length header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1285,7 +1282,6 @@ my content_length: 3
 
 
 === TEST 62: built-in Connection header
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1312,7 +1308,6 @@ my connection: close
 
 
 === TEST 63: built-in Transfer-Encoding header (chunked)
---- main_config
 --- config
     location = /t {
         content_by_lua '
@@ -1340,7 +1335,6 @@ my transfer-encoding: chunked
 
 
 === TEST 64: built-in Transfer-Encoding header (none)
---- main_config
 --- config
     location = /t {
         content_by_lua '
