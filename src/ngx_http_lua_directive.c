@@ -27,6 +27,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
 #include "api/ngx_http_lua_api.h"
+#include "api/ngx_http_lua_api.h"
 
 
 typedef struct ngx_http_lua_block_parser_ctx_s
