@@ -459,7 +459,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return "does not work with " NGINX_VER;
 #endif
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -569,7 +569,7 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -681,7 +681,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -802,7 +802,7 @@ ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -912,7 +912,7 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1012,7 +1012,7 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1110,7 +1110,7 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1177,7 +1177,7 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }

@@ -10,7 +10,7 @@ Production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.4] released on 17 May 2016.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.5] released on 25 May 2016.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3302,6 +3302,8 @@ outputs something like this:
 
 This method was first introduced in the <code>v0.7.17</code> release.
 
+This method does not work in HTTP/2 requests yet.
+
 == ngx.req.get_method ==
 '''syntax:''' ''method_name = ngx.req.get_method()''
 
@@ -4713,7 +4715,7 @@ This feature was introduced in the <code>v0.2.1rc11</code> release.
 
 '''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*''
 
-Similar to [[#ngx.re.match|ngx.re.match]] but only returns the begining index (<code>from</code>) and end index (<code>to</code>) of the matched substring. The returned indexes are 1-based and can be fed directly into the [http://www.lua.org/manual/5.1/manual.html#pdf-string.sub string.sub] API function to obtain the matched substring.
+Similar to [[#ngx.re.match|ngx.re.match]] but only returns the beginning index (<code>from</code>) and end index (<code>to</code>) of the matched substring. The returned indexes are 1-based and can be fed directly into the [http://www.lua.org/manual/5.1/manual.html#pdf-string.sub string.sub] API function to obtain the matched substring.
 
 In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two <code>nil</code> values followed by a string describing the error.
 
@@ -6178,7 +6180,7 @@ Here is a simple example:
     }
 </geshi>
 
-One can also create infinite re-occuring timers, for instance, a timer getting triggered every <code>5</code> seconds, by calling <code>ngx.timer.at</code> recursively in the timer callback function. Here is such an example,
+One can also create infinite re-occurring timers, for instance, a timer getting triggered every <code>5</code> seconds, by calling <code>ngx.timer.at</code> recursively in the timer callback function. Here is such an example,
 
 <geshi lang="lua">
     local delay = 5

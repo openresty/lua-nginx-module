@@ -263,6 +263,11 @@ retry:
 
 new_header:
 
+    if (r->headers_in.headers.last == NULL) {
+        /* must be 400 bad request */
+        return NGX_OK;
+    }
+
     h = ngx_list_push(&r->headers_in.headers);
 
     if (h == NULL) {

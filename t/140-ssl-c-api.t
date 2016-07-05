@@ -22,6 +22,57 @@ log_level 'debug';
 no_long_string();
 #no_diff();
 
+add_block_preprocessor(sub {
+    my $block = shift;
+
+    if (!defined $block->user_files) {
+        $block->set_value("user_files", <<'_EOC_');
+>>> defines.lua
+local ffi = require "ffi"
+
+ffi.cdef[[
+    int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem,
+        size_t pem_len, unsigned char *der, char **err);
+
+    int ngx_http_lua_ffi_priv_key_pem_to_der(const unsigned char *pem,
+        size_t pem_len, unsigned char *der, char **err);
+
+    int ngx_http_lua_ffi_ssl_set_der_certificate(void *r,
+        const char *data, size_t len, char **err);
+
+    int ngx_http_lua_ffi_ssl_set_der_private_key(void *r,
+        const char *data, size_t len, char **err);
+
+    int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
+
+    void *ngx_http_lua_ffi_parse_pem_cert(const unsigned char *pem,
+        size_t pem_len, char **err);
+
+    void *ngx_http_lua_ffi_parse_pem_priv_key(const unsigned char *pem,
+        size_t pem_len, char **err);
+
+    int ngx_http_lua_ffi_set_cert(void *r,
+        void *cdata, char **err);
+
+    int ngx_http_lua_ffi_set_priv_key(void *r,
+        void *cdata, char **err);
+
+    void ngx_http_lua_ffi_free_cert(void *cdata);
+
+    void ngx_http_lua_ffi_free_priv_key(void *cdata);
+
+    int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
+]]
+_EOC_
+    }
+
+    my $http_config = $block->http_config || '';
+    $http_config .= <<'_EOC_';
+lua_package_path "$prefix/html/?.lua;;";
+_EOC_
+    $block->set_value("http_config", $http_config);
+});
+
 run_tests();
 
 __DATA__
@@ -35,23 +86,8 @@ __DATA__
         ssl_certificate_by_lua_block {
             collectgarbage()
 
+            require "defines"
             local ffi = require "ffi"
-
-            ffi.cdef[[
-                int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-
-                int ngx_http_lua_ffi_priv_key_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-
-                int ngx_http_lua_ffi_ssl_set_der_certificate(void *r,
-                    const char *data, size_t len, char **err);
-
-                int ngx_http_lua_ffi_ssl_set_der_private_key(void *r,
-                    const char *data, size_t len, char **err);
-
-                int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
-            ]]
 
             local errmsg = ffi.new("char *[1]")
 
@@ -157,7 +193,7 @@ __DATA__
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -205,22 +241,7 @@ lua ssl server name: "test.com"
             collectgarbage()
 
             local ffi = require "ffi"
-
-            ffi.cdef[[
-                int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-
-                int ngx_http_lua_ffi_priv_key_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-
-                int ngx_http_lua_ffi_ssl_set_der_certificate(void *r,
-                    const char *data, size_t len, char **err);
-
-                int ngx_http_lua_ffi_ssl_set_der_private_key(void *r,
-                    const char *data, size_t len, char **err);
-
-                int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
-            ]]
+            require "defines"
 
             local errmsg = ffi.new("char *[1]")
 
@@ -326,7 +347,7 @@ lua ssl server name: "test.com"
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -374,14 +395,7 @@ lua ssl server name: "test.com"
             collectgarbage()
 
             local ffi = require "ffi"
-
-            ffi.cdef[[
-                int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-
-                int ngx_http_lua_ffi_priv_key_pem_to_der(const unsigned char *pem,
-                    size_t pem_len, unsigned char *der, char **err);
-            ]]
+            require "defines"
 
             local errmsg = ffi.new("char *[1]")
 
@@ -461,7 +475,7 @@ lua ssl server name: "test.com"
                 while true do
                     local line, err = sock:receive()
                     if not line then
-                        -- ngx.say("failed to recieve response status line: ", err)
+                        -- ngx.say("failed to receive response status line: ", err)
                         break
                     end
 
@@ -493,7 +507,307 @@ close: 1 nil
 --- error_log
 lua ssl server name: "test.com"
 failed to parse PEM cert: PEM_read_bio_X509_AUX()
-failed to parse PEM priv key: PEM_read_bio_PrivateKey failed
+failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 
 --- no_error_log
+[alert]
+
+
+
+=== TEST 4: simple cert + private key cdata
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate_by_lua_block {
+            collectgarbage()
+
+            local ffi = require "ffi"
+            require "defines"
+
+            local errmsg = ffi.new("char *[1]")
+
+            local r = getfenv(0).__ngx_req
+            if not r then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_ssl_clear_certs(r, errmsg)
+
+            local f = assert(io.open("t/cert/test.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not cert then
+                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_set_cert(r, cert, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to set cdata cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+
+            f = assert(io.open("t/cert/test.key", "rb"))
+            local pkey_data = f:read("*all")
+            f:close()
+
+            local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
+            if not pkey then
+                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_set_priv_key(r, pkey, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to set cdata priv key: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_priv_key(pkey)
+        }
+
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to recieve response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+
+--- error_log
+lua ssl server name: "test.com"
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 5: ECDSA cert + private key cdata
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate_by_lua_block {
+            collectgarbage()
+
+            local ffi = require "ffi"
+            require "defines"
+
+            local errmsg = ffi.new("char *[1]")
+
+            local r = getfenv(0).__ngx_req
+            if not r then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_ssl_clear_certs(r, errmsg)
+
+            local f = assert(io.open("t/cert/test_ecdsa.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not cert then
+                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_set_cert(r, cert, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to set cdata cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+
+            f = assert(io.open("t/cert/test_ecdsa.key", "rb"))
+            local pkey_data = f:read("*all")
+            f:close()
+
+            local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
+            if not pkey then
+                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_set_priv_key(r, pkey, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to set cdata priv key: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_priv_key(pkey)
+        }
+
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test_ecdsa.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to recieve response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+
+--- error_log
+lua ssl server name: "test.com"
+
+--- no_error_log
+[error]
 [alert]

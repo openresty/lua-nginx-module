@@ -304,6 +304,10 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (llcf->check_client_abort) {
         r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
 
+#if (NGX_HTTP_V2)
+        if (!r->stream) {
+#endif
+
         rev = r->connection->read;
 
         if (!rev->active) {
@@ -311,6 +315,10 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
                 return NGX_ERROR;
             }
         }
+
+#if (NGX_HTTP_V2)
+        }
+#endif
 
     } else {
         r->read_event_handler = ngx_http_block_reading;

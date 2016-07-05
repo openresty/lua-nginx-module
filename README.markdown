@@ -62,7 +62,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.4](https://github.com/openresty/lua-nginx-module/tags) released on 17 May 2016.
+This document describes ngx_lua [v0.10.5](https://github.com/openresty/lua-nginx-module/tags) released on 25 May 2016.
 
 Synopsis
 ========
@@ -3999,6 +3999,8 @@ outputs something like this:
 
 This method was first introduced in the `v0.7.17` release.
 
+This method does not work in HTTP/2 requests yet.
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.req.get_method
@@ -5658,7 +5660,7 @@ ngx.re.find
 
 **context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;*
 
-Similar to [ngx.re.match](#ngxrematch) but only returns the begining index (`from`) and end index (`to`) of the matched substring. The returned indexes are 1-based and can be fed directly into the [string.sub](http://www.lua.org/manual/5.1/manual.html#pdf-string.sub) API function to obtain the matched substring.
+Similar to [ngx.re.match](#ngxrematch) but only returns the beginning index (`from`) and end index (`to`) of the matched substring. The returned indexes are 1-based and can be fed directly into the [string.sub](http://www.lua.org/manual/5.1/manual.html#pdf-string.sub) API function to obtain the matched substring.
 
 In case of errors (like bad regexes or any PCRE runtime errors), this API function returns two `nil` values followed by a string describing the error.
 
@@ -7287,7 +7289,7 @@ Here is a simple example:
  }
 ```
 
-One can also create infinite re-occuring timers, for instance, a timer getting triggered every `5` seconds, by calling `ngx.timer.at` recursively in the timer callback function. Here is such an example,
+One can also create infinite re-occurring timers, for instance, a timer getting triggered every `5` seconds, by calling `ngx.timer.at` recursively in the timer callback function. Here is such an example,
 
 ```lua
 
