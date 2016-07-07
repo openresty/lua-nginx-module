@@ -1984,7 +1984,7 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
         return 0;
     }
 
-    return luaL_error(L, "unrecognized option name");
+    return luaL_error(L, "unrecognized option name for ngx.re.opt");
 }
 
 
