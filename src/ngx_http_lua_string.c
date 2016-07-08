@@ -15,7 +15,7 @@
 #include "ngx_http_lua_args.h"
 #include "ngx_crc32.h"
 
-#if NGX_HAVE_SHA1
+#if (NGX_HAVE_SHA1)
 #include "ngx_sha1.h"
 #endif
 
@@ -685,7 +685,7 @@ ngx_http_lua_ffi_md5(const u_char *src, size_t len, u_char *dst)
 int
 ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
 {
-#if NGX_HAVE_SHA1
+#if (NGX_HAVE_SHA1)
     ngx_sha1_t               sha;
 
     ngx_sha1_init(&sha);
