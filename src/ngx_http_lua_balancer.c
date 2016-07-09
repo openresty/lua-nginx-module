@@ -34,7 +34,7 @@ struct ngx_http_lua_balancer_peer_data_s {
 
     int                                 last_peer_state;
 
-#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
     unsigned                            cloned_upstream_conf;  /* :1 */
 #endif
 };
@@ -548,7 +548,7 @@ ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
 
-#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
     ngx_http_upstream_conf_t           *ucf;
 #endif
     ngx_http_lua_main_conf_t           *lmcf;
@@ -585,7 +585,7 @@ ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-#if !(HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
     if (!bp->cloned_upstream_conf) {
         /* we clone the upstream conf for the current request so that
          * we do not affect other requests at all. */
@@ -608,7 +608,7 @@ ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
 #endif
 
     if (connect_timeout > 0) {
-#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if (HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
         u->connect_timeout = (ngx_msec_t) connect_timeout;
 #else
         ucf->connect_timeout = (ngx_msec_t) connect_timeout;
@@ -616,7 +616,7 @@ ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
     }
 
     if (send_timeout > 0) {
-#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if (HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
         u->send_timeout = (ngx_msec_t) send_timeout;
 #else
         ucf->send_timeout = (ngx_msec_t) send_timeout;
@@ -624,7 +624,7 @@ ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
     }
 
     if (read_timeout > 0) {
-#if (HAVE_UPSTREAM_TIMEOUT_FIELDS)
+#if (HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
         u->read_timeout = (ngx_msec_t) read_timeout;
 #else
         ucf->read_timeout = (ngx_msec_t) read_timeout;
