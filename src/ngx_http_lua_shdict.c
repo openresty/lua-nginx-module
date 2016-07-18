@@ -57,7 +57,6 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     size_t                      len;
     ngx_int_t                   rc;
-    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_lua_shdict_ctx_t  *ctx;
 
     dd("init zone");
