@@ -50,6 +50,7 @@
 #include "ngx_http_lua_worker.h"
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_ssl_certby.h"
+#include "ngx_http_lua_ssl.h"
 
 
 #if 1
@@ -3553,8 +3554,7 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
     ngx_connection_t          *c;
 #if (NGX_HTTP_SSL)
     ngx_ssl_conn_t            *ssl_conn;
-
-    ngx_http_lua_ssl_cert_ctx_t     *cctx;
+    ngx_http_lua_ssl_ctx_t    *cctx;
 #endif
 
     c = r->connection;
