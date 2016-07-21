@@ -939,7 +939,7 @@ ngx_http_lua_inject_resp_header_api(lua_State *L)
 
 
 void
-ngx_http_lua_inject_req_header_api(lua_State *L)
+ngx_http_lua_inject_req_header_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf)
 {
     lua_pushcfunction(L, ngx_http_lua_ngx_req_http_version);
     lua_setfield(L, -2, "http_version");
@@ -952,7 +952,7 @@ ngx_http_lua_inject_req_header_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_header_set);
     lua_setfield(L, -2, "set_header");
-    lua_req_set_header_hash_init();
+    lua_req_set_header_hash_init(lmcf);
 
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_headers);
     lua_setfield(L, -2, "get_headers");

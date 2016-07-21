@@ -742,7 +742,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_regex_api(L);
 #endif
 
-    ngx_http_lua_inject_req_api(log, L);
+    ngx_http_lua_inject_req_api(log, L, lmcf);
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_create_headers_metatable(log, L);
     ngx_http_lua_inject_variable_api(L);
@@ -2090,13 +2090,14 @@ done:
 
 
 void
-ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
+ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf)
 {
     /* ngx.req table */
 
     lua_createtable(L, 0 /* narr */, 24 /* nrec */);    /* .req */
 
-    ngx_http_lua_inject_req_header_api(L);
+    ngx_http_lua_inject_req_header_api(L, lmcf);
     ngx_http_lua_inject_req_uri_api(log, L);
     ngx_http_lua_inject_req_args_api(L);
     ngx_http_lua_inject_req_body_api(L);

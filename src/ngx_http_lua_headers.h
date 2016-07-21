@@ -13,7 +13,8 @@
 
 
 void ngx_http_lua_inject_resp_header_api(lua_State *L);
-void ngx_http_lua_inject_req_header_api(lua_State *L);
+void ngx_http_lua_inject_req_header_api(lua_State *L,
+    ngx_http_lua_main_conf_t *lmcf);
 void ngx_http_lua_create_headers_metatable(ngx_log_t *log, lua_State *L);
 
 
