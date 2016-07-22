@@ -7,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 3);
 
 #no_diff();
 #no_long_string();
@@ -24,6 +24,8 @@ __DATA__
 GET /sha1
 --- response_body
 qvTGHdzF6KLavt4PO0gs2a6pQ00=
+--- no_error_log
+[error]
 
 
 
@@ -36,6 +38,8 @@ qvTGHdzF6KLavt4PO0gs2a6pQ00=
 GET /sha1
 --- response_body
 2jmj7l5rSw0yVb/vlWAYkK/YBwk=
+--- no_error_log
+[error]
 
 
 
@@ -48,6 +52,8 @@ GET /sha1
 GET /sha1
 --- response_body
 2jmj7l5rSw0yVb/vlWAYkK/YBwk=
+--- no_error_log
+[error]
 
 
 
@@ -62,4 +68,3 @@ GET /sha1
 zgmxJ9SPg4aKRWReJG07UvS97L4=
 --- no_error_log
 [error]
-
