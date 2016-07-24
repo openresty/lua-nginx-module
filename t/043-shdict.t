@@ -7,7 +7,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 18);
+plan tests => repeat_each() * (blocks() * 3 + 17);
 
 #no_diff();
 no_long_string();
@@ -2448,3 +2448,26 @@ GET /test
 --- error_code: 500
 --- error_log
 bad "exptime" argument
+
+
+
+=== TEST 93: duplicate zones
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            ngx.say("error")
+        ';
+    }
+--- request
+    GET /test
+--- request_body_unlike
+error
+--- must_die
+--- error_log
+lua_shared_dict "dogs" is already defined as "dogs"
+--- error_log
+[emerg]
