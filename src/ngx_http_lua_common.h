@@ -172,6 +172,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
 
+    ngx_array_t         *shdict_zones; /* shm zones of "shdict" */
+
     ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
@@ -205,6 +207,14 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
 };
+
+
+typedef struct ngx_http_lua_shm_zone_ctx_s {
+    ngx_log_t                *log;
+    ngx_http_lua_main_conf_t *lmcf;
+
+    u_char                    data; /* ngx_shm_zone_t */
+} ngx_http_lua_shm_zone_ctx_t;
 
 
 union ngx_http_lua_srv_conf_u {
