@@ -170,8 +170,3 @@ tthread
 addr2line
 hup
 theaders
-
-GPATH
-GRTAGS
-GTAGS
-tmp/*
