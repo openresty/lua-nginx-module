@@ -39,7 +39,7 @@ __DATA__
     lua_fake_shm x1 1m;
 --- config
     location = /test {
-        content_by_lua_block '
+        content_by_lua_block {
             local shm_zones = require("fake_shm_zones")
             local name, size, isinit, isold
             local x1 = shm_zones.x1
@@ -49,7 +49,7 @@ __DATA__
             ngx.say("size=", size)
             ngx.say("isinit=", isinit)
             ngx.say("isold=", isold)
-        ';
+        }
     }
 --- request
 GET /test
@@ -67,7 +67,7 @@ isold=false
     lua_fake_shm x1 1m;
 --- config
     location = /test {
-        content_by_lua_block '
+        content_by_lua_block {
             local shm_zones = require("fake_shm_zones")
             local name, size, isinit, isold
             local x1 = shm_zones.x1
@@ -77,7 +77,7 @@ isold=false
             ngx.say("size=", size)
             ngx.say("isinit=", isinit)
             ngx.say("isold=", isold)
-        ';
+        }
     }
 --- request
 GET /test
