@@ -1,8 +1,3 @@
-/*
- * Copyright (C) helloyi
- */
-
-
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
@@ -19,9 +14,9 @@ static void *ngx_http_lua_fake_shm_create_main_conf(ngx_conf_t *cf);
 static ngx_int_t ngx_http_lua_fake_shm_init(ngx_conf_t *cf);
 
 static char *ngx_http_lua_fake_shm(ngx_conf_t *cf, ngx_command_t *cmd,
-                                   void *conf);
+    void *conf);
 static ngx_int_t ngx_http_lua_fake_shm_init_zone(ngx_shm_zone_t *shm_zone,
-                                                 void *data);
+    void *data);
 static int ngx_http_lua_fake_shm_preload(lua_State *L);
 static int ngx_http_lua_fake_shm_get_info(lua_State *L);
 
@@ -29,6 +24,7 @@ static int ngx_http_lua_fake_shm_get_info(lua_State *L);
 typedef struct {
     ngx_array_t *shm_zones;
 } ngx_http_lua_fake_shm_main_conf_t;
+
 
 static ngx_command_t ngx_http_lua_fake_shm_cmds[] = {
 
@@ -41,6 +37,7 @@ static ngx_command_t ngx_http_lua_fake_shm_cmds[] = {
 
     ngx_null_command
 };
+
 
 static ngx_http_module_t  ngx_http_lua_fake_shm_module_ctx = {
     NULL,                                   /* preconfiguration */
@@ -56,6 +53,7 @@ static ngx_http_module_t  ngx_http_lua_fake_shm_module_ctx = {
     NULL,                                   /* merge location configuration */
 };
 
+
 ngx_module_t  ngx_http_lua_fake_shm_module = {
     NGX_MODULE_V1,
     &ngx_http_lua_fake_shm_module_ctx, /* module context */
@@ -70,6 +68,7 @@ ngx_module_t  ngx_http_lua_fake_shm_module = {
     NULL,                              /* exit master */
     NGX_MODULE_V1_PADDING
 };
+
 
 typedef struct {
     ngx_str_t name;
@@ -219,7 +218,7 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
     cycle = lua_touserdata(L, -1);
     lua_pop(L, 1);
 
-    hmcf_ctx = (ngx_http_conf_ctx_t *)cycle->conf_ctx[ngx_http_module.index];
+    hmcf_ctx = (ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index];
     lfsmcf = hmcf_ctx->main_conf[ngx_http_lua_fake_shm_module.ctx_index];
 
     if (lfsmcf->shm_zones != NULL) {
