@@ -2199,8 +2199,8 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
         if (name->len == name_len
             && ngx_strncmp(name->data, name_data, name_len) == 0)
         {
-            ctx = (ngx_http_lua_shm_zone_ctx_t *)zone[i].data;
-            return (ngx_shm_zone_t *)&ctx->data;
+            ctx = (ngx_http_lua_shm_zone_ctx_t *) zone[i].data;
+            return (ngx__shm_zone_t *) &ctx->data;
         }
     }
 

@@ -25,7 +25,7 @@ __DATA__
     lua_fake_shm x2 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block '
             local shm_zones = require("fake_shm_zones")
             ngx.say(type(shm_zones))
             local x1 = shm_zones.x1
@@ -50,7 +50,7 @@ table
     lua_fake_shm x1 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block '
             local shm_zones = require("fake_shm_zones")
             local x1 = shm_zones.x1
             ngx.say(type(x1))
@@ -70,7 +70,7 @@ table
     lua_fake_shm x1 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block '
             local shm_zones = require("fake_shm_zones")
             local name, size, isinit, isold
             local x1 = shm_zones.x1
@@ -101,7 +101,7 @@ isold=false
     lua_fake_shm x3 3m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block '
             local shm_zones = require("fake_shm_zones")
             local name, size, isinit, isold
             local x1 = shm_zones.x1
@@ -153,7 +153,7 @@ isold=false
     lua_fake_shm x1 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block '
             local shm_zones = require("fake_shm_zones")
             local x1 = shm_zones.x1
             ngx.say("error")
@@ -168,3 +168,4 @@ error
 lua_fake_shm "x1" is already defined as "x1"
 --- error_log
 [emerg]
+
