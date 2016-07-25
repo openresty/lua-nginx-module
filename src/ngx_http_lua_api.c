@@ -165,8 +165,9 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     if (octx) {
         ozone = (ngx_shm_zone_t *)&octx->data;
         odata = ozone->data;
-        zone->shm  = ozone->shm;
-        zone->noreuse = ozone->noreuse;
+        zone->data = odata;
+        zone->shm = shm_zone->shm;
+        zone->noreuse = shm_zone->noreuse;
 
     } else {
         zone->shm = shm_zone->shm;
