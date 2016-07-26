@@ -178,10 +178,14 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
         return NGX_ERROR;
     }
 
+    dd("get lmcf");
+
     lmcf = ctx->lmcf;
     if (lmcf == NULL) {
         return NGX_ERROR;
     }
+
+    dd("lmcf->lua: %p", lmcf->lua);
 
     lmcf->shm_zones_inited++;
 
