@@ -209,7 +209,6 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
     ngx_http_conf_ctx_t               *hmcf_ctx;
     ngx_cycle_t                       *cycle;
 
-    ngx_http_lua_fake_shm_ctx_t *ctx;
     ngx_uint_t                   i;
     ngx_shm_zone_t             **zone;
 
@@ -234,8 +233,6 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
         zone = lfsmcf->shm_zones->elts;
 
         for (i = 0; i < lfsmcf->shm_zones->nelts; i++) {
-            ctx = zone[i]->data;
-
             lua_pushlstring(L, (char *) zone[i]->shm.name.data, zone[i]->shm.name.len);
             /* shared mt key */
 
@@ -282,9 +279,9 @@ ngx_http_lua_fake_shm_get_info(lua_State *L)
         return luaL_error(L, "bad \"zone\" argument");
     }
 
-    ctx = (ngx_http_lua_fake_shm_ctx_t *)zone->data;
+    ctx = (ngx_http_lua_fake_shm_ctx_t *) zone->data;
 
-    lua_pushlstring(L, (char *)zone->shm.name.data, zone->shm.name.len);
+    lua_pushlstring(L, (char *) zone->shm.name.data, zone->shm.name.len);
     lua_pushnumber(L, zone->shm.size);
     lua_pushboolean(L, ctx->isinit);
     lua_pushboolean(L, ctx->isold);
