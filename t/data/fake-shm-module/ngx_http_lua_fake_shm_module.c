@@ -185,7 +185,6 @@ ngx_http_lua_fake_shm_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     if (octx) {
         ctx->isold = 1;
-        ctx->name = octx->name;
     }
 
     ctx->isinit = 1;
@@ -237,7 +236,7 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
         for (i = 0; i < lfsmcf->shm_zones->nelts; i++) {
             ctx = zone[i]->data;
 
-            lua_pushlstring(L, (char *) ctx->name.data, ctx->name.len);
+            lua_pushlstring(L, (char *) zone[i]->shm.name.data, zone[i]->shm.name.len);
             /* shared mt key */
 
             lua_createtable(L, 1 /* narr */, 0 /* nrec */);
