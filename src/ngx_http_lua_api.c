@@ -114,8 +114,8 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     }
 
     if (zone->data) {
-        ctx = (ngx_http_lua_shm_zone_ctx_t *)zone->data;
-        return (ngx_shm_zone_t *)&ctx->data;
+        ctx = (ngx_http_lua_shm_zone_ctx_t *) zone->data;
+        return (ngx_shm_zone_t *) &ctx->data;
     }
 
     n = offsetof(ngx_http_lua_shm_zone_ctx_t, data)
@@ -158,12 +158,12 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     ngx_http_lua_shm_zone_ctx_t *ctx;
     ngx_shm_zone_t              *zone;
 
-    ctx = (ngx_http_lua_shm_zone_ctx_t *)shm_zone->data;
-    zone = (ngx_shm_zone_t *)&ctx->data;
+    ctx = (ngx_http_lua_shm_zone_ctx_t *) shm_zone->data;
+    zone = (ngx_shm_zone_t *) &ctx->data;
 
     odata = NULL;
     if (octx) {
-        ozone = (ngx_shm_zone_t *)&octx->data;
+        ozone = (ngx_shm_zone_t *) &octx->data;
         odata = ozone->data;
         zone->data = odata;
         zone->shm = shm_zone->shm;
