@@ -1263,8 +1263,8 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
             if ((size_t) sd->value_len == sizeof(double)) {
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                               "lua shared dict incr: found old entry and value "
-                               "size matched, reusing it");
+                               "lua shared dict incr: found old entry and "
+                               "value size matched, reusing it");
 
                 ngx_queue_remove(&sd->queue);
                 ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
@@ -1970,8 +1970,8 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
             if ((size_t) sd->value_len == sizeof(double)) {
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
-                               "lua shared dict incr: found old entry and value "
-                               "size matched, reusing it");
+                               "lua shared dict incr: found old entry and "
+                               "value size matched, reusing it");
 
                 ngx_queue_remove(&sd->queue);
                 ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
