@@ -61,17 +61,20 @@ enum {
 };
 
 enum {
-    SHDICT_TNIL = 0,        // same as LUA_TNIL
-    SHDICT_TBOOLEAN = 1,    // same as LUA_TBOOLEAN
-    SHDICT_TNUMBER = 3,     // same as LUA_TNUMBER
-    SHDICT_TSTRING = 4,     // same as LUA_TSTRING
+    SHDICT_TNIL = 0,        /* same as LUA_TNIL */
+    SHDICT_TBOOLEAN = 1,    /* same as LUA_TBOOLEAN */
+    SHDICT_TNUMBER = 3,     /* same as LUA_TNUMBER */
+    SHDICT_TSTRING = 4,     /* same as LUA_TSTRING */
     SHDICT_TLIST = 5,
 };
 
 
-#define ngx_http_lua_shdict_get_list_head(sd, key_len)                      \
-    (ngx_queue_t *) ngx_align_ptr(((u_char *) &sd->data + key_len),         \
-                                  NGX_ALIGNMENT)
+static ngx_queue_t *
+ngx_http_lua_shdict_get_list_head(ngx_http_lua_shdict_node_t *sd, u_short len)
+{
+    return (ngx_queue_t *) ngx_align_ptr(((u_char *) &sd->data + len),
+                                         NGX_ALIGNMENT);
+}
 
 
 ngx_int_t
