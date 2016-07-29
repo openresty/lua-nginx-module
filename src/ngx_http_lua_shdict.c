@@ -51,12 +51,21 @@ static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 #define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
+
 #define NGX_HTTP_LUA_SHDICT_LEFT        0x0001
 #define NGX_HTTP_LUA_SHDICT_RIGHT       0x0002
 
 
 enum {
     SHDICT_USERDATA_INDEX = 1,
+};
+
+enum {
+    SHDICT_TNIL = 0,        // same as LUA_TNIL
+    SHDICT_TBOOLEAN = 1,    // same as LUA_TBOOLEAN
+    SHDICT_TNUMBER = 3,     // same as LUA_TNUMBER
+    SHDICT_TSTRING = 4,     // same as LUA_TSTRING
+    SHDICT_TLIST = 5,
 };
 
 
@@ -305,7 +314,7 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
             }
         }
 
-        if (sd->value_type == LUA_TTABLE) {
+        if (sd->value_type == SHDICT_TLIST) {
 
             list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
@@ -553,12 +562,12 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
 
     switch (value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
 
         lua_pushlstring(L, (char *) value.data, value.len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
 
         if (value.len != sizeof(double)) {
 
@@ -574,7 +583,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
         lua_pushnumber(L, num);
         break;
 
-    case LUA_TBOOLEAN:
+    case SHDICT_TBOOLEAN:
 
         if (value.len != sizeof(u_char)) {
 
@@ -590,7 +599,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
         lua_pushboolean(L, c ? 1 : 0);
         break;
 
-    case LUA_TTABLE:
+    case SHDICT_TLIST:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
@@ -750,7 +759,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
 
         if (sd->expires != 0 && sd->expires <= now) {
 
-            if (sd->value_type == LUA_TTABLE) {
+            if (sd->value_type == SHDICT_TLIST) {
 
                 list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
@@ -991,17 +1000,17 @@ ngx_http_lua_shdict_set_helper(lua_State *L, int flags)
 
     switch (value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
         value.data = (u_char *) lua_tolstring(L, 3, &value.len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
         value.len = sizeof(double);
         num = lua_tonumber(L, 3);
         value.data = (u_char *) &num;
         break;
 
-    case LUA_TBOOLEAN:
+    case SHDICT_TBOOLEAN:
         value.len = sizeof(u_char);
         c = lua_toboolean(L, 3) ? 1 : 0;
         value.data = &c;
@@ -1094,7 +1103,7 @@ replace:
 
         if (value.data
             && value.len == (size_t) sd->value_len
-            && sd->value_type != LUA_TTABLE)
+            && sd->value_type != SHDICT_TLIST)
         {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1140,7 +1149,7 @@ replace:
 
 remove:
 
-        if (sd->value_type == LUA_TTABLE) {
+        if (sd->value_type == SHDICT_TLIST) {
             queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
 
             for (q = ngx_queue_head(queue);
@@ -1380,7 +1389,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     /* rc == NGX_OK */
 
-    if (sd->value_type != LUA_TNUMBER || sd->value_len != sizeof(double)) {
+    if (sd->value_type != SHDICT_TNUMBER || sd->value_len != sizeof(double)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushnil(L);
@@ -1538,7 +1547,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
 
     switch (value->type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
 
         if (value->value.s.data == NULL || value->value.s.len == 0) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "no string buffer "
@@ -1557,7 +1566,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
         ngx_memcpy(value->value.s.data, data, len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
 
         if (len != sizeof(double)) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua number "
@@ -1571,7 +1580,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
         ngx_memcpy(&value->value.b, data, len);
         break;
 
-    case LUA_TBOOLEAN:
+    case SHDICT_TBOOLEAN:
 
         if (len != sizeof(u_char)) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "bad lua boolean "
@@ -1674,11 +1683,11 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
 
     switch (value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
         value.data = (u_char *) lua_tolstring(L, 3, &value.len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
         value.len = sizeof(double);
         num = lua_tonumber(L, 3);
         value.data = (u_char *) &num;
@@ -1703,7 +1712,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
     if (rc == NGX_DONE) {
         /* exists but expired */
 
-        if (sd->value_type != LUA_TTABLE) {
+        if (sd->value_type != SHDICT_TLIST) {
             /* TODO: reuse when length matched */
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -1752,7 +1761,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
 
     } else if (rc == NGX_OK) {
 
-        if (sd->value_type != LUA_TTABLE) {
+        if (sd->value_type != SHDICT_TLIST) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
@@ -1809,9 +1818,9 @@ init_list:
 
     sd->value_len = 0;
 
-    dd("setting value type to %d", (int) LUA_TTABLE);
+    dd("setting value type to %d", (int) SHDICT_TLIST);
 
-    sd->value_type = (uint8_t) LUA_TTABLE;
+    sd->value_type = (uint8_t) SHDICT_TLIST;
 
     ngx_memcpy(sd->data, key.data, key.len);
 
@@ -1977,7 +1986,7 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
 
     /* rc == NGX_OK */
 
-    if (sd->value_type != LUA_TTABLE) {
+    if (sd->value_type != SHDICT_TLIST) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushnil(L);
@@ -2014,12 +2023,12 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
 
     switch (value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
 
         lua_pushlstring(L, (char *) value.data, value.len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
 
         if (value.len != sizeof(double)) {
 
@@ -2140,7 +2149,7 @@ ngx_http_lua_shdict_llen(lua_State *L)
 
     if (rc == NGX_OK) {
 
-        if (sd->value_type != LUA_TTABLE) {
+        if (sd->value_type != SHDICT_TLIST) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
@@ -2326,17 +2335,17 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
 
     switch (value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
         /* do nothing */
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
         dd("num value: %lf", num_value);
         str_value_buf = (u_char *) &num_value;
         str_value_len = sizeof(double);
         break;
 
-    case LUA_TBOOLEAN:
+    case SHDICT_TBOOLEAN:
         c = num_value ? 1 : 0;
         str_value_buf = &c;
         str_value_len = sizeof(u_char);
@@ -2411,7 +2420,7 @@ replace:
 
         if (str_value_buf
             && str_value_len == (size_t) sd->value_len
-            && sd->value_type != LUA_TTABLE)
+            && sd->value_type != SHDICT_TLIST)
         {
 
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
@@ -2454,7 +2463,7 @@ replace:
 
 remove:
 
-        if (sd->value_type == LUA_TTABLE) {
+        if (sd->value_type == SHDICT_TLIST) {
 
             queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
 
@@ -2622,12 +2631,12 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     value.len = (size_t) sd->value_len;
 
     if (*str_value_len < (size_t) value.len) {
-        if (*value_type == LUA_TBOOLEAN) {
+        if (*value_type == SHDICT_TBOOLEAN) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             return NGX_ERROR;
         }
 
-        if (*value_type == LUA_TSTRING) {
+        if (*value_type == SHDICT_TSTRING) {
             *str_value_buf = malloc(value.len);
             if (*str_value_buf == NULL) {
                 ngx_shmtx_unlock(&ctx->shpool->mutex);
@@ -2638,12 +2647,12 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
 
     switch (*value_type) {
 
-    case LUA_TSTRING:
+    case SHDICT_TSTRING:
         *str_value_len = value.len;
         ngx_memcpy(*str_value_buf, value.data, value.len);
         break;
 
-    case LUA_TNUMBER:
+    case SHDICT_TNUMBER:
 
         if (value.len != sizeof(double)) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
@@ -2658,7 +2667,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
         ngx_memcpy(num_value, value.data, sizeof(double));
         break;
 
-    case LUA_TBOOLEAN:
+    case SHDICT_TBOOLEAN:
 
         if (value.len != sizeof(u_char)) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
@@ -2770,7 +2779,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
     /* rc == NGX_OK */
 
-    if (sd->value_type != LUA_TNUMBER || sd->value_len != sizeof(double)) {
+    if (sd->value_type != SHDICT_TNUMBER || sd->value_len != sizeof(double)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         *err = "not a number";
         return NGX_ERROR;
