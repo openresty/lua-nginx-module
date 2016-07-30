@@ -215,7 +215,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 #ifdef SSL_ERROR_PENDING_SESSION
         return SSL_magic_pending_session_ptr();
 #else
-        ngx_log_error(NGX_LOG_CRIT, r->connection->log, 0,
+        ngx_log_error(NGX_LOG_CRIT, c->log, 0,
                       "lua: cannot yield in sess get cb: "
                       "missing async sess get cb support in OpenSSL");
         return NULL;
@@ -349,7 +349,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 #ifdef SSL_ERROR_PENDING_SESSION
     return SSL_magic_pending_session_ptr();
 #else
-    ngx_log_error(NGX_LOG_CRIT, r->connection->log, 0,
+    ngx_log_error(NGX_LOG_CRIT, c->log, 0,
                   "lua: cannot yield in sess get cb: "
                   "missing async sess get cb support in OpenSSL");
 
