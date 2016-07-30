@@ -856,7 +856,7 @@ qr/get_phase: ssl_session_fetch/s
 
 
 
-=== TEST 15: inter-operation with ssl_certificate_by_lua
+=== TEST 11: inter-operation with ssl_certificate_by_lua
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -948,7 +948,7 @@ ssl store session by lua is running!
 
 
 
-=== TEST 16: simple logging (by file)
+=== TEST 12: simple logging (by file)
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
