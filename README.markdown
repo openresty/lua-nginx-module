@@ -7565,7 +7565,7 @@ ngx.worker.count
 
 **syntax:** *count = ngx.worker.count()*
 
-**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_by_lua&#42;*
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_by_lua&#42;, init_worker_by_lua&#42;*
 
 Returns the total number of the Nginx worker processes (i.e., the value configured
 by the [worker_processes](http://nginx.org/en/docs/ngx_core_module.html#worker_processes)
