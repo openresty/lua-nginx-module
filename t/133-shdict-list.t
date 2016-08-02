@@ -82,7 +82,7 @@ nil nil
 GET /test
 --- response_body
 push success
-nil wrongtype operation
+nil value is a list
 --- no_error_log
 [error]
 
@@ -181,7 +181,7 @@ GET /test
 --- response_body
 push success
 false exists
-nil wrongtype operation
+nil value is a list
 --- no_error_log
 [error]
 
@@ -247,7 +247,7 @@ GET /test
 --- response_body
 push success
 nil not a number
-nil wrongtype operation
+nil value is a list
 --- no_error_log
 [error]
 
@@ -308,7 +308,7 @@ key: foo
 GET /test
 --- response_body
 set success
-nil wrongtype operation
+nil value not a list
 bar nil
 --- no_error_log
 [error]
@@ -341,7 +341,7 @@ bar nil
 GET /test
 --- response_body
 set success
-nil wrongtype operation
+nil value not a list
 bar nil
 --- no_error_log
 [error]
@@ -374,7 +374,7 @@ bar nil
 GET /test
 --- response_body
 set success
-nil wrongtype operation
+nil value not a list
 bar nil
 --- no_error_log
 [error]

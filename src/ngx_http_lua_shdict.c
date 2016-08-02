@@ -52,6 +52,7 @@ static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
 #define NGX_HTTP_LUA_SHDICT_REPLACE     0x0002
 #define NGX_HTTP_LUA_SHDICT_SAFE_STORE  0x0004
 
+
 #define NGX_HTTP_LUA_SHDICT_LEFT        0x0001
 #define NGX_HTTP_LUA_SHDICT_RIGHT       0x0002
 
@@ -59,6 +60,7 @@ static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
 enum {
     SHDICT_USERDATA_INDEX = 1,
 };
+
 
 enum {
     SHDICT_TNIL = 0,        /* same as LUA_TNIL */
@@ -69,7 +71,7 @@ enum {
 };
 
 
-static ngx_queue_t *
+static ngx_inline ngx_queue_t *
 ngx_http_lua_shdict_get_list_head(ngx_http_lua_shdict_node_t *sd, u_short len)
 {
     return (ngx_queue_t *) ngx_align_ptr(((u_char *) &sd->data + len),
@@ -607,7 +609,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushnil(L);
-        lua_pushliteral(L, "wrongtype operation");
+        lua_pushliteral(L, "value is a list");
         return 2;
 
     default:
@@ -1712,8 +1714,9 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
 
     dd("shdict lookup returned %d", (int) rc);
 
+    /* exists but expired */
+
     if (rc == NGX_DONE) {
-        /* exists but expired */
 
         if (sd->value_type != SHDICT_TLIST) {
             /* TODO: reuse when length matched */
@@ -1761,14 +1764,17 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
 
         dd("go to push_node");
         goto push_node;
+    }
 
-    } else if (rc == NGX_OK) {
+    /* exists and not expired */
+
+    if (rc == NGX_OK) {
 
         if (sd->value_type != SHDICT_TLIST) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
-            lua_pushliteral(L, "wrongtype operation");
+            lua_pushliteral(L, "value not a list");
             return 2;
         }
 
@@ -1993,7 +1999,7 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
         lua_pushnil(L);
-        lua_pushliteral(L, "wrongtype operation");
+        lua_pushliteral(L, "value not a list");
         return 2;
     }
 
@@ -2076,7 +2082,6 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
         ngx_slab_free_locked(ctx->shpool, node);
 
     } else {
-
         sd->value_len = sd->value_len - 1;
 
         ngx_queue_remove(&sd->queue);
@@ -2151,21 +2156,20 @@ ngx_http_lua_shdict_llen(lua_State *L)
     dd("shdict lookup returned %d", (int) rc);
 
     if (rc == NGX_OK) {
-
         if (sd->value_type != SHDICT_TLIST) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
-            lua_pushliteral(L, "wrongtype operation");
+            lua_pushliteral(L, "value not a list");
             return 2;
         }
 
         ngx_queue_remove(&sd->queue);
         ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
-        lua_pushnumber(L, (lua_Number) sd->value_len);
-
         ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        lua_pushnumber(L, (lua_Number) sd->value_len);
         return 1;
     }
 

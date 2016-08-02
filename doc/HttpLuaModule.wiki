@@ -5112,7 +5112,7 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-Retrieving the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. If the key does not exist or has been expired, then <code>nil</code> will be returned.
+Retrieving the value in the dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] for the key <code>key</code>. If the key does not exist or has expired, then <code>nil</code> will be returned.
 
 In case of errors, <code>nil</code> and a string describing the error will be returned.
 
@@ -5292,9 +5292,9 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
-Inserts the specified (numerical or string) <code>value</code> at the head of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns the length of the list after the push operations.
+Inserts the specified (numerical or string) <code>value</code> at the head of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns the number of elements in the list after the push operation.
 
-If <code>key</code> does not exist, it is created as empty list before performing the push operations. When key holds a value that is not a list, it will return <code>nil</code> and <code>"wrongtype operation"</code>.
+If <code>key</code> does not exist, it is created as an empty list before performing the push operations. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
 
@@ -5320,7 +5320,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 Removes and returns the first element of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
-If <code>key</code> does not exist, it will return <code>nil</code>. When key holds a value that is not a list, it will return <code>nil</code> and <code>"wrongtype operation"</code>.
+If <code>key</code> does not exist, it will return <code>nil</code>. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 This feature was first introduced in the <code>v0.*.*</code> release.
 
@@ -5333,7 +5333,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 Removes and returns the last element of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
-If <code>key</code> does not exist, it will return <code>nil</code>. When key holds a value that is not a list, it will return <code>nil</code> and <code>"wrongtype operation"</code>.
+If <code>key</code> does not exist, it will return <code>nil</code>. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 This feature was first introduced in the <code>v0.*.*</code> release.
 
@@ -5346,7 +5346,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 Returns the length of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
-If key does not exist, it is interpreted as an empty list and 0 is returned. When key holds a value that is not a list, it will return <code>nil</code> and <code>"wrongtype operation"</code>.
+If key does not exist, it is interpreted as an empty list and 0 is returned. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 This feature was first introduced in the <code>v0.*.*</code> release.
 
@@ -5357,9 +5357,9 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
 
-The <code>exptime</code> argument specifies expiration time (in seconds) for the inserted key-value pair. The time resolution is 0.001 seconds. If the exptime takes the value 0, then the item will never be expired.
+The <code>exptime</code> argument specifies a new expiration time (in seconds) for an existing key-value pair in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] specified by the <code>key</code> argument. The time resolution is 0.001 seconds. If the exptime takes the value 0, then the item will never expire.
 
-If key does not exist or has been expired, it will return <code>false</code> and <code>"not found"</code>. Otherwise it will return <code>true</code>.
+If key does not exist or has expired, it will return <code>false</code> and <code>"not found"</code>. Otherwise it will return <code>true</code>.
 
 This feature was first introduced in the <code>v0.*.*</code> release.
 
