@@ -320,7 +320,6 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
         }
 
         if (sd->value_type == SHDICT_TLIST) {
-
             list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
             for (lq = ngx_queue_head(list_queue);
@@ -765,7 +764,6 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
         if (sd->expires != 0 && sd->expires <= now) {
 
             if (sd->value_type == SHDICT_TLIST) {
-
                 list_queue = ngx_http_lua_shdict_get_list_head(sd, sd->key_len);
 
                 for (lq = ngx_queue_head(list_queue);
@@ -2156,6 +2154,7 @@ ngx_http_lua_shdict_llen(lua_State *L)
     dd("shdict lookup returned %d", (int) rc);
 
     if (rc == NGX_OK) {
+
         if (sd->value_type != SHDICT_TLIST) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
@@ -2471,7 +2470,6 @@ replace:
 remove:
 
         if (sd->value_type == SHDICT_TLIST) {
-
             queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
 
             for (q = ngx_queue_head(queue);
