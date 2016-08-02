@@ -119,7 +119,7 @@ ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_rbtree_init(&ctx->sh->rbtree, &ctx->sh->sentinel,
                     ngx_http_lua_shdict_rbtree_insert_value);
 
-    ngx_queue_init(&ctx->sh->queue);
+    ngx_queue_init(&ctx->sh->lru_queue);
 
     len = sizeof(" in lua_shared_dict zone \"\"") + shm_zone->shm.name.len;
 
@@ -243,7 +243,7 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 
         if (rc == 0) {
             ngx_queue_remove(&sd->queue);
-            ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+            ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
             *sdp = sd;
 
@@ -299,11 +299,11 @@ ngx_http_lua_shdict_expire(ngx_http_lua_shdict_ctx_t *ctx, ngx_uint_t n)
 
     while (n < 3) {
 
-        if (ngx_queue_empty(&ctx->sh->queue)) {
+        if (ngx_queue_empty(&ctx->sh->lru_queue)) {
             return freed;
         }
 
-        q = ngx_queue_last(&ctx->sh->queue);
+        q = ngx_queue_last(&ctx->sh->lru_queue);
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
 
@@ -692,8 +692,8 @@ ngx_http_lua_shdict_flush_all(lua_State *L)
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    for (q = ngx_queue_head(&ctx->sh->queue);
-         q != ngx_queue_sentinel(&ctx->sh->queue);
+    for (q = ngx_queue_head(&ctx->sh->lru_queue);
+         q != ngx_queue_sentinel(&ctx->sh->lru_queue);
          q = ngx_queue_next(q))
     {
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
@@ -744,7 +744,7 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    if (ngx_queue_empty(&ctx->sh->queue)) {
+    if (ngx_queue_empty(&ctx->sh->lru_queue)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_pushnumber(L, 0);
         return 1;
@@ -754,9 +754,9 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
 
     now = (uint64_t) tp->sec * 1000 + tp->msec;
 
-    q = ngx_queue_last(&ctx->sh->queue);
+    q = ngx_queue_last(&ctx->sh->lru_queue);
 
-    while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
+    while (q != ngx_queue_sentinel(&ctx->sh->lru_queue)) {
         prev = ngx_queue_prev(q);
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
@@ -840,7 +840,7 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    if (ngx_queue_empty(&ctx->sh->queue)) {
+    if (ngx_queue_empty(&ctx->sh->lru_queue)) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         lua_createtable(L, 0, 0);
         return 1;
@@ -852,9 +852,9 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
 
     /* first run through: get total number of elements we need to allocate */
 
-    q = ngx_queue_last(&ctx->sh->queue);
+    q = ngx_queue_last(&ctx->sh->lru_queue);
 
-    while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
+    while (q != ngx_queue_sentinel(&ctx->sh->lru_queue)) {
         prev = ngx_queue_prev(q);
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
@@ -874,9 +874,9 @@ ngx_http_lua_shdict_get_keys(lua_State *L)
     /* second run through: add keys to table */
 
     total = 0;
-    q = ngx_queue_last(&ctx->sh->queue);
+    q = ngx_queue_last(&ctx->sh->lru_queue);
 
-    while (q != ngx_queue_sentinel(&ctx->sh->queue)) {
+    while (q != ngx_queue_sentinel(&ctx->sh->lru_queue)) {
         prev = ngx_queue_prev(q);
 
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);
@@ -1114,7 +1114,7 @@ replace:
                            "size matched, reusing it");
 
             ngx_queue_remove(&sd->queue);
-            ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+            ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
             sd->key_len = (u_short) key.len;
 
@@ -1265,7 +1265,7 @@ allocated:
 
     ngx_rbtree_insert(&ctx->sh->rbtree, node);
 
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
@@ -1376,7 +1376,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
                                "value size matched, reusing it");
 
                 ngx_queue_remove(&sd->queue);
-                ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+                ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
                 dd("go to setvalue");
                 goto setvalue;
@@ -1401,7 +1401,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
     }
 
     ngx_queue_remove(&sd->queue);
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
     dd("setting value type to %d", (int) sd->value_type);
 
@@ -1484,7 +1484,7 @@ allocated:
 
     ngx_rbtree_insert(&ctx->sh->rbtree, node);
 
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
 setvalue:
 
@@ -1758,7 +1758,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
         ngx_queue_init(queue);
 
         ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
         dd("go to push_node");
         goto push_node;
@@ -1779,7 +1779,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
         queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
 
         ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
         dd("go to push_node");
         goto push_node;
@@ -1835,7 +1835,7 @@ init_list:
 
     ngx_rbtree_insert(&ctx->sh->rbtree, node);
 
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
 push_node:
 
@@ -2083,7 +2083,7 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
         sd->value_len = sd->value_len - 1;
 
         ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
     }
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
@@ -2164,7 +2164,7 @@ ngx_http_lua_shdict_llen(lua_State *L)
         }
 
         ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
@@ -2255,7 +2255,7 @@ ngx_http_lua_shdict_set_expire(lua_State *L)
         }
 
         ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
@@ -2434,7 +2434,7 @@ replace:
                            "size matched, reusing it");
 
             ngx_queue_remove(&sd->queue);
-            ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+            ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
             sd->key_len = (u_short) key_len;
 
@@ -2572,7 +2572,7 @@ allocated:
     ngx_memcpy(p, str_value_buf, str_value_len);
 
     ngx_rbtree_insert(&ctx->sh->rbtree, node);
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return NGX_OK;
@@ -2768,7 +2768,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
                                "value size matched, reusing it");
 
                 ngx_queue_remove(&sd->queue);
-                ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+                ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
                 dd("go to setvalue");
                 goto setvalue;
@@ -2791,7 +2791,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     }
 
     ngx_queue_remove(&sd->queue);
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
     dd("setting value type to %d", (int) sd->value_type);
 
@@ -2872,7 +2872,7 @@ allocated:
 
     ngx_rbtree_insert(&ctx->sh->rbtree, node);
 
-    ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
 setvalue:
 
@@ -2905,8 +2905,8 @@ ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    for (q = ngx_queue_head(&ctx->sh->queue);
-         q != ngx_queue_sentinel(&ctx->sh->queue);
+    for (q = ngx_queue_head(&ctx->sh->lru_queue);
+         q != ngx_queue_sentinel(&ctx->sh->lru_queue);
          q = ngx_queue_next(q))
     {
         sd = ngx_queue_data(q, ngx_http_lua_shdict_node_t, queue);

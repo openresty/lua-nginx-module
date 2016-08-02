@@ -35,7 +35,7 @@ typedef struct {
 typedef struct {
     ngx_rbtree_t                  rbtree;
     ngx_rbtree_node_t             sentinel;
-    ngx_queue_t                   queue;
+    ngx_queue_t                   lru_queue;
 } ngx_http_lua_shdict_shctx_t;
 
 
