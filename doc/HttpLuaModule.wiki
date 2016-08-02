@@ -5058,7 +5058,6 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.lpop|lpop]]
 * [[#ngx.shared.DICT.rpop|rpop]]
 * [[#ngx.shared.DICT.llen|llen]]
-* [[#ngx.shared.DICT.expire|expire]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
 * [[#ngx.shared.DICT.get_keys|get_keys]]
@@ -5347,19 +5346,6 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 Returns the length of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
-
-This feature was first introduced in the <code>v0.*.*</code> release.
-
-See also [[#ngx.shared.DICT|ngx.shared.DICT]].
-
-== ngx.shared.DICT.expire ==
-'''syntax:''' ''ok, err = ngx.shared.DICT:expire(key, exptime)''
-
-'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*''
-
-The <code>exptime</code> argument specifies a new expiration time (in seconds) for an existing key-value pair in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] specified by the <code>key</code> argument. The time resolution is 0.001 seconds. If the exptime takes the value 0, then the item will never expire.
-
-If key does not exist or has expired, it will return <code>false</code> and <code>"not found"</code>. Otherwise it will return <code>true</code>.
 
 This feature was first introduced in the <code>v0.*.*</code> release.
 

@@ -3046,7 +3046,6 @@ Nginx API for Lua
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
 * [ngx.shared.DICT.rpop](#ngxshareddictrpop)
 * [ngx.shared.DICT.llen](#ngxshareddictllen)
-* [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
@@ -6046,7 +6045,6 @@ The resulting object `dict` has the following methods:
 * [lpop](#ngxshareddictlpop)
 * [rpop](#ngxshareddictrpop)
 * [llen](#ngxshareddictllen)
-* [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
@@ -6383,22 +6381,6 @@ ngx.shared.DICT.llen
 Returns the length of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
 
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
-
-This feature was first introduced in the `v0.*.*` release.
-
-See also [ngx.shared.DICT](#ngxshareddict).
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.shared.DICT.expire
-----------------------
-**syntax:** *ok, err = ngx.shared.DICT:expire(key, exptime)*
-
-**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;*
-
-The `exptime` argument specifies a new expiration time (in seconds) for an existing key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) specified by the `key` argument. The time resolution is 0.001 seconds. If the exptime takes the value 0, then the item will never expire.
-
-If key does not exist or has expired, it will return `false` and `"not found"`. Otherwise it will return `true`.
 
 This feature was first introduced in the `v0.*.*` release.
 
