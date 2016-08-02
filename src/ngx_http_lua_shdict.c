@@ -41,7 +41,6 @@ static int ngx_http_lua_shdict_lpop(lua_State *L);
 static int ngx_http_lua_shdict_rpop(lua_State *L);
 static int ngx_http_lua_shdict_pop_helper(lua_State *L, int flags);
 static int ngx_http_lua_shdict_llen(lua_State *L);
-static int ngx_http_lua_shdict_set_expire(lua_State *L);
 
 
 static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
@@ -360,7 +359,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shm_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 19 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 18 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
@@ -403,9 +402,6 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_llen);
         lua_setfield(L, -2, "llen");
-
-        lua_pushcfunction(L, ngx_http_lua_shdict_set_expire);
-        lua_setfield(L, -2, "expire");
 
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_all);
         lua_setfield(L, -2, "flush_all");
@@ -2176,98 +2172,6 @@ ngx_http_lua_shdict_llen(lua_State *L)
 
     lua_pushnumber(L, 0);
     return 1;
-}
-
-
-static int
-ngx_http_lua_shdict_set_expire(lua_State *L)
-{
-    int                          n;
-    ngx_str_t                    key;
-    uint32_t                     hash;
-    ngx_int_t                    rc;
-    ngx_http_lua_shdict_ctx_t   *ctx;
-    ngx_http_lua_shdict_node_t  *sd;
-    ngx_shm_zone_t              *zone;
-    lua_Number                   exptime = 0;
-    ngx_time_t                  *tp;
-
-    n = lua_gettop(L);
-
-    if (n != 3) {
-        return luaL_error(L, "expecting 3 arguments, "
-                          "but only seen %d", n);
-    }
-
-    if (lua_type(L, 1) != LUA_TTABLE) {
-        return luaL_error(L, "bad \"zone\" argument");
-    }
-
-    zone = ngx_http_lua_shdict_get_zone(L, 1);
-    if (zone == NULL) {
-        return luaL_error(L, "bad \"zone\" argument");
-    }
-
-    ctx = zone->data;
-
-    if (lua_isnil(L, 2)) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "nil key");
-        return 2;
-    }
-
-    key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
-
-    if (key.len == 0) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "empty key");
-        return 2;
-    }
-
-    if (key.len > 65535) {
-        lua_pushnil(L);
-        lua_pushliteral(L, "key too long");
-        return 2;
-    }
-
-    hash = ngx_crc32_short(key.data, key.len);
-
-    exptime = luaL_checknumber(L, 3);
-    if (exptime < 0) {
-        exptime = 0;
-    }
-
-    ngx_shmtx_lock(&ctx->shpool->mutex);
-
-    rc = ngx_http_lua_shdict_lookup(zone, hash, key.data, key.len, &sd);
-
-    dd("shdict lookup returned %d", (int) rc);
-
-    if (rc == NGX_OK) {
-
-        if (exptime > 0) {
-            tp = ngx_timeofday();
-            sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
-                        + (uint64_t) (exptime * 1000);
-
-        } else {
-            sd->expires = 0;
-        }
-
-        ngx_queue_remove(&sd->queue);
-        ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
-
-        ngx_shmtx_unlock(&ctx->shpool->mutex);
-
-        lua_pushboolean(L, 1);
-        return 1;
-    }
-
-    ngx_shmtx_unlock(&ctx->shpool->mutex);
-
-    lua_pushboolean(L, 0);
-    lua_pushliteral(L, "not found");
-    return 2;
 }
 
 

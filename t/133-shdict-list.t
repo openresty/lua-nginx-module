@@ -512,24 +512,18 @@ GET /test
                     max = i
                     break
                 end
-
-                local ok = dogs:expire(key, 0.01)
-                if not ok then
-                    ngx.say("expire error")
-                end
             end
 
             local keys = dogs:get_keys(0)
 
             ngx.say("max-1 matched keys length: ", max-1 == #keys)
 
-            ngx.sleep(0.01)
+            dogs:flush_all()
 
             local keys = dogs:get_keys(0)
 
             ngx.say("keys all expired, left number: ", #keys)
 
-            -- some reused, some removed
             for i = 10000, 1, -1 do
                 local key = string.format("%05d", i)
 
@@ -650,19 +644,7 @@ two == number 2: true
 
             ngx.say("keys number: ", #keys)
 
-            for i = 1, #keys do
-                local ok, err = dogs:expire(keys[i], 0.01)
-                if not ok then
-                    ngx.say("expire err: ", err)
-                end
-            end
-
-            local ok, err = dogs:expire("not-exits", 1)
-            if not ok then
-                ngx.say("expire on not-exists, err: ", err)
-            end
-
-            ngx.sleep(0.01)
+            dogs:flush_all()
 
             local keys = dogs:get_keys(0)
 
@@ -673,7 +655,6 @@ two == number 2: true
 GET /test
 --- response_body
 keys number: 2
-expire on not-exists, err: not found
 keys number: 0
 --- no_error_log
 [error]
