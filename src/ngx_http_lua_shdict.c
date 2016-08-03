@@ -2206,7 +2206,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
         if (name->len == name_len
             && ngx_strncmp(name->data, name_data, name_len) == 0)
         {
-            return zone;
+            return &zone[i];
         }
     }
 
