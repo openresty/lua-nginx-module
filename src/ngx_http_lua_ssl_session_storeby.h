@@ -11,6 +11,7 @@
 #include "ngx_http_lua_common.h"
 
 
+#if (NGX_HTTP_SSL)
 ngx_int_t ngx_http_lua_ssl_sess_store_handler_inline(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
@@ -25,6 +26,7 @@ char *ngx_http_lua_ssl_sess_store_by_lua_block(ngx_conf_t *cf,
 
 int ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_ssl_session_t *sess);
+#endif
 
 
 #endif /* _NGX_HTTP_LUA_SSL_SESSION_STOREBY_H_INCLUDED_  */
