@@ -1290,6 +1290,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
                          /* indicates whether to foricibly override other
                           * valid entries */
     int                          forcible = 0;
+    ngx_queue_t                 *queue, *q;
 
     n = lua_gettop(L);
 
@@ -1366,7 +1367,9 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
             /* found an expired item */
 
-            if ((size_t) sd->value_len == sizeof(double)) {
+            if ((size_t) sd->value_len == sizeof(double)
+                && sd->value_type != SHDICT_TLIST)
+            {
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                                "lua shared dict incr: found old entry and "
                                "value size matched, reusing it");
@@ -1419,6 +1422,21 @@ remove:
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                    "lua shared dict incr: found old entry but value size "
                    "NOT matched, removing it first");
+
+    if (sd->value_type == SHDICT_TLIST) {
+        queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+
+        for (q = ngx_queue_head(queue);
+             q != ngx_queue_sentinel(queue);
+             q = ngx_queue_next(q))
+        {
+            p = (u_char *) ngx_queue_data(q,
+                                          ngx_http_lua_shdict_list_node_t,
+                                          queue);
+
+            ngx_slab_free_locked(ctx->shpool, p);
+        }
+    }
 
     ngx_queue_remove(&sd->queue);
 
@@ -2639,6 +2657,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     double                       num;
     ngx_rbtree_node_t           *node;
     u_char                      *p;
+    ngx_queue_t                 *queue, *q;
 
     if (zone == NULL) {
         return NGX_ERROR;
@@ -2675,7 +2694,9 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
             /* found an expired item */
 
-            if ((size_t) sd->value_len == sizeof(double)) {
+            if ((size_t) sd->value_len == sizeof(double)
+                && sd->value_type != SHDICT_TLIST)
+            {
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                                "lua shared dict incr: found old entry and "
                                "value size matched, reusing it");
@@ -2725,6 +2746,20 @@ remove:
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                    "lua shared dict incr: found old entry but value size "
                    "NOT matched, removing it first");
+
+    if (sd->value_type == SHDICT_TLIST) {
+        queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
+
+        for (q = ngx_queue_head(queue);
+             q != ngx_queue_sentinel(queue);
+             q = ngx_queue_next(q))
+        {
+            p = (u_char *) ngx_queue_data(q, ngx_http_lua_shdict_list_node_t,
+                                          queue);
+
+            ngx_slab_free_locked(ctx->shpool, p);
+        }
+    }
 
     ngx_queue_remove(&sd->queue);
 

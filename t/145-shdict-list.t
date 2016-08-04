@@ -622,7 +622,7 @@ two == number 2: true
 
 
 
-=== TEST 16: expire on all types
+=== TEST 17: expire on all types
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -661,7 +661,7 @@ keys number: 0
 
 
 
-=== TEST 17: long list node
+=== TEST 18: long list node
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -695,3 +695,46 @@ foofoofoofoofoofoofoofoofoofoo
 --- no_error_log
 [error]
 
+
+
+=== TEST 19: incr on expired list
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+
+            local long_str = string.rep("foo", 10 * 1024) -- 30k
+
+            for i = 1, 100 do
+                for j = 1, 10 do
+                    local key = "list" .. j
+                    local len, err = dogs:lpush(key, long_str)
+                    if not len then
+                        ngx.say("push err: ", err)
+                    end
+                end
+
+                dogs:flush_all()
+
+                for j = 10, 1, -1 do
+                    local key = "list" .. j
+                    local newval, err = dogs:incr(key, 1, 0)
+                    if not newval then
+                        ngx.say("incr err: ", err)
+                    end
+                end
+
+                dogs:flush_all()
+            end
+
+            ngx.say("done")
+        }
+    }
+--- request
+GET /test
+--- response_body
+done
+--- no_error_log
+[error]
