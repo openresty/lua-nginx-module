@@ -61,6 +61,7 @@ services:
 
 install:
   - if [ ! -d download-cache ]; then mkdir download-cache; fi
+  - rm -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz  # alas, we may end up with corrupted drizzle tarball stuck in the download-cache/ forever.
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -O download-cache/drizzle7-$DRIZZLE_VER.tar.gz http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
