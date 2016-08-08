@@ -469,14 +469,19 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                        | NGX_HTTP_LUA_CONTEXT_BALANCER
-                                       | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH,
                                        err, errlen)
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
-    if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_CERT) {
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
+                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH))
+    {
 
 #if (NGX_HTTP_SSL)
 
@@ -485,6 +490,10 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua exit with code %d", status);
+
+        if (ctx->context == NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE) {
+            return NGX_DONE;
+        }
 
         return NGX_OK;
 
