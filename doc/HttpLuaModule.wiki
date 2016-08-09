@@ -5293,7 +5293,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 Inserts the specified (numerical or string) <code>value</code> at the head of the list named <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns the number of elements in the list after the push operation.
 
-If <code>key</code> does not exist, it is created as an empty list before performing the push operations. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
+If <code>key</code> does not exist, it is created as an empty list before performing the push operation. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
 

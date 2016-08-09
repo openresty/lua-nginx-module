@@ -6316,7 +6316,7 @@ ngx.shared.DICT.lpush
 
 Inserts the specified (numerical or string) `value` at the head of the list named `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the number of elements in the list after the push operation.
 
-If `key` does not exist, it is created as an empty list before performing the push operations. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+If `key` does not exist, it is created as an empty list before performing the push operation. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
 
 It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
 
