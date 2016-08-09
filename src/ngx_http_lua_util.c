@@ -372,17 +372,17 @@ u_char *
 ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 {
     ngx_str_t nsrc = {.len = len, .data = src};
-    ngx_str_t nout = {};
+    ngx_str_t nout;
     ngx_int_t err;
     
     if (len == 0) {
         return NULL;
     }
     
-    if(err = ngx_get_full_name(pool, &nout, &nsrc))
+    if((err = ngx_get_full_name(pool, &nout, &nsrc)))
         return NULL;
     
-    return nout->data;
+    return nout.data;
 }
 
 
