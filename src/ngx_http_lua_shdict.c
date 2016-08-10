@@ -71,7 +71,7 @@ enum {
 
 
 static ngx_inline ngx_queue_t *
-ngx_http_lua_shdict_get_list_head(ngx_http_lua_shdict_node_t *sd, u_short len)
+ngx_http_lua_shdict_get_list_head(ngx_http_lua_shdict_node_t *sd, size_t len)
 {
     return (ngx_queue_t *) ngx_align_ptr(((u_char *) &sd->data + len),
                                          NGX_ALIGNMENT);
