@@ -1149,7 +1149,7 @@ replace:
 remove:
 
         if (sd->value_type == SHDICT_TLIST) {
-            queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+            queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
             for (q = ngx_queue_head(queue);
                  q != ngx_queue_sentinel(queue);
@@ -1424,7 +1424,7 @@ remove:
                    "NOT matched, removing it first");
 
     if (sd->value_type == SHDICT_TLIST) {
-        queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+        queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
         for (q = ngx_queue_head(queue);
              q != ngx_queue_sentinel(queue);
@@ -1758,7 +1758,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
 
         /* free list nodes */
 
-        queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+        queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
         for (q = ngx_queue_head(queue);
              q != ngx_queue_sentinel(queue);
@@ -1790,7 +1790,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
             return 2;
         }
 
-        queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+        queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
         ngx_queue_remove(&sd->queue);
         ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
@@ -1830,7 +1830,7 @@ init_list:
 
     sd = (ngx_http_lua_shdict_node_t *) &node->color;
 
-    queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+    queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
     node->key = hash;
     sd->key_len = (u_short) key.len;
@@ -2023,7 +2023,7 @@ ngx_http_lua_shdict_pop_helper(lua_State *L, int flags)
                           (unsigned long) sd->value_len);
     }
 
-    queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
+    queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key.len);
 
     if (flags == NGX_HTTP_LUA_SHDICT_LEFT) {
         queue = ngx_queue_head(queue);
@@ -2392,7 +2392,7 @@ replace:
 remove:
 
         if (sd->value_type == SHDICT_TLIST) {
-            queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
+            queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key_len);
 
             for (q = ngx_queue_head(queue);
                  q != ngx_queue_sentinel(queue);
@@ -2748,7 +2748,7 @@ remove:
                    "NOT matched, removing it first");
 
     if (sd->value_type == SHDICT_TLIST) {
-        queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
+        queue = ngx_http_lua_shdict_get_list_head(sd, (u_short) key_len);
 
         for (q = ngx_queue_head(queue);
              q != ngx_queue_sentinel(queue);
