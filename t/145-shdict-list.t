@@ -558,6 +558,7 @@ loop again, max matched: true
 loop again, max matched: true
 --- no_error_log
 [error]
+--- timeout: 9
 
 
 
@@ -619,6 +620,7 @@ no one left: 0
 two == number 2: true
 --- no_error_log
 [error]
+--- timeout: 9
 
 
 
