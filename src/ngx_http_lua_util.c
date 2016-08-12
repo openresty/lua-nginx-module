@@ -371,37 +371,26 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
 u_char *
 ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 {
-    u_char            *p, *dst;
+    u_char     *p;
+    ngx_str_t   dst;
 
-    if (len == 0) {
+    dst.data = ngx_palloc(pool, len + 1);
+    if (dst.data == NULL) {
         return NULL;
     }
 
-    if (src[0] == '/') {
-        /* being an absolute path already */
-        dst = ngx_palloc(pool, len + 1);
-        if (dst == NULL) {
-            return NULL;
-        }
+    dst.len = len;
 
-        p = ngx_copy(dst, src, len);
-
-        *p = '\0';
-
-        return dst;
-    }
-
-    dst = ngx_palloc(pool, ngx_cycle->prefix.len + len + 1);
-    if (dst == NULL) {
-        return NULL;
-    }
-
-    p = ngx_copy(dst, ngx_cycle->prefix.data, ngx_cycle->prefix.len);
-    p = ngx_copy(p, src, len);
-
+    p = ngx_copy(dst.data, src, len);
     *p = '\0';
 
-    return dst;
+    if (ngx_get_full_name(pool, (ngx_str_t *) &ngx_cycle->prefix, &dst)
+        != NGX_OK)
+    {
+        return NULL;
+    }
+
+    return dst.data;
 }
 
 
