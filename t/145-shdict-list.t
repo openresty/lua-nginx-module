@@ -503,8 +503,10 @@ GET /test
         content_by_lua_block {
             local dogs = ngx.shared.dogs
 
-            local max
-            for i = 1, 10000 do
+            local N = 100000
+            local max = 0
+
+            for i = 1, N do
                 local key = string.format("%05d", i)
 
                 local len , err = dogs:lpush(key, i)
@@ -516,7 +518,7 @@ GET /test
 
             local keys = dogs:get_keys(0)
 
-            ngx.say("max-1 matched keys length: ", max-1 == #keys)
+            ngx.say("max - 1 matched keys length: ", max - 1 == #keys)
 
             dogs:flush_all()
 
@@ -524,12 +526,12 @@ GET /test
 
             ngx.say("keys all expired, left number: ", #keys)
 
-            for i = 10000, 1, -1 do
+            for i = 100000, 1, -1 do
                 local key = string.format("%05d", i)
 
                 local len, err = dogs:lpush(key, i)
                 if not len then
-                    ngx.say("loop again, max matched: ", 10001-i == max)
+                    ngx.say("loop again, max matched: ", N + 1 - i == max)
                     break
                 end
             end
@@ -538,7 +540,7 @@ GET /test
 
             dogs:flush_expired()
 
-            for i = 1, 10000 do
+            for i = 1, N do
                 local key = string.format("%05d", i)
 
                 local len, err = dogs:lpush(key, i)
@@ -552,7 +554,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-max-1 matched keys length: true
+max - 1 matched keys length: true
 keys all expired, left number: 0
 loop again, max matched: true
 loop again, max matched: true
