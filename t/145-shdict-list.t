@@ -497,7 +497,7 @@ GET /test
 
 === TEST 15: list removed: expired
 --- http_config
-    lua_shared_dict dogs 1m;
+    lua_shared_dict dogs 900k;
 --- config
     location = /test {
         content_by_lua_block {
@@ -566,14 +566,15 @@ loop again, max matched: true
 
 === TEST 16: list removed: forcibly
 --- http_config
-    lua_shared_dict dogs 1m;
+    lua_shared_dict dogs 900k;
 --- config
     location = /test {
         content_by_lua_block {
             local dogs = ngx.shared.dogs
 
-            local max
-            for i = 1, 20000 do
+            local N = 200000
+            local max = 0
+            for i = 1, N do
                 local ok, err, forcible  = dogs:set(i, i)
                 if not ok or forcible then
                     max = i
@@ -592,7 +593,7 @@ loop again, max matched: true
 
             ngx.say("no one left: ", #keys)
 
-            for i = 1, 20000 do
+            for i = 1, N do
                 local key = string.format("%05d", i)
 
                 local len, err = dogs:lpush(key, i)
