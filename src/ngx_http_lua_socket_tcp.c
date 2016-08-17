@@ -93,6 +93,8 @@ static int ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L);
 static int ngx_http_lua_req_socket(lua_State *L);
 static void ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r);
 static int ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L);
+static int ngx_http_lua_socket_tcp_binddata(lua_State *L);
+static int ngx_http_lua_socket_tcp_getbounddata(lua_State *L);
 static int ngx_http_lua_socket_tcp_setkeepalive(lua_State *L);
 static ngx_int_t ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     lua_State *L, int key_index,
@@ -266,7 +268,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{tcp object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_tcp_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 11 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 13 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -301,6 +303,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_setkeepalive);
     lua_setfield(L, -2, "setkeepalive");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_binddata);
+    lua_setfield(L, -2, "binddata");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_getbounddata);
+    lua_setfield(L, -2, "getbounddata");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -605,6 +613,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
+    u->bind_tbl_ref = LUA_NOREF;
 
     /* TODO: we should avoid this in-pool allocation */
 
@@ -4368,6 +4377,71 @@ ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 
 
 static int
+ngx_http_lua_socket_tcp_getbounddata(lua_State *L)
+{
+    ngx_http_lua_socket_tcp_upstream_t    *u;
+
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "expecting 2 argument "
+                          "(including the object), but got %d", lua_gettop(L));
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TSTRING);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, u->bind_tbl_ref);
+    switch (lua_type(L, -1)) {
+            case LUA_TTABLE:
+                lua_pushvalue(L,2);
+                lua_gettable(L,-2);
+                break;
+            case LUA_TNIL:
+                break;
+            default:
+                return luaL_error(L, "no bind table found");
+    }
+    return 1;
+}
+
+
+static int
+ngx_http_lua_socket_tcp_binddata(lua_State *L)
+{
+    ngx_http_lua_socket_tcp_upstream_t    *u;
+
+    if (lua_gettop(L) != 3) {
+        return luaL_error(L, "expecting 3 argument "
+                          "(including the object), but got %d", lua_gettop(L));
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TSTRING);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+
+    if (u->bind_tbl_ref == LUA_NOREF) {
+        lua_createtable(L, 0, 1);
+        lua_pushvalue(L,2); //key
+        lua_pushvalue(L,3); //value
+        lua_rawset(L,-3);
+        u->bind_tbl_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, u->bind_tbl_ref);
+    lua_pushvalue(L,2); //key
+    lua_pushvalue(L,3); //value
+    lua_rawset(L,-3);
+    lua_pushinteger(L, 1);
+    return 1;
+}
+
+
+static int
 ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 {
     ngx_http_lua_loc_conf_t             *llcf;
@@ -4625,6 +4699,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     item->socklen = pc->socklen;
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
     item->reused = u->reused;
+    item->bind_tbl_ref = u->bind_tbl_ref;
 
     if (c->read->ready) {
         rc = ngx_http_lua_socket_keepalive_close_handler(c->read);
@@ -4715,6 +4790,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
         pc->cached = 1;
 
         u->reused = item->reused + 1;
+        u->bind_tbl_ref = item->bind_tbl_ref;
 
 #if 1
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
@@ -4891,6 +4967,7 @@ ngx_http_lua_socket_tcp_upstream_destroy(lua_State *L)
         return 0;
     }
 
+    luaL_unref(L, LUA_REGISTRYINDEX, u->bind_tbl_ref);
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
     }

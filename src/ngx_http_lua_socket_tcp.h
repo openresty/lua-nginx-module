@@ -89,6 +89,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *write_co_ctx;
 
     ngx_uint_t                       reused;
+    ngx_int_t                        bind_tbl_ref;
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
@@ -142,6 +143,7 @@ typedef struct {
     struct sockaddr_storage          sockaddr;
 
     ngx_uint_t                       reused;
+    ngx_int_t                        bind_tbl_ref;
 
 } ngx_http_lua_socket_pool_item_t;
 
