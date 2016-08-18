@@ -27,12 +27,12 @@ __DATA__
 
             ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-            local res = sock:getbounddata("test")
+            local res = sock:gettagdata("test")
             if not res then
-                sock:binddata("test", "a")
-                ngx.say("bind data not found")
+                sock:settagdata("test", "a")
+                ngx.say("set tag data not found")
             else
-                ngx.say("bind data ", res)
+                ngx.say("set tag data ", res)
             end
 
             local ok, err = sock:setkeepalive()
@@ -46,15 +46,15 @@ __DATA__
 
 --- response_body eval
 ["connected: 1, reused: 0
-bind data not found
+set tag data not found
 ",
 "connected: 1, reused: 1
-bind data a
+set tag data a
 "]
 
 
 
-=== TEST 2: unbind data
+=== TEST 2: unset tag data
 --- no_check_leak
 --- config
     location /t {
@@ -69,13 +69,13 @@ bind data a
 
             ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-            local res = sock:getbounddata("test")
+            local res = sock:gettagdata("test")
             if not res then
-                sock:binddata("test", "a")
-                ngx.say("bind data not found")
+                sock:settagdata("test", "a")
+                ngx.say("set tag data not found")
             else
-                ngx.say("bind data ", res)
-                sock:binddata("test", nil)
+                ngx.say("set tag data ", res)
+                sock:settagdata("test", nil)
             end
 
             local ok, err = sock:setkeepalive()
@@ -90,13 +90,13 @@ bind data a
 --- response_body eval
 [
 "connected: 1, reused: 0
-bind data not found
+set tag data not found
 ", 
 "connected: 1, reused: 1
-bind data a
+set tag data a
 ",
 "connected: 1, reused: 2
-bind data not found
+set tag data not found
 "]
 
 
@@ -117,14 +117,14 @@ bind data not found
 
             ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-            local res = sock:getbounddata("test")
+            local res = sock:gettagdata("test")
             if not res then
-                sock:binddata("test", string.rep("a",60))
-                ngx.say("bind data not found")
+                sock:settagdata("test", string.rep("a",60))
+                ngx.say("set tag data not found")
             end
 
-            local ok, err = sock:getbounddata("test")
-            ngx.say("bind data ", ok)
+            local ok, err = sock:gettagdata("test")
+            ngx.say("set tag data ", ok)
         ';
     }
 --- request
@@ -132,8 +132,8 @@ GET /t
 
 --- response_body
 connected: 1, reused: 0
-bind data not found
-bind data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+set tag data not found
+set tag data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 
 
@@ -150,17 +150,17 @@ bind data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                 return
             end
 
-            local res = sock:getbounddata("test")
+            local res = sock:gettagdata("test")
             if not res then
-                sock:binddata("test", string.rep("a",60))
-                res = sock:getbounddata("test")
+                sock:settagdata("test", string.rep("a",60))
+                res = sock:gettagdata("test")
             end
 
-            ngx.say("bind data ", res)
+            ngx.say("set tag data ", res)
 
-            sock:binddata("test", nil)
+            sock:settagdata("test", nil)
 
-            local ok, err = sock:getbounddata("test")
+            local ok, err = sock:gettagdata("test")
             if not ok then
                 ngx.say("removed")
             end
@@ -175,5 +175,5 @@ bind data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 GET /t
 
 --- response_body
-bind data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+set tag data aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 removed
