@@ -47,12 +47,11 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
         lua_pushcfunction(L, func);
         lua_setfield(L, -2, package);
         lua_pop(L, 2);
-
-        return NGX_OK;
     }
 
     /* L == NULL */
 
+    /* still store for a new vm init */
     if (lmcf->preload_hooks == NULL) {
         lmcf->preload_hooks =
             ngx_array_create(cf->pool, 4,
