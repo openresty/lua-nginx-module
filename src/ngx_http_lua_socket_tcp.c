@@ -4847,6 +4847,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
 {
     ngx_http_lua_socket_pool_item_t     *item;
     ngx_http_lua_socket_pool_t          *spool;
+    lua_State                           *L;
 
     int                n;
     char               buf[1];
@@ -4889,6 +4890,9 @@ close:
 
     item = c->data;
     spool = item->socket_pool;
+
+    L = spool->lua_vm;
+    luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
 
     ngx_http_lua_socket_tcp_close_connection(c);
 
