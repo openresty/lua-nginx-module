@@ -2486,6 +2486,13 @@ SSL session resumption will happen and thus bypass the [ssl_certificate_by_lua*]
 hook completely. In this case, NGINX also bypasses the [ssl_session_store_by_lua_block](#ssl_session_store_by_lua)
 hook, for obvious reasons.
 
+To easily test this hook locally with a modern web browser, you can temporarily put the following line
+in your https server block to disable the TLS session ticket support:
+
+    ssl_session_tickets off;
+
+But do not forget to comment this line out before publishing your site to the world.
+
 If you are using the [official pre-built packages](http://openresty.org/en/linux-packages.html) for [OpenResty](https://openresty.org/)
 1.11.2.1 or later, then everything should work out of the box.
 
@@ -2542,6 +2549,13 @@ The Lua API for obtaining the current session ID and the associated session stat
 is provided in the [ngx.ssl.session](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/session.md#readme)
 Lua module shipped with the [lua-resty-core](https://github.com/openresty/lua-resty-core#readme)
 library.
+
+To easily test this hook locally with a modern web browser, you can temporarily put the following line
+in your https server block to disable the TLS session ticket support:
+
+    ssl_session_tickets off;
+
+But do not forget to comment this line out before publishing your site to the world.
 
 This directive was first introduced in the `v0.10.6` release.
 
