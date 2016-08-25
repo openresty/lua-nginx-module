@@ -5000,6 +5000,7 @@ The optional `status` parameter specifies the HTTP status code to be used. The f
 
 * `301`
 * `302` (default)
+* `303`
 * `307`
 
 It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
