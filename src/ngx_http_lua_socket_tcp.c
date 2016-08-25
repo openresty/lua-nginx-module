@@ -3359,6 +3359,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 {
     ngx_connection_t               *c;
     ngx_http_lua_socket_pool_t     *spool;
+    lua_State                      *L;
 
     dd("request: %p, u: %p, u->cleanup: %p", r, u, u->cleanup);
 
@@ -3400,6 +3401,9 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     if (c) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua close socket connection");
+
+        L = ngx_http_lua_get_lua_vm(r, NULL);
+        luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
 
         ngx_http_lua_socket_tcp_close_connection(c);
         u->peer.connection = NULL;
@@ -4950,6 +4954,8 @@ ngx_http_lua_socket_shutdown_pool(lua_State *L)
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
         c = item->connection;
 
+        luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+
         ngx_http_lua_socket_tcp_close_connection(c);
 
         ngx_queue_remove(q);
@@ -4996,6 +5002,8 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
         dd("u is NULL");
         return 0;
     }
+
+    luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
 
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
@@ -5390,6 +5398,8 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
             q = ngx_queue_head(&spool->cache);
             item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
             c = item->connection;
+
+            luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
 
             ngx_http_lua_socket_tcp_close_connection(c);
 
