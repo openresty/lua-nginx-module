@@ -599,6 +599,8 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         u->connect_timeout = u->conf->connect_timeout;
     }
 
+    u->tag_data = LUA_NOREF;
+
     rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
     if (rc == NGX_OK) {
@@ -613,7 +615,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
-    u->tag_data = LUA_NOREF;
 
     /* TODO: we should avoid this in-pool allocation */
 
@@ -3402,8 +3403,11 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua close socket connection");
 
-        L = ngx_http_lua_get_lua_vm(r, NULL);
-        luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+        if (u->tag_data != LUA_NOREF) {
+            L = ngx_http_lua_get_lua_vm(r, NULL);
+            luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+            u->tag_data = LUA_NOREF;
+        }
 
         ngx_http_lua_socket_tcp_close_connection(c);
         u->peer.connection = NULL;
@@ -4895,8 +4899,11 @@ close:
     item = c->data;
     spool = item->socket_pool;
 
-    L = spool->lua_vm;
-    luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+    if (item->tag_data != LUA_NOREF) {
+        L = spool->lua_vm;
+        luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+        item->tag_data = LUA_NOREF;
+    }
 
     ngx_http_lua_socket_tcp_close_connection(c);
 
@@ -4954,7 +4961,10 @@ ngx_http_lua_socket_shutdown_pool(lua_State *L)
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
         c = item->connection;
 
-        luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+        if (item->tag_data != LUA_NOREF) {
+            luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+            item->tag_data = LUA_NOREF;
+        }
 
         ngx_http_lua_socket_tcp_close_connection(c);
 
@@ -4980,7 +4990,10 @@ ngx_http_lua_socket_tcp_upstream_destroy(lua_State *L)
         return 0;
     }
 
-    luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+    if (u->tag_data != LUA_NOREF) {
+        luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+        u->tag_data = LUA_NOREF;
+    }
 
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
@@ -5003,7 +5016,10 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
         return 0;
     }
 
-    luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+    if (u->tag_data != LUA_NOREF) {
+        luaL_unref(L, LUA_REGISTRYINDEX, u->tag_data);
+        u->tag_data = LUA_NOREF;
+    }
 
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
@@ -5399,7 +5415,10 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
             item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
             c = item->connection;
 
-            luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+            if (item->tag_data != LUA_NOREF) {
+                luaL_unref(L, LUA_REGISTRYINDEX, item->tag_data);
+                item->tag_data = LUA_NOREF;
+            }
 
             ngx_http_lua_socket_tcp_close_connection(c);
 
