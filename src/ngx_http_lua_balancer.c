@@ -682,7 +682,7 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
 #if (nginx_version >= 1007005)
     max_tries = r->upstream->conf->next_upstream_tries;
 
-    if (bp->total_tries + count > max_tries) {
+    if (max_tries && bp->total_tries + count > max_tries) {
         count = max_tries - bp->total_tries;
         *err = "reduced tries due to limit";
 
