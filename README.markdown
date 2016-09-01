@@ -3166,6 +3166,7 @@ Nginx API for Lua
 * [ngx.thread.kill](#ngxthreadkill)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
+* [ngx.timer.every](#ngxtimerevery)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
 * [ngx.timer.pending_count](#ngxtimerpending_count)
 * [ngx.config.subsystem](#ngxconfigsubsystem)
@@ -7638,6 +7639,23 @@ this context.
 You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you *cannot* pass any thread objects returned by [coroutine.create](#coroutinecreate) and [ngx.thread.spawn](#ngxthreadspawn) or any cosocket objects returned by [ngx.socket.tcp](#ngxsockettcp), [ngx.socket.udp](#ngxsocketudp), and [ngx.req.socket](#ngxreqsocket) because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to create all these objects inside your timer callback.
 
 This API was first introduced in the `v0.8.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.every
+---------------
+**syntax:** *ok, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)*
+
+**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Similar to the [ngx.timer.at](#ngxtimerat) API, but
+
+1. `delay` *cannot* be zero,
+1. timer will be created every `delay` seconds until the current Nginx worker process starts exiting.
+
+This API also respect the [lua_max_pending_timers](#lua_max_pending_timers) and [lua_max_running_timers](#lua_max_running_timers).
+
+This API was first introduced in the `v0.x.x` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

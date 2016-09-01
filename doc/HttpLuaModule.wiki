@@ -6486,6 +6486,20 @@ You can pass most of the standard Lua values (nils, booleans, numbers, strings, 
 
 This API was first introduced in the <code>v0.8.0</code> release.
 
+== ngx.timer.every ==
+'''syntax:''' ''ok, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)''
+
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Similar to the [[#ngx.timer.at|ngx.timer.at]] API, but
+
+# <code>delay</code> ''cannot'' be zero,
+# timer will be created every <code>delay</code> seconds until the current Nginx worker process starts exiting.
+
+This API also respect the [[#lua_max_pending_timers|lua_max_pending_timers]] and [[#lua_max_running_timers|lua_max_running_timers]].
+
+This API was first introduced in the <code>v0.x.x</code> release.
+
 == ngx.timer.running_count ==
 '''syntax:''' ''count = ngx.timer.running_count()''
 
