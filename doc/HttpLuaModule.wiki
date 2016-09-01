@@ -911,7 +911,7 @@ This directive was first introduced in the <code>v0.8.5</code> release.
 
 '''syntax:''' ''lua_package_path <lua-style-path-str>''
 
-'''default:''' ''The content of LUA_PATH environ variable or Lua's compiled-in defaults.''
+'''default:''' ''The content of LUA_PATH environment variable or Lua's compiled-in defaults.''
 
 '''context:''' ''http''
 
