@@ -1170,7 +1170,7 @@ lua_package_path
 
 **syntax:** *lua_package_path &lt;lua-style-path-str&gt;*
 
-**default:** *The content of LUA_PATH environ variable or Lua's compiled-in defaults.*
+**default:** *The content of LUA_PATH environment variable or Lua's compiled-in defaults.*
 
 **context:** *http*
 
