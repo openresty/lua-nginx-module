@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 187;
+plan tests => repeat_each() * 190;
 
 our $HtmlDir = html_dir;
 
@@ -3640,3 +3640,53 @@ failed to receive a line: closed []
 close: 1 nil
 --- error_log
 lua http cleanup reuse
+
+
+
+=== TEST 60: options_table is nil
+--- config
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+
+            local ok, err = sock:connect("127.0.0.1", port, nil)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "flush_all\r\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            ngx.say("request sent: ", bytes)
+
+            local line, err, part = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+
+            else
+                ngx.say("failed to receive a line: ", err, " [", part, "]")
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 11
+received: OK
+close: 1 nil
+--- no_error_log
+[error]
