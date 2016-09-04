@@ -2,7 +2,7 @@
 
 use Test::Nginx::Socket::Lua 'no_plan';
 
-repeat_each(10);
+repeat_each(2);
 
 log_level 'debug';
 
@@ -17,73 +17,64 @@ __DATA__
         set $port $TEST_NGINX_SERVER_PORT;
         content_by_lua_block {
             local sock = ngx.socket.tcp()
-            sock:settimeout(100)
+            sock:settimeout(500)
             assert(sock:connect("127.0.0.1", ngx.var.port))
             local req = {
-                'GET /foo ',
-                'HTTP/1.0\r\n',
-                'Host: ',
-                'localhost\r\n',
+                'GET /foo HTTP/1.0\r\n',
+                'Host: localhost\r\n',
                 'Connection: close\r\n\r\n',
             }
-            for _, msg in ipairs(req) do
-                sock:send(msg)
-                ngx.sleep(0.01)
-            end
+            sock:send(req)
 
-            local i = 1
-            local resp = {}
-            local err
+            -- skip http header
             while true do
-                resp[i], err = sock:receive('*b')
-                if err ~= nil then
-                    ngx.log(ngx.ERR, "receive *b error: ", err)
+                local data, err, _ = sock:receive('*l')
+                if err then
+                    ngx.say('unexpected error occurs when receiving http head: ' .. err)
+                    return
+                end
+                if #data == 0 then -- read last line of head
                     break
                 end
-
-                local resp_str = table.concat(resp)
-                if string.sub(resp_str, -15) == 'AAAAABBBBBCCCCC' then
-                    ngx.say('ok')
-                    break
-                end
-                if string.sub(resp_str, -12) == 'wwwxxxyyyzzz' then
-                    ngx.say('ok')
-                    break
-                end
-                i = i + 1
             end
+
+            -- receive http body
+            while true do
+                local data, err = sock:receive('*b')
+                if err then
+                    if err ~= 'closed' then
+                        ngx.say('unexpected err: ', err)
+                    end
+                    break
+                end
+                ngx.say(data)
+            end
+
             sock:close()
         }
     }
 
     location = /foo {
         content_by_lua_block {
-            local resps = {
-                {
-                    "AAAAA",
-                    "BBBBB",
-                    "CCCCC",
-                },
-                {
-                    "www",
-                    "xxx",
-                    "yyy",
-                    "zzz",
-                },
+            local resp = {
+                '1',
+                '22',
+                'hello world',
             }
-            local i = math.random(2)
-            local resp = resps[i]
+
             local length = 0
-            for _, s in ipairs(resp) do
-                length = length + #s
+            for _, v in ipairs(resp) do
+                length = length + #v
             end
 
+            -- flush http header
             ngx.header['Content-Length'] = length
             ngx.flush(true)
             ngx.sleep(0.01)
 
-            for _, s in ipairs(resp) do
-                ngx.print(s)
+            -- send http body
+            for _, v in ipairs(resp) do
+                ngx.print(v)
                 ngx.flush(true)
                 ngx.sleep(0.01)
             end
@@ -93,7 +84,9 @@ __DATA__
 --- request
 GET /t
 --- response_body
-ok
+1
+22
+hello world
 --- no_error_log
 [error]
 --- error_log
