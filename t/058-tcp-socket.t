@@ -3652,7 +3652,7 @@ lua http cleanup reuse
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
 
-            local ok, err = sock:connect("127.0.0.1", port)
+            local ok, err = sock:connect("127.0.0.1", port, nil)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
