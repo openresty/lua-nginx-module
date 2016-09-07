@@ -224,10 +224,10 @@ Location: http://agentzh.org/foo?a=b&c=d
 === TEST 12: explicit 303
 --- config
     location /read {
-        content_by_lua '
+        content_by_lua_block {
             ngx.redirect("http://agentzh.org/foo", ngx.HTTP_SEE_OTHER);
             ngx.say("hi")
-        ';
+        }
     }
 --- request
 GET /read
@@ -241,10 +241,10 @@ Location: http://agentzh.org/foo
 === TEST 13: explicit 303 with args
 --- config
     location /read {
-        content_by_lua '
+        content_by_lua_block {
             ngx.redirect("http://agentzh.org/foo?a=b&c=d", ngx.HTTP_SEE_OTHER);
             ngx.say("hi")
-        ';
+        }
     }
 --- request
 GET /read
@@ -258,10 +258,10 @@ Location: http://agentzh.org/foo?a=b&c=d
 === TEST 14: explicit 303
 --- config
     location /read {
-        content_by_lua '
+        content_by_lua_block {
             ngx.redirect("http://agentzh.org/foo?a=b&c=d", 303);
             ngx.say("hi")
-        ';
+        }
     }
 --- request
 GET /read
