@@ -172,6 +172,8 @@ int
 ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_ssl_session_t *sess)
 {
+    const u_char                    *sess_id;
+    unsigned int                     sess_id_len;
     lua_State                       *L;
     ngx_int_t                        rc;
     ngx_connection_t                *c, *fc = NULL;
@@ -246,11 +248,13 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
         }
     }
 
+    sess_id = SSL_SESSION_get_id(sess, &sess_id_len);
+
     cctx->connection = c;
     cctx->request = r;
     cctx->session = sess;
-    cctx->session_id.data = sess->session_id;
-    cctx->session_id.len = sess->session_id_length;
+    cctx->session_id.data = (u_char *) sess_id;
+    cctx->session_id.len = sess_id_len;
     cctx->done = 0;
 
     dd("setting cctx");
