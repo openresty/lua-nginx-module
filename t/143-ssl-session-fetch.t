@@ -33,7 +33,7 @@ __DATA__
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -114,7 +114,7 @@ qr/ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!/s
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -198,7 +198,7 @@ qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -297,9 +297,9 @@ qr/my timer run!/s
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -377,9 +377,9 @@ qr/received memc reply: OK/s
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -458,9 +458,9 @@ should never reached here
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -540,9 +540,9 @@ should never reached here
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -621,9 +621,9 @@ should never reached here
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -704,9 +704,9 @@ should never reached here
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -787,7 +787,7 @@ should never reached here
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -872,7 +872,7 @@ qr/get_phase: ssl_session_fetch/s
         }
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -956,7 +956,7 @@ ssl store session by lua is running!
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -1036,7 +1036,7 @@ qr/\S+:\d+: ssl fetch sess by lua is running!/s
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
