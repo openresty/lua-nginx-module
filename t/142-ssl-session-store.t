@@ -32,7 +32,7 @@ __DATA__
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -107,7 +107,7 @@ ssl_session_store_by_lua_block:1: ssl session store by lua is running!,
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -182,7 +182,7 @@ API disabled in the context of ssl_session_store_by_lua*
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -272,9 +272,9 @@ my timer run!
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
 
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -340,9 +340,9 @@ API disabled in the context of ssl_session_store_by_lua*
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -412,9 +412,9 @@ ngx.exit does not yield and the error code is eaten.
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -485,9 +485,9 @@ ssl_session_store_by_lua*: handler return value: 0, sess new cb exit code: 0
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -553,9 +553,9 @@ should never reached here
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -626,7 +626,7 @@ get_phase: ssl_session_store
         }
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -695,7 +695,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
@@ -765,7 +765,6 @@ a.lua:1: ssl store session by lua is running!
         ssl_session_store_by_lua_block {
             print("handler in test.com")
         }
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
 
@@ -775,7 +774,6 @@ a.lua:1: ssl store session by lua is running!
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
 
@@ -841,7 +839,7 @@ qr/\[emerg\] .*? "ssl_session_store_by_lua_block" directive is not allowed here 
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols SSLv3;
+        ssl_session_tickets off;
 
         server_tokens off;
     }
