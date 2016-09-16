@@ -3342,6 +3342,21 @@ This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_heade
 
 This API was first introduced in the <code>v0.9.5</code> release.
 
+== ngx.resp.set_status_reason ==
+'''syntax:''' ''ngx.resp.set_status_reason(status_code, status_reason)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*''
+
+Sets the full status line in the response, allowing you to customize the HTTP reason phrase. This is especially useful if you want to implement custom error codes that are unknown by the core nginx binary. This clears the previous status of the request.
+
+Calling <code>ngx.resp.set_status_reason</code> after the response header is sent out has no effect but leaving an error message in your nginx's error log file:
+
+<geshi lang="text">
+attempt to call ngx.resp.set_status_reason after sending out response headers
+</geshi>
+
+Note that reason does not exist in HTTP/2.
+
 == ngx.req.is_internal ==
 '''syntax:''' ''is_internal = ngx.req.is_internal()''
 

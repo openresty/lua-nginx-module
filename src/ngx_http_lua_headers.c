@@ -26,6 +26,7 @@ static int ngx_http_lua_ngx_req_get_headers(lua_State *L);
 static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 static int ngx_http_lua_ngx_resp_get_headers(lua_State *L);
+static int ngx_http_lua_ngx_resp_set_status_reason(lua_State *L);
 
 
 static int
@@ -595,6 +596,48 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
 
 
 static int
+ngx_http_lua_ngx_resp_set_status_reason(lua_State *L)
+{
+    ngx_http_request_t *r;
+    u_char             *reason, *buf;
+    size_t              reason_len;
+    ngx_uint_t          status;
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    if (r->header_sent) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "attempt to call ngx.resp.set_status_reason after "
+                      "sending out response headers");
+        return 0;
+    }
+
+    ngx_http_lua_check_fake_request(L, r);
+
+    status = luaL_checknumber(L, 1);
+    reason = (u_char *) luaL_checklstring(L, 2, &reason_len);
+
+    /* per RFC-7230 sec 3.1.2, the status line must be 3 digits, it also makes
+     * buffer size calculation easier */
+    luaL_argcheck(L, status >= 100 && status <= 999, 1,
+                  "invalid HTTP status code");
+
+    reason_len += 5; /* "ddd <reason>\0" */
+    buf = ngx_palloc(r->pool, reason_len);
+    ngx_snprintf(buf, reason_len, "%d %s", status, reason);
+
+    r->headers_out.status_line.data = buf;
+    r->headers_out.status_line.len = reason_len - 1;
+    r->headers_out.status = status;
+
+    return 0;
+}
+
+
+static int
 ngx_http_lua_ngx_header_get(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -939,6 +982,9 @@ ngx_http_lua_inject_resp_header_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_resp_get_headers);
     lua_setfield(L, -2, "get_headers");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_resp_set_status_reason);
+    lua_setfield(L, -2, "set_status_reason");
 
     lua_setfield(L, -2, "resp");
 }
