@@ -54,7 +54,6 @@ typedef struct {
 typedef struct {
     ngx_rbtree_t                       rbtree;
     ngx_rbtree_node_t                  sentinel;
-    int                                state;
 
 } ngx_http_lua_socket_tag_ctx_t;
 
@@ -106,7 +105,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *write_co_ctx;
 
     ngx_uint_t                       reused;
-    ngx_http_lua_socket_tag_ctx_t    tag_ctx;
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
@@ -160,7 +159,7 @@ typedef struct {
     struct sockaddr_storage          sockaddr;
 
     ngx_uint_t                       reused;
-    ngx_http_lua_socket_tag_ctx_t    tag_ctx;
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
 
 } ngx_http_lua_socket_pool_item_t;
 

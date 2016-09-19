@@ -141,7 +141,7 @@ static void ngx_http_lua_socket_tag_rbtree_insert_value(
 static int ngx_http_lua_socket_tag_set_helper(lua_State *L, int flags);
 static int ngx_http_lua_socket_tag_get_helper(lua_State *L);
 static void ngx_http_lua_socket_tag_remove_all(
-    ngx_http_lua_socket_tag_ctx_t *tag_ctx);
+    ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx);
 
 
 enum {
@@ -606,11 +606,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         u->connect_timeout = u->conf->connect_timeout;
     }
 
-    ngx_rbtree_init(&(u->tag_ctx.rbtree), &(u->tag_ctx.sentinel),
-                    ngx_http_lua_socket_tag_rbtree_insert_value);
-    u->tag_ctx.state = 1;
+    u->tag_ctx = NULL;
 
     rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
+
+
 
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);
@@ -624,6 +624,16 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     }
 
     /* rc == NGX_DECLINED */
+    if (u->tag_ctx == NULL) {
+        u->tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
+                        ngx_cycle->log);
+        if (u->tag_ctx == NULL) {
+            return luaL_error(L, "no memory");
+        }
+
+        ngx_rbtree_init(&(u->tag_ctx->rbtree), &(u->tag_ctx->sentinel),
+                        ngx_http_lua_socket_tag_rbtree_insert_value);
+    }
 
     /* TODO: we should avoid this in-pool allocation */
 
@@ -4403,11 +4413,14 @@ ngx_http_lua_socket_tcp_settagdata(lua_State *L)
 
 
 static void
-ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t *tag_ctx)
+ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
 {
     ngx_rbtree_node_t               *node, *sentinel;
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
 
-    if (tag_ctx->state == 0)
+    tag_ctx = *pp_tag_ctx;
+
+    if (tag_ctx == NULL)
     {
         return ;
     }
@@ -4426,7 +4439,8 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t *tag_ctx)
         ngx_free(node);
     }
 
-    tag_ctx->state = 0;
+    ngx_free(*pp_tag_ctx);
+    *pp_tag_ctx = NULL;
     return ;
 }
 
@@ -4452,7 +4466,7 @@ ngx_http_lua_socket_tag_get_helper(lua_State *L)
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
-    tag_ctx = &u->tag_ctx;
+    tag_ctx = u->tag_ctx;
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
@@ -4536,7 +4550,7 @@ ngx_http_lua_socket_tag_set_helper(lua_State *L, int flags)
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
-    tag_ctx = &u->tag_ctx;
+    tag_ctx = u->tag_ctx;
 
     key.data = (u_char *) luaL_checklstring(L, 2, &key.len);
 
@@ -4602,7 +4616,7 @@ ngx_http_lua_socket_tag_set_helper(lua_State *L, int flags)
 
         /* hash == node->key */
         st = (ngx_http_lua_socket_tag_node_t *) &node->color;
-        rc = ngx_memn2cmp((u_char *)value.data, st->data, value.len,
+        rc = ngx_memn2cmp((u_char *)key.data, st->data, key.len,
                           (size_t) st->key_len);
 
         if (rc == 0) {
@@ -4620,11 +4634,13 @@ remove:
     node = (ngx_rbtree_node_t *)
                    ((u_char *) st - offsetof(ngx_rbtree_node_t, color));
 
+    printf("do remove at first: %x\n", (unsigned int)node);
     ngx_rbtree_delete(&tag_ctx->rbtree, node);
     ngx_free(node);
     node = NULL;
 
 insert:
+    printf("do insert\n");
     n = offsetof(ngx_rbtree_node_t, color)
         + offsetof(ngx_http_lua_socket_tag_node_t, data)
         + key.len
@@ -4636,6 +4652,7 @@ insert:
         lua_pushliteral(L, "no memory");
         return 2;
     }
+    printf("alloc %x\n", (unsigned int)node);
 
     node->key = hash;
     st = (ngx_http_lua_socket_tag_node_t *) &node->color;
@@ -4909,6 +4926,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
     item->reused = u->reused;
     item->tag_ctx = u->tag_ctx;
+    u->tag_ctx = NULL;
 
     if (c->read->ready) {
         rc = ngx_http_lua_socket_keepalive_close_handler(c->read);
@@ -5000,6 +5018,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r, lua_State *L,
 
         u->reused = item->reused + 1;
         u->tag_ctx = item->tag_ctx;
+        item->tag_ctx = NULL;
 
 #if 1
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
@@ -5179,8 +5198,6 @@ ngx_http_lua_socket_tcp_upstream_destroy(lua_State *L)
     if (u == NULL) {
         return 0;
     }
-
-    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
 
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
