@@ -4448,13 +4448,17 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
 static int
 ngx_http_lua_socket_tag_get_helper(lua_State *L)
 {
-    ngx_str_t                        key;
-    ngx_rbtree_node_t               *node, *sentinel;
-    uint32_t                         hash;
-    ngx_int_t                        rc;
-    ngx_http_lua_socket_tag_node_t  *st, *dst;
+    ngx_str_t                              key;
+    ngx_rbtree_node_t                     *node, *sentinel;
+    uint32_t                               hash;
+    ngx_int_t                              rc;
+    ngx_http_lua_socket_tag_node_t        *st, *dst;
     ngx_http_lua_socket_tcp_upstream_t    *u;
     ngx_http_lua_socket_tag_ctx_t         *tag_ctx;
+    ngx_str_t                              value;
+    int                                    value_type;
+    double                                 num;
+    u_char                                 c;
 
     if (lua_gettop(L) != 2) {
         return luaL_error(L, "expecting 3 argument "
@@ -4518,7 +4522,54 @@ ngx_http_lua_socket_tag_get_helper(lua_State *L)
         return 1;
     }
 
-    lua_pushlstring(L, (char *)dst->data + dst->key_len, dst->value_len);
+    value_type = dst->value_type;
+
+    dd("data: %p", dst->data);
+    dd("key len: %d", (int) dst->key_len);
+
+    value.data = dst->data + dst->key_len;
+    value.len = (size_t) dst->value_len;
+
+    switch (value_type) {
+
+    case LUA_TSTRING:
+
+        lua_pushlstring(L, (char *) value.data, value.len);
+        break;
+
+    case LUA_TNUMBER:
+
+        if (value.len != sizeof(double)) {
+
+            return luaL_error(L, "bad lua number value size found for key %s "
+                              "in %lu", key.data, (unsigned long) value.len);
+        }
+
+        ngx_memcpy(&num, value.data, sizeof(double));
+
+        lua_pushnumber(L, num);
+        break;
+
+    case LUA_TBOOLEAN:
+
+        if (value.len != sizeof(u_char)) {
+
+            return luaL_error(L, "bad lua boolean value size found for key %s "
+                              "in %lu", key.data, (unsigned long) value.len);
+        }
+
+        c = *value.data;
+
+        lua_pushboolean(L, c ? 1 : 0);
+        break;
+
+    default:
+
+        return luaL_error(L, "bad value type found for key %s in "
+                          "%d", key.data, value_type);
+    }
+
+    // lua_pushlstring(L, (char *)dst->data + dst->key_len, dst->value_len);
     return 1;
 }
 
@@ -4634,13 +4685,15 @@ remove:
     node = (ngx_rbtree_node_t *)
                    ((u_char *) st - offsetof(ngx_rbtree_node_t, color));
 
-    printf("do remove at first: %x\n", (unsigned int)node);
     ngx_rbtree_delete(&tag_ctx->rbtree, node);
     ngx_free(node);
     node = NULL;
 
 insert:
-    printf("do insert\n");
+    if (value.data == NULL) {
+        return NGX_OK;
+    }
+
     n = offsetof(ngx_rbtree_node_t, color)
         + offsetof(ngx_http_lua_socket_tag_node_t, data)
         + key.len
@@ -4652,12 +4705,12 @@ insert:
         lua_pushliteral(L, "no memory");
         return 2;
     }
-    printf("alloc %x\n", (unsigned int)node);
 
     node->key = hash;
     st = (ngx_http_lua_socket_tag_node_t *) &node->color;
     st->key_len = (u_short) key.len;
     st->value_len = (uint32_t) value.len;
+    st->value_type = (uint8_t) value_type;
     p = ngx_copy(st->data, key.data, key.len);
     ngx_memcpy(p, value.data, value.len);
     ngx_rbtree_insert(&tag_ctx->rbtree, node);
