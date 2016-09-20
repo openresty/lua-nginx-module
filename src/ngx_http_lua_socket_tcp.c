@@ -3416,12 +3416,12 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     }
 #endif
 
+    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
+
     c = u->peer.connection;
     if (c) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua close socket connection");
-
-        ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
 
         ngx_http_lua_socket_tcp_close_connection(c);
         u->peer.connection = NULL;
@@ -4439,7 +4439,8 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
         ngx_free(node);
     }
 
-    ngx_free(*pp_tag_ctx);
+    ngx_free(tag_ctx);
+
     *pp_tag_ctx = NULL;
     return ;
 }
