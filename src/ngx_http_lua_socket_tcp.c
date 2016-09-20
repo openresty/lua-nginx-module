@@ -610,8 +610,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
-
-
     if (rc == NGX_OK) {
         lua_pushinteger(L, 1);
         return 1;
@@ -626,7 +624,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     /* rc == NGX_DECLINED */
     if (u->tag_ctx == NULL) {
         u->tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
-                        ngx_cycle->log);
+                               ngx_cycle->log);
         if (u->tag_ctx == NULL) {
             return luaL_error(L, "no memory");
         }
@@ -5692,7 +5690,7 @@ static void
 ngx_http_lua_socket_tag_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t           **p;
+    ngx_rbtree_node_t               **p;
     ngx_http_lua_socket_tag_node_t   *sdn, *sdnt;
 
     for ( ;; ) {
