@@ -51,6 +51,22 @@ typedef struct {
 } ngx_http_lua_socket_pool_t;
 
 
+typedef struct {
+    ngx_rbtree_t                       rbtree;
+    ngx_rbtree_node_t                  sentinel;
+
+} ngx_http_lua_socket_tag_ctx_t;
+
+
+typedef struct {
+    u_char                       color;
+    u_short                      key_len;
+    uint8_t                      value_type;
+    uint32_t                     value_len;
+    u_char                       data[1];
+} ngx_http_lua_socket_tag_node_t;
+
+
 struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_socket_tcp_retval_handler          read_prepare_retvals;
     ngx_http_lua_socket_tcp_retval_handler          write_prepare_retvals;
@@ -89,7 +105,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *write_co_ctx;
 
     ngx_uint_t                       reused;
-    ngx_int_t                        tag_data; /* store tag data */
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
@@ -143,7 +159,7 @@ typedef struct {
     struct sockaddr_storage          sockaddr;
 
     ngx_uint_t                       reused;
-    ngx_int_t                        tag_data;  /* store tag data */
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
 
 } ngx_http_lua_socket_pool_item_t;
 
