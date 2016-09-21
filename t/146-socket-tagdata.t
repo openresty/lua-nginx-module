@@ -290,6 +290,37 @@ GET /t
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*:10: bad argument #1 to \'settagdata\' \(string expected, got number\)/
+qr/\[error\] .*bad argument #1 to \'settagdata\' \(string expected, got number\)/
+
+
+
+=== TEST 7: ngx.req.socket
+# For TEST_NGINX_CHECK_LEAK
+--- config
+    location /t {
+        content_by_lua '
+            local port = ngx.var.server_port
+            local sock = ngx.req.socket()
+
+            local ok, err = sock:settagdata("key", "value")
+            if not ok then
+                ngx.log(ngx.ERR, "set tag data fail: ", err)
+                return
+            end
+
+            local res, err = sock:gettagdata("key")
+            if not res then
+                ngx.log(ngx.ERR, "get tag data fail: ", err)
+            else
+                ngx.log(ngx.ERR, "get tag data succ: ", res)
+            end
+        ';
+    }
+--- request eval
+"POST /t
+hello"
+--- error_code: 200
+--- error_log eval
+qr/\[error\] .* get tag data succ: value/
 
 
