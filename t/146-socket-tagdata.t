@@ -44,12 +44,8 @@ __DATA__
 --- request eval
 ["GET /t", "GET /t"]
 --- response_body eval
-["connected: 1, reused: 0
-set tag data not found
-",
-"connected: 1, reused: 1
-set tag data a
-"]
+["connected: 1, reused: 0\nset tag data not found\n",
+"connected: 1, reused: 1\nset tag data a\n"]
 
 
 
@@ -87,15 +83,9 @@ set tag data a
 ["GET /t", "GET /t", "GET /t"]
 --- response_body eval
 [
-"connected: 1, reused: 0
-set tag data not found
-",
-"connected: 1, reused: 1
-set tag data a
-",
-"connected: 1, reused: 2
-set tag data not found
-"]
+"connected: 1, reused: 0\nset tag data not found\n",
+"connected: 1, reused: 1\nset tag data a\n",
+"connected: 1, reused: 2\nset tag data not found\n"]
 
 
 
