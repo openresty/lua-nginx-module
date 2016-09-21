@@ -4428,8 +4428,7 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
         node = tag_ctx->rbtree.root;
         sentinel = tag_ctx->rbtree.sentinel;
 
-        if (node == sentinel)
-        {
+        if (node == sentinel) {
             break;
         }
 
@@ -4568,7 +4567,6 @@ ngx_http_lua_socket_tag_get_helper(lua_State *L)
                           "%d", key.data, value_type);
     }
 
-    // lua_pushlstring(L, (char *)dst->data + dst->key_len, dst->value_len);
     return 1;
 }
 
