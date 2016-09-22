@@ -3395,6 +3395,8 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
+    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
+
     if (u->cleanup) {
         *u->cleanup = NULL;
         ngx_http_lua_cleanup_free(r, u->cleanup);
@@ -3425,8 +3427,6 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->ssl_name.len = 0;
     }
 #endif
-
-    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
 
     c = u->peer.connection;
     if (c) {
@@ -4443,6 +4443,9 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
     {
         return ;
     }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "lua tcp socket tag data free: %p", tag_ctx);
 
     for (;;)
     {
