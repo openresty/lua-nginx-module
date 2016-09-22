@@ -234,7 +234,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 4 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -245,6 +245,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_settagdata);
+    lua_setfield(L, -2, "settagdata");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettagdata);
+    lua_setfield(L, -2, "gettagdata");
+
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
@@ -253,7 +259,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 5 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -266,6 +272,12 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_settagdata);
+    lua_setfield(L, -2, "settagdata");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettagdata);
+    lua_setfield(L, -2, "gettagdata");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -3383,6 +3395,8 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
+    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
+
     if (u->cleanup) {
         *u->cleanup = NULL;
         ngx_http_lua_cleanup_free(r, u->cleanup);
@@ -3413,8 +3427,6 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->ssl_name.len = 0;
     }
 #endif
-
-    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
 
     c = u->peer.connection;
     if (c) {
@@ -4307,6 +4319,15 @@ ngx_http_lua_req_socket(lua_State *L)
     u->connect_timeout = u->conf->connect_timeout;
     u->send_timeout = u->conf->send_timeout;
 
+    u->tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
+                               ngx_cycle->log);
+    if (u->tag_ctx == NULL) {
+        return luaL_error(L, "no memory");
+    }
+
+    ngx_rbtree_init(&(u->tag_ctx->rbtree), &(u->tag_ctx->sentinel),
+                    ngx_http_lua_socket_tag_rbtree_insert_value);
+
     cln = ngx_http_lua_cleanup_add(r, 0);
     if (cln == NULL) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
@@ -4422,6 +4443,9 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
     {
         return ;
     }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "lua tcp socket tag data free: %p", tag_ctx);
 
     for (;;)
     {
@@ -4688,7 +4712,8 @@ remove:
 
 insert:
     if (value.data == NULL) {
-        return NGX_OK;
+        lua_pushboolean(L, 1);
+        return 1;
     }
 
     n = offsetof(ngx_rbtree_node_t, color)

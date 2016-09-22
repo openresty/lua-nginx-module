@@ -4,7 +4,9 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 2 * 3 + 1) ;
+plan tests => repeat_each() * (blocks() * 2 + 2 * 6) ;
+
+log_level('debug');
 
 run_tests();
 
@@ -290,6 +292,121 @@ GET /t
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*:10: bad argument #1 to \'settagdata\' \(string expected, got number\)/
+qr/\[error\] .*bad argument #1 to \'settagdata\' \(string expected, got number\)/
 
+
+
+=== TEST 7: upstream sockets close prematurely
+# For TEST_NGINX_CHECK_LEAK
+--- config
+    location /t {
+        content_by_lua '
+            local sock = ngx.req.socket()
+
+            local ok, err = sock:settagdata("key", "value")
+            if not ok then
+                ngx.log(ngx.ERR, "set tag data fail: ", err)
+                return
+            end
+
+            local res, err = sock:gettagdata("key")
+            if not res then
+                ngx.log(ngx.ERR, "get tag data fail: ", err)
+            else
+                ngx.log(ngx.ERR, "get tag data succ: ", res)
+            end
+        ';
+    }
+--- request eval
+"POST /t
+hello"
+--- error_code: 200
+--- error_log eval
+[
+qr/\[error\] .* get tag data succ: value/,
+"lua tcp socket tag data free: "
+]
+
+
+
+=== TEST 8: upstream sockets close prematurely
+# For TEST_NGINX_CHECK_LEAK
+--- config
+    location /t {
+        rewrite_by_lua '
+            local port = ngx.var.server_port
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local ok, err = sock:settagdata("key", "value")
+            if not ok then
+                ngx.log(ngx.ERR, "set tag data fail: ", err)
+                return
+            end
+
+            local ok, err = sock:setkeepalive(10, 3)
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.sleep(1)
+        ';
+
+        content_by_lua_block {
+            ngx.say("done")
+        }
+    }
+--- request
+GET /t
+--- response_body
+done
+--- error_log eval
+[
+qr/lua tcp socket keepalive close handler/,
+"lua tcp socket tag data free: "
+]
+
+
+
+=== TEST 9: upstream sockets close
+# For TEST_NGINX_CHECK_LEAK
+--- config
+    location /t {
+        content_by_lua '
+            local port = ngx.var.server_port
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+
+            ok, err = sock:settagdata("test", "a")
+            if not ok then
+                ngx.say("failed to set tag: ", err)
+                return
+            end
+
+            ok, err = sock:close()
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /t
+--- response_body
+done
+--- error_log eval
+[
+qr/lua finalize socket/,
+"lua tcp socket tag data free: "
+]
 
