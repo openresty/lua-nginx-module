@@ -4,9 +4,9 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 2 * 6) ;
+plan tests => repeat_each() * (blocks() * 4 - 2 * 4) ;
 
-log_level('debug');
+log_level('debug'); # to ensure any log-level can be outputted
 
 run_tests();
 
@@ -366,7 +366,7 @@ GET /t
 done
 --- error_log eval
 [
-qr/lua tcp socket keepalive close handler/,
+"lua tcp socket keepalive close handler",
 "lua tcp socket tag data free: "
 ]
 
@@ -384,7 +384,6 @@ qr/lua tcp socket keepalive close handler/,
                 ngx.say("failed to connect: ", err)
                 return
             end
-
 
             ok, err = sock:settagdata("test", "a")
             if not ok then
@@ -406,7 +405,42 @@ GET /t
 done
 --- error_log eval
 [
-qr/lua finalize socket/,
+"lua finalize socket",
 "lua tcp socket tag data free: "
 ]
+
+
+
+=== TEST 10: upstream sockets destroy
+# For TEST_NGINX_CHECK_LEAK
+--- config
+    location /t {
+        content_by_lua '
+            local port = ngx.var.server_port
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ok, err = sock:settagdata("test", "a")
+            if not ok then
+                ngx.say("failed to set tag: ", err)
+                return
+            end
+
+            ngx.say("done")
+        ';
+    }
+--- request
+GET /t
+--- response_body
+done
+--- error_log eval
+[
+"lua finalize socket",
+"lua tcp socket tag data free: "
+]
+
 
