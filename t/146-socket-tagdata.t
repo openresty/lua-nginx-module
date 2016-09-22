@@ -296,7 +296,7 @@ qr/\[error\] .*bad argument #1 to \'settagdata\' \(string expected, got number\)
 
 
 
-=== TEST 7: ngx.req.socket
+=== TEST 7: upstream sockets close prematurely
 # For TEST_NGINX_CHECK_LEAK
 --- config
     location /t {
@@ -329,7 +329,7 @@ qr/\[error\] .* get tag data succ: value/,
 
 
 
-=== TEST 9: upstream sockets close prematurely
+=== TEST 8: upstream sockets close prematurely
 # For TEST_NGINX_CHECK_LEAK
 --- config
     location /t {
