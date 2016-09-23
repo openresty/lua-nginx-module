@@ -233,8 +233,6 @@ ngx_http_lua_ffi_ssl_create_ocsp_request(const char *chain_data,
     X509_free(cert);
     BIO_free(bio);
 
-    ERR_clear_error();
-
     return NGX_OK;
 
 failed:
@@ -254,6 +252,8 @@ failed:
     if (bio) {
         BIO_free(bio);
     }
+
+    ERR_clear_error();
 
     return rc;
 

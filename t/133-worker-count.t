@@ -50,3 +50,23 @@ GET /lua
 workers: 1
 --- no_error_log
 [error]
+
+
+
+=== TEST 3: init_worker_by_lua
+--- http_config
+    init_worker_by_lua_block {
+        init_worker_count = ngx.worker.count()
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("workers: ", init_worker_count)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+workers: 1
+--- no_error_log
+[error]

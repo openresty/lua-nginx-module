@@ -816,7 +816,7 @@ foo = hello
 
 
 
-=== TEST 31: incr key (key exists)
+=== TEST 31: replace key (key exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -950,7 +950,7 @@ foo = 10534
 
 
 
-=== TEST 36: replace key (key not exists)
+=== TEST 36: incr key (key not exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -973,7 +973,7 @@ foo = nil
 
 
 
-=== TEST 37: replace key (key expired)
+=== TEST 37: incr key (key expired)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config

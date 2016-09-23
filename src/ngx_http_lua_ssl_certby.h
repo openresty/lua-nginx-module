@@ -14,16 +14,6 @@
 #if (NGX_HTTP_SSL)
 
 
-typedef struct {
-    ngx_connection_t        *connection; /* original true connection */
-    ngx_http_request_t      *request;    /* fake request */
-    int                      exit_code;  /* exit code for openssl's
-                                            set_cert_cb callback */
-    unsigned                 done;       /* :1 */
-    unsigned                 aborted;    /* :1 */
-} ngx_http_lua_ssl_cert_ctx_t;
-
-
 ngx_int_t ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 

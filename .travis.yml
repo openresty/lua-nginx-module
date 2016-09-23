@@ -36,7 +36,6 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - LUA_CMODULE_DIR=/lib
     - PCRE_VER=8.33
     - PCRE_PREFIX=/opt/pcre
     - PCRE_LIB=$PCRE_PREFIX/lib
@@ -61,6 +60,7 @@ services:
 
 install:
   - if [ ! -d download-cache ]; then mkdir download-cache; fi
+  - rm -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz  # alas, we may end up with corrupted drizzle tarball stuck in the download-cache/ forever.
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -O download-cache/drizzle7-$DRIZZLE_VER.tar.gz http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
@@ -107,6 +107,8 @@ script:
   - cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
+  - wget https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-$OPENSSL_VER-sess_set_get_cb_yield.patch
+  - patch -p1 < openssl-$OPENSSL_VER-sess_set_get_cb_yield.patch
   - ./config shared --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
