@@ -4442,16 +4442,14 @@ ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
 
     tag_ctx = *pp_tag_ctx;
 
-    if (tag_ctx == NULL)
-    {
+    if (tag_ctx == NULL) {
         return ;
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua tcp socket tag data free: %p", tag_ctx);
 
-    for (;;)
-    {
+    for (;;) {
         node = tag_ctx->rbtree.root;
         sentinel = tag_ctx->rbtree.sentinel;
 
