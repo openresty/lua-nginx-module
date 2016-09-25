@@ -246,10 +246,10 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settagdata);
-    lua_setfield(L, -2, "settagdata");
+    lua_setfield(L, -2, "settag");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettagdata);
-    lua_setfield(L, -2, "gettagdata");
+    lua_setfield(L, -2, "gettag");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -274,10 +274,10 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settagdata);
-    lua_setfield(L, -2, "settagdata");
+    lua_setfield(L, -2, "settag");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettagdata);
-    lua_setfield(L, -2, "gettagdata");
+    lua_setfield(L, -2, "gettag");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -324,10 +324,10 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "setkeepalive");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settagdata);
-    lua_setfield(L, -2, "settagdata");
+    lua_setfield(L, -2, "settag");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettagdata);
-    lua_setfield(L, -2, "gettagdata");
+    lua_setfield(L, -2, "gettag");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
