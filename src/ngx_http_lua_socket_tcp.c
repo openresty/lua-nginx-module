@@ -4483,7 +4483,7 @@ ngx_http_lua_socket_tag_get_helper(lua_State *L)
     u_char                                 c;
 
     if (lua_gettop(L) != 2) {
-        return luaL_error(L, "expecting 3 argument "
+        return luaL_error(L, "expecting 2 argument "
                           "(including the object), but got %d", lua_gettop(L));
     }
 
