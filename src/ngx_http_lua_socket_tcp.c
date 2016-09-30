@@ -140,7 +140,9 @@ static void ngx_http_lua_socket_tag_rbtree_insert_value(
     ngx_rbtree_node_t *sentinel);
 static int ngx_http_lua_socket_tag_set_helper(lua_State *L, int flags);
 static int ngx_http_lua_socket_tag_get_helper(lua_State *L);
-static void ngx_http_lua_socket_tag_remove_all(
+static void ngx_http_lua_socket_tag_init(
+    ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx);
+static void ngx_http_lua_socket_tag_destroy(
     ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx);
 static ngx_int_t ngx_http_lua_shdict_lookup(
     ngx_http_lua_socket_tag_ctx_t *tag_ctx, ngx_uint_t hash,
@@ -638,14 +640,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* rc == NGX_DECLINED */
     if (u->tag_ctx == NULL) {
-        u->tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
-                               ngx_cycle->log);
-        if (u->tag_ctx == NULL) {
-            return luaL_error(L, "no memory");
-        }
-
-        ngx_rbtree_init(&(u->tag_ctx->rbtree), &(u->tag_ctx->sentinel),
-                        ngx_http_lua_socket_tag_rbtree_insert_value);
+        ngx_http_lua_socket_tag_init(&u->tag_ctx);
     }
 
     /* TODO: we should avoid this in-pool allocation */
@@ -3398,7 +3393,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua finalize socket");
 
-    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
+    ngx_http_lua_socket_tag_destroy(&u->tag_ctx);
 
     if (u->cleanup) {
         *u->cleanup = NULL;
@@ -4322,14 +4317,9 @@ ngx_http_lua_req_socket(lua_State *L)
     u->connect_timeout = u->conf->connect_timeout;
     u->send_timeout = u->conf->send_timeout;
 
-    u->tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
-                               ngx_cycle->log);
     if (u->tag_ctx == NULL) {
-        return luaL_error(L, "no memory");
+        ngx_http_lua_socket_tag_init(&u->tag_ctx);
     }
-
-    ngx_rbtree_init(&(u->tag_ctx->rbtree), &(u->tag_ctx->sentinel),
-                    ngx_http_lua_socket_tag_rbtree_insert_value);
 
     cln = ngx_http_lua_cleanup_add(r, 0);
     if (cln == NULL) {
@@ -4435,7 +4425,32 @@ ngx_http_lua_socket_tcp_settagdata(lua_State *L)
 
 
 static void
-ngx_http_lua_socket_tag_remove_all(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
+ngx_http_lua_socket_tag_init(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
+{
+    ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
+
+    tag_ctx = *pp_tag_ctx;
+
+    if (tag_ctx == NULL) {
+
+        tag_ctx = ngx_alloc(sizeof(ngx_http_lua_socket_tag_ctx_t),
+                            ngx_cycle->log);
+
+        if (tag_ctx == NULL) {
+            return luaL_error(L, "no memory");
+        }
+
+        ngx_rbtree_init(&(tag_ctx->rbtree), &(tag_ctx->sentinel),
+                        ngx_http_lua_socket_tag_rbtree_insert_value);
+
+        *pp_tag_ctx = tag_ctx;
+
+    }
+}
+
+
+static void
+ngx_http_lua_socket_tag_destroy(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
 {
     ngx_rbtree_node_t               *node, *sentinel;
     ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
@@ -5156,7 +5171,7 @@ close:
     item = c->data;
     spool = item->socket_pool;
 
-    ngx_http_lua_socket_tag_remove_all(&item->tag_ctx);
+    ngx_http_lua_socket_tag_destroy(&item->tag_ctx);
 
     ngx_http_lua_socket_tcp_close_connection(c);
 
@@ -5214,7 +5229,7 @@ ngx_http_lua_socket_shutdown_pool(lua_State *L)
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
         c = item->connection;
 
-        ngx_http_lua_socket_tag_remove_all(&item->tag_ctx);
+        ngx_http_lua_socket_tag_destroy(&item->tag_ctx);
 
         ngx_http_lua_socket_tcp_close_connection(c);
 
@@ -5261,7 +5276,7 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
         return 0;
     }
 
-    ngx_http_lua_socket_tag_remove_all(&u->tag_ctx);
+    ngx_http_lua_socket_tag_destroy(&u->tag_ctx);
 
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
@@ -5657,7 +5672,7 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
             item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
             c = item->connection;
 
-            ngx_http_lua_socket_tag_remove_all(&item->tag_ctx);
+            ngx_http_lua_socket_tag_destroy(&item->tag_ctx);
 
             ngx_http_lua_socket_tcp_close_connection(c);
 
