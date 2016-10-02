@@ -27,6 +27,9 @@
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
+#include <malloc.h>
+#endif
 
 
 static ngx_int_t ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r);
@@ -67,8 +70,42 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
+    ngx_uint_t                   trim_cycle, trim_nreq;
+    ngx_http_lua_main_conf_t    *lmcf;
+#endif
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
+
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    trim_cycle = lmcf->malloc_trim_cycle;
+
+    if (trim_cycle > 0) {
+
+        dd("cycle: %d", (int) trim_cycle);
+
+        trim_nreq = ++lmcf->malloc_trim_req_count;
+
+        if (trim_nreq >= trim_cycle) {
+            lmcf->malloc_trim_req_count = 0;
+
+#if (NGX_DEBUG)
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "malloc_trim(1) returned %d", malloc_trim(1));
+#else
+            (void) malloc_trim(1);
+#endif
+        }
+    }
+#   if (NGX_DEBUG)
+    else {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "malloc_trim() disabled");
+    }
+#   endif
+#endif
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua log handler, uri:\"%V\" c:%ud", &r->uri,

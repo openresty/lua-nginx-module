@@ -1002,6 +1002,7 @@ Directives
 ==========
 
 * [lua_use_default_type](#lua_use_default_type)
+* [lua_malloc_trim](#lua_malloc_trim)
 * [lua_code_cache](#lua_code_cache)
 * [lua_regex_cache_max_entries](#lua_regex_cache_max_entries)
 * [lua_regex_match_limit](#lua_regex_match_limit)
@@ -1086,6 +1087,31 @@ Specifies whether to use the MIME type specified by the [default_type](http://ng
 This directive is turned on by default.
 
 This directive was first introduced in the `v0.9.1` release.
+
+[Back to TOC](#directives)
+
+lua_malloc_trim
+---------------
+**syntax:** *lua_malloc_trim &lt;request-count&gt;*
+
+**default:** *lua_malloc_trim 1000*
+
+**context:** *http*
+
+Asks the underlying `libc` runtime library to release its cached free memory back to the operating system every
+`N` requests processed by the NGINX core. By default, `N` is 1000. You can configure the request count
+by using your own numbers. Smaller numbers mean more frequent releases, which may introduce higher CPU time consumption and
+smaller memory footprint while larger numbers usually lead to less CPU time overhead and relatively larger memory footprint.
+Just tune the number for your own use cases.
+
+Configuring the argument to `0` essentially turns off the periodical memory trimming altogether.
+
+The current implementation uses an NGINX log phase handler to do the request counting. So the appearance of the
+[log_subrequest on](http://nginx.org/en/docs/http/ngx_http_core_module.html#log_subrequest) directives in `nginx.conf`
+may make the counting faster when subrequests are involved. By default, only "main requests" count.
+
+Note that this directive does *not* affect the memory allocated by LuaJIT's own allocator based on the `mmap`
+system call.
 
 [Back to TOC](#directives)
 
