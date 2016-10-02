@@ -840,6 +840,32 @@ This directive is turned on by default.
 
 This directive was first introduced in the <code>v0.9.1</code> release.
 
+== lua_malloc_trim ==
+'''syntax:''' ''lua_malloc_trim <request-count>''
+
+'''default:''' ''lua_malloc_trim 1000''
+
+'''context:''' ''http''
+
+Asks the underlying <code>libc</code> runtime library to release its cached free memory back to the operating system every
+<code>N</code> requests processed by the NGINX core. By default, <code>N</code> is 1000. You can configure the request count
+by using your own numbers. Smaller numbers mean more frequent releases, which may introduce higher CPU time consumption and
+smaller memory footprint while larger numbers usually lead to less CPU time overhead and relatively larger memory footprint.
+Just tune the number for your own use cases.
+
+Configuring the argument to <code>0</code> essentially turns off the periodical memory trimming altogether.
+
+<geshi lang="nginx">
+    lua_malloc_trim 0;  # turn off trimming completely
+</geshi>
+
+The current implementation uses an NGINX log phase handler to do the request counting. So the appearance of the
+[http://nginx.org/en/docs/http/ngx_http_core_module.html#log_subrequest log_subrequest on] directives in <code>nginx.conf</code>
+may make the counting faster when subrequests are involved. By default, only "main requests" count.
+
+Note that this directive does *not* affect the memory allocated by LuaJIT's own allocator based on the <code>mmap</code>
+system call.
+
 == lua_code_cache ==
 '''syntax:''' ''lua_code_cache on | off''
 
