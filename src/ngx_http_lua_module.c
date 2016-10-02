@@ -53,6 +53,8 @@ void ngx_http_lua_limit_data_segment(void);
 static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
 #   endif
 #endif
+static char *ngx_http_lua_malloc_trim(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 
 
 static ngx_conf_post_t  ngx_http_lua_lowat_post =
@@ -578,6 +580,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 #endif  /* NGX_HTTP_SSL */
 
+     { ngx_string("lua_malloc_trim"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_malloc_trim,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      NULL },
+
     ngx_null_command
 };
 
@@ -832,6 +841,10 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
 
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
+    lmcf->malloc_trim_cycle = NGX_CONF_UNSET_UINT;
+#endif
+
 #ifndef NGX_LUA_NO_FFI_API
     rc = ngx_http_lua_sema_mm_init(cf, lmcf);
     if (rc != NGX_OK) {
@@ -867,6 +880,12 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
     if (lmcf->max_running_timers == NGX_CONF_UNSET) {
         lmcf->max_running_timers = 256;
     }
+
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
+    if (lmcf->malloc_trim_cycle == NGX_CONF_UNSET_UINT) {
+        lmcf->malloc_trim_cycle = 1000;  /* number of reqs */
+    }
+#endif
 
     lmcf->cycle = cf->cycle;
 
@@ -1282,5 +1301,40 @@ ngx_http_lua_limit_data_segment(void)
     }
 }
 #endif
+
+
+static char *
+ngx_http_lua_malloc_trim(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+#if NGX_HTTP_LUA_HAVE_MALLOC_TRIM
+
+    ngx_int_t       nreqs;
+    ngx_str_t      *value;
+
+    ngx_http_lua_main_conf_t    *lmcf = conf;
+
+    value = cf->args->elts;
+
+    nreqs = ngx_atoi(value[1].data, value[1].len);
+    if (nreqs == NGX_ERROR) {
+        return "invalid number in the 1st argument";
+    }
+
+    lmcf->malloc_trim_cycle = (ngx_uint_t) nreqs;
+
+    if (nreqs == 0) {
+        return NGX_CONF_OK;
+    }
+
+    lmcf->requires_log = 1;
+
+#else
+
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "lua_malloc_trim is not supported "
+                       "on this platform, ignored");
+
+#endif
+    return NGX_CONF_OK;
+}
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

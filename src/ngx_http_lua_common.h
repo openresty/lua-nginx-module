@@ -193,6 +193,10 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_sema_mm_t         *sema_mm;
 
+    ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
+                                                of reqeusts */
+    ngx_uint_t           malloc_trim_req_count;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
