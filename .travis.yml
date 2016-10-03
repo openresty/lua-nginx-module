@@ -52,7 +52,7 @@ env:
     - TEST_NGINX_SLEEP=0.006
   matrix:
     - NGINX_VERSION=1.9.15
-#    - NGINX_VERSION=1.10.0
+    - NGINX_VERSION=1.11.2
 
 services:
  - memcache
