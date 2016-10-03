@@ -13,12 +13,11 @@
 
 typedef struct {
     u_char                       color;
-    u_char                       dummy;
-    u_short                      key_len;
-    ngx_queue_t                  queue;
-    uint64_t                     expires;
     uint8_t                      value_type;
+    u_short                      key_len;
     uint32_t                     value_len;
+    uint64_t                     expires;
+    ngx_queue_t                  queue;
     uint32_t                     user_flags;
     u_char                       data[1];
 } ngx_http_lua_shdict_node_t;

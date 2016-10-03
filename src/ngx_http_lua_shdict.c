@@ -1195,6 +1195,9 @@ insert:
         + key.len
         + value.len;
 
+    dd("overhead = %d", (int) (offsetof(ngx_rbtree_node_t, color)
+       + offsetof(ngx_http_lua_shdict_node_t, data)));
+
     node = ngx_slab_alloc_locked(ctx->shpool, n);
 
     if (node == NULL) {
