@@ -2471,3 +2471,193 @@ error
 lua_shared_dict "dogs" is already defined as "dogs"
 --- error_log
 [emerg]
+
+
+
+=== TEST 94: decr key (key exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:decr("foo", 17)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: 15 nil
+foo = 15
+--- no_error_log
+[error]
+
+
+
+=== TEST 95: decr key (key not exists)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bah", 32)
+            local res, err = dogs:decr("foo", 2)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: nil not found
+foo = nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 96: decr key (key expired)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("bar", 3, 0.001)
+            dogs:set("baz", 2, 0.001)
+            dogs:set("foo", 32, 0.001)
+            ngx.location.capture("/sleep/0.002")
+            local res, err = dogs:decr("foo", 17)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+    location ~ ^/sleep/(.+) {
+        echo_sleep $1;
+    }
+--- request
+GET /test
+--- response_body
+decr: nil not found
+foo = nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 97: decr key (decr by 0)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:decr("foo", 0)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: nil must decr by a positive value
+foo = 32
+--- no_error_log
+[error]
+
+
+
+=== TEST 98: decr key (decr by floating point number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:decr("foo", 0.14)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: 31.86 nil
+foo = 31.86
+--- no_error_log
+[error]
+
+
+
+=== TEST 99: decr key (decr by negative numbers)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:decr("foo", -0.14)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: nil must decr by a positive value
+foo = 32
+--- no_error_log
+[error]
+
+
+
+=== TEST 100: decr key (decr below zero)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", 32)
+            local res, err = dogs:decr("foo", 33)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: nil cannot decr below zero
+foo = 32
+--- no_error_log
+[error]
+
+
+
+=== TEST 101: decr key (original value is not number)
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:set("foo", true)
+            local res, err = dogs:decr("foo", -0.14)
+            ngx.say("decr: ", res, " ", err)
+            ngx.say("foo = ", dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+decr: nil must decr by a positive value
+foo = true
+--- no_error_log
+[error]

@@ -5116,6 +5116,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.replace|replace]]
 * [[#ngx.shared.DICT.delete|delete]]
 * [[#ngx.shared.DICT.incr|incr]]
+* [[#ngx.shared.DICT.decr|decr]]
 * [[#ngx.shared.DICT.lpush|lpush]]
 * [[#ngx.shared.DICT.rpush|rpush]]
 * [[#ngx.shared.DICT.lpop|lpop]]
@@ -5348,6 +5349,22 @@ This method was first introduced in the <code>v0.3.1rc22</code> release.
 The optional `init` parameter was first added in the <code>v0.10.6</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.decr ==
+'''syntax:''' ''newval, err, forcible? = ngx.shared.DICT:decr(key, value, init?)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Similar to [[#ngx.shared.DICT.incr|ngx.shared.DICT.incr]], but decrements the (numerical) value for <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] by the step value <code>value</code>. Returns the new resulting number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
+
+Additionally, existing values cannot be decremented below 0.
+
+When the key does not exist or has already expired in the shared dictionary,
+
+# if the <code>init</code> argument is not specified or takes the value <code>nil</code>, this method will return <code>nil</code> and the error string <code>"not found"</code>, or
+# if the <code>init</code> argument takes a number value, this method will create a new <code>key</code> with the value <code>init - value</code>, unless the result of <code>init - value</code> is less than 0, in which case this method will return nil and the error string <code>"cannot initialize decr below zero"</code>
+
+All other behaviors are identical to [[#ngx.shared.DICT.incr|ngx.shared.DICT.incr]].
 
 == ngx.shared.DICT.lpush ==
 '''syntax:''' ''length, err = ngx.shared.DICT:lpush(key, value)''

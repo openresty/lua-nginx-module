@@ -283,7 +283,7 @@ n = 5
 --- request
 GET /test
 --- response_body
-n = 18
+n = 19
 --- no_error_log
 [error]
 
