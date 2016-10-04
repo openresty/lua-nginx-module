@@ -72,14 +72,14 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
 #if NGX_HTTP_LUA_HAVE_MALLOC_TRIM
     ngx_uint_t                   trim_cycle, trim_nreq;
-#endif
     ngx_http_lua_main_conf_t    *lmcf;
+#endif
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
 
+#if NGX_HTTP_LUA_HAVE_MALLOC_TRIM
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-#if NGX_HTTP_LUA_HAVE_MALLOC_TRIM
     trim_cycle = lmcf->malloc_trim_cycle;
 
     if (trim_cycle > 0) {
