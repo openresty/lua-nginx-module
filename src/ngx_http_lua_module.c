@@ -1306,7 +1306,7 @@ ngx_http_lua_limit_data_segment(void)
 static char *
 ngx_http_lua_malloc_trim(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-#if NGX_HTTP_LUA_HAVE_MALLOC_TRIM
+#if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
 
     ngx_int_t       nreqs;
     ngx_str_t      *value;
