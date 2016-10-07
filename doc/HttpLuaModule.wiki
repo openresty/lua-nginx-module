@@ -463,10 +463,10 @@ and then accessing it from <code>nginx.conf</code>:
 
 <geshi lang="nginx">
     location /lua {
-        content_by_lua '
+        content_by_lua_block {
             local mydata = require "mydata"
             ngx.say(mydata.get_age("dog"))
-        ';
+        }
     }
 </geshi>
 
@@ -545,9 +545,9 @@ The [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_m
 
 <geshi lang="nginx">
     location /foo {
-        content_by_lua '
+        content_by_lua_block {
             res = ngx.location.capture("/bar")
-        ';
+        }
     }
     location /bar {
         echo_location /blah;
@@ -693,9 +693,9 @@ servers in Lua. For example,
     datagram {
         server {
             listen 1953;
-            handler_by_lua '
+            handler_by_lua_block {
                 -- custom Lua code implementing the special UDP server...
-            ';
+            }
         }
     }
 </geshi>
@@ -957,9 +957,9 @@ Usually you can register (true) Lua global variables or pre-load Lua modules at 
 
     server {
         location = /api {
-            content_by_lua '
+            content_by_lua_block {
                 ngx.say(cjson.encode({dog = 5, cat = 6}))
-            ';
+            }
         }
     }
 </geshi>
@@ -976,10 +976,10 @@ You can also initialize the [[#lua_shared_dict|lua_shared_dict]] shm storage at 
 
     server {
         location = /api {
-            content_by_lua '
+            content_by_lua_block {
                 local dogs = ngx.shared.dogs;
                 ngx.say(dogs:get("Tom"))
-            ';
+            }
         }
     }
 </geshi>
@@ -1707,7 +1707,7 @@ When the Lua code may change the length of the response body, then it is require
     location /foo {
         # fastcgi_pass/proxy_pass/...
 
-        header_filter_by_lua 'ngx.header.content_length = nil';
+        header_filter_by_lua_block { ngx.header.content_length = nil }
         body_filter_by_lua 'ngx.arg[1] = string.len(ngx.arg[1]) .. "\\n"';
     }
 </geshi>
@@ -1806,7 +1806,7 @@ Here is an example of gathering average data for [[HttpUpstreamModule#$upstream_
         }
 
         location = /status {
-            content_by_lua '
+            content_by_lua_block {
                 local log_dict = ngx.shared.log_dict
                 local sum = log_dict:get("upstream_time-sum")
                 local nb = log_dict:get("upstream_time-nb")
@@ -1817,7 +1817,7 @@ Here is an example of gathering average data for [[HttpUpstreamModule#$upstream_
                 else
                     ngx.say("no data yet")
                 end
-            ';
+            }
         }
     }
 </geshi>
@@ -1946,15 +1946,15 @@ Determines whether to force the request body data to be read before running rewr
 To read the request body data within the [[HttpCoreModule#$request_body|$request_body]] variable,
 [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] must have the same value as [[HttpCoreModule#client_max_body_size|client_max_body_size]]. Because when the content length exceeds [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] but less than [[HttpCoreModule#client_max_body_size|client_max_body_size]], Nginx will buffer the data into a temporary file on the disk, which will lead to empty value in the [[HttpCoreModule#$request_body|$request_body]] variable.
 
-If the current location includes [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]] directives,
-then the request body will be read just before the [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]] code is run (and also at the
+If the current location includes [[#rewrite_by_lua|rewrite_by_lua*]] directives,
+then the request body will be read just before the [[#rewrite_by_lua|rewrite_by_lua*]] code is run (and also at the
 <code>rewrite</code> phase). Similarly, if only [[#content_by_lua|content_by_lua]] is specified,
 the request body will not be read until the content handler's Lua code is
 about to run (i.e., the request body will be read during the content phase).
 
 It is recommended however, to use the [[#ngx.req.read_body|ngx.req.read_body]] and [[#ngx.req.discard_body|ngx.req.discard_body]] functions for finer control over the request body reading process instead.
 
-This also applies to [[#access_by_lua|access_by_lua]] and [[#access_by_lua_file|access_by_lua_file]].
+This also applies to [[#access_by_lua|access_by_lua*]].
 
 == ssl_certificate_by_lua_block ==
 
@@ -2408,7 +2408,7 @@ This directive was first introduced in the <code>v0.5.0rc19</code> release.
 
 '''context:''' ''http''
 
-Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua]]* directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
+Controls whether or not to disable postponing [[#rewrite_by_lua|rewrite_by_lua*]] directives to run at the end of the <code>rewrite</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>rewrite</code> phase.
 
 This directive was first introduced in the <code>v0.5.0rc29</code> release.
 
@@ -2420,7 +2420,7 @@ This directive was first introduced in the <code>v0.5.0rc29</code> release.
 
 '''context:''' ''http''
 
-Controls whether or not to disable postponing [[#access_by_lua|access_by_lua]]* directives to run at the end of the <code>access</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>access</code> phase.
+Controls whether or not to disable postponing [[#access_by_lua|access_by_lua*]] directives to run at the end of the <code>access</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>access</code> phase.
 
 This directive was first introduced in the <code>v0.9.20</code> release.
 
@@ -2504,7 +2504,7 @@ This directive was first introduced in the <code>v0.8.0</code> release.
 <!-- inline-toc -->
 
 == Introduction ==
-The various <code>*_by_lua</code> and <code>*_by_lua_file</code> configuration directives serve as gateways to the Lua API within the <code>nginx.conf</code> file. The Nginx Lua API described below can only be called within the user Lua code run in the context of these configuration directives.
+The various <code>*_by_lua</code>, <code>*_by_lua_block</code> and <code>*_by_lua_file</code> configuration directives serve as gateways to the Lua API within the <code>nginx.conf</code> file. The Nginx Lua API described below can only be called within the user Lua code run in the context of these configuration directives.
 
 The API is exposed to Lua in the form of two standard packages <code>ngx</code> and <code>ndk</code>. These packages are in the default global scope within ngx_lua and are always available within ngx_lua directives.
 
@@ -2540,7 +2540,7 @@ Network I/O operations in user code should only be done through the Nginx Lua AP
 
 '''context:''' ''set_by_lua*, body_filter_by_lua*''
 
-When this is used in the context of the [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]] directives, this table is read-only and holds the input arguments to the config directives:
+When this is used in the context of the [[#set_by_lua|set_by_lua*]] directives, this table is read-only and holds the input arguments to the config directives:
 
 <geshi lang="lua">
     value = ngx.arg[n]
@@ -2563,7 +2563,7 @@ Here is an example
 
 that writes out <code>88</code>, the sum of <code>32</code> and <code>56</code>.
 
-When this table is used in the context of [[#body_filter_by_lua|body_filter_by_lua]] or [[#body_filter_by_lua_file|body_filter_by_lua_file]], the first element holds the input data chunk to the output filter code and the second element holds the boolean flag for the "eof" flag indicating the end of the whole output data stream.
+When this table is used in the context of [[#body_filter_by_lua|body_filter_by_lua*]], the first element holds the input data chunk to the output filter code and the second element holds the boolean flag for the "eof" flag indicating the end of the whole output data stream.
 
 The data chunk and "eof" flag passed to the downstream Nginx output filters can also be overridden by assigning values directly to the corresponding table elements. When setting <code>nil</code> or an empty Lua string value to <code>ngx.arg[1]</code>, no data chunk will be passed to the downstream Nginx output filters at all.
 
@@ -2585,10 +2585,10 @@ For example:
 <geshi lang="nginx">
     location /foo {
         set $my_var ''; # this line is required to create $my_var at config time
-        content_by_lua '
+        content_by_lua_block {
             ngx.var.my_var = 123;
             ...
-        ';
+        }
     }
 </geshi>
 
@@ -2620,7 +2620,7 @@ Undefined NGINX variables are evaluated to `nil` while uninitialized (but define
 This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 
 == Core constants ==
-'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, *log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, *log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 <geshi lang="lua">
   ngx.OK (0)
@@ -2641,7 +2641,7 @@ The <code>ngx.null</code> constant is a <code>NULL</code> light userdata usually
 The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0rc19</code> release.
 
 == HTTP method constants ==
-'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 <geshi lang="text">
   ngx.HTTP_GET
@@ -2664,7 +2664,7 @@ The <code>ngx.DECLINED</code> constant was first introduced in the <code>v0.5.0r
 These constants are usually used in [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] method calls.
 
 == HTTP status constants ==
-'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 <geshi lang="nginx">
   value = ngx.HTTP_CONTINUE (100) (first added in the v0.9.20 release)
@@ -2704,7 +2704,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.capture
 </geshi>
 
 == Nginx log level constants ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 <geshi lang="lua">
   ngx.STDERR
@@ -2723,7 +2723,7 @@ These constants are usually used by the [[#ngx.log|ngx.log]] method.
 == print ==
 '''syntax:''' ''print(...)''
 
-'''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 Writes argument values into the nginx <code>error.log</code> file with the <code>ngx.NOTICE</code> log level.
 
@@ -2738,7 +2738,7 @@ Lua <code>nil</code> arguments are accepted and result in literal <code>"nil"</c
 There is a hard coded <code>2048</code> byte limitation on error message lengths in the Nginx core. This limit includes trailing newlines and leading time stamps. If the message size exceeds this limit, Nginx will truncate the message text accordingly. This limit can be manually modified by editing the <code>NGX_MAX_ERROR_STR</code> macro definition in the <code>src/core/ngx_log.h</code> file in the Nginx source tree.
 
 == ngx.ctx ==
-'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, ngx.timer.*, balancer_by_lua*''
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, ngx.timer.*, balancer_by_lua*''
 
 This table can be used to store per-request Lua context data and has a life time identical to the current request (as with the Nginx variables). 
 
@@ -2746,15 +2746,15 @@ Consider the following example,
 
 <geshi lang="nginx">
     location /test {
-        rewrite_by_lua '
+        rewrite_by_lua_block {
             ngx.ctx.foo = 76
-        ';
-        access_by_lua '
+        }
+        access_by_lua_block {
             ngx.ctx.foo = ngx.ctx.foo + 3
-        ';
-        content_by_lua '
+        }
+        content_by_lua_block {
             ngx.say(ngx.ctx.foo)
-        ';
+        }
     }
 </geshi>
 
@@ -2770,21 +2770,21 @@ Every request, including subrequests, has its own copy of the table. For example
 
 <geshi lang="nginx">
     location /sub {
-        content_by_lua '
+        content_by_lua_block {
             ngx.say("sub pre: ", ngx.ctx.blah)
             ngx.ctx.blah = 32
             ngx.say("sub post: ", ngx.ctx.blah)
-        ';
+        }
     }
  
     location /main {
-        content_by_lua '
+        content_by_lua_block {
             ngx.ctx.blah = 73
             ngx.say("main pre: ", ngx.ctx.blah)
             local res = ngx.location.capture("/sub")
             ngx.print(res.body)
             ngx.say("main post: ", ngx.ctx.blah)
-        ';
+        }
     }
 </geshi>
 
@@ -2803,16 +2803,16 @@ Internal redirection will destroy the original request <code>ngx.ctx</code> data
 
 <geshi lang="nginx">
     location /new {
-        content_by_lua '
+        content_by_lua_block {
             ngx.say(ngx.ctx.foo)
-        ';
+        }
     }
  
     location /orig {
-        content_by_lua '
+        content_by_lua_block {
             ngx.ctx.foo = "hello"
             ngx.exec("/new")
-        ';
+        }
     }
 </geshi>
 
@@ -2999,13 +2999,13 @@ This option is set to <code>false</code> by default
 
     location /lua {
         set $dog 'hello';
-        content_by_lua '
+        content_by_lua_block {
             res = ngx.location.capture("/other",
                 { share_all_vars = true });
 
             ngx.print(res.body)
             ngx.say(ngx.var.uri, ": ", ngx.var.dog)
-        ';
+        }
     }
 </geshi>
 
@@ -3026,13 +3026,13 @@ The <code>copy_all_vars</code> option provides a copy of the parent request's Ng
 
     location /lua {
         set $dog 'hello';
-        content_by_lua '
+        content_by_lua_block {
             res = ngx.location.capture("/other",
                 { copy_all_vars = true });
 
             ngx.print(res.body)
             ngx.say(ngx.var.uri, ": ", ngx.var.dog)
-        ';
+        }
     }
 </geshi>
 
@@ -3054,21 +3054,21 @@ unescaping them in the Nginx config file.
 
 <geshi lang="nginx">
     location /other {
-        content_by_lua '
+        content_by_lua_block {
             ngx.say("dog = ", ngx.var.dog)
             ngx.say("cat = ", ngx.var.cat)
-        ';
+        }
     }
 
     location /lua {
         set $dog '';
         set $cat '';
-        content_by_lua '
+        content_by_lua_block {
             res = ngx.location.capture("/other",
                 { vars = { dog = "hello", cat = 32 }});
 
             ngx.print(res.body)
-        ';
+        }
     }
 </geshi>
 
@@ -3083,18 +3083,18 @@ The <code>ctx</code> option can be used to specify a custom Lua table to serve a
 
 <geshi lang="nginx">
     location /sub {
-        content_by_lua '
+        content_by_lua_block {
             ngx.ctx.foo = "bar";
-        ';
+        }
     }
     location /lua {
-        content_by_lua '
+        content_by_lua_block {
             local ctx = {}
             res = ngx.location.capture("/sub", { ctx = ctx })
 
             ngx.say(ctx.foo);
             ngx.say(ngx.ctx.foo);
-        ';
+        }
     }
 </geshi>
 
@@ -3109,15 +3109,15 @@ It is also possible to use this <code>ctx</code> option to share the same [[#ngx
 
 <geshi lang="nginx">
     location /sub {
-        content_by_lua '
+        content_by_lua_block {
             ngx.ctx.foo = "bar";
-        ';
+        }
     }
     location /lua {
-        content_by_lua '
+        content_by_lua_block {
             res = ngx.location.capture("/sub", { ctx = ngx.ctx })
             ngx.say(ngx.ctx.foo);
-        ';
+        }
     }
 </geshi>
 
@@ -3206,7 +3206,7 @@ of this function. Logically speaking, the [[#ngx.location.capture|ngx.location.c
 Please also refer to restrictions on capturing locations configured by [[#Locations_Configured_by_Subrequest_Directives_of_Other_Modules|subrequest directives of other modules]].
 
 == ngx.status ==
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*''
 
 Read and write the current request's response status. This should be called
 before sending out the response headers.
@@ -3227,7 +3227,7 @@ Setting <code>ngx.status</code> after the response header is sent out has no eff
 
 '''syntax:''' ''value = ngx.header.HEADER''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*''
 
 Set, add to, or clear the current request's <code>HEADER</code> response header that is to be sent.
 
@@ -3287,7 +3287,7 @@ Reading <code>ngx.header.HEADER</code> will return the value of the response hea
 
 Underscores (<code>_</code>) in the header names will also be replaced by dashes (<code>-</code>) and the header names will be matched case-insensitively. If the response header is not present at all, <code>nil</code> will be returned.
 
-This is particularly useful in the context of [[#header_filter_by_lua|header_filter_by_lua]] and [[#header_filter_by_lua_file|header_filter_by_lua_file]], for example,
+This is particularly useful in the context of [[#header_filter_by_lua|header_filter_by_lua*]], for example,
 
 <geshi lang="nginx">
     location /test {
@@ -3295,11 +3295,11 @@ This is particularly useful in the context of [[#header_filter_by_lua|header_fil
 
         proxy_pass http://some-backend;
 
-        header_filter_by_lua '
+        header_filter_by_lua_block {
             if ngx.header["X-My-Header"] == "blah" then
                 ngx.var.footer = "some value"
             end
-        ';
+        }
 
         echo_after_body $footer;
     }
@@ -3327,7 +3327,7 @@ For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_head
 == ngx.resp.get_headers ==
 '''syntax:''' ''headers = ngx.resp.get_headers(max_headers?, raw?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*, balancer_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*, balancer_by_lua*''
 
 Returns a Lua table holding all the current response headers for the current request.
 
@@ -3492,16 +3492,16 @@ or equivalently,
     ngx.req.set_uri("/foo")
 </geshi>
 
-The <code>jump</code> argument can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua]] and [[#rewrite_by_lua_file|rewrite_by_lua_file]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
+The <code>jump</code> argument can only be set to <code>true</code> in [[#rewrite_by_lua|rewrite_by_lua*]]. Use of jump in other contexts is prohibited and will throw out a Lua exception.
 
 A more sophisticated example involving regex substitutions is as follows
 
 <geshi lang="nginx">
     location /test {
-        rewrite_by_lua '
+        rewrite_by_lua_block {
             local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "/$1", "o")
             ngx.req.set_uri(uri)
-        ';
+        }
         proxy_pass http://my_backend;
     }
 </geshi>
@@ -3577,7 +3577,7 @@ Returns a Lua table holding all the current request URL query arguments.
 
 <geshi lang="nginx">
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local args = ngx.req.get_uri_args()
             for key, val in pairs(args) do
                 if type(val) == "table" then
@@ -3586,7 +3586,7 @@ Returns a Lua table holding all the current request URL query arguments.
                     ngx.say(key, ": ", val)
                 end
             end
-        ';
+        }
     }
 </geshi>
 
@@ -3655,13 +3655,13 @@ Removing the <code>max_args</code> cap is strongly discouraged.
 == ngx.req.get_post_args ==
 '''syntax:''' ''args, err = ngx.req.get_post_args(max_args?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*''
 
 Returns a Lua table holding all the current request POST query arguments (of the MIME type <code>application/x-www-form-urlencoded</code>). Call [[#ngx.req.read_body|ngx.req.read_body]] to read the request body first or turn on the [[#lua_need_request_body|lua_need_request_body]] directive to avoid errors.
 
 <geshi lang="nginx">
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             ngx.req.read_body()
             local args, err = ngx.req.get_post_args()
             if not args then
@@ -3675,7 +3675,7 @@ Returns a Lua table holding all the current request POST query arguments (of the
                     ngx.say(key, ": ", val)
                 end
             end
-        ';
+        }
     }
 </geshi>
 
@@ -3745,7 +3745,7 @@ Removing the <code>max_args</code> cap is strongly discouraged.
 == ngx.req.get_headers ==
 '''syntax:''' ''headers = ngx.req.get_headers(max_headers?, raw?)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, log_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block, log_by_lua*''
 
 Returns a Lua table holding all the current request headers.
 
@@ -3809,7 +3809,7 @@ The <code>__index</code> metamethod will not be added when the <code>raw</code> 
 == ngx.req.set_header ==
 '''syntax:''' ''ngx.req.set_header(header_name, header_value)''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua, body_filter_by_lua_block''
 
 Set the current request's request header named <code>header_name</code> to value <code>header_value</code>, overriding any existing ones.
 
@@ -3995,7 +3995,7 @@ The usage of this function is often like this:
     ngx.req.finish_body()
 </geshi>
 
-This function can be used with [[#ngx.req.append_body|ngx.req.append_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+This function can be used with [[#ngx.req.append_body|ngx.req.append_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua*]] or [[#access_by_lua|access_by_lua*]]), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
 
 This function was first introduced in the <code>v0.5.11</code> release.
 
@@ -4010,7 +4010,7 @@ When the data can no longer be hold in the memory buffer for the request body, t
 
 It is important to always call the [[#ngx.req.finish_body|ngx.req.finish_body]] after all the data has been appended onto the current request body.
 
-This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.finish_body|ngx.req.finish_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua*]] or [[#access_by_lua|access_by_lua*]]), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
 
 This function was first introduced in the <code>v0.5.11</code> release.
 
@@ -4023,7 +4023,7 @@ See also [[#ngx.req.init_body|ngx.req.init_body]].
 
 Completes the construction process of the new request body created by the [[#ngx.req.init_body|ngx.req.init_body]] and [[#ngx.req.append_body|ngx.req.append_body]] calls.
 
-This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.append_body|ngx.req.append_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua]]* or [[#access_by_lua|access_by_lua]]*), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
+This function can be used with [[#ngx.req.init_body|ngx.req.init_body]], [[#ngx.req.append_body|ngx.req.append_body]], and [[#ngx.req.socket|ngx.req.socket]] to implement efficient input filters in pure Lua (in the context of [[#rewrite_by_lua|rewrite_by_lua*]] or [[#access_by_lua|access_by_lua*]]), which can be used with other Nginx content handler or upstream modules like [[HttpProxyModule]] and [[HttpFastcgiModule]].
 
 This function was first introduced in the <code>v0.5.11</code> release.
 
@@ -4088,20 +4088,20 @@ Named locations are also supported but the second <code>args</code> argument wil
 
 <geshi lang="nginx">
     location /foo {
-        content_by_lua '
+        content_by_lua_block {
             ngx.exec("@bar", "a=goodbye");
-        ';
+        }
     }
 
     location @bar {
-        content_by_lua '
+        content_by_lua_block {
             local args = ngx.req.get_uri_args()
             for key, val in pairs(args) do
                 if key == "a" then
                     ngx.say(val)
                 end
             end
-        ';
+        }
     }
 </geshi>
 
@@ -4111,7 +4111,7 @@ it is purely an internal redirect and that no new external HTTP traffic is invol
 Also note that this method call terminates the processing of the current request and that it ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body
 outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
-It is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exec(...)</code> be adopted when this method call is used in contexts other than [[#header_filter_by_lua|header_filter_by_lua]] to reinforce the fact that the request processing is being terminated.
+It is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exec(...)</code> be adopted when this method call is used in contexts other than [[#header_filter_by_lua|header_filter_by_lua*]] to reinforce the fact that the request processing is being terminated.
 
 == ngx.redirect ==
 '''syntax:''' ''ngx.redirect(uri, status?)''
@@ -4181,7 +4181,7 @@ URI arguments can be specified as well, for example:
 Note that this method call terminates the processing of the current request and that it ''must'' be called before [[#ngx.send_headers|ngx.send_headers]] or explicit response body
 outputs by either [[#ngx.print|ngx.print]] or [[#ngx.say|ngx.say]].
 
-It is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.redirect(...)</code> be adopted when this method call is used in contexts other than [[#header_filter_by_lua|header_filter_by_lua]] to reinforce the fact that the request processing is being terminated.
+It is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.redirect(...)</code> be adopted when this method call is used in contexts other than [[#header_filter_by_lua|header_filter_by_lua*]] to reinforce the fact that the request processing is being terminated.
 
 == ngx.send_headers ==
 '''syntax:''' ''ok, err = ngx.send_headers()''
@@ -4193,7 +4193,7 @@ Explicitly send out the response headers.
 Since <code>v0.8.3</code> this function returns <code>1</code> on success, or returns <code>nil</code> and a string describing the error otherwise.
 
 Note that there is normally no need to manually send out response headers as ngx_lua will automatically send headers out
-before content is output with [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] or when [[#content_by_lua|content_by_lua]] exits normally.
+before content is output with [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] or when [[#content_by_lua|content_by_lua*]] exits normally.
 
 == ngx.headers_sent ==
 '''syntax:''' ''value = ngx.headers_sent''
@@ -4284,7 +4284,7 @@ Since <code>v0.8.3</code> this function returns <code>1</code> on success, or re
 
 When <code>status >= 200</code> (i.e., <code>ngx.HTTP_OK</code> and above), it will interrupt the execution of the current request and return status code to nginx.
 
-When <code>status == 0</code> (i.e., <code>ngx.OK</code>), it will only quit the current phase handler (or the content handler if the [[#content_by_lua|content_by_lua]] directive is used) and continue to run later phases (if any) for the current request.
+When <code>status == 0</code> (i.e., <code>ngx.OK</code>), it will only quit the current phase handler (or the content handler if the [[#content_by_lua|content_by_lua*]] directive is used) and continue to run later phases (if any) for the current request.
 
 The <code>status</code> argument can be <code>ngx.OK</code>, <code>ngx.ERROR</code>, <code>ngx.HTTP_NOT_FOUND</code>,
 <code>ngx.HTTP_MOVED_TEMPORARILY</code>, or other [[#HTTP status constants|HTTP status constants]].
@@ -4338,11 +4338,11 @@ When you disable the HTTP 1.1 keep-alive feature for your downstream connections
 <geshi lang="nginx">
     location = /async {
         keepalive_timeout 0;
-        content_by_lua '
+        content_by_lua_block {
             ngx.say("got the task!")
             ngx.eof()  -- a descent HTTP client will close the connection at this point
             -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
-        ';
+        }
     }
 </geshi>
 
@@ -4546,7 +4546,7 @@ For example,
 
 <geshi lang="nginx">
     location = /md5 {
-        content_by_lua 'ngx.say(ngx.md5("hello"))';
+        content_by_lua_block { ngx.say(ngx.md5("hello")) }
     }
 </geshi>
 
@@ -5085,17 +5085,17 @@ Here is an example:
         lua_shared_dict dogs 10m;
         server {
             location /set {
-                content_by_lua '
+                content_by_lua_block {
                     local dogs = ngx.shared.dogs
                     dogs:set("Jim", 8)
                     ngx.say("STORED")
-                ';
+                }
             }
             location /get {
-                content_by_lua '
+                content_by_lua_block {
                     local dogs = ngx.shared.dogs
                     ngx.say(dogs:get("Jim"))
-                ';
+                }
             }
         }
     }
@@ -5448,7 +5448,7 @@ Here is an example for connecting to a UDP (memcached) server:
     location /test {
         resolver 8.8.8.8;
 
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.udp()
             local ok, err = sock:setpeername("my.memcached.server.domain", 11211)
             if not ok then
@@ -5457,7 +5457,7 @@ Here is an example for connecting to a UDP (memcached) server:
             end
             ngx.say("successfully connected to memcached!")
             sock:close()
-        ';
+        }
     }
 </geshi>
 
@@ -5619,7 +5619,7 @@ Here is an example for connecting to a TCP server:
     location /test {
         resolver 8.8.8.8;
 
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("www.google.com", 80)
             if not ok then
@@ -5628,7 +5628,7 @@ Here is an example for connecting to a TCP server:
             end
             ngx.say("successfully connected to google!")
             sock:close()
-        ';
+        }
     }
 </geshi>
 
@@ -5967,31 +5967,31 @@ This feature was first introduced in the <code>v0.5.0rc1</code> release.
 Retrieves the current running phase name. Possible return values are
 
 * <code>init</code>
-: for the context of [[#init_by_lua|init_by_lua]] or [[#init_by_lua_file|init_by_lua_file]].
+: for the context of [[#init_by_lua|init_by_lua*]].
 * <code>init_worker</code>
-: for the context of [[#init_worker_by_lua|init_worker_by_lua]] or [[#init_worker_by_lua_file|init_worker_by_lua_file]].
+: for the context of [[#init_worker_by_lua|init_worker_by_lua*]].
 * <code>ssl_cert</code>
-: for the context of [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua_block]] or [[#ssl_certificate_by_lua_file|ssl_certificate_by_lua_file]].
+: for the context of [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua*]].
 * <code>ssl_session_fetch</code>
 : for the context of [[#ssl_session_fetch_by_lua_block|ssl_session_fetch_by_lua*]].
 * <code>ssl_session_store</code>
 : for the context of [[#ssl_session_store_by_lua_block|ssl_session_store_by_lua*]].
 * <code>set</code>
-: for the context of [[#set_by_lua|set_by_lua]] or [[#set_by_lua_file|set_by_lua_file]].
+: for the context of [[#set_by_lua|set_by_lua*]].
 * <code>rewrite</code>
-: for the context of [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]].
+: for the context of [[#rewrite_by_lua|rewrite_by_lua*]].
 * <code>balancer</code>
-: for the context of [[#balancer_by_lua_block|balancer_by_lua_block]] or [[#balancer_by_lua_file|balancer_by_lua_file]].
+: for the context of [[#balancer_by_lua_block|balancer_by_lua*]].
 * <code>access</code>
-: for the context of [[#access_by_lua|access_by_lua]] or [[#access_by_lua_file|access_by_lua_file]].
+: for the context of [[#access_by_lua|access_by_lua*]].
 * <code>content</code>
-: for the context of [[#content_by_lua|content_by_lua]] or [[#content_by_lua_file|content_by_lua_file]].
+: for the context of [[#content_by_lua|content_by_lua*]].
 * <code>header_filter</code>
-: for the context of [[#header_filter_by_lua|header_filter_by_lua]] or [[#header_filter_by_lua_file|header_filter_by_lua_file]].
+: for the context of [[#header_filter_by_lua|header_filter_by_lua*]].
 * <code>body_filter</code>
-: for the context of [[#body_filter_by_lua|body_filter_by_lua]] or [[#body_filter_by_lua_file|body_filter_by_lua_file]].
+: for the context of [[#body_filter_by_lua|body_filter_by_lua*]].
 * <code>log</code>
-: for the context of [[#log_by_lua|log_by_lua]] or [[#log_by_lua_file|log_by_lua_file]].
+: for the context of [[#log_by_lua|log_by_lua*]].
 * <code>timer</code>
 : for the context of user callback functions for [[#ngx.timer.at|ngx.timer.*]].
 
@@ -6318,7 +6318,7 @@ Here is a simple example:
 <geshi lang="nginx">
     location / {
         ...
-        log_by_lua '
+        log_by_lua_block {
             local function push_data(premature, uri, args, status)
                 -- push the data uri, args, and status to the remote
                 -- via ngx.socket.tcp or ngx.socket.udp
@@ -6331,7 +6331,7 @@ Here is a simple example:
                 ngx.log(ngx.ERR, "failed to create timer: ", err)
                 return
             end
-        ';
+        }
     }
 </geshi>
 
