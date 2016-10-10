@@ -2141,3 +2141,24 @@ hi
 --- error_log
 my Content-Length: 8589934591
 upstream prematurely closed connection while sending to client
+
+
+
+=== TEST 95: Expose the 'Last-Modified' response header as ngx.header["Last-Modified"]
+--- config
+    location /a.txt {
+        header_filter_by_lua_block {
+            local last_mod = ngx.parse_http_time(ngx.header["Last-Modified"])
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        }
+    }
+--- user_files
+>>> a.txt
+Foo
+--- request
+GET /a.txt
+--- raw_response_headers_like chomp
+Age: \d\r\n
+--- no_error_log
+[error]
