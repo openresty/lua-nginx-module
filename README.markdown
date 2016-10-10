@@ -2485,7 +2485,7 @@ ssl_session_fetch_by_lua_block
 
 **syntax:** *ssl_session_fetch_by_lua_block { lua-script }*
 
-**context:** *server*
+**context:** *http*
 
 **phase:** *right-before-SSL-handshake*
 
@@ -2541,6 +2541,9 @@ apply the following patch to the standard NGINX core 1.11.2 or later:
 
 This directive was first introduced in the `v0.10.6` release.
 
+Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
+(because SSL session resumption happens before server name dispatch).
+
 [Back to TOC](#directives)
 
 ssl_session_fetch_by_lua_file
@@ -2548,7 +2551,7 @@ ssl_session_fetch_by_lua_file
 
 **syntax:** *ssl_session_fetch_by_lua_file &lt;path-to-lua-script-file&gt;*
 
-**context:** *server*
+**context:** *http*
 
 **phase:** *right-before-SSL-handshake*
 
@@ -2558,6 +2561,9 @@ When a relative path like `foo/bar.lua` is given, they will be turned into the a
 
 This directive was first introduced in the `v0.10.6` release.
 
+Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
+(because SSL session resumption happens before server name dispatch).
+
 [Back to TOC](#directives)
 
 ssl_session_store_by_lua_block
@@ -2565,7 +2571,7 @@ ssl_session_store_by_lua_block
 
 **syntax:** *ssl_session_store_by_lua_block { lua-script }*
 
-**context:** *server*
+**context:** *http*
 
 **phase:** *right-after-SSL-handshake*
 
@@ -2592,6 +2598,9 @@ But do not forget to comment this line out before publishing your site to the wo
 
 This directive was first introduced in the `v0.10.6` release.
 
+Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
+(because SSL session resumption happens before server name dispatch).
+
 [Back to TOC](#directives)
 
 ssl_session_store_by_lua_file
@@ -2599,7 +2608,7 @@ ssl_session_store_by_lua_file
 
 **syntax:** *ssl_session_store_by_lua_file &lt;path-to-lua-script-file&gt;*
 
-**context:** *server*
+**context:** *http*
 
 **phase:** *right-before-SSL-handshake*
 
@@ -2608,6 +2617,9 @@ Equivalent to [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block),
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 This directive was first introduced in the `v0.10.6` release.
+
+Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
+(because SSL session resumption happens before server name dispatch).
 
 [Back to TOC](#directives)
 
