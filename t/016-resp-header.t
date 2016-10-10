@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 46);
+plan tests => repeat_each() * (blocks() * 3 + 45);
 
 #no_diff();
 no_long_string();
@@ -1699,3 +1699,22 @@ found 3 resp headers
 --- no_error_log
 [error]
 lua exceeding response header limit
+
+
+
+=== TEST 76: Expose the 'Last-Modified' response header as ngx.header["Last-Modified"]
+--- config
+    location /read {
+        header_filter_by_lua '
+            local last_mod = ngx.parse_http_time(ngx.header["Last-Modified"])
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        ';
+    }
+--- user_files
+>>> read/test
+Foo
+--- request
+GET /read/test
+--- raw_response_headers_like chomp
+Age: \d\r\n

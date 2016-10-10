@@ -535,6 +535,8 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
     ngx_uint_t                  i;
     unsigned                    found;
 
+    u_char                     buf[sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1];
+
     dd("looking for response header \"%.*s\"", (int) key->len, key->data);
 
     switch (key->len) {
@@ -555,6 +557,17 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
         {
             lua_pushlstring(L, (char *) r->headers_out.content_type.data,
                             r->headers_out.content_type.len);
+            return 1;
+        }
+
+        break;
+
+    case 13:
+        if (r->headers_out.last_modified_time >= 0
+            && ngx_strncasecmp(key->data, (u_char *) "Last-Modified", 13) == 0)
+        {
+            (void) ngx_http_time(buf, r->headers_out.last_modified_time);
+            lua_pushlstring(L, (char *) buf, sizeof(buf));
             return 1;
         }
 
