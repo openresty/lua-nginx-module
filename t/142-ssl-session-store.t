@@ -6,7 +6,7 @@ use File::Basename;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6 + 2);
+plan tests => repeat_each() * (blocks() * 6 - 1);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -26,10 +26,10 @@ __DATA__
 
 === TEST 1: simple logging
 --- http_config
+    ssl_session_store_by_lua_block { print("ssl session store by lua is running!") }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_session_store_by_lua_block { print("ssl session store by lua is running!") }
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
         ssl_protocols SSLv3;
@@ -92,14 +92,14 @@ ssl_session_store_by_lua_block:1: ssl session store by lua is running!
 
 === TEST 2: sleep is not allowed
 --- http_config
+    ssl_session_store_by_lua_block {
+        local begin = ngx.now()
+        ngx.sleep(0.1)
+        print("elapsed in ssl store session by lua: ", ngx.now() - begin)
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_session_store_by_lua_block {
-            local begin = ngx.now()
-            ngx.sleep(0.1)
-            print("elapsed in ssl store session by lua: ", ngx.now() - begin)
-        }
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
         ssl_protocols SSLv3;
@@ -162,21 +162,21 @@ API disabled in the context of ssl_session_store_by_lua*
 
 === TEST 3: timer
 --- http_config
+    ssl_session_store_by_lua_block {
+        local function f()
+            print("my timer run!")
+        end
+        local ok, err = ngx.timer.at(0, f)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to create timer: ", err)
+            return
+        end
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_session_store_by_lua_block {
-            local function f()
-                print("my timer run!")
-            end
-            local ok, err = ngx.timer.at(0, f)
-            if not ok then
-                ngx.log(ngx.ERR, "failed to create timer: ", err)
-                return
-            end
-        }
         ssl_protocols SSLv3;
 
         server_tokens off;
@@ -237,34 +237,35 @@ my timer run!
 
 === TEST 4: cosocket is not allowed
 --- http_config
+    ssl_session_store_by_lua_block {
+        local sock = ngx.socket.tcp()
+
+        sock:settimeout(5000)
+
+        local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+            return
+        end
+
+        local bytes, err = sock:send("flush_all\\r\\n")
+        if not bytes then
+            ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
+            return
+        end
+
+        local res, err = sock:receive()
+        if not res then
+            ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+            return
+        end
+
+        print("received memc reply: ", res)
+    }
+
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_session_store_by_lua_block {
-            local sock = ngx.socket.tcp()
-
-            sock:settimeout(5000)
-
-            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
-            if not ok then
-                ngx.log(ngx.ERR, "failed to connect to memc: ", err)
-                return
-            end
-
-            local bytes, err = sock:send("flush_all\\r\\n")
-            if not bytes then
-                ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
-                return
-            end
-
-            local res, err = sock:receive()
-            if not res then
-                ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
-                return
-            end
-
-            print("received memc reply: ", res)
-        }
 
         ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
@@ -328,12 +329,12 @@ API disabled in the context of ssl_session_store_by_lua*
 
 === TEST 5: ngx.exit(0) - no yield
 --- http_config
+    ssl_session_store_by_lua_block {
+        ngx.exit(0)
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_session_store_by_lua_block {
-            ngx.exit(0)
-        }
         ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
@@ -400,12 +401,12 @@ lua exit with code 0
 === TEST 6: ngx.exit(ngx.ERROR) - no yield
 ngx.exit does not yield and the error code is eaten.
 --- http_config
+    ssl_session_store_by_lua_block {
+        ngx.exit(ngx.ERROR)
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_session_store_by_lua_block {
-            ngx.exit(ngx.ERROR)
-        }
         ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
@@ -472,13 +473,13 @@ ssl_session_store_by_lua*: handler return value: 0, sess new cb exit code: 0
 
 === TEST 7: lua exception - no yield
 --- http_config
+    ssl_session_store_by_lua_block {
+        error("bad bad bad")
+        ngx.log(ngx.ERR, "should never reached here...")
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_session_store_by_lua_block {
-            error("bad bad bad")
-            ngx.log(ngx.ERR, "should never reached here...")
-        }
         ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
@@ -541,12 +542,12 @@ should never reached here
 
 === TEST 8: get phase
 --- http_config
+    ssl_session_store_by_lua_block {
+        print("get_phase: ", ngx.get_phase())
+    }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
-        ssl_session_store_by_lua_block {
-            print("get_phase: ", ngx.get_phase())
-        }
         ssl_protocols SSLv3;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
@@ -609,6 +610,7 @@ get_phase: ssl_session_store
 
 === TEST 9: inter-operation with ssl_certificate_by_lua
 --- http_config
+    ssl_session_store_by_lua_block { print("ssl store session by lua is running!") }
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
@@ -617,7 +619,6 @@ get_phase: ssl_session_store
             ngx.sleep(0.1)
             print("elapsed in ssl cert by lua: ", ngx.now() - begin)
         }
-        ssl_session_store_by_lua_block { print("ssl store session by lua is running!") }
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
         ssl_protocols SSLv3;
@@ -683,10 +684,10 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
 
 === TEST 10: simple logging (by file)
 --- http_config
+    ssl_session_store_by_lua_file html/a.lua;
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
-        ssl_session_store_by_lua_file html/a.lua;
         ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
         ssl_protocols SSLv3;
@@ -744,6 +745,155 @@ close: 1 nil
 --- error_log
 lua ssl server name: "test.com"
 a.lua:1: ssl store session by lua is running!
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 11: will crash when ssl_session_store_by_lua* is allowed in server context
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name foo.com;
+        ssl_session_store_by_lua_block {
+            print("handler in test.com")
+        }
+        ssl_protocols SSLv3;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+
+        server_tokens off;
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_protocols SSLv3;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+
+--- no_error_log
+[error]
+--- must_die
+--- error_log eval
+qr/\[emerg\] .*? "ssl_session_store_by_lua_block" directive is not allowed here .*?\bnginx\.conf:28/
+
+
+
+=== TEST 12: mixing ssl virtual servers with non-ssl virtual servers
+--- http_config
+    ssl_session_store_by_lua_block { print("ssl session store by lua is running!") }
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/https.sock ssl;
+        server_name   test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols SSLv3;
+
+        server_tokens off;
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/http.sock;
+        server_name   foo.com;
+
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/https.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+
+--- error_log
+lua ssl server name: "test.com"
+ssl_session_store_by_lua_block:1: ssl session store by lua is running!
 
 --- no_error_log
 [error]
