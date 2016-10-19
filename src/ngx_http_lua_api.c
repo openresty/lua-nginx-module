@@ -118,8 +118,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
         return (ngx_shm_zone_t *) &ctx->data;
     }
 
-    n = offsetof(ngx_http_lua_shm_zone_ctx_t, data)
-        + sizeof(ngx_shm_zone_t);
+    n = offsetof(ngx_http_lua_shm_zone_ctx_t, data) + sizeof(ngx_shm_zone_t);
 
     ctx = ngx_pcalloc(cf->pool, n);
     if (ctx == NULL) {
@@ -169,13 +168,10 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     if (octx) {
         ozone = (ngx_shm_zone_t *) &octx->data;
         odata = ozone->data;
-        zone->shm = shm_zone->shm;
-        zone->noreuse = shm_zone->noreuse;
-
-    } else {
-        zone->shm = shm_zone->shm;
-        zone->noreuse = shm_zone->noreuse;
     }
+
+    zone->shm = shm_zone->shm;
+    zone->noreuse = shm_zone->noreuse;
 
     if (zone->init(zone, odata) != NGX_OK) {
         return NGX_ERROR;
