@@ -83,11 +83,11 @@ ngx_shm_zone_t *
 ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     void *tag)
 {
-    ngx_http_lua_main_conf_t    *lmcf;
-    ngx_shm_zone_t             **zp;
-    ngx_shm_zone_t              *zone;
-    ngx_http_lua_shm_zone_ctx_t *ctx;
-    ngx_int_t                    n;
+    ngx_http_lua_main_conf_t     *lmcf;
+    ngx_shm_zone_t              **zp;
+    ngx_shm_zone_t               *zone;
+    ngx_http_lua_shm_zone_ctx_t  *ctx;
+    ngx_int_t                     n;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
     if (lmcf == NULL) {
@@ -128,7 +128,9 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
 
     ctx->lmcf = lmcf;
     ctx->log = &cf->cycle->new_log;
-    ngx_memcpy(&ctx->data, zone, sizeof(*zone));
+    ctx->cycle = cf->cycle;
+
+    ngx_memcpy(&ctx->data, zone, sizeof(ngx_shm_zone_t));
 
     zp = ngx_array_push(lmcf->shm_zones);
     if (zp == NULL) {
@@ -143,7 +145,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
 
     lmcf->requires_shm = 1;
 
-    return (ngx_shm_zone_t *)&ctx->data;
+    return (ngx_shm_zone_t *) &ctx->data;
 }
 
 
@@ -154,6 +156,8 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     ngx_shm_zone_t              *ozone;
     void                        *odata;
 
+    ngx_int_t                    rc;
+    volatile ngx_cycle_t        *saved_cycle;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_shm_zone_ctx_t *ctx;
     ngx_shm_zone_t              *zone;
@@ -191,7 +195,14 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
         && lmcf->init_handler)
     {
-        if (lmcf->init_handler(ctx->log, lmcf, lmcf->lua) != NGX_OK) {
+        saved_cycle = ngx_cycle;
+        ngx_cycle = ctx->cycle;
+
+        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
+
+        ngx_cycle = saved_cycle;
+
+        if (rc != NGX_OK) {
             /* an error happened */
             return NGX_ERROR;
         }
