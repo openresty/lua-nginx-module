@@ -62,6 +62,7 @@ isold=false
 [error]
 
 
+
 === TEST 2: get_info, after HUP reload
 --- http_config
     lua_fake_shm x1 1m;
