@@ -866,6 +866,8 @@ may make the counting faster when subrequests are involved. By default, only "ma
 Note that this directive does *not* affect the memory allocated by LuaJIT's own allocator based on the <code>mmap</code>
 system call.
 
+This directive was first introduced in the <code>v0.10.7</code> release.
+
 == lua_code_cache ==
 '''syntax:''' ''lua_code_cache on | off''
 
