@@ -26,9 +26,9 @@ use t::StapThread;
 our $GCScript = $t::StapThread::GCScript;
 our $StapScript = $t::StapThread::StapScript;
 
-repeat_each(2);
+repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4 + 12);
+plan tests => repeat_each() * (blocks() * 4 + 20);
 
 our $HtmlDir = html_dir;
 
@@ -994,4 +994,433 @@ close: 1 nil
 
 --- no_error_log
 [error]
+
+
+=== TEST 23: sock:setconnecttimeout()
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 60s;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 3s;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            sock:setconnecttimeout(150)
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: timeout
+--- error_log
+lua tcp socket connect timeout: 150
+lua tcp socket connect timed out
+--- timeout: 10
+
+
+=== TEST 24: sock:setconnecttimeout(nil) does not override lua_socket_connect_timeout
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 102ms;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            sock:setconnecttimeout(nil)
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: timeout
+--- error_log
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
+
+
+
+=== TEST 25: sock:setconnecttimeout(0) does not override lua_socket_connect_timeout
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 102ms;
+    resolver $TEST_NGINX_RESOLVER;
+    resolver_timeout 3s;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            sock:setconnecttimeout(0)
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: timeout
+--- error_log
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
+--- timeout: 10
+
+
+
+=== TEST 26: sock:setconnecttimeout(-1) does not override lua_socket_connect_timeout
+--- config
+    server_tokens off;
+    lua_socket_connect_timeout 102ms;
+    resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            sock:setconnecttimeout(-1)
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+        ';
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: timeout
+--- error_log
+lua tcp socket connect timeout: 102
+lua tcp socket connect timed out
+
+
+
+=== TEST 27: sock:setreadtimeout()
+--- config
+    server_tokens off;
+    lua_socket_read_timeout 60s;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setreadtimeout(150)
+
+            local line
+            line, err = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+            else
+                ngx.say("failed to receive: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 150
+lua tcp socket read timed out
+
+
+
+=== TEST 28: sock:setreadtimeout(nil) does not override lua_socket_read_timeout
+--- config
+    server_tokens off;
+    lua_socket_read_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setreadtimeout(nil)
+
+            local line
+            line, err = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+            else
+                ngx.say("failed to receive: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 102
+lua tcp socket read timed out
+
+
+
+=== TEST 29: sock:setreadtimeout(0) does not override lua_socket_read_timeout
+--- config
+    server_tokens off;
+    lua_socket_read_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setreadtimeout(0)
+
+            local line
+            line, err = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+            else
+                ngx.say("failed to receive: ", err)
+            end
+
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket read timeout: 102
+lua tcp socket read timed out
+
+
+
+=== TEST 30: sock:setreadtimeout(-1) does not override lua_socket_read_timeout
+--- config
+    server_tokens off;
+    lua_socket_read_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setreadtimeout(-1)
+
+            local line
+            line, err = sock:receive()
+            if line then
+                ngx.say("received: ", line)
+            else
+                ngx.say("failed to receive: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive: timeout
+--- error_log
+lua tcp socket read timeout: 102
+lua tcp socket connect timeout: 60000
+lua tcp socket read timed out
+
+
+
+=== TEST 31: sock:setsendtimeout()
+--- config
+    server_tokens off;
+    lua_socket_send_timeout 60s;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setsendtimeout(150)
+
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to send: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 150
+lua tcp socket write timed out
+
+
+
+=== TEST 32: sock:setsendtimeout(nil) does not override lua_socket_send_timeout
+--- config
+    server_tokens off;
+    lua_socket_send_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setsendtimeout(nil)
+
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to send: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 102
+lua tcp socket write timed out
+
+
+
+=== TEST 33: sock:setsendtimeout(0) does not override lua_socket_send_timeout
+--- config
+    server_tokens off;
+    lua_socket_send_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setsendtimeout(0)
+
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to send: timeout
+--- error_log
+lua tcp socket connect timeout: 60000
+lua tcp socket send timeout: 102
+lua tcp socket write timed out
+
+
+
+=== TEST 34: sock:setsendtimeout(-1) does not override lua_socket_send_timeout
+--- config
+    server_tokens off;
+    lua_socket_send_timeout 102ms;
+    #resolver $TEST_NGINX_RESOLVER;
+    location /t {
+        content_by_lua '
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            sock:setsendtimeout(-1)
+
+            local bytes
+            bytes, err = sock:send("get helloworld!")
+            if bytes then
+                ngx.say("sent: ", bytes)
+            else
+                ngx.say("failed to send: ", err)
+            end
+        ';
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to send: timeout
+--- error_log
+lua tcp socket send timeout: 102
+lua tcp socket connect timeout: 60000
+lua tcp socket write timed out
+
+
 
