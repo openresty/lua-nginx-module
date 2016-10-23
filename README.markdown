@@ -1106,12 +1106,19 @@ Just tune the number for your own use cases.
 
 Configuring the argument to `0` essentially turns off the periodical memory trimming altogether.
 
+```nginx
+
+ lua_malloc_trim 0;  # turn off trimming completely
+```
+
 The current implementation uses an NGINX log phase handler to do the request counting. So the appearance of the
 [log_subrequest on](http://nginx.org/en/docs/http/ngx_http_core_module.html#log_subrequest) directives in `nginx.conf`
 may make the counting faster when subrequests are involved. By default, only "main requests" count.
 
 Note that this directive does *not* affect the memory allocated by LuaJIT's own allocator based on the `mmap`
 system call.
+
+This directive was first introduced in the `v0.10.7` release.
 
 [Back to TOC](#directives)
 
