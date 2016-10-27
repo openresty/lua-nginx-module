@@ -5935,7 +5935,7 @@ You are recommended to use [[#tcpsock:settimeouts|settimeouts]] instead of [[#tc
 
 Note that this method does ''not'' affect the [[#lua_socket_keepalive_timeout|lua_socket_keepalive_timeout]] setting; the <code>timeout</code> argument to the [[#tcpsock:setkeepalive|setkeepalive]] method should be used for this purpose instead.
 
-This feature was first introduced in the <code>vXXX</code> release.
+This feature was first introduced in the <code>v0.10.7</code> release.
 
 == tcpsock:setoption ==
 '''syntax:''' ''tcpsock:setoption(option, value?)''

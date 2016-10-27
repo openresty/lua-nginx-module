@@ -7047,7 +7047,7 @@ You are recommended to use [settimeouts](#tcpsocksettimeouts) instead of [settim
 
 Note that this method does *not* affect the [lua_socket_keepalive_timeout](#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [setkeepalive](#tcpsocksetkeepalive) method should be used for this purpose instead.
 
-This feature was first introduced in the `vXXX` release.
+This feature was first introduced in the `v0.10.7` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
