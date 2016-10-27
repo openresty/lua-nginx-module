@@ -2697,9 +2697,8 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket settimout: expecting at least 2 "
-                          "arguments (including the object) but seen %d",
-                          lua_gettop(L));
+        return luaL_error(L, "ngx.socket settimout: expecting 2 arguments "
+                          "(including the object) but seen %d", lua_gettop(L));
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
@@ -2741,9 +2740,8 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 4) {
-        return luaL_error(L, "ngx.socket settimout: expecting at least 4 "
-                          "arguments (including the object) but seen %d",
-                          lua_gettop(L));
+        return luaL_error(L, "ngx.socket settimout: expecting 4 arguments "
+                          "(including the object) but seen %d", lua_gettop(L));
     }
 
     connect_timeout = (ngx_int_t) lua_tonumber(L, 2);

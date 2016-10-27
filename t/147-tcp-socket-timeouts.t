@@ -24,7 +24,7 @@ __DATA__
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(20, 20, 20)  -- 20ms read timeout
+            sock:settimeouts(150, 150, 150)  -- 150ms read timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -80,7 +80,7 @@ received: foo
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(20, 20, 2)  -- 2ms read timeout
+            sock:settimeouts(150, 150, 2)  -- 2ms read timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -136,7 +136,7 @@ lua tcp socket read timed out
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(100, 100, 100)  -- 100ms timeout
+            sock:settimeouts(500, 500, 500)  -- 500ms timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -186,7 +186,7 @@ lua tcp socket read timed out
 
             local sock = ngx.req.socket()
 
-            sock:settimeouts(100, 100, 100)
+            sock:settimeouts(500, 500, 500)
 
             local chunk = 8096
 
@@ -218,7 +218,7 @@ received: got len: 8290304
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(100, 100, 100)  -- 100ms timeout
+            sock:settimeouts(500, 500, 500)  -- 500ms timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -270,7 +270,7 @@ received: got len: 8290304
 
             ngx.sleep(1)
 
-            sock:settimeouts(100, 100, 100)
+            sock:settimeouts(500, 500, 500)
 
             local chunk = 8096
 
