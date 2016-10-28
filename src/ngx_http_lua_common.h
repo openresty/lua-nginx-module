@@ -213,7 +213,7 @@ typedef struct ngx_http_lua_shm_zone_ctx_s {
     ngx_log_t                   *log;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_cycle_t                 *cycle;
-    u_char                       data; /* ngx_shm_zone_t */
+    ngx_shm_zone_t               data;
 } ngx_http_lua_shm_zone_ctx_t;
 
 

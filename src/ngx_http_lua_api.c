@@ -118,7 +118,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
         return (ngx_shm_zone_t *) &ctx->data;
     }
 
-    n = offsetof(ngx_http_lua_shm_zone_ctx_t, data) + sizeof(ngx_shm_zone_t);
+    n = sizeof(ngx_http_lua_shm_zone_ctx_t);
 
     ctx = ngx_pcalloc(cf->pool, n);
     if (ctx == NULL) {
@@ -206,4 +206,5 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
 
     return NGX_OK;
 }
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -7,7 +7,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include "../../../src/api/ngx_http_lua_api.h"
+#include "ngx_http_lua_api.h"
 
 
 static void *ngx_http_lua_fake_shm_create_main_conf(ngx_conf_t *cf);
@@ -22,7 +22,7 @@ static int ngx_http_lua_fake_shm_get_info(lua_State *L);
 
 
 typedef struct {
-    ngx_array_t *shm_zones;
+    ngx_array_t     *shm_zones;
 } ngx_http_lua_fake_shm_main_conf_t;
 
 
@@ -71,10 +71,10 @@ ngx_module_t  ngx_http_lua_fake_shm_module = {
 
 
 typedef struct {
-    ngx_str_t name;
-    size_t   size;
-    ngx_int_t isold;
-    ngx_int_t isinit;
+    ngx_str_t   name;
+    size_t      size;
+    ngx_int_t   isold;
+    ngx_int_t   isinit;
 } ngx_http_lua_fake_shm_ctx_t;
 
 
@@ -233,7 +233,9 @@ ngx_http_lua_fake_shm_preload(lua_State *L)
         zone = lfsmcf->shm_zones->elts;
 
         for (i = 0; i < lfsmcf->shm_zones->nelts; i++) {
-            lua_pushlstring(L, (char *) zone[i]->shm.name.data, zone[i]->shm.name.len);
+            lua_pushlstring(L, (char *) zone[i]->shm.name.data,
+                            zone[i]->shm.name.len);
+
             /* shared mt key */
 
             lua_createtable(L, 1 /* narr */, 0 /* nrec */);
