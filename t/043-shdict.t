@@ -585,7 +585,7 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^true nil true\nabort at (?:139|140)$
+^true nil true\nabort at (?:141|140)$
 --- no_error_log
 [error]
 
