@@ -1,5 +1,25 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+BEGIN {
+    if (!defined $ENV{LD_PRELOAD}) {
+        $ENV{LD_PRELOAD} = '';
+    }
+
+    if ($ENV{LD_PRELOAD} !~ /\bmockeagain\.so\b/) {
+        $ENV{LD_PRELOAD} = "mockeagain.so $ENV{LD_PRELOAD}";
+    }
+
+    if ($ENV{MOCKEAGAIN} eq 'r') {
+        $ENV{MOCKEAGAIN} = 'rw';
+
+    } else {
+        $ENV{MOCKEAGAIN} = 'w';
+    }
+
+    $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+    $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'slowdata';
+}
+
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
@@ -145,8 +165,8 @@ lua tcp socket read timed out
                 return
             end
 
-            local data = string.rep("a", 8096) -- 8k
-            local num = 1024 -- total: 8M
+            local data = string.rep("a", 8) -- 8 bytes
+            local num = 10 -- total: 80 bytes
 
             local req = "POST /foo HTTP/1.0\r\nHost: localhost\r\nContent-Length: "
                         .. #data * num .. "\r\nConnection: close\r\n\r\n"
@@ -188,7 +208,7 @@ lua tcp socket read timed out
 
             sock:settimeouts(500, 500, 500)
 
-            local chunk = 8096
+            local chunk = 8
 
             for i = 1, content_length, chunk do
                 local data, err = sock:receive(chunk)
@@ -205,7 +225,7 @@ lua tcp socket read timed out
 --- request
 GET /t
 --- response_body_like
-received: got len: 8290304
+received: got len: 80
 --- no_error_log
 [error]
 
@@ -227,8 +247,8 @@ received: got len: 8290304
                 return
             end
 
-            local data = string.rep("a", 8096) -- 8k
-            local num = 1024 -- total: 8M
+            local data = "slowdata" -- slow data
+            local num = 10
 
             local req = "POST /foo HTTP/1.0\r\nHost: localhost\r\nContent-Length: "
                         .. #data * num .. "\r\nConnection: close\r\n\r\n"
@@ -268,11 +288,9 @@ received: got len: 8290304
 
             local sock = ngx.req.socket()
 
-            ngx.sleep(1)
-
             sock:settimeouts(500, 500, 500)
 
-            local chunk = 8096
+            local chunk = 8
 
             for i = 1, content_length, chunk do
                 local data, err = sock:receive(chunk)
@@ -340,7 +358,7 @@ lua tcp socket connect timed out
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(100, 100, 100)  -- 100ms timeout
+            sock:settimeouts(200, 200, 200)  -- 200ms timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -349,7 +367,7 @@ lua tcp socket connect timed out
                 return
             end
 
-            local data = string.rep("a", 4048) -- 4k
+            local data = string.rep("a", 4) -- 4 bytes
             local num = 3
 
             local req = "POST /foo HTTP/1.0\r\nHost: localhost\r\nContent-Length: "
@@ -367,7 +385,7 @@ lua tcp socket connect timed out
                     ngx.log(ngx.ERR, "failed to send body: ", err)
                     return
                 end
-                ngx.sleep(0.08) -- 20ms
+                ngx.sleep(0.12) -- 120ms
             end
 
             while true do
@@ -391,7 +409,7 @@ lua tcp socket connect timed out
 
             local sock = ngx.req.socket(true)
 
-            local chunk = 4048
+            local chunk = 4
 
             function read()
                 sock:settimeout(200) -- read: 200 ms
@@ -405,7 +423,7 @@ lua tcp socket connect timed out
 
             local co = ngx.thread.spawn(read)
 
-            sock:settimeout(10) -- send: 10ms
+            sock:settimeout(100) -- send: 100ms
             sock:send("ok\n")
 
             local ok, err = ngx.thread.wait(co)
@@ -433,7 +451,7 @@ failed to receive data: timeout
         content_by_lua_block {
             local sock = ngx.socket.tcp()
 
-            sock:settimeouts(100, 100, 100)  -- 100ms timeout
+            sock:settimeouts(200, 200, 200)  -- 200ms timeout
 
             local port = ngx.var.server_port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -442,7 +460,7 @@ failed to receive data: timeout
                 return
             end
 
-            local data = string.rep("a", 4048) -- 4k
+            local data = string.rep("a", 4) -- 4 bytes
             local num = 3
 
             local req = "POST /foo HTTP/1.0\r\nHost: localhost\r\nContent-Length: "
@@ -460,7 +478,7 @@ failed to receive data: timeout
                     ngx.log(ngx.ERR, "failed to send body: ", err)
                     return
                 end
-                ngx.sleep(0.08) -- 20ms
+                ngx.sleep(0.12) -- 120ms
             end
 
             while true do
@@ -484,9 +502,9 @@ failed to receive data: timeout
 
             local sock = ngx.req.socket(true)
 
-            sock:settimeouts(0, 10, 200) -- send: 10ms, read: 200ms
+            sock:settimeouts(0, 100, 200) -- send: 100ms, read: 200ms
 
-            local chunk = 4048
+            local chunk = 4
 
             function read()
                 local data, err = sock:receive(content_length)
