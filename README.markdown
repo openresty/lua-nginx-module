@@ -4995,8 +4995,13 @@ ngx.redirect
 
 Issue an `HTTP 301` or `302` redirection to `uri`.
 
-The optional `status` parameter specifies whether
-`301` or `302` to be used. It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
+The optional `status` parameter specifies the HTTP status code to be used. The following status codes are supported right now:
+
+* `301`
+* `302` (default)
+* `307`
+
+It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
 
 Here is an example assuming the current server name is `localhost` and that it is listening on port 1984:
 
