@@ -349,3 +349,19 @@ hello
 --- response_body
 hello, bah
 
+
+
+=== TEST 16: github issue #905: unsafe uri
+--- config
+    location /read {
+        access_by_lua '
+            ngx.exec("/hi/../");
+        ';
+    }
+    location /hi {
+        echo "Hello";
+    }
+--- request
+GET /read
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
