@@ -4160,8 +4160,13 @@ It is recommended that a coding style that combines this method call with the <c
 
 Issue an <code>HTTP 301</code> or <code>302</code> redirection to <code>uri</code>.
 
-The optional <code>status</code> parameter specifies whether
-<code>301</code> or <code>302</code> to be used. It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
+The optional <code>status</code> parameter specifies the HTTP status code to be used. The following status codes are supported right now:
+
+* <code>301</code>
+* <code>302</code> (default)
+* <code>307</code>
+
+It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
 
 Here is an example assuming the current server name is <code>localhost</code> and that it is listening on port 1984:
 
