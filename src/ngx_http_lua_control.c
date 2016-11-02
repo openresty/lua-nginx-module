@@ -54,6 +54,7 @@ static int
 ngx_http_lua_ngx_exec(lua_State *L)
 {
     int                          n;
+    int                          rc;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
     ngx_str_t                    uri;
@@ -105,10 +106,11 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
-        != NGX_OK)
-    {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    rc = ngx_http_parse_unsafe_uri(r, &uri, &args, &flags);
+    if (rc != NGX_OK) {
+        dd("rc = %d", (int) rc);
+
+        return luaL_error(L, "unsafe uri in #1: %s", p);
     }
 
     if (n == 2) {
