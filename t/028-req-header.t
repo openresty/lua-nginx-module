@@ -1643,3 +1643,4 @@ GeT / HTTP/1.1
 ok
 --- no_error_log
 [error]
+--- no_check_leak
