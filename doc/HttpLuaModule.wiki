@@ -4164,6 +4164,7 @@ The optional <code>status</code> parameter specifies the HTTP status code to be 
 
 * <code>301</code>
 * <code>302</code> (default)
+* <code>303</code>
 * <code>307</code>
 
 It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
