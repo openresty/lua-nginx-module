@@ -1976,7 +1976,9 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
 
         if (result == -1) {
             return luaL_error(L, "Changing jit stack size is not allowed when "
-                                "regexs have already been compiled and cached");
+                                 "some regexs have already been compiled and "
+                                 "cached");
+
         } else if (result == -2) {
             return luaL_error(L, "PCRE jit stack allocation failed");
         }
