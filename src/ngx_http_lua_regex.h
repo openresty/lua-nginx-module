@@ -13,7 +13,7 @@
 
 
 #if (NGX_PCRE)
-void      ngx_http_lua_inject_regex_api(lua_State *L);
+void ngx_http_lua_inject_regex_api(lua_State *L);
 ngx_int_t ngx_http_lua_set_jit_stack_size(int size);
 #endif
 

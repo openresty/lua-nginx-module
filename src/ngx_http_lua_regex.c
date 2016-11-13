@@ -1947,7 +1947,7 @@ ngx_http_lua_set_jit_stack_size(int size)
     lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
                                            size);
 
-    if (!lmcf->jit_stack) {
+    if (lmcf->jit_stack == NULL) {
         return -2;
     }
 
@@ -1960,8 +1960,8 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
 {
     const char   *option;
     int           nargs;
-    int           value = 0;
-    int           result;
+    int           value;
+    int           rc;
 
     nargs = lua_gettop(L);
     if (nargs != 2) {
@@ -1971,22 +1971,24 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
     option = luaL_checklstring(L, 1, NULL);
     value = luaL_checkint(L, 2);
 
-    if (ngx_strcmp(option, "jit_stack_size") == 0) {
-        result = ngx_http_lua_set_jit_stack_size(value);
+    if (ngx_strncmp(option, "jit_stack_size") == 0) {
+        rc = ngx_http_lua_set_jit_stack_size(value);
 
-        if (result == -1) {
+        if (rc == -1) {
             return luaL_error(L, "Changing jit stack size is not allowed when "
-                                 "some regexs have already been compiled and "
-                                 "cached");
+                              "some regexs have already been compiled and "
+                              "cached");
 
-        } else if (result == -2) {
+        }
+
+        if (rc == -2) {
             return luaL_error(L, "PCRE jit stack allocation failed");
         }
 
         return 0;
     }
 
-    return luaL_error(L, "unrecognized option name for ngx.re.opt");
+    return luaL_error(L, "unrecognized option name");
 }
 
 
