@@ -1924,6 +1924,8 @@ error:
 }
 
 
+#if LUA_HAVE_PCRE_JIT
+
 ngx_int_t
 ngx_http_lua_set_jit_stack_size(int size)
 {
@@ -1954,6 +1956,8 @@ ngx_http_lua_set_jit_stack_size(int size)
     return 0;
 }
 
+#endif /* LUA_HAVE_PCRE_JIT */
+
 
 static int
 ngx_http_lua_ngx_re_opt(lua_State *L)
@@ -1971,6 +1975,8 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
     option = luaL_checklstring(L, 1, NULL);
     value = luaL_checkint(L, 2);
 
+#if LUA_HAVE_PCRE_JIT
+
     if (ngx_strncmp(option, "jit_stack_size") == 0) {
         rc = ngx_http_lua_set_jit_stack_size(value);
 
@@ -1987,6 +1993,8 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
 
         return 0;
     }
+
+#endif /* LUA_HAVE_PCRE_JIT */
 
     return luaL_error(L, "unrecognized option name");
 }
