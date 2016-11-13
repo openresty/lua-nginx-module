@@ -1935,7 +1935,7 @@ ngx_http_lua_set_jit_stack_size(int size)
                                                ngx_http_lua_module);
 
     if (lmcf->regex_cache_entries > 0) {
-        return -1;
+        return NGX_DECLINED;
     }
 
     if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
@@ -1950,7 +1950,7 @@ ngx_http_lua_set_jit_stack_size(int size)
                                            size);
 
     if (lmcf->jit_stack == NULL) {
-        return -2;
+        return NGX_ERROR;
     }
 
     return 0;
@@ -1980,14 +1980,14 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
     if (ngx_strncmp(option, "jit_stack_size") == 0) {
         rc = ngx_http_lua_set_jit_stack_size(value);
 
-        if (rc == -1) {
+        if (rc == NGX_DECLINED) {
             return luaL_error(L, "Changing jit stack size is not allowed when "
                               "some regexs have already been compiled and "
                               "cached");
 
         }
 
-        if (rc == -2) {
+        if (rc == NGX_ERROR) {
             return luaL_error(L, "PCRE jit stack allocation failed");
         }
 
