@@ -1963,6 +1963,7 @@ static int
 ngx_http_lua_ngx_re_opt(lua_State *L)
 {
     const char   *option;
+    size_t        option_len;
     int           nargs;
     int           value;
     int           rc;
@@ -1972,12 +1973,12 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
         return luaL_error(L, "expecting two arguments, but got %d", nargs);
     }
 
-    option = luaL_checklstring(L, 1, NULL);
+    option = luaL_checklstring(L, 1, &option_len);
     value = luaL_checkint(L, 2);
 
 #if LUA_HAVE_PCRE_JIT
 
-    if (ngx_strncmp(option, "jit_stack_size") == 0) {
+    if (ngx_strncmp(option, "jit_stack_size", option_len) == 0) {
         rc = ngx_http_lua_set_jit_stack_size(value);
 
         if (rc == NGX_DECLINED) {
