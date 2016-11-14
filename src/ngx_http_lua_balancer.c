@@ -640,7 +640,7 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     int count, char **err)
 {
 #if (nginx_version >= 1007005)
-    ngx_uint_t             max_tries;
+    ngx_uint_t             max_tries, total;
 #endif
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
@@ -681,9 +681,10 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
 
 #if (nginx_version >= 1007005)
     max_tries = r->upstream->conf->next_upstream_tries;
+    total = bp->total_tries + r->upstream->peer.tries - 1;
 
-    if (bp->total_tries + count > max_tries) {
-        count = max_tries - bp->total_tries;
+    if (max_tries && total + count > max_tries) {
+        count = max_tries - total;
         *err = "reduced tries due to limit";
 
     } else {

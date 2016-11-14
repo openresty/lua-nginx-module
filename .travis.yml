@@ -79,6 +79,7 @@ install:
   - git clone https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
+  - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
 
 before_script:
