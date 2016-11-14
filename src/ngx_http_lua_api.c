@@ -57,7 +57,8 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
         lua_setfield(L, -2, package);
         lua_pop(L, 2);
 
-        return NGX_OK;
+        /* ensure store the package while lua_cache_off */
+        /* return NGX_OK; */
     }
 
     /* L == NULL */
