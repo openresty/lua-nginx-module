@@ -988,15 +988,37 @@ to: 1563
     location /re {
         content_by_lua_block {
             local s = "hello, 1234"
-            ngx.re.find(s, "(hello world)|([0-9])", "jo")
+            local from, to = ngx.re.find(s, "(hello world)|([0-9])")
             local status, err = pcall(function() ngx.re.opt("jit_stack_size", 128 * 1024) end)
+            ngx.say("from: ", from)
+            ngx.say("to: ", to)
+            ngx.say(err)
+
+            local from, to = ngx.re.find(s, "(hello world)|([0-9])", "j")
+            local status, err = pcall(function() ngx.re.opt("jit_stack_size", 128 * 1024) end)
+            ngx.say("from: ", from)
+            ngx.say("to: ", to)
+            ngx.say(err)
+
+            local from, to = ngx.re.find(s, "(hello world)|([0-9])", "jo")
+            local status, err = pcall(function() ngx.re.opt("jit_stack_size", 128 * 1024) end)
+            ngx.say("from: ", from)
+            ngx.say("to: ", to)
             ngx.say(err)
         }
     }
 --- request
     GET /re
 --- response_body
-content_by_lua(nginx.conf:45):4: Changing jit stack size is not allowed when some regexs have already been compiled and cached
+from: 8
+to: 8
+nil
+from: 8
+to: 8
+nil
+from: 8
+to: 8
+content_by_lua(nginx.conf:59):16: Changing jit stack size is not allowed when some regexs have already been compiled and cached
 --- no_error_log
 [error]
 
