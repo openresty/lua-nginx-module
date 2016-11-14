@@ -52,6 +52,7 @@ time ngx-build $force $version \
                 --add-module=$root/../redis2-nginx-module \
                 --add-module=$root/t/data/fake-module \
                 --add-module=$root/t/data/fake-shm-module \
+                --add-module=$root/t/data/fake-delayed-load-module \
                 --with-http_gunzip_module \
                 --with-http_dav_module \
           --with-select_module \

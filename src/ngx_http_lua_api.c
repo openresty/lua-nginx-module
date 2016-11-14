@@ -56,11 +56,10 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
         lua_pushcfunction(L, func);
         lua_setfield(L, -2, package);
         lua_pop(L, 2);
-
-        return NGX_OK;
     }
 
-    /* L == NULL */
+    /* we always register preload_hooks since we always create new Lua VMs
+     * when lua code cache is off. */
 
     if (lmcf->preload_hooks == NULL) {
         lmcf->preload_hooks =
