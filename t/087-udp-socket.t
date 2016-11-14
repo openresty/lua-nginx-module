@@ -667,7 +667,8 @@ lua udp socket receive buffer size: 8192
 
 === TEST 12: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    resolver_timeout 5s;
 
     location = /sub {
         content_by_lua '
@@ -704,12 +705,13 @@ resolve name done
 
 --- no_error_log
 [error]
+--- timeout: 10
 
 
 
 === TEST 13: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 5s;
 
     location = /sub {
