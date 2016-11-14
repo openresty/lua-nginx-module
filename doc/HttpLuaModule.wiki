@@ -5120,6 +5120,36 @@ This method requires the PCRE library enabled in Nginx.  ([[#Special Escaping Se
 
 This feature was first introduced in the <code>v0.2.1rc15</code> release.
 
+== ngx.re.opt ==
+'''syntax:''' ''ngx.re.opt(option, value)''
+
+'''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Allows changing of regex settings. Currently, it can only change the <code>jit_stack_size</code> of the PCRE engine. For example,
+
+<geshi lang="nginx">
+init_by_lua_block { ngx.re.opt("jit_stack_size", 128 * 1024) }
+
+server {
+    location /re {
+        content_by_lua_block {
+            -- full regex and string are taken from https://github.com/JuliaLang/julia/issues/8278
+            local very_long_string = [[71.163.72.113 - - [30/Jul/2014:16:40:55 -0700] ...]]
+            local very_complicated_regex = [[([\d\.]+) ([\w.-]+) ([\w.-]+) (\[.+\]) ...]]
+            local from, to, err = ngx.re.find(very_long_string, very_complicated_regex, "jo")
+
+            -- with the regular jit_stack_size, we would get the error 'pcre_exec() failed: -27'
+            -- instead, we get a match
+            ngx.print(from .. "-" .. to) -- prints '1-1563'
+        }
+    }
+}
+</geshi>
+
+This method requires the PCRE library enabled in Nginx.  ([[#Special Escaping Sequences|Known Issue With Special Escaping Sequences]]).
+
+This feature was first introduced in the <code>XXX</code> release.
+
 == ngx.shared.DICT ==
 '''syntax:''' ''dict = ngx.shared.DICT''
 

@@ -6117,7 +6117,7 @@ This feature was first introduced in the `v0.2.1rc15` release.
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.re.opt
------------
+----------
 **syntax:** *ngx.re.opt(option, value)*
 
 **context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
@@ -6136,7 +6136,7 @@ Allows changing of regex settings. Currently, it can only change the `jit_stack_
              local very_complicated_regex = [[([\d\.]+) ([\w.-]+) ([\w.-]+) (\[.+\]) ...]]
              local from, to, err = ngx.re.find(very_long_string, very_complicated_regex, "jo")
 
-             -- with the regular jit_stack_size, we would the error 'pcre_exec() failed: -27'
+             -- with the regular jit_stack_size, we would get the error 'pcre_exec() failed: -27'
              -- instead, we get a match
              ngx.print(from .. "-" .. to) -- prints '1-1563'
          }
