@@ -1953,7 +1953,7 @@ ngx_http_lua_set_jit_stack_size(int size)
         return NGX_ERROR;
     }
 
-    return 0;
+    return NGX_OK;
 }
 
 #endif /* LUA_HAVE_PCRE_JIT */
@@ -1992,7 +1992,7 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
             return luaL_error(L, "PCRE jit stack allocation failed");
         }
 
-        return 0;
+        return NGX_OK;
     }
 
 #endif /* LUA_HAVE_PCRE_JIT */
