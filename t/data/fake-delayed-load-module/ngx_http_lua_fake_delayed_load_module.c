@@ -1,5 +1,4 @@
-/* Copyright (C) Jim Tan
- *
+/*
  * This fake_delayed_load delayed load module was used to reproduce
  * a bug in ngx_lua's function ngx_http_lua_add_package_preload.
  */
@@ -74,5 +73,5 @@ ngx_http_lua_fake_delayed_load_preload(lua_State *L)
 static int
 ngx_http_lua_fake_delayed_load_function(lua_State * L)
 {
-    return 1;
+    return 0;
 }
