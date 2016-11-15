@@ -1927,7 +1927,7 @@ error:
 #if LUA_HAVE_PCRE_JIT
 
 ngx_int_t
-ngx_http_lua_set_jit_stack_size(int size)
+ngx_http_lua_ffi_set_jit_stack_size(int size)
 {
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_pool_t                  *pool, *old_pool;
@@ -1992,7 +1992,7 @@ ngx_http_lua_ngx_re_opt(lua_State *L)
 #if LUA_HAVE_PCRE_JIT
 
     if (ngx_strncmp(option, "jit_stack_size", option_len) == 0) {
-        rc = ngx_http_lua_set_jit_stack_size(value);
+        rc = ngx_http_lua_ffi_set_jit_stack_size(value);
 
         if (rc == NGX_DECLINED) {
             return luaL_error(L, "Changing jit stack size is not allowed when "
