@@ -1930,6 +1930,7 @@ ngx_int_t
 ngx_http_lua_set_jit_stack_size(int size)
 {
     ngx_http_lua_main_conf_t    *lmcf;
+    ngx_pool_t                  *pool, *old_pool;
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
@@ -1942,12 +1943,24 @@ ngx_http_lua_set_jit_stack_size(int size)
         size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
     }
 
+    pool = lmcf->pool;
+
+    dd("server pool %p", lmcf->pool);
+
     if (lmcf->jit_stack) {
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
+
         pcre_jit_stack_free(lmcf->jit_stack);
+
+        ngx_http_lua_pcre_malloc_done(old_pool);
     }
+
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
     lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
                                            size);
+
+    ngx_http_lua_pcre_malloc_done(old_pool);
 
     if (lmcf->jit_stack == NULL) {
         return NGX_ERROR;
