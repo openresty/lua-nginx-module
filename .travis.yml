@@ -43,7 +43,6 @@ env:
     - OPENSSL_PREFIX=/opt/ssl
     - OPENSSL_LIB=$OPENSSL_PREFIX/lib
     - OPENSSL_INC=$OPENSSL_PREFIX/include
-    - OPENSSL_VER=1.0.2j
     - LIBDRIZZLE_PREFIX=/opt/drizzle
     - LIBDRIZZLE_INC=$LIBDRIZZLE_PREFIX/include/libdrizzle-1.0
     - LIBDRIZZLE_LIB=$LIBDRIZZLE_PREFIX/lib
@@ -51,8 +50,9 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.9.15
-    - NGINX_VERSION=1.11.2
+    - NGINX_VERSION=1.9.15 OPENSSL_VER=1.0.2j
+    - NGINX_VERSION=1.11.2 OPENSSL_VER=1.0.2j
+    - NGINX_VERSION=1.11.2 OPENSSL_VER=1.1.0c
 
 services:
  - memcache
@@ -65,9 +65,9 @@ install:
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
-  - git clone https://github.com/openresty/openresty.git ../openresty
+  - git clone -b openssl https://github.com/doujiang24/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
-  - git clone https://github.com/openresty/nginx-devel-utils.git
+  - git clone -b openssl https://github.com/doujiang24/nginx-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
   - git clone https://github.com/openresty/lua-cjson.git
   - git clone https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
@@ -107,8 +107,7 @@ script:
   - cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
-  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -O ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
-  - patch -p1 < ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch
+  - patch -p1 < ../../openresty/patches/openssl-$OPENSSL_VER-sess_set_get_cb_yield.patch
   - ./config shared --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
