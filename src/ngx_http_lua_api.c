@@ -175,7 +175,9 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     }
 
     zone->shm = shm_zone->shm;
+#if defined(nginx_version) && nginx_version >= 1009000
     zone->noreuse = shm_zone->noreuse;
+#endif
 
     if (zone->init(zone, odata) != NGX_OK) {
         return NGX_ERROR;
