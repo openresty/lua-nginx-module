@@ -50,6 +50,7 @@
 #include "ngx_http_lua_worker.h"
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_ssl_certby.h"
+#include "ngx_http_lua_ssl.h"
 
 
 #if 1
@@ -370,37 +371,26 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
 u_char *
 ngx_http_lua_rebase_path(ngx_pool_t *pool, u_char *src, size_t len)
 {
-    u_char            *p, *dst;
+    u_char     *p;
+    ngx_str_t   dst;
 
-    if (len == 0) {
+    dst.data = ngx_palloc(pool, len + 1);
+    if (dst.data == NULL) {
         return NULL;
     }
 
-    if (src[0] == '/') {
-        /* being an absolute path already */
-        dst = ngx_palloc(pool, len + 1);
-        if (dst == NULL) {
-            return NULL;
-        }
+    dst.len = len;
 
-        p = ngx_copy(dst, src, len);
-
-        *p = '\0';
-
-        return dst;
-    }
-
-    dst = ngx_palloc(pool, ngx_cycle->prefix.len + len + 1);
-    if (dst == NULL) {
-        return NULL;
-    }
-
-    p = ngx_copy(dst, ngx_cycle->prefix.data, ngx_cycle->prefix.len);
-    p = ngx_copy(p, src, len);
-
+    p = ngx_copy(dst.data, src, len);
     *p = '\0';
 
-    return dst;
+    if (ngx_get_full_name(pool, (ngx_str_t *) &ngx_cycle->prefix, &dst)
+        != NGX_OK)
+    {
+        return NULL;
+    }
+
+    return dst.data;
 }
 
 
@@ -3553,8 +3543,7 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
     ngx_connection_t          *c;
 #if (NGX_HTTP_SSL)
     ngx_ssl_conn_t            *ssl_conn;
-
-    ngx_http_lua_ssl_cert_ctx_t     *cctx;
+    ngx_http_lua_ssl_ctx_t    *cctx;
 #endif
 
     c = r->connection;
@@ -3829,6 +3818,7 @@ ngx_http_lua_create_fake_connection(ngx_pool_t *pool)
     }
 
     c->fd = (ngx_socket_t) -1;
+    c->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
 
     if (pool) {
         c->pool = pool;

@@ -2038,7 +2038,7 @@ resolve name done
 
 === TEST 34: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 5s;
 
     location = /sub {

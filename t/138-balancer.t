@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 8);
+plan tests => repeat_each() * (blocks() * 4 + 9);
 
 #no_diff();
 no_long_string();
@@ -405,3 +405,29 @@ ctx counter: nil
 ctx counter: nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 14: ngx.log(ngx.ERR, ...) github #816
+--- http_config
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            ngx.log(ngx.ERR, "hello from balancer by lua!")
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- error_log eval
+[
+'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
+]
+--- no_error_log
+[warn]

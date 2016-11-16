@@ -87,6 +87,10 @@ extern char ngx_http_lua_headers_metatable_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"      \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE ?                          \
+                                                 "ssl_session_store_by_lua*" \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH ?                          \
+                                                 "ssl_session_fetch_by_lua*" \
      : "(unknown)")
 
 
@@ -433,7 +437,6 @@ ngx_http_lua_get_flush_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
-extern int         ngx_http_lua_ssl_ctx_index;
 
 
 #endif /* _NGX_HTTP_LUA_UTIL_H_INCLUDED_ */

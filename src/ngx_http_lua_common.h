@@ -42,6 +42,13 @@
 #endif
 
 
+#ifndef NGX_HAVE_SHA1
+#   if (nginx_version >= 1011002)
+#       define NGX_HAVE_SHA1  1
+#   endif
+#endif
+
+
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
 #endif
@@ -96,17 +103,19 @@ typedef struct {
 
 
 /* must be within 16 bit */
-#define NGX_HTTP_LUA_CONTEXT_SET            0x001
-#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x002
-#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x004
-#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x008
-#define NGX_HTTP_LUA_CONTEXT_LOG            0x010
-#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x020
-#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x040
-#define NGX_HTTP_LUA_CONTEXT_TIMER          0x080
-#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x100
-#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x200
-#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x400
+#define NGX_HTTP_LUA_CONTEXT_SET            0x0001
+#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x0002
+#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x0004
+#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x0008
+#define NGX_HTTP_LUA_CONTEXT_LOG            0x0010
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x0020
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x0040
+#define NGX_HTTP_LUA_CONTEXT_TIMER          0x0080
+#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x0100
+#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x0200
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x0400
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE 0x0800
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH 0x1000
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -163,6 +172,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
 
+    ngx_array_t         *shdict_zones; /* shm zones of "shdict" */
+
     ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
@@ -184,6 +195,10 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_sema_mm_t         *sema_mm;
 
+    ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
+                                                of reqeusts */
+    ngx_uint_t           malloc_trim_req_count;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
@@ -197,10 +212,18 @@ struct ngx_http_lua_main_conf_s {
 union ngx_http_lua_srv_conf_u {
 #if (NGX_HTTP_SSL)
     struct {
-        ngx_http_lua_srv_conf_handler_pt     cert_handler;
-        ngx_str_t                            cert_src;
-        u_char                              *cert_src_key;
-    } ssl;
+        ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
+        ngx_str_t                            ssl_cert_src;
+        u_char                              *ssl_cert_src_key;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_sess_store_handler;
+        ngx_str_t                            ssl_sess_store_src;
+        u_char                              *ssl_sess_store_src_key;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_sess_fetch_handler;
+        ngx_str_t                            ssl_sess_fetch_src;
+        u_char                              *ssl_sess_fetch_src_key;
+    } srv;
 #endif
 
     struct {

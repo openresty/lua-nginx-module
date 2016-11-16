@@ -3,9 +3,8 @@
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
-#repeat_each(1);
 
-plan tests => blocks() * repeat_each() * 2;
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 #no_diff();
 #no_long_string();
@@ -349,3 +348,24 @@ hello
 --- response_body
 hello, bah
 
+
+
+=== TEST 16: github issue #905: unsafe uri
+--- config
+    location /read {
+        access_by_lua_block {
+            ngx.exec("/hi/../");
+        }
+    }
+    location /hi {
+        echo "Hello";
+    }
+--- request
+GET /read
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+[
+'unsafe URI "/hi/../" was detected',
+qr/runtime error: access_by_lua\(nginx.conf:\d+\):2: unsafe uri/,
+]

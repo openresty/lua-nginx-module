@@ -7,7 +7,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 18);
+plan tests => repeat_each() * (blocks() * 3 + 17);
 
 #no_diff();
 no_long_string();
@@ -585,7 +585,7 @@ hello, world
 --- request
 GET /test
 --- response_body_like
-^true nil true\nabort at (?:139|140)$
+^true nil true\nabort at (?:141|140)$
 --- no_error_log
 [error]
 
@@ -816,7 +816,7 @@ foo = hello
 
 
 
-=== TEST 31: incr key (key exists)
+=== TEST 31: replace key (key exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -950,7 +950,7 @@ foo = 10534
 
 
 
-=== TEST 36: replace key (key not exists)
+=== TEST 36: incr key (key not exists)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -973,7 +973,7 @@ foo = nil
 
 
 
-=== TEST 37: replace key (key expired)
+=== TEST 37: incr key (key expired)
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -2448,3 +2448,26 @@ GET /test
 --- error_code: 500
 --- error_log
 bad "exptime" argument
+
+
+
+=== TEST 93: duplicate zones
+--- http_config
+    lua_shared_dict dogs 1m;
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            ngx.say("error")
+        ';
+    }
+--- request
+    GET /test
+--- request_body_unlike
+error
+--- must_die
+--- error_log
+lua_shared_dict "dogs" is already defined as "dogs"
+--- error_log
+[emerg]

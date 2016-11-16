@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 7);
+plan tests => repeat_each() * (blocks() * 5 + 9);
 
 our $HtmlDir = html_dir;
 
@@ -1476,3 +1476,78 @@ done
 --- no_error_log
 [error]
 
+
+
+=== TEST 24: setkeepalive() with explicit nil args
+--- config
+   server_tokens off;
+   location /t {
+       lua_socket_keepalive_timeout 100ms;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
+            local data, res = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            local ok, err = sock:setkeepalive(nil, nil)
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ngx.location.capture("/sleep")
+
+            ngx.say("done")
+        }
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 61
+received response of 156 bytes
+done
+--- no_error_log
+[error]
+--- error_log eval
+["lua tcp socket keepalive close handler",
+"lua tcp socket keepalive: free connection pool for ",
+"lua tcp socket keepalive timeout: 100 ms",
+qr/lua tcp socket connection pool size: 30\b/]
+--- timeout: 4

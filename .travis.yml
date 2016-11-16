@@ -13,8 +13,18 @@ addons:
   apt:
     packages:
     - mysql-server
+    - axel
+    - cpanminus
+    - libtest-base-perl
+    - libtext-diff-perl
+    - liburi-perl
+    - libwww-perl
+    - libtest-longstring-perl
+    - liblist-moreutils-perl
+    - libgd-dev
 
 cache:
+  apt: true
   directories:
   - download-cache
 
@@ -26,7 +36,6 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - LUA_CMODULE_DIR=/lib
     - PCRE_VER=8.33
     - PCRE_PREFIX=/opt/pcre
     - PCRE_LIB=$PCRE_PREFIX/lib
@@ -34,7 +43,7 @@ env:
     - OPENSSL_PREFIX=/opt/ssl
     - OPENSSL_LIB=$OPENSSL_PREFIX/lib
     - OPENSSL_INC=$OPENSSL_PREFIX/include
-    - OPENSSL_VER=1.0.2h
+    - OPENSSL_VER=1.0.2j
     - LIBDRIZZLE_PREFIX=/opt/drizzle
     - LIBDRIZZLE_INC=$LIBDRIZZLE_PREFIX/include/libdrizzle-1.0
     - LIBDRIZZLE_LIB=$LIBDRIZZLE_PREFIX/lib
@@ -43,17 +52,15 @@ env:
     - TEST_NGINX_SLEEP=0.006
   matrix:
     - NGINX_VERSION=1.9.15
-#    - NGINX_VERSION=1.10.0
+    - NGINX_VERSION=1.11.2
 
 services:
  - memcache
  - redis-server
 
-before_install:
-  - sudo apt-get install -y axel cpanminus libtest-base-perl libtext-diff-perl liburi-perl libwww-perl libtest-longstring-perl liblist-moreutils-perl libgd-dev
-
 install:
   - if [ ! -d download-cache ]; then mkdir download-cache; fi
+  - rm -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz  # alas, we may end up with corrupted drizzle tarball stuck in the download-cache/ forever.
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -O download-cache/drizzle7-$DRIZZLE_VER.tar.gz http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
@@ -89,8 +96,7 @@ script:
   - ./configure --prefix=$LIBDRIZZLE_PREFIX --without-server > build.log 2>&1 || (cat build.log && exit 1)
   - make libdrizzle-1.0 -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
-  - cd ..
-  - cd mockeagain/ && make CC=$CC -j$JOBS && cd ..
+  - cd ../mockeagain/ && make CC=$CC -j$JOBS && cd ..
   - cd test-nginx/ && sudo cpanm . && cd ..
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
   - tar zxf download-cache/pcre-$PCRE_VER.tar.gz
@@ -101,6 +107,8 @@ script:
   - cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
+  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -O ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
+  - patch -p1 < ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch
   - ./config shared --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)

@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 30);
+plan tests => repeat_each() * (2 * blocks() + 31);
 
 #no_diff();
 #no_long_string();
@@ -1601,6 +1601,7 @@ GeT / HTTP/1.1
 ok
 --- no_error_log
 [error]
+--- no_check_leak
 
 
 
@@ -1620,3 +1621,26 @@ GET x HTTP/1.1
 ok
 --- no_error_log
 [error]
+--- no_check_leak
+
+
+
+=== TEST 54: for bad requests causing segfaults when setting & getting multi-value headers
+--- config
+    error_page 400 = /err;
+
+    location = /err {
+        content_by_lua_block {
+            ngx.req.set_header("Cookie", "foo=bar")
+            local test = ngx.var.cookie_bar
+
+            ngx.say("ok")
+        }
+    }
+--- raw_request
+GeT / HTTP/1.1
+--- response_body
+ok
+--- no_error_log
+[error]
+--- no_check_leak
