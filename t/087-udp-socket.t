@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 13);
+plan tests => repeat_each() * (3 * blocks() + 14);
 
 our $HtmlDir = html_dir;
 
@@ -1103,3 +1103,54 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 --- no_error_log
 [alert]
 
+
+
+=== TEST 20: udp object size
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+        #set $port 1234;
+
+        content_by_lua '
+            local socket = ngx.socket
+            -- local socket = require "socket"
+
+            local udp = socket.udp()
+
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected")
+
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local ok, err = udp:send(req)
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+
+            local data, err = udp:receive()
+            if not data then
+                ngx.say("failed to receive data: ", err)
+                return
+            end
+            ngx.print("object size: ", table.maxn(udp))
+        ';
+    }
+--- request
+GET /t
+--- response_body eval
+"connected\nobject size: 2"
+--- no_error_log
+[error]
+--- log_level: debug
+--- error_log
+lua udp socket receive buffer size: 8192

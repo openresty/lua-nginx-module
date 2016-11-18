@@ -143,7 +143,7 @@ ngx_http_lua_socket_udp(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_TIMER
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */);
+    lua_createtable(L, 2 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
