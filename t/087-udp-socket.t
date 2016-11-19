@@ -1113,7 +1113,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
         set $port $TEST_NGINX_MEMCACHED_PORT;
         #set $port 1234;
 
-        content_by_lua '
+        content_by_lua_block {
             local socket = ngx.socket
             -- local socket = require "socket"
 
@@ -1130,7 +1130,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
             ngx.say("connected")
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -1143,7 +1143,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
                 return
             end
             ngx.print("object size: ", table.maxn(udp))
-        ';
+        }
     }
 --- request
 GET /t
