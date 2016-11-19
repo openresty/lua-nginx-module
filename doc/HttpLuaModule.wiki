@@ -705,7 +705,6 @@ servers in Lua. For example,
 * cosocket: pool-based backend concurrency level control: implement automatic <code>connect</code> queueing when the backend concurrency exceeds its connection pool limit.
 * cosocket: review and merge aviramc's [https://github.com/openresty/lua-nginx-module/pull/290 patch] for adding the <code>bsdrecv</code> method.
 * add new API function <code>ngx.resp.add_header</code> to emulate the standard <code>add_header</code> config directive.
-* review and apply Jader H. Silva's patch for <code>ngx.re.split()</code>.
 * review and apply vadim-pavlov's patch for [[#ngx.location.capture|ngx.location.capture]]'s <code>extra_headers</code> option
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
 * add configure options for different strategies of handling the cosocket connection exceeding in the pools.
