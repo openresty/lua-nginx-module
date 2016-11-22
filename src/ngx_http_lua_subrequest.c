@@ -138,7 +138,6 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     unsigned                         vars_action;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
-    ngx_str_t                       *ngx_method_name = NULL;
     u_char                          *lua_method_name;
     size_t                           method_name_length;
     size_t                           sr_statuses_len;
