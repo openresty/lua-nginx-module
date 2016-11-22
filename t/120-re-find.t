@@ -988,7 +988,7 @@ to: 1563
     location /re {
         content_by_lua_block {
             local s = "hello, 1234"
-            local from, to = ngx.re.find(s, "(hello world)|([0-9])")
+            local from, to = ngx.re.find(s, "(hello world)|([0-9])", "jo")
             ngx.say("from: ", from)
             ngx.say("to: ", to)
             ngx.re.opt("jit_stack_size", 128 * 1024)
