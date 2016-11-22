@@ -4093,7 +4093,7 @@ ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
 }
 
 
-ngx_int_t
+ngx_uint_t
 ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
 {
     switch (len) {
