@@ -58,7 +58,7 @@ static ngx_str_t  ngx_http_lua_content_length_header_key =
 static ngx_int_t ngx_http_lua_set_content_length_header(ngx_http_request_t *r,
     off_t len);
 static ngx_int_t ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr,
-    ngx_uint_t method, ngx_str_t *method_name, int forward_body,
+    ngx_uint_t method, int forward_body,
     ngx_http_request_body_t *body, unsigned vars_action,
     ngx_array_t *extra_vars);
 static int ngx_http_lua_ngx_location_capture(lua_State *L);
@@ -596,8 +596,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
-        rc = ngx_http_lua_adjust_subrequest(sr, method, ngx_method_name,
-                                            always_forward_body,
+        rc = ngx_http_lua_adjust_subrequest(sr, method, always_forward_body,
                                             body, vars_action, extra_vars);
 
         if (rc != NGX_OK) {
@@ -633,9 +632,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
 static ngx_int_t
 ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
-    ngx_str_t *method_name, int always_forward_body,
-    ngx_http_request_body_t *body, unsigned vars_action,
-    ngx_array_t *extra_vars)
+    int always_forward_body, ngx_http_request_body_t *body,
+    unsigned vars_action, ngx_array_t *extra_vars)
 {
     ngx_http_request_t          *r;
     ngx_int_t                    rc;
@@ -692,14 +690,6 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
     sr->method = method;
 
     switch (method) {
-    case NGX_HTTP_UNKNOWN:
-        if (method_name == NULL) {
-            return NGX_ERROR;
-        }
-
-        sr->method_name = *method_name;
-        break;
-        
     case NGX_HTTP_GET:
         sr->method_name = ngx_http_lua_get_method;
         break;
