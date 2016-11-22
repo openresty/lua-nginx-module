@@ -4098,11 +4098,11 @@ ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
 {
     switch (len) {
     case 3:
-        if (ngx_str3_cmp(method_name, 'G', 'E', 'T', ' ')) {
+        if (ngx_http_lua_str3_cmp(method_name, 'G', 'E', 'T')) {
             return NGX_HTTP_GET;
         }
         
-        if (ngx_str3_cmp(method_name, 'P', 'U', 'T', ' ')) {
+        if (ngx_http_lua_str3_cmp(method_name, 'P', 'U', 'T')) {
             return NGX_HTTP_PUT;
         }
         
@@ -4111,25 +4111,25 @@ ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
     case 4:
         if (method_name[1] == 'O') {
             
-            if (ngx_str3Ocmp(method_name, 'P', 'O', 'S', 'T')) {
+            if (ngx_http_lua_str3Ocmp(method_name, 'P', 'O', 'S', 'T')) {
                 return NGX_HTTP_POST;
             }
             
-            if (ngx_str3Ocmp(method_name, 'C', 'O', 'P', 'Y')) {
+            if (ngx_http_lua_str3Ocmp(method_name, 'C', 'O', 'P', 'Y')) {
                 return NGX_HTTP_COPY;
             }
             
-            if (ngx_str3Ocmp(method_name, 'M', 'O', 'V', 'E')) {
+            if (ngx_http_lua_str3Ocmp(method_name, 'M', 'O', 'V', 'E')) {
                 return NGX_HTTP_MOVE;
             }
             
-            if (ngx_str3Ocmp(method_name, 'L', 'O', 'C', 'K')) {
+            if (ngx_http_lua_str3Ocmp(method_name, 'L', 'O', 'C', 'K')) {
                 return NGX_HTTP_LOCK;
             }
         
         } else {
         
-            if (ngx_str4cmp(method_name, 'H', 'E', 'A', 'D')) {
+            if (ngx_http_lua_str4cmp(method_name, 'H', 'E', 'A', 'D')) {
                 return NGX_HTTP_HEAD;
             }
         }
@@ -4137,33 +4137,34 @@ ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
         return NGX_HTTP_UNKNOWN;
             
     case 5:
-        if (ngx_str5cmp(method_name, 'M', 'K', 'C', 'O', 'L')) {
+        if (ngx_http_lua_str5cmp(method_name, 'M', 'K', 'C', 'O', 'L')) {
             return NGX_HTTP_MKCOL;
         }
         
-        if (ngx_str5cmp(method_name, 'P', 'A', 'T', 'C', 'H')) {
+        if (ngx_http_lua_str5cmp(method_name, 'P', 'A', 'T', 'C', 'H')) {
             return NGX_HTTP_PATCH;
         }
         
-        if (ngx_str5cmp(method_name, 'T', 'R', 'A', 'C', 'E')) {
+        if (ngx_http_lua_str5cmp(method_name, 'T', 'R', 'A', 'C', 'E')) {
             return NGX_HTTP_TRACE;
         }
         
         return NGX_HTTP_UNKNOWN;
     
     case 6:
-        if (ngx_str6cmp(method_name, 'D', 'E', 'L', 'E', 'T', 'E')) {
+        if (ngx_http_lua_str6cmp(method_name, 'D', 'E', 'L', 'E', 'T', 'E')) {
             return NGX_HTTP_DELETE;
         }
         
-        if (ngx_str6cmp(method_name, 'U', 'N', 'L', 'O', 'C', 'K')) {
+        if (ngx_http_lua_str6cmp(method_name, 'U', 'N', 'L', 'O', 'C', 'K')) {
             return NGX_HTTP_UNLOCK;
         }
         
         return NGX_HTTP_UNKNOWN;
     
     case 7:
-        if (ngx_str7_cmp(method_name, 'O', 'P', 'T', 'I', 'O', 'N', 'S', ' '))
+        if (ngx_http_lua_str7_cmp(method_name,
+                                  'O', 'P', 'T', 'I', 'O', 'N', 'S'))
         {
             return NGX_HTTP_OPTIONS;
         }
@@ -4171,7 +4172,8 @@ ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
         return NGX_HTTP_UNKNOWN;
     
     case 8:
-        if (ngx_str8cmp(method_name, 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D'))
+        if (ngx_http_lua_str8cmp(method_name,
+                                 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D'))
         {
             return NGX_HTTP_PROPFIND;
         }
@@ -4179,11 +4181,11 @@ ngx_http_lua_parse_method_name(u_char *method_name, size_t len)
         return NGX_HTTP_UNKNOWN;
     
     case 9:
-        if (ngx_str9cmp(method_name,
-            'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H'))
-            {
-                return NGX_HTTP_PROPPATCH;
-            }
+        if (ngx_http_lua_str9cmp(method_name,
+                                 'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H'))
+        {
+            return NGX_HTTP_PROPPATCH;
+        }
             
         return NGX_HTTP_UNKNOWN;
     
