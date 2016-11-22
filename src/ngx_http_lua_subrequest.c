@@ -51,6 +51,7 @@ ngx_str_t  ngx_http_lua_patch_method =
 ngx_str_t  ngx_http_lua_trace_method =
         ngx_http_lua_method_name("TRACE");
 
+
 static ngx_str_t  ngx_http_lua_content_length_header_key =
     ngx_string("Content-Length");
 
