@@ -11,7 +11,7 @@ use Test::Nginx::Socket::Lua;
 no_root_location;
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 23);
+plan tests => repeat_each() * (blocks() * 3 + 100);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
