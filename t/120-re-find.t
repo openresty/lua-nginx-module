@@ -991,19 +991,7 @@ to: 1563
             local from, to = ngx.re.find(s, "(hello world)|([0-9])")
             ngx.say("from: ", from)
             ngx.say("to: ", to)
-            if err then ngx.log(ngx.ERR, err) end
-
-            local status, err = pcall(function() ngx.re.opt("jit_stack_size", 128 * 1024) end)
-            local from, to = ngx.re.find(s, "(hello world)|([0-9])", "j")
-            ngx.say("from: ", from)
-            ngx.say("to: ", to)
-            if err then ngx.log(ngx.ERR, err) end
-
-            local status, err = pcall(function() ngx.re.opt("jit_stack_size", 128 * 1024) end)
-            local from, to = ngx.re.find(s, "(hello world)|([0-9])", "jo")
-            ngx.say("from: ", from)
-            ngx.say("to: ", to)
-            if err then ngx.log(ngx.ERR, err) end
+            ngx.re.opt("jit_stack_size", 128 * 1024)
         }
     }
 --- request
@@ -1011,16 +999,12 @@ to: 1563
 --- response_body
 from: 8
 to: 8
-from: 8
-to: 8
-from: 8
-to: 8
 
 --- grep_error_log eval
 Changing jit stack size is not allowed when some regexs have already been compiled and cached
 
 --- grep_error_log_out eval
-["", "Changing jit stack size is not allowed when some regexs have already been compiled and cached\nChanging jit stack size is not allowed when some regexs have already been compiled and cached\n"]
+["", "Changing jit stack size is not allowed when some regexs have already been compiled and cached\n"]
 
 
 
