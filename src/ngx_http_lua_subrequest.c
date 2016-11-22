@@ -140,7 +140,7 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
     u_char                          *lua_method_name;
-    size_t                           method_name_length;
+    size_t                           lua_method_name_len;
     size_t                           sr_statuses_len;
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
@@ -395,9 +395,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
                 break;
 
             case LUA_TSTRING:
-                lua_method_name = (u_char *) lua_tolstring(L, -1,
-                                                           &method_name_length);
-                method = ngx_http_lua_parse_method_name(lua_method_name, method_name_length);
+                lua_method_name = (u_char *)
+                                  lua_tolstring(L, -1, &lua_method_name_len);
+                method = ngx_http_lua_parse_method_name(lua_method_name,
+                                                        lua_method_name_len);
                 
                 if (method == NGX_HTTP_UNKNOWN) {
                     return luaL_error(L, "Bad http request method");
