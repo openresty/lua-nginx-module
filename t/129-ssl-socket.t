@@ -1117,6 +1117,20 @@ SSL reused session
 
 
 === TEST 14: default cipher
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -1129,7 +1143,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("iscribblet.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1137,7 +1151,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "iscribblet.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1145,7 +1159,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1174,9 +1188,17 @@ GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 59 bytes.
+sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate
+>>> test.crl
+$::TestCRL"
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
@@ -1185,8 +1207,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+lua ssl server name: "test.com"
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-GCM-SHA384 TLSv1.2
 --- no_error_log
 SSL reused session
 [error]
@@ -1196,10 +1218,24 @@ SSL reused session
 
 
 === TEST 15: explicit cipher configuration
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
-    lua_ssl_ciphers RC4-SHA;
+    lua_ssl_ciphers AES256-SHA256;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1209,7 +1245,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("iscribblet.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1217,7 +1253,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "iscribblet.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1225,7 +1261,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1254,9 +1290,17 @@ GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 59 bytes.
+sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate
+>>> test.crl
+$::TestCRL"
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
@@ -1265,8 +1309,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "RC4-SHA SSLv3
+lua ssl server name: "test.com"
+SSL: TLSv1.2, cipher: "AES256-SHA256 TLSv1.2
 --- no_error_log
 SSL reused session
 [error]
@@ -1276,6 +1320,20 @@ SSL reused session
 
 
 === TEST 16: explicit ssl protocol configuration
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua 'ngx.status = 201 ngx.say("foo") ngx.exit(201)';
+            more_clear_headers Date;
+        }
+    }
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -1289,7 +1347,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("iscribblet.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1297,7 +1355,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "iscribblet.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1305,7 +1363,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1334,9 +1392,17 @@ GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 59 bytes.
+sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
+
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate
+>>> test.crl
+$::TestCRL"
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
@@ -1345,8 +1411,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+lua ssl server name: "test.com"
+SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA SSLv3
 --- no_error_log
 SSL reused session
 [error]
