@@ -1129,7 +1129,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("iscribblet.org", 443)
+                local ok, err = sock:connect("openresty.org", 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1137,7 +1137,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "iscribblet.org")
+                local session, err = sock:sslhandshake(nil, "openresty.org")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1145,7 +1145,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: iscribblet.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /en/ HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1174,7 +1174,7 @@ GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 59 bytes.
+sent http request: 61 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
 
@@ -1185,8 +1185,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+lua ssl server name: "openresty.org"
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256
 --- no_error_log
 SSL reused session
 [error]
@@ -1199,7 +1199,7 @@ SSL reused session
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
-    lua_ssl_ciphers RC4-SHA;
+    lua_ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1266,7 +1266,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "RC4-SHA SSLv3
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256
 --- no_error_log
 SSL reused session
 [error]
@@ -1346,7 +1346,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "iscribblet.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+SSL: TLSv1
 --- no_error_log
 SSL reused session
 [error]
