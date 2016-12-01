@@ -2431,7 +2431,7 @@ See also [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]].
 
 '''context:''' ''http, server, location, location-if''
 
-Enables or disables automatic response buffering for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which replies on a proper <code>Content-Length</code> response header.
+Enables or disables automatic response buffering for HTTP 1.0 (or older) requests. This buffering mechanism is mainly used for HTTP 1.0 keep-alive which relies on a proper <code>Content-Length</code> response header.
 
 If the Lua code explicitly sets a <code>Content-Length</code> response header before sending the headers (either explicitly via [[#ngx.send_headers|ngx.send_headers]] or implicitly via the first [[#ngx.say|ngx.say]] or [[#ngx.print|ngx.print]] call), then the HTTP 1.0 response buffering will be disabled even when this directive is turned on.
 
