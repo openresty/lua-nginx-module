@@ -1200,6 +1200,64 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+char *
+ngx_http_lua_exit_worker_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    char        *rv
+    ngx_conf_t   save;
+
+    save = *cf;
+    cf->handler = ngx_http_lua_exit_worker_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+char *
+ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    u_char                      *name;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf = conf;
+
+    dd("enter");
+
+    /*  must specify a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (lmcf->exit_worker_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    lmcf->exit_worker_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
+
+    if (cmd->pos == ngx_http_lua_exit_worker_by_lua_file) {
+        name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
+                                        value[1].len);
+        if (name == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->exit_worker_src.data = name;
+        lmcf->exit_worker_src.len = ngx_strlen(name);
+    } else {
+        lmcf->exit_worker_src = value[1];
+    }
+
+    return NGX_CONF_OK;
+}
+
+
 #if defined(NDK) && NDK
 static ngx_int_t
 ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)

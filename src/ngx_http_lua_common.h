@@ -226,6 +226,9 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_main_conf_handler_pt    init_worker_handler;
     ngx_str_t                            init_worker_src;
 
+    ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
+    ngx_str_t                            exit_worker_src;
+
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
                     /* neither yielding nor recursion is possible in
                      * balancer_by_lua*, so there cannot be any races among
