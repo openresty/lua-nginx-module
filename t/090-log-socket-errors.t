@@ -21,7 +21,7 @@ __DATA__
 
 === TEST 1: log socket errors off (tcp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     location /t {
         lua_socket_connect_timeout 1ms;
@@ -43,7 +43,7 @@ timeout
 
 === TEST 2: log socket errors on (tcp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     location /t {
         lua_socket_connect_timeout 1ms;
@@ -65,7 +65,7 @@ lua tcp socket connect timed out
 
 === TEST 3: log socket errors on (udp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     location /t {
         lua_socket_log_errors on;
@@ -88,7 +88,7 @@ lua udp socket read timed out
 
 === TEST 4: log socket errors off (udp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     location /t {
         lua_socket_log_errors off;
