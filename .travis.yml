@@ -12,7 +12,6 @@ compiler:
 addons:
   apt:
     packages:
-    - mysql-server
     - axel
     - cpanminus
     - libtest-base-perl
@@ -24,7 +23,6 @@ addons:
     - libgd-dev
 
 cache:
-  apt: true
   directories:
   - download-cache
 
@@ -57,13 +55,12 @@ env:
 services:
  - memcache
  - redis-server
+ - mysql
 
 install:
-  - if [ ! -d download-cache ]; then mkdir download-cache; fi
-  - rm -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz  # alas, we may end up with corrupted drizzle tarball stuck in the download-cache/ forever.
-  - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -O download-cache/drizzle7-$DRIZZLE_VER.tar.gz http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
-  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
-  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
+  - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
+  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
+  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
