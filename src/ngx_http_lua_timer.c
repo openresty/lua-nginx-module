@@ -190,7 +190,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     co = lua_newthread(vm);
 
-    /* L stack: time func [args] thread */
+    /* L stack: time func [args] */
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 

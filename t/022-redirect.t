@@ -84,7 +84,7 @@ GET /read
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-only ngx.HTTP_MOVED_TEMPORARILY, ngx.HTTP_MOVED_PERMANENTLY, and ngx.HTTP_TEMPORARY_REDIRECT are allowed
+only ngx.HTTP_MOVED_TEMPORARILY, ngx.HTTP_MOVED_PERMANENTLY, ngx.HTTP_SEE_OTHER, and ngx.HTTP_TEMPORARY_REDIRECT are allowed
 
 
 
@@ -218,3 +218,54 @@ GET /read
 Location: http://agentzh.org/foo?a=b&c=d
 --- response_body_like: 307 Temporary Redirect
 --- error_code: 307
+
+
+
+=== TEST 12: explicit 303
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo", ngx.HTTP_SEE_OTHER);
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo
+--- response_body_like: 303 See Other
+--- error_code: 303
+
+
+
+=== TEST 13: explicit 303 with args
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo?a=b&c=d", ngx.HTTP_SEE_OTHER);
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo?a=b&c=d
+--- response_body_like: 303 See Other
+--- error_code: 303
+
+
+
+=== TEST 14: explicit 303
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo?a=b&c=d", 303);
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo?a=b&c=d
+--- response_body_like: 303 See Other
+--- error_code: 303

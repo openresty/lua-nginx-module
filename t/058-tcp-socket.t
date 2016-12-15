@@ -200,7 +200,7 @@ attempt to send data on a closed socket:
 --- timeout: 10
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -290,7 +290,7 @@ qr/connect\(\) failed \(\d+: Connection refused\)/
 
 === TEST 6: connection timeout (tcp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_socket_connect_timeout 100ms;
     lua_socket_send_timeout 100ms;
     lua_socket_read_timeout 100ms;
@@ -362,7 +362,7 @@ connected: 1
 === TEST 8: resolver error (host not found)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -403,7 +403,7 @@ attempt to send data on a closed socket
 === TEST 9: resolver error (timeout)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 1ms;
     location /t {
         content_by_lua '
@@ -1995,7 +1995,7 @@ close: 1 nil
 
 === TEST 33: github issue #215: Handle the posted requests in lua cosocket api (failed to resolve)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     location = /sub {
         content_by_lua '
@@ -2038,7 +2038,7 @@ resolve name done
 
 === TEST 34: github issue #215: Handle the posted requests in lua cosocket api (successfully resolved)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 5s;
 
     location = /sub {
@@ -2136,7 +2136,7 @@ close: nil closed
 --- config
     server_tokens off;
     lua_socket_read_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -2178,7 +2178,7 @@ lua tcp socket read timed out
 === TEST 37: successful reread after a read time out happen (receive -> receive)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -2255,7 +2255,7 @@ lua tcp socket read timed out
 === TEST 38: successful reread after a read time out happen (receive -> receiveuntil)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -2335,7 +2335,7 @@ lua tcp socket read timed out
 === TEST 39: successful reread after a read time out happen (receiveuntil -> receiveuntil)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -2417,7 +2417,7 @@ lua tcp socket read timed out
 === TEST 40: successful reread after a read time out happen (receiveuntil -> receive)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -3015,7 +3015,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):16: bad request/
 === TEST 50: cosocket resolving aborted by coroutine yielding failures (require)
 --- http_config
     lua_package_path "$prefix/html/?.lua;;";
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
 --- config
     location = /t {
@@ -3049,7 +3049,7 @@ runtime error: attempt to yield across C-call boundary
 === TEST 51: cosocket resolving aborted by coroutine yielding failures (xpcall err)
 --- http_config
     lua_package_path "$prefix/html/?.lua;;";
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
 --- config
     location = /t {
@@ -3307,7 +3307,7 @@ close: 1 nil
 --- config
     server_tokens off;
     lua_socket_connect_timeout 1s;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
