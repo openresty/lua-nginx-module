@@ -671,7 +671,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     /* rc == NGX_DECLINED */
     if (u->tag_ctx == NULL) {
         rc = ngx_http_lua_socket_tag_init(&u->tag_ctx);
-        
+
         if (rc != NGX_OK) {
             return luaL_error(L, "no memory");
         }
@@ -4203,6 +4203,7 @@ static int
 ngx_http_lua_req_socket(lua_State *L)
 {
     int                              n, raw;
+    ngx_int_t                        rc;
     ngx_peer_connection_t           *pc;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_connection_t                *c;
