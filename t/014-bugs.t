@@ -849,7 +849,7 @@ ok
     "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
 --- config
     location /t {
-        resolver $TEST_NGINX_RESOLVER;
+        resolver $TEST_NGINX_RESOLVER ipv6=off;
         set $myhost 'agentzh.org.';
         proxy_pass http://$myhost/misc/.vimrc;
     }

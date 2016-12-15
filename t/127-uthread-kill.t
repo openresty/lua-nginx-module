@@ -190,7 +190,7 @@ resolve name done: -2
 
 === TEST 4: kill pending connect
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /lua {
         content_by_lua '
             local ready = false

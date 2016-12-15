@@ -105,10 +105,10 @@ ngx_http_lua_ngx_exec(lua_State *L)
 
     ngx_http_lua_check_if_abortable(L, ctx);
 
-    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags)
-        != NGX_OK)
-    {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    flags = NGX_HTTP_LOG_UNSAFE;
+
+    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK) {
+        return luaL_error(L, "unsafe uri");
     }
 
     if (n == 2) {
@@ -212,10 +212,12 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
         if (rc != NGX_HTTP_MOVED_TEMPORARILY
             && rc != NGX_HTTP_MOVED_PERMANENTLY
+            && rc != NGX_HTTP_SEE_OTHER
             && rc != NGX_HTTP_TEMPORARY_REDIRECT)
         {
             return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY, "
-                              "ngx.HTTP_MOVED_PERMANENTLY, and "
+                              "ngx.HTTP_MOVED_PERMANENTLY, "
+                              "ngx.HTTP_SEE_OTHER, and "
                               "ngx.HTTP_TEMPORARY_REDIRECT are allowed");
         }
 

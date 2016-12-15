@@ -1,5 +1,4 @@
-/* Copyright (C) ZHANG Heng (chiyouhen)
- *
+/*
  * This fake module was used to reproduce a bug in ngx_lua's
  * init_worker_by_lua implementation.
  */

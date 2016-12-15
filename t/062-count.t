@@ -259,7 +259,7 @@ n = 10
 POST /test
 hello world
 --- response_body
-n = 6
+n = 7
 --- no_error_log
 [error]
 
@@ -491,6 +491,6 @@ n = 6
 --- request
 GET /test
 --- response_body
-n = 7
+n = 8
 --- no_error_log
 [error]

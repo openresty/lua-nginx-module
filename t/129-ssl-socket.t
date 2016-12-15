@@ -125,7 +125,7 @@ SSL reused session
 === TEST 2: no SNI, no verify
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -202,7 +202,7 @@ SSL reused session
 === TEST 3: SNI, no verify
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -280,7 +280,7 @@ SSL reused session
 === TEST 4: ssl session reuse
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -374,7 +374,7 @@ lua ssl free session
 The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 5;
     location /t {
@@ -453,7 +453,7 @@ SSL reused session
 The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_socket_log_errors off;
     lua_ssl_verify_depth 2;
@@ -532,7 +532,7 @@ SSL reused session
 === TEST 7: certificate does not match host name (no verify)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -611,7 +611,7 @@ SSL reused session
 === TEST 8: iscribblet.org: passing SSL verify
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
     location /t {
@@ -696,7 +696,7 @@ SSL reused session
 === TEST 9: ssl verify depth not enough (with automatic error logging)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 1;
     location /t {
@@ -774,7 +774,7 @@ SSL reused session
 === TEST 10: ssl verify depth not enough (without automatic error logging)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 1;
     lua_socket_log_errors off;
@@ -1033,7 +1033,7 @@ SSL reused session
 === TEST 13: iscribblet.org: passing SSL verify with multiple certificates
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
     location /t {
@@ -1119,7 +1119,7 @@ SSL reused session
 === TEST 14: default cipher
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1198,7 +1198,7 @@ SSL reused session
 === TEST 15: explicit cipher configuration
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_ciphers RC4-SHA;
     location /t {
         #set $port 5000;
@@ -1278,7 +1278,7 @@ SSL reused session
 === TEST 16: explicit ssl protocol configuration
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_protocols TLSv1;
     location /t {
         #set $port 5000;
@@ -1358,7 +1358,7 @@ SSL reused session
 === TEST 17: unsupported ssl protocol
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_protocols SSLv2;
     lua_socket_log_errors off;
     location /t {
@@ -1435,7 +1435,7 @@ SSL reused session
 === TEST 18: iscribblet.org: passing SSL verify: keepalive (reuse the ssl session)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
     location /t {
@@ -1512,7 +1512,7 @@ SSL reused session
 === TEST 19: iscribblet.org: passing SSL verify: keepalive (no reusing the ssl session)
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
     location /t {
@@ -1592,7 +1592,7 @@ SSL reused session
 === TEST 20: downstream cosockets do not support ssl handshake
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
     location /t {
@@ -1647,7 +1647,7 @@ attempt to call method 'sslhandshake' (a nil value)
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1750,7 +1750,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/test.crt;
 
     location /t {
@@ -1854,7 +1854,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1946,7 +1946,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_crl ../html/test.crl;
     lua_ssl_trusted_certificate ../html/test.crt;
     lua_socket_log_errors off;
@@ -2031,7 +2031,7 @@ SSL reused session
 === TEST 25: multiple handshake calls
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2115,7 +2115,7 @@ SSL reused session
 === TEST 26: handshake timed out
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2183,7 +2183,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2254,7 +2254,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2328,7 +2328,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2405,7 +2405,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/test.crt;
 
     location /t {
@@ -2510,7 +2510,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     #lua_ssl_trusted_certificate ../html/test.crt;
 
     location /t {
@@ -2589,7 +2589,7 @@ SSL reused session
 === TEST 32: handshake, too many arguments
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
