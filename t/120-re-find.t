@@ -891,3 +891,29 @@ not matched!
 --- no_error_log
 [error]
 
+
+
+=== TEST 31: match with ctx and a pos (anchored by \G)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = { pos = 3 }
+            local from, to, err = ngx.re.find("1234, hello", [[(\G[0-9]+)]], "", ctx)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("pos: ", ctx.pos)
+            else
+                ngx.say("not matched!")
+                ngx.say("pos: ", ctx.pos)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+from: 3
+to: 4
+pos: 5
+--- no_error_log
+[error]

@@ -357,7 +357,7 @@ F(ngx_http_lua_socket_tcp_finalize_write_part) {
 --- config
     server_tokens off;
     lua_socket_log_errors off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -390,7 +390,7 @@ F(ngx_http_lua_socket_tcp_finalize_write_part) {
             end
 
             sock:settimeout(300)
-            local ok, err = sock:connect("106.187.41.147", 12345)
+            local ok, err = sock:connect("106.184.1.99", 12345)
             ngx.say("connect: ", ok, " ", err)
 
             local ok, err = sock:close()

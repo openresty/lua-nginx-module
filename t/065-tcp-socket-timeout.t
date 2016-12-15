@@ -46,7 +46,7 @@ __DATA__
 --- config
     server_tokens off;
     lua_socket_connect_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -75,7 +75,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 60s;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -105,7 +105,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -133,7 +133,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -163,7 +163,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -191,7 +191,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -228,7 +228,7 @@ lua tcp socket read timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 60s;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -267,7 +267,7 @@ lua tcp socket read timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -306,7 +306,7 @@ lua tcp socket read timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -346,7 +346,7 @@ lua tcp socket read timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -385,7 +385,7 @@ lua tcp socket read timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -436,7 +436,7 @@ lua tcp socket write timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 60s;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -475,7 +475,7 @@ lua tcp socket write timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -514,7 +514,7 @@ lua tcp socket write timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -553,7 +553,7 @@ lua tcp socket write timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 102ms;
-    #resolver $TEST_NGINX_RESOLVER;
+    #resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -686,7 +686,7 @@ after
 --- config
     server_tokens off;
     lua_socket_connect_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /t {
         content_by_lua '
@@ -724,7 +724,7 @@ lua tcp socket connect timed out
 --- config
     server_tokens off;
     lua_socket_send_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -779,7 +779,7 @@ lua tcp socket write timed out
 === TEST 19: abort when upstream sockets pending on writes
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -832,7 +832,7 @@ lua tcp socket write timed out
 === TEST 20: abort when downstream socket pending on writes
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             ngx.send_headers()
@@ -888,7 +888,7 @@ lua tcp socket write timed out
 --- config
     server_tokens off;
     lua_socket_read_timeout 100ms;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()

@@ -172,6 +172,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
 
+    ngx_array_t         *shdict_zones; /* shm zones of "shdict" */
+
     ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
@@ -192,6 +194,10 @@ struct ngx_http_lua_main_conf_s {
     ngx_uint_t                      shm_zones_inited;
 
     ngx_http_lua_sema_mm_t         *sema_mm;
+
+    ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
+                                                of reqeusts */
+    ngx_uint_t           malloc_trim_req_count;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
