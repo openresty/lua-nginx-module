@@ -141,7 +141,7 @@ static void ngx_http_lua_socket_tag_rbtree_insert_value(
     ngx_rbtree_node_t *sentinel);
 static int ngx_http_lua_socket_tag_set_helper(lua_State *L, int flags);
 static int ngx_http_lua_socket_tag_get_helper(lua_State *L);
-static void ngx_http_lua_socket_tag_init(
+static int ngx_http_lua_socket_tag_init(
     ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx);
 static void ngx_http_lua_socket_tag_destroy(
     ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx);
@@ -670,7 +670,11 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     /* rc == NGX_DECLINED */
     if (u->tag_ctx == NULL) {
-        ngx_http_lua_socket_tag_init(&u->tag_ctx);
+        rc = ngx_http_lua_socket_tag_init(&u->tag_ctx);
+        
+        if (rc != NGX_OK) {
+            return luaL_error(L, "no memory");
+        }
     }
 
     /* TODO: we should avoid this in-pool allocation */
@@ -4404,7 +4408,11 @@ ngx_http_lua_req_socket(lua_State *L)
     u->send_timeout = u->conf->send_timeout;
 
     if (u->tag_ctx == NULL) {
-        ngx_http_lua_socket_tag_init(&u->tag_ctx);
+        rc = ngx_http_lua_socket_tag_init(&u->tag_ctx);
+
+        if (rc != NGX_OK) {
+            return luaL_error(L, "no memory");
+        }
     }
 
     cln = ngx_http_lua_cleanup_add(r, 0);
@@ -4510,7 +4518,7 @@ ngx_http_lua_socket_tcp_settagdata(lua_State *L)
 }
 
 
-static void
+static int
 ngx_http_lua_socket_tag_init(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
 {
     ngx_http_lua_socket_tag_ctx_t   *tag_ctx;
@@ -4523,7 +4531,7 @@ ngx_http_lua_socket_tag_init(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
                             ngx_cycle->log);
 
         if (tag_ctx == NULL) {
-            return luaL_error(L, "no memory");
+            return NGX_ERROR;
         }
 
         ngx_rbtree_init(&(tag_ctx->rbtree), &(tag_ctx->sentinel),
@@ -4532,6 +4540,8 @@ ngx_http_lua_socket_tag_init(ngx_http_lua_socket_tag_ctx_t **pp_tag_ctx)
         *pp_tag_ctx = tag_ctx;
 
     }
+
+    return NGX_OK;
 }
 
 
