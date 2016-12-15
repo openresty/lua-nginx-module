@@ -1536,7 +1536,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
 
-        if (n == 3) {
+        if (n == 4) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
