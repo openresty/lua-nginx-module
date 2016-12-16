@@ -3122,7 +3122,6 @@ Nginx API for Lua
 * [ngx.re.gmatch](#ngxregmatch)
 * [ngx.re.sub](#ngxresub)
 * [ngx.re.gsub](#ngxregsub)
-* [ngx.re.opt](#ngxreopt)
 * [ngx.shared.DICT](#ngxshareddict)
 * [ngx.shared.DICT.get](#ngxshareddictget)
 * [ngx.shared.DICT.get_stale](#ngxshareddictget_stale)
@@ -6113,40 +6112,6 @@ Here is some examples:
 This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
 
 This feature was first introduced in the `v0.2.1rc15` release.
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.re.opt
-----------
-**syntax:** *ngx.re.opt(option, value)*
-
-**context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
-
-Allows changing of regex settings. Currently, it can only change the `jit_stack_size` of the PCRE engine. For example,
-
-```nginx
-
- init_by_lua_block { ngx.re.opt("jit_stack_size", 128 * 1024) }
-
- server {
-     location /re {
-         content_by_lua_block {
-             -- full regex and string are taken from https://github.com/JuliaLang/julia/issues/8278
-             local very_long_string = [[71.163.72.113 - - [30/Jul/2014:16:40:55 -0700] ...]]
-             local very_complicated_regex = [[([\d\.]+) ([\w.-]+) ([\w.-]+) (\[.+\]) ...]]
-             local from, to, err = ngx.re.find(very_long_string, very_complicated_regex, "jo")
-
-             -- with the regular jit_stack_size, we would get the error 'pcre_exec() failed: -27'
-             -- instead, we get a match
-             ngx.print(from .. "-" .. to) -- prints '1-1563'
-         }
-     }
- }
-```
-
-This method requires the PCRE library enabled in Nginx.  ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
-
-This feature was first introduced in the `XXX` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

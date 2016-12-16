@@ -363,7 +363,7 @@ n = 6
 --- request
 GET /test
 --- response_body
-n = 6
+n = 5
 --- no_error_log
 [error]
 

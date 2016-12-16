@@ -1972,54 +1972,12 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
 #endif /* LUA_HAVE_PCRE_JIT */
 
 
-static int
-ngx_http_lua_ngx_re_opt(lua_State *L)
-{
-    const char   *option;
-    size_t        option_len;
-    int           nargs;
-    int           value;
-    int           rc;
-
-    nargs = lua_gettop(L);
-    if (nargs != 2) {
-        return luaL_error(L, "expecting two arguments, but got %d", nargs);
-    }
-
-    option = luaL_checklstring(L, 1, &option_len);
-    value = luaL_checkint(L, 2);
-
-#if LUA_HAVE_PCRE_JIT
-
-    if (ngx_strncmp(option, "jit_stack_size", option_len) == 0) {
-        rc = ngx_http_lua_ffi_set_jit_stack_size(value);
-
-        if (rc == NGX_DECLINED) {
-            return luaL_error(L, "Changing jit stack size is not allowed when "
-                              "some regexs have already been compiled and "
-                              "cached");
-
-        }
-
-        if (rc == NGX_ERROR) {
-            return luaL_error(L, "PCRE jit stack allocation failed");
-        }
-
-        return 0;
-    }
-
-#endif /* LUA_HAVE_PCRE_JIT */
-
-    return luaL_error(L, "unrecognized option name");
-}
-
-
 void
 ngx_http_lua_inject_regex_api(lua_State *L)
 {
     /* ngx.re */
 
-    lua_createtable(L, 0, 6 /* nrec */);    /* .re */
+    lua_createtable(L, 0, 5 /* nrec */);    /* .re */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_re_find);
     lua_setfield(L, -2, "find");
@@ -2035,9 +1993,6 @@ ngx_http_lua_inject_regex_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_re_gsub);
     lua_setfield(L, -2, "gsub");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_re_opt);
-    lua_setfield(L, -2, "opt");
 
     lua_setfield(L, -2, "re");
 }
