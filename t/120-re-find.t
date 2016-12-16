@@ -69,7 +69,7 @@ matched: 1234
 --- response_body
 from: 1
 to: 0
-matched:
+matched: 
 --- no_error_log
 [error]
 
@@ -1021,6 +1021,6 @@ qr/Changing jit stack size is not allowed when some regexs have already been com
 --- request
     GET /re
 --- response_body
-content_by_lua(nginx.conf:43):2: unrecognized option name
+unrecognized option name
 --- no_error_log
 [error]
