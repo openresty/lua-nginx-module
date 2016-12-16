@@ -987,11 +987,12 @@ to: 1563
 --- config
     location /re {
         content_by_lua_block {
+            local status, err = pcall(ngx.re.opt, "jit_stack_size", 128 * 1024)
+            if err then ngx.log(ngx.INFO, err) end
             local s = "hello, 1234"
             local from, to = ngx.re.find(s, "(hello world)|([0-9])", "jo")
             ngx.say("from: ", from)
             ngx.say("to: ", to)
-            ngx.re.opt("jit_stack_size", 128 * 1024)
         }
     }
 --- request
@@ -1001,7 +1002,7 @@ from: 8
 to: 8
 
 --- grep_error_log eval
-Changing jit stack size is not allowed when some regexs have already been compiled and cached
+qr/Changing jit stack size is not allowed when some regexs have already been compiled and cached/
 
 --- grep_error_log_out eval
 ["", "Changing jit stack size is not allowed when some regexs have already been compiled and cached\n"]
@@ -1013,7 +1014,7 @@ Changing jit stack size is not allowed when some regexs have already been compil
 --- config
     location /re {
         content_by_lua_block {
-            local status, err = pcall(function() ngx.re.opt("foo", 123) end)
+            local status, err = pcall(ngx.re.opt, "foo", 123)
             ngx.say(err)
         }
     }
