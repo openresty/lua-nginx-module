@@ -104,7 +104,7 @@ script:
   - cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
-  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -O ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
+  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -P ../download-cache https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
   - patch -p1 < ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch
   - ./config shared --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
