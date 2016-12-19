@@ -1935,10 +1935,6 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
 
-    if (lmcf->regex_cache_entries > 0) {
-        return NGX_DECLINED;
-    }
-
     if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
         size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
     }
