@@ -236,6 +236,17 @@ union ngx_http_lua_srv_conf_u {
 
 
 typedef struct {
+    ngx_int_t                is_handler_inline;
+    u_char                  *rewrite_chunkname;
+    ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
+                                                inline script/script
+                                                file path */
+
+    u_char                  *rewrite_src_key; /* cached key for rewrite_src */
+} ngx_http_lua_rewrite_sets_t;
+
+
+typedef struct {
 #if (NGX_HTTP_SSL)
     ngx_ssl_t              *ssl;  /* shared by SSL cosockets */
     ngx_uint_t              ssl_protocols;
@@ -261,12 +272,8 @@ typedef struct {
 
     ngx_http_output_body_filter_pt         body_filter_handler;
 
-    u_char                  *rewrite_chunkname;
-    ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
-                                                inline script/script
+    ngx_array_t             *rewrite_sets;  /*   rewrite sets, inline script/script
                                                 file path */
-
-    u_char                  *rewrite_src_key; /* cached key for rewrite_src */
 
     u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua

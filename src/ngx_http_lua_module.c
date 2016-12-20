@@ -241,7 +241,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      (void *) ngx_http_lua_rewrite_handler_inline },
+      (void *) ngx_http_lua_rewrite_handler_sets },
 
     /* rewrite_by_lua_block { <inline script> } */
     { ngx_string("rewrite_by_lua_block"),
@@ -250,7 +250,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua_block,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      (void *) ngx_http_lua_rewrite_handler_inline },
+      (void *) ngx_http_lua_rewrite_handler_sets },
 
     /* access_by_lua "<inline script>" */
     { ngx_string("access_by_lua"),
@@ -1095,11 +1095,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
 
-    if (conf->rewrite_src.value.len == 0) {
-        conf->rewrite_src = prev->rewrite_src;
+    if (conf->rewrite_sets == NULL) {
+        conf->rewrite_sets = prev->rewrite_sets;
         conf->rewrite_handler = prev->rewrite_handler;
-        conf->rewrite_src_key = prev->rewrite_src_key;
-        conf->rewrite_chunkname = prev->rewrite_chunkname;
     }
 
     if (conf->access_src.value.len == 0) {

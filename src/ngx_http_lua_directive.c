@@ -450,6 +450,9 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
+    ngx_array_t                 *p_sets;    /*   rewrite sets, inline script/script
+                                                file path */
+    ngx_http_lua_rewrite_sets_t *rewrite_info;
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -464,8 +467,19 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (llcf->rewrite_handler) {
-        return "is duplicate";
+    if (llcf->rewrite_sets == NULL) {
+        p_sets = ngx_array_create(cf->pool, 4, sizeof(ngx_http_lua_rewrite_sets_t)); 
+
+        if (p_sets == NULL) {
+            return "not enough memory";
+        }
+
+        llcf->rewrite_sets = p_sets;
+    }
+
+    rewrite_info = ngx_array_push(llcf->rewrite_sets);
+    if (rewrite_info == NULL) {
+        return "not enough memory";
     }
 
     value = cf->args->elts;
@@ -478,25 +492,26 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (cmd->post == ngx_http_lua_rewrite_handler_inline) {
+    if (cmd->post == ngx_http_lua_rewrite_handler_sets) {
         chunkname = ngx_http_lua_gen_chunk_name(cf, "rewrite_by_lua",
                                                 sizeof("rewrite_by_lua") - 1);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        llcf->rewrite_chunkname = chunkname;
+        rewrite_info->is_handler_inline = 1;
+        rewrite_info->rewrite_chunkname = chunkname;
 
         /* Don't eval nginx variables for inline lua code */
 
-        llcf->rewrite_src.value = value[1];
+        rewrite_info->rewrite_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        llcf->rewrite_src_key = p;
+        rewrite_info->rewrite_src_key = p;
 
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -506,20 +521,22 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
         ccv.cf = cf;
         ccv.value = &value[1];
-        ccv.complex_value = &llcf->rewrite_src;
+        ccv.complex_value = &rewrite_info->rewrite_src;
+        rewrite_info->is_handler_inline = 0;
 
         if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
 
-        if (llcf->rewrite_src.lengths == NULL) {
+        if (rewrite_info->rewrite_src.lengths == NULL) {
             /* no variable found */
             p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
             if (p == NULL) {
                 return NGX_CONF_ERROR;
             }
 
-            llcf->rewrite_src_key = p;
+            rewrite_info->rewrite_src_key = p;
+            rewrite_info->is_handler_inline = 0;
 
             p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
             p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -527,7 +544,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    llcf->rewrite_handler = (ngx_http_handler_pt) cmd->post;
+    llcf->rewrite_handler = (ngx_http_handler_pt) ngx_http_lua_rewrite_handler_sets;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 

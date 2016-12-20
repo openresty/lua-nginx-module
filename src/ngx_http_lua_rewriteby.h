@@ -13,8 +13,11 @@
 
 
 ngx_int_t ngx_http_lua_rewrite_handler(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r);
+ngx_int_t ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
+    ngx_http_lua_rewrite_sets_t *rewrite_info);
+ngx_int_t ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
+    ngx_http_lua_rewrite_sets_t *rewrite_info);
+ngx_int_t ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r);
 
 
 #endif /* _NGX_HTTP_LUA_REWRITEBY_H_INCLUDED_ */
