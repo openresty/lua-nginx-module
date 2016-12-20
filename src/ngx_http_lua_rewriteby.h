@@ -14,9 +14,9 @@
 
 ngx_int_t ngx_http_lua_rewrite_handler(ngx_http_request_t *r);
 ngx_int_t ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_rewrites_t *rewrite_info);
+    ngx_http_lua_rewrites_t *rewrite);
 ngx_int_t ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_rewrites_t *rewrite_info);
+    ngx_http_lua_rewrites_t *rewrite);
 ngx_int_t ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r);
 
 
