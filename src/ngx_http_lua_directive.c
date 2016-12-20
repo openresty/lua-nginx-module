@@ -547,8 +547,8 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
-    lmcf->requires_rewrite += 1;
-    lmcf->requires_capture_filter += 1;
+    lmcf->requires_rewrite = 1;
+    lmcf->requires_capture_filter = 1;
 
     return NGX_CONF_OK;
 }
