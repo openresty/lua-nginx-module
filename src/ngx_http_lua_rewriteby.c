@@ -166,7 +166,6 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 {
-    lua_State                   *L;
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_array_t                 *p_sets;    /*   rewrite sets, inline script/script
@@ -179,7 +178,6 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
     rc = NGX_DECLINED;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     p_sets = llcf->rewrite_sets;
 
@@ -210,11 +208,9 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 {
     lua_State                   *L;
     ngx_int_t                    rc;
-    ngx_http_lua_loc_conf_t     *llcf;
 
     dd("rewrite by lua inline");
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
