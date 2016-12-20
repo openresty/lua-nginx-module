@@ -1095,8 +1095,8 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
 
-    if (conf->rewrite_sets == NULL) {
-        conf->rewrite_sets = prev->rewrite_sets;
+    if (conf->rewrites == NULL) {
+        conf->rewrites = prev->rewrites;
         conf->rewrite_handler = prev->rewrite_handler;
     }
 

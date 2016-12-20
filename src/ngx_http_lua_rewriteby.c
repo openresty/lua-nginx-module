@@ -171,7 +171,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
     ngx_array_t                 *p_sets;    /*   rewrite sets, inline script/script
                                                 file path */
     ngx_uint_t                   i;
-    ngx_http_lua_rewrite_sets_t *rewrite_info;
+    ngx_http_lua_rewrites_t *rewrite_info;
 
     dd("rewrite by lua handler sets");
 
@@ -179,12 +179,12 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    p_sets = llcf->rewrite_sets;
+    p_sets = llcf->rewrites;
 
     for (i = 0; i < p_sets->nelts; ++i)
     {
-        rewrite_info = (ngx_http_lua_rewrite_sets_t *)((char *)p_sets->elts
-                         + sizeof(ngx_http_lua_rewrite_sets_t) * i);
+        rewrite_info = (ngx_http_lua_rewrites_t *)((char *)p_sets->elts
+                         + sizeof(ngx_http_lua_rewrites_t) * i);
 
         if (rewrite_info->is_handler_inline) {
             rc = ngx_http_lua_rewrite_handler_inline(r, rewrite_info);
@@ -204,7 +204,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_rewrite_sets_t *rewrite_info)
+    ngx_http_lua_rewrites_t *rewrite_info)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
@@ -230,7 +230,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r, 
-    ngx_http_lua_rewrite_sets_t *rewrite_info)
+    ngx_http_lua_rewrites_t *rewrite_info)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
