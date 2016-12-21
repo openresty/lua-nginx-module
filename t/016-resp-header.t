@@ -1475,8 +1475,6 @@ image/png
             ngx.say(ngx.header["content-type"])
             ngx.say(ngx.header["content-type"])
         }
-        header_filter_by_lua_block {
-        }
     }
 --- request
 GET /set/hello.png
