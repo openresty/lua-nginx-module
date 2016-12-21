@@ -1441,3 +1441,49 @@ Content-Type: ; blah
 test
 --- no_error_log
 [error]
+
+
+
+=== TEST 69: return the matched content-type instead of default_type
+--- http_config
+types {
+    image/png png;
+}
+--- config
+location /set/ {
+     default_type text/html;
+     content_by_lua_block {
+       ngx.say(ngx.header["content-type"])
+   }
+}
+--- request
+GET /set/hello.png
+--- response_headers
+Content-Type: image/png
+--- response_body
+image/png
+--- no_error_log
+[error]
+
+
+
+=== TEST 70:always return the matched content-type
+--- config
+    location /set/ {
+        default_type "image/png";
+        content_by_lua_block {
+            ngx.say(ngx.header["content-type"])
+            ngx.say(ngx.header["content-type"])
+        }
+        header_filter_by_lua_block {
+        }
+    }
+--- request
+GET /set/hello.png
+--- response_headers
+Content-Type: image/png
+--- response_body
+image/png
+image/png
+--- no_error_log
+[error]
