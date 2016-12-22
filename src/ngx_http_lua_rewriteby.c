@@ -126,6 +126,13 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
                 return NGX_HTTP_OK;
             }
+            else {
+                rc = ngx_http_lua_rewrite_handler_sets(r);
+
+                if (rc == NGX_OK) {
+                    rc = NGX_DECLINED;
+                }
+            }
         }
 
         return rc;
@@ -168,29 +175,40 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
-    ngx_array_t                 *p_sets;    /*   rewrite sets, inline
-                                                script/script file path */
-    ngx_uint_t                   i;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_uint_t                   i, n;
     ngx_http_lua_rewrites_t     *rewrite;
 
     dd("rewrite by lua handler sets");
 
     rc = NGX_DECLINED;
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        ctx = ngx_http_lua_create_ctx(r);
+        if (ctx == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    p_sets = llcf->rewrites;
+    rewrite = llcf->rewrites->elts;
+    n = llcf->rewrites->nelts;
+    dd("rewrite_index [%ld]", ctx->rewrite_index);
 
-    for (i = 0; i < p_sets->nelts; ++i)
+    for (i = ctx->rewrite_index; i < n; ++i)
     {
-        rewrite = (ngx_http_lua_rewrites_t *)((char *)p_sets->elts
-                         + sizeof(ngx_http_lua_rewrites_t) * i);
+        ctx->rewrite_index = i + 1;
 
-        if (rewrite->is_handler_inline) {
-            rc = ngx_http_lua_rewrite_handler_inline(r, rewrite);
+        if (rewrite[i].is_handler_inline) {
+            rc = ngx_http_lua_rewrite_handler_inline(r, &rewrite[i]);
 
         } else {
-            rc = ngx_http_lua_rewrite_handler_file(r, rewrite);
+            rc = ngx_http_lua_rewrite_handler_file(r, &rewrite[i]);
         }
 
         if (rc != NGX_DECLINED) {

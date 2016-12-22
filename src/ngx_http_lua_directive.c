@@ -471,7 +471,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                                       sizeof(ngx_http_lua_rewrites_t));
 
         if (p_rewrites == NULL) {
-            return "not enough memory";
+            return NGX_CONF_ERROR;
         }
 
         llcf->rewrites = p_rewrites;

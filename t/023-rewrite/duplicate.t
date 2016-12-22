@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 5);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #no_diff();
 #no_long_string();
@@ -22,7 +22,7 @@ __DATA__
         rewrite_by_lua_block { ngx.log(ngx.ERR, "first rewrite") }
         rewrite_by_lua_block { ngx.log(ngx.ERR, "second rewrite") }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
-        content_by_lua return;
+        content_by_lua_block { return }
     }
 --- request
 GET /lua
@@ -39,7 +39,7 @@ second rewrite
     location /lua {
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
         rewrite_by_lua_block { ngx.print("Hello, again Lua!\n") }
-        content_by_lua return;
+        content_by_lua_block { return }
     }
 --- request
 GET /lua
@@ -75,7 +75,7 @@ rewrite_by_lua_file
     location /lua {
         rewrite_by_lua_block { ngx.exit(503) }
         rewrite_by_lua_block { ngx.print("Hello, again Lua!\n") }
-        content_by_lua return;
+        content_by_lua_block { return }
     }
 --- request
 GET /lua
@@ -91,7 +91,7 @@ GET /lua
           ngx.exit(0)
         }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
-        content_by_lua return;
+        content_by_lua_block { return }
     }
 --- request
 GET /lua
@@ -99,3 +99,26 @@ GET /lua
 Hello, Lua!
 --- error_log
 rewrite_by_lua_block first
+
+
+
+=== TEST 6: duplicate rewrite directives
+--- config
+    location /lua {
+        rewrite_by_lua_block {
+            ngx.log(ngx.ERR, "first rewrite before sleep")
+            ngx.sleep(0.001)
+            ngx.log(ngx.ERR, "first rewrite after sleep")
+        }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "second rewrite") }
+        rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
+        content_by_lua_block { ngx.print("Hello, again Lua!\n") }
+    }
+--- request
+GET /lua
+--- response_body
+Hello, Lua!
+--- error_log
+first rewrite before sleep
+first rewrite after sleep
+second rewrite
