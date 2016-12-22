@@ -477,6 +477,10 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         llcf->rewrites = p_rewrites;
     }
 
+    if (p_rewrites->nelts >= 10) {      /* max rewrite directives limit */
+        return "max rewrite sets is 10";
+    }
+
     rewrite = ngx_array_push(p_rewrites);
     if (rewrite == NULL) {
         return "not enough memory";
