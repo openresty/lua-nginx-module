@@ -477,8 +477,11 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         llcf->rewrites = p_rewrites;
     }
 
-    if (p_rewrites->nelts >= 10) {      /* max rewrite directives limit */
-        return "max rewrite directives limit to 10";
+    if (p_rewrites->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                           "max rewrite directives limit to %d",
+                           NGX_HTTP_LUA_MAX_PHASE_COUNT);
+        return NGX_CONF_ERROR;
     }
 
     phase_ctx = ngx_array_push(p_rewrites);

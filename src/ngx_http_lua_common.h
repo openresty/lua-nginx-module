@@ -96,6 +96,10 @@ typedef struct {
 #define NGX_HTTP_LUA_MAX_ARGS 100
 #endif
 
+#ifndef NGX_HTTP_LUA_MAX_PHASE_COUNT
+#define NGX_HTTP_LUA_MAX_PHASE_COUNT 10
+#endif
+
 
 #ifndef NGX_HTTP_LUA_MAX_HEADERS
 #define NGX_HTTP_LUA_MAX_HEADERS 100

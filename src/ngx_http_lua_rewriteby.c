@@ -177,7 +177,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_uint_t                   i;
-    ngx_http_lua_phase_ctx_t     *phase_ctx;
+    ngx_http_lua_phase_ctx_t    *phase_ctx;
 
     dd("rewrite by lua handler sets");
 
