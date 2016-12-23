@@ -1037,8 +1037,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     /* set by ngx_pcalloc:
      *      conf->access_src  = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->access_src_key = NULL
-     *      conf->rewrite_src = {{ 0, NULL }, NULL, NULL, NULL};
-     *      conf->rewrite_src_key = NULL
+     *      conf->source = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->source_key = NULL
      *      conf->rewrite_handler = NULL;
      *
      *      conf->content_src = {{ 0, NULL }, NULL, NULL, NULL};
