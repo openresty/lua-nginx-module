@@ -237,13 +237,12 @@ union ngx_http_lua_srv_conf_u {
 
 typedef struct {
     ngx_int_t                is_handler_inline;
-    u_char                  *rewrite_chunkname;
-    ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
-                                                inline script/script
-                                                file path */
+    u_char                  *chunkname;
+    ngx_http_complex_value_t source;    /*  inline script/script
+                                            file path */
 
-    u_char                  *rewrite_src_key; /* cached key for rewrite_src */
-} ngx_http_lua_rewrites_t;
+    u_char                  *source_key; /* cached key for source */
+} ngx_http_lua_phase_ctx_t;
 
 
 typedef struct {
@@ -273,7 +272,7 @@ typedef struct {
     ngx_http_output_body_filter_pt         body_filter_handler;
 
     ngx_array_t             *rewrites;  /*   rewrite sets, inline script/script
-                                                file path */
+                                            file path */
 
     u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua
@@ -533,6 +532,8 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         acquired_raw_req_socket:1;  /* whether a raw req socket
                                                     is acquired */
     unsigned         seen_body_data:1;
+
+    ngx_uint_t       rewrite_index;
 } ngx_http_lua_ctx_t;
 
 

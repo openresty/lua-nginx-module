@@ -126,6 +126,13 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
                 return NGX_HTTP_OK;
             }
+            else {
+                rc = ngx_http_lua_rewrite_handler_sets(r);
+
+                if (rc == NGX_OK) {
+                    rc = NGX_DECLINED;
+                }
+            }
         }
 
         return rc;
@@ -168,29 +175,40 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 {
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
-    ngx_array_t                 *p_sets;    /*   rewrite sets, inline
-                                                script/script file path */
+    ngx_http_lua_ctx_t          *ctx;
     ngx_uint_t                   i;
-    ngx_http_lua_rewrites_t     *rewrite;
+    ngx_http_lua_phase_ctx_t     *phase_ctx;
 
     dd("rewrite by lua handler sets");
 
     rc = NGX_DECLINED;
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    dd("ctx = %p", ctx);
+
+    if (ctx == NULL) {
+        ctx = ngx_http_lua_create_ctx(r);
+        if (ctx == NULL) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    dd("entered rewrite by lua handler sets[%ld]", ctx->rewrite_index);
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    p_sets = llcf->rewrites;
+    phase_ctx = llcf->rewrites->elts;
 
-    for (i = 0; i < p_sets->nelts; ++i)
+    for (i = ctx->rewrite_index; i < llcf->rewrites->nelts; ++i)
     {
-        rewrite = (ngx_http_lua_rewrites_t *)((char *)p_sets->elts
-                         + sizeof(ngx_http_lua_rewrites_t) * i);
+        ctx->rewrite_index = i + 1;
 
-        if (rewrite->is_handler_inline) {
-            rc = ngx_http_lua_rewrite_handler_inline(r, rewrite);
+        if (phase_ctx[i].is_handler_inline) {
+            rc = ngx_http_lua_rewrite_handler_inline(r, &phase_ctx[i]);
 
         } else {
-            rc = ngx_http_lua_rewrite_handler_file(r, rewrite);
+            rc = ngx_http_lua_rewrite_handler_file(r, &phase_ctx[i]);
         }
 
         if (rc != NGX_DECLINED) {
@@ -204,7 +222,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_rewrites_t *rewrite)
+    ngx_http_lua_phase_ctx_t *phase_ctx)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
@@ -215,11 +233,11 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       rewrite->rewrite_src.value.data,
-                                       rewrite->rewrite_src.value.len,
-                                       rewrite->rewrite_src_key,
+                                       phase_ctx->source.value.data,
+                                       phase_ctx->source.value.len,
+                                       phase_ctx->source_key,
                                        (const char *)
-                                       rewrite->rewrite_chunkname);
+                                       phase_ctx->chunkname);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -230,14 +248,14 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_rewrites_t *rewrite)
+    ngx_http_lua_phase_ctx_t *phase_ctx)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
     u_char                          *script_path;
     ngx_str_t                        eval_src;
 
-    if (ngx_http_complex_value(r, &rewrite->rewrite_src, &eval_src) != NGX_OK) {
+    if (ngx_http_complex_value(r, &phase_ctx->source, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -252,7 +270,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     rewrite->rewrite_src_key);
+                                     phase_ctx->source_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
