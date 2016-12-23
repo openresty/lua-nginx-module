@@ -451,7 +451,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
     ngx_array_t                 *p_rewrites = llcf->rewrites;
-    ngx_http_lua_rewrites_t     *rewrite;
+    ngx_http_lua_phase_ctx_t    *rewrite;
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -468,7 +468,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (p_rewrites == NULL) {
         p_rewrites = ngx_array_create(cf->pool, 1,
-                                      sizeof(ngx_http_lua_rewrites_t));
+                                      sizeof(ngx_http_lua_phase_ctx_t));
 
         if (p_rewrites == NULL) {
             return NGX_CONF_ERROR;
