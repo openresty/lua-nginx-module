@@ -177,7 +177,7 @@ second rewrite
 
 
 
-=== TEST 9: rewrite directives at different context (server + location)
+=== TEST 9: rewrite directives at different scopes (server + location)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -202,7 +202,7 @@ rewrite 2 at server
 
 
 
-=== TEST 10: rewrite directives at different context (server + location)
+=== TEST 10: rewrite directives at different scopes (server + location)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -227,7 +227,7 @@ rewrite 1 at location
 
 
 
-=== TEST 11: rewrite directives at different context (http + location)
+=== TEST 11: rewrite directives at different scopes (http + location)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -252,7 +252,7 @@ rewrite 2 at http
 
 
 
-=== TEST 12: rewrite directives at different context (http + server)
+=== TEST 12: rewrite directives at different scopes (http + server)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -276,7 +276,7 @@ rewrite 2 at server
 
 
 
-=== TEST 13: rewrite directives at different context (http + server + location)
+=== TEST 13: rewrite directives at different scopes (http + server + location)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
