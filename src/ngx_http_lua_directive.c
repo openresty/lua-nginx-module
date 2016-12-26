@@ -501,7 +501,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (cmd->post == ngx_http_lua_rewrite_handler_sets) {
+    if (cmd->post == ngx_http_lua_rewrite_handler_inline) {
         chunkname = ngx_http_lua_gen_chunk_name(cf, "rewrite_by_lua",
                                                 sizeof("rewrite_by_lua") - 1);
         if (chunkname == NULL) {
