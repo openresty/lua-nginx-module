@@ -241,7 +241,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      (void *) ngx_http_lua_rewrite_handler_sets },
+      (void *) ngx_http_lua_rewrite_handler_inline },
 
     /* rewrite_by_lua_block { <inline script> } */
     { ngx_string("rewrite_by_lua_block"),
@@ -250,7 +250,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       ngx_http_lua_rewrite_by_lua_block,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      (void *) ngx_http_lua_rewrite_handler_sets },
+      (void *) ngx_http_lua_rewrite_handler_inline },
 
     /* access_by_lua "<inline script>" */
     { ngx_string("access_by_lua"),
