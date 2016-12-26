@@ -89,7 +89,7 @@ rewrite_by_lua_file
 GET /t
 --- must_die
 --- error_log
-max rewrite directives limit to 10
+the number of rewrite_by_lua* directives exceeds 10
 
 
 

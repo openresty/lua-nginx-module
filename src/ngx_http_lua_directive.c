@@ -479,14 +479,16 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (p_rewrites->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                           "max rewrite directives limit to %d",
+                           "the number of rewrite_by_lua* directives exceeds %d",
                            NGX_HTTP_LUA_MAX_PHASE_COUNT);
         return NGX_CONF_ERROR;
     }
 
     phase_ctx = ngx_array_push(p_rewrites);
     if (phase_ctx == NULL) {
-        return "not enough memory";
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                           "not enough memory");
+        return NGX_CONF_ERROR;
     }
 
     value = cf->args->elts;
