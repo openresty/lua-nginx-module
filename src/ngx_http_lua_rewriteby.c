@@ -125,8 +125,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
                 }
 
                 return NGX_HTTP_OK;
-            }
-            else {
+            } else {
                 rc = ngx_http_lua_rewrite_handler_sets(r);
 
                 if (rc == NGX_OK) {
@@ -178,6 +177,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
     ngx_http_lua_ctx_t              *ctx;
     ngx_uint_t                       i;
     ngx_http_lua_phase_handler_t    *phase_handler;
+    ngx_array_t                     *rewrite_handlers;
 
     dd("rewrite by lua handler sets");
 
@@ -198,10 +198,10 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    phase_handler = llcf->rewrites->elts;
+    rewrite_handlers = llcf->rewrite_handlers;
+    phase_handler = rewrite_handlers->elts;
 
-    for (i = ctx->current_rewrite_index; i < llcf->rewrites->nelts; ++i)
-    {
+    for (i = ctx->current_rewrite_index; i < rewrite_handlers->nelts; ++i) {
         ctx->current_rewrite_index = i + 1;
 
         if (phase_handler[i].is_handler_inline) {

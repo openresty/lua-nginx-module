@@ -450,7 +450,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                       *value;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf = conf;
-    ngx_array_t                     *rewrite_handlers = llcf->rewrites;
+    ngx_array_t                     *rewrite_handlers = llcf->rewrite_handlers;
     ngx_http_lua_phase_handler_t    *phase_handler;
 
     ngx_http_compile_complex_value_t         ccv;
@@ -474,7 +474,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        llcf->rewrites = rewrite_handlers;
+        llcf->rewrite_handlers = rewrite_handlers;
     }
 
     if (rewrite_handlers->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {

@@ -275,8 +275,8 @@ typedef struct {
 
     ngx_http_output_body_filter_pt         body_filter_handler;
 
-    ngx_array_t             *rewrites;  /*   rewrite sets, inline script/script
-                                            file path */
+    ngx_array_t             *rewrite_handlers;  /*   rewrite sets, inline
+                                                    script/script file path */
 
     u_char                  *access_chunkname;
     ngx_http_complex_value_t access_src;     /*  access_by_lua
