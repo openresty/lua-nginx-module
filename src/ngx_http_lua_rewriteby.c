@@ -204,7 +204,7 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
     for (i = ctx->current_rewrite_index; i < rewrite_handlers->nelts; ++i) {
         ctx->current_rewrite_index = i + 1;
 
-        if (phase_handler[i].is_handler_inline) {
+        if (phase_handler[i].is_inline) {
             rc = ngx_http_lua_rewrite_handler_inline(r, &phase_handler[i]);
 
         } else {

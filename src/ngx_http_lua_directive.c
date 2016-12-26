@@ -486,8 +486,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     phase_handler = ngx_array_push(rewrite_handlers);
     if (phase_handler == NULL) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                           "not enough memory");
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "no memory");
         return NGX_CONF_ERROR;
     }
 
@@ -508,7 +507,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        phase_handler->is_handler_inline = 1;
+        phase_handler->is_inline = 1;
         phase_handler->chunkname = chunkname;
 
         /* Don't eval nginx variables for inline lua code */
@@ -531,7 +530,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ccv.cf = cf;
         ccv.value = &value[1];
         ccv.complex_value = &phase_handler->source;
-        phase_handler->is_handler_inline = 0;
+        phase_handler->is_inline = 0;
 
         if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
@@ -545,7 +544,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
 
             phase_handler->source_key = p;
-            phase_handler->is_handler_inline = 0;
+            phase_handler->is_inline = 0;
 
             p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
             p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);

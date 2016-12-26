@@ -240,7 +240,7 @@ union ngx_http_lua_srv_conf_u {
 
 
 typedef struct {
-    ngx_int_t                    is_handler_inline;
+    ngx_int_t                    is_inline;
     u_char                      *chunkname;
     ngx_http_complex_value_t     source;    /*  inline script/script
                                                 file path */
