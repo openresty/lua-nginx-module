@@ -450,7 +450,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                       *value;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf = conf;
-    ngx_array_t                     *p_rewrites = llcf->rewrites;
+    ngx_array_t                     *rewrite_handlers = llcf->rewrites;
     ngx_http_lua_phase_handler_t    *phase_handler;
 
     ngx_http_compile_complex_value_t         ccv;
@@ -466,25 +466,25 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (p_rewrites == NULL) {
-        p_rewrites = ngx_array_create(cf->pool, 1,
+    if (rewrite_handlers == NULL) {
+        rewrite_handlers = ngx_array_create(cf->pool, 1,
                                       sizeof(ngx_http_lua_phase_handler_t));
 
-        if (p_rewrites == NULL) {
+        if (rewrite_handlers == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        llcf->rewrites = p_rewrites;
+        llcf->rewrites = rewrite_handlers;
     }
 
-    if (p_rewrites->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
+    if (rewrite_handlers->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                            "the number of rewrite_by_lua* directives exceeds %d",
                            NGX_HTTP_LUA_MAX_PHASE_COUNT);
         return NGX_CONF_ERROR;
     }
 
-    phase_handler = ngx_array_push(p_rewrites);
+    phase_handler = ngx_array_push(rewrite_handlers);
     if (phase_handler == NULL) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                            "not enough memory");
