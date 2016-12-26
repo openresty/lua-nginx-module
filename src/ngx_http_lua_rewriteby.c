@@ -194,15 +194,15 @@ ngx_http_lua_rewrite_handler_sets(ngx_http_request_t *r)
         }
     }
 
-    dd("entered rewrite by lua handler sets[%ld]", ctx->rewrite_index);
+    dd("entered rewrite by lua handler sets[%ld]", ctx->current_rewrite_index);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     phase_ctx = llcf->rewrites->elts;
 
-    for (i = ctx->rewrite_index; i < llcf->rewrites->nelts; ++i)
+    for (i = ctx->current_rewrite_index; i < llcf->rewrites->nelts; ++i)
     {
-        ctx->rewrite_index = i + 1;
+        ctx->current_rewrite_index = i + 1;
 
         if (phase_ctx[i].is_handler_inline) {
             rc = ngx_http_lua_rewrite_handler_inline(r, &phase_ctx[i]);
