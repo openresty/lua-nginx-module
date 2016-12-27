@@ -127,12 +127,10 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
             } else {
                 rc = ngx_http_lua_access_handler_sets(r);
 
-                if (rc == NGX_OK) {
-                    rc = NGX_DECLINED;
-                }
+                return rc;
             }
 
-            return rc;
+            return NGX_OK;
         }
 
         return NGX_DECLINED;
@@ -213,7 +211,9 @@ ngx_http_lua_access_handler_sets(ngx_http_request_t *r)
             rc = ngx_http_lua_access_handler_file(r, &handler[i]);
         }
 
-        if (rc != NGX_DECLINED) {
+        dd("current handler rc[%d]", rc);
+
+        if (rc != NGX_OK) {
             return rc;
         }
     }
