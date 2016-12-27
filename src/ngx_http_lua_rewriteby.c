@@ -204,7 +204,7 @@ ngx_http_lua_run_rewrite_handlers(ngx_http_request_t *r)
     handlers = llcf->rewrite_handlers;
     ph = handlers->elts;
 
-    for (i = ctx->current_rewrite_index; i < handlers->nelts; ++i) {
+    for (i = ctx->current_rewrite_index; i < handlers->nelts; i++) {
         ctx->current_rewrite_index = i + 1;
 
         if (ph[i].is_inline) {

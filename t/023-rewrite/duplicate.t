@@ -125,10 +125,11 @@ rewrite_by_lua_block first
 
 
 
-=== TEST 7:
+=== TEST 7: multiple yield by ngx.sleep
 --- config
     location /t {
         rewrite_by_lua_block {
+            ngx.sleep(0.001)
             ngx.log(ngx.ERR, "first rewrite before sleep")
             ngx.sleep(0.001)
             ngx.log(ngx.ERR, "first rewrite after sleep")
