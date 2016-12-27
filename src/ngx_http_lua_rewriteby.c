@@ -194,18 +194,18 @@ ngx_http_lua_run_rewrite_handlers(ngx_http_request_t *r)
         }
     }
 
-    /* ctx->current_rewrite_index was initialized to 0 in
+    /* ctx->cur_rewrite_index was initialized to 0 in
      * ngx_http_lua_init_ctx */
 
-    dd("current ctx rewrite index[%ld]", ctx->current_rewrite_index);
+    dd("current ctx rewrite index[%ld]", ctx->cur_rewrite_index);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     handlers = llcf->rewrite_handlers;
     ph = handlers->elts;
 
-    for (i = ctx->current_rewrite_index; i < handlers->nelts; i++) {
-        ctx->current_rewrite_index = i + 1;
+    for (i = ctx->cur_rewrite_index; i < handlers->nelts; i++) {
+        ctx->cur_rewrite_index = i + 1;
 
         if (ph[i].is_inline) {
             rc = ngx_http_lua_rewrite_handler_inline(r, &ph[i]);

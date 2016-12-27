@@ -533,7 +533,8 @@ typedef struct ngx_http_lua_ctx_s {
                                                     is acquired */
     unsigned         seen_body_data:1;
 
-    ngx_uint_t       current_rewrite_index;
+
+    ngx_uint_t       cur_rewrite_index;
     ngx_uint_t       current_access_index;
 } ngx_http_lua_ctx_t;
 
