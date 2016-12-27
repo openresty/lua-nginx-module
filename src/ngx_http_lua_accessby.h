@@ -13,8 +13,11 @@
 
 
 ngx_int_t ngx_http_lua_access_handler(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_access_handler_inline(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_access_handler_file(ngx_http_request_t *r);
+ngx_int_t ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
+    ngx_http_lua_phase_handler_t *handler);
+ngx_int_t ngx_http_lua_access_handler_file(ngx_http_request_t *r,
+    ngx_http_lua_phase_handler_t *handler);
+ngx_int_t ngx_http_lua_access_handler_sets(ngx_http_request_t *r);
 
 
 #endif /* _NGX_HTTP_LUA_ACCESSBY_H_INCLUDED_ */
