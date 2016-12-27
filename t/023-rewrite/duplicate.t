@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 18);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -18,8 +18,8 @@ __DATA__
 === TEST 1: duplicate rewrite directives
 --- config
     location /t {
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "first rewrite") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "second rewrite") }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
         content_by_lua_block { return }
     }
@@ -27,9 +27,11 @@ __DATA__
 GET /t
 --- response_body
 Hello, Lua!
---- error_log
-first rewrite
-second rewrite
+--- grep_error_log eval
+qr/rewrite 1|rewrite 2/
+--- grep_error_log_out
+rewrite 1
+rewrite 2
 
 
 
@@ -50,22 +52,24 @@ Hello, Lua!
 === TEST 3: mix three different styles
 --- config
     location /t {
-        rewrite_by_lua ' ngx.log(ngx.ERR, "rewrite_by_lua") ';
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite_by_lua_block") }
+        rewrite_by_lua ' ngx.log(ngx.ERR, "rewrite by lua") ';
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite by block") }
         rewrite_by_lua_file html/a.lua;
     }
 --- user_files
 >>> a.lua
-ngx.log(ngx.ERR, "rewrite_by_lua_file")
+ngx.log(ngx.ERR, "rewrite by file")
 ngx.print("Hello, Lua!\n")
 --- request
 GET /t
 --- response_body
 Hello, Lua!
---- error_log
-rewrite_by_lua
-rewrite_by_lua_block
-rewrite_by_lua_file
+--- grep_error_log eval
+qr/rewrite by lua|rewrite by block|rewrite by file/
+--- grep_error_log_out
+rewrite by lua
+rewrite by block
+rewrite by file
 
 
 
@@ -120,7 +124,9 @@ GET /t
 GET /t
 --- response_body
 Hello, Lua!
---- error_log
+--- grep_error_log eval
+qr/rewrite_by_lua_block first/
+--- grep_error_log_out
 rewrite_by_lua_block first
 
 
@@ -142,7 +148,9 @@ rewrite_by_lua_block first
 GET /t
 --- response_body
 Hello, Lua!
---- error_log
+--- grep_error_log eval
+qr/first rewrite before sleep|first rewrite after sleep|second rewrite/
+--- grep_error_log_out
 first rewrite before sleep
 first rewrite after sleep
 second rewrite
@@ -156,12 +164,12 @@ second rewrite
     }
     location /t {
         rewrite_by_lua_block {
-            ngx.log(ngx.ERR, "first rewrite before sleep")
+            ngx.log(ngx.ERR, "first rewrite before capture")
 
             local res = ngx.location.capture("/internal")
             ngx.log(ngx.ERR, "status:", res.status, " body:", res.body)
 
-            ngx.log(ngx.ERR, "first rewrite after sleep")
+            ngx.log(ngx.ERR, "first rewrite after capture")
         }
         rewrite_by_lua_block { ngx.log(ngx.ERR, "second rewrite") }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
@@ -170,10 +178,12 @@ second rewrite
 GET /t
 --- response_body
 Hello, Lua!
---- error_log
-first rewrite before sleep
+--- grep_error_log eval
+qr/first rewrite before capture|status:200 body:internal|first rewrite after capture|second rewrite/
+--- grep_error_log_out
+first rewrite before capture
 status:200 body:internal
-first rewrite after sleep
+first rewrite after capture
 second rewrite
 
 
@@ -197,7 +207,9 @@ GET /t
 Hello /t
 --- no_error_log
 rewrite 1 at location
---- error_log
+--- grep_error_log eval
+qr/rewrite 1 at server|rewrite 2 at server/
+--- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
 
@@ -223,7 +235,9 @@ Hello /t2
 --- no_error_log
 rewrite 1 at server
 rewrite 2 at server
---- error_log
+--- grep_error_log eval
+qr/rewrite 1 at location/
+--- grep_error_log_out
 rewrite 1 at location
 
 
@@ -247,7 +261,9 @@ GET /t
 Hello /t
 --- no_error_log
 rewrite 1 at location
---- error_log
+--- grep_error_log eval
+qr/rewrite 1 at http|rewrite 2 at http/
+--- grep_error_log_out
 rewrite 1 at http
 rewrite 2 at http
 
@@ -271,7 +287,9 @@ Hello /t
 --- no_error_log
 rewrite 1 at http
 rewrite 2 at http
---- error_log
+--- grep_error_log eval
+qr/rewrite 1 at server|rewrite 2 at server/
+--- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
 
@@ -294,11 +312,13 @@ rewrite 2 at server
 GET /t
 --- response_body
 Hello /t
---- error_log
-rewrite 1 at location
-rewrite 2 at location
 --- no_error_log
 rewrite 1 at http
 rewrite 2 at http
 rewrite 1 at server
 rewrite 2 at server
+--- grep_error_log eval
+qr/rewrite 1 at location|rewrite 2 at location/
+--- grep_error_log_out
+rewrite 1 at location
+rewrite 2 at location
