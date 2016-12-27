@@ -450,8 +450,8 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                       *value;
     ngx_http_lua_main_conf_t        *lmcf;
     ngx_http_lua_loc_conf_t         *llcf = conf;
-    ngx_array_t                     *rewrite_handlers = llcf->rewrite_handlers;
-    ngx_http_lua_phase_handler_t    *handler;
+    ngx_array_t                     *handlers = llcf->rewrite_handlers;
+    ngx_http_lua_phase_handler_t    *ph;
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -466,27 +466,26 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (rewrite_handlers == NULL) {
-        rewrite_handlers = ngx_array_create(cf->pool, 1,
-                                      sizeof(ngx_http_lua_phase_handler_t));
+    if (handlers == NULL) {
+        handlers = ngx_array_create(cf->pool, 1,
+                                    sizeof(ngx_http_lua_phase_handler_t));
 
-        if (rewrite_handlers == NULL) {
+        if (handlers == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        llcf->rewrite_handlers = rewrite_handlers;
+        llcf->rewrite_handlers = handlers;
     }
 
-    if (rewrite_handlers->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
+    if (handlers->nelts >= NGX_HTTP_LUA_MAX_HANDLER_EACH_PHASE) {
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                            "the number of rewrite_by_lua* directives exceeds %d",
-                           NGX_HTTP_LUA_MAX_PHASE_COUNT);
+                           NGX_HTTP_LUA_MAX_HANDLER_EACH_PHASE);
         return NGX_CONF_ERROR;
     }
 
-    handler = ngx_array_push(rewrite_handlers);
-    if (handler == NULL) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "no memory");
+    ph = ngx_array_push(handlers);
+    if (ph == NULL) {
         return NGX_CONF_ERROR;
     }
 
@@ -507,19 +506,19 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        handler->is_inline = 1;
-        handler->chunkname = chunkname;
+        ph->is_inline = 1;
+        ph->chunkname = chunkname;
 
         /* Don't eval nginx variables for inline lua code */
 
-        handler->source.value = value[1];
+        ph->source.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        handler->source_key = p;
+        ph->source_key = p;
 
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -529,22 +528,22 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
         ccv.cf = cf;
         ccv.value = &value[1];
-        ccv.complex_value = &handler->source;
-        handler->is_inline = 0;
+        ccv.complex_value = &ph->source;
+        ph->is_inline = 0;
 
         if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
 
-        if (handler->source.lengths == NULL) {
+        if (ph->source.lengths == NULL) {
             /* no variable found */
             p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
             if (p == NULL) {
                 return NGX_CONF_ERROR;
             }
 
-            handler->source_key = p;
-            handler->is_inline = 0;
+            ph->source_key = p;
+            ph->is_inline = 0;
 
             p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
             p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -553,7 +552,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     llcf->rewrite_handler = (ngx_http_handler_pt)
-                              ngx_http_lua_rewrite_handler_sets;
+                              ngx_http_lua_run_rewrite_handlers;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
@@ -586,12 +585,10 @@ ngx_http_lua_access_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
 char *
 ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char                          *p, *chunkname;
-    ngx_str_t                       *value;
-    ngx_http_lua_main_conf_t        *lmcf;
-    ngx_http_lua_loc_conf_t         *llcf = conf;
-    ngx_array_t                     *access_handlers = llcf->access_handlers;
-    ngx_http_lua_phase_handler_t    *handler;
+    u_char                      *p, *chunkname;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_loc_conf_t     *llcf = conf;
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -602,28 +599,8 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (access_handlers == NULL) {
-        access_handlers = ngx_array_create(cf->pool, 1,
-                                      sizeof(ngx_http_lua_phase_handler_t));
-
-        if (access_handlers == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        llcf->access_handlers = access_handlers;
-    }
-
-    if (access_handlers->nelts >= NGX_HTTP_LUA_MAX_PHASE_COUNT) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                           "the number of access_by_lua* directives exceeds %d",
-                           NGX_HTTP_LUA_MAX_PHASE_COUNT);
-        return NGX_CONF_ERROR;
-    }
-
-    handler = ngx_array_push(access_handlers);
-    if (handler == NULL) {
-        ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "no memory");
-        return NGX_CONF_ERROR;
+    if (llcf->access_handler) {
+        return "is duplicate";
     }
 
     value = cf->args->elts;
@@ -643,19 +620,18 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        handler->is_inline = 1;
-        handler->chunkname = chunkname;
+        llcf->access_chunkname = chunkname;
 
         /* Don't eval nginx variables for inline lua code */
 
-        handler->source.value = value[1];
+        llcf->access_src.value = value[1];
 
         p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        handler->source_key = p;
+        llcf->access_src_key = p;
 
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -665,22 +641,20 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
         ccv.cf = cf;
         ccv.value = &value[1];
-        ccv.complex_value = &handler->source;
-        handler->is_inline = 0;
+        ccv.complex_value = &llcf->access_src;
 
         if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
 
-        if (handler->source.lengths == NULL) {
+        if (llcf->access_src.lengths == NULL) {
             /* no variable found */
             p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
             if (p == NULL) {
                 return NGX_CONF_ERROR;
             }
 
-            handler->source_key = p;
-            handler->is_inline = 0;
+            llcf->access_src_key = p;
 
             p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
             p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
@@ -688,8 +662,7 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    llcf->access_handler = (ngx_http_handler_pt)
-                            ngx_http_lua_access_handler_sets;
+    llcf->access_handler = (ngx_http_handler_pt) cmd->post;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
