@@ -322,3 +322,29 @@ qr/rewrite 1 at location|rewrite 2 at location/
 --- grep_error_log_out
 rewrite 1 at location
 rewrite 2 at location
+
+
+
+=== TEST 14: yield by ngx.req.get_body_data()
+--- config
+    location /t {
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block {
+            ngx.req.read_body()
+
+            local data = ngx.req.get_body_data()
+            ngx.say("request body:", data)
+
+            ngx.log(ngx.ERR, "rewrite 2")
+        }
+    }
+--- request
+POST /t
+hi
+--- response_body
+request body:hi
+--- grep_error_log eval
+qr/rewrite 1|rewrite 2/
+--- grep_error_log_out
+rewrite 1
+rewrite 2
