@@ -236,9 +236,9 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       h->source.value.data,
-                                       h->source.value.len,
-                                       h->source_key,
+                                       h->src.value.data,
+                                       h->src.value.len,
+                                       h->src_key,
                                        (const char *)
                                        h->chunkname);
     if (rc != NGX_OK) {
@@ -258,7 +258,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
     u_char                          *script_path;
     ngx_str_t                        eval_src;
 
-    if (ngx_http_complex_value(r, &h->source, &eval_src) != NGX_OK) {
+    if (ngx_http_complex_value(r, &h->src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -273,7 +273,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     h->source_key);
+                                     h->src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
