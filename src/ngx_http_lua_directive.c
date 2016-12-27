@@ -468,7 +468,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (handlers == NULL) {
         handlers = ngx_array_create(cf->pool, 1,
-                                      sizeof(ngx_http_lua_phase_handler_t));
+                                    sizeof(ngx_http_lua_phase_handler_t));
 
         if (handlers == NULL) {
             return NGX_CONF_ERROR;
@@ -552,7 +552,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     llcf->rewrite_handler = (ngx_http_handler_pt)
-                              ngx_http_lua_rewrite_handler_sets;
+                              ngx_http_lua_run_rewrite_handlers;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
