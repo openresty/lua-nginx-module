@@ -489,6 +489,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
                               "failed to set default content type: %d",
                               (int) rc);
         }
+        
         ctx->headers_set = 1;
     }
 

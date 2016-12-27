@@ -1467,7 +1467,7 @@ image/png
 
 
 
-=== TEST 70:always return the matched content-type
+=== TEST 70: always return the matched content-type
 --- config
     location /set/ {
         default_type "image/png";
