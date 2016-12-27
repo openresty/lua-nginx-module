@@ -124,17 +124,15 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
                 return NGX_HTTP_OK;
 
-            } else {
-                rc = ngx_http_lua_access_handler_sets(r);
-
-                if (rc == NGX_DECLINED) {
-                    rc = NGX_OK;
-                }
-
-                return rc;
             }
 
-            return NGX_OK;
+            rc = ngx_http_lua_run_access_handlers(r);
+
+            if (rc == NGX_DECLINED) {
+                rc = NGX_OK;
+            }
+
+            return rc;
         }
 
         return NGX_DECLINED;
@@ -174,18 +172,18 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_access_handler_sets(ngx_http_request_t *r)
+ngx_http_lua_run_access_handlers(ngx_http_request_t *r)
 {
     ngx_int_t                        rc;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_http_lua_ctx_t              *ctx;
     ngx_uint_t                       i;
-    ngx_http_lua_phase_handler_t    *handler;
-    ngx_array_t                     *access_handlers;
+    ngx_http_lua_phase_handler_t    *ph;
+    ngx_array_t                     *handlers;
 
-    dd("access by lua handler sets");
+    dd("run access lua handlers");
 
-    rc = NGX_DECLINED;
+    rc = NGX_OK;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -198,24 +196,22 @@ ngx_http_lua_access_handler_sets(ngx_http_request_t *r)
         }
     }
 
-    dd("entered access by lua handler sets[%ld]", ctx->current_access_index);
+    dd("current ctx access index[%ld]", ctx->current_access_index);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    access_handlers = llcf->access_handlers;
-    handler = access_handlers->elts;
+    handlers = llcf->access_handlers;
+    ph = handlers->elts;
 
-    for (i = ctx->current_access_index; i < access_handlers->nelts; ++i) {
+    for (i = ctx->current_access_index; i < handlers->nelts; ++i) {
         ctx->current_access_index = i + 1;
 
-        if (handler[i].is_inline) {
-            rc = ngx_http_lua_access_handler_inline(r, &handler[i]);
+        if (ph[i].is_inline) {
+            rc = ngx_http_lua_access_handler_inline(r, &ph[i]);
 
         } else {
-            rc = ngx_http_lua_access_handler_file(r, &handler[i]);
+            rc = ngx_http_lua_access_handler_file(r, &ph[i]);
         }
-
-        dd("index[%ld] access handler rc[%ld]", i, rc);
 
         if (rc != NGX_OK) {
             return rc;
@@ -228,7 +224,7 @@ ngx_http_lua_access_handler_sets(ngx_http_request_t *r)
 
 ngx_int_t
 ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *handler)
+    ngx_http_lua_phase_handler_t *h)
 {
     ngx_int_t                  rc;
     lua_State                 *L;
@@ -237,10 +233,10 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       handler->source.value.data,
-                                       handler->source.value.len,
-                                       handler->source_key,
-                                       (const char *) handler->chunkname);
+                                       h->source.value.data,
+                                       h->source.value.len,
+                                       h->source_key,
+                                       (const char *) h->chunkname);
 
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -252,7 +248,7 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_access_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *handler)
+    ngx_http_lua_phase_handler_t *h)
 {
     u_char                    *script_path;
     ngx_int_t                  rc;
@@ -260,7 +256,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r,
     lua_State                 *L;
 
     /* Eval nginx variables in code path string first */
-    if (ngx_http_complex_value(r, &handler->source, &eval_src) != NGX_OK) {
+    if (ngx_http_complex_value(r, &h->source, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -275,7 +271,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     handler->source_key);
+                                     h->source_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
