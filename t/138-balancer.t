@@ -488,3 +488,41 @@ retry counter: 5
 
 --- error_log
 set more tries: reduced tries due to limit
+
+
+
+=== TEST 16: set_more_tries bugfix
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+	proxy_next_upstream_tries 0;
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            local balancer = require "ngx.balancer"
+			local ctx = ngx.ctx
+			if not ctx.has_run then
+				ctx.has_run = true
+				local _, err = balancer.set_more_tries(3)
+				if err then
+					ngx.log(ngx.ERR, "failed to set more tries: ", err)
+				end
+			end
+			balancer.set_current_peer("127.0.0.1", 81)
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- error_code: 502
+--- grep_error_log eval: qr/http next upstream, \d+/
+--- grep_error_log_out
+http next upstream, 2
+http next upstream, 2
+http next upstream, 2
+http next upstream, 2
+--- no_error_log
+failed to set more tries: reduced tries due to limit
+[alert]
