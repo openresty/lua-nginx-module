@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 7);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -76,24 +76,26 @@ rewrite by file
 === TEST 4: rewrite directives max limit is 10
 --- config
     location /t {
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at location") }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
+        rewrite_by_lua_block { return }
         content_by_lua_block { return }
     }
 --- request
 GET /t
+--- no_error_log
+[error]
 --- must_die
---- error_log
-the number of rewrite_by_lua* directives exceeds 10
+--- error_log eval
+qr/\[emerg\] .*? the number of rewrite_by_lua\* directives exceeds 10/
 
 
 

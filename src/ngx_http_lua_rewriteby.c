@@ -225,7 +225,7 @@ ngx_http_lua_run_rewrite_handlers(ngx_http_request_t *r)
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *h)
+    ngx_http_lua_phase_handler_t *ph)
 {
     lua_State                   *L;
     ngx_int_t                    rc;
@@ -236,11 +236,11 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       h->src.value.data,
-                                       h->src.value.len,
-                                       h->src_key,
+                                       ph->src.value.data,
+                                       ph->src.value.len,
+                                       ph->src_key,
                                        (const char *)
-                                       h->chunkname);
+                                       ph->chunkname);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -251,14 +251,14 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
 
 ngx_int_t
 ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *h)
+    ngx_http_lua_phase_handler_t *ph)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
     u_char                          *script_path;
     ngx_str_t                        eval_src;
 
-    if (ngx_http_complex_value(r, &h->src, &eval_src) != NGX_OK) {
+    if (ngx_http_complex_value(r, &ph->src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -273,7 +273,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     h->src_key);
+                                     ph->src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
