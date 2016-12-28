@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 7);
+plan tests => repeat_each() * (blocks() * 3 - 3);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -27,7 +27,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/access 1|access 2/
+qr/access \d/
 --- grep_error_log_out
 access 1
 access 2
@@ -63,7 +63,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/access by lua|access by block|access by file/
+qr/access by \w+/
 --- grep_error_log_out
 access by lua
 access by block
@@ -147,7 +147,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/first access before sleep|first access after sleep|second access/
+qr/first access (before|after) sleep|second access/
 --- grep_error_log_out
 first access before sleep
 first access after sleep
@@ -207,7 +207,7 @@ hi
 --- response_body
 request body:hi
 --- grep_error_log eval
-qr/access 1|access 2/
+qr/access \d/
 --- grep_error_log_out
 access 1
 access 2
@@ -231,10 +231,8 @@ access 2
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-access 1 at location
 --- grep_error_log eval
-qr/access 1 at server|access 2 at server/
+qr/access \d at (server|location)/
 --- grep_error_log_out
 access 1 at server
 access 2 at server
@@ -258,11 +256,8 @@ access 2 at server
 GET /t2
 --- response_body
 Hello /t2
---- no_error_log
-access 1 at server
-access 2 at server
 --- grep_error_log eval
-qr/access 1 at location/
+qr/access \d at (location|server)/
 --- grep_error_log_out
 access 1 at location
 
@@ -285,10 +280,8 @@ access 1 at location
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-access 1 at location
 --- grep_error_log eval
-qr/access 1 at http|access 2 at http/
+qr/access \d at (http|location)/
 --- grep_error_log_out
 access 1 at http
 access 2 at http
@@ -310,11 +303,8 @@ access 2 at http
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-access 1 at http
-access 2 at http
 --- grep_error_log eval
-qr/access 1 at server|access 2 at server/
+qr/access \d at (server|http)/
 --- grep_error_log_out
 access 1 at server
 access 2 at server
@@ -338,13 +328,8 @@ access 2 at server
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-access 1 at http
-access 2 at http
-access 1 at server
-access 2 at server
 --- grep_error_log eval
-qr/access 1 at location|access 2 at location/
+qr/access \d at (server|http|location)/
 --- grep_error_log_out
 access 1 at location
 access 2 at location

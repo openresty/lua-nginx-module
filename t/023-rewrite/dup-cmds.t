@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 7);
+plan tests => repeat_each() * (blocks() * 3 - 3);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -27,7 +27,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/rewrite 1|rewrite 2/
+qr/rewrite \d/
 --- grep_error_log_out
 rewrite 1
 rewrite 2
@@ -63,7 +63,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/rewrite by lua|rewrite by block|rewrite by file/
+qr/rewrite by \w+/
 --- grep_error_log_out
 rewrite by lua
 rewrite by block
@@ -147,7 +147,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/first rewrite before sleep|first rewrite after sleep|second rewrite/
+qr/first rewrite (before|after) sleep|second rewrite/
 --- grep_error_log_out
 first rewrite before sleep
 first rewrite after sleep
@@ -207,7 +207,7 @@ hi
 --- response_body
 request body:hi
 --- grep_error_log eval
-qr/rewrite 1|rewrite 2/
+qr/rewrite \d/
 --- grep_error_log_out
 rewrite 1
 rewrite 2
@@ -231,10 +231,8 @@ rewrite 2
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-rewrite 1 at location
 --- grep_error_log eval
-qr/rewrite 1 at server|rewrite 2 at server/
+qr/rewrite \d at (server|location)/
 --- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
@@ -258,11 +256,8 @@ rewrite 2 at server
 GET /t2
 --- response_body
 Hello /t2
---- no_error_log
-rewrite 1 at server
-rewrite 2 at server
 --- grep_error_log eval
-qr/rewrite 1 at location/
+qr/rewrite \d at (location|server)/
 --- grep_error_log_out
 rewrite 1 at location
 
@@ -285,10 +280,8 @@ rewrite 1 at location
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-rewrite 1 at location
 --- grep_error_log eval
-qr/rewrite 1 at http|rewrite 2 at http/
+qr/rewrite \d at (http|location)/
 --- grep_error_log_out
 rewrite 1 at http
 rewrite 2 at http
@@ -310,11 +303,8 @@ rewrite 2 at http
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-rewrite 1 at http
-rewrite 2 at http
 --- grep_error_log eval
-qr/rewrite 1 at server|rewrite 2 at server/
+qr/rewrite \d at (server|http)/
 --- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
@@ -338,17 +328,9 @@ rewrite 2 at server
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-rewrite 1 at http
-rewrite 2 at http
-rewrite 1 at server
-rewrite 2 at server
 --- grep_error_log eval
-qr/rewrite 1 at location|rewrite 2 at location/
+qr/rewrite \d at (server|http|location)/
 --- grep_error_log_out
 rewrite 1 at location
 rewrite 2 at location
-
-
-
 
