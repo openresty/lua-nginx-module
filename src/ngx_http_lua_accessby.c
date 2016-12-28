@@ -123,7 +123,6 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
                 }
 
                 return NGX_HTTP_OK;
-
             }
 
             rc = ngx_http_lua_run_access_handlers(r);
@@ -197,16 +196,16 @@ ngx_http_lua_run_access_handlers(ngx_http_request_t *r)
     }
 
     /* ctx->cur_rewrite_index was initialized to 0 in
-     * ngx_http_lua_init_ctx */
+     * ngx_http_lua_init_ctx called by ngx_http_lua_create_ct */
 
-    dd("current ctx access index[%ld]", ctx->cur_access_index);
+    dd("current access index[%ld]", ctx->cur_access_index);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     handlers = llcf->access_handlers;
     ph = handlers->elts;
 
-    for (i = ctx->cur_access_index; i < handlers->nelts; ++i) {
+    for (i = ctx->cur_access_index; i < handlers->nelts; i++) {
         ctx->cur_access_index = i + 1;
 
         if (ph[i].is_inline) {
