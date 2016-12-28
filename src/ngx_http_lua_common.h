@@ -242,10 +242,10 @@ union ngx_http_lua_srv_conf_u {
 typedef struct {
     ngx_int_t                    is_inline;
     u_char                      *chunkname;
-    ngx_http_complex_value_t     source;    /*  inline script/script
+    ngx_http_complex_value_t     src;    /*  inline script/script
                                                 file path */
 
-    u_char                      *source_key; /* cached key for source */
+    u_char                      *src_key; /* cached key for source */
 } ngx_http_lua_phase_handler_t;
 
 
