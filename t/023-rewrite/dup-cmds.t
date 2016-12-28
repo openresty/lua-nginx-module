@@ -21,7 +21,6 @@ __DATA__
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
-        content_by_lua_block { return }
     }
 --- request
 GET /t
@@ -40,7 +39,6 @@ rewrite 2
     location /t {
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
         rewrite_by_lua_block { ngx.print("Hello, again Lua!\n") }
-        content_by_lua_block { return }
     }
 --- request
 GET /t
@@ -104,7 +102,6 @@ qr/\[emerg\] .*? the number of rewrite_by_lua\* directives exceeds 10/
     location /t {
         rewrite_by_lua_block { ngx.exit(503) }
         rewrite_by_lua_block { ngx.print("Hello, again Lua!\n") }
-        content_by_lua_block { return }
     }
 --- request
 GET /t
@@ -120,7 +117,6 @@ GET /t
           ngx.exit(0)
         }
         rewrite_by_lua_block { ngx.print("Hello, Lua!\n") }
-        content_by_lua_block { return }
     }
 --- request
 GET /t
@@ -159,7 +155,7 @@ second rewrite
 
 
 
-=== TEST 8: yield by ngx.location.capture
+=== TEST 8: multiple yield by ngx.location.capture
 --- config
     location = /internal {
         echo "internal";
@@ -170,6 +166,8 @@ second rewrite
 
             local res = ngx.location.capture("/internal")
             ngx.log(ngx.ERR, "status:", res.status, " body:", res.body)
+
+            ngx.location.capture("/internal")
 
             ngx.log(ngx.ERR, "first rewrite after capture")
         }
@@ -190,7 +188,33 @@ second rewrite
 
 
 
-=== TEST 9: rewrite directives at different scopes (server + location)
+=== TEST 9: yield by ngx.req.get_body_data()
+--- config
+    location /t {
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block {
+            ngx.req.read_body()
+
+            local data = ngx.req.get_body_data()
+            ngx.say("request body:", data)
+
+            ngx.log(ngx.ERR, "rewrite 2")
+        }
+    }
+--- request
+POST /t
+hi
+--- response_body
+request body:hi
+--- grep_error_log eval
+qr/rewrite 1|rewrite 2/
+--- grep_error_log_out
+rewrite 1
+rewrite 2
+
+
+
+=== TEST 10: rewrite directives at different scopes (server + location)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -217,7 +241,7 @@ rewrite 2 at server
 
 
 
-=== TEST 10: rewrite directives at different scopes (server + location)
+=== TEST 11: rewrite directives at different scopes (server + location)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -244,7 +268,7 @@ rewrite 1 at location
 
 
 
-=== TEST 11: rewrite directives at different scopes (http + location)
+=== TEST 12: rewrite directives at different scopes (http + location)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -271,7 +295,7 @@ rewrite 2 at http
 
 
 
-=== TEST 12: rewrite directives at different scopes (http + server)
+=== TEST 13: rewrite directives at different scopes (http + server)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -297,7 +321,7 @@ rewrite 2 at server
 
 
 
-=== TEST 13: rewrite directives at different scopes (http + server + location)
+=== TEST 14: rewrite directives at different scopes (http + server + location)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -327,26 +351,4 @@ rewrite 2 at location
 
 
 
-=== TEST 14: yield by ngx.req.get_body_data()
---- config
-    location /t {
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
-        rewrite_by_lua_block {
-            ngx.req.read_body()
 
-            local data = ngx.req.get_body_data()
-            ngx.say("request body:", data)
-
-            ngx.log(ngx.ERR, "rewrite 2")
-        }
-    }
---- request
-POST /t
-hi
---- response_body
-request body:hi
---- grep_error_log eval
-qr/rewrite 1|rewrite 2/
---- grep_error_log_out
-rewrite 1
-rewrite 2
