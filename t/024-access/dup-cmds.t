@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 2);
+plan tests => repeat_each() * (blocks() * 3 - 3);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -231,10 +231,8 @@ access 2
 GET /t
 --- response_body
 Hello /t
---- no_error_log
-access 1 at location
 --- grep_error_log eval
-qr/access \d at server/
+qr/access \d at (server|location)/
 --- grep_error_log_out
 access 1 at server
 access 2 at server
