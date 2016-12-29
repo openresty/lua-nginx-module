@@ -194,7 +194,7 @@ ngx_http_lua_run_rewrite_handlers(ngx_http_request_t *r)
         }
     }
 
-    dd("current rewrite index[%ld]", ctx->cur_rewrite_index);
+    dd("current rewrite index[%u]", ctx->cur_rewrite_index);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
