@@ -130,7 +130,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
             rc = ngx_http_lua_run_rewrite_handlers(r);
 
             if (rc == NGX_OK) {
-                rc = NGX_DECLINED;
+                return NGX_DECLINED;
             }
         }
 
