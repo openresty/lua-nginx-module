@@ -236,8 +236,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r,
                                        ph->src.value.data,
                                        ph->src.value.len,
                                        ph->src_key,
-                                       (const char *)
-                                       ph->chunkname);
+                                       (const char *)ph->chunkname);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }

@@ -490,6 +490,12 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    /* set by ngx array:
+     *      ph->src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      ph->src_key = NULL;
+     *      ph->chunkname = NULL;
+     *      ph->is_inline = 0; */
+
     value = cf->args->elts;
 
     if (value[1].len == 0) {
@@ -507,7 +513,6 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        ph->is_inline = 1;
         ph->chunkname = chunkname;
 
         /* Don't eval nginx variables for inline lua code */
@@ -520,6 +525,7 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         ph->src_key = p;
+        ph->is_inline = 1;
 
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
