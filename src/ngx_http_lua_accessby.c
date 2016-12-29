@@ -123,16 +123,9 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
                 }
 
                 return NGX_HTTP_OK;
-
             }
 
-            rc = ngx_http_lua_run_access_handlers(r);
-
-            if (rc == NGX_DECLINED) {
-                rc = NGX_OK;
-            }
-
-            return rc;
+            return NGX_OK;
         }
 
         return NGX_DECLINED;
@@ -172,74 +165,22 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_run_access_handlers(ngx_http_request_t *r)
-{
-    ngx_int_t                        rc;
-    ngx_http_lua_loc_conf_t         *llcf;
-    ngx_http_lua_ctx_t              *ctx;
-    ngx_uint_t                       i;
-    ngx_http_lua_phase_handler_t    *ph;
-    ngx_array_t                     *handlers;
-
-    dd("run access lua handlers");
-
-    rc = NGX_OK;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    dd("ctx = %p", ctx);
-
-    if (ctx == NULL) {
-        ctx = ngx_http_lua_create_ctx(r);
-        if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
-    }
-
-    /* ctx->cur_rewrite_index was initialized to 0 in
-     * ngx_http_lua_init_ctx */
-
-    dd("current ctx access index[%ld]", ctx->cur_access_index);
-
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
-    handlers = llcf->access_handlers;
-    ph = handlers->elts;
-
-    for (i = ctx->cur_access_index; i < handlers->nelts; ++i) {
-        ctx->cur_access_index = i + 1;
-
-        if (ph[i].is_inline) {
-            rc = ngx_http_lua_access_handler_inline(r, &ph[i]);
-
-        } else {
-            rc = ngx_http_lua_access_handler_file(r, &ph[i]);
-        }
-
-        if (rc != NGX_OK) {
-            return rc;
-        }
-    }
-
-    return rc;
-}
-
-
-ngx_int_t
-ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *ph)
+ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
 {
     ngx_int_t                  rc;
     lua_State                 *L;
+    ngx_http_lua_loc_conf_t   *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       ph->src.value.data,
-                                       ph->src.value.len,
-                                       ph->src_key,
-                                       (const char *) ph->chunkname);
+                                       llcf->access_src.value.data,
+                                       llcf->access_src.value.len,
+                                       llcf->access_src_key,
+                                       (const char *) llcf->access_chunkname);
 
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -250,16 +191,18 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r,
 
 
 ngx_int_t
-ngx_http_lua_access_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_phase_handler_t *ph)
+ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 {
     u_char                    *script_path;
     ngx_int_t                  rc;
     ngx_str_t                  eval_src;
     lua_State                 *L;
+    ngx_http_lua_loc_conf_t   *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     /* Eval nginx variables in code path string first */
-    if (ngx_http_complex_value(r, &ph->src, &eval_src) != NGX_OK) {
+    if (ngx_http_complex_value(r, &llcf->access_src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -274,7 +217,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     ph->src_key);
+                                     llcf->access_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
