@@ -2471,3 +2471,90 @@ error
 lua_shared_dict "dogs" is already defined as "dogs"
 --- error_log
 [emerg]
+
+
+
+=== TEST 94: incr expire test new key
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:incr("foo", 32, 1, 0.5)
+			ngx.sleep(0.001)
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+33
+--- no_error_log
+[error]
+
+
+
+=== TEST 95: incr expire test new key expire
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:incr("foo", 32, 1, 0.01)
+			ngx.sleep(0.02)
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 96: incr expire test existing key expire
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:incr("foo", 32, 1)
+            dogs:incr("foo", 32, nil, 0.01)
+            ngx.sleep(0.02)
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 97: incr expire set no init
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua '
+            local dogs = ngx.shared.dogs
+            dogs:incr("foo", 32, nil, 0.5)
+            ngx.sleep(0.01)
+            ngx.say(dogs:get("foo"))
+        ';
+    }
+--- request
+GET /test
+--- response_body
+nil
+--- no_error_log
+[error]
+
+

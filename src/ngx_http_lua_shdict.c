@@ -1257,23 +1257,49 @@ ngx_http_lua_shdict_incr(lua_State *L)
     ngx_http_lua_shdict_node_t  *sd;
     double                       num;
     double                       init = 0;
+    int                          has_init = 0;
     u_char                      *p;
     ngx_shm_zone_t              *zone;
     double                       value;
+    lua_Number                   exptime = -1;
     ngx_rbtree_node_t           *node;
                          /* indicates whether to foricibly override other
                           * valid entries */
     int                          forcible = 0;
     ngx_queue_t                 *queue, *q;
+    ngx_time_t                  *tp;
 
     n = lua_gettop(L);
 
-    if (n != 3 && n != 4) {
-        return luaL_error(L, "expecting 3 or 4 arguments, but only seen %d", n);
+    if (n < 3) {
+        return luaL_error(L, "expecting at least 3 arguments, but only seen %d", n);
+    }
+    
+    if (n > 5) {
+        return luaL_error(L, "expecting no more than 5 arguments, but %d seen", n);
     }
 
     if (lua_type(L, 1) != LUA_TTABLE) {
         return luaL_error(L, "bad \"zone\" argument");
+    }
+    
+    if (n >= 4) {
+        if (!lua_isnil(L, 4)) {
+            init = luaL_checknumber(L, 4);
+            if (init < 0) {
+                return luaL_error(L, "bad \"init\" argument");
+            }
+            has_init = 1;
+        }
+        
+        if (n >= 5) {
+            if (!lua_isnil(L, 5)) {
+                exptime = luaL_checknumber(L, 5);
+                if (exptime < 0) {
+                    return luaL_error(L, "bad \"exptime\" argument");
+                }
+            }
+        }
     }
 
     zone = ngx_http_lua_shdict_get_zone(L, 1);
@@ -1307,10 +1333,6 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     value = luaL_checknumber(L, 3);
 
-    if (n == 4) {
-        init = luaL_checknumber(L, 4);
-    }
-
     dd("looking up key %.*s in shared dict %.*s", (int) key.len, key.data,
        (int) ctx->name.len, ctx->name.data);
 
@@ -1326,7 +1348,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     if (rc == NGX_DECLINED || rc == NGX_DONE) {
 
-        if (n == 3) {
+        if (!has_init) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
             lua_pushnil(L);
@@ -1375,6 +1397,18 @@ ngx_http_lua_shdict_incr(lua_State *L)
 
     ngx_queue_remove(&sd->queue);
     ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
+
+    if (exptime > 0) {
+        dd("setting expire time to %d", exptime);
+
+        tp = ngx_timeofday();
+        sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
+            + (uint64_t)(exptime * 1000);
+
+    } else if (exptime == 0) {
+        dd("setting key to never expire");
+        sd->expires = 0;
+    }
 
     dd("setting value type to %d", (int) sd->value_type);
 
@@ -1476,9 +1510,19 @@ allocated:
 
 setvalue:
 
-    sd->user_flags = 0;
+    if (exptime > 0) {
+        dd("setting expire time to %d", exptime);
 
-    sd->expires = 0;
+        tp = ngx_timeofday();
+        sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
+            + (uint64_t)(exptime * 1000);
+
+    } else if (exptime == 0) {
+        dd("setting key to never expire");
+        sd->expires = 0;
+    }
+
+    sd->user_flags = 0;
 
     dd("setting value type to %d", LUA_TNUMBER);
 
@@ -2622,7 +2666,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
 
 int
 ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
-    size_t key_len, double *value, char **err, int has_init, double init,
+    size_t key_len, double *value, int exptime, char **err, int has_init, double init,
     int *forcible)
 {
     int                          i, n;
@@ -2633,6 +2677,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     double                       num;
     ngx_rbtree_node_t           *node;
     u_char                      *p;
+    ngx_time_t                  *tp;
     ngx_queue_t                 *queue, *q;
 
     if (zone == NULL) {
@@ -2711,6 +2756,18 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     num += *value;
 
     ngx_memcpy(p, (double *) &num, sizeof(double));
+
+    if (exptime > 0) {
+        dd("setting expire time to %d", exptime);
+
+        tp = ngx_timeofday();
+        sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
+            + (uint64_t)(exptime * 1000);
+
+    } else if (exptime == 0) {
+        dd("setting key to never expire");
+        sd->expires = 0;
+    }
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
