@@ -1517,7 +1517,7 @@ setvalue:
         sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
             + (uint64_t)(exptime * 1000);
 
-    } else if (exptime == 0) {
+    } else {
         dd("setting key to never expire");
         sd->expires = 0;
     }
