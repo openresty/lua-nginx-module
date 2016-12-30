@@ -48,6 +48,7 @@ static int ngx_http_lua_ngx_decode_base64(lua_State *L);
 static int ngx_http_lua_ngx_encode_base64(lua_State *L);
 static int ngx_http_lua_ngx_crc32_short(lua_State *L);
 static int ngx_http_lua_ngx_crc32_long(lua_State *L);
+static int ngx_http_lua_ngx_crc32_update(lua_State *L);
 static int ngx_http_lua_ngx_encode_args(lua_State *L);
 static int ngx_http_lua_ngx_decode_args(lua_State *L);
 #if (NGX_OPENSSL)
@@ -95,6 +96,9 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_crc32_long);
     lua_setfield(L, -2, "crc32_long");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_crc32_update);
+    lua_setfield(L, -2, "crc32_update");
 
 #if (NGX_OPENSSL)
     lua_pushcfunction(L, ngx_http_lua_ngx_hmac_sha1);
@@ -572,6 +576,28 @@ ngx_http_lua_ngx_crc32_long(lua_State *L)
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
     lua_pushnumber(L, (lua_Number) ngx_crc32_long(p, len));
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_crc32_update(lua_State *L)
+{
+    uint32_t                 crc;
+    u_char                  *p;
+    size_t                   len;
+
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "expecting two argument, but got %d",
+                          lua_gettop(L));
+    }
+
+    crc = (uint32_t)  luaL_checkint(L, 1);
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+
+    ngx_crc32_update(&crc, p, len);
+
+    lua_pushnumber(L, (lua_Number) crc);
     return 1;
 }
 
