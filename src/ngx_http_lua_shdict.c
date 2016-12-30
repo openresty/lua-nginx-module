@@ -1272,11 +1272,13 @@ ngx_http_lua_shdict_incr(lua_State *L)
     n = lua_gettop(L);
 
     if (n < 3) {
-        return luaL_error(L, "expecting at least 3 arguments, but only seen %d", n);
+        return luaL_error(L, "expecting at least 3 arguments, but only seen %d",
+            n);
     }
     
     if (n > 5) {
-        return luaL_error(L, "expecting no more than 5 arguments, but %d seen", n);
+        return luaL_error(L, "expecting no more than 5 arguments, but %d seen",
+            n);
     }
 
     if (lua_type(L, 1) != LUA_TTABLE) {
@@ -2666,8 +2668,8 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
 
 int
 ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
-    size_t key_len, double *value, int exptime, char **err, int has_init, double init,
-    int *forcible)
+    size_t key_len, double *value, int exptime, char **err, int has_init, 
+    double init, int *forcible)
 {
     int                          i, n;
     uint32_t                     hash;
