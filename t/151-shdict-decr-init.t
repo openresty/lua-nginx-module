@@ -1,19 +1,11 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use lib 'lib';
 use Test::Nginx::Socket::Lua;
-
-#worker_connections(1014);
-#master_process_enabled(1);
-#log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 0);
+plan tests => repeat_each() * (blocks() * 3);
 
-#no_diff();
 no_long_string();
-#master_on();
-#workers(2);
 
 run_tests();
 
@@ -77,14 +69,11 @@ foo = 10501
                 dogs:set("bar" .. i, i, 0.001)
             end
             dogs:set("foo", "32", 0.001)
-            ngx.location.capture("/sleep/0.002")
+            ngx.sleep(0.002)
             local res, err = dogs:decr("foo", 1, 10502)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         }
-    }
-    location ~ ^/sleep/(.+) {
-        echo_sleep $1;
     }
 --- request
 GET /test
@@ -107,14 +96,11 @@ foo = 10501
                 dogs:set("bar" .. i, i, 0.001)
             end
             dogs:set("foo", 32, 0.001)
-            ngx.location.capture("/sleep/0.002")
+            ngx.sleep(0.002)
             local res, err = dogs:decr("foo", 1, 10502)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
         }
-    }
-    location ~ ^/sleep/(.+) {
-        echo_sleep $1;
     }
 --- request
 GET /test
