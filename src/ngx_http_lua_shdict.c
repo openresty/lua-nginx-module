@@ -1293,7 +1293,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
             }
             has_init = 1;
         }
-        
+
         if (n >= 5) {
             if (!lua_isnil(L, 5)) {
                 exptime = luaL_checknumber(L, 5);
@@ -2763,8 +2763,8 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
         dd("setting expire time to %d", exptime);
 
         tp = ngx_timeofday();
-        sd->expires = (uint64_t)tp->sec * 1000 + tp->msec
-            + (uint64_t)(exptime * 1000);
+        sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
+            + (uint64_t) (exptime * 1000);
 
     } else if (exptime == 0) {
         dd("setting key to never expire");
