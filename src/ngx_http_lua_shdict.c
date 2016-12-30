@@ -336,7 +336,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shdict_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 18 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 19 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get);
         lua_setfield(L, -2, "get");
@@ -1367,7 +1367,8 @@ ngx_http_lua_shdict_incr_helper(lua_State *L, int flags)
         if (flags == NGX_HTTP_LUA_SHDICT_INCR) {
             /* add value */
             num = value + init;
-        } else /* decr */ {
+
+        } else  { /* decr */
             num = init - value;
 
             if (num < 0) {
@@ -1426,7 +1427,8 @@ ngx_http_lua_shdict_incr_helper(lua_State *L, int flags)
 
     if (flags == NGX_HTTP_LUA_SHDICT_INCR) {
         num += value;
-    } else /* decr */ {
+
+    } else  { /* decr */
         num -= value;
 
         if (num < 0) {
@@ -2721,7 +2723,8 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, int op, u_char *key,
         if (op == NGX_HTTP_LUA_SHDICT_INCR) {
             /* add value */
             num = *value + init;
-        } else /* decr */ {
+
+        } else  { /* decr */
             num = init - *value;
 
             if (num < 0) {
@@ -2777,7 +2780,8 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, int op, u_char *key,
 
     if (op == NGX_HTTP_LUA_SHDICT_INCR) {
         num += *value;
-    } else /* decr */ {
+
+    } else { /* decr */
         num -= *value;
 
         if (num < 0) {

@@ -3103,6 +3103,7 @@ Nginx API for Lua
 * [ngx.shared.DICT.replace](#ngxshareddictreplace)
 * [ngx.shared.DICT.delete](#ngxshareddictdelete)
 * [ngx.shared.DICT.incr](#ngxshareddictincr)
+* [ngx.shared.DICT.decr](#ngxshareddictdecr)
 * [ngx.shared.DICT.lpush](#ngxshareddictlpush)
 * [ngx.shared.DICT.rpush](#ngxshareddictrpush)
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
@@ -6109,6 +6110,7 @@ The resulting object `dict` has the following methods:
 * [replace](#ngxshareddictreplace)
 * [delete](#ngxshareddictdelete)
 * [incr](#ngxshareddictincr)
+* [decr](#ngxshareddictdecr)
 * [lpush](#ngxshareddictlpush)
 * [rpush](#ngxshareddictrpush)
 * [lpop](#ngxshareddictlpop)
@@ -6374,6 +6376,25 @@ This method was first introduced in the `v0.3.1rc22` release.
 The optional `init` parameter was first added in the `v0.10.6` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.decr
+--------------------
+**syntax:** *newval, err, forcible? = ngx.shared.DICT:decr(key, value, init?)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Similar to [ngx.shared.DICT.incr](#ngxshareddictincr), but decrements the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
+
+Additionally, existing values cannot be decremented below 0.
+
+When the key does not exist or has already expired in the shared dictionary,
+
+1. if the `init` argument is not specified or takes the value `nil`, this method will return `nil` and the error string `"not found"`, or
+1. if the `init` argument takes a number value, this method will create a new `key` with the value `init - value`, unless the result of `init - value` is less than 0, in which case this method will return nil and the error string `"cannot initialize decr below zero"`
+
+All other behaviors are identical to [ngx.shared.DICT.incr](#ngxshareddictincr).
 
 [Back to TOC](#nginx-api-for-lua)
 
