@@ -2479,13 +2479,13 @@ lua_shared_dict "dogs" is already defined as "dogs"
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:decr("foo", 17)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2502,13 +2502,13 @@ foo = 15
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("bah", 32)
             local res, err = dogs:decr("foo", 2)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2525,19 +2525,16 @@ foo = nil
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("bar", 3, 0.001)
             dogs:set("baz", 2, 0.001)
             dogs:set("foo", 32, 0.001)
-            ngx.location.capture("/sleep/0.002")
+            ngx.sleep(0.002)
             local res, err = dogs:decr("foo", 17)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
-    }
-    location ~ ^/sleep/(.+) {
-        echo_sleep $1;
+        }
     }
 --- request
 GET /test
@@ -2554,13 +2551,13 @@ foo = nil
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:decr("foo", 0)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2577,13 +2574,13 @@ foo = 32
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:decr("foo", 0.14)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2600,13 +2597,13 @@ foo = 31.86
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:decr("foo", -0.14)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2623,13 +2620,13 @@ foo = 32
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32)
             local res, err = dogs:decr("foo", 33)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
@@ -2646,13 +2643,13 @@ foo = 32
     lua_shared_dict dogs 1m;
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local dogs = ngx.shared.dogs
             dogs:set("foo", true)
             local res, err = dogs:decr("foo", -0.14)
             ngx.say("decr: ", res, " ", err)
             ngx.say("foo = ", dogs:get("foo"))
-        ';
+        }
     }
 --- request
 GET /test
