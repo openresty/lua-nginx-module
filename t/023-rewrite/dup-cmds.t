@@ -253,7 +253,7 @@ rewrite 2
 
 
 
-=== TEST 11: multiple directives at different context: server(Y) + location(N)
+=== TEST 11: multiple directives at different phase: server(Y) + location(N)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -273,7 +273,7 @@ rewrite 2 at server
 
 
 
-=== TEST 12: multiple directives at different context: server(Y) + location(Y)
+=== TEST 12: multiple directives at different phase: server(Y) + location(Y)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -295,7 +295,7 @@ rewrite 2 at location
 
 
 
-=== TEST 13: multiple directives at different context: http(Y) + location(N)
+=== TEST 13: multiple directives at different phase: http(Y) + location(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -315,7 +315,7 @@ rewrite 2 at http
 
 
 
-=== TEST 14: multiple directives at different context: http(Y) + location(Y)
+=== TEST 14: multiple directives at different phase: http(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -337,7 +337,7 @@ rewrite 2 at location
 
 
 
-=== TEST 15: multiple directives at different context: http(Y) + server(N)
+=== TEST 15: multiple directives at different phase: http(Y) + server(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -357,7 +357,7 @@ rewrite 2 at http
 
 
 
-=== TEST 16: multiple directives at different context: http(Y) + server(Y)
+=== TEST 16: multiple directives at different phase: http(Y) + server(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -380,7 +380,7 @@ rewrite 2 at server
 
 
 
-=== TEST 17: multiple directives at different context: http(Y) + server(Y) + location(Y)
+=== TEST 17: multiple directives at different phase: http(Y) + server(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
