@@ -3,12 +3,12 @@ use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
 #no_nginx_manager();
-log_level('warn');
+#log_level('warn');
 #master_on();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 2);
+plan tests => repeat_each() * (blocks() * 3 - 1);
 #no_diff();
 #no_long_string();
 run_tests();
@@ -20,7 +20,7 @@ __DATA__
     location /t {
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
-        rewrite_by_lua_block { ngx.say("Hello, Lua!") }
+        content_by_lua_block { ngx.say("Hello, Lua!") }
     }
 --- request
 GET /t
@@ -38,10 +38,12 @@ rewrite 2
 --- config
     location /t {
         rewrite_by_lua_block { ngx.say("Hello, Lua!") }
-        rewrite_by_lua_block { ngx.say("Hello, again Lua!") }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite") }
     }
 --- request
 GET /t
+--- no_error_log
+[error]
 --- response_body
 Hello, Lua!
 
@@ -133,7 +135,7 @@ rewrite 2
 
 
 
-=== TEST 7: multiple yield by ngx.sleep
+=== TEST 7: multiple yields by ngx.sleep
 --- config
     location /t {
         rewrite_by_lua_block {
@@ -163,9 +165,9 @@ rewrite 2
 
 
 
-=== TEST 8: multiple yield by ngx.location.capture
+=== TEST 8: yield by ngx.location.capture
 --- config
-    location = /internal {
+    location /internal {
         echo "internal";
     }
     location /t {
@@ -185,7 +187,7 @@ GET /t
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/rewrite \d (before|after) capture|rewrite \d|status:\d+ body:internal/
+qr/rewrite \d \w+ capture|rewrite \d|status:\d+ body:\w+/
 --- grep_error_log_out
 rewrite 1 before capture
 status:200 body:internal
@@ -202,9 +204,12 @@ rewrite 2
             ngx.req.read_body()
 
             local data = ngx.req.get_body_data()
-            ngx.log(ngx.ERR, "request body: ", data)
+            ngx.log(ngx.ERR, "request body:", data)
         }
-        rewrite_by_lua_block { ngx.say("Hello, Lua!") }
+        rewrite_by_lua_block {
+            ngx.log(ngx.ERR, "rewrite 2")
+            ngx.say("Hello, Lua!")
+        }
     }
 --- request
 POST /t
@@ -212,14 +217,43 @@ hi
 --- response_body
 Hello, Lua!
 --- grep_error_log eval
-qr/rewrite 1|request body: \w+/
+qr/rewrite \d|request body:\w+/
 --- grep_error_log_out
 rewrite 1
-request body: hi
+request body:hi
+rewrite 2
 
 
 
-=== TEST 10: multiple directives at different context: server(Y) + location(N)
+=== TEST 10: yield by ngx.req.socket()
+--- config
+    location /t {
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block {
+            local sock = ngx.req.socket()
+            local data = sock:receive(2)
+            ngx.log(ngx.ERR, "request body:", data)
+        }
+        rewrite_by_lua_block {
+            ngx.log(ngx.ERR, "rewrite 2")
+            ngx.say("Hello, Lua!")
+        }
+    }
+--- request
+POST /t
+hi
+--- response_body
+Hello, Lua!
+--- grep_error_log eval
+qr/rewrite \d|request body:\w+/
+--- grep_error_log_out
+rewrite 1
+request body:hi
+rewrite 2
+
+
+
+=== TEST 11: multiple directives at different context: server(Y) + location(N)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -232,14 +266,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (server|location)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
 
 
 
-=== TEST 11: multiple directives at different context: server(Y) + location(Y)
+=== TEST 12: multiple directives at different context: server(Y) + location(Y)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -254,14 +288,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (location|server)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at location
 rewrite 2 at location
 
 
 
-=== TEST 12: multiple directives at different context: http(Y) + location(N)
+=== TEST 13: multiple directives at different context: http(Y) + location(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -274,14 +308,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at http/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at http
 rewrite 2 at http
 
 
 
-=== TEST 13: multiple directives at different context: http(Y) + location(Y)
+=== TEST 14: multiple directives at different context: http(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -296,14 +330,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (server|http|location)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at location
 rewrite 2 at location
 
 
 
-=== TEST 14: multiple directives at different context: http(Y) + server(N)
+=== TEST 15: multiple directives at different context: http(Y) + server(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -316,14 +350,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (server|http|location)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at http
 rewrite 2 at http
 
 
 
-=== TEST 15: multiple directives at different context: http(Y) + server(Y)
+=== TEST 16: multiple directives at different context: http(Y) + server(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -339,14 +373,14 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (server|http|location)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at server
 rewrite 2 at server
 
 
 
-=== TEST 16: multiple directives at different context: http(Y) + server(Y) + location(Y)
+=== TEST 17: multiple directives at different context: http(Y) + server(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -364,7 +398,7 @@ GET /t
 --- response_body
 Hello /t
 --- grep_error_log eval
-qr/rewrite \d at (server|http|location)/
+qr/rewrite \d at \w+/
 --- grep_error_log_out
 rewrite 1 at location
 rewrite 2 at location
