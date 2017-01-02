@@ -315,7 +315,7 @@ lua tcp socket write timed out
 
 === TEST 5: connection timeout (tcp)
 --- config
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     resolver_timeout 3s;
     location /test {
         content_by_lua_block {

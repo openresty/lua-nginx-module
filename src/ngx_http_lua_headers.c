@@ -444,6 +444,8 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     ngx_list_part_t    *part;
     ngx_table_elt_t    *header;
     ngx_http_request_t *r;
+    ngx_http_lua_ctx_t *ctx;
+    ngx_int_t           rc;
     u_char             *lowcase_key = NULL;
     size_t              lowcase_key_sz = 0;
     ngx_uint_t          i;
@@ -473,6 +475,22 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    if (!ctx->headers_set) {
+        rc = ngx_http_lua_set_content_type(r);
+        if (rc != NGX_OK) {
+            return luaL_error(L,
+                              "failed to set default content type: %d",
+                              (int) rc);
+        }
+
+        ctx->headers_set = 1;
     }
 
     ngx_http_lua_check_fake_request(L, r);
@@ -603,10 +621,17 @@ ngx_http_lua_ngx_header_get(lua_State *L)
     ngx_uint_t                   i;
     size_t                       len;
     ngx_http_lua_loc_conf_t     *llcf;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_int_t                    rc;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
     }
 
     ngx_http_lua_check_fake_request(L, r);
@@ -639,6 +664,17 @@ ngx_http_lua_ngx_header_get(lua_State *L)
     }
 
     key.len = len;
+
+    if (!ctx->headers_set) {
+        rc = ngx_http_lua_set_content_type(r);
+        if (rc != NGX_OK) {
+            return luaL_error(L,
+                              "failed to set default content type: %d",
+                              (int) rc);
+        }
+
+        ctx->headers_set = 1;
+    }
 
     return ngx_http_lua_get_output_header(L, r, &key);
 }

@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 38);
+plan tests => repeat_each() * (blocks() * 3 + 41);
 
 #no_diff();
 no_long_string();
@@ -1439,5 +1439,73 @@ GET /test2
 Content-Type: ; blah
 --- response_body
 test
+--- no_error_log
+[error]
+
+
+
+=== TEST 69: return the matched content-type instead of default_type
+--- http_config
+types {
+    image/png png;
+}
+--- config
+location /set/ {
+     default_type text/html;
+     content_by_lua_block {
+       ngx.say(ngx.header["content-type"])
+   }
+}
+--- request
+GET /set/hello.png
+--- response_headers
+Content-Type: image/png
+--- response_body
+image/png
+--- no_error_log
+[error]
+
+
+
+=== TEST 70: always return the matched content-type
+--- config
+    location /set/ {
+        default_type "image/png";
+        content_by_lua_block {
+            ngx.say(ngx.header["content-type"])
+            ngx.say(ngx.header["content-type"])
+        }
+    }
+--- request
+GET /set/hello.png
+--- response_headers
+Content-Type: image/png
+--- response_body
+image/png
+image/png
+--- no_error_log
+[error]
+
+
+
+=== TEST 71: return the matched content-type after ngx.resp.get_headers()
+--- http_config
+types {
+    image/png png;
+}
+--- config
+    location /set/ {
+        default_type text/html;
+        content_by_lua_block {
+            local h = ngx.resp.get_headers()
+            ngx.say(h["content-type"])
+        }
+    }
+--- request
+GET /set/hello.png
+--- response_headers
+Content-Type: image/png
+--- response_body
+image/png
 --- no_error_log
 [error]

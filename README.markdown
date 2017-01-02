@@ -956,7 +956,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2016, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2016, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
+Copyright (C) 2009-2017, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
 
 All rights reserved.
 
@@ -5000,6 +5000,7 @@ The optional `status` parameter specifies the HTTP status code to be used. The f
 
 * `301`
 * `302` (default)
+* `303`
 * `307`
 
 It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
