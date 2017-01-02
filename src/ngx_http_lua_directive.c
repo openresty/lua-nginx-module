@@ -23,6 +23,7 @@
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
+#include "ngx_http_lua_exitworkerby.h"
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
@@ -1204,7 +1205,7 @@ char *
 ngx_http_lua_exit_worker_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-    char        *rv
+    char        *rv;
     ngx_conf_t   save;
 
     save = *cf;
@@ -1217,6 +1218,7 @@ ngx_http_lua_exit_worker_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
 
     return rv;
 }
+
 
 char *
 ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -1241,7 +1243,7 @@ ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     lmcf->exit_worker_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
 
-    if (cmd->pos == ngx_http_lua_exit_worker_by_lua_file) {
+    if (cmd->post == ngx_http_lua_exit_worker_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
                                         value[1].len);
         if (name == NULL) {
@@ -1250,6 +1252,7 @@ ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
         lmcf->exit_worker_src.data = name;
         lmcf->exit_worker_src.len = ngx_strlen(name);
+
     } else {
         lmcf->exit_worker_src = value[1];
     }
