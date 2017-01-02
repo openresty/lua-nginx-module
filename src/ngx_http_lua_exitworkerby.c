@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) Xianliang Li
+ * Copyright (C) Yichun Zhang (agentzh)
  */
 
 
@@ -14,7 +14,7 @@
 #include "ngx_http_lua_util.h"
 
 
-ngx_int_t
+void
 ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
 {
     ngx_http_lua_main_conf_t    *lmcf;
@@ -24,12 +24,12 @@ ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
         || lmcf->exit_worker_handler == NULL
         || lmcf->lua == NULL) 
     {
-            return NGX_OK;
+            return;
     }
     
     (void) lmcf->exit_worker_handler(cycle->log, lmcf, lmcf->lua);
 
-    return NGX_OK;
+    return;
 }
 
 
@@ -40,8 +40,8 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
     int         status;
 
     status = luaL_loadbuffer(L, (char *) lmcf->exit_worker_src.data,
-                            lmcf->exit_worker_src.len, "=exit_worker_by_lua"
-             || ngx_http_lua_do_call(log, L));
+                            lmcf->exit_worker_src.len, "=exit_worker_by_lua")
+             || ngx_http_lua_do_call(log, L);
 
     return ngx_http_lua_report(log, L, status, "exit_worker_by_lua");
 }
