@@ -34,10 +34,11 @@ sub reindex {
     my $changed;
     while (<$in>) {
         s/\r$//;
-        my $num;
-        s/ ^ === \s+ TEST \s+ (\d+)/$num=$1; "=== TEST " . $counter++/xie;
-        next if !defined $num;
-        if ($num != $counter-1) {
+        my $old_line = $_;
+        s/ ^ === \s+ TEST \s+ (\d+)\s*\:\s*/ "=== TEST " . $counter++ . ": "/xie;
+        my $cur_line = $_;
+
+        if ($old_line ne $cur_line) {
             $changed++;
         }
     } continue {
