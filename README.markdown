@@ -1064,6 +1064,8 @@ Directives
 * [init_worker_by_lua](#init_worker_by_lua)
 * [init_worker_by_lua_block](#init_worker_by_lua_block)
 * [init_worker_by_lua_file](#init_worker_by_lua_file)
+* [exit_worker_by_lua_block](#exit_worker_by_lua_block)
+* [exit_worker_by_lua_file](#exit_worker_by_lua_file)
 * [set_by_lua](#set_by_lua)
 * [set_by_lua_block](#set_by_lua_block)
 * [set_by_lua_file](#set_by_lua_file)
@@ -1575,6 +1577,43 @@ Similar to [init_worker_by_lua](#init_worker_by_lua), but accepts the file path 
 This directive was first introduced in the `v0.9.5` release.
 
 This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
+
+[Back to TOC](#directives)
+
+exit_worker_by_lua_block
+------------------------
+
+**syntax:** *exit_worker_by_lua_block { lua-script }*
+
+**context:** *http*
+
+**phase:** *exitting-worker*
+
+Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
+
+This hook is often used to release resources When init_worker_by* create resources, To prevent the worker exit abnormal
+
+For instance,
+
+```nginx
+
+ exit_worker_by_lua_block {
+     print("log from exit_worker_by_lua_block")
+ }
+```
+
+[Back to TOC](#directives)
+
+exit_worker_by_lua_block
+------------------------
+
+**syntax:** *exit_worker_by_lua_file &lt;lua-file-path&gt;*
+
+**context:** *http*
+
+**phase:** *exitting-worker*
+
+Similar to [exit_worker_by_lua_block](#exit_worker_by_lua_block), but accepts the file path to a Lua source file or Lua bytecode file.
 
 [Back to TOC](#directives)
 
