@@ -35,7 +35,7 @@ sub reindex {
     while (<$in>) {
         s/\r$//;
         my $original = $_;
-        s/ ^ === \s+ TEST \s+ (\d+)\s*\:\s*/ "=== TEST " . $counter++ . ": "/xie;
+        s/ ^ === \s+ TEST \s+ (\d+)\s*\:\ */ "=== TEST " . $counter++ . ": "/xie;
 
         if ($original ne $_) {
             $changed++;
