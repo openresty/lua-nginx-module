@@ -22,11 +22,11 @@ ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
     if (lmcf == NULL
         || lmcf->exit_worker_handler == NULL
-        || lmcf->lua == NULL) 
+        || lmcf->lua == NULL)
     {
-            return;
+        return;
     }
-    
+
     (void) lmcf->exit_worker_handler(cycle->log, lmcf, lmcf->lua);
 
     return;
@@ -48,7 +48,7 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
 
 
 ngx_int_t
-ngx_http_lua_exit_worker_by_file(ngx_log_t *log, 
+ngx_http_lua_exit_worker_by_file(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 {
     int         status;
