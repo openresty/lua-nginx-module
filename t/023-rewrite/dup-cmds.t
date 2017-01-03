@@ -1,16 +1,12 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 use Test::Nginx::Socket::Lua;
 
-#worker_connections(1014);
-#no_nginx_manager();
-#log_level('warn');
-#master_on();
-
 repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 - 1);
-#no_diff();
-#no_long_string();
+
+no_long_string();
+
 run_tests();
 
 __DATA__
@@ -34,22 +30,81 @@ rewrite 2
 
 
 
-=== TEST 2: the first return status == 200
+=== TEST 2: missing ]] (string)
 --- config
     location /t {
-        rewrite_by_lua_block { ngx.say("Hello, Lua!") }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite") }
+        rewrite_by_lua_block { ngx.say([[hello, world") }
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite") }
     }
 --- request
 GET /t
 --- no_error_log
 [error]
+--- must_die
+--- error_log eval
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]" in .*?nginx\.conf:41/
+
+
+
+=== TEST 3: return status == 200
+--- config
+    location /t {
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block { ngx.say("Hello, Lua!") }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
+    }
+--- request
+GET /t
 --- response_body
 Hello, Lua!
+--- grep_error_log eval
+qr/rewrite \d/
+--- grep_error_log_out
+rewrite 1
 
 
 
-=== TEST 3: mix three different styles
+=== TEST 4: return status > 200
+--- config
+    location /t {
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
+        rewrite_by_lua_block { ngx.exit(503) }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
+    }
+--- request
+GET /t
+--- error_code: 503
+--- grep_error_log eval
+qr/rewrite \d/
+--- grep_error_log_out
+rewrite 1
+
+
+
+=== TEST 5: return status == 0
+--- config
+    location /t {
+        rewrite_by_lua_block {
+          ngx.log(ngx.ERR, "rewrite 1")
+          ngx.exit(0)
+        }
+        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
+        content_by_lua_block { ngx.say("Hello, Lua!") }
+    }
+--- request
+GET /t
+--- response_body
+Hello, Lua!
+--- grep_error_log eval
+qr/rewrite \d/
+--- grep_error_log_out
+rewrite 1
+rewrite 2
+
+
+
+=== TEST 6: mix three different styles
 --- config
     location /t {
         rewrite_by_lua ' ngx.log(ngx.ERR, "rewrite by lua") ';
@@ -73,7 +128,7 @@ rewrite by file
 
 
 
-=== TEST 4: the number of rewrite_by_lua* directives exceeds 10
+=== TEST 7: the number of rewrite_by_lua* directives exceeds 10
 --- config
     location /t {
         rewrite_by_lua_block { return }
@@ -99,43 +154,7 @@ qr/\[emerg\] .*? the number of rewrite_by_lua\* directives exceeds 10/
 
 
 
-=== TEST 5: the first return status > 200
---- config
-    location /t {
-        rewrite_by_lua_block { ngx.exit(503) }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite") }
-    }
---- request
-GET /t
---- error_code: 503
---- no_error_log
-[error]
-
-
-
-=== TEST 6: the first return status == 0
---- config
-    location /t {
-        rewrite_by_lua_block {
-          ngx.log(ngx.ERR, "rewrite 1")
-          ngx.exit(0)
-        }
-        rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2") }
-        content_by_lua_block { ngx.say("Hello, Lua!") }
-    }
---- request
-GET /t
---- response_body
-Hello, Lua!
---- grep_error_log eval
-qr/rewrite \d/
---- grep_error_log_out
-rewrite 1
-rewrite 2
-
-
-
-=== TEST 7: multiple yields by ngx.sleep
+=== TEST 8: yields by ngx.sleep
 --- config
     location /t {
         rewrite_by_lua_block {
@@ -165,7 +184,7 @@ rewrite 2
 
 
 
-=== TEST 8: yield by ngx.location.capture
+=== TEST 9: yield by ngx.location.capture
 --- config
     location /internal {
         echo "internal";
@@ -196,7 +215,7 @@ rewrite 2
 
 
 
-=== TEST 9: yield by ngx.req.get_body_data()
+=== TEST 10: yield by ngx.req.get_body_data()
 --- config
     location /t {
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
@@ -225,7 +244,7 @@ rewrite 2
 
 
 
-=== TEST 10: yield by ngx.req.socket()
+=== TEST 11: yield by ngx.req.socket()
 --- config
     location /t {
         rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1") }
@@ -253,7 +272,7 @@ rewrite 2
 
 
 
-=== TEST 11: multiple directives at different phase: server(Y) + location(N)
+=== TEST 12: multiple directives at different phase: server(Y) + location(N)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -273,7 +292,7 @@ rewrite 2 at server
 
 
 
-=== TEST 12: multiple directives at different phase: server(Y) + location(Y)
+=== TEST 13: multiple directives at different phase: server(Y) + location(Y)
 --- config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at server") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at server") }
@@ -295,7 +314,7 @@ rewrite 2 at location
 
 
 
-=== TEST 13: multiple directives at different phase: http(Y) + location(N)
+=== TEST 14: multiple directives at different phase: http(Y) + location(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -315,7 +334,7 @@ rewrite 2 at http
 
 
 
-=== TEST 14: multiple directives at different phase: http(Y) + location(Y)
+=== TEST 15: multiple directives at different phase: http(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -337,7 +356,7 @@ rewrite 2 at location
 
 
 
-=== TEST 15: multiple directives at different phase: http(Y) + server(N)
+=== TEST 16: multiple directives at different phase: http(Y) + server(N)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -357,7 +376,7 @@ rewrite 2 at http
 
 
 
-=== TEST 16: multiple directives at different phase: http(Y) + server(Y)
+=== TEST 17: multiple directives at different phase: http(Y) + server(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
@@ -380,7 +399,7 @@ rewrite 2 at server
 
 
 
-=== TEST 17: multiple directives at different phase: http(Y) + server(Y) + location(Y)
+=== TEST 18: multiple directives at different phase: http(Y) + server(Y) + location(Y)
 --- http_config
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 1 at http") }
     rewrite_by_lua_block { ngx.log(ngx.ERR, "rewrite 2 at http") }
