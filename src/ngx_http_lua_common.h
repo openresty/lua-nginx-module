@@ -97,6 +97,11 @@ typedef struct {
 #endif
 
 
+#ifndef NGX_HTTP_LUA_MAX_HANDLER_PER_PHASE
+#define NGX_HTTP_LUA_MAX_HANDLER_PER_PHASE 10
+#endif
+
+
 #ifndef NGX_HTTP_LUA_MAX_HEADERS
 #define NGX_HTTP_LUA_MAX_HEADERS 100
 #endif
@@ -233,6 +238,16 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt  handler;
     } balancer;
 };
+
+
+typedef struct {
+    ngx_http_complex_value_t     src;       /*  inline script/script
+                                               file path */
+
+    u_char                      *src_key;   /* cached key for source */
+    u_char                      *chunkname;
+    unsigned                     is_inline:1;
+} ngx_http_lua_phase_handler_t;
 
 
 typedef struct {
@@ -526,6 +541,8 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         acquired_raw_req_socket:1;  /* whether a raw req socket
                                                     is acquired */
     unsigned         seen_body_data:1;
+
+    unsigned         cur_rewrite_index:4;
 } ngx_http_lua_ctx_t;
 
 

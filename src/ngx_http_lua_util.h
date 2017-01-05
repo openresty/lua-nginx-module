@@ -260,6 +260,11 @@ static ngx_inline void
 ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
     ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));
+
+    /* set by ngx_memzero:
+     *      ctx->cur_rewrite_index = 0;
+     */
+
     ctx->ctx_ref = LUA_NOREF;
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
     ctx->resume_handler = ngx_http_lua_wev_handler;
