@@ -107,6 +107,7 @@ ngx_http_lua_inject_phase_api(lua_State *L)
     lua_setfield(L, -2, "get_phase");
 }
 
+
 #ifndef NGX_LUA_NO_FFI_API
 int
 ngx_http_lua_ffi_get_phase(ngx_http_request_t *r, char **err)
