@@ -283,12 +283,7 @@ typedef struct {
 
     u_char                  *rewrite_src_key; /* cached key for rewrite_src */
 
-    u_char                  *access_chunkname;
-    ngx_http_complex_value_t access_src;     /*  access_by_lua
-                                                inline script/script
-                                                file path */
-
-    u_char                  *access_src_key; /* cached key for access_src */
+    ngx_array_t             *access_handlers;  /* access phase handlers */
 
     u_char                  *content_chunkname;
     ngx_http_complex_value_t content_src;    /*  content_by_lua
@@ -543,6 +538,7 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         seen_body_data:1;
 
     unsigned         cur_rewrite_index:4;
+    unsigned         cur_access_index:4;
 } ngx_http_lua_ctx_t;
 
 

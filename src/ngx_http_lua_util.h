@@ -263,6 +263,7 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     /* set by ngx_memzero:
      *      ctx->cur_rewrite_index = 0;
+     *      ctx->cur_access_index = 0;
      */
 
     ctx->ctx_ref = LUA_NOREF;
