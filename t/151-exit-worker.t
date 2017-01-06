@@ -1,8 +1,10 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket 'no_plan';
 use Test::Nginx::Socket::Lua;
 
+repeat_each(1);
+
+plan tests => repeat_each() * (blocks() * 1 + 4);
 
 #log_level("warn");
 no_long_string();
@@ -15,12 +17,6 @@ __DATA__
 --- http_config
     exit_worker_by_lua_block {
         ngx.log(ngx.NOTICE, "log from exit_worker_by_lua_block")
-        -- grep_error_log chop
-        -- log from exit_worker_by_lua_block
-        -- --- grep_error_log_out eval
-        -- ["log from exit_worker_by_lua_block\n", ""]
-        -- Due to the use grep_error_log and grep_error_log_out is invalid, So use grep verification test(exit_worker_by_lua* run when worker exit)
-        -- grep "log from exit_worker_by_lua_block" t/servroot/logs/error.log
     }
 --- config
     location /t {
@@ -30,20 +26,15 @@ __DATA__
 GET /t
 --- response_body
 ok
---- no_error_log
-[error]
+--- stop_after_request
+--- error_log
+log from exit_worker_by_lua_block
 
 
 
-=== TEST 1: simple exit_worker_by_lua_file
+=== TEST 2: simple exit_worker_by_lua_file
 --- http_config
     exit_worker_by_lua_file html/exit_worker.lua;
-    # grep_error_log chop
-    # log from exit_worker_by_lua_file
-    # --- grep_error_log_out eval
-    # ["log from exit_worker_by_lua_file\n", ""]
-    # Due to the use grep_error_log and grep_error_log_out is invalid, So use grep verification test(exit_worker_by_lua* run when worker exit)
-    # grep "log from exit_worker_by_lua_file" t/servroot/logs/error.log
 --- config
     location /t {
         echo "ok";
@@ -55,6 +46,7 @@ ngx.log(ngx.NOTICE, "log from exit_worker_by_lua_file")
 GET /t
 --- response_body
 ok
---- no_error_log
-[error]
+--- stop_after_request
+--- error_log
+log from exit_worker_by_lua_file
 
