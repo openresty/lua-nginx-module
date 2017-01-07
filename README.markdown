@@ -1587,13 +1587,13 @@ exit_worker_by_lua_block
 
 **context:** *http*
 
-**phase:** *exitting-worker*
+**phase:** *exiting-worker*
 
 Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
 
-This hook is often used to release resources when init_worker_by* create resources, To prevent the worker exit abnormal
+This hook is often used to release resources when init_worker_by* create resources, To prevent the worker exit abnormal.
 
-For instance,
+For example,
 
 ```nginx
 
@@ -1604,16 +1604,16 @@ For instance,
 
 [Back to TOC](#directives)
 
-exit_worker_by_lua_block
-------------------------
+exit_worker_by_lua_file
+-----------------------
 
-**syntax:** *exit_worker_by_lua_file &lt;lua-file-path&gt;*
+**syntax:** *exit_worker_by_lua_file { lua--file-path }*
 
 **context:** *http*
 
-**phase:** *exitting-worker*
+**phase:** *exiting-worker*
 
-Similar to [exit_worker_by_lua_block](#exit_worker_by_lua_block), but accepts the file path to a Lua source file or Lua bytecode file.
+Similar to [[#exit_worker_by_lua_block]], but accepts the file path to a Lua source file or Lua bytecode file.
 
 [Back to TOC](#directives)
 

@@ -1281,6 +1281,36 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 This hook no longer runs in the cache manager and cache loader processes since the <code>v0.10.12</code> release.
 
+== exit_worker_by_lua_block ==
+
+'''syntax:''' ''exit_worker_by_lua_block { lua-script }''
+
+'''context:''' ''http''
+
+'''phase:''' ''exiting-worker''
+
+Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
+
+This hook is often used to release resources when init_worker_by* create resources, To prevent the worker exit abnormal.
+
+For example,
+
+<geshi lang="nginx">
+    exit_worker_by_lua_block {
+        print("log from exit_worker_by_lua_block")
+    }
+</geshi>
+
+== exit_worker_by_lua_file ==
+
+'''syntax:''' ''exit_worker_by_lua_file { lua--file-path }''
+
+'''context:''' ''http''
+
+'''phase:''' ''exiting-worker''
+
+Similar to [[#exit_worker_by_lua_block]], but accepts the file path to a Lua source file or Lua bytecode file.
+
 == set_by_lua ==
 
 '''syntax:''' ''set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]''
