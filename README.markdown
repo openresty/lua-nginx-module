@@ -1613,7 +1613,7 @@ exit_worker_by_lua_file
 
 **phase:** *exiting-worker*
 
-Similar to [[#exit_worker_by_lua_block]], but accepts the file path to a Lua source file or Lua bytecode file.
+Similar to [exit_worker_by_lua_block](#exit_worker_by_lua_block), but accepts the file path to a Lua source file or Lua bytecode file.
 
 [Back to TOC](#directives)
 
