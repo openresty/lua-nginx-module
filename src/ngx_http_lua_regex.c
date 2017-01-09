@@ -358,7 +358,7 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
 
-        if (lmcf->jit_stack) {
+        if (sd && lmcf->jit_stack) {
             pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
         }
 
@@ -824,7 +824,7 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
 
-        if (lmcf->jit_stack) {
+        if (sd && lmcf->jit_stack) {
             pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
         }
 
@@ -2216,6 +2216,9 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         goto error;
     }
 
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+
 #if (LUA_HAVE_PCRE_JIT)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
@@ -2251,14 +2254,11 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         ngx_http_lua_pcre_malloc_done(old_pool);
     }
 
-#endif /* LUA_HAVE_PCRE_JIT */
-
-    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
-                                               ngx_http_lua_module);
-
     if (sd && lmcf->jit_stack) {
         pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
     }
+
+#endif /* LUA_HAVE_PCRE_JIT */
 
     if (sd && lmcf && lmcf->regex_match_limit > 0) {
         sd->flags |= PCRE_EXTRA_MATCH_LIMIT;
