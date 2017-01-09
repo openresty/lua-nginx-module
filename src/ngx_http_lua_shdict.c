@@ -1291,6 +1291,7 @@ ngx_http_lua_shdict_incr(lua_State *L)
             if (init < 0) {
                 return luaL_error(L, "bad \"init\" argument");
             }
+            
             has_init = 1;
         }
 
