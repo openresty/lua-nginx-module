@@ -1924,11 +1924,11 @@ error:
 }
 
 
-#if LUA_HAVE_PCRE_JIT
-
 ngx_int_t
 ngx_http_lua_ffi_set_jit_stack_size(int size)
 {
+#if LUA_HAVE_PCRE_JIT
+
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_pool_t                  *pool, *old_pool;
 
@@ -1963,9 +1963,14 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
     }
 
     return NGX_OK;
-}
+
+#else  /* LUA_HAVE_PCRE_JIT */
+
+    return NGX_ERROR;
 
 #endif /* LUA_HAVE_PCRE_JIT */
+}
+
 
 
 void
