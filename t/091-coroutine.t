@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 5);
+plan tests => repeat_each() * blocks() * 3 + 4;
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
