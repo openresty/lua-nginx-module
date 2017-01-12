@@ -1437,9 +1437,6 @@ user_co_done:
 
             ctx->cur_co_ctx = next_coctx;
 
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "lua coroutine: %s: %s\n%s", err, msg, trace);
-
             /* try resuming on the new coroutine again */
             continue;
         }
