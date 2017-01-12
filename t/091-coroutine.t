@@ -281,7 +281,7 @@ GET /lua
               end)
             end
 
-            N = 10 
+            N = 10
             x = gen(N)		-- generate primes up to N
             while 1 do
               local n = x()		-- pick a number until done
@@ -483,8 +483,8 @@ done
 GET /lua
 --- response_body
 hello
---- error_log eval
-["stack traceback:", "coroutine 0:", "coroutine 1:", "coroutine 2:"]
+--- no_error_log
+[error]
 
 
 
@@ -901,8 +901,8 @@ qr/^child: resume: falsecontent_by_lua\(nginx\.conf:\d+\):4: bad
 child: status: dead
 parent: status: running
 $/s
---- error_log eval
-qr/lua coroutine: runtime error: content_by_lua\(nginx\.conf:\d+\):4: bad/
+--- no_error_log
+[error]
 
 
 
@@ -1315,4 +1315,3 @@ co yield: 2
 
 --- no_error_log
 [error]
-
