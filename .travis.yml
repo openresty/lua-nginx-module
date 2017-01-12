@@ -14,6 +14,7 @@ addons:
     packages:
     - axel
     - cpanminus
+    - ack-grep
     - libtest-base-perl
     - libtext-diff-perl
     - liburi-perl
@@ -57,6 +58,12 @@ services:
  - redis-server
  - mysql
 
+before_install:
+  - sudo dpkg-divert --local --divert /usr/bin/ack --rename --add /usr/bin/ack-grep
+  - git clone https://github.com/openresty/nginx-devel-utils.git ../nginx-devel-utils && cd ..
+  - export PATH=$PWD/nginx-devel-utils:$PATH && cd -
+  - ngx-releng
+
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
@@ -64,7 +71,6 @@ install:
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
-  - git clone https://github.com/openresty/nginx-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
   - git clone https://github.com/openresty/lua-cjson.git
   - git clone https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
@@ -111,7 +117,7 @@ script:
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
-  - export PATH=$PWD/work/nginx/sbin:$PWD/nginx-devel-utils:$PATH
+  - export PATH=$PWD/work/nginx/sbin:$PATH
   - export NGX_BUILD_CC=$CC
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V
