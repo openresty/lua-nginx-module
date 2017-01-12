@@ -1966,7 +1966,7 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
 
 #else  /* LUA_HAVE_PCRE_JIT */
 
-    return NGX_ERROR;
+    return NGX_DECLINED;
 
 #endif /* LUA_HAVE_PCRE_JIT */
 }
