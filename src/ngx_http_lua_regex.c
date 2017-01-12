@@ -1972,7 +1972,6 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
 }
 
 
-
 void
 ngx_http_lua_inject_regex_api(lua_State *L)
 {
