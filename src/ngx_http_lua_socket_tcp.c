@@ -1333,8 +1333,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
 
-                if (SSL_set_tlsext_host_name(c->ssl->connection, name.data)
-                    == 0)
+                if (SSL_set_tlsext_host_name(c->ssl->connection, 
+                                             (const char *) name.data) == 0)
                 {
                     lua_pushnil(L);
                     lua_pushliteral(L, "SSL_set_tlsext_host_name failed");
