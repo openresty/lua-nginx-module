@@ -612,7 +612,7 @@ matched: 你
 
 === TEST 22: just hit match limit
 --- http_config
-    lua_regex_match_limit 5600;
+    lua_regex_match_limit 5000;
 --- config
     location /re {
         content_by_lua_file html/a.lua;
@@ -654,7 +654,7 @@ error: pcre_exec() failed: -8
 
 === TEST 23: just not hit match limit
 --- http_config
-    lua_regex_match_limit 5700;
+    lua_regex_match_limit 5100;
 --- config
     location /re {
         content_by_lua_file html/a.lua;
@@ -891,3 +891,29 @@ not matched!
 --- no_error_log
 [error]
 
+
+
+=== TEST 31: match with ctx and a pos (anchored by \G)
+--- config
+    location /re {
+        content_by_lua '
+            local ctx = { pos = 3 }
+            local from, to, err = ngx.re.find("1234, hello", [[(\G[0-9]+)]], "", ctx)
+            if from then
+                ngx.say("from: ", from)
+                ngx.say("to: ", to)
+                ngx.say("pos: ", ctx.pos)
+            else
+                ngx.say("not matched!")
+                ngx.say("pos: ", ctx.pos)
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+from: 3
+to: 4
+pos: 5
+--- no_error_log
+[error]

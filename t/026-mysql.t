@@ -66,7 +66,7 @@ __DATA__
 ^status = 504
 thread id = \d+
 kill status = 200
-kill body = {"errcode":0}$
+kill body = \{"errcode":0\}$
 --- error_log eval
 qr{upstream timed out \(\d+: Connection timed out\) while sending query to drizzle upstream}
 
@@ -126,6 +126,5 @@ qr{upstream timed out \(\d+: Connection timed out\) while sending query to drizz
 ^status = 504
 thread id = \d+
 kill status = 200
-kill body = {"errcode":0}$
+kill body = \{"errcode":0\}$
 --- SKIP
-

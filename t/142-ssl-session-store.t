@@ -38,7 +38,7 @@ __DATA__
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -108,7 +108,7 @@ ssl_session_store_by_lua_block:1: ssl session store by lua is running!
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -183,7 +183,7 @@ API disabled in the context of ssl_session_store_by_lua*
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -275,7 +275,7 @@ my timer run!
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -343,7 +343,7 @@ API disabled in the context of ssl_session_store_by_lua*
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
     lua_ssl_verify_depth 3;
 
@@ -415,7 +415,7 @@ ngx.exit does not yield and the error code is eaten.
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
     lua_ssl_verify_depth 3;
 
@@ -488,7 +488,7 @@ ssl_session_store_by_lua*: handler return value: 0, sess new cb exit code: 0
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
     lua_ssl_verify_depth 3;
 
@@ -556,7 +556,7 @@ should never reached here
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
     lua_ssl_verify_depth 3;
 
@@ -627,7 +627,7 @@ get_phase: ssl_session_store
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -696,7 +696,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {
@@ -778,7 +778,7 @@ a.lua:1: ssl store session by lua is running!
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
     lua_ssl_verify_depth 3;
 
@@ -849,7 +849,7 @@ qr/\[emerg\] .*? "ssl_session_store_by_lua_block" directive is not allowed here 
     }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
 
     location /t {

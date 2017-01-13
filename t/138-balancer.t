@@ -431,3 +431,98 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 ]
 --- no_error_log
 [warn]
+
+
+
+=== TEST 15: test if execeed proxy_next_upstream_limit
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    proxy_next_upstream_tries 5;
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            local b = require "ngx.balancer"
+
+            if not ngx.ctx.tries then
+                ngx.ctx.tries = 0
+            end
+
+            if ngx.ctx.tries >= 6 then
+                ngx.log(ngx.ERR, "retry count exceed limit")
+                ngx.exit(500)
+            end
+
+            ngx.ctx.tries = ngx.ctx.tries + 1
+            print("retry counter: ", ngx.ctx.tries)
+
+            local ok, err = b.set_more_tries(2)
+            if not ok then
+                return error("failed to set more tries: ", err)
+            elseif err then
+                ngx.log(ngx.WARN, "set more tries: ", err)
+            end
+
+            assert(b.set_current_peer("127.0.0.1", 81))
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend/back;
+    }
+
+    location = /back {
+        return 404;
+    }
+--- request
+    GET /t
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
+--- grep_error_log eval: qr/\bretry counter: \w+/
+--- grep_error_log_out
+retry counter: 1
+retry counter: 2
+retry counter: 3
+retry counter: 4
+retry counter: 5
+
+--- error_log
+set more tries: reduced tries due to limit
+
+
+
+=== TEST 16: set_more_tries bugfix
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+	proxy_next_upstream_tries 0;
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            local balancer = require "ngx.balancer"
+			local ctx = ngx.ctx
+			if not ctx.has_run then
+				ctx.has_run = true
+				local _, err = balancer.set_more_tries(3)
+				if err then
+					ngx.log(ngx.ERR, "failed to set more tries: ", err)
+				end
+			end
+			balancer.set_current_peer("127.0.0.1", 81)
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- error_code: 502
+--- grep_error_log eval: qr/http next upstream, \d+/
+--- grep_error_log_out
+http next upstream, 2
+http next upstream, 2
+http next upstream, 2
+http next upstream, 2
+--- no_error_log
+failed to set more tries: reduced tries due to limit
+[alert]

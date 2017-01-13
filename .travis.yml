@@ -12,7 +12,6 @@ compiler:
 addons:
   apt:
     packages:
-    - mysql-server
     - axel
     - cpanminus
     - libtest-base-perl
@@ -24,7 +23,6 @@ addons:
     - libgd-dev
 
 cache:
-  apt: true
   directories:
   - download-cache
 
@@ -36,7 +34,7 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - PCRE_VER=8.33
+    - PCRE_VER=8.39
     - PCRE_PREFIX=/opt/pcre
     - PCRE_LIB=$PCRE_PREFIX/lib
     - PCRE_INC=$PCRE_PREFIX/include
@@ -57,13 +55,12 @@ env:
 services:
  - memcache
  - redis-server
+ - mysql
 
 install:
-  - if [ ! -d download-cache ]; then mkdir download-cache; fi
-  - rm -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz  # alas, we may end up with corrupted drizzle tarball stuck in the download-cache/ forever.
-  - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -O download-cache/drizzle7-$DRIZZLE_VER.tar.gz http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
-  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -O download-cache/pcre-$PCRE_VER.tar.gz http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
-  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -O download-cache/openssl-$OPENSSL_VER.tar.gz https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
+  - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
+  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
+  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
@@ -82,6 +79,7 @@ install:
   - git clone https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
+  - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
 
 before_script:
@@ -107,7 +105,7 @@ script:
   - cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
-  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -O ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
+  - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -P ../download-cache https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
   - patch -p1 < ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch
   - ./config shared --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)

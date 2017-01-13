@@ -501,6 +501,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         n--;
     }
 
+    /* the fourth argument is not a table */
+    if (n == 4) {
+        lua_pop(L, 1);
+        n--;
+    }
+
     if (n == 3) {
         port = luaL_checkinteger(L, 3);
 

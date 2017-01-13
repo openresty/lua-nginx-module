@@ -56,11 +56,10 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
         lua_pushcfunction(L, func);
         lua_setfield(L, -2, package);
         lua_pop(L, 2);
-
-        return NGX_OK;
     }
 
-    /* L == NULL */
+    /* we always register preload_hooks since we always create new Lua VMs
+     * when lua code cache is off. */
 
     if (lmcf->preload_hooks == NULL) {
         lmcf->preload_hooks =
@@ -176,7 +175,9 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     }
 
     zone->shm = shm_zone->shm;
+#if defined(nginx_version) && nginx_version >= 1009000
     zone->noreuse = shm_zone->noreuse;
+#endif
 
     if (zone->init(zone, odata) != NGX_OK) {
         return NGX_ERROR;
