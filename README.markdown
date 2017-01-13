@@ -4278,7 +4278,7 @@ A more sophisticated example involving regex substitutions is as follows
 
  location /test {
      rewrite_by_lua_block {
-         local uri = ngx.re.sub(ngx.var.uri, "^/test/(.*)", "/$1", "o")
+         local uri = ngx.re.sub(ngx.var.uri, [[^/test/(.*)]], "/$1", "o")
          ngx.req.set_uri(uri)
      }
      proxy_pass http://my_backend;
@@ -5706,7 +5706,7 @@ When a match is found, a Lua table `captures` is returned, where `captures[0]` h
 
 ```lua
 
- local m, err = ngx.re.match("hello, 1234", "[0-9]+")
+ local m, err = ngx.re.match("hello, 1234", [=[[0-9]+]=])
  if m then
      -- m[0] == "1234"
 
@@ -5722,7 +5722,7 @@ When a match is found, a Lua table `captures` is returned, where `captures[0]` h
 
 ```lua
 
- local m, err = ngx.re.match("hello, 1234", "([0-9])[0-9]+")
+ local m, err = ngx.re.match("hello, 1234", [[([0-9])[0-9]+]])
  -- m[0] == "1234"
  -- m[1] == "1"
 ```
@@ -5732,8 +5732,8 @@ and are returned in the same Lua table as key-value pairs as the numbered captur
 
 ```lua
 
- local m, err = ngx.re.match("hello, 1234", "([0-9])(?<remaining>[0-9]+)")
- -- m[0] == "1234"
+ local m, err = ngx.re.match("hello, 1234", [[\w+, (\d)(?<remaining>\d+)]])
+ -- m[0] == " 1234"
  -- m[1] == "1"
  -- m[2] == "234"
  -- m["remaining"] == "234"
@@ -5743,7 +5743,7 @@ Unmatched subpatterns will have `false` values in their `captures` table fields.
 
 ```lua
 
- local m, err = ngx.re.match("hello, world", "(world)|(hello)|(?<named>howdy)")
+ local m, err = ngx.re.match("hello, world", [[(world)|(hello)|(?<named>howdy)]])
  -- m[0] == "hello"
  -- m[1] == false
  -- m[2] == "hello"
@@ -5764,7 +5764,7 @@ Specify `options` to control how the match operation will be performed. The foll
                   subpattern names to be repeated, returning the captures in
                   an array-like Lua table. for example,
                     local m = ngx.re.match("hello, world",
-                                           "(?<named>\w+), (?<named>\w+)",
+                                           [[(?<named>\w+), (?<named>\w+)]],
                                            "D")
                     -- m["named"] == {"hello", "world"}
                   this option was first introduced in the v0.7.14 release.
@@ -5801,13 +5801,13 @@ These options can be combined:
 
 ```nginx
 
- local m, err = ngx.re.match("hello, world", "HEL LO", "ix")
+ local m, err = ngx.re.match("hello, world", [[HEL LO]], "ix")
  -- m[0] == "hello"
 ```
 
 ```nginx
 
- local m, err = ngx.re.match("hello, 美好生活", "HELLO, (.{2})", "iu")
+ local m, err = ngx.re.match("hello, 美好生活", [[HELLO, (.{2})]], "iu")
  -- m[0] == "hello, 美好"
  -- m[1] == "美好"
 ```
@@ -5819,7 +5819,7 @@ The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos
 ```lua
 
  local ctx = {}
- local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+ local m, err = ngx.re.match("1234, hello", [[\d+]], "", ctx)
       -- m[0] = "1234"
       -- ctx.pos == 5
 ```
@@ -5827,7 +5827,7 @@ The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos
 ```lua
 
  local ctx = { pos = 2 }
- local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
+ local m, err = ngx.re.match("1234, hello", [=[[0-9]+]=], "", ctx)
       -- m[0] = "34"
       -- ctx.pos == 5
 ```
@@ -5867,7 +5867,7 @@ Below is an example:
 ```lua
 
  local s = "hello, 1234"
- local from, to, err = ngx.re.find(s, "([0-9]+)", "jo")
+ local from, to, err = ngx.re.find(s, [[([0-9]+)]], "jo")
  if from then
      ngx.say("from: ", from)
      ngx.say("to: ", to)
@@ -5894,7 +5894,7 @@ Since the `0.9.3` release, an optional 5th argument, `nth`, is supported to spec
 ```lua
 
  local str = "hello, 1234"
- local from, to = ngx.re.find(str, "([0-9])([0-9]+)", "jo", nil, 2)
+ local from, to = ngx.re.find(str, [[(\d)(\d+)]], "jo", nil, 2)
  if from then
      ngx.say("matched 2nd submatch: ", string.sub(str, from, to))  -- yields "234"
  end
@@ -5918,7 +5918,7 @@ Here is a small example to demonstrate its basic usage:
 
 ```lua
 
- local iterator, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+ local iterator, err = ngx.re.gmatch("hello, world!", [[([a-z]+)]], "i")
  if not iterator then
      ngx.log(ngx.ERR, "error: ", err)
      return
@@ -5948,7 +5948,7 @@ More often we just put it into a Lua loop:
 
 ```lua
 
- local it, err = ngx.re.gmatch("hello, world!", "([a-z]+)", "i")
+ local it, err = ngx.re.gmatch("hello, world!", [[(\w+)]], "i")
  if not it then
      ngx.log(ngx.ERR, "error: ", err)
      return
@@ -5996,7 +5996,7 @@ When the `replace` is a string, then it is treated as a special template for str
 
 ```lua
 
- local newstr, n, err = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
+ local newstr, n, err = ngx.re.sub("hello, 1234", [[(\d)\d]], "[$0][$1]")
  if newstr then
      -- newstr == "hello, [12][1]34"
      -- n == 1
@@ -6012,7 +6012,7 @@ Curly braces can also be used to disambiguate variable names from the background
 
 ```lua
 
- local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
+ local newstr, n, err = ngx.re.sub("hello, 1234", [[\d]], "${0}00")
      -- newstr == "hello, 100234"
      -- n == 1
 ```
@@ -6021,7 +6021,7 @@ Literal dollar sign characters (`$`) in the `replace` string argument can be esc
 
 ```lua
 
- local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "$$")
+ local newstr, n, err = ngx.re.sub("hello, 1234", [[\d]], "$$")
      -- newstr == "hello, $234"
      -- n == 1
 ```
@@ -6035,7 +6035,7 @@ When the `replace` argument is of type "function", then it will be invoked with 
  local func = function (m)
      return "[" .. m[0] .. "][" .. m[1] .. "]"
  end
- local newstr, n, err = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
+ local newstr, n, err = ngx.re.sub("hello, 1234", [[( [0-9] ) \d]], func, "x")
      -- newstr == "hello, [12][1]34"
      -- n == 1
 ```
@@ -6060,7 +6060,7 @@ Here is some examples:
 
 ```lua
 
- local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
+ local newstr, n, err = ngx.re.gsub("hello, world", [[(\w)[a-z]+]], "[$0,$1]", "i")
  if newstr then
      -- newstr == "[hello,h], [world,w]"
      -- n == 2
@@ -6075,7 +6075,7 @@ Here is some examples:
  local func = function (m)
      return "[" .. m[0] .. "," .. m[1] .. "]"
  end
- local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
+ local newstr, n, err = ngx.re.gsub("hello, world", [[([a-z])[a-z]+]], func, "i")
      -- newstr == "[hello,h], [world,w]"
      -- n == 2
 ```
@@ -7997,4 +7997,3 @@ Special PCRE Sequences
 ----------------------
 
 This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
-
