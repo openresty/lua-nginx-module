@@ -1214,11 +1214,11 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
-    /* Lua function arguments: self [,session] [,host] [,verify] */
+    /* Lua function arguments: self [,session] [,host] [,verify] [,send_status_req] */
 
     n = lua_gettop(L);
     if (n < 1 || n > 5) {
-        return luaL_error(L, "ngx.socket connect: expecting 1 ~ 5 "
+        return luaL_error(L, "ngx.socket sslhandshake: expecting 1 ~ 5 "
                           "arguments (including the object), but seen %d", n);
     }
 
