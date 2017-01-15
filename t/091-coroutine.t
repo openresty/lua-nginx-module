@@ -475,8 +475,8 @@ done
             local g = function() unknown.unknown = 1 end
             local l1 = coroutine.create(f)
             local l2 = coroutine.create(g)
-            local ok = coroutine.resume(l1, l2)
-            ngx.say(ok and "hello" or "error")
+            local o, k, e = coroutine.resume(l1, l2)
+            ngx.say(o and not k and "hello" or e)
         ';
     }
 --- request
