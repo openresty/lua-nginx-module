@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * blocks() * 3 + 4;
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -281,7 +281,7 @@ GET /lua
               end)
             end
 
-            N = 10
+            N = 10 
             x = gen(N)		-- generate primes up to N
             while 1 do
               local n = x()		-- pick a number until done
@@ -470,13 +470,13 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local f = function(cr) coroutine.resume(cr) end
+            local f = function(cr) return coroutine.resume(cr) end
             -- emit a error
             local g = function() unknown.unknown = 1 end
             local l1 = coroutine.create(f)
             local l2 = coroutine.create(g)
-            coroutine.resume(l1, l2)
-            ngx.say("hello")
+            local ok = coroutine.resume(l1, l2)
+            ngx.say(ok and "hello" or "error")
         ';
     }
 --- request
@@ -1315,3 +1315,4 @@ co yield: 2
 
 --- no_error_log
 [error]
+
