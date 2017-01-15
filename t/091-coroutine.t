@@ -476,15 +476,18 @@ done
             local l1 = coroutine.create(f)
             local l2 = coroutine.create(g)
             local o, k, e = coroutine.resume(l1, l2)
-            ngx.say(o and not k and "hello" or e)
+            ngx.say(o and not k and "hello" or "failed")
+            if e then
+                ngx.log(ngx.ERR, e)
+            end
         ';
     }
 --- request
 GET /lua
 --- response_body
 hello
---- no_error_log
-[error]
+--- error_log eval
+["attempt to index global 'unknown' (a nil value)"]
 
 
 
