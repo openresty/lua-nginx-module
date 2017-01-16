@@ -1,10 +1,11 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua;
+use Digest::MD5 qw(md5_hex);
 
 repeat_each(2);
 
-plan tests => repeat_each() * 219;
+plan tests => repeat_each() * 234;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -31,6 +32,63 @@ our $EquifaxRootCertificate = read_file("t/cert/equifax.crt");
 our $TestCertificate = read_file("t/cert/test.crt");
 our $TestCertificateKey = read_file("t/cert/test.key");
 our $TestCRL = read_file("t/cert/test.crl");
+our $clientKey = read_file("t/cert/client.key");
+our $clientUnsecureKey = read_file("t/cert/client.unsecure.key");
+our $clientCrt = read_file("t/cert/client.crt");
+our $clientCrtMd5 = md5_hex($clientCrt);
+our $serverKey = read_file("t/cert/server.key");
+our $serverUnsecureKey = read_file("t/cert/server.unsecure.key");
+our $serverCrt = read_file("t/cert/server.crt");
+our $caKey = read_file("t/cert/ca.key");
+our $caCrt = read_file("t/cert/ca.crt");
+our $sslhttpconfig = <<_EOS_;
+server {
+    listen 1983 ssl;
+    server_name   server;
+    ssl_certificate ../html/server.crt;
+    ssl_certificate_key ../html/server.unsecure.key;
+    ssl_client_certificate ../html/ca.crt;
+    ssl_verify_client on;
+
+    server_tokens off;
+
+    location / {
+        default_type 'text/plain';
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        more_clear_headers Date;
+    }
+
+    location /cert {
+        default_type 'text/plain';
+        content_by_lua_block {
+            ngx.say(ngx.md5(ngx.var.ssl_client_raw_cert))
+        }
+        more_clear_headers Date;
+    }
+}
+_EOS_
+our $certfiles = <<_EOS_;
+>>> client.key
+$clientKey
+>>> client.unsecure.key
+$clientUnsecureKey
+>>> client.crt
+$clientCrt
+>>> server.key
+$serverKey
+>>> server.unsecure.key
+$serverUnsecureKey
+>>> server.crt
+$serverCrt
+>>> ca.key
+$caKey
+>>> ca.crt
+$caCrt
+>>> wrong.crt
+OpenResty
+_EOS_
 
 run_tests();
 
@@ -2618,3 +2676,409 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 --- no_error_log
 [alert]
 --- timeout: 5
+
+
+
+=== TEST 33: setsslcert, too many arguments
+--- config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(5000)
+
+            local ok, err = sock:connect("openresty.org", 443)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local ok, err = sock.setsslcert()
+        }
+    }
+
+--- request
+GET /t
+
+--- ignore_response
+--- error_log eval
+qr/\[error\] .* ngx.socket setsslcert: expecting 1 ~ 4 arguments \(including the object\), but seen 0/
+--- timeout: 5
+
+
+
+=== TEST 34: setsslcert should return error on closed connection
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(3000)
+
+            local cert = read_file("$TEST_NGINX_HTML_DIR/client.crt")
+            local key = read_file("$TEST_NGINX_HTML_DIR/client.unsecure.key")
+
+            local ok, err = sock:setsslcert(cert, key)
+            if not ok then
+                ngx.say("failed to set ssl certificate: ", err)
+                return
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+failed to set ssl certificate: closed
+
+--- user_files eval: $::certfiles
+--- timeout: 5
+
+
+=== TEST 35: setsslcert should return error on sslhandshaked connection
+--- http_config eval: $::sslhttpconfig
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(3000)
+            local ok, err = sock:connect("127.0.0.1", 1983)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local sess, err = sock:sslhandshake(nil, nil, true)
+            if not sess then
+                ngx.say("failed to do SSL handshake: ", err)
+                return
+            end
+
+            local cert = read_file("$TEST_NGINX_HTML_DIR/client.crt")
+            local key = read_file("$TEST_NGINX_HTML_DIR/client.unsecure.key")
+
+            local ok, err = sock:setsslcert(cert, key)
+            if not ok then
+                ngx.say("failed to set ssl certificate: ", err)
+                return
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+failed to set ssl certificate: sslhandshaked
+
+--- user_files eval: $::certfiles
+--- timeout: 5
+
+
+
+=== TEST 36: setsslcert send client certificate with nopassword private key
+--- http_config eval: $::sslhttpconfig
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(3000)
+                local ok, err = sock:connect("127.0.0.1", 1983)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local cert = read_file("$TEST_NGINX_HTML_DIR/client.crt")
+                local key = read_file("$TEST_NGINX_HTML_DIR/client.unsecure.key")
+
+                local ok, err = sock:setsslcert(cert, key)
+                if not ok then
+                    ngx.say("failed to set ssl certificate: ", err)
+                    return
+                end
+
+                local sess, err = sock:sslhandshake(nil, nil, true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /cert HTTP/1.0\r\nHost: server\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+ssl handshake: userdata
+sent http request: 55 bytes.
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 33
+received: Connection: close
+received: 
+received: $::clientCrtMd5
+close: 1 nil
+"
+
+--- user_files eval: $::certfiles
+--- timeout: 5
+
+
+
+=== TEST 37: setsslcert send client certificate with password private key
+--- http_config eval: $::sslhttpconfig
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(3000)
+                local ok, err = sock:connect("127.0.0.1", 1983)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local cert = read_file("$TEST_NGINX_HTML_DIR/client.crt")
+                local key = read_file("$TEST_NGINX_HTML_DIR/client.key")
+
+                local ok, err = sock:setsslcert(cert, key, "openresty")
+                if not ok then
+                    ngx.say("failed to set ssl certificate: ", err)
+                    return
+                end
+
+                local sess, err = sock:sslhandshake(nil, nil, true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /cert HTTP/1.0\r\nHost: server\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body eval
+"connected: 1
+ssl handshake: userdata
+sent http request: 55 bytes.
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 33
+received: Connection: close
+received: 
+received: $::clientCrtMd5
+close: 1 nil
+"
+
+--- user_files eval: $::certfiles
+--- timeout: 5
+
+
+
+=== TEST 38: setsslcert set ssl wrong formated certificate
+--- http_config eval: $::sslhttpconfig
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(3000)
+                local ok, err = sock:connect("127.0.0.1", 1983)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local cert = read_file("$TEST_NGINX_HTML_DIR/wrong.crt")
+                local key = read_file("$TEST_NGINX_HTML_DIR/client.key")
+
+                local ok, err = sock:setsslcert(cert, key, "openresty")
+                if not ok then
+                    ngx.say(err)
+                    return
+                end
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to set ssl certificate
+
+--- user_files eval: $::certfiles
+--- error_log eval
+qr/.*PEM routines:PEM_read_bio:no start line:Expecting: CERTIFICATE.*/
+--- timeout: 5
+
+
+
+=== TEST 39: setsslcert set ssl unmatched private key
+--- http_config eval: $::sslhttpconfig
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/ca.crt;
+
+    location /t {
+        content_by_lua_block {
+            function read_file(file)
+                local f = io.open(file, "rb")
+                local content = f:read("*all")
+                f:close()
+                return content
+            end
+
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(3000)
+                local ok, err = sock:connect("127.0.0.1", 1983)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local cert = read_file("$TEST_NGINX_HTML_DIR/client.crt")
+                local key = read_file("$TEST_NGINX_HTML_DIR/server.unsecure.key")
+
+                local ok, err = sock:setsslcert(cert, key)
+                if not ok then
+                    ngx.say(err)
+                    return
+                end
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to set ssl certificate
+
+--- user_files eval: $::certfiles
+--- error_log eval
+qr/.*x509 certificate routines:X509_check_private_key:key values mismatch.*/
+--- timeout: 5
+

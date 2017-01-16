@@ -35,6 +35,10 @@ typedef struct {
 
 
 ngx_int_t ngx_http_lua_ssl_init(ngx_log_t *log);
+int ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
+    void *userdata);
+ngx_int_t ngx_http_lua_ssl_certificate(ngx_ssl_t *ssl, ngx_str_t *cert,
+    ngx_str_t *priv_key, ngx_str_t *password, ngx_log_t *log);
 
 
 extern int ngx_http_lua_ssl_ctx_index;
