@@ -2747,6 +2747,7 @@ failed to set ssl certificate: closed
 --- timeout: 5
 
 
+
 === TEST 35: setsslcert should return error on sslhandshaked connection
 --- http_config eval: $::sslhttpconfig
 --- config
