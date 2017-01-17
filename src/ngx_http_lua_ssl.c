@@ -41,7 +41,8 @@ ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
 
     if (rwflag) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
-                      "ngx_ssl_password_callback() is called for encryption");
+                      "ngx_http_lua_ssl_password_callback() "
+                      "is called for encryption");
         return 0;
     }
 
