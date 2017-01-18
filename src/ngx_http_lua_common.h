@@ -119,8 +119,17 @@ typedef struct {
 
 
 #ifndef NGX_LUA_NO_FFI_API
-#define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
-#define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
+#define NGX_HTTP_LUA_FFI_EOF                110
+#define NGX_HTTP_LUA_FFI_HEADER_ONLY        111
+#define NGX_HTTP_LUA_FFI_RAW_SOCKET         112
+#define NGX_HTTP_LUA_FFI_NO_REQ_CTX        -100
+#define NGX_HTTP_LUA_FFI_BAD_CONTEXT       -101
+#define NGX_HTTP_LUA_FFI_NO_REQUEST        -102
+#define NGX_HTTP_LUA_FFI_NULL_STRING       -103
+#define NGX_HTTP_LUA_FFI_BAD_RANGE         -104
+#define NGX_HTTP_LUA_FFI_NO_MEMORY         -105
+#define NGX_HTTP_LUA_FFI_OUTPUT_ERROR      -106
+#define NGX_HTTP_LUA_FFI_BAD_REQUEST       -110
 #endif
 
 
