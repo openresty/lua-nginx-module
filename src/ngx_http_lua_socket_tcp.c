@@ -1214,7 +1214,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
-    /* Lua function arguments: self [,session] [,host] [,verify] [,send_status_req] */
+    /* Lua function arguments: self [,session] [,host] [,verify]
+       [,send_status_req] */
 
     n = lua_gettop(L);
     if (n < 1 || n > 5) {
