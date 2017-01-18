@@ -53,7 +53,7 @@ ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
     if (pwd->len > (size_t) size) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                       "password is truncated to %d bytes", size);
-                      
+
     } else {
         size = pwd->len;
     }
@@ -137,8 +137,6 @@ done:
     if (rc == NGX_ERROR) {
         ERR_clear_error();
     }
-
-    SSL_CTX_set_default_passwd_cb(ssl->ctx, NULL);
 
     return rc;
 }
