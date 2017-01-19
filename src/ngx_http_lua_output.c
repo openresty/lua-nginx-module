@@ -805,7 +805,8 @@ ngx_http_lua_flush_cleanup(void *data)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset, size_t len)
+ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset, 
+                       size_t len)
 {
     ngx_http_lua_ctx_t          *ctx;
     ngx_uint_t                   size;
