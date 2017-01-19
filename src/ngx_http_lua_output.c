@@ -802,30 +802,31 @@ ngx_http_lua_flush_cleanup(void *data)
     ctx->flushing_coros--;
 }
 
+
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_write(ngx_http_request_t *r, const char* str, size_t offset, size_t len)
+ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset, size_t len)
 {
     ngx_http_lua_ctx_t          *ctx;
-    ngx_uint_t                  size;
+    ngx_uint_t                   size;
     ngx_buf_t                   *b;
     ngx_chain_t                 *cl;
-    ngx_int_t                   rc;
-    const char*                 str_sub;
-    u_char                      err[128];
-    size_t                      errlen;
-
+    ngx_int_t                    rc;
+    const char                  *str_sub;
+    u_char                       err[128];
+    size_t                       errlen;
+    
     errlen = 64;
 
     if (r == NULL) {
         return NGX_HTTP_LUA_FFI_NO_REQUEST;
     }
 
-    if (str == NULL) {
+    if (buf == NULL) {
         return NGX_HTTP_LUA_FFI_NULL_STRING;
     }
 
-    size = ngx_strlen(str);
+    size = ngx_strlen(buf);
 
     if (len == 0 || size == 0 || offset > size - 1) {
         return NGX_HTTP_LUA_FFI_BAD_RANGE;
@@ -835,7 +836,7 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char* str, size_t offset, si
         len = size - offset;
     }
 
-    str_sub = str + offset;
+    str_sub = buf + offset;
 
     if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
@@ -873,7 +874,7 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char* str, size_t offset, si
     ctx->seen_body_data = 1;
 
     cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
-            &ctx->free_bufs, len);
+                                         &ctx->free_bufs, len);
 
     if (cl == NULL) {
         return NGX_HTTP_LUA_FFI_NO_MEMORY;
