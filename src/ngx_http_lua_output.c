@@ -805,8 +805,8 @@ ngx_http_lua_flush_cleanup(void *data)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset, 
-                       size_t len)
+ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset,
+                       size_t len, char **err)
 {
     ngx_http_lua_ctx_t          *ctx;
     ngx_uint_t                   size;
@@ -814,23 +814,22 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset,
     ngx_chain_t                 *cl;
     ngx_int_t                    rc;
     const char                  *str_sub;
-    u_char                       err[128];
-    size_t                       errlen;
-    
-    errlen = 64;
 
     if (r == NULL) {
-        return NGX_HTTP_LUA_FFI_NO_REQUEST;
+        *err = "no request object found";
+        return NGX_ERROR;
     }
 
     if (buf == NULL) {
-        return NGX_HTTP_LUA_FFI_NULL_STRING;
+        *err = "no buffer found";
+        return NGX_ERROR;
     }
 
     size = ngx_strlen(buf);
 
     if (len == 0 || size == 0 || offset > size - 1) {
-        return NGX_HTTP_LUA_FFI_BAD_RANGE;
+        *err = "bad buffer range";
+        return NGX_ERROR;
     }
 
     if (offset + len > size) {
@@ -840,36 +839,38 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset,
     str_sub = buf + offset;
 
     if (r->connection->fd == (ngx_socket_t) -1) {
+        *err = "bad connection context";
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx == NULL) {
+        *err = "no request context found";
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
-    rc = ngx_http_lua_ffi_check_context(ctx,
-                    NGX_HTTP_LUA_CONTEXT_REWRITE
-                    | NGX_HTTP_LUA_CONTEXT_ACCESS
-                    | NGX_HTTP_LUA_CONTEXT_CONTENT,
-                    &err[0], &errlen);
-
-    if (rc != NGX_OK) {
+    if (!(ctx->context & (NGX_HTTP_LUA_CONTEXT_REWRITE
+                          | NGX_HTTP_LUA_CONTEXT_ACCESS
+                          | NGX_HTTP_LUA_CONTEXT_CONTENT))) {
+        *err = "API disabled in the current context";
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
     if (ctx->acquired_raw_req_socket) {
-        return NGX_HTTP_LUA_FFI_RAW_SOCKET;
+        *err = "raw request socket acquired";
+        return NGX_ERROR;
     }
 
     if (r->header_only) {
         ctx->eof = 1;
-        return NGX_HTTP_LUA_FFI_HEADER_ONLY;
+        *err = "header only";
+        return NGX_ERROR;
     }
 
     if (ctx->eof) {
-        return NGX_HTTP_LUA_FFI_EOF;
+        *err = "seen eof";
+        return NGX_ERROR;
     }
 
     ctx->seen_body_data = 1;
@@ -878,7 +879,8 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset,
                                          &ctx->free_bufs, len);
 
     if (cl == NULL) {
-        return NGX_HTTP_LUA_FFI_NO_MEMORY;
+        *err = "no memory";
+        return NGX_ERROR;
     }
 
     b = cl->buf;
@@ -890,7 +892,8 @@ ngx_http_lua_ffi_write(ngx_http_request_t *r, const char *buf, size_t offset,
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-        return NGX_HTTP_LUA_FFI_OUTPUT_ERROR;
+        *err = "output filter error";
+        return NGX_ERROR;
     }
 
     dd("downstream write: %d, buf len: %d", (int) rc,
