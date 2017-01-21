@@ -85,6 +85,7 @@ extern char ngx_http_lua_headers_metatable_key;
      : (c) == NGX_HTTP_LUA_CONTEXT_BODY_FILTER ? "body_filter_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_TIMER ? "ngx.timer"                       \
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
+     : (c) == NGX_HTTP_LUA_CONTEXT_EXIT_WORKER ? "exit_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"      \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE ?                          \
