@@ -176,3 +176,24 @@ GET /lua
 init_worker
 --- no_error_log
 [error]
+
+
+
+=== TEST 11: get_phase in exit_worker_by_lua
+--- http_config
+    exit_worker_by_lua_block {
+        local phase = ngx.get_phase()
+        ngx.log(ngx.NOTICE, phase)
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+ok
+--- shutdown_error_log
+exit_worker
