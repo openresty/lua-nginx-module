@@ -618,7 +618,7 @@ ngx_module_t ngx_http_lua_module = {
     ngx_http_lua_cmds,          /*  module directives */
     NGX_HTTP_MODULE,            /*  module type */
     NULL,                       /*  init master */
-    NULL,                       /*  init module */
+    ngx_http_lua_init_module,   /*  init module */
     ngx_http_lua_init_worker,   /*  init process */
     NULL,                       /*  init thread */
     NULL,                       /*  exit thread */
@@ -635,7 +635,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
-    volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
 #ifndef NGX_LUA_NO_FFI_API
@@ -743,20 +742,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
             ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
                                "failed to initialize Lua VM");
             return NGX_ERROR;
-        }
-
-        if (!lmcf->requires_shm && lmcf->init_handler) {
-            saved_cycle = ngx_cycle;
-            ngx_cycle = cf->cycle;
-
-            rc = lmcf->init_handler(cf->log, lmcf, lmcf->lua);
-
-            ngx_cycle = saved_cycle;
-
-            if (rc != NGX_OK) {
-                /* an error happened */
-                return NGX_ERROR;
-            }
         }
 
         dd("Lua VM initialized!");
