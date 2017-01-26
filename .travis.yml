@@ -41,7 +41,7 @@ env:
     - OPENSSL_PREFIX=/opt/ssl
     - OPENSSL_LIB=$OPENSSL_PREFIX/lib
     - OPENSSL_INC=$OPENSSL_PREFIX/include
-    - OPENSSL_VER=1.0.2j
+    - OPENSSL_VER=1.0.2k
     - LIBDRIZZLE_PREFIX=/opt/drizzle
     - LIBDRIZZLE_INC=$LIBDRIZZLE_PREFIX/include/libdrizzle-1.0
     - LIBDRIZZLE_LIB=$LIBDRIZZLE_PREFIX/lib
