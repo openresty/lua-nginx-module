@@ -1129,7 +1129,11 @@ ngx_http_lua_ffi_set_cert(ngx_http_request_t *r,
 
 #   else
 
+#ifdef OPENSSL_IS_BORINGSSL
+    size_t             i;
+#else
     int                i;
+#endif
     X509              *x509 = NULL;
     ngx_ssl_conn_t    *ssl_conn;
     STACK_OF(X509)    *chain = cdata;
