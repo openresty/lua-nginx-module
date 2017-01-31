@@ -304,6 +304,11 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "expecting one argument");
     }
 
+    rc = (ngx_int_t) luaL_checkinteger(L, 1);
+    if (rc == NGX_AGAIN || rc == NGX_DONE) {
+        return luaL_argerror(L, 1, "does not accept NGX_AGAIN or NGX_DONE");
+    }
+
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
@@ -323,8 +328,6 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
-
-    rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
     if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
@@ -458,6 +461,14 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     size_t *errlen)
 {
     ngx_http_lua_ctx_t       *ctx;
+
+    if (status == NGX_AGAIN || status == NGX_DONE) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "bad argument: does not accept "
+                               "NGX_AGAIN or NGX_DONE")
+                  - err;
+        return NGX_ERROR;
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
