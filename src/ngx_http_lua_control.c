@@ -358,6 +358,14 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 {
     ngx_http_lua_ctx_t       *ctx;
 
+    if (status == NGX_AGAIN || status == NGX_DONE) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "bad argument to 'ngx.exit': does not accept "
+                               "NGX_AGAIN or NGX_DONE")
+                  - err;
+        return NGX_ERROR;
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         *errlen = ngx_snprintf(err, *errlen, "no request ctx found") - err;
