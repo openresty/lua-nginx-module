@@ -4333,7 +4333,7 @@ When <code>status >= 200</code> (i.e., <code>ngx.HTTP_OK</code> and above), it w
 
 When <code>status == 0</code> (i.e., <code>ngx.OK</code>), it will only quit the current phase handler (or the content handler if the [[#content_by_lua|content_by_lua*]] directive is used) and continue to run later phases (if any) for the current request.
 
-The <code>status</code> argument can be <code>ngx.OK</code>, <code>ngx.ERROR</code>, <code>ngx.HTTP_NOT_FOUND</code>,
+The <code>status</code> argument can be <code>ngx.OK</code>, <code>ngx.ERROR</code>, <code>ngx.DECLINED</code>, <code>ngx.HTTP_NOT_FOUND</code>,
 <code>ngx.HTTP_MOVED_TEMPORARILY</code>, or other [[#HTTP status constants|HTTP status constants]].
 
 To return an error page with custom contents, use code snippets like this:
@@ -4365,7 +4365,7 @@ Number literals can be used directly as the argument, for instance,
     ngx.exit(501)
 </geshi>
 
-Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
+Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code>, <code>NGX_ERROR</code> and <code>NGX_DECLINED</code> of the [[#core constants|core constants]].
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exit(...)</code> be used to reinforce the fact that the request processing is being terminated.
 

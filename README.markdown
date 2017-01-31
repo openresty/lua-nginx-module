@@ -5200,7 +5200,7 @@ When `status >= 200` (i.e., `ngx.HTTP_OK` and above), it will interrupt the exec
 
 When `status == 0` (i.e., `ngx.OK`), it will only quit the current phase handler (or the content handler if the [content_by_lua*](#content_by_lua) directive is used) and continue to run later phases (if any) for the current request.
 
-The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.HTTP_NOT_FOUND`,
+The `status` argument can be `ngx.OK`, `ngx.ERROR`, `ngx.DECLINED`, `ngx.HTTP_NOT_FOUND`,
 `ngx.HTTP_MOVED_TEMPORARILY`, or other [HTTP status constants](#http-status-constants).
 
 To return an error page with custom contents, use code snippets like this:
@@ -5235,7 +5235,7 @@ Number literals can be used directly as the argument, for instance,
  ngx.exit(501)
 ```
 
-Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](#core-constants).
+Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `NGX_OK`, `NGX_ERROR` and `NGX_DECLINED` of the [core constants](#core-constants).
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exit(...)` be used to reinforce the fact that the request processing is being terminated.
 
