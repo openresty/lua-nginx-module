@@ -67,9 +67,8 @@ lua_package_path "$prefix/html/?.lua;;";
 _EOC_
     $block->set_value("http_config", $http_config);
 
-    my $config = $block->config || '';
-    if (!defined($block->config)) {
-      $config = <<_EOC_;
+    if (!defined $block->config) {
+      my $config = <<_EOC_;
 server_tokens off;
 
 location /t {
