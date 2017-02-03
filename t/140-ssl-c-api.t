@@ -62,8 +62,6 @@ ffi.cdef[[
 
     void ngx_http_lua_ffi_free_priv_key(void *cdata);
 
-    int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
-
     int ngx_http_lua_ffi_ssl_verify_client(void *r, void *cdata,
         int depth, char **err);
 
