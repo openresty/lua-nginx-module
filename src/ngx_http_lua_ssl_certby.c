@@ -989,7 +989,7 @@ ngx_http_lua_ffi_priv_key_pem_to_der_with_password(const u_char *pem,
     int          len;
     BIO         *in;
     EVP_PKEY    *pkey;
-    ngx_str_t   password;
+    ngx_str_t    password;
 
     password.data = (u_char *) pwd;
     password.len = pwd_len;
@@ -1153,7 +1153,7 @@ ngx_http_lua_ffi_parse_pem_priv_key_with_password(const u_char *pem,
 {
     BIO         *in;
     EVP_PKEY    *pkey;
-    ngx_str_t   password;
+    ngx_str_t    password;
 
     password.data = (u_char *) pwd;
     password.len = pwd_len;
