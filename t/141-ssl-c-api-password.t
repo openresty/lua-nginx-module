@@ -30,27 +30,27 @@ local ffi = require "ffi"
 ffi.cdef[[
     int ngx_http_lua_ffi_cert_pem_to_der(const unsigned char *pem,
         size_t pem_len, unsigned char *der, char **err);
-      
+
     int ngx_http_lua_ffi_priv_key_pem_to_der_with_password(const unsigned char *pem, size_t pem_len,
         const unsigned char *pwd, size_t pwd_len, unsigned char *der, char **err);
 
     void *ngx_http_lua_ffi_parse_pem_priv_key_with_password(const unsigned char *pem, size_t pem_len,
         const unsigned char*pwd, size_t pwd_len, char **err);
-        
+
     int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
-    
+
     int ngx_http_lua_ffi_ssl_set_der_certificate(void *r,
         const char *data, size_t len, char **err);
-        
+
     int ngx_http_lua_ffi_ssl_set_der_private_key(void *r,
         const char *data, size_t len, char **err);
-        
+
     void *ngx_http_lua_ffi_parse_pem_cert(const unsigned char *pem,
         size_t pem_len, char **err);
-        
+
     int ngx_http_lua_ffi_set_cert(void *r,
         void *cdata, char **err);
-    
+
     int ngx_http_lua_ffi_set_priv_key(void *r,
         void *cdata, char **err);
 
@@ -66,7 +66,7 @@ _EOC_
 lua_package_path "$prefix/html/?.lua;;";
 _EOC_
     $block->set_value("http_config", $http_config);
-    
+
     my $config = $block->config || '';
     if (!defined($block->config)) {
       $config = <<_EOC_;
@@ -123,7 +123,7 @@ location /t {
 _EOC_
       $block->set_value("config", $config);
     }
-    
+
     if (!defined $block->response_body) {
       my $response_body = <<_EOC_;
 connected: 1
@@ -320,7 +320,7 @@ lua ssl server name: "test.com"
 === TEST 3: simple cert + private key cdata with password
 --- http_config
     lua_ssl_trusted_certificate ../../cert/test.crt;
-    
+
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
