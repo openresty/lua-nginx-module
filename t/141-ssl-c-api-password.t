@@ -249,18 +249,23 @@ lua ssl server name: "test.com"
         server_name   test.com;
         ssl_certificate_by_lua_block {
             collectgarbage()
+            
             local ffi = require "ffi"
             require "defines"
+            
             local errmsg = ffi.new("char *[1]")
             local r = getfenv(0).__ngx_req
             if not r then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_ssl_clear_certs(r, errmsg)
+            
             local f = assert(io.open("t/cert/test_ecdsa.crt", "rb"))
             local cert = f:read("*all")
             f:close()
+            
             local out = ffi.new("char [?]", #cert)
             local rc = ffi.C.ngx_http_lua_ffi_cert_pem_to_der(cert, #cert, out, errmsg)
             if rc < 1 then
@@ -268,17 +273,22 @@ lua ssl server name: "test.com"
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local cert_der = ffi.string(out, rc)
+            
             local rc = ffi.C.ngx_http_lua_ffi_ssl_set_der_certificate(r, cert_der, #cert_der, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set DER cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             f = assert(io.open("t/cert/test_ecdsa_with_password_openresty.key", "rb"))
             local pkey = f:read("*all")
             f:close()
+            
             out = ffi.new("char [?]", #pkey)
+            
             local pwd = "openresty"
             local rc = ffi.C.ngx_http_lua_ffi_priv_key_pem_to_der_with_password(
                         pkey, #pkey, pwd, #pwd, out, errmsg)
@@ -287,7 +297,9 @@ lua ssl server name: "test.com"
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local pkey_der = ffi.string(out, rc)
+            
             local rc = ffi.C.ngx_http_lua_ffi_ssl_set_der_private_key(r, pkey_der, #pkey_der, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set DER priv key: ",
@@ -295,9 +307,12 @@ lua ssl server name: "test.com"
                 return
             end
         }
+        
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
+        
         server_tokens off;
+        
         location /foo {
             default_type 'text/plain';
             content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
@@ -326,35 +341,46 @@ lua ssl server name: "test.com"
         server_name   test.com;
         ssl_certificate_by_lua_block {
             collectgarbage()
+            
             local ffi = require "ffi"
             require "defines"
+            
             local errmsg = ffi.new("char *[1]")
+            
             local r = getfenv(0).__ngx_req
             if not r then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_ssl_clear_certs(r, errmsg)
+            
             local f = assert(io.open("t/cert/test.crt", "rb"))
             local cert_data = f:read("*all")
             f:close()
+            
             local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
             if not cert then
                 ngx.log(ngx.ERR, "failed to parse PEM cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local rc = ffi.C.ngx_http_lua_ffi_set_cert(r, cert, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set cdata cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            
             f = assert(io.open("t/cert/test_with_password_openresty.key", "rb"))
             local pkey_data = f:read("*all")
             f:close()
+            
             local pwd = "openresty"
+            
             local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key_with_password(
                 pkey_data, #pkey_data, pwd, #pwd, errmsg)
             if pkey == nil then
@@ -362,17 +388,22 @@ lua ssl server name: "test.com"
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local rc = ffi.C.ngx_http_lua_ffi_set_priv_key(r, pkey, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set cdata priv key: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_free_priv_key(pkey)
         }
+        
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
+        
         server_tokens off;
+        
         location /foo {
             default_type 'text/plain';
             content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
@@ -399,36 +430,47 @@ lua ssl server name: "test.com"
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
+        
         ssl_certificate_by_lua_block {
             collectgarbage()
+            
             local ffi = require "ffi"
             require "defines"
+            
             local errmsg = ffi.new("char *[1]")
+            
             local r = getfenv(0).__ngx_req
             if not r then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_ssl_clear_certs(r, errmsg)
+            
             local f = assert(io.open("t/cert/test_ecdsa.crt", "rb"))
             local cert_data = f:read("*all")
             f:close()
+            
             local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
             if not cert then
                 ngx.log(ngx.ERR, "failed to parse PEM cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local rc = ffi.C.ngx_http_lua_ffi_set_cert(r, cert, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set cdata cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            
             f = assert(io.open("t/cert/test_ecdsa_with_password_openresty.key", "rb"))
             local pkey_data = f:read("*all")
             f:close()
+            
             local pwd = "openresty"
             local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key_with_password(
                 pkey_data, #pkey_data, pwd, #pwd, errmsg)
@@ -437,17 +479,22 @@ lua ssl server name: "test.com"
                         ffi.string(errmsg[0]))
                 return
             end
+            
             local rc = ffi.C.ngx_http_lua_ffi_set_priv_key(r, pkey, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set cdata priv key: ",
                         ffi.string(errmsg[0]))
                 return
             end
+            
             ffi.C.ngx_http_lua_ffi_free_priv_key(pkey)
         }
+        
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
+        
         server_tokens off;
+        
         location /foo {
             default_type 'text/plain';
             content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
@@ -475,13 +522,15 @@ lua ssl server name: "test.com"
         content_by_lua_block {
             local ffi = require "ffi"
             require "defines"
-            
+
             f = assert(io.open("t/cert/test_with_password_openresty.key", "rb"))
             local pkey_data = f:read("*all")
             f:close()
 
             local errmsg = ffi.new("char *[1]")
+            
             local pwd = "openresty"
+            
             local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key_with_password(pkey_data, #pkey_data, pwd, #pwd, errmsg)
             if pkey == nil then
                 ngx.say("parse key with right password: error")
@@ -509,7 +558,7 @@ lua ssl server name: "test.com"
             else
                 ngx.say("pem to der with right password: success")
             end
-            
+
             pwd = "wrongpassword"
             local rc = ffi.C.ngx_http_lua_ffi_priv_key_pem_to_der_with_password(cert, #cert, pwd, #pwd, out, errmsg)
             if rc < 1 then
