@@ -561,7 +561,7 @@ failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
             f:close()
 
             local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
-            if not pkey then
+            if pkey == nil then
                 ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
                         ffi.string(errmsg[0]))
                 return
@@ -711,7 +711,7 @@ lua ssl server name: "test.com"
             f:close()
 
             local pkey = ffi.C.ngx_http_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
-            if not pkey then
+            if pkey == nil then
                 ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
                         ffi.string(errmsg[0]))
                 return
