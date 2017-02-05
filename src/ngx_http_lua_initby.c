@@ -22,10 +22,7 @@ ngx_http_lua_init_module(ngx_cycle_t *cycle)
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
 
-    if (lmcf == NULL
-        || lmcf->init_handler == NULL
-        || lmcf->lua == NULL)
-    {
+    if (lmcf == NULL || lmcf->init_handler == NULL || lmcf->lua == NULL) {
         return NGX_OK;
     }
 
