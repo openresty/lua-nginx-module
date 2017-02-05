@@ -146,8 +146,6 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     zone->init = ngx_http_lua_shared_memory_init;
     zone->data = ctx;
 
-    lmcf->requires_shm = 1;
-
     return &ctx->zone;
 }
 

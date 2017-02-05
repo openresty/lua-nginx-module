@@ -147,8 +147,6 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *zp = zone;
 
-    lmcf->requires_shm = 1;
-
     return NGX_CONF_OK;
 }
 

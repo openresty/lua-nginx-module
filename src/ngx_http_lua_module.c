@@ -814,7 +814,6 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->requires_rewrite = 0;
      *      lmcf->requires_access = 0;
      *      lmcf->requires_log = 0;
-     *      lmcf->requires_shm = 0;
      */
 
     lmcf->pool = cf->pool;
