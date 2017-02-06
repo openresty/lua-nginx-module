@@ -36,6 +36,8 @@ static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
+static int ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
+    void *userdata);
 
 
 ngx_int_t
@@ -554,6 +556,37 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
     return (int) TLS1_get_version(ssl_conn);
 
 #endif
+}
+
+
+static int
+ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
+    void *userdata)
+{
+    ngx_str_t *pwd = userdata;
+
+    if (rwflag) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "ngx_http_lua_ssl_password_callback() "
+                      "is called for encryption");
+        return 0;
+    }
+
+    if (pwd->len == 0) {
+        return 0;
+    }
+
+    if (pwd->len > (size_t) size) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                      "password is truncated to %d bytes", size);
+
+    } else {
+        size = pwd->len;
+    }
+
+    ngx_memcpy(buf, pwd->data, size);
+
+    return size;
 }
 
 
