@@ -138,7 +138,7 @@ typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
 typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
-    ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
 
 typedef struct {
