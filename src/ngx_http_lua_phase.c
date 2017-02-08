@@ -92,6 +92,10 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "ssl_session_fetch");
         break;
 
+    case NGX_HTTP_LUA_CONTEXT_EXIT_WORKER:
+        lua_pushliteral(L, "exit_worker");
+        break;
+
     default:
         return luaL_error(L, "unknown phase: %#x", (int) ctx->context);
     }
