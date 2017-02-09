@@ -1591,7 +1591,7 @@ exit_worker_by_lua_block
 
 Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
 
-This hook is often used to release resources when init_worker_by* create resources, To prevent the worker exit abnormal.
+This hook is often used to release resources when [init_worker_by_lua*](#init_worker_by_lua_block) create resources, To prevent the worker exit abnormal.
 
 For example,
 
