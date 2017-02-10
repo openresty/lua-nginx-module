@@ -104,7 +104,7 @@ ok
 
 
 
-=== TEST 4: exit_worker_by_lua use shdict
+=== TEST 5: exit_worker_by_lua use shdict
 --- http_config
     lua_shared_dict dog 10m;
     exit_worker_by_lua_block {
@@ -129,5 +129,5 @@ GET /t
 --- response_body
 ok
 --- shutdown_error_log
-get 11val: 1000
+get val: 100
 
