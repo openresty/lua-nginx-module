@@ -130,4 +130,3 @@ GET /t
 ok
 --- shutdown_error_log
 get val: 100
-
