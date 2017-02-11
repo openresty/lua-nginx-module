@@ -523,7 +523,7 @@ Here is the reason: by design, the global environment has exactly the same lifet
 Generally, use of Lua global variables is a really really bad idea in the context of ngx_lua because
 
 # misuse of Lua globals has very bad side effects for concurrent requests when these variables are actually supposed to be local only,
-# Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is use nginx var in code pat expensive, and
+# Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is computationally expensive, and
 # some Lua global variable references may include typing errors which make such difficult to debug.
 
 It is therefore *highly* recommended to always declare such as "local" within an appropriate scope instead.
