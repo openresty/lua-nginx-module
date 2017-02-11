@@ -150,7 +150,7 @@ Synopsis
      }
 
      # use nginx var in code path
-     # WARNING: contents in nginx var must be carefully filtered,
+     # CAUTION: contents in nginx var must be carefully filtered,
      # otherwise there'll be great security risk!
      location ~ ^/app/([-_a-zA-Z0-9/]+) {
          set $path $1;
@@ -312,8 +312,9 @@ Starting from NGINX 1.9.11, you can also compile this module as a dynamic module
 directive, for example,
 
 ```nginx
-load_module /path/to/modules/ndk_http_module.so;  # assuming NDK is built as a dynamic module too
-load_module /path/to/modules/ngx_http_lua_module.so;
+
+ load_module /path/to/modules/ndk_http_module.so;  # assuming NDK is built as a dynamic module too
+ load_module /path/to/modules/ngx_http_lua_module.so;
 ```
 
 [Back to TOC](#table-of-contents)
@@ -656,15 +657,29 @@ instead of the old deprecated form:
 
 Here is the reason: by design, the global environment has exactly the same lifetime as the Nginx request handler associated with it. Each request handler has its own set of Lua global variables and that is the idea of request isolation. The Lua module is actually loaded by the first Nginx request handler and is cached by the `require()` built-in in the `package.loaded` table for later reference, and the `module()` builtin used by some Lua modules has the side effect of setting a global variable to the loaded module table. But this global variable will be cleared at the end of the request handler,  and every subsequent request handler all has its own (clean) global environment. So one will get Lua exception for accessing the `nil` value.
 
-Generally, use of Lua global variables is a really really bad idea in the context of ngx_lua because
+The use of Lua global variables is a generally inadvisable in the ngx_lua context as:
 
-1. misuse of Lua globals has very bad side effects for concurrent requests when these variables are actually supposed to be local only,
-1. Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is kinda expensive, and
-1. some Lua global variable references are just typos, which are hard to debug.
+1. the misuse of Lua globals has detrimental side effects on concurrent requests when such variables should instead be local in scope,
+1. Lua global variables require Lua table look-ups in the global environment which is computationally expensive, and
+1. some Lua global variable references may include typing errors which make such difficult to debug.
 
-It's *highly* recommended to always declare them via "local" in the scope that is reasonable.
+It is therefore *highly* recommended to always declare such within an appropriate local scope instead.
 
-To find out all the uses of Lua global variables in your Lua code, you can run the [lua-releng tool](https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng) across all your .lua source files:
+```lua
+
+ -- Avoid
+ foo = 123
+ -- Recomended
+ local foo = 123
+
+ -- Avoid
+ function foo() return 123 end
+ -- Recomended
+ local function foo() return 123 end
+```
+
+
+To find all instances of Lua global variables in your Lua code, run the [lua-releng tool](https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng) across all `.lua` source files:
 
     $ lua-releng
     Checking use of Lua global variables in file lib/foo/bar.lua ...
@@ -709,28 +724,27 @@ will not work as expected.
 Cosockets Not Available Everywhere
 ----------------------------------
 
-Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [set_by_lua*](#set_by_lua), [log_by_lua*](#log_by_lua), [header_filter_by_lua*](#header_filter_by_lua), and [body_filter_by_lua](#body_filter_by_lua).
+Due to internal limitations in the nginx core, the cosocket API is disabled in the following contexts: [set_by_lua*](#set_by_lua), [log_by_lua*](#log_by_lua), [header_filter_by_lua*](#header_filter_by_lua), and [body_filter_by_lua](#body_filter_by_lua).
 
 The cosockets are currently also disabled in the [init_by_lua*](#init_by_lua) and [init_worker_by_lua*](#init_worker_by_lua) directive contexts but we may add support for these contexts in the future because there is no limitation in the nginx core (or the limitation might be worked around).
 
-There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a 0-delay timer via the [ngx.timer.at](#ngxtimerat) API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
+There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a zero-delay timer via the [ngx.timer.at](#ngxtimerat) API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
 
 [Back to TOC](#table-of-contents)
 
 Special Escaping Sequences
 --------------------------
 
-**WARNING** We no longer suffer from this pitfall since the introduction of the
-`*_by_lua_block {}` configuration directives.
+**NOTE** Following the `v0.9.17` release, this pitfall can be avoided by using the `*_by_lua_block {}` configuration directives.
 
-PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in string literals, the backslash character, `\`, is stripped out by both the Lua language parser and by the Nginx config file parser before processing. So the following snippet will not work as expected:
+PCRE sequences such as `\d`, `\s`, or `\w`, require special attention because in string literals, the backslash character, `\`, is stripped out by both the Lua language parser and by the nginx config file parser before processing if not within a `*_by_lua_block {}` directive. So the following snippet will not work as expected:
 
 ```nginx
 
  # nginx.conf
  ? location /test {
  ?     content_by_lua '
- ?         local regex = "\d+"  -- THIS IS WRONG!!
+ ?         local regex = "\d+"  -- THIS IS WRONG OUTSIDE OF A *_by_lua_block DIRECTIVE
  ?         local m = ngx.re.match("hello, 1234", regex)
  ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
  ?     ';
@@ -811,6 +825,22 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
  -- evaluates to "1234"
 ```
 
+As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives (available following the `v0.9.17` release) do not require modification.
+
+```nginx
+
+ # nginx.conf
+ location /test {
+     content_by_lua_block {
+         local regex = "\d+"
+         local m = ngx.re.match("hello, 1234", regex)
+         if m then ngx.say(m[0]) else ngx.say("not matched!") end
+     }
+ }
+ # evaluates to "1234"
+```
+
+
 [Back to TOC](#table-of-contents)
 
 Mixing with SSI Not Supported
@@ -885,7 +915,7 @@ servers in Lua. For example,
 Changes
 =======
 
-The changes of every release of this module can be obtained from the OpenResty bundle's change logs:
+The changes made in every release of this module are listed in the change logs of the OpenResty bundle:
 
 <http://openresty.org/#Changes>
 
@@ -1081,7 +1111,7 @@ lua_use_default_type
 
 **context:** *http, server, location, location if*
 
-Specifies whether to use the MIME type specified by the [default_type](http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type) directive for the default value of the `Content-Type` response header. If you do not want a default `Content-Type` response header for your Lua request handlers, then turn this directive off.
+Specifies whether to use the MIME type specified by the [default_type](http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type) directive for the default value of the `Content-Type` response header. Deactivate this directive if a default `Content-Type` response header for Lua request handlers is not desired.
 
 This directive is turned on by default.
 
@@ -1153,7 +1183,7 @@ Apache `mod_lua` module (yet).
 
 Disabling the Lua code cache is strongly
 discouraged for production use and should only be used during
-development as it has a significant negative impact on overall performance. For example, the performance a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
+development as it has a significant negative impact on overall performance. For example, the performance of a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
 
 [Back to TOC](#directives)
 
@@ -1242,8 +1272,7 @@ init_by_lua
 
 **phase:** *loading-config*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [init_by_lua_block](#init_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [init_by_lua_block](#init_by_lua_block) directive instead.
 
 Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
@@ -1359,7 +1388,7 @@ init_worker_by_lua
 
 **phase:** *starting-worker*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*; use the new [init_worker_by_lua_block](#init_worker_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [init_worker_by_lua_block](#init_worker_by_lua_block) directive instead.
 
 Runs the specified Lua code upon every Nginx worker process's startup when the master process is enabled. When the master process is disabled, this hook will just run after [init_by_lua*](#init_by_lua).
 
@@ -1448,7 +1477,7 @@ set_by_lua
 
 **phase:** *rewrite*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*; use the new [set_by_lua_block](#set_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [set_by_lua_block](#set_by_lua_block) directive instead.
 
 Executes code specified in `<lua-script-str>` with optional input arguments `$arg1 $arg2 ...`, and returns string output to `$res`.
 The code in `<lua-script-str>` can make [API calls](#nginx-api-for-lua) and can retrieve input arguments from the `ngx.arg` table (index starts from `1` and increases sequentially).
@@ -1562,8 +1591,7 @@ content_by_lua
 
 **phase:** *content*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [content_by_lua_block](#content_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [content_by_lua_block](#content_by_lua_block) directive instead.
 
 Acts as a "content handler" and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1623,7 +1651,7 @@ Nginx variables are supported in the file path for dynamic dispatch, for example
 
 ```nginx
 
- # WARNING: contents in nginx var must be carefully filtered,
+ # CAUTION: contents in nginx var must be carefully filtered,
  # otherwise there'll be great security risk!
  location ~ ^/app/([-_a-zA-Z0-9/]+) {
      set $path $1;
@@ -1644,8 +1672,7 @@ rewrite_by_lua
 
 **phase:** *rewrite tail*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [rewrite_by_lua_block](#rewrite_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [rewrite_by_lua_block](#rewrite_by_lua_block) directive instead.
 
 Acts as a rewrite phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1821,8 +1848,7 @@ access_by_lua
 
 **phase:** *access tail*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [access_by_lua_block](#access_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [access_by_lua_block](#access_by_lua_block) directive instead.
 
 Acts as an access phase handler and executes Lua code string specified in `<lua-script-str>` for every request.
 The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1951,8 +1977,7 @@ header_filter_by_lua
 
 **phase:** *output-header-filter*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [header_filter_by_lua_block](#header_filter_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [header_filter_by_lua_block](#header_filter_by_lua_block) directive instead.
 
 Uses Lua code specified in `<lua-script-str>` to define an output header filter.
 
@@ -2030,8 +2055,7 @@ body_filter_by_lua
 
 **phase:** *output-body-filter*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [body_filter_by_lua_block](#body_filter_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [body_filter_by_lua_block](#body_filter_by_lua_block) directive instead.
 
 Uses Lua code specified in `<lua-script-str>` to define an output body filter.
 
@@ -2167,8 +2191,7 @@ log_by_lua
 
 **phase:** *log*
 
-**WARNING** Since the `v0.9.17` release, use of this directive is *discouraged*;
-use the new [log_by_lua_block](#log_by_lua_block) directive instead.
+**NOTE** Use of this directive is *discouraged* following the `v0.9.17` release. Use the [log_by_lua_block](#log_by_lua_block) directive instead.
 
 Runs the Lua source code inlined as the `<lua-script-str>` at the `log` request processing phase. This does not replace the current access logs, but runs before.
 
@@ -2952,7 +2975,7 @@ lua_check_client_abort
 
 This directive controls whether to check for premature client connection abortion.
 
-When this directive is turned on, the ngx_lua module will monitor the premature connection close event on the downstream connections. And when there is such an event, it will call the user Lua function callback (registered by [ngx.on_abort](#ngxon_abort)) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
+When this directive is on, the ngx_lua module will monitor the premature connection close event on the downstream connections and when there is such an event, it will call the user Lua function callback (registered by [ngx.on_abort](#ngxon_abort)) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
 
 According to the current implementation, however, if the client closes the connection before the Lua code finishes reading the request body data via [ngx.req.socket](#ngxreqsocket), then ngx_lua will neither stop all the running "light threads" nor call the user callback (if [ngx.on_abort](#ngxon_abort) has been called). Instead, the reading operation on [ngx.req.socket](#ngxreqsocket) will just return the error message "client aborted" as the second return value (the first return value is surely `nil`).
 
@@ -3281,7 +3304,7 @@ Setting `ngx.var.Foo` to a `nil` value will unset the `$Foo` Nginx variable.
  ngx.var.args = nil
 ```
 
-**WARNING** When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
+**CAUTION** When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
 
 ```lua
 
@@ -3550,7 +3573,7 @@ Because of the metamethod magic, never "local" the `ngx.ctx` table outside your 
  local _M = {}
 
  -- the following line is bad since ngx.ctx is a per-request
- -- data while this `ctx` variable is on the Lua module level
+ -- data while this <code>ctx</code> variable is on the Lua module level
  -- and thus is per-nginx-worker.
  local ctx = ngx.ctx
 
@@ -5253,7 +5276,7 @@ ngx.eof
 
 Explicitly specify the end of the response output stream. In the case of HTTP 1.1 chunked encoded output, it will just trigger the Nginx core to send out the "last chunk".
 
-When you disable the HTTP 1.1 keep-alive feature for your downstream connections, you can rely on descent HTTP clients to close the connection actively for you when you call this method. This trick can be used do back-ground jobs without letting the HTTP clients to wait on the connection, as in the following example:
+When you disable the HTTP 1.1 keep-alive feature for your downstream connections, you can rely on well written HTTP clients to close the connection actively for you when you call this method. This trick can be used do back-ground jobs without letting the HTTP clients to wait on the connection, as in the following example:
 
 ```nginx
 
@@ -5261,7 +5284,7 @@ When you disable the HTTP 1.1 keep-alive feature for your downstream connections
      keepalive_timeout 0;
      content_by_lua_block {
          ngx.say("got the task!")
-         ngx.eof()  -- a descent HTTP client will close the connection at this point
+         ngx.eof()  -- well written HTTP clients will close the connection at this point
          -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
      }
  }
@@ -6497,7 +6520,7 @@ Fetch a list of the keys from the dictionary, up to `<max_count>`.
 
 By default, only the first 1024 keys (if any) are returned. When the `<max_count>` argument is given the value `0`, then all the keys will be returned even there is more than 1024 keys in the dictionary.
 
-**WARNING** Be careful when calling this method on dictionaries with a really huge number of keys. This method may lock the dictionary for quite a while and block all the nginx worker processes that are trying to access the dictionary.
+**CAUTION** Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the `v0.7.3` release.
 
@@ -7282,7 +7305,7 @@ Then it will generate the output
     4
 
 
-"Light threads" are mostly useful for doing concurrent upstream requests in a single Nginx request handler, kinda like a generalized version of [ngx.location.capture_multi](#ngxlocationcapture_multi) that can work with all the [Nginx API for Lua](#nginx-api-for-lua). The following example demonstrates parallel requests to MySQL, Memcached, and upstream HTTP services in a single Lua handler, and outputting the results in the order that they actually return (very much like the Facebook BigPipe model):
+"Light threads" are mostly useful for making concurrent upstream requests in a single Nginx request handler, much like a generalized version of [ngx.location.capture_multi](#ngxlocationcapture_multi) that can work with all the [Nginx API for Lua](#nginx-api-for-lua). The following example demonstrates parallel requests to MySQL, Memcached, and upstream HTTP services in a single Lua handler, and outputting the results in the order that they actually return (similar to Facebook's BigPipe model):
 
 ```lua
 
