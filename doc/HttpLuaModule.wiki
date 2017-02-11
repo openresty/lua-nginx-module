@@ -96,7 +96,7 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
         }
 
         # use nginx var in code path
-        # WARNING: contents in nginx var must be carefully filtered,
+        # CAUTION: contents in nginx var must be carefully filtered,
         # otherwise there'll be great security risk!
         location ~ ^/app/([-_a-zA-Z0-9/]+) {
             set $path $1;
@@ -523,12 +523,12 @@ Here is the reason: by design, the global environment has exactly the same lifet
 Generally, use of Lua global variables is a really really bad idea in the context of ngx_lua because
 
 # misuse of Lua globals has very bad side effects for concurrent requests when these variables are actually supposed to be local only,
-# Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is kinda expensive, and
-# some Lua global variable references are just typos, which are hard to debug.
+# Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is use nginx var in code pat expensive, and
+# some Lua global variable references may include typing errors which make such difficult to debug.
 
-It's *highly* recommended to always declare them via "local" in the scope that is reasonable.
+It is therefore *highly* recommended to always declare such as "local" within an appropriate scope instead.
 
-To find out all the uses of Lua global variables in your Lua code, you can run the [https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng lua-releng tool] across all your .lua source files:
+To find all instances of Lua global variables in your Lua code, run the [https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng lua-releng tool] across all <code>.lua</code> source files:
 <geshi lang="text">
 $ lua-releng
 Checking use of Lua global variables in file lib/foo/bar.lua ...
@@ -565,24 +565,23 @@ will not work as expected.
 
 == Cosockets Not Available Everywhere ==
 
-Due the internal limitations in the nginx core, the cosocket API are disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
+Due the internal limitations in the nginx core, the cosocket API is disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
 
 The cosockets are currently also disabled in the [[#init_by_lua|init_by_lua*]] and [[#init_worker_by_lua|init_worker_by_lua*]] directive contexts but we may add support for these contexts in the future because there is no limitation in the nginx core (or the limitation might be worked around).
 
-There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a 0-delay timer via the [[#ngx.timer.at|ngx.timer.at]] API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
+There exists a work-around, however, when the original context does *not* need to wait for the cosocket results. That is, creating a zero-delay timer via the [[#ngx.timer.at|ngx.timer.at]] API and do the cosocket results in the timer handler, which runs asynchronously as to the original context creating the timer.
 
 == Special Escaping Sequences ==
 
-'''WARNING''' We no longer suffer from this pitfall since the introduction of the
-<code>*_by_lua_block {}</code> configuration directives.
+'''NOTE''' Following the `v0.9.17` release, this pitfall can be avoided by using the `*_by_lua_block {}` configuration directives.
 
-PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the Nginx config file parser before processing. So the following snippet will not work as expected:
+PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the Nginx config file parser before processing if not within a `*_by_lua_block {}` directive. So the following snippet will not work as expected:
 
 <geshi lang="nginx">
     # nginx.conf
     ? location /test {
     ?     content_by_lua '
-    ?         local regex = "\d+"  -- THIS IS WRONG!!
+    ?         local regex = "\d+"  -- THIS IS WRONG OUTSIDE A *_by_lua_block DIRECTIVE!!
     ?         local m = ngx.re.match("hello, 1234", regex)
     ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
     ?     ';
@@ -658,6 +657,21 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
     -- evaluates to "1234"
 </geshi>
 
+As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives, available following the `v0.9.17` release, do not require modification.
+
+<geshi lang="nginx">
+    # nginx.conf
+    location /test {
+        content_by_lua_block {
+            local regex = "\d+"
+            local m = ngx.re.match("hello, 1234", regex)
+            if m then ngx.say(m[0]) else ngx.say("not matched!") end
+        }
+    }
+    # evaluates to "1234"
+</geshi>
+
+
 == Mixing with SSI Not Supported ==
 
 Mixing SSI with ngx_lua in the same Nginx request is not supported at all. Just use ngx_lua exclusively. Everything you can do with SSI can be done atop ngx_lua anyway and it can be more efficient when using ngx_lua.
@@ -716,7 +730,7 @@ servers in Lua. For example,
 
 = Changes =
 
-The changes of every release of this module can be obtained from the OpenResty bundle's change logs:
+The changes made in every release of this module are listed in the change logs of the OpenResty bundle:
 
 http://openresty.org/#Changes
 
@@ -833,7 +847,7 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 '''context:''' ''http, server, location, location if''
 
-Specifies whether to use the MIME type specified by the [http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type default_type] directive for the default value of the <code>Content-Type</code> response header. If you do not want a default <code>Content-Type</code> response header for your Lua request handlers, then turn this directive off.
+Specifies whether to use the MIME type specified by the [http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type default_type] directive for the default value of the <code>Content-Type</code> response header. Deactivate this directive if a default <code>Content-Type</code> response header for Lua request handlers is not desired.
 
 This directive is turned on by default.
 
@@ -898,7 +912,7 @@ Apache <code>mod_lua</code> module (yet).
 
 Disabling the Lua code cache is strongly
 discouraged for production use and should only be used during
-development as it has a significant negative impact on overall performance. For example, the performance a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
+development as it has a significant negative impact on overall performance. For example, the performance of a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
 
 == lua_regex_cache_max_entries ==
 '''syntax:''' ''lua_regex_cache_max_entries <num>''
@@ -972,8 +986,7 @@ As from the <code>v0.5.0rc29</code> release, the special notation <code>$prefix<
 
 '''phase:''' ''loading-config''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#init_by_lua_block|init_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#init_by_lua_block|init_by_lua_block]] directive instead.
 
 Runs the Lua code specified by the argument <code><lua-script-str></code> on the global Lua VM level when the Nginx master process (if any) is loading the Nginx config file.
 
@@ -1077,7 +1090,7 @@ This directive was first introduced in the <code>v0.5.5</code> release.
 
 '''phase:''' ''starting-worker''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged''; use the new [[#init_worker_by_lua_block|init_worker_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#init_worker_by_lua_block|init_worker_by_lua_block]] directive instead.
 
 Runs the specified Lua code upon every Nginx worker process's startup when the master process is enabled. When the master process is disabled, this hook will just run after [[#init_by_lua|init_by_lua*]].
 
@@ -1155,7 +1168,7 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 '''phase:''' ''rewrite''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged''; use the new [[#set_by_lua_block|set_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#set_by_lua_block|set_by_lua_block]] directive instead.
 
 Executes code specified in <code><lua-script-str></code> with optional input arguments <code>$arg1 $arg2 ...</code>, and returns string output to <code>$res</code>.
 The code in <code><lua-script-str></code> can make [[#Nginx API for Lua|API calls]] and can retrieve input arguments from the <code>ngx.arg</code> table (index starts from <code>1</code> and increases sequentially).
@@ -1257,8 +1270,7 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 
 '''phase:''' ''content''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#content_by_lua_block|content_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#content_by_lua_block|content_by_lua_block]] directive instead.
 
 Acts as a "content handler" and executes Lua code string specified in <code><lua-script-str></code> for every request.
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1310,7 +1322,7 @@ switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.con
 Nginx variables are supported in the file path for dynamic dispatch, for example:
 
 <geshi lang="nginx">
-    # WARNING: contents in nginx var must be carefully filtered,
+    # CAUTION: contents in nginx var must be carefully filtered,
     # otherwise there'll be great security risk!
     location ~ ^/app/([-_a-zA-Z0-9/]+) {
         set $path $1;
@@ -1328,8 +1340,7 @@ But be very careful about malicious user inputs and always carefully validate or
 
 '''phase:''' ''rewrite tail''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#rewrite_by_lua_block|rewrite_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#rewrite_by_lua_block|rewrite_by_lua_block]] directive instead.
 
 Acts as a rewrite phase handler and executes Lua code string specified in <code><lua-script-str></code> for every request.
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1489,8 +1500,7 @@ Nginx variables are supported in the file path for dynamic dispatch just as in [
 
 '''phase:''' ''access tail''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#access_by_lua_block|access_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#access_by_lua_block|access_by_lua_block]] directive instead.
 
 Acts as an access phase handler and executes Lua code string specified in <code><lua-script-str></code> for every request.
 The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
@@ -1606,8 +1616,7 @@ Nginx variables are supported in the file path for dynamic dispatch just as in [
 
 '''phase:''' ''output-header-filter''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#header_filter_by_lua_block|header_filter_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#header_filter_by_lua_block|header_filter_by_lua_block]] directive instead.
 
 Uses Lua code specified in <code><lua-script-str></code> to define an output header filter.
 
@@ -1674,8 +1683,7 @@ This directive was first introduced in the <code>v0.2.1rc20</code> release.
 
 '''phase:''' ''output-body-filter''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#body_filter_by_lua_block|body_filter_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#body_filter_by_lua_block|body_filter_by_lua_block]] directive instead.
 
 Uses Lua code specified in <code><lua-script-str></code> to define an output body filter.
 
@@ -1797,8 +1805,7 @@ This directive was first introduced in the <code>v0.5.0rc32</code> release.
 
 '''phase:''' ''log''
 
-'''WARNING''' Since the <code>v0.9.17</code> release, use of this directive is ''discouraged'';
-use the new [[#log_by_lua_block|log_by_lua_block]] directive instead.
+'''NOTE''' Use of this directive is ''discouraged'' following the <code>v0.9.17</code> release. Use the [[#log_by_lua_block|log_by_lua_block]] directive instead.
 
 Runs the Lua source code inlined as the <code><lua-script-str></code> at the <code>log</code> request processing phase. This does not replace the current access logs, but runs before.
 
@@ -2487,7 +2494,7 @@ This directive was first introduced in the <code>v0.5.0rc32</code> release.
 
 This directive controls whether to check for premature client connection abortion.
 
-When this directive is turned on, the ngx_lua module will monitor the premature connection close event on the downstream connections. And when there is such an event, it will call the user Lua function callback (registered by [[#ngx.on_abort|ngx.on_abort]]) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
+When this directive is on, the ngx_lua module will monitor the premature connection close event on the downstream connections and when there is such an event, it will call the user Lua function callback (registered by [[#ngx.on_abort|ngx.on_abort]]) or just stop and clean up all the Lua "light threads" running in the current request's request handler when there is no user callback function registered.
 
 According to the current implementation, however, if the client closes the connection before the Lua code finishes reading the request body data via [[#ngx.req.socket|ngx.req.socket]], then ngx_lua will neither stop all the running "light threads" nor call the user callback (if [[#ngx.on_abort|ngx.on_abort]] has been called). Instead, the reading operation on [[#ngx.req.socket|ngx.req.socket]] will just return the error message "client aborted" as the second return value (the first return value is surely <code>nil</code>).
 
@@ -2647,7 +2654,7 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
     ngx.var.args = nil
 </geshi>
 
-'''WARNING''' When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
+'''CAUTION''' When reading from an Nginx variable, Nginx will allocate memory in the per-request memory pool which is freed only at request termination. So when you need to read from an Nginx variable repeatedly in your Lua code, cache the Nginx variable value to your own Lua variable, for example,
 
 <geshi lang="lua">
     local val = ngx.var.some_var
@@ -5447,7 +5454,7 @@ Fetch a list of the keys from the dictionary, up to <code><max_count></code>.
 
 By default, only the first 1024 keys (if any) are returned. When the <code><max_count></code> argument is given the value <code>0</code>, then all the keys will be returned even there is more than 1024 keys in the dictionary.
 
-'''WARNING''' Be careful when calling this method on dictionaries with a really huge number of keys. This method may lock the dictionary for quite a while and block all the nginx worker processes that are trying to access the dictionary.
+'''CAUTION''' Avoid calling this method on dictionaries with a very large number of keys as this method may lock the dictionary for a significant amount of time while blocking nginx worker processes that are trying to access the dictionary.
 
 This feature was first introduced in the <code>v0.7.3</code> release.
 
@@ -6150,7 +6157,7 @@ Then it will generate the output
     4
 </geshi>
 
-"Light threads" are mostly useful for doing concurrent upstream requests in a single Nginx request handler, kinda like a generalized version of [[#ngx.location.capture_multi|ngx.location.capture_multi]] that can work with all the [[#Nginx API for Lua|Nginx API for Lua]]. The following example demonstrates parallel requests to MySQL, Memcached, and upstream HTTP services in a single Lua handler, and outputting the results in the order that they actually return (very much like the Facebook BigPipe model):
+"Light threads" are mostly useful for making concurrent upstream requests in a single Nginx request handler, much like a generalized version of [[#ngx.location.capture_multi|ngx.location.capture_multi]] that can work with all the [[#Nginx API for Lua|Nginx API for Lua]]. The following example demonstrates parallel requests to MySQL, Memcached, and upstream HTTP services in a single Lua handler, and outputting the results in the order that they actually return (similar to Facebook's BigPipe model):
 
 <geshi lang="lua">
     -- query mysql, memcached, and a remote http service at the same time,
