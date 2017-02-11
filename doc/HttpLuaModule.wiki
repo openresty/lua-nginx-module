@@ -237,14 +237,14 @@ Build the source with this module:
 
 == Building as a dynamic module ==
 
-Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the
-`./configure` command line above. And then you can explicitly load the module in your `nginx.conf` via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
+Starting from NGINX 1.9.11, you can also compile this module as a dynamic module, by using the <code>--add-dynamic-module=PATH</code> option instead of <code>--add-module=PATH</code> on the
+<code>./configure</code> command line above. And then you can explicitly load the module in your <code>nginx.conf</code> via the [load_module](http://nginx.org/en/docs/ngx_core_module.html#load_module)
 directive, for example,
 
-```nginx
+<geshi lang="nginx">
 load_module /path/to/modules/ndk_http_module.so;  # assuming NDK is built as a dynamic module too
 load_module /path/to/modules/ngx_http_lua_module.so;
-```
+</geshi>
 
 == C Macro Configurations ==
 
@@ -573,9 +573,9 @@ There exists a work-around, however, when the original context does *not* need t
 
 == Special Escaping Sequences ==
 
-'''NOTE''' Following the `v0.9.17` release, this pitfall can be avoided by using the `*_by_lua_block {}` configuration directives.
+'''NOTE''' Following the <code>v0.9.17</code> release, this pitfall can be avoided by using the <code>*_by_lua_block {}</code> configuration directives.
 
-PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the Nginx config file parser before processing if not within a `*_by_lua_block {}` directive. So the following snippet will not work as expected:
+PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the Nginx config file parser before processing if not within a <code>*_by_lua_block {}</code> directive. So the following snippet will not work as expected:
 
 <geshi lang="nginx">
     # nginx.conf
@@ -657,7 +657,7 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
     -- evaluates to "1234"
 </geshi>
 
-As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives, available following the `v0.9.17` release, do not require modification.
+As noted earlier, PCRE sequences presented within <code>*_by_lua_block {}</code> directives, available following the <code>v0.9.17</code> release, do not require modification.
 
 <geshi lang="nginx">
     # nginx.conf
@@ -785,7 +785,7 @@ To run specific test files:
     prove -I/path/to/test-nginx/lib t/002-content.t t/003-errors.t
 </geshi>
 
-To run a specific test block in a particular test file, add the line <code>--- ONLY</code> to the test block you want to run, and then use the `prove` utility to run that <code>.t</code> file.
+To run a specific test block in a particular test file, add the line <code>--- ONLY</code> to the test block you want to run, and then use the <code>prove</code> utility to run that <code>.t</code> file.
 
 There are also various testing modes based on mockeagain, valgrind, and etc. Refer to the [http://search.cpan.org/perldoc?Test::Nginx Test::Nginx documentation] for more details for various advanced testing modes. See also the test reports for the Nginx test cluster running on Amazon EC2: http://qa.openresty.org.
 
@@ -931,7 +931,7 @@ The default number of entries allowed is 1024 and when this limit is reached, ne
     2011/08/27 23:18:26 [warn] 31997#0: *1 lua exceeding regex cache max entries (1024), ...
 </geshi>
 
-If you are using the `ngx.re.*` implementation of [lua-resty-core](https://github.com/openresty/lua-resty-core) by loading the `resty.core.regex` module (or just the `resty.core` module), then an LRU cache is used for the regex cache being used here.
+If you are using the <code>ngx.re.*</code> implementation of [lua-resty-core](https://github.com/openresty/lua-resty-core) by loading the <code>resty.core.regex</code> module (or just the <code>resty.core</code> module), then an LRU cache is used for the regex cache being used here.
 
 Do not activate the <code>o</code> option for regular expressions (and/or <code>replace</code> string arguments for [[#ngx.re.sub|ngx.re.sub]] and [[#ngx.re.gsub|ngx.re.gsub]]) that are generated ''on the fly'' and give rise to infinite variations to avoid hitting the specified limit.
 
@@ -1055,7 +1055,7 @@ This directive was first introduced in the <code>v0.5.5</code> release.
 
 Similar to the [[#init_by_lua|init_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1135,7 +1135,7 @@ This directive was first introduced in the <code>v0.9.5</code> release.
 
 Similar to the [[#init_worker_by_lua|init_worker_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1227,7 +1227,7 @@ This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_ki
 Similar to the [[#set_by_lua|set_by_lua]] directive except that
 
 # this directive inlines the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping), and
 # this directive does not support extra arguments after the Lua script as in [[#set_by_lua|set_by_lua]].
 
@@ -1287,7 +1287,7 @@ Do not use this directive and other content handler directives in the same locat
 
 Similar to the [[#content_by_lua|content_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1459,7 +1459,7 @@ The <code>rewrite_by_lua</code> code will always run at the end of the <code>rew
 
 Similar to the [[#rewrite_by_lua|rewrite_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1575,7 +1575,7 @@ of NGINX.
 
 Similar to the [[#access_by_lua|access_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1648,7 +1648,7 @@ This directive was first introduced in the <code>v0.2.1rc20</code> release.
 
 Similar to the [[#header_filter_by_lua|header_filter_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1770,7 +1770,7 @@ This directive was first introduced in the <code>v0.5.0rc32</code> release.
 
 Similar to the [[#body_filter_by_lua|body_filter_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -1870,7 +1870,7 @@ This directive was first introduced in the <code>v0.5.0rc31</code> release.
 
 Similar to the [[#log_by_lua|log_by_lua]] directive except that this directive inlines
 the Lua source directly
-inside a pair of curly braces (`{}`) instead of in an NGINX string literal (which requires
+inside a pair of curly braces (<code>{}</code>) instead of in an NGINX string literal (which requires
 special character escaping).
 
 For instance,
@@ -2663,7 +2663,7 @@ Setting <code>ngx.var.Foo</code> to a <code>nil</code> value will unset the <cod
 
 to prevent (temporary) memory leaking within the current request's lifetime. Another way of caching the result is to use the [[#ngx.ctx|ngx.ctx]] table.
 
-Undefined NGINX variables are evaluated to `nil` while uninitialized (but defined) NGINX variables are evaluated to an empty Lua string.
+Undefined NGINX variables are evaluated to <code>nil</code> while uninitialized (but defined) NGINX variables are evaluated to an empty Lua string.
 
 This API requires a relatively expensive metamethod call and it is recommended to avoid using it on hot code paths.
 
@@ -2891,7 +2891,7 @@ Because of the metamethod magic, never "local" the <code>ngx.ctx</code> table ou
 local _M = {}
 
 -- the following line is bad since ngx.ctx is a per-request
--- data while this `ctx` variable is on the Lua module level
+-- data while this <code>ctx</code> variable is on the Lua module level
 -- and thus is per-nginx-worker.
 local ctx = ngx.ctx
 
@@ -2915,7 +2915,7 @@ end
 return _M
 </geshi>
 
-That is, let the caller pass the `ctx` table explicitly via a function argument.
+That is, let the caller pass the <code>ctx</code> table explicitly via a function argument.
 
 == ngx.location.capture ==
 '''syntax:''' ''res = ngx.location.capture(uri, options?)''
@@ -5352,7 +5352,7 @@ The <code>value</code> argument and <code>init</code> argument can be any valid 
 
 This method was first introduced in the <code>v0.3.1rc22</code> release.
 
-The optional `init` parameter was first added in the <code>v0.10.6</code> release.
+The optional <code>init</code> parameter was first added in the <code>v0.10.6</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
@@ -5733,7 +5733,7 @@ session userdata returned by a previous <code>sslhandshake</code>
 call for exactly the same target. For short-lived connections, reusing SSL
 sessions can usually speed up the handshake by one order by magnitude but it
 is not so useful if the connection pool is enabled. This argument defaults to
-`nil`. If this argument takes the boolean `false` value, no SSL session
+<code>nil</code>. If this argument takes the boolean <code>false</code> value, no SSL session
 userdata would return by this call and only a Lua boolean will be returned as
 the first return value; otherwise the current SSL session will
 always be returned as the first argument in case of successes.
@@ -5746,7 +5746,7 @@ also used to validate the server name specified in the server certificate sent f
 the remote.
 
 The optional <code>ssl_verify</code> argument takes a Lua boolean value to
-control whether to perform SSL verification. When set to `true`, the server
+control whether to perform SSL verification. When set to <code>true</code>, the server
 certificate will be verified according to the CA certificates specified by
 the [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]] directive.
 You may also need to adjust the [[#lua_ssl_verify_depth|lua_ssl_verify_depth]]
@@ -6490,8 +6490,8 @@ This directive was first introduced in the <code>v0.9.20</code> release.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua*''
 
-This string field indicates the current NGINX subsystem the current Lua environment is based on. For this module, this field always takes the string value `"http"`. For
-[https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module], however, this field takes the value `"stream"`.
+This string field indicates the current NGINX subsystem the current Lua environment is based on. For this module, this field always takes the string value <code>"http"</code>. For
+[https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module], however, this field takes the value <code>"stream"</code>.
 
 This field was first introduced in the <code>0.10.1</code>.
 
@@ -6572,7 +6572,7 @@ This API was first introduced in the <code>0.9.5</code> release.
 
 Returns the total number of the Nginx worker processes (i.e., the value configured
 by the [http://nginx.org/en/docs/ngx_core_module.html#worker_processes worker_processes]
-directive in `nginx.conf`).
+directive in <code>nginx.conf</code>).
 
 This API was first introduced in the <code>0.9.20</code> release.
 
@@ -6584,11 +6584,11 @@ This API was first introduced in the <code>0.9.20</code> release.
 
 Returns the ordinal number of the current Nginx worker processes (starting from number 0).
 
-So if the total number of workers is `N`, then this method may return a number between 0
-and `N - 1` (inclusive).
+So if the total number of workers is <code>N</code>, then this method may return a number between 0
+and <code>N - 1</code> (inclusive).
 
 This function returns meaningful values only for NGINX 1.9.1+. With earlier versions of NGINX, it
-always returns `nil`.
+always returns <code>nil</code>.
 
 See also [[#ngx.worker.count|ngx.worker.count]].
 
