@@ -252,6 +252,11 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     cctx->session_id.data = sess->session_id;
     cctx->session_id.len = sess->session_id_length;
     cctx->done = 0;
+#if (NGX_HTTP_V2)
+    cctx->http_version = 2;
+#else
+    cctx->http_version = 0;
+#endif
 
     dd("setting cctx");
 

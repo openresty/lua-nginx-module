@@ -28,6 +28,16 @@ char *ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 int ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data);
 
+#ifdef TLSEXT_TYPE_application_layer_protocol_negotiation
+int ngx_http_lua_ssl_alpn_select(ngx_ssl_conn_t *ssl_conn,
+    const unsigned char **out, unsigned char *outlen,
+    const unsigned char *in, unsigned int inlen, void *arg);
+#endif
+
+#ifdef TLSEXT_TYPE_next_proto_neg
+int ngx_http_lua_ssl_npn_advertised(ngx_ssl_conn_t *ssl_conn,
+    const unsigned char **out, unsigned int *outlen, void *arg);
+#endif
 
 #endif  /* NGX_HTTP_SSL */
 

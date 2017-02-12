@@ -23,6 +23,8 @@
 #include "ngx_http_lua_ssl.h"
 
 
+#define NGX_HTTP_NPN_ADVERTISE  "\x08http/1.1"
+
 enum {
     NGX_HTTP_LUA_ADDR_TYPE_UNIX  = 0,
     NGX_HTTP_LUA_ADDR_TYPE_INET  = 1,
@@ -281,6 +283,11 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     cctx->request = r;
     cctx->entered_cert_handler = 1;
     cctx->done = 0;
+#if (NGX_HTTP_V2)
+    cctx->http_version = 2;
+#else
+    cctx->http_version = 0;
+#endif
 
     dd("setting cctx");
 
@@ -522,6 +529,123 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_http_lua_finalize_request(r, rc);
     return rc;
 }
+
+
+#ifdef TLSEXT_TYPE_application_layer_protocol_negotiation
+
+int
+ngx_http_lua_ssl_alpn_select(ngx_ssl_conn_t *ssl_conn,
+    const unsigned char **out, unsigned char *outlen,
+    const unsigned char *in, unsigned int inlen, void *arg)
+{
+    unsigned int            srvlen;
+    unsigned char          *srv;
+#if (NGX_DEBUG)
+    unsigned int            i;
+#endif
+#if (NGX_HTTP_V2)
+    ngx_http_connection_t  *hc;
+    ngx_http_lua_ssl_ctx_t *cctx;
+#endif
+#if (NGX_HTTP_V2 || NGX_DEBUG)
+    ngx_connection_t       *c;
+
+    c = ngx_ssl_get_connection(ssl_conn);
+#endif
+
+#if (NGX_DEBUG)
+    for (i = 0; i < inlen; i += in[i] + 1) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "LUA SSL ALPN supported by client: %*s",
+                       (size_t) in[i], &in[i + 1]);
+    }
+#endif
+
+#if (NGX_HTTP_V2)
+    hc   = c->data;
+    cctx = ngx_http_lua_ssl_get_ctx(ssl_conn);
+    if (cctx == NULL) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "LUA SSL ALPN get sslconn ctx error");
+    }
+
+    if (hc->addr_conf->http2 && cctx != NULL && cctx->http_version == 2) {
+        srv =
+           (unsigned char *) NGX_HTTP_V2_ALPN_ADVERTISE NGX_HTTP_NPN_ADVERTISE;
+        srvlen = sizeof(NGX_HTTP_V2_ALPN_ADVERTISE NGX_HTTP_NPN_ADVERTISE) - 1;
+
+    } else
+#endif
+    {
+        srv = (unsigned char *) NGX_HTTP_NPN_ADVERTISE;
+        srvlen = sizeof(NGX_HTTP_NPN_ADVERTISE) - 1;
+    }
+
+    if (SSL_select_next_proto((unsigned char **) out, outlen, srv, srvlen,
+                              in, inlen)
+        != OPENSSL_NPN_NEGOTIATED)
+    {
+        return SSL_TLSEXT_ERR_NOACK;
+    }
+
+    #if (NGX_DEBUG)
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "SAE SSL ALPN selected: %*s", (size_t) *outlen, *out);
+    #endif
+
+    return SSL_TLSEXT_ERR_OK;
+}
+#endif
+
+
+#ifdef TLSEXT_TYPE_next_proto_neg
+
+int
+ngx_http_lua_ssl_npn_advertised(ngx_ssl_conn_t *ssl_conn,
+    const unsigned char **out, unsigned int *outlen, void *arg)
+{
+#if (NGX_HTTP_V2 || NGX_DEBUG)
+    ngx_connection_t  *c;
+
+    c = ngx_ssl_get_connection(ssl_conn);
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "LUA SSL NPN advertised");
+#endif
+
+#if (NGX_HTTP_V2)
+    {
+    ngx_http_connection_t  *hc;
+
+    hc = c->data;
+
+    ngx_http_lua_ssl_ctx_t *cctx;
+    cctx = ngx_http_lua_ssl_get_ctx(ssl_conn);
+    if (cctx == NULL) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "LUA SSL NPN get sslconn ctx error");
+    }
+
+    if (hc->addr_conf->http2 && cctx != NULL && cctx->http_version == 2) {
+        *out =
+            (unsigned char *) NGX_HTTP_V2_NPN_ADVERTISE NGX_HTTP_NPN_ADVERTISE;
+        *outlen = sizeof(NGX_HTTP_V2_NPN_ADVERTISE NGX_HTTP_NPN_ADVERTISE) - 1;
+
+        return SSL_TLSEXT_ERR_OK;
+    }
+    }
+#endif
+
+    *out = (unsigned char *) NGX_HTTP_NPN_ADVERTISE;
+    *outlen = sizeof(NGX_HTTP_NPN_ADVERTISE) - 1;
+
+    #if (NGX_DEBUG)
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "LUA SSL NPN selected: %*s", (size_t) *outlen, *out);
+    #endif
+
+    return SSL_TLSEXT_ERR_OK;
+}
+
+#endif
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -1235,6 +1359,40 @@ failed:
     return NGX_ERROR;
 }
 
+
+int
+ngx_http_lua_ffi_set_httpv(ngx_http_request_t *r,
+    int hv, char **err)
+{
+    ngx_ssl_conn_t                  *ssl_conn;
+    ngx_http_lua_ssl_ctx_t          *cctx;
+
+    if (hv != 2 && hv != 1) {
+        *err = "error http version";
+        return NGX_ERROR;
+    }
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    cctx = ngx_http_lua_ssl_get_ctx(ssl_conn);
+    if (cctx == NULL) {
+        *err = "bad ssl conn ctx";
+        return NGX_ERROR;
+    }
+
+    cctx->http_version = hv;
+
+    return NGX_OK;
+}
 
 #endif  /* NGX_LUA_NO_FFI_API */
 
