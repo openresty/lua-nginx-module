@@ -520,13 +520,26 @@ instead of the old deprecated form:
 
 Here is the reason: by design, the global environment has exactly the same lifetime as the Nginx request handler associated with it. Each request handler has its own set of Lua global variables and that is the idea of request isolation. The Lua module is actually loaded by the first Nginx request handler and is cached by the <code>require()</code> built-in in the <code>package.loaded</code> table for later reference, and the <code>module()</code> builtin used by some Lua modules has the side effect of setting a global variable to the loaded module table. But this global variable will be cleared at the end of the request handler,  and every subsequent request handler all has its own (clean) global environment. So one will get Lua exception for accessing the <code>nil</code> value.
 
-Generally, use of Lua global variables is a really really bad idea in the context of ngx_lua because
+The use of Lua global variables is a generally inadvisable in the ngx_lua context as:
 
-# misuse of Lua globals has very bad side effects for concurrent requests when these variables are actually supposed to be local only,
-# Lua global variables require Lua table look-up in the global environment (which is just a Lua table), which is computationally expensive, and
+# the misuse of Lua globals has detrimental side effects on concurrent requests when such variables should instead be local in scope,
+# Lua global variables require Lua table look-ups in the global environment which is computationally expensive, and
 # some Lua global variable references may include typing errors which make such difficult to debug.
 
-It is therefore *highly* recommended to always declare such as "local" within an appropriate scope instead.
+It is therefore *highly* recommended to always declare such within an appropriate local scope instead.
+
+<geshi lang="lua">
+    -- Avoid
+    foo = 123
+    -- Recomended
+    local foo = 123
+
+    -- Avoid
+    function foo() return 123 end
+    -- Recomended
+    local function foo() return 123 end
+</geshi>
+
 
 To find all instances of Lua global variables in your Lua code, run the [https://github.com/openresty/nginx-devel-utils/blob/master/lua-releng lua-releng tool] across all <code>.lua</code> source files:
 <geshi lang="text">
@@ -565,7 +578,7 @@ will not work as expected.
 
 == Cosockets Not Available Everywhere ==
 
-Due the internal limitations in the nginx core, the cosocket API is disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
+Due to internal limitations in the nginx core, the cosocket API is disabled in the following contexts: [[#set_by_lua|set_by_lua*]], [[#log_by_lua|log_by_lua*]], [[#header_filter_by_lua|header_filter_by_lua*]], and [[#body_filter_by_lua|body_filter_by_lua]].
 
 The cosockets are currently also disabled in the [[#init_by_lua|init_by_lua*]] and [[#init_worker_by_lua|init_worker_by_lua*]] directive contexts but we may add support for these contexts in the future because there is no limitation in the nginx core (or the limitation might be worked around).
 
@@ -575,7 +588,7 @@ There exists a work-around, however, when the original context does *not* need t
 
 '''NOTE''' Following the <code>v0.9.17</code> release, this pitfall can be avoided by using the <code>*_by_lua_block {}</code> configuration directives.
 
-PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the Nginx config file parser before processing if not within a <code>*_by_lua_block {}</code> directive. So the following snippet will not work as expected:
+PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, require special attention because in string literals, the backslash character, <code>\</code>, is stripped out by both the Lua language parser and by the nginx config file parser before processing if not within a <code>*_by_lua_block {}</code> directive. So the following snippet will not work as expected:
 
 <geshi lang="nginx">
     # nginx.conf
@@ -4387,14 +4400,14 @@ an asynchronous operation and will return immediately. This behavior may change 
 
 Explicitly specify the end of the response output stream. In the case of HTTP 1.1 chunked encoded output, it will just trigger the Nginx core to send out the "last chunk".
 
-When you disable the HTTP 1.1 keep-alive feature for your downstream connections, you can rely on descent HTTP clients to close the connection actively for you when you call this method. This trick can be used do back-ground jobs without letting the HTTP clients to wait on the connection, as in the following example:
+When you disable the HTTP 1.1 keep-alive feature for your downstream connections, you can rely on well written HTTP clients to close the connection actively for you when you call this method. This trick can be used do back-ground jobs without letting the HTTP clients to wait on the connection, as in the following example:
 
 <geshi lang="nginx">
     location = /async {
         keepalive_timeout 0;
         content_by_lua_block {
             ngx.say("got the task!")
-            ngx.eof()  -- a descent HTTP client will close the connection at this point
+            ngx.eof()  -- well written HTTP clients will close the connection at this point
             -- access MySQL, PostgreSQL, Redis, Memcached, and etc here...
         }
     }
@@ -5454,7 +5467,7 @@ Fetch a list of the keys from the dictionary, up to <code><max_count></code>.
 
 By default, only the first 1024 keys (if any) are returned. When the <code><max_count></code> argument is given the value <code>0</code>, then all the keys will be returned even there is more than 1024 keys in the dictionary.
 
-'''CAUTION''' Avoid calling this method on dictionaries with a very large number of keys as this method may lock the dictionary for a significant amount of time while blocking nginx worker processes that are trying to access the dictionary.
+'''CAUTION''' Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the <code>v0.7.3</code> release.
 
