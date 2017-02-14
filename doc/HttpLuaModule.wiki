@@ -594,7 +594,7 @@ PCRE sequences such as <code>\d</code>, <code>\s</code>, or <code>\w</code>, req
     # nginx.conf
     ? location /test {
     ?     content_by_lua '
-    ?         local regex = "\d+"  -- THIS IS WRONG OUTSIDE A *_by_lua_block DIRECTIVE!!
+    ?         local regex = "\d+"  -- THIS IS WRONG OUTSIDE OF A *_by_lua_block DIRECTIVE
     ?         local m = ngx.re.match("hello, 1234", regex)
     ?         if m then ngx.say(m[0]) else ngx.say("not matched!") end
     ?     ';
@@ -670,7 +670,7 @@ Within external script files, PCRE sequences presented as long-bracketed Lua str
     -- evaluates to "1234"
 </geshi>
 
-As noted earlier, PCRE sequences presented within <code>*_by_lua_block {}</code> directives, available following the <code>v0.9.17</code> release, do not require modification.
+As noted earlier, PCRE sequences presented within <code>*_by_lua_block {}</code> directives (available following the <code>v0.9.17</code> release) do not require modification.
 
 <geshi lang="nginx">
     # nginx.conf
