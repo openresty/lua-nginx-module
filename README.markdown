@@ -3565,7 +3565,7 @@ When being used in the context of [init_worker_by_lua*](#init_worker_by_lua), th
 
 The `ngx.ctx` lookup requires relatively expensive metamethod calls and it is much slower than explicitly passing per-request data along by your own function arguments. So do not abuse this API for saving your own function arguments because it usually has quite some performance impact.
 
-Because of the metamethod magic, never "local" the `ngx.ctx` table outside your Lua function scope on the Lua module level level due to [worker-level data sharing](#data-sharing-within-an-nginx-worker). For example, the following is bad:
+Because of the metamethod magic, never "local" the `ngx.ctx` table outside your Lua function scope on the Lua module level due to [worker-level data sharing](#data-sharing-within-an-nginx-worker). For example, the following is bad:
 
 ```lua
 
