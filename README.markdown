@@ -298,6 +298,9 @@ Build the source with this module:
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
+# Note that you also should add arguments which are used in your current nginx  version.
+# You can get these arguments using command 'nginx -V'
+
  make -j2
  make install
 ```
