@@ -2710,12 +2710,6 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
-    lua_pushinteger(L, timeout);
-    lua_pushinteger(L, timeout);
-
-    lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
-    lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
-    lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
 
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
@@ -2731,6 +2725,15 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
             u->send_timeout = u->conf->send_timeout;
             u->connect_timeout = u->conf->connect_timeout;
         }
+
+    } else {
+        lua_pop(L, 1);
+        lua_pushinteger(L, timeout);
+        lua_pushinteger(L, timeout);
+
+        lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
+        lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
+        lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
     }
 
     return 0;
@@ -2756,10 +2759,6 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     send_timeout = (ngx_int_t) lua_tonumber(L, 3);
     read_timeout = (ngx_int_t) lua_tonumber(L, 4);
 
-    lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
-    lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
-    lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
-
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
 
@@ -2784,6 +2783,13 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
         } else {
             u->read_timeout = u->conf->read_timeout;
         }
+
+    } else {
+        lua_pop(L, 1);
+
+        lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
+        lua_rawseti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
+        lua_rawseti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
     }
 
     return 0;
@@ -4324,7 +4330,7 @@ ngx_http_lua_req_socket(lua_State *L)
         r->request_body = rb;
     }
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */); /* the object */
+    lua_createtable(L, 1 /* narr */, 1 /* nrec */); /* the object */
 
     if (raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
