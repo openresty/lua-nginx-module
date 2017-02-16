@@ -1,8 +1,7 @@
 #!/usr/bin/perl
 #: reindex.pl
 #: reindex .t files for Test::Base based test files
-#: Copyright (c) 2006 Agent Zhang
-#: 2006-04-27 2006-05-09
+#: Copyright (c) Yichun Zhang
 
 use strict;
 use warnings;
