@@ -438,8 +438,8 @@ ngx_http_lua_ffi_req_get_uri_args_count(ngx_http_request_t *r, int max)
 
 
 int
-ngx_http_lua_ffi_req_args_helper(u_char *buf, ngx_http_lua_ffi_table_elt_t *out,
-    int count, int len)
+ngx_http_lua_ffi_req_args_helper(u_char *buf, int len,
+    ngx_http_lua_ffi_table_elt_t *out, int count)
 {
     int                          i, parsing_value = 0;
     u_char                      *last, *p, *q;
@@ -553,13 +553,9 @@ int
 ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
     ngx_http_lua_ffi_table_elt_t *out, int count)
 {
-    int len;
+    ngx_memcpy(buf, r->args.data, r->args.len);
 
-    len = r->args.len;
-
-    ngx_memcpy(buf, r->args.data, len);
-
-    return ngx_http_lua_ffi_req_args_helper(buf, out, count, len);
+    return ngx_http_lua_ffi_req_args_helper(buf, r->args.len, out, count);
 }
 
 
@@ -653,14 +649,15 @@ ngx_http_lua_ffi_req_get_post_args_count(ngx_http_request_t *r,
     return 0;
 }
 
+
 int
 ngx_http_lua_ffi_req_get_post_args(ngx_http_request_t *r, u_char *buf,
-    ngx_http_lua_ffi_table_elt_t *out, int count, int len)
+    int len, ngx_http_lua_ffi_table_elt_t *out, int count)
 {
 
     /* buf has already been allocated in lua and filled via post_args_count */
 
-    return ngx_http_lua_ffi_req_args_helper(buf, out, count, len);
+    return ngx_http_lua_ffi_req_args_helper(buf, len, out, count);
 }
 
 #endif /* NGX_LUA_NO_FFI_API */
