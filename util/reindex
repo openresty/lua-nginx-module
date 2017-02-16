@@ -44,7 +44,9 @@ sub reindex {
         push @lines, $_;
     }
     close $in;
+
     my $text = join '', @lines;
+    $text =~ s/\n+\z/\n/sm;
     $text =~ s/(?x) \n+ === \s+ TEST/\n\n\n\n=== TEST/ixsg;
     $text =~ s/__(DATA|END)__\n+=== TEST/__${1}__\n\n=== TEST/;
     #$text =~ s/\n+$/\n\n/s;
