@@ -184,7 +184,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
     if (r->request_body->temp_file) {
         lua_pushnil(L);
-        lua_pushliteral(L, "requesty body in temp file not supported");
+        lua_pushliteral(L, "request body in temp file not supported");
         return 2;
     }
 
