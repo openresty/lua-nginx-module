@@ -36,4 +36,3 @@ GET /today
 --- request
 GET /today
 --- response_body_like: ^\d{4}-\d{2}-\d{2}$
-

@@ -654,4 +654,3 @@ delete thread 2
 
 --- no_error_log
 [error]
-

@@ -2193,4 +2193,3 @@ ok
 --- error_log
 Bad bad bad
 --- skip_nginx: 4: < 1.7.1
-

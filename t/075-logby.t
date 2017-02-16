@@ -581,4 +581,3 @@ qr{log_by_lua\(nginx\.conf:\d+\):1: content-type: text/plain}
 
 --- no_error_log
 [error]
-

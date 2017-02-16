@@ -88,4 +88,3 @@ delete thread 1
 say failed: nginx output filter error
 --- no_error_log
 [error]
-

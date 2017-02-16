@@ -31,4 +31,3 @@ GET /lua
 GET /lua
 --- response_body
 helloworld
-

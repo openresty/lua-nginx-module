@@ -542,4 +542,3 @@ ok
 [error]
 --- error_log eval
 "2: hello\0world, client: "
-

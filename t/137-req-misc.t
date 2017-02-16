@@ -59,4 +59,3 @@ not internal
 GET /test
 --- response_body
 internal
-

@@ -44,4 +44,3 @@ GET /read
 GET /read
 --- response_body
 504
-

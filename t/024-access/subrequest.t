@@ -599,4 +599,3 @@ the nginx core requires the patch https://github.com/agentzh/ngx_openresty/blob/
     GET /t
 --- response_body
 done
-

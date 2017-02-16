@@ -43,4 +43,3 @@ Thu, 18-Nov-10 11:27:35 GMT
 GET /lua
 --- response_body
 Thu, 18-Nov-10 11:27:35 GMT
-

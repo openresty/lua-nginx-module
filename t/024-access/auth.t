@@ -107,4 +107,3 @@ Location: /terms_of_use\.html
 GET /lua
 --- response_body_like: 403 Forbidden
 --- error_code: 403
-
