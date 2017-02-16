@@ -1389,4 +1389,3 @@ GET /lua
     GET /foo?world
 --- response_body_like
 ^HTTP/1.0 (a=3&b|b&a=3)$
-

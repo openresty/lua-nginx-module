@@ -198,4 +198,3 @@ hello, world
 --- response_body
 [hello,h], [world,w]
 2
-

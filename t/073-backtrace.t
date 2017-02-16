@@ -187,4 +187,3 @@ probe process("$LIBLUA_PATH").function("lua_concat") {
 :79: in function 'func20'
 :83: in function 'func21'
 ...
-

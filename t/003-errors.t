@@ -126,4 +126,3 @@ GET /main
 GET /main
 --- response_body
 500
-
