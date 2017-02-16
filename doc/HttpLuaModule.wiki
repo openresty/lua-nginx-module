@@ -230,6 +230,9 @@ Build the source with this module:
             --with-ld-opt="-Wl,-rpath,/path/to/luajit-or-lua/lib" \
             --add-module=/path/to/ngx_devel_kit \
             --add-module=/path/to/lua-nginx-module
+            
+    # Note that you should also add options which are used in your current nginx version.
+    # You can get these options using command nginx -V            
 
     make -j2
     make install
