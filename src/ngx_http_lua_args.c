@@ -636,7 +636,7 @@ ngx_http_lua_ffi_req_get_post_args_count(ngx_http_request_t *r,
         if (max > 0 && count > max) {
             count = max;
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "lua hit post args limit %d", max);
+                           "lua hit query args limit %d", max);
         }
 
         return count;
