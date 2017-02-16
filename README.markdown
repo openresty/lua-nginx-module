@@ -298,6 +298,12 @@ Build the source with this module:
          --add-module=/path/to/ngx_devel_kit \
          --add-module=/path/to/lua-nginx-module
 
+ # Note that you may also want to add `./configure` options which are used in your
+ # current nginx build.
+ # You can get usually those options using command nginx -V
+
+ # you can change the parallism number 2 below to fit the number of spare CPU cores in your
+ # machine.
  make -j2
  make install
 ```
