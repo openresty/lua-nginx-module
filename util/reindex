@@ -1,6 +1,6 @@
-#!/usr/bin/perl
-#: reindex.pl
-#: reindex .t files for Test::Base based test files
+#!/usr/bin/env perl
+
+#: reindexes .t files for Test::Base based test files
 #: Copyright (c) Yichun Zhang
 
 use strict;
