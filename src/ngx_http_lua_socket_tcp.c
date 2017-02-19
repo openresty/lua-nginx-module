@@ -183,6 +183,12 @@ enum {
     }
 
 
+#if (NGX_HTTP_SSL)
+
+#define ngx_http_lua_ngx_socket_tcp_mt_key  "__ngx_socket_tcp_mt"
+
+#endif
+
 static char ngx_http_lua_req_socket_metatable_key;
 static char ngx_http_lua_raw_req_socket_metatable_key;
 static char ngx_http_lua_tcp_socket_metatable_key;
@@ -316,6 +322,19 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
+
+#if (NGX_HTTP_SSL)
+
+#ifndef NGX_LUA_NO_FFI_API
+
+    /* expose tcp object metatable to global for FFI */
+    lua_pushvalue(L, -1);
+    lua_setglobal(L, ngx_http_lua_ngx_socket_tcp_mt_key);
+
+#endif /* NGX_LUA_NO_FFI_API */
+
+#endif /* NGX_HTTP_SSL */
+
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
@@ -586,6 +605,12 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     u->conf = llcf;
+
+#if (NGX_HTTP_SSL)
+
+    u->ssl = llcf->ssl;
+
+#endif
 
     pc = &u->peer;
 
@@ -1200,6 +1225,35 @@ ngx_http_lua_socket_conn_error_retval_handler(ngx_http_request_t *r,
 
 #if (NGX_HTTP_SSL)
 
+
+#ifndef NGX_LUA_NO_FFI_API
+
+int
+ngx_http_lua_ffi_socket_tcp_setsslctx(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, void *cdata_ctx, char **err)
+{
+    SSL_CTX   *ssl_ctx = cdata_ctx;
+
+    ngx_ssl_t *ssl;
+
+    ssl = ngx_pcalloc(r->pool, sizeof(ngx_ssl_t));
+    if (ssl == NULL) {
+        *err = "no memory";
+        return NGX_ERROR;
+    }
+
+    ssl->ctx = ssl_ctx;
+    ssl->log = u->ssl->log;
+    ssl->buffer_size = u->ssl->buffer_size;
+
+    u->ssl = ssl;
+
+    return NGX_OK;
+}
+
+#endif /* NGX_LUA_NO_FFI_API */
+
+
 static int
 ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 {
@@ -1286,7 +1340,7 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
         return 1;
     }
 
-    if (ngx_ssl_create_connection(u->conf->ssl, c,
+    if (ngx_ssl_create_connection(u->ssl, c,
                                   NGX_SSL_BUFFER|NGX_SSL_CLIENT)
         != NGX_OK)
     {
