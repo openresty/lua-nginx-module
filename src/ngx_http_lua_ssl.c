@@ -13,11 +13,6 @@
 #if (NGX_HTTP_SSL)
 
 
-#define ngx_http_lua_ssl_check_method(method, method_len, s)             \
-    (method_len == sizeof(s) - 1                                         \
-    && ngx_strncmp((method), (s), method_len) == 0)
-
-
 int ngx_http_lua_ssl_ctx_index = -1;
 
 
