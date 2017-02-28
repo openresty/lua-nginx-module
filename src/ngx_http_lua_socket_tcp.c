@@ -327,9 +327,10 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
 #ifndef NGX_LUA_NO_FFI_API
 
-    /* expose tcp object metatable to global for FFI */
-    lua_pushvalue(L, -1);
-    lua_setglobal(L, ngx_http_lua_ngx_socket_tcp_mt_key);
+    /* expose tcp object metatable to REGISTRY for FFI */
+    lua_pushliteral(L, ngx_http_lua_ngx_socket_tcp_mt_key);
+    lua_pushvalue(L, -2);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 
 #endif /* NGX_LUA_NO_FFI_API */
 
