@@ -40,7 +40,6 @@ ngx_http_lua_ssl_init(ngx_log_t *log)
 void *
 ngx_http_lua_ffi_ssl_ctx_init(ngx_uint_t protocols, char **err)
 {
-    SSL_CTX                 *ssl_ctx;
     ngx_ssl_t                ssl;
 
     ssl.log = ngx_cycle->log;
@@ -50,12 +49,10 @@ ngx_http_lua_ffi_ssl_ctx_init(ngx_uint_t protocols, char **err)
         return NULL;
     }
 
-    ssl_ctx = ssl.ctx;
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ssl.log, 0,
+                   "lua ssl ctx init: %p:%d", ssl.ctx, ssl.ctx->references);
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                   "lua ssl ctx init: %p:%d", ssl_ctx, ssl_ctx->references);
-
-    return ssl_ctx;
+    return ssl.ctx;
 }
 
 
