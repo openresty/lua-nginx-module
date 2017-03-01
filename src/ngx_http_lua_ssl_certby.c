@@ -106,8 +106,8 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 #if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
     ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "at least OpenSSL 1.0.2e required but found "
-                  OPENSSL_VERSION_TEXT);
+                  "compiled with " OPENSSL_VERSION_TEXT
+                  " but at least OpenSSL 1.0.2e is required");
 
     return NGX_CONF_ERROR;
 
