@@ -281,6 +281,18 @@ END
             fi
             . auto/feature
         fi
+        
+        if [ $ngx_found = no ]; then
+            # Debian with LuaJIT 2.1
+            ngx_feature="LuaJIT library in /usr/"
+            ngx_feature_path="/usr/include/luajit-2.1"
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1"
+            else
+                ngx_feature_libs="-L/usr/lib -lm -lluajit-5.1"
+            fi
+            . auto/feature
+        fi
     fi
 fi
 
