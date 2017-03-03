@@ -89,3 +89,80 @@ GET /lua
 hello, foo
 --- no_error_log
 [error]
+
+
+
+=== TEST 4: no error in init before HUP, used ngx.shared.DICT
+--- http_config
+    lua_shared_dict dogs 1m;
+
+    init_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("foo", "hello, FOO")
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+            local foo = dogs:get("foo")
+            ngx.say(foo)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+hello, FOO
+--- no_error_log
+[error]
+
+
+
+=== TEST 5: error in init after HUP, not reloaded but foo have changed.
+--- http_config
+    lua_shared_dict dogs 1m;
+
+    init_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("foo", "foo have changed")
+
+        error("failed to init")
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("HUP reload failed")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+foo have changed
+--- error_log
+failed to init
+--- skip_check_config_version
+
+
+
+=== TEST 6: no error in init again, reload success and foo still have changed.
+--- http_config
+    lua_shared_dict dogs 1m;
+
+    init_by_lua_block {
+        -- do nothing
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+            local foo = dogs:get("foo")
+            ngx.say(foo)
+            ngx.say("reload success")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+foo have changed
+reload success
+--- no_error_log
+[error]
