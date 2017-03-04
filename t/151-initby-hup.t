@@ -68,7 +68,7 @@ GET /lua
 hello, FOO
 --- error_log
 failed to init
---- skip_check_config_version
+--- reload_fails
 
 
 
@@ -139,7 +139,7 @@ GET /lua
 foo have changed
 --- error_log
 failed to init
---- skip_check_config_version
+--- reload_fails
 
 
 
