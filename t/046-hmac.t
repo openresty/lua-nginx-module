@@ -29,4 +29,3 @@ __DATA__
 GET /lua
 --- response_body
 R/pvxzHC4NLtj7S+kXFg/NePTmk=
-

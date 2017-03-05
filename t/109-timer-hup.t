@@ -500,4 +500,3 @@ ok
 --- grep_error_log_out
 lua found 8191 pending timers
 --- timeout: 20
-

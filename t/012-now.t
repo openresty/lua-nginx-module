@@ -116,4 +116,3 @@ GET /time
 --- request
 GET /time
 --- response_body_like: ^\d{10,}(\.\d{1,3})?$
-

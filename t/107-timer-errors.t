@@ -1420,4 +1420,3 @@ qr/\[error\] .*? runtime error: content_by_lua\(nginx\.conf:\d+\):3: API disable
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]
-

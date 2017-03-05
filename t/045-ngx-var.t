@@ -226,4 +226,3 @@ GET /test?hello
 --- error_log
 variable "query_string" not changeable
 --- error_code: 500
-

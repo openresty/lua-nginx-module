@@ -351,6 +351,6 @@ CORE::join("", @k);
 POST /lua
 a=3&b=4&c
 --- response_body
-requesty body in temp file not supported
+request body in temp file not supported
 --- no_error_log
 [error]

@@ -54,4 +54,3 @@ GET /test
 GET /test
 --- response_body
 0
-

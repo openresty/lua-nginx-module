@@ -2390,4 +2390,3 @@ qr/runtime error: rewrite_by_lua\(nginx\.conf:\d+\):16: bad request/
 
 --- no_error_log
 [alert]
-

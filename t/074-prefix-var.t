@@ -64,4 +64,3 @@ GET /t
 Greetings from module foo.
 --- no_error_log
 [error]
-

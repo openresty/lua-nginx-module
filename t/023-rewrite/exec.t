@@ -376,4 +376,3 @@ ngx.exec("@proxy")
     GET /main
 --- response_body
 hello, bah
-

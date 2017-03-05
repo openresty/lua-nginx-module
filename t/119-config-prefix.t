@@ -30,4 +30,3 @@ GET /lua
 ^prefix: \/\S+$
 --- no_error_log
 [error]
-

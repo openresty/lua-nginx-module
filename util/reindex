@@ -1,8 +1,7 @@
-#!/usr/bin/perl
-#: reindex.pl
-#: reindex .t files for Test::Base based test files
-#: Copyright (c) 2006 Agent Zhang
-#: 2006-04-27 2006-05-09
+#!/usr/bin/env perl
+
+#: reindexes .t files for Test::Base based test files
+#: Copyright (c) Yichun Zhang
 
 use strict;
 use warnings;
@@ -44,7 +43,9 @@ sub reindex {
         push @lines, $_;
     }
     close $in;
+
     my $text = join '', @lines;
+    $text =~ s/\n\n+\z/\n/sm;
     $text =~ s/(?x) \n+ === \s+ TEST/\n\n\n\n=== TEST/ixsg;
     $text =~ s/__(DATA|END)__\n+=== TEST/__${1}__\n\n=== TEST/;
     #$text =~ s/\n+$/\n\n/s;

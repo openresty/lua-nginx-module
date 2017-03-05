@@ -2614,7 +2614,7 @@ SSL reused session
 GET /t
 --- ignore_response
 --- error_log eval
-qr/\[error\] .* ngx.socket connect: expecting 1 ~ 5 arguments \(including the object\), but seen 0/
+qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including the object\), but seen 0/
 --- no_error_log
 [alert]
 --- timeout: 5

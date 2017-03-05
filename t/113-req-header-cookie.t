@@ -247,4 +247,3 @@ Cookie: boo=123; foo=bar
 
 --- no_error_log
 [error]
-

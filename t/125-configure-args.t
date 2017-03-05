@@ -29,4 +29,3 @@ GET /configure_args
 ^\s*\-\-[^-]+
 --- no_error_log
 [error]
-
