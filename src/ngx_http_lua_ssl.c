@@ -45,7 +45,6 @@ ngx_http_lua_ffi_ssl_ctx_init(ngx_uint_t protocols, char **err)
     ssl.log = ngx_cycle->log;
     if (ngx_ssl_create(&ssl, protocols, NULL) != NGX_OK) {
         *err = "failed to create ssl ctx";
-        ngx_log_error(NGX_LOG_ERR, ssl.log, 0, *err);
         return NULL;
     }
 
@@ -57,18 +56,19 @@ ngx_http_lua_ffi_ssl_ctx_init(ngx_uint_t protocols, char **err)
 
 
 int
-ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert, char **err)
+ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
+    char **err_buf, size_t err_buf_len)
 {
 #ifdef LIBRESSL_VERSION_NUMBER
 
-    *err = "LibreSSL not supported";
+    *err_buf = "LibreSSL not supported";
     return NGX_ERROR;
 
 #else
 
 #   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
-    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
+    *err_buf = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
 #   else
@@ -77,6 +77,7 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert, char **err)
     SSL_CTX           *ssl_ctx = cdata_ctx;
     STACK_OF(X509)    *cert = cdata_cert;
 
+    u_long             e;
 #ifdef OPENSSL_IS_BORINGSSL
     size_t             i;
 #else
@@ -84,22 +85,19 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert, char **err)
 #endif
 
     if (sk_X509_num(cert) < 1) {
-        *err = "sk_X509_num() failed";
-        ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
-        return NGX_ERROR;
+        *err_buf = "sk_X509_num() failed";
+        goto failed;
     }
 
     x509 = sk_X509_value(cert, 0);
     if (x509 == NULL) {
-        *err = "sk_X509_value() failed";
-        ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
-        return NGX_ERROR;
+        *err_buf = "sk_X509_value() failed";
+        goto failed;
     }
 
     if (SSL_CTX_use_certificate(ssl_ctx, x509) == 0) {
-        *err = "SSL_CTX_use_certificate() failed";
-        ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
-        return NGX_ERROR;
+        *err_buf = "SSL_CTX_use_certificate() failed";
+        goto failed;
     }
 
     /* read rest of the chain */
@@ -108,19 +106,26 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert, char **err)
 
         x509 = sk_X509_value(cert, i);
         if (x509 == NULL) {
-            *err = "sk_X509_value() failed";
-            ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
-            return NGX_ERROR;
+            *err_buf = "sk_X509_value() failed";
+            goto failed;
         }
 
         if (SSL_CTX_add1_chain_cert(ssl_ctx, x509) == 0) {
-            *err = "SSL_add1_chain_cert() failed";
-            ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
-            return NGX_ERROR;
+            *err_buf = "SSL_add1_chain_cert() failed";
+            goto failed;
         }
     }
 
     return NGX_OK;
+
+failed:
+
+    e = ERR_get_error();
+    if (e == 0) {
+        ERR_error_string_n(e, *err_buf, err_buf_len);
+    }
+
+    return NGX_ERROR;
 
 #   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
 #endif
@@ -129,14 +134,22 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert, char **err)
 
 int
 ngx_http_lua_ffi_ssl_ctx_set_priv_key(void *cdata_ctx, void *cdata_key,
-    char **err)
+    char **err_buf, size_t err_buf_len)
 {
     SSL_CTX     *ssl_ctx = cdata_ctx;
     EVP_PKEY    *key = cdata_key;
 
+    u_long       e;
+
     if (SSL_CTX_use_PrivateKey(ssl_ctx, key) == 0) {
-        *err = "SSL_CTX_use_PrivateKey() failed";
-        ngx_ssl_error(NGX_LOG_ERR, ngx_cycle->log, 0, *err);
+        e = ERR_get_error();
+        if (e == 0) {
+            *err_buf = "SSL_CTX_use_PrivateKey() failed";
+
+        } else {
+            ERR_error_string_n(e, *err_buf, err_buf_len);
+        }
+
         return NGX_ERROR;
     }
 
