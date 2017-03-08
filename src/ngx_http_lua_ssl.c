@@ -68,7 +68,8 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
 
 #   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
-    *err_buf = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
+    *err_buf = "at least OpenSSL 1.0.2e required but found "
+               OPENSSL_VERSION_TEXT;
     return NGX_ERROR;
 
 #   else
