@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 11);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 no_long_string();
@@ -838,3 +838,46 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of body_filter_by_lua*
+
+
+
+=== TEST 27: exit 444
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say("111")
+            ngx.say("222")
+            ngx.say("333")
+        }
+
+        body_filter_by_lua_block {
+            ngx.exit(444)
+        }
+    }
+--- request
+    GET /t
+--- ignore_response
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 28: exit OK
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say("111")
+            ngx.say("222")
+            ngx.say("333")
+        }
+
+        body_filter_by_lua_block {
+            ngx.exit(200)
+        }
+    }
+--- request
+    GET /t
+--- ignore_response
+--- error_log
+attempt to exit with the code not 444 or ngx.ERROR

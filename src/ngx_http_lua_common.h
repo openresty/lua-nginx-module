@@ -559,6 +559,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         exited:1;
 
+    unsigned         body_filter_aborted:1;
+
     unsigned         eof:1;             /*  1: last_buf has been sent;
                                             0: last_buf not sent yet */
 
