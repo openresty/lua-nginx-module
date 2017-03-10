@@ -5268,7 +5268,7 @@ Note that while this method accepts all [HTTP status constants](#http-status-con
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exit(...)` be used to reinforce the fact that the request processing is being terminated.
 
-When being used in the contexts of [header_filter_by_lua](#header_filter_by_lua) and
+When being used in the contexts of [header_filter_by_lua](#header_filter_by_lua), [balancer_by_lua](#balancer_by_lua) and
 [ssl_session_store_by_lua*](#ssl_session_store_by_lua_block), `ngx.exit()` is
 an asynchronous operation and will return immediately. This behavior may change in future and it is recommended that users always use `return` in combination as suggested above.
 
