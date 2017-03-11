@@ -43,18 +43,12 @@ ngx_http_lua_ssl_get_error(u_long e, u_char *ssl_err_buf,
     size_t ssl_err_buf_len, u_char *default_errmsg,
     size_t default_errmsg_len)
 {
+    size_t len;
+
     if (e == 0) {
-        if (ssl_err_buf_len >= default_errmsg_len) {
-            ssl_err_buf = ngx_copy(ssl_err_buf,
-                                   default_errmsg, default_errmsg_len);
-            return default_errmsg_len;
-
-        } else {
-            ssl_err_buf = ngx_copy(ssl_err_buf,
-                                   default_errmsg, ssl_err_buf_len);
-            return ssl_err_buf_len;
-        }
-
+        len = ngx_min(ssl_err_buf_len, default_errmsg_len);
+        ssl_err_buf = ngx_copy(ssl_err_buf, default_errmsg, len);
+        return len;
     }
 
     ERR_error_string_n(e, (char *) ssl_err_buf, ssl_err_buf_len);
