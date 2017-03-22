@@ -77,6 +77,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i, j;
+    ngx_chain_t                 *cl, *ln;
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
     ngx_http_connection_t       *hc;
@@ -147,8 +148,11 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     if (hc->nbusy) {
         b = NULL;
-        for (i = 0; i < hc->nbusy; i++) {
-            b = hc->busy[i];
+        for (cl = hc->busy; cl; /* void */) {
+            ln = cl;
+            cl = cl->next;
+
+            b = ln->buf;
 
             dd("busy buf: %d: [%.*s]", (int) i, (int) (b->pos - b->start),
                b->start);
@@ -223,8 +227,11 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     }
 
     if (hc->nbusy) {
-        for (i = 0; i < hc->nbusy; i++) {
-            b = hc->busy[i];
+        for (cl = hc->busy; cl; /* void */) {
+            ln = cl;
+            cl = cl->next;
+
+            b = ln->buf;
 
             if (!found) {
                 if (b != first) {
