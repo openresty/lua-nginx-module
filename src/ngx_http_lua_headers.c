@@ -77,7 +77,9 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i, j;
-    ngx_chain_t                 *cl, *ln;
+#if defined(nginx_version) && nginx_version >= 1011011
+    ngx_chain_t                 *cl;
+#endif
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
     ngx_http_connection_t       *hc;
@@ -148,11 +150,15 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     if (hc->nbusy) {
         b = NULL;
-        for (cl = hc->busy; cl; /* void */) {
-            ln = cl;
-            cl = cl->next;
 
-            b = ln->buf;
+#if defined(nginx_version) && nginx_version >= 1011011
+        for (cl = hc->busy; cl; /* void */) {
+            b = cl->buf;
+            cl = cl->next;
+#else
+        for (i = 0; i < hc->nbusy; i++) {
+            b = hc->busy[i];
+#endif
 
             dd("busy buf: %d: [%.*s]", (int) i, (int) (b->pos - b->start),
                b->start);
@@ -227,11 +233,15 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     }
 
     if (hc->nbusy) {
-        for (cl = hc->busy; cl; /* void */) {
-            ln = cl;
-            cl = cl->next;
 
-            b = ln->buf;
+#if defined(nginx_version) && nginx_version >= 1011011
+        for (cl = hc->busy; cl; /* void */) {
+            b = cl->buf;
+            cl = cl->next;
+#else
+        for (i = 0; i < hc->nbusy; i++) {
+            b = hc->busy[i];
+#endif
 
             if (!found) {
                 if (b != first) {
