@@ -199,6 +199,12 @@ struct ngx_http_lua_main_conf_s {
                                                 of reqeusts */
     ngx_uint_t           malloc_trim_req_count;
 
+#if nginx_version >= 1011011
+    /* the following 2 fields are only used by ngx.req.raw_headers() for now */
+    ngx_buf_t          **busy_buf_ptrs;
+    ngx_int_t            busy_buf_ptr_count;
+#endif
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
