@@ -596,6 +596,7 @@ received a good response.
 --- log_level: debug
 --- error_log
 lua udp socket receive buffer size: 8192
+--- no_check_leak
 
 
 
@@ -662,6 +663,7 @@ received a good response.
 --- log_level: debug
 --- error_log
 lua udp socket receive buffer size: 8192
+--- no_check_leak
 
 
 
