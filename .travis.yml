@@ -99,7 +99,6 @@ script:
   - make libdrizzle-1.0 -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../mockeagain/ && make CC=$CC -j$JOBS && cd ..
-  - cd test-nginx/ && sudo cpanm . && cd ..
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
   - tar zxf download-cache/pcre-$PCRE_VER.tar.gz
   - cd pcre-$PCRE_VER/
@@ -125,4 +124,4 @@ script:
   - export TEST_NGINX_RESOLVER=8.8.4.4
   - dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0
   - dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
-  - prove -r t
+  - prove -Itest-nginx/lib -r t
