@@ -754,7 +754,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
         ngx_str_null(&value);
 
     } else if (lua_type(L, 3) == LUA_TTABLE) {
-        n = luaL_getn(L, 3);
+        n = lua_objlen(L, 3);
         if (n == 0) {
             ngx_str_null(&value);
 
@@ -888,7 +888,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
         ngx_str_null(&value);
 
     } else if (lua_type(L, 2) == LUA_TTABLE) {
-        n = luaL_getn(L, 2);
+        n = lua_objlen(L, 2);
         if (n == 0) {
             ngx_str_null(&value);
 
