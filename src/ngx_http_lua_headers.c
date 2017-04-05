@@ -1299,7 +1299,6 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
     ngx_table_elt_t     *h;
     ngx_list_part_t     *part;
     ngx_http_lua_ctx_t  *ctx;
-    ngx_int_t            rc;
 
     ngx_http_lua_loc_conf_t     *llcf;
 
@@ -1309,16 +1308,16 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
-        // *errmsg = "no ctx found";
+        /* *errmsg = "no ctx found"; */
         return NGX_ERROR;
     }
 
     if (!ctx->headers_set) {
-        rc = ngx_http_lua_set_content_type(r);
-        if (rc != NGX_OK) {
-            // *errmsg = "failed to set default content type";
+        if (ngx_http_lua_set_content_type(r) != NGX_OK) {
+            /* *errmsg = "failed to set default content type"; */
             return NGX_ERROR;
         }
+
         ctx->headers_set = 1;
     }
 
