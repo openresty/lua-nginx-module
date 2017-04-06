@@ -2084,7 +2084,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 {
     /* ngx.req table */
 
-    lua_createtable(L, 0 /* narr */, 24 /* nrec */);    /* .req */
+    lua_createtable(L, 0 /* narr */, 25 /* nrec */);    /* .req */
 
     ngx_http_lua_inject_req_header_api(L);
     ngx_http_lua_inject_req_uri_api(log, L);
@@ -4090,6 +4090,63 @@ ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
 
         last = &(*last)->next;
     }
+}
+
+
+ngx_int_t
+ngx_http_lua_intercept_log_handler(ngx_log_t *log,
+    ngx_uint_t level, void *buf, size_t n)
+{
+    ngx_http_request_t           *r;
+    ngx_http_log_ctx_t           *log_ctx;
+    ngx_http_lua_ctx_t           *ctx;
+    ngx_array_t                  *logs;
+    ngx_str_t                    *new_log;
+    ngx_http_lua_main_conf_t     *lmcf;
+
+    dd("enter");
+
+    log_ctx = log->data;
+    if (log_ctx == NULL) {
+        return NGX_DECLINED;
+    }
+
+    r = log_ctx->request;
+    if (r == NULL) {
+        return NGX_DECLINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx && ctx->context == NGX_HTTP_LUA_CONTEXT_LOG) {
+        return NGX_DECLINED;
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    logs = r->intercept_logs;
+    if (!logs) {
+        logs = ngx_array_create(r->pool, 1, sizeof(ngx_str_t));
+        if (logs == NULL) {
+            return NGX_ERROR;
+        }
+        r->intercept_logs = logs;
+
+    } else if (logs->nelts >= (size_t)lmcf->max_intercept_logs) {
+        return NGX_DECLINED;
+    }
+
+    new_log = ngx_array_push(logs);
+    new_log->data = ngx_palloc(r->pool, n);
+    if (new_log->data == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(new_log->data, buf, n);
+    new_log->len = n;
+
+    dd("store data: %s\n", buf);
+
+    return NGX_OK;
 }
 
 

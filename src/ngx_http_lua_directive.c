@@ -1700,6 +1700,37 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 }
 
 
+char *
+ngx_http_lua_intercept_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_lua_main_conf_t   *lmcf = conf;
+
+    ngx_str_t                  *value;
+    ssize_t                     size;
+
+    value = cf->args->elts;
+
+    if (value[1].len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua intercept log size \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    size = ngx_parse_size(&value[1]);
+
+    if (size > 256) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid lua intercept log size \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    lmcf->max_intercept_logs = size;
+    lmcf->requires_intercept_log = 1;
+
+    return NGX_CONF_OK;
+}
+
+
 /*
  * ngx_http_lua_strlstrn() is intended to search for static substring
  * with known length in string until the argument last. The argument n

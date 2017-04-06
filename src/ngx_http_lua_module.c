@@ -94,6 +94,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+    { ngx_string("lua_intercept_log"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_intercept_log,
+      0,
+      0,
+      NULL },
+
 #if (NGX_PCRE)
     { ngx_string("lua_regex_cache_max_entries"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
@@ -757,6 +764,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         dd("Lua VM initialized!");
+    }
+
+    if (lmcf->requires_intercept_log) {
+        cf->cycle->intercept_log = (ngx_log_intercept_pt)
+            ngx_http_lua_intercept_log_handler;
+        cf->cycle->log->intercept_log = (ngx_log_intercept_pt)
+            ngx_http_lua_intercept_log_handler;
     }
 
     return NGX_OK;
