@@ -78,7 +78,9 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i, j;
 #if defined(nginx_version) && nginx_version >= 1011011
+    ngx_buf_t                 **bb;
     ngx_chain_t                 *cl;
+    ngx_array_t                 *busy_bufs;
 #endif
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
@@ -112,8 +114,13 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     dd("hc->nbusy: %d", (int) hc->nbusy);
 
     if (hc->nbusy) {
+#if defined(nginx_version) && nginx_version >= 1011011
+        dd("hc->busy: %p %p %p %p", hc->busy->buf->start, hc->busy->buf->pos,
+           hc->busy->buf->last, hc->busy->buf->end);
+#else
         dd("hc->busy: %p %p %p %p", hc->busy[0]->start, hc->busy[0]->pos,
            hc->busy[0]->last, hc->busy[0]->end);
+#endif
     }
 
     dd("request line: %p %p", mr->request_line.data,
@@ -148,13 +155,23 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     dd("size: %d", (int) size);
 
+#if defined(nginx_version) && nginx_version >= 1011011
+    busy_bufs = ngx_array_create(r->pool, hc->nbusy + 1, sizeof(ngx_buf_t *));
+#endif
+
     if (hc->nbusy) {
         b = NULL;
 
 #if defined(nginx_version) && nginx_version >= 1011011
         for (cl = hc->busy; cl; /* void */) {
-            b = cl->buf;
+            bb = ngx_array_push(busy_bufs);
+            *bb = cl->buf;
             cl = cl->next;
+        }
+
+        bb = busy_bufs->elts;
+        for (i = busy_bufs->nelts - 1; i > 0; i--) {
+            b = bb[i];
 #else
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
@@ -235,9 +252,9 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     if (hc->nbusy) {
 
 #if defined(nginx_version) && nginx_version >= 1011011
-        for (cl = hc->busy; cl; /* void */) {
-            b = cl->buf;
-            cl = cl->next;
+        bb = busy_bufs->elts;
+        for (i = busy_bufs->nelts - 1; i > 0; i--) {
+            b = bb[i];
 #else
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
