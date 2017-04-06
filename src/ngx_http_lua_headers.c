@@ -170,8 +170,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         }
 
         bb = busy_bufs->elts;
-        for (i = busy_bufs->nelts - 1; i > 0; i--) {
-            b = bb[i];
+        for (i = busy_bufs->nelts; i > 0; i--) {
+            b = bb[i - 1];
 #else
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
@@ -253,8 +253,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if defined(nginx_version) && nginx_version >= 1011011
         bb = busy_bufs->elts;
-        for (i = busy_bufs->nelts - 1; i > 0; i--) {
-            b = bb[i];
+        for (i = busy_bufs->nelts; i > 0; i--) {
+            b = bb[i - 1];
 #else
         for (i = 0; i < hc->nbusy; i++) {
             b = hc->busy[i];
