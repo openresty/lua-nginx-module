@@ -9,7 +9,7 @@ log_level('error');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 2);
+plan tests => repeat_each() * (blocks() * 3 - 1);
 
 #no_diff();
 #no_long_string();
@@ -49,7 +49,6 @@ enter 2
 intercept log line:2
 "
 ]
-
 
 
 
@@ -152,3 +151,51 @@ intercept log line:1
 attempt to perform arithmetic on a table value
 "
 ]
+
+
+
+=== TEST 5: no error log
+--- http_config
+    lua_intercept_log 4;
+--- config
+    location /t {
+        echo "hello";
+    }
+    log_by_lua_block {
+        local t = ngx.req.get_intercept_log()
+        ngx.log(ngx.ERR, "intercept log line:", #t)
+
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log
+intercept log line:0
+
+
+
+=== TEST 6: customize the log path
+--- http_config
+    lua_intercept_log 4;
+    error_log logs/error_http.log error;
+--- config
+    location /t {
+        error_log logs/error.log error;
+        access_by_lua_block {
+            ngx.log(ngx.ERR, "enter access /t")
+        }
+        echo "hello";
+    }
+    log_by_lua_block {
+        local t = ngx.req.get_intercept_log()
+        ngx.log(ngx.ERR, "intercept log line:", #t)
+
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log
+enter access /t
+intercept log line:1
