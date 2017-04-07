@@ -315,19 +315,24 @@ failed to send request: closed)$
 
             local data = ""
             local ntm = 0
-            local done = false
+            local aborted = false
             for i = 1, 3 do
-                local res, err, part = sock:receive(1)
-                if not res then
-                    ngx.say("failed to receive: ", err)
-                    return
-                else
-                    data = data .. res
+                if not aborted then
+                    local res, err, part = sock:receive(1)
+                    if not res then
+                        ngx.say("failed to receive: ", err)
+                        aborted = true
+                    else
+                        data = data .. res
+                    end
                 end
+
                 ngx.sleep(0.001)
             end
 
-            ngx.say("received: ", data)
+            if not aborted then
+                ngx.say("received: ", data)
+            end
         ';
     }
 
