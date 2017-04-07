@@ -78,12 +78,12 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i, j;
 #if defined(nginx_version) && nginx_version >= 1011011
-    ngx_buf_t                 **bb;
+    ngx_buf_t                  **bb;
     ngx_chain_t                 *cl;
-    ngx_array_t                 *busy_bufs;
 #endif
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
+    ngx_http_lua_ctx_t          *ctx;
     ngx_http_connection_t       *hc;
 
     n = lua_gettop(L);
@@ -109,6 +109,11 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         return luaL_error(L, "http v2 not supported yet");
     }
 #endif
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
 
 #if 1
     dd("hc->nbusy: %d", (int) hc->nbusy);
@@ -156,21 +161,30 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     dd("size: %d", (int) size);
 
 #if defined(nginx_version) && nginx_version >= 1011011
-    busy_bufs = ngx_array_create(r->pool, hc->nbusy + 1, sizeof(ngx_buf_t *));
+    if (hc->nbusy && ctx->busy_bufs_ptrs == NULL) {
+        ctx->busy_bufs_ptrs = ngx_array_create(r->pool, hc->nbusy, sizeof(ngx_buf_t *));
+        if (ctx->busy_bufs_ptrs == NULL) {
+            return luaL_error(L, "no memory");
+        }
+
+        for (cl = hc->busy; cl; /* void */) {
+            bb = ngx_array_push(ctx->busy_bufs_ptrs);
+            if (bb == NULL) {
+                return luaL_error(L, "no memory");
+            }
+
+            *bb = cl->buf;
+            cl = cl->next;
+        }
+    }
 #endif
 
     if (hc->nbusy) {
         b = NULL;
 
 #if defined(nginx_version) && nginx_version >= 1011011
-        for (cl = hc->busy; cl; /* void */) {
-            bb = ngx_array_push(busy_bufs);
-            *bb = cl->buf;
-            cl = cl->next;
-        }
-
-        bb = busy_bufs->elts;
-        for (i = busy_bufs->nelts; i > 0; i--) {
+        bb = ctx->busy_bufs_ptrs->elts;
+        for (i = ctx->busy_bufs_ptrs->nelts; i > 0; i--) {
             b = bb[i - 1];
 #else
         for (i = 0; i < hc->nbusy; i++) {
@@ -252,8 +266,8 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     if (hc->nbusy) {
 
 #if defined(nginx_version) && nginx_version >= 1011011
-        bb = busy_bufs->elts;
-        for (i = busy_bufs->nelts; i > 0; i--) {
+        bb = ctx->busy_bufs_ptrs->elts;
+        for (i = ctx->busy_bufs_ptrs->nelts; i > 0; i--) {
             b = bb[i - 1];
 #else
         for (i = 0; i < hc->nbusy; i++) {
