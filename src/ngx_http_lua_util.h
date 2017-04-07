@@ -291,11 +291,6 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     dd("lmcf: %p", lmcf);
 
-    if (lmcf->requires_intercept_log) {
-        r->connection->log->intercept_log = (ngx_log_intercept_pt)
-            ngx_http_lua_intercept_log_handler;
-    }
-
     if (!llcf->enable_code_cache && r->connection->fd != (ngx_socket_t) -1) {
 
         L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
