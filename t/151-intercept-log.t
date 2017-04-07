@@ -9,7 +9,7 @@ log_level('error');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 - 3);
+plan tests => repeat_each() * (blocks() * 3 - 2);
 
 #no_diff();
 #no_long_string();
@@ -36,10 +36,20 @@ __DATA__
 GET /t
 --- response_body
 hello
---- error_log
-enter 1
+--- grep_error_log eval
+qr/enter \d|intercept log line:\d/
+--- grep_error_log_out eval
+[
+"enter 1
 enter 2
 intercept log line:2
+",
+"enter 1
+enter 2
+intercept log line:2
+"
+]
+
 
 
 
@@ -64,12 +74,23 @@ intercept log line:2
 GET /t
 --- response_body
 hello
---- error_log
-enter 1
+--- grep_error_log eval
+qr/enter \d|intercept log line:\d/
+--- grep_error_log_out eval
+[
+"enter 1
 enter 2
 enter 3
 enter 4
 intercept log line:3
+",
+"enter 1
+enter 2
+enter 3
+enter 4
+intercept log line:3
+"
+]
 
 
 
@@ -98,7 +119,6 @@ intercept log line:1
 No such file or directory
 "
 ]
---- ONLY
 
 
 

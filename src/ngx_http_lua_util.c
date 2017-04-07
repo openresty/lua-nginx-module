@@ -4144,7 +4144,7 @@ ngx_http_lua_intercept_log_handler(ngx_log_t *log,
     ngx_memcpy(new_log->data, buf, n);
     new_log->len = n;
 
-    dd("store data: %s\n", buf);
+    dd("intercept log: %s\n", buf);
 
     return NGX_OK;
 }
