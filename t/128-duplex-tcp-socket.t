@@ -355,6 +355,7 @@ F(ngx_http_lua_socket_tcp_finalize_write_part) {
 --- tcp_query_len: 11
 --- no_error_log
 [error]
+--- wait: 0.05
 
 
 
