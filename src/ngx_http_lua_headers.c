@@ -28,12 +28,6 @@ static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 static int ngx_http_lua_ngx_resp_get_headers(lua_State *L);
 
 
-#if defined(nginx_version) && nginx_version >= 1011011
-static ngx_buf_t  **busy_bufs_ptrs = NULL;
-static ngx_int_t    prealloc_nbusy = 0;
-#endif
-
-
 static int
 ngx_http_lua_ngx_req_http_version(lua_State *L)
 {
@@ -86,6 +80,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 #if defined(nginx_version) && nginx_version >= 1011011
     ngx_buf_t                  **bb;
     ngx_chain_t                 *cl;
+    ngx_http_lua_main_conf_t    *lmcf;
 #endif
     ngx_connection_t            *c;
     ngx_http_request_t          *r, *mr;
@@ -102,6 +97,10 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
+
+#if defined(nginx_version) && nginx_version >= 1011011
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+#endif
 
     ngx_http_lua_check_fake_request(L, r);
 
@@ -162,21 +161,22 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     if (hc->nbusy) {
 #if defined(nginx_version) && nginx_version >= 1011011
-        if (hc->nbusy > prealloc_nbusy) {
-            if (busy_bufs_ptrs != NULL)
-                ngx_pfree(ngx_cycle->pool, busy_bufs_ptrs);
+        if (hc->nbusy > lmcf->prealloc_nbusy) {
+            if (lmcf->busy_bufs_ptrs) {
+                ngx_free(lmcf->busy_bufs_ptrs);
+            }
 
-            busy_bufs_ptrs = ngx_palloc(ngx_cycle->pool,
-                                        hc->nbusy * sizeof(ngx_buf_t *));
+            lmcf->busy_bufs_ptrs = ngx_alloc(hc->nbusy * sizeof(ngx_buf_t *),
+                                             r->connection->log);
 
-            if (busy_bufs_ptrs == NULL) {
+            if (lmcf->busy_bufs_ptrs == NULL) {
                 return luaL_error(L, "no memory");
             }
 
-            prealloc_nbusy = hc->nbusy;
+            lmcf->prealloc_nbusy = hc->nbusy;
         }
 
-        bb = busy_bufs_ptrs;
+        bb = lmcf->busy_bufs_ptrs;
         for (cl = hc->busy; cl; cl = cl->next) {
             *bb++ = cl->buf;
         }
@@ -184,7 +184,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         b = NULL;
 
 #if defined(nginx_version) && nginx_version >= 1011011
-        bb = busy_bufs_ptrs;
+        bb = lmcf->busy_bufs_ptrs;
         for (i = hc->nbusy; i > 0; i--) {
             b = bb[i - 1];
 #else
@@ -267,7 +267,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     if (hc->nbusy) {
 
 #if defined(nginx_version) && nginx_version >= 1011011
-        bb = busy_bufs_ptrs;
+        bb = lmcf->busy_bufs_ptrs;
         for (i = hc->nbusy; i > 0; i--) {
             b = bb[i - 1];
 #else

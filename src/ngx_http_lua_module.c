@@ -1020,7 +1020,6 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 #endif  /* NGX_HTTP_SSL */
-
     return NGX_CONF_OK;
 }
 

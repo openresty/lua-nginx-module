@@ -199,6 +199,11 @@ struct ngx_http_lua_main_conf_s {
                                                 of reqeusts */
     ngx_uint_t           malloc_trim_req_count;
 
+#if defined(nginx_version) && nginx_version >= 1011011
+    ngx_buf_t          **busy_bufs_ptrs;
+    ngx_int_t            prealloc_nbusy;
+#endif
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
