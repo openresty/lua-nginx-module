@@ -920,6 +920,8 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
      *      lscf->balancer.src_key = NULL;
+     *
+     *      lscf->busy_bufs_ptrs = NULL;
      */
 
     return lscf;
@@ -929,13 +931,17 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+#if (NGX_HTTP_SSL) || (defined(nginx_version) && nginx_version >= 1011011)
+    ngx_http_lua_srv_conf_t *conf = child;
+
+    dd("merge srv conf");
+#endif
+
 #if (NGX_HTTP_SSL)
 
     ngx_http_lua_srv_conf_t *prev = parent;
-    ngx_http_lua_srv_conf_t *conf = child;
     ngx_http_ssl_srv_conf_t *sscf;
 
-    dd("merge srv conf");
 
     if (conf->srv.ssl_cert_src.len == 0) {
         conf->srv.ssl_cert_src = prev->srv.ssl_cert_src;
@@ -1020,6 +1026,19 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 #endif  /* NGX_HTTP_SSL */
+
+#if defined(nginx_version) && nginx_version >= 1011011
+    ngx_http_core_srv_conf_t *cscf = ngx_http_conf_get_module_srv_conf(cf,
+                                                          ngx_http_core_module);
+
+    conf->busy_bufs_ptrs = ngx_palloc(cf->pool,
+                   cscf->large_client_header_buffers.num * sizeof(ngx_buf_t *));
+
+    if (conf->busy_bufs_ptrs == NULL) {
+        return NGX_CONF_ERROR;
+    }
+#endif
+
     return NGX_CONF_OK;
 }
 

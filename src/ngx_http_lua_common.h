@@ -232,6 +232,10 @@ union ngx_http_lua_srv_conf_u {
 
         ngx_http_lua_srv_conf_handler_pt  handler;
     } balancer;
+
+#if defined(nginx_version) && nginx_version >= 1011011
+    ngx_buf_t             **busy_bufs_ptrs;
+#endif
 };
 
 
