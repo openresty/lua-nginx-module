@@ -162,6 +162,13 @@ typedef struct {
 } ngx_http_lua_preload_hook_t;
 
 
+typedef struct {
+    ssize_t              max_size;
+    size_t               size;
+    u_char              *data;
+} ngx_http_lua_intercept_log_t;
+
+
 struct ngx_http_lua_main_conf_s {
     lua_State           *lua;
 
@@ -176,7 +183,6 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_int_t            max_running_timers;
     ngx_int_t            running_timers;
-    ngx_int_t            max_intercept_logs;
 
     ngx_connection_t    *watcher;  /* for watching the process exit event */
 
@@ -225,6 +231,8 @@ struct ngx_http_lua_main_conf_s {
     ngx_buf_t          **busy_buf_ptrs;
     ngx_int_t            busy_buf_ptr_count;
 #endif
+
+    ngx_http_lua_intercept_log_t intercept_log;
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;

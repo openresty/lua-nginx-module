@@ -767,7 +767,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
     if (lmcf->requires_intercept_log) {
-        cmcf->intercept_log_handler = (ngx_log_intercept_pt)
+        cf->cycle->log_intercept_handler = (ngx_log_intercept_pt)
             ngx_http_lua_intercept_log_handler;
     }
 

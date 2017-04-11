@@ -20,6 +20,7 @@ static int ngx_http_lua_ngx_log(lua_State *L);
 static int log_wrapper(ngx_log_t *log, const char *ident,
     ngx_uint_t level, lua_State *L);
 static void ngx_http_lua_inject_log_consts(lua_State *L);
+static int ngx_http_lua_ngx_get_log(lua_State *L);
 
 
 /**
@@ -275,6 +276,9 @@ ngx_http_lua_inject_log_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_log);
     lua_setfield(L, -2, "log");
 
+    lua_pushcfunction(L, ngx_http_lua_ngx_get_log);
+    lua_setfield(L, -2, "get_log");
+
     lua_pushcfunction(L, ngx_http_lua_print);
     lua_setglobal(L, "print");
 }
@@ -312,5 +316,66 @@ ngx_http_lua_inject_log_consts(lua_State *L)
     lua_setfield(L, -2, "DEBUG");
     /* }}} */
 }
+
+
+static int
+ngx_http_lua_ngx_get_log(lua_State *L)
+{
+    ngx_http_request_t  *r;
+    ngx_http_lua_main_conf_t           *lmcf;
+    ngx_http_lua_intercept_log_t       *intercept_log;
+
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request object found");
+    }
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    intercept_log = &lmcf->intercept_log;
+
+    lua_pushlstring(L, (const char *)intercept_log->data, intercept_log->size);
+    intercept_log->size = 0;
+
+    return 1;
+}
+
+
+#ifndef NGX_LUA_NO_FFI_API
+int
+ngx_http_lua_ffi_ngx_get_log(ngx_http_request_t *r, char *str)
+{
+    ngx_http_lua_main_conf_t           *lmcf;
+    ngx_http_lua_intercept_log_t       *intercept_log;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    intercept_log = &lmcf->intercept_log;
+
+    if (intercept_log->size == 0) {
+        return 0;
+    }
+
+    ngx_memcpy(str, intercept_log->data, intercept_log->size);
+    intercept_log->size = 0;
+
+    return 1;
+}
+
+
+size_t
+ngx_http_lua_ffi_ngx_get_log_length(ngx_http_request_t *r)
+{
+    ngx_http_lua_main_conf_t           *lmcf;
+    ngx_http_lua_intercept_log_t       *intercept_log;
+
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+    intercept_log = &lmcf->intercept_log;
+
+    return intercept_log->size;
+}
+#endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

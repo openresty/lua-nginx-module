@@ -9,7 +9,7 @@ log_level('error');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 1);
+plan tests => repeat_each() * (blocks() * 3 - 2);
 
 #no_diff();
 #no_long_string();
@@ -19,75 +19,61 @@ __DATA__
 
 === TEST 1: sanity
 --- http_config
-    lua_intercept_log 4;
+    lua_intercept_log 4m;
 --- config
     location /t {
         access_by_lua_block {
             ngx.log(ngx.ERR, "enter 1")
-            ngx.log(ngx.ERR, "enter 2")
-            ngx.say("hello")
-        }
-        log_by_lua_block {
-            local t = ngx.req.get_intercept_log()
-            ngx.log(ngx.ERR, "intercept log line:", #t)
+            ngx.log(ngx.ERR, "enter 11")
+
+            local t = ngx.get_log()
+            ngx.say("log length:", #t)
         }
     }
 --- request
 GET /t
 --- response_body
-hello
+log length:341
 --- grep_error_log eval
-qr/enter \d|intercept log line:\d/
+qr/enter \d+/
 --- grep_error_log_out eval
 [
 "enter 1
-enter 2
-intercept log line:2
+enter 11
 ",
 "enter 1
-enter 2
-intercept log line:2
+enter 11
 "
 ]
 
 
 
-=== TEST 2: maximum intercepted 3 error logs
+=== TEST 2: overflow intercepted error logs
 --- http_config
-    lua_intercept_log 3;
+    lua_intercept_log 256;
 --- config
     location /t {
         access_by_lua_block {
             ngx.log(ngx.ERR, "enter 1")
-            ngx.log(ngx.ERR, "enter 2")
-            ngx.log(ngx.ERR, "enter 3")
-            ngx.log(ngx.ERR, "enter 4")
-            ngx.say("hello")
-        }
-        log_by_lua_block {
-            local t = ngx.req.get_intercept_log()
-            ngx.log(ngx.ERR, "intercept log line:", #t)
+            ngx.log(ngx.ERR, "enter 22")
+
+            local t = ngx.get_log()
+            ngx.say("log length:", #t)
         }
     }
 --- request
 GET /t
 --- response_body
-hello
+log length:170
 --- grep_error_log eval
-qr/enter \d|intercept log line:\d/
+qr/enter \d+/
 --- grep_error_log_out eval
 [
 "enter 1
-enter 2
-enter 3
-enter 4
-intercept log line:3
+enter 22
 ",
 "enter 1
-enter 2
-enter 3
-enter 4
-intercept log line:3
+enter 22
 "
 ]
 
@@ -95,27 +81,24 @@ intercept log line:3
 
 === TEST 3: 404 error(not found)
 --- http_config
-    lua_intercept_log 4;
+    lua_intercept_log 4m;
 --- config
     log_by_lua_block {
-        local t = ngx.req.get_intercept_log()
+        local t = ngx.get_log()
         ngx.log(ngx.ERR, "intercept log line:", #t)
-        ngx.log(ngx.ERR, "------->:", t[1])
     }
 --- request
 GET /t
 --- error_code: 404
 --- grep_error_log eval
-qr/intercept log line:1|No such file or directory/
+qr/intercept log line:\d+|No such file or directory/
 --- grep_error_log_out eval
 [
 "No such file or directory
-intercept log line:1
-No such file or directory
+intercept log line:235
 ",
 "No such file or directory
-intercept log line:1
-No such file or directory
+intercept log line:439
 "
 ]
 
@@ -123,7 +106,7 @@ No such file or directory
 
 === TEST 4: 500 error
 --- http_config
-    lua_intercept_log 4;
+    lua_intercept_log 4m;
 --- config
     location /t {
         content_by_lua_block {
@@ -131,24 +114,21 @@ No such file or directory
         }
     }
     log_by_lua_block {
-        local t = ngx.req.get_intercept_log()
+        local t = ngx.get_log()
         ngx.log(ngx.ERR, "intercept log line:", #t)
-        ngx.log(ngx.ERR, "------->:", t[1])
     }
 --- request
 GET /t
 --- error_code: 500
 --- grep_error_log eval
-qr/intercept log line:1|attempt to perform arithmetic on a table value/
+qr/intercept log line:\d+|attempt to perform arithmetic on a table value/
 --- grep_error_log_out eval
 [
 "attempt to perform arithmetic on a table value
-intercept log line:1
-attempt to perform arithmetic on a table value
+intercept log line:353
 ",
 "attempt to perform arithmetic on a table value
-intercept log line:1
-attempt to perform arithmetic on a table value
+intercept log line:557
 "
 ]
 
@@ -156,28 +136,34 @@ attempt to perform arithmetic on a table value
 
 === TEST 5: no error log
 --- http_config
-    lua_intercept_log 4;
+    lua_intercept_log 4m;
 --- config
     location /t {
         echo "hello";
     }
     log_by_lua_block {
-        local t = ngx.req.get_intercept_log()
+        local t = ngx.get_log()
         ngx.log(ngx.ERR, "intercept log line:", #t)
-
     }
 --- request
 GET /t
 --- response_body
 hello
---- error_log
-intercept log line:0
+--- grep_error_log eval
+qr/intercept log line:\d+/
+--- grep_error_log_out eval
+[
+"intercept log line:0
+",
+"intercept log line:202
+"
+]
 
 
 
 === TEST 6: customize the log path
 --- http_config
-    lua_intercept_log 4;
+    lua_intercept_log 4m;
     error_log logs/error_http.log error;
 --- config
     location /t {
@@ -188,7 +174,7 @@ intercept log line:0
         echo "hello";
     }
     log_by_lua_block {
-        local t = ngx.req.get_intercept_log()
+        local t = ngx.get_log()
         ngx.log(ngx.ERR, "intercept log line:", #t)
 
     }
@@ -196,6 +182,14 @@ intercept log line:0
 GET /t
 --- response_body
 hello
---- error_log
-enter access /t
-intercept log line:1
+--- grep_error_log eval
+qr/intercept log line:\d+|enter access/
+--- grep_error_log_out eval
+[
+"enter access
+intercept log line:178
+",
+"enter access
+intercept log line:382
+"
+]

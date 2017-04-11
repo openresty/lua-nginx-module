@@ -1703,10 +1703,12 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 char *
 ngx_http_lua_intercept_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_lua_main_conf_t   *lmcf = conf;
+    ngx_http_lua_main_conf_t      *lmcf = conf;
+    ngx_http_lua_intercept_log_t  *intercept_log;
 
-    ngx_str_t                  *value;
-    ssize_t                     size;
+    ngx_str_t                     *value;
+    ssize_t                        size;
+    u_char                        *data;
 
     value = cf->args->elts;
 
@@ -1718,13 +1720,22 @@ ngx_http_lua_intercept_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     size = ngx_parse_size(&value[1]);
 
-    if (size > 256) {
+    if (size > 1024*1024*32) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid lua intercept log size \"%V\"", &value[1]);
         return NGX_CONF_ERROR;
     }
 
-    lmcf->max_intercept_logs = size;
+    intercept_log = &lmcf->intercept_log;
+    data = ngx_pnalloc(cf->pool, size);
+    if (data == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    intercept_log->max_size = size;
+    intercept_log->size = 0;
+    intercept_log->data = data;
+
     lmcf->requires_intercept_log = 1;
 
     return NGX_CONF_OK;
