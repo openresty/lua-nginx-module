@@ -486,6 +486,10 @@ ngx_feature_test="int rc = malloc_trim((size_t) 0); printf(\"%d\", rc);"
 SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
 CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
 
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
 # ----------------------------------------
 
 if test -n "$ngx_module_link"; then
