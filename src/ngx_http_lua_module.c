@@ -639,7 +639,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
     volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
-#if (!defined(NGX_LUA_NO_FFI_API)) || (defined(nginx_version) && nginx_version >= 1011011)
+#if (!defined(NGX_LUA_NO_FFI_API)) \
+    || (defined(nginx_version) && nginx_version >= 1011011)
     ngx_pool_cleanup_t         *cln;
 #endif
 
