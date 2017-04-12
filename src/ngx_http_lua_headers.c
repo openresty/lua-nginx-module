@@ -26,6 +26,9 @@ static int ngx_http_lua_ngx_req_get_headers(lua_State *L);
 static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 static int ngx_http_lua_ngx_resp_get_headers(lua_State *L);
+#if defined(nginx_version) && nginx_version >= 1011011
+void ngx_http_lua_ngx_raw_header_cleanup(void *data);
+#endif
 
 
 static int
@@ -1462,6 +1465,21 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
     return found;
 }
 #endif /* NGX_LUA_NO_FFI_API */
+
+
+#if defined(nginx_version) && nginx_version >= 1011011
+void
+ngx_http_lua_ngx_raw_header_cleanup(void *data)
+{
+    ngx_http_lua_main_conf_t  *lmcf;
+
+    lmcf = (ngx_http_lua_main_conf_t *) data;
+
+    if (lmcf->busy_bufs_ptrs) {
+        ngx_free(lmcf->busy_bufs_ptrs);
+    }
+}
+#endif
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
