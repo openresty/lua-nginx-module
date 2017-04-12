@@ -94,12 +94,12 @@ GET /t
 qr/intercept log line:\d+|No such file or directory/
 --- grep_error_log_out eval
 [
-"No such file or directory
-intercept log line:235
-",
-"No such file or directory
-intercept log line:439
-"
+qr/^No such file or directory
+intercept log line:2\d{2}
+$/,
+qr/^No such file or directory
+intercept log line:4\d{2}
+$/
 ]
 
 
@@ -124,12 +124,12 @@ GET /t
 qr/intercept log line:\d+|attempt to perform arithmetic on a table value/
 --- grep_error_log_out eval
 [
-"attempt to perform arithmetic on a table value
-intercept log line:353
-",
-"attempt to perform arithmetic on a table value
-intercept log line:557
-"
+qr/^attempt to perform arithmetic on a table value
+intercept log line:3\d{2}
+$/,
+qr/^attempt to perform arithmetic on a table value
+intercept log line:5\d{2}
+$/
 ]
 
 
@@ -153,10 +153,10 @@ hello
 qr/intercept log line:\d+/
 --- grep_error_log_out eval
 [
-"intercept log line:0
-",
-"intercept log line:202
-"
+qr/^intercept log line:0
+$/,
+qr/^intercept log line:2\d{2}
+$/
 ]
 
 
@@ -186,10 +186,10 @@ hello
 qr/intercept log line:\d+|enter access/
 --- grep_error_log_out eval
 [
-"enter access
-intercept log line:178
-",
-"enter access
-intercept log line:382
-"
+qr/^enter access
+intercept log line:1\d{2}
+$/,
+qr/^enter access
+intercept log line:3\d{2}
+$/
 ]
