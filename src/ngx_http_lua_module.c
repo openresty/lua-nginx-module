@@ -639,8 +639,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
-#if (!defined(NGX_LUA_NO_FFI_API)) \
-    || (defined(nginx_version) && nginx_version >= 1011011)
+#if !defined(NGX_LUA_NO_FFI_API) || nginx_version >= 1011011
     ngx_pool_cleanup_t         *cln;
 #endif
 
@@ -732,7 +731,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     cln->handler = ngx_http_lua_sema_mm_cleanup;
 #endif
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
         return NGX_ERROR;

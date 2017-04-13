@@ -26,7 +26,7 @@ static int ngx_http_lua_ngx_req_get_headers(lua_State *L);
 static int ngx_http_lua_ngx_req_header_clear(lua_State *L);
 static int ngx_http_lua_ngx_req_header_set(lua_State *L);
 static int ngx_http_lua_ngx_resp_get_headers(lua_State *L);
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
 void ngx_http_lua_ngx_raw_header_cleanup(void *data);
 #endif
 
@@ -80,7 +80,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size_t                       size;
     ngx_buf_t                   *b, *first = NULL;
     ngx_int_t                    i, j;
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
     ngx_buf_t                  **bb;
     ngx_chain_t                 *cl;
     ngx_http_lua_main_conf_t    *lmcf;
@@ -101,7 +101,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 #endif
 
@@ -121,7 +121,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     dd("hc->nbusy: %d", (int) hc->nbusy);
 
     if (hc->nbusy) {
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
         dd("hc->busy: %p %p %p %p", hc->busy->buf->start, hc->busy->buf->pos,
            hc->busy->buf->last, hc->busy->buf->end);
 #else
@@ -163,7 +163,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     dd("size: %d", (int) size);
 
     if (hc->nbusy) {
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
         if (hc->nbusy > lmcf->prealloc_nbusy) {
             if (lmcf->busy_bufs_ptrs) {
                 ngx_free(lmcf->busy_bufs_ptrs);
@@ -186,7 +186,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 #endif
         b = NULL;
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
         bb = lmcf->busy_bufs_ptrs;
         for (i = hc->nbusy; i > 0; i--) {
             b = bb[i - 1];
@@ -269,7 +269,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     if (hc->nbusy) {
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
         bb = lmcf->busy_bufs_ptrs;
         for (i = hc->nbusy; i > 0; i--) {
             b = bb[i - 1];
@@ -1467,7 +1467,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
 #endif /* NGX_LUA_NO_FFI_API */
 
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
 void
 ngx_http_lua_ngx_raw_header_cleanup(void *data)
 {
@@ -1477,6 +1477,7 @@ ngx_http_lua_ngx_raw_header_cleanup(void *data)
 
     if (lmcf->busy_bufs_ptrs) {
         ngx_free(lmcf->busy_bufs_ptrs);
+        lmcf->busy_bufs_ptrs = NULL;
     }
 }
 #endif
