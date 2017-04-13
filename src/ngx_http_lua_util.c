@@ -4098,6 +4098,7 @@ ngx_int_t
 ngx_http_lua_intercept_log_handler(ngx_log_t *log,
     ngx_uint_t level, void *buf, size_t n)
 {
+#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_http_lua_log_ringbuff_t  *log_ringbuff;
 
     dd("enter");
@@ -4108,6 +4109,7 @@ ngx_http_lua_intercept_log_handler(ngx_log_t *log,
     log_rb_write(log_ringbuff, level, buf, n);
 
     dd("intercept log: %s\n", buf);
+#endif
 
     return NGX_OK;
 }

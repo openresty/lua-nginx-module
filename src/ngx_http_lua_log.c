@@ -322,6 +322,7 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 static int
 ngx_http_lua_ngx_get_log(lua_State *L)
 {
+#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_http_lua_log_ringbuff_t     *log_ringbuff;
     void                            *data = NULL;
     size_t                           len, i, count;
@@ -342,6 +343,9 @@ ngx_http_lua_ngx_get_log(lua_State *L)
     log_rb_reset(log_ringbuff);
 
     return 1;
+#else
+    return 0;
+#endif
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

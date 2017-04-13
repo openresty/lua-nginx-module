@@ -19,7 +19,7 @@ __DATA__
 
 === TEST 1: sanity
 --- http_config
-    lua_intercept_log 4m;
+    lua_intercept_error_log 4m;
 --- config
     location /t {
         access_by_lua_block {
@@ -27,13 +27,13 @@ __DATA__
             ngx.log(ngx.ERR, "enter 11")
 
             local t = ngx.get_log()
-            ngx.say("log length:", #t)
+            ngx.say("log lines:", #t)
         }
     }
 --- request
 GET /t
 --- response_body
-log length:341
+log lines:2
 --- grep_error_log eval
 qr/enter \d+/
 --- grep_error_log_out eval
@@ -45,26 +45,27 @@ enter 11
 enter 11
 "
 ]
+--- skip_nginx: 3: <1.11.2
 
 
 
 === TEST 2: overflow intercepted error logs
 --- http_config
-    lua_intercept_log 256;
+    lua_intercept_error_log 4k;
 --- config
     location /t {
         access_by_lua_block {
             ngx.log(ngx.ERR, "enter 1")
-            ngx.log(ngx.ERR, "enter 22")
+            ngx.log(ngx.ERR, "enter 22" .. string.rep("a", 4096))
 
             local t = ngx.get_log()
-            ngx.say("log length:", #t)
+            ngx.say("log lines:", #t)
         }
     }
 --- request
 GET /t
 --- response_body
-log length:170
+log lines:1
 --- grep_error_log eval
 qr/enter \d+/
 --- grep_error_log_out eval
@@ -76,12 +77,13 @@ enter 22
 enter 22
 "
 ]
+--- skip_nginx: 3: <1.11.2
 
 
 
 === TEST 3: 404 error(not found)
 --- http_config
-    lua_intercept_log 4m;
+    lua_intercept_error_log 4m;
 --- config
     log_by_lua_block {
         local t = ngx.get_log()
@@ -95,18 +97,19 @@ qr/intercept log line:\d+|No such file or directory/
 --- grep_error_log_out eval
 [
 qr/^No such file or directory
-intercept log line:2\d{2}
+intercept log line:1
 $/,
 qr/^No such file or directory
-intercept log line:4\d{2}
+intercept log line:2
 $/
 ]
+--- skip_nginx: 2: <1.11.2
 
 
 
 === TEST 4: 500 error
 --- http_config
-    lua_intercept_log 4m;
+    lua_intercept_error_log 4m;
 --- config
     location /t {
         content_by_lua_block {
@@ -125,18 +128,19 @@ qr/intercept log line:\d+|attempt to perform arithmetic on a table value/
 --- grep_error_log_out eval
 [
 qr/^attempt to perform arithmetic on a table value
-intercept log line:3\d{2}
+intercept log line:1
 $/,
 qr/^attempt to perform arithmetic on a table value
-intercept log line:5\d{2}
+intercept log line:2
 $/
 ]
+--- skip_nginx: 2: <1.11.2
 
 
 
 === TEST 5: no error log
 --- http_config
-    lua_intercept_log 4m;
+    lua_intercept_error_log 4m;
 --- config
     location /t {
         echo "hello";
@@ -155,15 +159,16 @@ qr/intercept log line:\d+/
 [
 qr/^intercept log line:0
 $/,
-qr/^intercept log line:2\d{2}
+qr/^intercept log line:1
 $/
 ]
+--- skip_nginx: 3: <1.11.2
 
 
 
 === TEST 6: customize the log path
 --- http_config
-    lua_intercept_log 4m;
+    lua_intercept_error_log 4m;
     error_log logs/error_http.log error;
 --- config
     location /t {
@@ -187,9 +192,10 @@ qr/intercept log line:\d+|enter access/
 --- grep_error_log_out eval
 [
 qr/^enter access
-intercept log line:1\d{2}
+intercept log line:1
 $/,
 qr/^enter access
-intercept log line:3\d{2}
+intercept log line:2
 $/
 ]
+--- skip_nginx: 3: <1.11.2

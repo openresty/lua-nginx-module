@@ -152,8 +152,6 @@ typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
-typedef ngx_int_t (*ngx_http_intercept_log_handler_pt)(ngx_log_t *log,
-    ngx_uint_t level, void *buf, size_t n);
 
 
 typedef struct {
