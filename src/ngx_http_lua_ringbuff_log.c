@@ -36,6 +36,7 @@ log_rb_init(ngx_http_lua_log_ringbuff_t *rb, void *buf, size_t len)
     rb->tail = rb->data;
     rb->head = rb->data;
     rb->count = 0;
+    rb->filter_level = NGX_LOG_DEBUG;
 
     return;
 }
@@ -151,7 +152,8 @@ log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
 
 
 ngx_int_t
-log_rb_read(ngx_http_lua_log_ringbuff_t *rb, void **buf, size_t *n)
+log_rb_read(ngx_http_lua_log_ringbuff_t *rb, int *log_level, void **buf,
+    size_t *n)
 {
     ringbuff_head       *head;
 
@@ -165,6 +167,7 @@ log_rb_read(ngx_http_lua_log_ringbuff_t *rb, void **buf, size_t *n)
         return NGX_ERROR;
     }
 
+    *log_level = head->log_level;
     *n = head->len;
     rb->head += sizeof(ringbuff_head);
     *buf = rb->head;

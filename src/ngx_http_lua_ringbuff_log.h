@@ -18,12 +18,14 @@ typedef struct {
     char      *data;              /*  log buffer      */
     size_t     size;              /*  buffer size     */
     size_t     count;             /*  count           */
+    ngx_uint_t filter_level;
 }ngx_http_lua_log_ringbuff_t;
 
 
 void log_rb_init(ngx_http_lua_log_ringbuff_t *rb, void *buf, size_t len);
 void log_rb_reset(ngx_http_lua_log_ringbuff_t *rb);
-ngx_int_t log_rb_read(ngx_http_lua_log_ringbuff_t *rb, void **buf, size_t *n);
+ngx_int_t log_rb_read(ngx_http_lua_log_ringbuff_t *rb, int *log_level,
+    void **buf, size_t *n);
 ngx_int_t log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
     void *buf, size_t n);
 

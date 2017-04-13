@@ -710,7 +710,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 117 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 118 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -4105,6 +4105,10 @@ ngx_http_lua_intercept_log_handler(ngx_log_t *log,
 
     log_ringbuff = (ngx_http_lua_log_ringbuff_t  *)
                     ngx_cycle->intercept_error_log_data;
+
+    if (level > log_ringbuff->filter_level) {
+        return NGX_OK;
+    }
 
     log_rb_write(log_ringbuff, level, buf, n);
 

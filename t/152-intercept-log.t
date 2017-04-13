@@ -9,7 +9,7 @@ log_level('error');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 6);
 
 #no_diff();
 #no_long_string();
@@ -241,3 +241,40 @@ invalid intercept error log size "33m", max size is 32MB
 --- error_log
 invalid number of arguments in "lua_intercept_error_log" directive
 --- skip_nginx: 2: <1.11.2
+
+
+
+=== TEST 10: without directive
+--- config
+    location /t {
+        access_by_lua_block {
+            ngx.log(ngx.ERR, "enter 1")
+
+            local t = ngx.get_log()
+            ngx.say("log lines:", #t)
+        }
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+API "ngx.get_log" depends on directive "lua_intercept_error_log"
+--- skip_nginx: 3: <1.11.2
+
+
+
+=== TEST 11: without directive
+--- config
+    location /t {
+        access_by_lua_block {
+            ngx.filter_log(ngx.ERR)
+        }
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+API "ngx.filter_log" depends on directive "lua_intercept_error_log"
+--- skip_nginx: 3: <1.11.2
