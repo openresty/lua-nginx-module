@@ -13,6 +13,7 @@
 
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_ringbuff_log.h"
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -321,61 +322,26 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 static int
 ngx_http_lua_ngx_get_log(lua_State *L)
 {
-    ngx_http_request_t  *r;
-    ngx_http_lua_main_conf_t           *lmcf;
-    ngx_http_lua_intercept_log_t       *intercept_log;
+    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+    void                            *data = NULL;
+    size_t                           len, i, count;
 
+    log_ringbuff = ngx_cycle->intercept_error_log_data;
+    count = log_ringbuff->count;
 
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
+    lua_createtable(L, count, 0);
+
+    for (i = 0; i < count; ++i)
+    {
+        log_rb_read(log_ringbuff, &data, &len);
+
+        lua_pushlstring(L, (const char *)data, len);
+        lua_rawseti(L, -2, i + 1);
     }
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    intercept_log = &lmcf->intercept_log;
-
-    lua_pushlstring(L, (const char *)intercept_log->data, intercept_log->size);
-    intercept_log->size = 0;
+    log_rb_reset(log_ringbuff);
 
     return 1;
 }
-
-
-#ifndef NGX_LUA_NO_FFI_API
-int
-ngx_http_lua_ffi_ngx_get_log(ngx_http_request_t *r, char *str)
-{
-    ngx_http_lua_main_conf_t           *lmcf;
-    ngx_http_lua_intercept_log_t       *intercept_log;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    intercept_log = &lmcf->intercept_log;
-
-    if (intercept_log->size == 0) {
-        return 0;
-    }
-
-    ngx_memcpy(str, intercept_log->data, intercept_log->size);
-    intercept_log->size = 0;
-
-    return 1;
-}
-
-
-size_t
-ngx_http_lua_ffi_ngx_get_log_length(ngx_http_request_t *r)
-{
-    ngx_http_lua_main_conf_t           *lmcf;
-    ngx_http_lua_intercept_log_t       *intercept_log;
-
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-
-    intercept_log = &lmcf->intercept_log;
-
-    return intercept_log->size;
-}
-#endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

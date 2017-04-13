@@ -51,6 +51,7 @@
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl.h"
+#include "ngx_http_lua_ringbuff_log.h"
 
 
 #if 1
@@ -4097,24 +4098,14 @@ ngx_int_t
 ngx_http_lua_intercept_log_handler(ngx_log_t *log,
     ngx_uint_t level, void *buf, size_t n)
 {
-    ngx_http_lua_main_conf_t      *lmcf;
-    ngx_http_lua_intercept_log_t  *intercept_log;
+    ngx_http_lua_log_ringbuff_t  *log_ringbuff;
 
     dd("enter");
 
-    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle, ngx_http_lua_module);
-    if (lmcf == NULL) {
-        return NGX_DECLINED;
-    }
+    log_ringbuff = (ngx_http_lua_log_ringbuff_t  *)
+                    ngx_cycle->intercept_error_log_data;
 
-    intercept_log = &lmcf->intercept_log;
-
-    if (n > intercept_log->max_size - intercept_log->size) {
-        return NGX_DECLINED;
-    }
-
-    ngx_memcpy(intercept_log->data + intercept_log->size, buf, n);
-    intercept_log->size += n;
+    log_rb_write(log_ringbuff, level, buf, n);
 
     dd("intercept log: %s\n", buf);
 

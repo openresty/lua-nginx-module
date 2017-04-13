@@ -94,9 +94,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
-    { ngx_string("lua_intercept_log"),
+    { ngx_string("lua_intercept_error_log"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_http_lua_intercept_log,
+      ngx_http_lua_intercept_error_log,
       0,
       0,
       NULL },
@@ -764,11 +764,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         dd("Lua VM initialized!");
-    }
-
-    if (lmcf->requires_intercept_log) {
-        cf->cycle->log_intercept_handler = (ngx_log_intercept_pt)
-            ngx_http_lua_intercept_log_handler;
     }
 
     return NGX_OK;

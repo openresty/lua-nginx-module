@@ -162,13 +162,6 @@ typedef struct {
 } ngx_http_lua_preload_hook_t;
 
 
-typedef struct {
-    ssize_t              max_size;
-    size_t               size;
-    u_char              *data;
-} ngx_http_lua_intercept_log_t;
-
-
 struct ngx_http_lua_main_conf_s {
     lua_State           *lua;
 
