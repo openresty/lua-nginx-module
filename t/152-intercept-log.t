@@ -9,7 +9,7 @@ log_level('error');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 - 2);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 #no_diff();
 #no_long_string();
@@ -199,3 +199,45 @@ intercept log line:2
 $/
 ]
 --- skip_nginx: 3: <1.11.2
+
+
+
+=== TEST 7: invalid size (< 4k)
+--- http_config
+    lua_intercept_error_log 3k;
+--- config
+    location /t {
+        echo "hello";
+    }
+--- must_die
+--- error_log
+invalid intercept error log size "3k", minimum size is 4KB
+--- skip_nginx: 2: <1.11.2
+
+
+
+=== TEST 8: invalid size (> 32m)
+--- http_config
+    lua_intercept_error_log 33m;
+--- config
+    location /t {
+        echo "hello";
+    }
+--- must_die
+--- error_log
+invalid intercept error log size "33m", max size is 32MB
+--- skip_nginx: 2: <1.11.2
+
+
+
+=== TEST 9: invalid size (no argu)
+--- http_config
+    lua_intercept_error_log;
+--- config
+    location /t {
+        echo "hello";
+    }
+--- must_die
+--- error_log
+invalid number of arguments in "lua_intercept_error_log" directive
+--- skip_nginx: 2: <1.11.2

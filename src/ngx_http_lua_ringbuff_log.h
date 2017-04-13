@@ -4,8 +4,8 @@
  */
 
 
-#ifndef _NGX_HTTP_LUA_RINGBUFF_LOG_H_INCLUDED_
-#define _NGX_HTTP_LUA_RINGBUFF_LOG_H_INCLUDED_
+#ifndef _NGX_HTTP_LUA_LOG_RINGBUFF_H_INCLUDED_
+#define _NGX_HTTP_LUA_LOG_RINGBUFF_H_INCLUDED_
 
 
 #include <nginx.h>
@@ -28,6 +28,6 @@ ngx_int_t log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
     void *buf, size_t n);
 
 
-#endif /* _NGX_HTTP_LUA_RINGBUFF_LOG_H_INCLUDED_ */
+#endif /* _NGX_HTTP_LUA_LOG_RINGBUFF_H_INCLUDED_ */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

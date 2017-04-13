@@ -1725,7 +1725,8 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (value[1].len == 0) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid lua intercept log size \"%V\"", &value[1]);
+                           "invalid intercept error log size \"%V\"",
+                           &value[1]);
         return NGX_CONF_ERROR;
     }
 
@@ -1733,14 +1734,14 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (size > 1024 * 1024 * 32) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid lua intercept log size \"%V\", "
+                           "invalid intercept error log size \"%V\", "
                            "max size is 32MB", &value[1]);
         return NGX_CONF_ERROR;
     }
 
     if (size < 1024 * 4) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid lua intercept log size \"%V\", "
+                           "invalid intercept error log size \"%V\", "
                            "minimum size is 4KB", &value[1]);
         return NGX_CONF_ERROR;
     }

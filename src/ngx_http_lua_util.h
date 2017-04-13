@@ -288,10 +288,10 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    dd("lmcf: %p", lmcf);
-
     if (!llcf->enable_code_cache && r->connection->fd != (ngx_socket_t) -1) {
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        dd("lmcf: %p", lmcf);
 
         L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
                                  r->connection->log, &cln);
