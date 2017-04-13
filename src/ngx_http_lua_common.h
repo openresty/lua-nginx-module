@@ -199,7 +199,7 @@ struct ngx_http_lua_main_conf_s {
                                                 of reqeusts */
     ngx_uint_t           malloc_trim_req_count;
 
-#if defined(nginx_version) && nginx_version >= 1011011
+#if nginx_version >= 1011011
     ngx_buf_t          **busy_bufs_ptrs;
     ngx_int_t            prealloc_nbusy;
 #endif
