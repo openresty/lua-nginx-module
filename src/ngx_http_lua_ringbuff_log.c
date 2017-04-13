@@ -102,8 +102,9 @@ log_rb_set_tail(ngx_http_lua_log_ringbuff_t *rb, int is_data,
 static size_t
 log_rb_rleft(ngx_http_lua_log_ringbuff_t *rb)
 {
-    if (rb->tail >= rb->head)
+    if (rb->tail >= rb->head) {
         return rb->data + rb->size - rb->tail;
+    }
 
     return rb->head - rb->tail;
 }
@@ -118,21 +119,18 @@ log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
 
     head_len = sizeof(ringbuff_head);
 
-    if (n + head_len > rb->size)
+    if (n + head_len > rb->size) {
         return NGX_ERROR;
+    }
 
     rleft = log_rb_rleft(rb);
 
-    if (rleft < n + head_len)
-    {
-        /* set placehold */
-        log_rb_set_tail(rb, 0, 0, 0, 0);
+    if (rleft < n + head_len) {
+        log_rb_set_tail(rb, 0, 0, 0, 0);    /*  set placehold */
 
         rb->tail = rb->data;
 
-        /* remove old data for more spaces */
-        do
-        {
+        do {                                /*  thrown old data */
             if (rb->head != log_rb_head(rb)) {
                 break;
             }
@@ -143,8 +141,7 @@ log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
 
             log_rb_head(rb);
             rleft = log_rb_rleft(rb);
-        }
-        while (rleft < n + head_len);
+        } while (rleft < n + head_len);
     }
 
     log_rb_set_tail(rb, 1, log_level, buf, n);
