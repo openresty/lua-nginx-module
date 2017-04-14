@@ -21,8 +21,6 @@ static int ngx_http_lua_ngx_log(lua_State *L);
 static int log_wrapper(ngx_log_t *log, const char *ident,
     ngx_uint_t level, lua_State *L);
 static void ngx_http_lua_inject_log_consts(lua_State *L);
-static int ngx_http_lua_ngx_get_log(lua_State *L);
-static int ngx_http_lua_ngx_filter_log(lua_State *L);
 
 
 /**
@@ -278,12 +276,6 @@ ngx_http_lua_inject_log_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_log);
     lua_setfield(L, -2, "log");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_get_log);
-    lua_setfield(L, -2, "get_log");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_filter_log);
-    lua_setfield(L, -2, "filter_log");
-
     lua_pushcfunction(L, ngx_http_lua_print);
     lua_setglobal(L, "print");
 }
@@ -323,82 +315,100 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 }
 
 
-static int
-ngx_http_lua_ngx_get_log(lua_State *L)
+#ifndef NGX_LUA_NO_FFI_API
+int
+ngx_http_lua_ffi_filter_log(int level, u_char *err, size_t *errlen)
+{
+#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
+    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+
+    log_ringbuff = ngx_cycle->intercept_error_log_data;
+
+    if (!log_ringbuff) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API \"ngx.filter_log\" depends on directive "
+                               "\"lua_intercept_error_log\"")
+                  - err;
+        return NGX_ERROR;
+    }
+
+    if (level > NGX_LOG_DEBUG || level < NGX_LOG_STDERR) {
+        *errlen = ngx_snprintf(err, *errlen, "bad log level: %d", level)
+                  - err;
+        return NGX_ERROR;
+
+    }
+
+    log_ringbuff->filter_level = level;
+
+    return NGX_OK;
+#else
+    return NGX_OK;
+#endif
+}
+
+
+int
+ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
+{
+#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
+    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+
+    log_ringbuff = ngx_cycle->intercept_error_log_data;
+
+    if (!log_ringbuff) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API \"ngx.errlog\" depends on directive "
+                               "\"lua_intercept_error_log\"")
+                  - err;
+        return NGX_ERROR;
+    }
+
+    return log_ringbuff->count;
+#else
+    return 0;
+#endif
+}
+
+
+int
+ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
+    size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     void            *data = NULL;
-    size_t           len, i, count, n;
+    size_t           len, i, count;
     int              log_level;
 
     ngx_http_lua_log_ringbuff_t     *log_ringbuff;
 
-    if (!ngx_cycle->intercept_error_log_data) {
-        return luaL_error(L, "API \"ngx.get_log\" depends on directive "
-                             "\"lua_intercept_error_log\"");
-    }
-
-    n = lua_gettop(L);
-
-    if (n != 0) {
-        return luaL_error(L, "expecting 0 argument, but saw %d", n);
-    }
-
     log_ringbuff = ngx_cycle->intercept_error_log_data;
-    count = log_ringbuff->count;
 
-    lua_createtable(L, count, 0);
+    if (!log_ringbuff) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "API \"ngx.get_log\" depends on directive "
+                               "\"lua_intercept_error_log\"")
+                  - err;
+        return NGX_ERROR;
+    }
+
+    count = log_ringbuff->count;
 
     for (i = 0; i < count; i++) {
         log_rb_read(log_ringbuff, &log_level, &data, &len);
-        lua_pushlstring(L, (const char *)data, len);
-        lua_rawseti(L, -2, i + 1);
+        out[i].key.len = log_level;
+        out[i].value.len = len;
+        out[i].value.data = data;
     }
 
     log_rb_reset(log_ringbuff);
 
-    return 1;
-#else
-    return 0;
-#endif
-}
-
-
-static int
-ngx_http_lua_ngx_filter_log(lua_State *L)
-{
-#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    size_t             n;
-    int                level;
-
-    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
-
-    if (!ngx_cycle->intercept_error_log_data) {
-        return luaL_error(L, "API \"ngx.filter_log\" depends on directive "
-                             "\"lua_intercept_error_log\"");
-    }
-
-    n = lua_gettop(L);
-
-    if (n != 1) {
-        return luaL_error(L, "expecting 1 argument, "
-                          "but saw %d", n);
-    }
-
-    level = luaL_checkint(L, 1);
-
-    if (level > NGX_LOG_DEBUG || level < NGX_LOG_STDERR) {
-        return luaL_error(L, "bad log level: %d", level);
-
-    }
-
-    log_ringbuff = ngx_cycle->intercept_error_log_data;
-    log_ringbuff->filter_level = level;
-
     return 0;
 #else
     return 0;
 #endif
 }
+
+#endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

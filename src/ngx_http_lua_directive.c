@@ -1705,16 +1705,14 @@ char *
 ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
 #ifndef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    return "please patch your nginx support intercept error at first";
+    return "missing intercept error log patch";
 #else
-
-    ngx_http_lua_main_conf_t            *lmcf = conf;
-    ngx_http_lua_log_ringbuff_t         *log_ringbuff;
-
     ngx_str_t                     *value;
     ssize_t                        size;
     u_char                        *data;
     ngx_cycle_t                   *cycle;
+    ngx_http_lua_main_conf_t      *lmcf = conf;
+    ngx_http_lua_log_ringbuff_t   *log_ringbuff;
 
     value = cf->args->elts;
     cycle = cf->cycle;
@@ -1767,9 +1765,9 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cycle->intercept_error_log_handler = (ngx_log_intercept_pt)
         ngx_http_lua_intercept_log_handler;
     cycle->intercept_error_log_data = log_ringbuff;
-#endif
 
     return NGX_CONF_OK;
+#endif
 }
 
 
