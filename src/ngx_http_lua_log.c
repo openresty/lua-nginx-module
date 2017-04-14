@@ -336,14 +336,15 @@ ngx_http_lua_ffi_filter_log(int level, u_char *err, size_t *errlen)
         *errlen = ngx_snprintf(err, *errlen, "bad log level: %d", level)
                   - err;
         return NGX_ERROR;
-
     }
 
     log_ringbuff->filter_level = level;
-
     return NGX_OK;
 #else
-    return NGX_OK;
+    *errlen = ngx_snprintf(err, *errlen,
+                           "missing intercept error log patch")
+              - err;
+    return NGX_ERROR;
 #endif
 }
 
@@ -366,7 +367,10 @@ ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
 
     return log_ringbuff->count;
 #else
-    return 0;
+    *errlen = ngx_snprintf(err, *errlen,
+                           "missing intercept error log patch")
+              - err;
+    return NGX_ERROR;
 #endif
 }
 
@@ -402,10 +406,12 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
     }
 
     log_rb_reset(log_ringbuff);
-
-    return 0;
+    return NGX_OK;
 #else
-    return 0;
+    *errlen = ngx_snprintf(err, *errlen,
+                           "missing intercept error log patch")
+              - err;
+    return NGX_ERROR;
 #endif
 }
 

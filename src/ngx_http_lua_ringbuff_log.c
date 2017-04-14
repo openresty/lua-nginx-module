@@ -22,7 +22,7 @@ typedef struct {
 
 
 static void * log_rb_head(ngx_http_lua_log_ringbuff_t *rb);
-static void log_rb_set_tail(ngx_http_lua_log_ringbuff_t *rb, int is_data,
+static void log_rb_append_tail(ngx_http_lua_log_ringbuff_t *rb, int is_data,
     int log_level, void *buf, int n);
 static size_t log_rb_rleft(ngx_http_lua_log_ringbuff_t *rb);
 
@@ -76,7 +76,7 @@ log_rb_head(ngx_http_lua_log_ringbuff_t *rb)
 
 
 static void
-log_rb_set_tail(ngx_http_lua_log_ringbuff_t *rb, int is_data,
+log_rb_append_tail(ngx_http_lua_log_ringbuff_t *rb, int is_data,
     int log_level, void *buf, int n)
 {
     ringbuff_head        *head;
@@ -127,11 +127,11 @@ log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
     rleft = log_rb_rleft(rb);
 
     if (rleft < n + head_len) {
-        log_rb_set_tail(rb, 0, 0, 0, 0);    /*  set placehold */
+        log_rb_append_tail(rb, 0, 0, 0, 0);    /*  set placehold */
 
         rb->tail = rb->data;
 
-        do {                                /*  thrown old data */
+        do {                                   /*  thrown old data */
             if (rb->head != log_rb_head(rb)) {
                 break;
             }
@@ -145,7 +145,7 @@ log_rb_write(ngx_http_lua_log_ringbuff_t *rb, int log_level,
         } while (rleft < n + head_len);
     }
 
-    log_rb_set_tail(rb, 1, log_level, buf, n);
+    log_rb_append_tail(rb, 1, log_level, buf, n);
 
     return NGX_OK;
 }

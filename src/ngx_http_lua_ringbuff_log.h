@@ -13,11 +13,11 @@
 
 
 typedef struct {
-    char      *tail;              /*  write point     */
-    char      *head;              /*  read point      */
-    char      *data;              /*  log buffer      */
-    size_t     size;              /*  buffer size     */
-    size_t     count;             /*  count           */
+    char      *tail;              /*  writed point     */
+    char      *head;              /*  readed point     */
+    char      *data;              /*  buffer           */
+    size_t     size;              /*  buffer toal size */
+    size_t     count;             /*  count of logs    */
     ngx_uint_t filter_level;
 }ngx_http_lua_log_ringbuff_t;
 

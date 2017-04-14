@@ -1702,7 +1702,8 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 
 
 char *
-ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
 {
 #ifndef HAVE_INTERCEPT_ERROR_LOG_PATCH
     return "missing intercept error log patch";
@@ -1745,11 +1746,11 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cycle->intercept_error_log_handler) {
-        return "intercept error log handler already exists";
+        return "intercept error log handler has been hooked";
     }
 
     log_ringbuff = (ngx_http_lua_log_ringbuff_t  *)
-                    ngx_palloc(cf->pool, sizeof(ngx_http_lua_log_ringbuff_t));
+                   ngx_palloc(cf->pool, sizeof(ngx_http_lua_log_ringbuff_t));
     if (log_ringbuff == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1763,7 +1764,7 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     lmcf->requires_intercept_log = 1;
     cycle->intercept_error_log_handler = (ngx_log_intercept_pt)
-        ngx_http_lua_intercept_log_handler;
+                                         ngx_http_lua_intercept_log_handler;
     cycle->intercept_error_log_data = log_ringbuff;
 
     return NGX_CONF_OK;
