@@ -1926,7 +1926,7 @@ error:
 
 ngx_int_t
 ngx_http_lua_ffi_set_jit_stack_size(int size, u_char *errstr,
-                                    size_t errstr_size)
+                                    size_t *errstr_size)
 {
 #if LUA_HAVE_PCRE_JIT
 
