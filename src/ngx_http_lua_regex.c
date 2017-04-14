@@ -1925,7 +1925,8 @@ error:
 
 
 ngx_int_t
-ngx_http_lua_ffi_set_jit_stack_size(int size)
+ngx_http_lua_ffi_set_jit_stack_size(int size, u_char *errstr,
+                                    size_t errstr_size)
 {
 #if LUA_HAVE_PCRE_JIT
 
@@ -1959,6 +1960,9 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
     ngx_http_lua_pcre_malloc_done(old_pool);
 
     if (lmcf->jit_stack == NULL) {
+        *errstr_size = ngx_snprintf(errstr, *errstr_size,
+                                    "pcre jit stack allocation failed")
+                       - errstr;
         return NGX_ERROR;
     }
 
@@ -1966,7 +1970,9 @@ ngx_http_lua_ffi_set_jit_stack_size(int size)
 
 #else  /* LUA_HAVE_PCRE_JIT */
 
-    return NGX_DECLINED;
+    *errstr_size = ngx_snprintf(errstr, *errstr_size,
+                                "no pcre jit support found") - errstr;
+    return NGX_ERROR;
 
 #endif /* LUA_HAVE_PCRE_JIT */
 }
