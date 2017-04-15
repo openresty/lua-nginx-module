@@ -13,7 +13,7 @@
 
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
-#include "ngx_http_lua_ringbuff_log.h"
+#include "ngx_http_lua_log_ringbuf.h"
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -317,16 +317,17 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_filter_log(int level, u_char *err, size_t *errlen)
+ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err,
+    size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+    ngx_http_lua_log_ringbuf_t     *ringbuf;
 
-    log_ringbuff = ngx_cycle->intercept_error_log_data;
+    ringbuf = ngx_cycle->intercept_error_log_data;
 
-    if (!log_ringbuff) {
+    if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"ngx.filter_log\" depends on directive "
+                               "API \"ngx.errlog_filter\" depends on directive "
                                "\"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
@@ -338,11 +339,12 @@ ngx_http_lua_ffi_filter_log(int level, u_char *err, size_t *errlen)
         return NGX_ERROR;
     }
 
-    log_ringbuff->filter_level = level;
+    ringbuf->filter_level = level;
     return NGX_OK;
 #else
     *errlen = ngx_snprintf(err, *errlen,
-                           "missing intercept error log patch")
+                           "missing intercept error log patch in the nginx "
+                           "core")
               - err;
     return NGX_ERROR;
 #endif
@@ -353,11 +355,11 @@ int
 ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+    ngx_http_lua_log_ringbuf_t     *ringbuf;
 
-    log_ringbuff = ngx_cycle->intercept_error_log_data;
+    ringbuf = ngx_cycle->intercept_error_log_data;
 
-    if (!log_ringbuff) {
+    if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
                                "API \"ngx.errlog\" depends on directive "
                                "\"lua_intercept_error_log\"")
@@ -365,10 +367,11 @@ ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
         return NGX_ERROR;
     }
 
-    return log_ringbuff->count;
+    return ringbuf->count;
 #else
     *errlen = ngx_snprintf(err, *errlen,
-                           "missing intercept error log patch")
+                           "missing intercept error log patch in the nginx "
+                           "core")
               - err;
     return NGX_ERROR;
 #endif
@@ -384,11 +387,11 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
     size_t           len, i, count;
     int              log_level;
 
-    ngx_http_lua_log_ringbuff_t     *log_ringbuff;
+    ngx_http_lua_log_ringbuf_t     *ringbuf;
 
-    log_ringbuff = ngx_cycle->intercept_error_log_data;
+    ringbuf = ngx_cycle->intercept_error_log_data;
 
-    if (!log_ringbuff) {
+    if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
                                "API \"ngx.get_log\" depends on directive "
                                "\"lua_intercept_error_log\"")
@@ -396,20 +399,21 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
         return NGX_ERROR;
     }
 
-    count = log_ringbuff->count;
+    count = ringbuf->count;
 
     for (i = 0; i < count; i++) {
-        log_rb_read(log_ringbuff, &log_level, &data, &len);
+        ngx_http_lua_log_ringbuf_read(ringbuf, &log_level, &data, &len);
         out[i].key.len = log_level;
         out[i].value.len = len;
         out[i].value.data = data;
     }
 
-    log_rb_reset(log_ringbuff);
+    ngx_http_lua_log_ringbuf_reset(ringbuf);
     return NGX_OK;
 #else
     *errlen = ngx_snprintf(err, *errlen,
-                           "missing intercept error log patch")
+                           "missing intercept error log patch in the nginx "
+                           "core")
               - err;
     return NGX_ERROR;
 #endif

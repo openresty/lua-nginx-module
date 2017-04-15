@@ -27,7 +27,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_lex.h"
 #include "api/ngx_http_lua_api.h"
-#include "ngx_http_lua_ringbuff_log.h"
+#include "ngx_http_lua_log_ringbuf.h"
 
 
 typedef struct ngx_http_lua_block_parser_ctx_s
@@ -1706,14 +1706,14 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
 #ifndef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    return "missing intercept error log patch";
+    return "missing intercept error log patch in the nginx core";
 #else
     ngx_str_t                     *value;
     ssize_t                        size;
     u_char                        *data;
     ngx_cycle_t                   *cycle;
     ngx_http_lua_main_conf_t      *lmcf = conf;
-    ngx_http_lua_log_ringbuff_t   *log_ringbuff;
+    ngx_http_lua_log_ringbuf_t   *ringbuf;
 
     value = cf->args->elts;
     cycle = cf->cycle;
@@ -1731,17 +1731,11 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
 
     size = ngx_parse_size(&value[1]);
 
-    if (size > 1024 * 1024 * 32) {
+    if (size < NGX_MAX_ERROR_STR) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid intercept error log size \"%V\", "
-                           "max size is 32MB", &value[1]);
-        return NGX_CONF_ERROR;
-    }
-
-    if (size < 1024 * 4) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid intercept error log size \"%V\", "
-                           "minimum size is 4KB", &value[1]);
+                           "minimum size is %d", &value[1],
+                           NGX_MAX_ERROR_STR);
         return NGX_CONF_ERROR;
     }
 
@@ -1749,9 +1743,9 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
         return "intercept error log handler has been hooked";
     }
 
-    log_ringbuff = (ngx_http_lua_log_ringbuff_t  *)
-                   ngx_palloc(cf->pool, sizeof(ngx_http_lua_log_ringbuff_t));
-    if (log_ringbuff == NULL) {
+    ringbuf = (ngx_http_lua_log_ringbuf_t *)
+              ngx_palloc(cf->pool, sizeof(ngx_http_lua_log_ringbuf_t));
+    if (ringbuf == NULL) {
         return NGX_CONF_ERROR;
     }
 
@@ -1760,12 +1754,12 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    log_rb_init(log_ringbuff, data, size);
+    ngx_http_lua_log_ringbuf_init(ringbuf, data, size);
 
     lmcf->requires_intercept_log = 1;
     cycle->intercept_error_log_handler = (ngx_log_intercept_pt)
                                          ngx_http_lua_intercept_log_handler;
-    cycle->intercept_error_log_data = log_ringbuff;
+    cycle->intercept_error_log_data = ringbuf;
 
     return NGX_CONF_OK;
 #endif
