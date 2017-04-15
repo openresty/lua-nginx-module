@@ -379,8 +379,8 @@ ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
 
 
 int
-ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
-    size_t *errlen)
+ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, size_t max,
+    u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     void            *data = NULL;
@@ -400,6 +400,9 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
     }
 
     count = ringbuf->count;
+    if (count > max) {
+        count = max;
+    }
 
     for (i = 0; i < count; i++) {
         ngx_http_lua_log_ringbuf_read(ringbuf, &log_level, &data, &len);
@@ -408,7 +411,6 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, u_char *err,
         out[i].value.data = data;
     }
 
-    ngx_http_lua_log_ringbuf_reset(ringbuf);
     return NGX_OK;
 #else
     *errlen = ngx_snprintf(err, *errlen,

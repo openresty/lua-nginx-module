@@ -12,11 +12,12 @@
 typedef struct {
     unsigned    is_data:1;
     unsigned    log_level:4;
-    int    len;
+    int         len;
 } ngx_http_lua_log_ringbuf_header_t;
 
 
-static void * ngx_http_lua_log_ringbuf_head(ngx_http_lua_log_ringbuf_t *rb);
+static void * ngx_http_lua_log_ringbuf_next_header(
+    ngx_http_lua_log_ringbuf_t *rb);
 static void ngx_http_lua_log_ringbuf_append_tail(
     ngx_http_lua_log_ringbuf_t *rb, int is_data, int log_level, void *buf,
     int n);
@@ -51,7 +52,7 @@ ngx_http_lua_log_ringbuf_reset(ngx_http_lua_log_ringbuf_t *rb)
 
 
 static void *
-ngx_http_lua_log_ringbuf_head(ngx_http_lua_log_ringbuf_t *rb)
+ngx_http_lua_log_ringbuf_next_header(ngx_http_lua_log_ringbuf_t *rb)
 {
     ngx_http_lua_log_ringbuf_header_t       *head;
 
@@ -132,8 +133,8 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
 
         rb->tail = rb->data;
 
-        do {                                   /*  throw away old data */
-            if (rb->head != ngx_http_lua_log_ringbuf_head(rb)) {
+        do {    /*  throw away old data */
+            if (rb->head != ngx_http_lua_log_ringbuf_next_header(rb)) {
                 break;
             }
 
@@ -141,7 +142,7 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
             rb->head += head_len + head->len;
             rb->count--;
 
-            ngx_http_lua_log_ringbuf_head(rb);
+            ngx_http_lua_log_ringbuf_next_header(rb);
             rleft = ngx_http_lua_log_ringbuf_rleft(rb);
         } while (rleft < n + head_len);
     }
@@ -163,7 +164,7 @@ ngx_http_lua_log_ringbuf_read(ngx_http_lua_log_ringbuf_t *rb, int *log_level,
     }
 
     head = (ngx_http_lua_log_ringbuf_header_t *)
-           ngx_http_lua_log_ringbuf_head(rb);
+           ngx_http_lua_log_ringbuf_next_header(rb);
 
     if (!head->is_data) {
         return NGX_ERROR;

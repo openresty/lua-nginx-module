@@ -1713,13 +1713,13 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                        *data;
     ngx_cycle_t                   *cycle;
     ngx_http_lua_main_conf_t      *lmcf = conf;
-    ngx_http_lua_log_ringbuf_t   *ringbuf;
+    ngx_http_lua_log_ringbuf_t    *ringbuf;
 
     value = cf->args->elts;
     cycle = cf->cycle;
 
     if (lmcf->requires_intercept_log) {
-        return "is duplicate";;
+        return "is duplicate";
     }
 
     if (value[1].len == 0) {
