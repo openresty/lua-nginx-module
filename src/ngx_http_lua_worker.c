@@ -130,4 +130,27 @@ ngx_http_lua_ffi_worker_count(void)
 
     return (int) ccf->worker_processes;
 }
+
+
+int
+ngx_http_lua_ffi_worker_type(void)
+{
+    return ngx_process;
+}
+
+
+void
+ngx_http_lua_ffi_worker_privileged(int enable)
+{
+#ifdef HAVE_PRIVILEGED_PROCESS_PATCH
+    ngx_core_conf_t   *ccf;
+
+    ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx,
+                                           ngx_core_module);
+
+    ccf->privileged_worker = enable;
+#endif
+
+    return;
+}
 #endif
