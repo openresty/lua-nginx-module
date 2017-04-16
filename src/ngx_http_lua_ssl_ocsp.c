@@ -434,7 +434,7 @@ error:
 
 
 static time_t
-ngx_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time)
+ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time)
 {
     u_char  *value;
     size_t   len;
@@ -558,7 +558,7 @@ ngx_http_lua_ffi_ssl_ocsp_get_nextupdate(const u_char *resp, size_t resp_len,
         goto error;
     }
 
-    *nextupdate = ngx_ssl_stapling_time(nupdate_ans1);
+    *nextupdate = ngx_http_lua_ssl_stapling_time(nupdate_ans1);
     if (*nextupdate == (time_t) NGX_ERROR) {
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
                                     "invalid nextUpdate time in "
