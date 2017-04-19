@@ -317,7 +317,7 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err,
+ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err,
     size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
@@ -327,7 +327,7 @@ ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err,
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"ngx.errlog_filter\" depends on directive "
+                               "API \"set_errlog_filter\" depends on directive "
                                "\"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
@@ -352,7 +352,7 @@ ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err,
 
 
 int
-ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
+ngx_http_lua_ffi_get_errlog_count(u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_http_lua_log_ringbuf_t     *ringbuf;
@@ -361,7 +361,7 @@ ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"ngx.errlog\" depends on directive "
+                               "API \"get_errlog_count\" depends on directive "
                                "\"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
@@ -379,7 +379,7 @@ ngx_http_lua_ffi_errlog_count(u_char *err, size_t *errlen)
 
 
 int
-ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, size_t max,
+ngx_http_lua_ffi_get_errlog_data(ngx_http_lua_ffi_table_elt_t *out, size_t max,
     u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
@@ -393,7 +393,7 @@ ngx_http_lua_ffi_errlog(ngx_http_lua_ffi_table_elt_t *out, size_t max,
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"ngx.get_log\" depends on directive "
+                               "API \"get_errlog\" depends on directive "
                                "\"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
