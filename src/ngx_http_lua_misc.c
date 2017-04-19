@@ -128,6 +128,13 @@ ngx_http_lua_ngx_get(lua_State *L)
         return 1;
     }
 
+    if (len == sizeof("is_internal") - 1
+        && ngx_strncmp(p, "is_internal", sizeof("is_internal") - 1) == 0)
+    {
+        lua_pushboolean(L, r->internal == 1);
+        return 1;
+    }
+
     dd("key %s not matched", p);
 
     lua_pushnil(L);
