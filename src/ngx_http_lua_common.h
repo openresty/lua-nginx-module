@@ -21,6 +21,8 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+#include "api/ngx_http_lua_api.h"
+
 
 #if !defined(nginx_version) || (nginx_version < 1006000)
 #error at least nginx 1.6.0 is required but found an older version
@@ -176,6 +178,9 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
+    ngx_array_t         *delay_list; /* of void* */
+    unsigned             delay_list_inited;
+
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
 
@@ -211,7 +216,6 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_rewrite:1;
     unsigned             requires_access:1;
     unsigned             requires_log:1;
-    unsigned             requires_shm:1;
 };
 
 

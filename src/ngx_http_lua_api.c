@@ -91,6 +91,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     ngx_shm_zone_t              **zp;
     ngx_shm_zone_t               *zone;
     ngx_http_lua_shm_zone_ctx_t  *ctx;
+    ngx_int_t                     rc;
     ngx_int_t                     n;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
@@ -146,7 +147,10 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     zone->init = ngx_http_lua_shared_memory_init;
     zone->data = ctx;
 
-    lmcf->requires_shm = 1;
+    rc = ngx_http_lua_delay_list_register(cf, tag);
+    if (rc == NGX_ERROR) {
+        return NULL;
+    }
 
     return &ctx->zone;
 }
@@ -194,13 +198,12 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
 
     lmcf->shm_zones_inited++;
 
-    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
-        && lmcf->init_handler)
+    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts)
     {
         saved_cycle = ngx_cycle;
         ngx_cycle = ctx->cycle;
 
-        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
+        rc = ngx_http_lua_delay_init_phase();
 
         ngx_cycle = saved_cycle;
 
@@ -211,6 +214,76 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     }
 
     return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_delay_list_register(ngx_conf_t *cf, void *tag)
+{
+    ngx_http_lua_main_conf_t     *lmcf;
+    void                        **init;
+    unsigned                      i;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+    if (lmcf == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (lmcf->delay_list == NULL) {
+        lmcf->delay_list =
+            ngx_array_create(cf->pool, 4, sizeof(void *));
+
+        if (lmcf->delay_list == NULL) {
+            return NGX_ERROR;
+        }
+    }
+
+    init = lmcf->delay_list->elts;
+
+    for (i = 0; i < lmcf->delay_list->nelts; i++) {
+
+        if (init[i] == tag) {
+            return NGX_OK;
+        }
+    }
+
+    init = ngx_array_push(lmcf->delay_list);
+    if (init == NULL) {
+        return NGX_ERROR;
+    }
+
+    *init = tag;
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_delay_init_phase()
+{
+    ngx_http_lua_main_conf_t     *lmcf;
+
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle, ngx_http_lua_module);
+    if (lmcf == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (!lmcf->init_handler) {
+        return NGX_OK;
+    }
+
+    lmcf->delay_list_inited++;
+
+    if (lmcf->delay_list->nelts > lmcf->delay_list_inited) {
+        return NGX_ERROR;
+    }
+
+    if (lmcf->delay_list->nelts < lmcf->delay_list_inited) {
+        return NGX_OK;
+    }
+
+    /* lmcf->delay_list->nelts == lmcf->delay_list_inited */
+    return lmcf->init_handler(lmcf->cycle->log, lmcf, lmcf->lua);
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
