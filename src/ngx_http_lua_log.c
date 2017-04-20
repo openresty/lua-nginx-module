@@ -352,40 +352,11 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err,
 
 
 int
-ngx_http_lua_ffi_get_errlog_count(u_char *err, size_t *errlen)
-{
-#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    ngx_http_lua_log_ringbuf_t     *ringbuf;
-
-    ringbuf = ngx_cycle->intercept_error_log_data;
-
-    if (ringbuf == NULL) {
-        *errlen = ngx_snprintf(err, *errlen,
-                               "API \"get_errlog_count\" depends on directive "
-                               "\"lua_intercept_error_log\"")
-                  - err;
-        return NGX_ERROR;
-    }
-
-    return ringbuf->count;
-#else
-    *errlen = ngx_snprintf(err, *errlen,
-                           "missing intercept error log patch in the nginx "
-                           "core")
-              - err;
-    return NGX_ERROR;
-#endif
-}
-
-
-int
-ngx_http_lua_ffi_get_errlog_data(ngx_http_lua_ffi_table_elt_t *out, size_t max,
+ngx_http_lua_ffi_get_errlog_data(char **log, size_t *loglen, int *loglevel,
     u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    void            *data = NULL;
-    size_t           len, i, count;
-    int              log_level;
+    size_t           count;
 
     ngx_http_lua_log_ringbuf_t     *ringbuf;
 
@@ -393,25 +364,19 @@ ngx_http_lua_ffi_get_errlog_data(ngx_http_lua_ffi_table_elt_t *out, size_t max,
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"get_errlog\" depends on directive "
+                               "API \"get_errlog_data\" depends on directive "
                                "\"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
     }
 
     count = ringbuf->count;
-    if (count > max) {
-        count = max;
+    if (count == 0) {
+        return count;
     }
 
-    for (i = 0; i < count; i++) {
-        ngx_http_lua_log_ringbuf_read(ringbuf, &log_level, &data, &len);
-        out[i].key.len = log_level;
-        out[i].value.len = len;
-        out[i].value.data = data;
-    }
-
-    return NGX_OK;
+    ngx_http_lua_log_ringbuf_read(ringbuf, loglevel, (void **)log, loglen);
+    return count;
 #else
     *errlen = ngx_snprintf(err, *errlen,
                            "missing intercept error log patch in the nginx "

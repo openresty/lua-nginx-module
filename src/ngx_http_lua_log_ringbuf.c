@@ -21,7 +21,8 @@ static void * ngx_http_lua_log_ringbuf_next_header(
 static void ngx_http_lua_log_ringbuf_append(
     ngx_http_lua_log_ringbuf_t *rb, int is_data, int log_level, void *buf,
     int n);
-static size_t ngx_http_lua_log_ringbuf_free_spaces(ngx_http_lua_log_ringbuf_t *rb);
+static size_t ngx_http_lua_log_ringbuf_free_spaces(
+    ngx_http_lua_log_ringbuf_t *rb);
 
 
 void
@@ -147,7 +148,7 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
 
     if (free_spaces < n + head_len) {
         /* if the right space is not enough, mark it as placehold data */
-        if (rb->data + rb->size - rb->tail < n + head_len) {
+        if ((size_t)(rb->data + rb->size - rb->tail) < n + head_len) {
             ngx_http_lua_log_ringbuf_append(rb, 0, 0, NULL, 0);
         }
 
