@@ -18,10 +18,10 @@ typedef struct {
 
 static void * ngx_http_lua_log_ringbuf_next_header(
     ngx_http_lua_log_ringbuf_t *rb);
-static void ngx_http_lua_log_ringbuf_append_tail(
+static void ngx_http_lua_log_ringbuf_append(
     ngx_http_lua_log_ringbuf_t *rb, int is_data, int log_level, void *buf,
     int n);
-static size_t ngx_http_lua_log_ringbuf_rleft(ngx_http_lua_log_ringbuf_t *rb);
+static size_t ngx_http_lua_log_ringbuf_free_spaces(ngx_http_lua_log_ringbuf_t *rb);
 
 
 void
@@ -51,6 +51,11 @@ ngx_http_lua_log_ringbuf_reset(ngx_http_lua_log_ringbuf_t *rb)
 }
 
 
+/*
+ * get the next data header, it'll skip the useless data space or
+ * placehold data
+ */
+
 static void *
 ngx_http_lua_log_ringbuf_next_header(ngx_http_lua_log_ringbuf_t *rb)
 {
@@ -75,8 +80,10 @@ ngx_http_lua_log_ringbuf_next_header(ngx_http_lua_log_ringbuf_t *rb)
 }
 
 
+/* append data to ring buffer directly */
+
 static void
-ngx_http_lua_log_ringbuf_append_tail(ngx_http_lua_log_ringbuf_t *rb,
+ngx_http_lua_log_ringbuf_append(ngx_http_lua_log_ringbuf_t *rb,
     int is_data, int log_level, void *buf, int n)
 {
     ngx_http_lua_log_ringbuf_header_t        *head;
@@ -100,10 +107,16 @@ ngx_http_lua_log_ringbuf_append_tail(ngx_http_lua_log_ringbuf_t *rb,
 }
 
 
+/* size of free spaces */
+
 static size_t
-ngx_http_lua_log_ringbuf_rleft(ngx_http_lua_log_ringbuf_t *rb)
+ngx_http_lua_log_ringbuf_free_spaces(ngx_http_lua_log_ringbuf_t *rb)
 {
-    if (rb->tail >= rb->head) {
+    if (rb->tail == rb->head && rb->tail == rb->data) {
+        return rb->size;
+    }
+
+    if (rb->tail > rb->head) {
         return rb->data + rb->size - rb->tail;
     }
 
@@ -111,11 +124,16 @@ ngx_http_lua_log_ringbuf_rleft(ngx_http_lua_log_ringbuf_t *rb)
 }
 
 
+/*
+ * try to write log data to ring buffer, throw away old data
+ * if there was not enough free spaces.
+ */
+
 ngx_int_t
 ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
     void *buf, size_t n)
 {
-    size_t              rleft, head_len;
+    size_t              free_spaces, head_len;
 
     ngx_http_lua_log_ringbuf_header_t       *head;
 
@@ -125,13 +143,13 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
         return NGX_ERROR;
     }
 
-    rleft = ngx_http_lua_log_ringbuf_rleft(rb);
+    free_spaces = ngx_http_lua_log_ringbuf_free_spaces(rb);
 
-    if (rleft < n + head_len) {
-        /*  set placehold */
-        ngx_http_lua_log_ringbuf_append_tail(rb, 0, 0, 0, 0);
-
-        rb->tail = rb->data;
+    if (free_spaces < n + head_len) {
+        /* if the right space is not enough, mark it as placehold data */
+        if (rb->data + rb->size - rb->tail < n + head_len) {
+            ngx_http_lua_log_ringbuf_append(rb, 0, 0, NULL, 0);
+        }
 
         do {    /*  throw away old data */
             if (rb->head != ngx_http_lua_log_ringbuf_next_header(rb)) {
@@ -143,15 +161,17 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
             rb->count--;
 
             ngx_http_lua_log_ringbuf_next_header(rb);
-            rleft = ngx_http_lua_log_ringbuf_rleft(rb);
-        } while (rleft < n + head_len);
+            free_spaces = ngx_http_lua_log_ringbuf_free_spaces(rb);
+        } while (free_spaces < n + head_len);
     }
 
-    ngx_http_lua_log_ringbuf_append_tail(rb, 1, log_level, buf, n);
+    ngx_http_lua_log_ringbuf_append(rb, 1, log_level, buf, n);
 
     return NGX_OK;
 }
 
+
+/* read log from ring buffer, do reset if all of the logs were readed. */
 
 ngx_int_t
 ngx_http_lua_log_ringbuf_read(ngx_http_lua_log_ringbuf_t *rb, int *log_level,
