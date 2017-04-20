@@ -197,7 +197,7 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 
 = Installation =
 
-It is *highly* recommended to use the [http://openresty.org OpenResty bundle] that bundles Nginx, ngx_lua,  LuaJIT 2.1, as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: <code>./configure -j2 && make -j2 && make install</code>. Do not build this module with nginx yourself since it is tricky to set up exactly right.
+It is *highly* recommended to use [http://openresty.org OpenResty releases] which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
