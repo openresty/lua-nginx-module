@@ -317,8 +317,7 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err,
-    size_t *errlen)
+ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_http_lua_log_ringbuf_t     *ringbuf;
@@ -327,8 +326,8 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err,
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"set_errlog_filter\" depends on directive "
-                               "\"lua_intercept_error_log\"")
+                               "API \"set_errlog_filter\" depends on "
+                               "directive \"lua_intercept_error_log\"")
                   - err;
         return NGX_ERROR;
     }
@@ -352,11 +351,11 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err,
 
 
 int
-ngx_http_lua_ffi_get_errlog_data(char **log, size_t *loglen, int *loglevel,
-    u_char *err, size_t *errlen)
+ngx_http_lua_ffi_get_errlog_data(char **log, int *loglevel, u_char *err,
+    size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    size_t           count;
+    ngx_uint_t           loglen;
 
     ngx_http_lua_log_ringbuf_t     *ringbuf;
 
@@ -370,13 +369,12 @@ ngx_http_lua_ffi_get_errlog_data(char **log, size_t *loglen, int *loglevel,
         return NGX_ERROR;
     }
 
-    count = ringbuf->count;
-    if (count == 0) {
-        return count;
+    if (ringbuf->count == 0) {
+        return NGX_DONE;
     }
 
-    ngx_http_lua_log_ringbuf_read(ringbuf, loglevel, (void **)log, loglen);
-    return count;
+    ngx_http_lua_log_ringbuf_read(ringbuf, loglevel, (void **)log, &loglen);
+    return loglen;
 #else
     *errlen = ngx_snprintf(err, *errlen,
                            "missing intercept error log patch in the nginx "
