@@ -140,7 +140,7 @@ ngx_http_lua_ffi_get_process_type(void)
 
 
 int
-ngx_http_lua_ffi_enable_privileged_agent(void)
+ngx_http_lua_ffi_enable_privileged_agent(char **err)
 {
 #ifdef HAVE_PRIVILEGED_PROCESS_PATCH
     ngx_core_conf_t   *ccf;
@@ -149,8 +149,12 @@ ngx_http_lua_ffi_enable_privileged_agent(void)
                                            ngx_core_module);
 
     ccf->privileged_agent = 1;
-#endif
 
     return NGX_OK;
+
+#else
+    *err = "missing privileged agent process patch in the nginx core";
+    return NGX_ERROR;
+#endif
 }
 #endif
