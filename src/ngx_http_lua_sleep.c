@@ -72,10 +72,25 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     coctx->sleep.data = coctx;
     coctx->sleep.log = r->connection->log;
 
-    dd("adding timer with delay %lu ms, r:%.*s", (unsigned long) delay,
-       (int) r->uri.len, r->uri.data);
+    if (delay == 0) {
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+        dd("posting 0 sec sleep event to head of delayed queue");
 
-    ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
+        coctx->sleep.delayed = 1;
+        ngx_post_event(&coctx->sleep, &ngx_posted_delayed_events);
+#else
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "ngx.sleep(0)"
+                      " called without delayed events patch, this will"
+                      " hurt performance");
+        ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
+#endif
+
+    } else {
+        dd("adding timer with delay %lu ms, r:%.*s", (unsigned long) delay,
+           (int) r->uri.len, r->uri.data);
+
+        ngx_add_timer(&coctx->sleep, (ngx_msec_t) delay);
+    }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua ready to sleep for %d ms", delay);
@@ -147,6 +162,15 @@ ngx_http_lua_sleep_cleanup(void *data)
 
         ngx_del_timer(&coctx->sleep);
     }
+
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+    if (coctx->sleep.posted) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua clean up the posted event for pending ngx.sleep");
+
+        ngx_delete_posted_event(&coctx->sleep);
+    }
+#endif
 }
 
 
