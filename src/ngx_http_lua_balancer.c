@@ -459,7 +459,7 @@ ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc, void *data)
 
 int
 ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
-    const u_char *addr, size_t addr_len, int port, char **err)
+    const u_char *addr, size_t addr_len, int port, int ssl, char **err)
 {
     ngx_url_t              url;
     ngx_http_lua_ctx_t    *ctx;
@@ -478,6 +478,24 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     if (u == NULL) {
         *err = "no upstream found";
         return NGX_ERROR;
+    }
+
+    if (ssl == 1) {
+#if (NGX_HTTP_SSL)
+        if (u->conf->ssl) {
+            u->ssl = 1;
+        } else {
+            *err = "proxy_pass http protocol only";
+            return NGX_ERROR;
+        }
+#else
+        *err = "https protocol requires SSL support";
+        return NGX_ERROR;
+#endif
+    } else if (ssl == 0) {
+        u->ssl = 0;
+    } else {
+        //by default
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
