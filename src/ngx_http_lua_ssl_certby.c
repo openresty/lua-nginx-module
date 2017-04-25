@@ -297,8 +297,13 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "loading SSL certificate by lua";
-
-    rc = lscf->srv.ssl_cert_handler(r, lscf, L);
+    
+    if (lscf->srv.ssl_cert_handler) {
+        rc = lscf->srv.ssl_cert_handler(r, lscf, L);
+    } else {
+        ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "srv.ssl_cert_handler is Null"); 
+        goto failed; 
+    } 
 
     if (rc >= NGX_OK || rc == NGX_ERROR) {
         cctx->done = 1;
