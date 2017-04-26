@@ -135,7 +135,17 @@ ngx_http_lua_ffi_worker_count(void)
 int
 ngx_http_lua_ffi_get_process_type(void)
 {
-    return ngx_process;
+    int           typ = ngx_process;
+
+    if (typ == NGX_PROCESS_HELPER) {
+#ifdef HAVE_PRIVILEGED_PROCESS_PATCH
+        if (ngx_is_privileged_agent) {
+            typ = 99;
+        }
+#endif
+    }
+
+    return typ;
 }
 
 
