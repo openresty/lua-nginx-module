@@ -147,7 +147,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     zone->init = ngx_http_lua_shared_memory_init;
     zone->data = ctx;
 
-    rc = ngx_http_lua_delay_list_register(cf, tag);
+    rc = ngx_http_lua_delay_init_declare(cf, tag);
     if (rc == NGX_ERROR) {
         return NULL;
     }
@@ -203,7 +203,7 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
         saved_cycle = ngx_cycle;
         ngx_cycle = ctx->cycle;
 
-        rc = ngx_http_lua_delay_init_phase();
+        rc = ngx_http_lua_delay_init_handler();
 
         ngx_cycle = saved_cycle;
 
@@ -218,7 +218,7 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
 
 
 ngx_int_t
-ngx_http_lua_delay_list_register(ngx_conf_t *cf, void *tag)
+ngx_http_lua_delay_init_declare(ngx_conf_t *cf, void *tag)
 {
     ngx_http_lua_main_conf_t     *lmcf;
     void                        **init;
@@ -229,25 +229,25 @@ ngx_http_lua_delay_list_register(ngx_conf_t *cf, void *tag)
         return NGX_ERROR;
     }
 
-    if (lmcf->delay_list == NULL) {
-        lmcf->delay_list =
+    if (lmcf->delay_init == NULL) {
+        lmcf->delay_init =
             ngx_array_create(cf->pool, 4, sizeof(void *));
 
-        if (lmcf->delay_list == NULL) {
+        if (lmcf->delay_init == NULL) {
             return NGX_ERROR;
         }
     }
 
-    init = lmcf->delay_list->elts;
+    init = lmcf->delay_init->elts;
 
-    for (i = 0; i < lmcf->delay_list->nelts; i++) {
+    for (i = 0; i < lmcf->delay_init->nelts; i++) {
 
         if (init[i] == tag) {
             return NGX_OK;
         }
     }
 
-    init = ngx_array_push(lmcf->delay_list);
+    init = ngx_array_push(lmcf->delay_init);
     if (init == NULL) {
         return NGX_ERROR;
     }
@@ -259,7 +259,7 @@ ngx_http_lua_delay_list_register(ngx_conf_t *cf, void *tag)
 
 
 ngx_int_t
-ngx_http_lua_delay_init_phase()
+ngx_http_lua_delay_init_handler()
 {
     ngx_http_lua_main_conf_t     *lmcf;
 
@@ -272,17 +272,17 @@ ngx_http_lua_delay_init_phase()
         return NGX_OK;
     }
 
-    lmcf->delay_list_inited++;
+    lmcf->delay_init_counter++;
 
-    if (lmcf->delay_list->nelts > lmcf->delay_list_inited) {
+    if (lmcf->delay_init->nelts > lmcf->delay_init_counter) {
         return NGX_ERROR;
     }
 
-    if (lmcf->delay_list->nelts < lmcf->delay_list_inited) {
+    if (lmcf->delay_init->nelts < lmcf->delay_init_counter) {
         return NGX_OK;
     }
 
-    /* lmcf->delay_list->nelts == lmcf->delay_list_inited */
+    /* lmcf->delay_init->nelts == lmcf->delay_init_counter */
     return lmcf->init_handler(lmcf->cycle->log, lmcf, lmcf->lua);
 }
 

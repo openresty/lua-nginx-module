@@ -178,8 +178,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_array_t         *preload_hooks; /* of ngx_http_lua_preload_hook_t */
 
-    ngx_array_t         *delay_list; /* of void* */
-    unsigned             delay_list_inited;
+    ngx_array_t         *delay_init; /* of void* */
+    unsigned             delay_init_counter;
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;

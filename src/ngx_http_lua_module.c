@@ -743,8 +743,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         if (lmcf->init_handler
-            && (!lmcf->delay_list
-                || lmcf->delay_list->nelts == lmcf->delay_list_inited))
+            && (!lmcf->delay_init
+                || lmcf->delay_init->nelts == lmcf->delay_init_counter))
         {
             saved_cycle = ngx_cycle;
             ngx_cycle = cf->cycle;
@@ -823,8 +823,8 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->shm_zones_inited = 0;
      *      lmcf->shdict_zones = NULL;
      *      lmcf->preload_hooks = NULL;
-     *      lmcf->delay_list = NULL;
-     *      lmcf->delay_list_inited = 0;
+     *      lmcf->delay_init = NULL;
+     *      lmcf->delay_init_counter = 0;
      *      lmcf->requires_header_filter = 0;
      *      lmcf->requires_body_filter = 0;
      *      lmcf->requires_capture_filter = 0;
