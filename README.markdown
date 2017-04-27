@@ -62,7 +62,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.7](https://github.com/openresty/lua-nginx-module/tags) released on 4 November 2016.
+This document describes ngx_lua [v0.10.8](https://github.com/openresty/lua-nginx-module/tags) released on 8 April 2017.
 
 Synopsis
 ========
@@ -263,7 +263,7 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 Installation
 ============
 
-It is highly recommended to use the [OpenResty bundle](http://openresty.org) that bundles Nginx, ngx_lua,  LuaJIT 2.0/2.1 (or the optional standard Lua 5.1 interpreter), as well as a package of powerful companion Nginx modules. The basic installation step is a simple command: `./configure --with-luajit && make && make install`.
+It is *highly* recommended to use [OpenResty releases](http://openresty.org) which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
@@ -5307,7 +5307,7 @@ Note that while this method accepts all [HTTP status constants](#http-status-con
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exit(...)` be used to reinforce the fact that the request processing is being terminated.
 
-When being used in the contexts of [header_filter_by_lua](#header_filter_by_lua) and
+When being used in the contexts of [header_filter_by_lua*](#header_filter_by_lua), [balancer_by_lua*](#balancer_by_lua_block), and
 [ssl_session_store_by_lua*](#ssl_session_store_by_lua_block), `ngx.exit()` is
 an asynchronous operation and will return immediately. This behavior may change in future and it is recommended that users always use `return` in combination as suggested above.
 

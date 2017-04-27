@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 #no_diff();
 #no_long_string();
@@ -304,3 +304,20 @@ INIT 2: foo = 3
 ",
 "",
 ]
+
+
+
+=== TEST 12: error in init
+--- http_config
+    init_by_lua_block {
+        error("failed to init")
+    }
+--- config
+    location /t {
+        echo ok;
+    }
+--- must_die
+--- error_log
+failed to init
+--- error_log
+[error]

@@ -1,6 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+use Test::Nginx::Socket::Lua
+    skip_all => 'no mmap(sbrk(0)) trick since glibc leaks memory in this case';
 
 #worker_connections(1014);
 #master_on();
