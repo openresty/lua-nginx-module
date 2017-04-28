@@ -198,8 +198,7 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
 
     lmcf->shm_zones_inited++;
 
-    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts)
-    {
+    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts) {
         saved_cycle = ngx_cycle;
         ngx_cycle = ctx->cycle;
 
@@ -275,11 +274,13 @@ ngx_http_lua_delay_init_handler()
     lmcf->delay_init_counter++;
 
     if (lmcf->delay_init->nelts > lmcf->delay_init_counter) {
-        return NGX_ERROR;
+        return NGX_OK;
     }
 
     if (lmcf->delay_init->nelts < lmcf->delay_init_counter) {
-        return NGX_OK;
+        ngx_log_error(NGX_LOG_ERR, lmcf->cycle->log, 0,
+                      "\"ngx_http_lua_delay_init_handler\" run too much times");
+        return NGX_ERROR;
     }
 
     /* lmcf->delay_init->nelts == lmcf->delay_init_counter */
