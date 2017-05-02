@@ -223,8 +223,6 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            busy_buf_ptr_count;
 #endif
 
-    ngx_http_lua_intercept_log_t intercept_log;
-
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
