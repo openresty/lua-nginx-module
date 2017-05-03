@@ -25,8 +25,8 @@ typedef struct {
      * ngx_connection_t. and we use the Lua coroutine reference number as
      * the event ident */
     int           co_ref;
-    unsigned      premature:1;
     unsigned      delay:31;
+    unsigned      premature:1;
     lua_State    *co;
 
     ngx_pool_t   *pool;
@@ -118,6 +118,10 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 }
 
 
+/*
+ * TODO: return a timer handler instead which can be passed to
+ * the ngx.timer.cancel method to cancel the timer.
+ */
 static int
 ngx_http_lua_ngx_timer_every(lua_State *L)
 {
@@ -156,7 +160,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
 
     if (every && delay == 0) {
-        return luaL_error(L, "delay cann't be zero");
+        return luaL_error(L, "delay cannot be zero");
     }
 
     luaL_argcheck(L, lua_isfunction(L, 2) && !lua_iscfunction(L, 2), 2,
