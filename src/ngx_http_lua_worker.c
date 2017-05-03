@@ -13,6 +13,9 @@
 #include "ngx_http_lua_worker.h"
 
 
+#define NGX_PROCESS_PRIVILEGED_AGENT    99
+
+
 static int ngx_http_lua_ngx_worker_exiting(lua_State *L);
 static int ngx_http_lua_ngx_worker_pid(lua_State *L);
 static int ngx_http_lua_ngx_worker_id(lua_State *L);
@@ -135,12 +138,12 @@ ngx_http_lua_ffi_worker_count(void)
 int
 ngx_http_lua_ffi_get_process_type(void)
 {
-    int           typ = ngx_process;
+    int typ = ngx_process;
 
     if (typ == NGX_PROCESS_HELPER) {
 #ifdef HAVE_PRIVILEGED_PROCESS_PATCH
         if (ngx_is_privileged_agent) {
-            typ = 99;
+            typ = NGX_PROCESS_PRIVILEGED_AGENT;
         }
 #endif
     }
