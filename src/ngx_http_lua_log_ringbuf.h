@@ -14,7 +14,7 @@ typedef struct {
     char      *sentinel;
     size_t     size;              /*  buffer total size */
     size_t     count;             /*  count of logs     */
-}ngx_http_lua_log_ringbuf_t;
+} ngx_http_lua_log_ringbuf_t;
 
 
 void ngx_http_lua_log_ringbuf_init(ngx_http_lua_log_ringbuf_t *rb,
