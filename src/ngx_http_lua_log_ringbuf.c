@@ -10,7 +10,7 @@
 
 
 typedef struct {
-    unsigned    len:24;
+    unsigned    len:28;
     unsigned    log_level:4;
 } ngx_http_lua_log_ringbuf_header_t;
 
