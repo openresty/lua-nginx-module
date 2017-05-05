@@ -20,7 +20,7 @@ enum {
 };
 
 
-static void * ngx_http_lua_log_ringbuf_next_header(
+static void *ngx_http_lua_log_ringbuf_next_header(
     ngx_http_lua_log_ringbuf_t *rb);
 static void ngx_http_lua_log_ringbuf_append(
     ngx_http_lua_log_ringbuf_t *rb, int sentinel, int log_level, void *buf,
