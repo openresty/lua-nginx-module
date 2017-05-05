@@ -173,8 +173,8 @@ ngx_http_lua_ffi_ssl_ctx_set_priv_key(void *cdata_ctx, void *cdata_key,
 failed:
 
     *err_buf_len = ngx_http_lua_ssl_get_error(ERR_get_error(), err_buf,
-                                                  *err_buf_len, (u_char *)err,
-                                                  ngx_strlen(err));
+                                              *err_buf_len, (u_char *)err,
+                                              ngx_strlen(err));
     return NGX_ERROR;
 }
 
