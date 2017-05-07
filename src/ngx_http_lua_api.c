@@ -146,8 +146,6 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     zone->init = ngx_http_lua_shared_memory_init;
     zone->data = ctx;
 
-    lmcf->requires_shm = 1;
-
     return &ctx->zone;
 }
 
@@ -159,8 +157,6 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     ngx_shm_zone_t              *ozone;
     void                        *odata;
 
-    ngx_int_t                    rc;
-    volatile ngx_cycle_t        *saved_cycle;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_shm_zone_ctx_t *ctx;
     ngx_shm_zone_t              *zone;
@@ -193,22 +189,6 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     dd("lmcf->lua: %p", lmcf->lua);
 
     lmcf->shm_zones_inited++;
-
-    if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
-        && lmcf->init_handler)
-    {
-        saved_cycle = ngx_cycle;
-        ngx_cycle = ctx->cycle;
-
-        rc = lmcf->init_handler(ctx->log, lmcf, lmcf->lua);
-
-        ngx_cycle = saved_cycle;
-
-        if (rc != NGX_OK) {
-            /* an error happened */
-            return NGX_ERROR;
-        }
-    }
 
     return NGX_OK;
 }

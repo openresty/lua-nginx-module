@@ -14,6 +14,35 @@
 
 
 ngx_int_t
+ngx_http_lua_init_module(ngx_cycle_t *cycle)
+{
+    ngx_int_t                   rc;
+    ngx_http_lua_main_conf_t   *lmcf;
+    volatile ngx_cycle_t       *saved_cycle;
+
+    lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
+
+    if (lmcf == NULL || lmcf->init_handler == NULL || lmcf->lua == NULL) {
+        return NGX_OK;
+    }
+
+    saved_cycle = ngx_cycle;
+    ngx_cycle = cycle;
+
+    rc = lmcf->init_handler(cycle->log, lmcf, lmcf->lua);
+
+    ngx_cycle = saved_cycle;
+
+    if (rc != NGX_OK) {
+        /* an error happened */
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
 ngx_http_lua_init_by_inline(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
     lua_State *L)
 {
