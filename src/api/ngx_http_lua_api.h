@@ -49,6 +49,11 @@ ngx_shm_zone_t *ngx_http_lua_find_zone(u_char *name_data, size_t name_len);
 ngx_shm_zone_t *ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name,
     size_t size, void *tag);
 
+ngx_int_t ngx_http_lua_delay_init_declare(ngx_conf_t *cf,
+    void *tag);
+
+ngx_int_t ngx_http_lua_delay_init_handler();
+
 
 #endif /* _NGX_HTTP_LUA_API_H_INCLUDED_ */
 

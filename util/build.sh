@@ -53,6 +53,7 @@ time ngx-build $force $version \
                 --add-module=$root/t/data/fake-module \
                 --add-module=$root/t/data/fake-shm-module \
                 --add-module=$root/t/data/fake-delayed-load-module \
+                --add-module=$root/t/data/fake-delay-init-lua-module \
                 --with-http_gunzip_module \
                 --with-http_dav_module \
           --with-select_module \
