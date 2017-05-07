@@ -1,7 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua;
-use Digest::MD5 qw(md5_hex);
 
 repeat_each(3);
 
