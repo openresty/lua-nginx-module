@@ -5607,7 +5607,7 @@ ngx.time
 
 Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-Updates of the Nginx time cache an be forced by calling [ngx.update_time](#ngxupdate_time) first.
+Updates of the Nginx time cache can be forced by calling [ngx.update_time](#ngxupdate_time) first.
 
 [Back to TOC](#nginx-api-for-lua)
 
