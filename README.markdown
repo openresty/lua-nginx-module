@@ -3407,6 +3407,7 @@ HTTP status constants
    value = ngx.HTTP_REQUEST_TIMEOUT (408) (first added in the v0.9.20 release)
    value = ngx.HTTP_CONFLICT (409) (first added in the v0.9.20 release)
    value = ngx.HTTP_GONE (410)
+   value = ngx.HTTP_IM_A_TEAPOT (418)
    value = ngx.HTTP_UPGRADE_REQUIRED (426) (first added in the v0.9.20 release)
    value = ngx.HTTP_TOO_MANY_REQUESTS (429) (first added in the v0.9.20 release)
    value = ngx.HTTP_CLOSE (444) (first added in the v0.9.20 release)
