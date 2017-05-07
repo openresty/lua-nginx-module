@@ -1,5 +1,6 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
