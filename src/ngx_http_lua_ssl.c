@@ -40,14 +40,14 @@ ngx_http_lua_ssl_init(ngx_log_t *log)
 
 static size_t
 ngx_http_lua_ssl_get_error(u_long e, u_char *ssl_err_buf,
-    size_t ssl_err_buf_len, u_char *default_errmsg,
-    size_t default_errmsg_len)
+    size_t ssl_err_buf_len, u_char *default_errmsg, size_t default_errmsg_len)
 {
     size_t len;
 
     if (e == 0) {
         len = ngx_min(ssl_err_buf_len, default_errmsg_len);
         ssl_err_buf = ngx_copy(ssl_err_buf, default_errmsg, len);
+
         return len;
     }
 
@@ -71,8 +71,8 @@ ngx_http_lua_ffi_ssl_ctx_init(ngx_uint_t protocols, char **err)
         return NULL;
     }
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ssl.log, 0,
-                   "lua ssl ctx init: %p:%d", ssl.ctx, ssl.ctx->references);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ssl.log, 0, "lua ssl ctx init: %p:%d",
+                   ssl.ctx, ssl.ctx->references);
 
     return ssl.ctx;
 }
@@ -83,6 +83,7 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
     u_char *err_buf, size_t *err_buf_len)
 {
     char               *err;
+    int                 num;
 
 #ifdef LIBRESSL_VERSION_NUMBER
 
@@ -93,8 +94,7 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
 
 #   if OPENSSL_VERSION_NUMBER < 0x1000205fL
 
-    err = "at least OpenSSL 1.0.2e required but found "
-               OPENSSL_VERSION_TEXT;
+    err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
     goto failed;
 
 #   else
@@ -103,13 +103,14 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
     SSL_CTX           *ssl_ctx = cdata_ctx;
     STACK_OF(X509)    *cert = cdata_cert;
 
-#ifdef OPENSSL_IS_BORINGSSL
+#   ifdef OPENSSL_IS_BORINGSSL
     size_t             i;
-#else
+#   else
     int                i;
-#endif
+#   endif
 
-    if (sk_X509_num(cert) < 1) {
+    num = sk_X509_num(cert);
+    if (num < 1) {
         err = "sk_X509_num() failed";
         goto failed;
     }
@@ -127,7 +128,7 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
 
     /* read rest of the chain */
 
-    for (i = 1; i < sk_X509_num(cert); i++) {
+    for (i = 1; i < num; i++) {
 
         x509 = sk_X509_value(cert, i);
         if (x509 == NULL) {
@@ -142,6 +143,7 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
     }
 
     return NGX_OK;
+
 #   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
 #endif
 
