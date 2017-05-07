@@ -46,7 +46,7 @@ ngx_http_lua_ssl_get_error(u_long e, u_char *ssl_err_buf,
 
     if (e == 0) {
         len = ngx_min(ssl_err_buf_len, default_errmsg_len);
-        ssl_err_buf = ngx_copy(ssl_err_buf, default_errmsg, len);
+        ngx_memcpy(ssl_err_buf, default_errmsg, len);
 
         return len;
     }
