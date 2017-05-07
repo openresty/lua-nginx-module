@@ -1017,4 +1017,3 @@ foo
 --- no_error_log
 [error]
 --- timeout: 2
-

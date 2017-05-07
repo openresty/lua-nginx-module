@@ -22,6 +22,19 @@
 #include <lauxlib.h>
 
 
+#if (NGX_PCRE)
+
+#include <pcre.h>
+
+#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
+#   define LUA_HAVE_PCRE_JIT 1
+#else
+#   define LUA_HAVE_PCRE_JIT 0
+#endif
+
+#endif
+
+
 #if !defined(nginx_version) || (nginx_version < 1006000)
 #error at least nginx 1.6.0 is required but found an older version
 #endif
@@ -138,7 +151,7 @@ typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
 typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
-    ngx_http_lua_srv_conf_t *lmcf, lua_State *L);
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
 
 typedef struct {
@@ -168,6 +181,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
     ngx_int_t            regex_match_limit;
+
+#if (LUA_HAVE_PCRE_JIT)
+    pcre_jit_stack      *jit_stack;
+#endif
+
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
@@ -198,6 +216,12 @@ struct ngx_http_lua_main_conf_s {
     ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
                                                 of reqeusts */
     ngx_uint_t           malloc_trim_req_count;
+
+#if nginx_version >= 1011011
+    /* the following 2 fields are only used by ngx.req.raw_headers() for now */
+    ngx_buf_t          **busy_buf_ptrs;
+    ngx_int_t            busy_buf_ptr_count;
+#endif
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;

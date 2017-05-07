@@ -505,4 +505,3 @@ thread created: zombie
 [alert]
 lua tcp socket abort resolver
 --- error_log
-

@@ -876,4 +876,3 @@ Foo: bar\r
 --- no_error_log
 [error]
 --- timeout: 5
-

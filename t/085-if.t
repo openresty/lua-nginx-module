@@ -198,4 +198,3 @@ GET /proxy-pass-uri
 --- response_body_like: It works!
 --- no_error_log
 [error]
-

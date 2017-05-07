@@ -43,8 +43,9 @@ ok
 ok
 ok
 --- grep_error_log eval: qr/malloc_trim\(\d+\) returned \d+/
---- grep_error_log_out
-malloc_trim(1) returned 0
+--- grep_error_log_out eval
+qr/\Amalloc_trim\(1\) returned [01]
+\z/
 --- wait: 0.2
 --- no_error_log
 [error]
@@ -76,13 +77,14 @@ ok
 ok
 ok
 --- grep_error_log eval: qr/malloc_trim\(\d+\) returned \d+/
---- grep_error_log_out
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
+--- grep_error_log_out eval
+qr/\Amalloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+\z/
 --- wait: 0.2
 --- no_error_log
 [error]
@@ -114,10 +116,11 @@ ok
 ok
 ok
 --- grep_error_log eval: qr/malloc_trim\(\d+\) returned \d+/
---- grep_error_log_out
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
+--- grep_error_log_out eval
+qr/\Amalloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+\z/
 --- wait: 0.2
 --- no_error_log
 [error]
@@ -149,9 +152,10 @@ ok
 ok
 ok
 --- grep_error_log eval: qr/malloc_trim\(\d+\) returned \d+/
---- grep_error_log_out
-malloc_trim(1) returned 0
-malloc_trim(1) returned 0
+--- grep_error_log_out eval
+qr/\Amalloc_trim\(1\) returned [01]
+malloc_trim\(1\) returned [01]
+\z/
 --- wait: 0.2
 --- no_error_log
 [error]
@@ -330,8 +334,9 @@ ok
 ok
 ok
 --- grep_error_log eval: qr/malloc_trim\(\d+\) returned \d+/
---- grep_error_log_out
-malloc_trim(1) returned 0
+--- grep_error_log_out eval
+qr/\Amalloc_trim\(1\) returned [01]
+\z/
 --- wait: 0.2
 --- no_error_log
 [error]

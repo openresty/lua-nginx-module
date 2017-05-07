@@ -17,14 +17,6 @@
 #include "ngx_http_lua_script.h"
 #include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_util.h"
-#include <pcre.h>
-
-
-#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
-#   define LUA_HAVE_PCRE_JIT 1
-#else
-#   define LUA_HAVE_PCRE_JIT 0
-#endif
 
 
 #if (PCRE_MAJOR >= 6)
@@ -41,6 +33,8 @@
 #define NGX_LUA_RE_NO_UTF8_CHECK     (1<<4)
 
 #define NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT (100)
+
+#define NGX_LUA_RE_MIN_JIT_STACK_SIZE 32 * 1024
 
 
 typedef struct {
@@ -363,6 +357,10 @@ ngx_http_lua_ngx_re_match_helper(lua_State *L, int wantcaps)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+
+        if (sd && lmcf->jit_stack) {
+            pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+        }
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -825,6 +823,10 @@ ngx_http_lua_ngx_re_gmatch(lua_State *L)
         old_pool = ngx_http_lua_pcre_malloc_init(pool);
 
         sd = pcre_study(re_comp.regex, PCRE_STUDY_JIT_COMPILE, &msg);
+
+        if (sd && lmcf->jit_stack) {
+            pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+        }
 
         ngx_http_lua_pcre_malloc_done(old_pool);
 
@@ -1922,6 +1924,60 @@ error:
 }
 
 
+ngx_int_t
+ngx_http_lua_ffi_set_jit_stack_size(int size, u_char *errstr,
+    size_t *errstr_size)
+{
+#if LUA_HAVE_PCRE_JIT
+
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_pool_t                  *pool, *old_pool;
+
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+
+    if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
+        size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
+    }
+
+    pool = lmcf->pool;
+
+    dd("server pool %p", lmcf->pool);
+
+    if (lmcf->jit_stack) {
+        old_pool = ngx_http_lua_pcre_malloc_init(pool);
+
+        pcre_jit_stack_free(lmcf->jit_stack);
+
+        ngx_http_lua_pcre_malloc_done(old_pool);
+    }
+
+    old_pool = ngx_http_lua_pcre_malloc_init(pool);
+
+    lmcf->jit_stack = pcre_jit_stack_alloc(NGX_LUA_RE_MIN_JIT_STACK_SIZE,
+                                           size);
+
+    ngx_http_lua_pcre_malloc_done(old_pool);
+
+    if (lmcf->jit_stack == NULL) {
+        *errstr_size = ngx_snprintf(errstr, *errstr_size,
+                                    "pcre jit stack allocation failed")
+                       - errstr;
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+
+#else  /* LUA_HAVE_PCRE_JIT */
+
+    *errstr_size = ngx_snprintf(errstr, *errstr_size,
+                                "no pcre jit support found") - errstr;
+    return NGX_ERROR;
+
+#endif /* LUA_HAVE_PCRE_JIT */
+}
+
+
 void
 ngx_http_lua_inject_regex_api(lua_State *L)
 {
@@ -2170,6 +2226,9 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         goto error;
     }
 
+    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
+                                               ngx_http_lua_module);
+
 #if (LUA_HAVE_PCRE_JIT)
 
     if (flags & NGX_LUA_RE_MODE_JIT) {
@@ -2205,10 +2264,11 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         ngx_http_lua_pcre_malloc_done(old_pool);
     }
 
-#endif /* LUA_HAVE_PCRE_JIT */
+    if (sd && lmcf->jit_stack) {
+        pcre_assign_jit_stack(sd, NULL, lmcf->jit_stack);
+    }
 
-    lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
-                                               ngx_http_lua_module);
+#endif /* LUA_HAVE_PCRE_JIT */
 
     if (sd && lmcf && lmcf->regex_match_limit > 0) {
         sd->flags |= PCRE_EXTRA_MATCH_LIMIT;

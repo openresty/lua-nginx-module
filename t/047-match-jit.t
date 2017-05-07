@@ -212,4 +212,3 @@ end
     GET /re
 --- response_body
 failed to match
-

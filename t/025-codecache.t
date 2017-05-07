@@ -1244,4 +1244,3 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "decrementing the reference count for Lua VM: 1",
 "lua close the global Lua VM",
 ]
-

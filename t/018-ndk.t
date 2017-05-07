@@ -171,4 +171,3 @@ ok
 foo = a b
 --- no_error_log
 [error]
-

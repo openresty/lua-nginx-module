@@ -12,6 +12,8 @@
 
 
 #if (NGX_HTTP_SSL)
+
+
 typedef struct {
     ngx_connection_t        *connection; /* original true connection */
     ngx_http_request_t      *request;    /* fake request */
@@ -31,13 +33,15 @@ typedef struct {
     unsigned                 entered_cert_handler:1;
     unsigned                 entered_sess_fetch_handler:1;
 } ngx_http_lua_ssl_ctx_t;
-#endif
 
 
 ngx_int_t ngx_http_lua_ssl_init(ngx_log_t *log);
 
 
 extern int ngx_http_lua_ssl_ctx_index;
+
+
+#endif
 
 
 #endif  /* _NGX_HTTP_LUA_SSL_H_INCLUDED_ */
