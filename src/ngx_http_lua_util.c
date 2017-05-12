@@ -51,6 +51,7 @@
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl.h"
+#include "ngx_http_lua_log_ringbuf.h"
 
 
 #if 1
@@ -4090,6 +4091,31 @@ ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
 
         last = &(*last)->next;
     }
+}
+
+
+ngx_int_t
+ngx_http_lua_intercept_log_handler(ngx_log_t *log,
+    ngx_uint_t level, void *buf, size_t n)
+{
+#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
+    ngx_http_lua_log_ringbuf_t  *ringbuf;
+
+    dd("enter");
+
+    ringbuf = (ngx_http_lua_log_ringbuf_t  *)
+                    ngx_cycle->intercept_error_log_data;
+
+    if (level > ringbuf->filter_level) {
+        return NGX_OK;
+    }
+
+    ngx_http_lua_log_ringbuf_write(ringbuf, level, buf, n);
+
+    dd("intercept log: %s\n", buf);
+#endif
+
+    return NGX_OK;
 }
 
 

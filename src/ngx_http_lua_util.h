@@ -249,6 +249,9 @@ ngx_http_cleanup_t *ngx_http_lua_cleanup_add(ngx_http_request_t *r,
 void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
     ngx_http_cleanup_pt *cleanup);
 
+ngx_int_t ngx_http_lua_intercept_log_handler(ngx_log_t *log,
+    ngx_uint_t level, void *buf, size_t n);
+
 
 #define ngx_http_lua_check_if_abortable(L, ctx)                             \
     if ((ctx)->no_abort) {                                                  \
