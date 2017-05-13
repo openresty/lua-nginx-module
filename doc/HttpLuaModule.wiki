@@ -859,8 +859,8 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
-== lua_intercept_error_log ==
-'''syntax:''' ''lua_intercept_error_log size''
+== lua_capture_error_log ==
+'''syntax:''' ''lua_capture_error_log size''
 
 '''default:''' ''none''
 
@@ -872,7 +872,7 @@ by this module or the nginx http subsystem, but everything) without touching fil
 You can use units like `k` and `m` in the <code>size</code> value, as in
 
 <geshi lang="nginx">
-    lua_intercept_error_log 100k;
+    lua_capture_error_log 100k;
 </geshi>
 
 As a rule of thumb, a 4KB buffer can usually hold about 20 typical error log messages. So do the maths!

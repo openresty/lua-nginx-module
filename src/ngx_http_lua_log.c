@@ -317,8 +317,8 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
 ngx_int_t
-ngx_http_lua_intercept_log_handler(ngx_log_t *log,
-    ngx_uint_t level, void *buf, size_t n)
+ngx_http_lua_capture_log_handler(ngx_log_t *log,
+    ngx_uint_t level, u_char *buf, size_t n)
 {
     ngx_http_lua_log_ringbuf_t  *ringbuf;
 
@@ -333,7 +333,7 @@ ngx_http_lua_intercept_log_handler(ngx_log_t *log,
 
     ngx_http_lua_log_ringbuf_write(ringbuf, level, buf, n);
 
-    dd("intercept log: %s\n", buf);
+    dd("capture log: %s\n", buf);
 
     return NGX_OK;
 }
@@ -352,7 +352,7 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
                                "API \"set_errlog_filter\" depends on "
-                               "directive \"lua_intercept_error_log\"")
+                               "directive \"lua_capture_error_log\"")
                   - err;
         return NGX_ERROR;
     }
@@ -367,7 +367,7 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
     return NGX_OK;
 #else
     *errlen = ngx_snprintf(err, *errlen,
-                           "missing the intercept error log patch for nginx")
+                           "missing the capture error log patch for nginx")
               - err;
     return NGX_ERROR;
 #endif
@@ -388,7 +388,7 @@ ngx_http_lua_ffi_get_errlog_data(char **log, int *loglevel, u_char *err,
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
                                "API \"get_errlog_data\" depends on directive "
-                               "\"lua_intercept_error_log\"")
+                               "\"lua_capture_error_log\"")
                   - err;
         return NGX_ERROR;
     }
@@ -401,7 +401,7 @@ ngx_http_lua_ffi_get_errlog_data(char **log, int *loglevel, u_char *err,
     return loglen;
 #else
     *errlen = ngx_snprintf(err, *errlen,
-                           "missing the intercept error log patch for nginx")
+                           "missing the capture error log patch for nginx")
               - err;
     return NGX_ERROR;
 #endif

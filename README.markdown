@@ -1036,7 +1036,7 @@ See Also
 Directives
 ==========
 
-* [lua_intercept_error_log](#lua_intercept_error_log)
+* [lua_capture_error_log](#lua_capture_error_log)
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_malloc_trim](#lua_malloc_trim)
 * [lua_code_cache](#lua_code_cache)
@@ -1110,9 +1110,9 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 [Back to TOC](#table-of-contents)
 
-lua_intercept_error_log
------------------------
-**syntax:** *lua_intercept_error_log size*
+lua_capture_error_log
+---------------------
+**syntax:** *lua_capture_error_log size*
 
 **default:** *none*
 
@@ -1125,7 +1125,7 @@ You can use units like `k` and `m` in the `size` value, as in
 
 ```nginx
 
- lua_intercept_error_log 100k;
+ lua_capture_error_log 100k;
 ```
 
 As a rule of thumb, a 4KB buffer can usually hold about 20 typical error log messages. So do the maths!

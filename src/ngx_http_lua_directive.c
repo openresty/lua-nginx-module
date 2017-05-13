@@ -1703,11 +1703,11 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
 
 
 char *
-ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
+ngx_http_lua_capture_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
 #ifndef HAVE_INTERCEPT_ERROR_LOG_PATCH
-    return "not found: missing the intercept error log patch for nginx";
+    return "not found: missing the capture error log patch for nginx";
 #else
     ngx_str_t                     *value;
     ssize_t                        size;
@@ -1719,13 +1719,13 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
     value = cf->args->elts;
     cycle = cf->cycle;
 
-    if (lmcf->requires_intercept_log) {
+    if (lmcf->requires_capture_log) {
         return "is duplicate";
     }
 
     if (value[1].len == 0) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid intercept error log size \"%V\"",
+                           "invalid capture error log size \"%V\"",
                            &value[1]);
         return NGX_CONF_ERROR;
     }
@@ -1734,14 +1734,14 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
 
     if (size < NGX_MAX_ERROR_STR) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "invalid intercept error log size \"%V\", "
+                           "invalid capture error log size \"%V\", "
                            "minimum size is %d", &value[1],
                            NGX_MAX_ERROR_STR);
         return NGX_CONF_ERROR;
     }
 
     if (cycle->intercept_error_log_handler) {
-        return "intercept error log handler has been hooked";
+        return "capture error log handler has been hooked";
     }
 
     ringbuf = (ngx_http_lua_log_ringbuf_t *)
@@ -1757,9 +1757,9 @@ ngx_http_lua_intercept_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
 
     ngx_http_lua_log_ringbuf_init(ringbuf, data, size);
 
-    lmcf->requires_intercept_log = 1;
+    lmcf->requires_capture_log = 1;
     cycle->intercept_error_log_handler = (ngx_log_intercept_pt)
-                                         ngx_http_lua_intercept_log_handler;
+                                         ngx_http_lua_capture_log_handler;
     cycle->intercept_error_log_data = ringbuf;
 
     return NGX_CONF_OK;

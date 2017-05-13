@@ -14,8 +14,8 @@
 
 void ngx_http_lua_inject_log_api(lua_State *L);
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
-ngx_int_t ngx_http_lua_intercept_log_handler(ngx_log_t *log,
-    ngx_uint_t level, void *buf, size_t n);
+ngx_int_t ngx_http_lua_capture_log_handler(ngx_log_t *log,
+    ngx_uint_t level, u_char *buf, size_t n);
 #endif
 
 

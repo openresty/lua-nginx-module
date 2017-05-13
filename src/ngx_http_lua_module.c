@@ -94,9 +94,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
-    { ngx_string("lua_intercept_error_log"),
+    { ngx_string("lua_capture_error_log"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_http_lua_intercept_error_log,
+      ngx_http_lua_capture_error_log,
       0,
       0,
       NULL },
