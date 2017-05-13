@@ -891,6 +891,18 @@ also remove these already read from the global capturing buffer, making room
 for any new error log data. For this reason, the user should not configure this
 buffer to be too big if the user read the buffered error log data fast enough.
 
+Note that the log level specified in the standard [http://nginx.org/r/error_log error_log] directive
+has no effect on this capturing facility. It always captures ''everything'' including those with a log
+level below the specified log level in the [http://nginx.org/r/error_log error_log] directive.
+The user can still choose to set a dynamic filtering log level via the Lua API function
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#set_errlog_filter errlog.set_errlog_filter].
+It is much more flexible than the static [http://nginx.org/r/error_log error_log] directive.
+
+It is worth noting that there is no way to capture the debugging logs
+without building OpenResty or NGINX with the <code>./configure</code>
+option <code>--with-debug</code>. And enabling debugging logs is
+strongly discouraged in production builds due to high overhead.
+
 This directive was first introduced in the <code>v0.10.9</code> release.
 
 == lua_use_default_type ==
