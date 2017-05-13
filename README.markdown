@@ -1036,6 +1036,7 @@ See Also
 Directives
 ==========
 
+* [lua_intercept_error_log](#lua_intercept_error_log)
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_malloc_trim](#lua_malloc_trim)
 * [lua_code_cache](#lua_code_cache)
@@ -1108,6 +1109,42 @@ how the result will be used. Below is a diagram showing the order in which direc
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
 [Back to TOC](#table-of-contents)
+
+lua_intercept_error_log
+-----------------------
+**syntax:** *lua_intercept_error_log size*
+
+**default:** *none*
+
+**context:** *http*
+
+Enables a buffer of the specified `size` for capturing all the nginx error log message data (not just those produced
+by this module or the nginx http subsystem, but everything) without touching files or disks.
+
+You can use units like `k` and `m` in the `size` value, as in
+
+```nginx
+
+ lua_intercept_error_log 100k;
+```
+
+The buffer never grows. If it is full, new error log messages will replace the oldest ones in the buffer.
+
+The size of the buffer must be bigger than the maximum length of a single error log message (which is 4K in OpenResty and 2K in stock NGINX).
+
+You can read the messages in the buffer on the Lua land via the
+[get_error_log()](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_error_logs)
+Lua function of the
+[ngx.errlog](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
+Lua module of the [lua-resty-core](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
+library. This Lua API function will return the captured error log messages and
+also remove these already read from the global capturing buffer, making room
+for any new error log data. For this reason, the user should not configure this
+buffer to be too big if the user read the buffered error log data fast enough.
+
+This directive was first introduced in the `v0.10.9` release.
+
+[Back to TOC](#directives)
 
 lua_use_default_type
 --------------------

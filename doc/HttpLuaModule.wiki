@@ -859,6 +859,40 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
+== lua_intercept_error_log ==
+'''syntax:''' ''lua_intercept_error_log size''
+
+'''default:''' ''none''
+
+'''context:''' ''http''
+
+Enables a buffer of the specified <code>size</code> for capturing all the nginx error log message data (not just those produced
+by this module or the nginx http subsystem, but everything) without touching files or disks.
+
+You can use units like `k` and `m` in the <code>size</code> value, as in
+
+<geshi lang="nginx">
+    lua_intercept_error_log 100k;
+</geshi>
+
+As a rule of thumb, a 4KB buffer can usually hold about 20 typical error log messages. So do the maths!
+
+This buffer never grows. If it is full, new error log messages will replace the oldest ones in the buffer.
+
+The size of the buffer must be bigger than the maximum length of a single error log message (which is 4K in OpenResty and 2K in stock NGINX).
+
+You can read the messages in the buffer on the Lua land via the
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_error_logs get_error_log()]
+Lua function of the
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme ngx.errlog]
+Lua module of the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme lua-resty-core]
+library. This Lua API function will return the captured error log messages and
+also remove these already read from the global capturing buffer, making room
+for any new error log data. For this reason, the user should not configure this
+buffer to be too big if the user read the buffered error log data fast enough.
+
+This directive was first introduced in the <code>v0.10.9</code> release.
+
 == lua_use_default_type ==
 '''syntax:''' ''lua_use_default_type on | off''
 
