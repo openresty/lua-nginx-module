@@ -342,7 +342,7 @@ ngx_http_lua_capture_log_handler(ngx_log_t *log,
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
+ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err, size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_http_lua_log_ringbuf_t     *ringbuf;
@@ -351,8 +351,7 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"set_errlog_filter\" depends on "
-                               "directive \"lua_capture_error_log\"")
+                               "directive \"lua_capture_error_log\" is not set")
                   - err;
         return NGX_ERROR;
     }
@@ -375,7 +374,7 @@ ngx_http_lua_ffi_set_errlog_filter(int level, u_char *err, size_t *errlen)
 
 
 int
-ngx_http_lua_ffi_get_errlog_data(char **log, int *loglevel, u_char *err,
+ngx_http_lua_ffi_errlog_get_logs(char **log, int *loglevel, u_char *err,
     size_t *errlen)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
@@ -387,8 +386,7 @@ ngx_http_lua_ffi_get_errlog_data(char **log, int *loglevel, u_char *err,
 
     if (ringbuf == NULL) {
         *errlen = ngx_snprintf(err, *errlen,
-                               "API \"get_errlog_data\" depends on directive "
-                               "\"lua_capture_error_log\"")
+                               "directive \"lua_capture_error_log\" is not set")
                   - err;
         return NGX_ERROR;
     }

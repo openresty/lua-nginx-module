@@ -1135,21 +1135,21 @@ This buffer never grows. If it is full, new error log messages will replace the 
 The size of the buffer must be bigger than the maximum length of a single error log message (which is 4K in OpenResty and 2K in stock NGINX).
 
 You can read the messages in the buffer on the Lua land via the
-[get_error_log()](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_error_logs)
-Lua function of the
+[get_logs()](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_logs)
+function of the
 [ngx.errlog](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
-Lua module of the [lua-resty-core](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
+module of the [lua-resty-core](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
 library. This Lua API function will return the captured error log messages and
 also remove these already read from the global capturing buffer, making room
 for any new error log data. For this reason, the user should not configure this
 buffer to be too big if the user read the buffered error log data fast enough.
 
 Note that the log level specified in the standard [error_log](http://nginx.org/r/error_log) directive
-has no effect on this capturing facility. It always captures *everything* including those with a log
-level below the specified log level in the [error_log](http://nginx.org/r/error_log) directive.
-The user can still choose to set a dynamic filtering log level via the Lua API function
-[errlog.set_errlog_filter](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#set_errlog_filter).
-It is much more flexible than the static [error_log](http://nginx.org/r/error_log) directive.
+*does* have effect on this capturing facility. It only captures log
+messages of a level no lower than the specified log level in the [error_log](http://nginx.org/r/error_log) directive.
+The user can still choose to set an even higher filtering log level on the fly via the Lua API function
+[errlog.set_filter_level](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#set_filter_level).
+So it is more flexible than the static [error_log](http://nginx.org/r/error_log) directive.
 
 It is worth noting that there is no way to capture the debugging logs
 without building OpenResty or NGINX with the `./configure`
