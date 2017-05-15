@@ -49,7 +49,6 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.9.15
     - NGINX_VERSION=1.11.2
 
 services:
