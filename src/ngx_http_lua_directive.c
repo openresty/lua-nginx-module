@@ -11,6 +11,10 @@
 #include "ddebug.h"
 
 
+#ifdef NGX_HAVE_META_LUA
+#   include "ngx_meta_lua_api.h"
+#endif
+
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_util.h"
@@ -1131,6 +1135,11 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     }
 
     lmcf->init_handler = (ngx_http_lua_main_conf_handler_pt) cmd->post;
+
+#ifdef NGX_HAVE_META_LUA
+    ngx_meta_lua_add_init_hooker(ngx_http_lua_init_callback, cf->cycle,
+                                 (void *)lmcf);
+#endif
 
     if (cmd->post == ngx_http_lua_init_by_file) {
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,

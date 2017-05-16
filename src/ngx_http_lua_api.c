@@ -10,6 +10,10 @@
 #include "ddebug.h"
 
 
+#ifdef NGX_HAVE_META_LUA
+#   include "ngx_meta_lua_api.h"
+#endif
+
 #include "ngx_http_lua_common.h"
 #include "api/ngx_http_lua_api.h"
 #include "ngx_http_lua_shdict.h"
@@ -87,6 +91,10 @@ ngx_shm_zone_t *
 ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     void *tag)
 {
+#ifdef NGX_HAVE_META_LUA
+    return ngx_meta_lua_shared_memory_add(cf, name, size, tag);
+#endif
+
     ngx_http_lua_main_conf_t     *lmcf;
     ngx_shm_zone_t              **zp;
     ngx_shm_zone_t               *zone;

@@ -11,6 +11,10 @@
 #include "ddebug.h"
 
 
+#ifdef NGX_HAVE_META_LUA
+#   include "ngx_meta_lua_api.h"
+#endif
+
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
@@ -749,7 +753,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
             return NGX_ERROR;
         }
 
-        if (!lmcf->requires_shm && lmcf->init_handler) {
+        if (lmcf->init_handler
+#ifdef NGX_HAVE_META_LUA
+            && ngx_meta_lua_shared_memory_count(cf) == 0)
+#else
+            && !lmcf->requires_shm)
+#endif
+        {
             saved_cycle = ngx_cycle;
             ngx_cycle = cf->cycle;
 

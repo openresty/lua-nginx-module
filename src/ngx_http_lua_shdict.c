@@ -10,6 +10,10 @@
 #include "ddebug.h"
 
 
+#ifdef NGX_HAVE_META_LUA
+#   include "ngx_meta_lua_api.h"
+#endif
+
 #include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_api.h"
@@ -2170,6 +2174,10 @@ ngx_http_lua_shdict_llen(lua_State *L)
 ngx_shm_zone_t *
 ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 {
+#ifdef NGX_HAVE_META_LUA
+    return ngx_meta_lua_find_zone(name_data, name_len);
+#endif
+
     ngx_str_t                       *name;
     ngx_uint_t                       i;
     ngx_shm_zone_t                  *zone;
