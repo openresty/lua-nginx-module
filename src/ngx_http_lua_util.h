@@ -259,11 +259,16 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
 static ngx_inline void
 ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
+    ngx_http_lua_loc_conf_t     *llcf;
+
     ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));
     ctx->ctx_ref = LUA_NOREF;
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
     ctx->resume_handler = ngx_http_lua_wev_handler;
     ctx->request = r;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    ctx->enter_body_filter = llcf->enter_body_filter_default;
 }
 
 

@@ -401,6 +401,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_body_filter_file },
 
+    { ngx_string("enter_body_filter_default"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, enter_body_filter_default),
+      NULL },
+
     { ngx_string("balancer_by_lua_block"),
       NGX_HTTP_UPS_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
       ngx_http_lua_balancer_by_lua_block,
@@ -1085,6 +1093,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
     conf->transform_underscores_in_resp_headers = NGX_CONF_UNSET;
     conf->log_socket_errors = NGX_CONF_UNSET;
+    conf->enter_body_filter_default  = NGX_CONF_UNSET;
 
 #if (NGX_HTTP_SSL)
     conf->ssl_verify_depth = NGX_CONF_UNSET_UINT;
@@ -1197,6 +1206,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                          prev->transform_underscores_in_resp_headers, 1);
 
     ngx_conf_merge_value(conf->log_socket_errors, prev->log_socket_errors, 1);
+
+    ngx_conf_merge_value(conf->enter_body_filter_default,
+                         prev->enter_body_filter_default, 1);
 
     return NGX_CONF_OK;
 }

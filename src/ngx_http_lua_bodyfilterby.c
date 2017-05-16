@@ -264,6 +264,11 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
     }
 
+    if (!ctx->enter_body_filter) {
+        dd("not enter body filter handler");
+        return ngx_http_next_body_filter(r, in);
+    }
+
     if (ctx->seen_last_in_filter) {
         for (/* void */; in; in = in->next) {
             dd("mark the buf as consumed: %d", (int) ngx_buf_size(in->buf));
@@ -629,5 +634,35 @@ done:
     lua_setglobal(L, ngx_http_lua_chain_key);
     return 0;
 }
+
+
+#ifndef NGX_LUA_NO_FFI_API
+
+int
+ngx_http_lua_ffi_body_filter_skip(ngx_http_request_t *r, int skip, char **err)
+{
+    ngx_http_lua_ctx_t    *ctx;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if (skip) {
+        ctx->enter_body_filter = 0;
+        return NGX_OK;
+    }
+
+    ctx->enter_body_filter = 1;
+    return NGX_OK;
+}
+
+#endif  /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
