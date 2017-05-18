@@ -14,11 +14,6 @@
 #include "ngx_http_lua_args.h"
 #include "ngx_http_lua_util.h"
 
-#define NGX_HTTP_LUA_FFI_POST_ARGS_OK 0
-#define NGX_HTTP_LUA_FFI_POST_ARGS_EMPTY 1
-#define NGX_HTTP_LUA_FFI_POST_ARGS_UNREAD 2
-#define NGX_HTTP_LUA_FFI_POST_ARGS_IN_FILE 3
-
 
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
@@ -559,38 +554,28 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 }
 
 
-int
-ngx_http_lua_ffi_req_validate_post(ngx_http_request_t *r)
-{
-    if (r->connection->fd == (ngx_socket_t) -1) {
-        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
-    }
-
-    if (r->discard_body) {
-        return NGX_HTTP_LUA_FFI_POST_ARGS_EMPTY;
-    }
-
-    if (r->request_body == NULL) {
-        return NGX_HTTP_LUA_FFI_POST_ARGS_UNREAD;
-    }
-
-    if (r->request_body->temp_file) {
-        return NGX_HTTP_LUA_FFI_POST_ARGS_IN_FILE;
-    }
-
-    if (r->request_body->bufs == NULL) {
-        return NGX_HTTP_LUA_FFI_POST_ARGS_EMPTY;
-    }
-
-    return NGX_HTTP_LUA_FFI_POST_ARGS_OK;
-}
-
 
 int
 ngx_http_lua_ffi_req_get_post_args_len(ngx_http_request_t *r)
 {
     size_t       len;
     ngx_chain_t *cl;
+
+    if (r->connection->fd == (ngx_socket_t) -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    if (r->discard_body || r->request_body->bufs == NULL) {
+        return -1;
+    }
+
+    if (r->request_body == NULL) {
+        return -2;
+    }
+
+    if (r->request_body->temp_file) {
+        return -3;
+    }
 
     len = 0;
     for (cl = r->request_body->bufs; cl; cl = cl->next) {
