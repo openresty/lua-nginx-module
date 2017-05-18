@@ -5197,6 +5197,8 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
 * [[#ngx.shared.DICT.get_keys|get_keys]]
 
+All these methods are ''atomic'' operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same <code>lua_shared_dict</code> zone.
+
 Here is an example:
 
 <geshi lang="nginx">

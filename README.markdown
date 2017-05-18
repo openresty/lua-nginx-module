@@ -6199,6 +6199,8 @@ The resulting object `dict` has the following methods:
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
 
+All these methods are *atomic* operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same `lua_shared_dict` zone.
+
 Here is an example:
 
 ```nginx
