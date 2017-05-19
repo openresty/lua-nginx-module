@@ -3672,6 +3672,7 @@ Nginx's subrequests provide a powerful way to make non-blocking internal request
 `ngx_postgres`, `ngx_drizzle`, and even ngx_lua itself and etc etc etc.
 
 Also note that subrequests just mimic the HTTP interface but there is *no* extra HTTP/TCP traffic *nor* IPC involved. Everything works internally, efficiently, on the C level.
+This also mean that subrequests are fully performed and buffered before being returned to Lua: making a subrequest call to a location that can return or stream a large amount of data (including by using sendfile) is probably a bad idea.
 
 Subrequests are completely different from HTTP 301/302 redirection (via [ngx.redirect](#ngxredirect)) and internal redirection (via [ngx.exec](#ngxexec)).
 
