@@ -168,4 +168,11 @@ ngx_http_lua_ffi_enable_privileged_agent(char **err)
     return NGX_ERROR;
 #endif
 }
+
+
+void
+ngx_http_lua_ffi_process_signal_graceful_exit(void)
+{
+    ngx_quit = 1;
+}
 #endif

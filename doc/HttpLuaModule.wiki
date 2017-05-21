@@ -859,6 +859,52 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
+== lua_capture_error_log ==
+'''syntax:''' ''lua_capture_error_log size''
+
+'''default:''' ''none''
+
+'''context:''' ''http''
+
+Enables a buffer of the specified <code>size</code> for capturing all the nginx error log message data (not just those produced
+by this module or the nginx http subsystem, but everything) without touching files or disks.
+
+You can use units like `k` and `m` in the <code>size</code> value, as in
+
+<geshi lang="nginx">
+    lua_capture_error_log 100k;
+</geshi>
+
+As a rule of thumb, a 4KB buffer can usually hold about 20 typical error log messages. So do the maths!
+
+This buffer never grows. If it is full, new error log messages will replace the oldest ones in the buffer.
+
+The size of the buffer must be bigger than the maximum length of a single error log message (which is 4K in OpenResty and 2K in stock NGINX).
+
+You can read the messages in the buffer on the Lua land via the
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_logs get_logs()]
+function of the
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme ngx.errlog]
+module of the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme lua-resty-core]
+library. This Lua API function will return the captured error log messages and
+also remove these already read from the global capturing buffer, making room
+for any new error log data. For this reason, the user should not configure this
+buffer to be too big if the user read the buffered error log data fast enough.
+
+Note that the log level specified in the standard [http://nginx.org/r/error_log error_log] directive
+''does'' have effect on this capturing facility. It only captures log
+messages of a level no lower than the specified log level in the [http://nginx.org/r/error_log error_log] directive.
+The user can still choose to set an even higher filtering log level on the fly via the Lua API function
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#set_filter_level errlog.set_filter_level].
+So it is more flexible than the static [http://nginx.org/r/error_log error_log] directive.
+
+It is worth noting that there is no way to capture the debugging logs
+without building OpenResty or NGINX with the <code>./configure</code>
+option <code>--with-debug</code>. And enabling debugging logs is
+strongly discouraged in production builds due to high overhead.
+
+This directive was first introduced in the <code>v0.10.9</code> release.
+
 == lua_use_default_type ==
 '''syntax:''' ''lua_use_default_type on | off''
 
@@ -1134,8 +1180,8 @@ This hook is often used to create per-worker reoccurring timers (via the [[#ngx.
             end
         end
 
-        local ok, err = new_timer(delay, check)
-        if not ok then
+        local hdl, err = new_timer(delay, check)
+        if not hdl then
             log(ERR, "failed to create timer: ", err)
             return
         end
@@ -4674,7 +4720,7 @@ This is the local time.
 
 Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-Updates of the Nginx time cache an be forced by calling [[#ngx.update_time|ngx.update_time]] first.
+Updates of the Nginx time cache can be forced by calling [[#ngx.update_time|ngx.update_time]] first.
 
 == ngx.now ==
 '''syntax:''' ''secs = ngx.now()''
@@ -5150,6 +5196,8 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.flush_all|flush_all]]
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
 * [[#ngx.shared.DICT.get_keys|get_keys]]
+
+All these methods are ''atomic'' operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same <code>lua_shared_dict</code> zone.
 
 Here is an example:
 
@@ -6366,7 +6414,7 @@ This API was first introduced in the <code>v0.7.4</code> release.
 See also [[#lua_check_client_abort|lua_check_client_abort]].
 
 == ngx.timer.at ==
-'''syntax:''' ''ok, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)''
+'''syntax:''' ''hdl, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)''
 
 '''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
@@ -6392,7 +6440,7 @@ Premature timer expiration happens when the Nginx worker process is
 trying to shut down, as in an Nginx configuration reload triggered by
 the <code>HUP</code> signal or in an Nginx server shutdown. When the Nginx worker
 is trying to shut down, one can no longer call <code>ngx.timer.at</code> to
-create new timers with nonzero delays and in that case <code>ngx.timer.at</code> will return <code>nil</code> and
+create new timers with nonzero delays and in that case <code>ngx.timer.at</code> will return a "conditional false" value and
 a string describing the error, that is, "process exiting".
 
 Starting from the <code>v0.9.3</code> release, it is allowed to create zero-delay timers even when the Nginx worker process starts shutting down.
@@ -6449,6 +6497,9 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
     end
 </geshi>
 
+It is recommended, however, to use the [[#ngx.timer.every|ngx.timer.every]] API function
+instead for creating recurring timers since it is more robust.
+
 Because timer callbacks run in the background and their running time
 will not add to any client request's response time, they can easily
 accumulate in the server and exhaust system resources due to either
@@ -6485,6 +6536,22 @@ this context.
 You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you ''cannot'' pass any thread objects returned by [[#coroutine.create|coroutine.create]] and [[#ngx.thread.spawn|ngx.thread.spawn]] or any cosocket objects returned by [[#ngx.socket.tcp|ngx.socket.tcp]], [[#ngx.socket.udp|ngx.socket.udp]], and [[#ngx.req.socket|ngx.req.socket]] because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to create all these objects inside your timer callback.
 
 This API was first introduced in the <code>v0.8.0</code> release.
+
+== ngx.timer.every ==
+'''syntax:''' ''hdl, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)''
+
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Similar to the [[#ngx.timer.at|ngx.timer.at]] API function, but
+
+# <code>delay</code> ''cannot'' be zero,
+# timer will be created every <code>delay</code> seconds until the current Nginx worker process starts exiting.
+
+When success, returns a "conditional true" value (but not a <code>true</code>). Otherwise, returns a "conditional false" value and a string describing the error.
+
+This API also respect the [[#lua_max_pending_timers|lua_max_pending_timers]] and [[#lua_max_running_timers|lua_max_running_timers]].
+
+This API was first introduced in the <code>v0.10.9</code> release.
 
 == ngx.timer.running_count ==
 '''syntax:''' ''count = ngx.timer.running_count()''
