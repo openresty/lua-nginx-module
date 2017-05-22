@@ -274,7 +274,7 @@ end
 
 #### Command methods ####
 
-define lbt 
+define lbt
 	if $argc < 1
 		echo Please specify Lua state and/or dump flag!\n
 	else
