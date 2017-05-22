@@ -171,8 +171,11 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 /* cached session fetching callback to be set with SSL_CTX_sess_set_get_cb */
 ngx_ssl_session_t *
-ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
-    int len, int *copy)
+ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+    const
+#endif
+    u_char *id, int len, int *copy)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -284,7 +287,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     cctx->exit_code = 1;  /* successful by default */
     cctx->connection = c;
     cctx->request = r;
-    cctx->session_id.data = id;
+    cctx->session_id.data = (u_char *) id;
     cctx->session_id.len = len;
     cctx->entered_sess_fetch_handler = 1;
     cctx->done = 0;
