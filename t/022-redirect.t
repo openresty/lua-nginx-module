@@ -284,7 +284,6 @@ Location: http://agentzh.org/foo?a=b&c=d
 GET /read
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
---- response_body_like: 308 Permanent Redirect
 --- error_code: 308
 
 
@@ -301,7 +300,6 @@ Location: http://agentzh.org/foo?a=b&c=d
 GET /read
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
---- response_body_like: 308 Permanent Redirect
 --- error_code: 308
 
 
@@ -318,5 +316,4 @@ Location: http://agentzh.org/foo?a=b&c=d
 GET /read
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
---- response_body_like: 308 Permanent Redirect
 --- error_code: 308
