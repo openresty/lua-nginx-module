@@ -131,6 +131,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+    { ngx_string("append_lua_package_cpath"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_append_lua_package_cpath,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("append_lua_package_path"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_append_lua_package_path,
+      0,
+      0,
+      NULL },
+
     { ngx_string("lua_code_cache"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_FLAG,
@@ -627,6 +641,10 @@ ngx_http_lua_init(ngx_conf_t *cf)
 {
     int                         multi_http_blocks;
     ngx_int_t                   rc;
+    ngx_uint_t                  i;
+    size_t                      len;
+    char                       *path;
+    ngx_str_t                  *p;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
     volatile ngx_cycle_t       *saved_cycle;
@@ -659,6 +677,64 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     if (lmcf->postponed_to_access_phase_end == NGX_CONF_UNSET) {
         lmcf->postponed_to_access_phase_end = 0;
+    }
+
+    len = lmcf->lua_cpath.len;
+
+    if (lmcf->requires_append_lua_path) {
+        for (i = 0; i < lmcf->append_lua_cpath->nelts; i++) {
+            p = (ngx_str_t *) lmcf->append_lua_cpath->elts;
+            len += p[i].len;
+        }
+
+        path = (char *) ngx_palloc(cf->pool, len);
+        if (path == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memzero(path, len);
+
+        for (i = 0; i < lmcf->append_lua_cpath->nelts; i++) {
+            p = (ngx_str_t *) lmcf->append_lua_cpath->elts;
+            path = strncat(path, (char *) p[i].data, p[i].len);
+        }
+
+        if (lmcf->lua_cpath.len) {
+            path = strncat(path, (char *) lmcf->lua_cpath.data,
+                           lmcf->lua_cpath.len);
+        }
+
+        lmcf->lua_cpath.data = (u_char *) path;
+        lmcf->lua_cpath.len = len;
+    }
+
+    len = lmcf->lua_path.len;
+
+    if (lmcf->requires_append_lua_path) {
+        for (i = 0; i < lmcf->append_lua_path->nelts; i++) {
+            p = (ngx_str_t *) lmcf->append_lua_path->elts;
+            len += p[i].len;
+        }
+
+        path = (char *) ngx_palloc(cf->pool, len);
+        if (path == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_memzero(path, len);
+
+        for (i = 0; i < lmcf->append_lua_path->nelts; i++) {
+            p = (ngx_str_t *) lmcf->append_lua_path->elts;
+            path = strncat(path, (char *) p[i].data, p[i].len);
+        }
+
+        if (lmcf->lua_path.len) {
+            path = strncat(path, (char *) lmcf->lua_path.data,
+                           lmcf->lua_path.len);
+        }
+
+        lmcf->lua_path.data = (u_char *) path;
+        lmcf->lua_path.len = len;
     }
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
@@ -835,6 +911,8 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->requires_access = 0;
      *      lmcf->requires_log = 0;
      *      lmcf->requires_shm = 0;
+     *      lmcf->requires_append_lua_path = 0;
+     *      lmcf->requires_append_lua_cpath = 0;
      */
 
     lmcf->pool = cf->pool;

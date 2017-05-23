@@ -165,6 +165,8 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_str_t            lua_path;
     ngx_str_t            lua_cpath;
+    ngx_array_t         *append_lua_path;
+    ngx_array_t         *append_lua_cpath;
 
     ngx_cycle_t         *cycle;
     ngx_pool_t          *pool;
@@ -231,6 +233,8 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
     unsigned             requires_capture_log:1;
+    unsigned             requires_append_lua_path:1;
+    unsigned             requires_append_lua_cpath:1;
 };
 
 

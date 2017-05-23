@@ -221,6 +221,91 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+char *
+ngx_http_append_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+
+    ngx_http_lua_main_conf_t *lmcf = conf;
+    ngx_str_t                *value;
+    ngx_str_t                *cpath;
+
+    dd("enter");
+
+    value = cf->args->elts;
+
+    if (lmcf->append_lua_cpath == NULL) {
+        lmcf->append_lua_cpath = ngx_palloc(cf->pool, sizeof(ngx_array_t));
+        if (lmcf->append_lua_cpath == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (ngx_array_init(lmcf->append_lua_cpath, cf->pool, 10,
+                    sizeof(ngx_str_t))
+                != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    cpath = ngx_array_push(lmcf->append_lua_cpath);
+    if (cpath == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    cpath->len = value[1].len;
+    cpath->data = value[1].data;
+
+    if (!lmcf->requires_append_lua_cpath) {
+        lmcf->requires_append_lua_cpath = 1;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_append_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+
+    ngx_http_lua_main_conf_t *lmcf = conf;
+    ngx_str_t                *value;
+    ngx_str_t                *path;
+
+    dd("enter");
+
+    value = cf->args->elts;
+
+    if (lmcf->append_lua_path == NULL) {
+        lmcf->append_lua_path = ngx_palloc(cf->pool, sizeof(ngx_array_t));
+        if (lmcf->append_lua_path == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (ngx_array_init(lmcf->append_lua_path, cf->pool, 10,
+                    sizeof(ngx_str_t))
+                != NGX_OK)
+        {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    path = ngx_array_push(lmcf->append_lua_path);
+    if (path == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    path->len = value[1].len;
+    path->data = value[1].data;
+
+    if (!lmcf->requires_append_lua_path) {
+        lmcf->requires_append_lua_path = 1;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
 #if defined(NDK) && NDK
 char *
 ngx_http_lua_set_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
