@@ -3467,6 +3467,7 @@ HTTP status constants
    value = ngx.HTTP_SEE_OTHER (303)
    value = ngx.HTTP_NOT_MODIFIED (304)
    value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
+   value = ngx.HTTP_PERMANENT_REDIRECT (308)
    value = ngx.HTTP_BAD_REQUEST (400)
    value = ngx.HTTP_UNAUTHORIZED (401)
    value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
@@ -5101,6 +5102,7 @@ The optional `status` parameter specifies the HTTP status code to be used. The f
 * `302` (default)
 * `303`
 * `307`
+* `308`
 
 It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
 

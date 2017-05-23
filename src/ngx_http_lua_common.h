@@ -54,6 +54,9 @@
 #   define NGX_HTTP_LUA_USE_OCSP 1
 #endif
 
+#ifndef NGX_HTTP_PERMANENT_REDIRECT
+#   define NGX_HTTP_PERMANENT_REDIRECT  308
+#endif
 
 #ifndef NGX_HAVE_SHA1
 #   if (nginx_version >= 1011002)
