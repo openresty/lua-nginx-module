@@ -2807,6 +2807,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.capture
   value = ngx.HTTP_SEE_OTHER (303)
   value = ngx.HTTP_NOT_MODIFIED (304)
   value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
+  value = ngx.HTTP_PERMANENT_REDIRECT (308)
   value = ngx.HTTP_BAD_REQUEST (400)
   value = ngx.HTTP_UNAUTHORIZED (401)
   value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
@@ -4253,6 +4254,7 @@ The optional <code>status</code> parameter specifies the HTTP status code to be 
 * <code>302</code> (default)
 * <code>303</code>
 * <code>307</code>
+* <code>308</code>
 
 It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
 
