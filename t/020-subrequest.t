@@ -2873,3 +2873,94 @@ DELETE /file.txt, response status: 204
 --- no_error_log
 [error]
 --- error_code: 200
+
+
+
+=== TEST 77: ngx.var.request_uri + ngx.location.capture
+--- config
+location /b {
+    content_by_lua '
+        ngx.print(ngx.var.request_uri)
+    ';
+}
+
+location /a {
+    content_by_lua '
+        local res = ngx.location.capture("/b")
+        ngx.say(res.body)
+    ';
+}
+--- request
+GET /a
+--- response_body
+/b
+--- no_error_log
+[error]
+
+
+
+=== TEST 78: ngx.var.request_uri from echo + ngx.location.capture
+--- config
+location /b {
+    echo $echo_request_uri;
+}
+
+location /a {
+    content_by_lua '
+        local res = ngx.location.capture("/b")
+        ngx.print(res.body)
+    ';
+}
+--- request
+GET /a
+--- response_body
+/b
+--- no_error_log
+[error]
+
+
+
+=== TEST 79: ngx.var.uri + ngx.location.capture
+--- config
+location /b {
+    content_by_lua '
+        ngx.print(ngx.var.uri)
+    ';
+}
+
+location /a {
+    content_by_lua '
+        local res = ngx.location.capture("/b")
+        ngx.say(res.body)
+    ';
+}
+--- request
+GET /a
+--- response_body
+/b
+--- no_error_log
+[error]
+
+
+
+=== TEST 80: ngx.var.args + ngx.location.capture
+--- ONLY
+--- config
+location /b {
+    content_by_lua '
+        ngx.print(ngx.var.args)
+    ';
+}
+
+location /a {
+    content_by_lua '
+        local res = ngx.location.capture("/b?foo=bar&bar=foo")
+        ngx.say(res.body)
+    ';
+}
+--- request
+GET /a
+--- response_body
+foo=bar&bar=foo
+--- no_error_log
+[error]
