@@ -61,6 +61,7 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
     /* we always register preload_hooks since we always create new Lua VMs
      * when lua code cache is off. */
 
+    /* still store for a new vm init */
     if (lmcf->preload_hooks == NULL) {
         lmcf->preload_hooks =
             ngx_array_create(cf->pool, 4,
