@@ -134,14 +134,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("append_lua_package_cpath"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_append_lua_package_cpath,
-      0,
+      NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       NULL },
 
     { ngx_string("append_lua_package_path"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_append_lua_package_path,
-      0,
+      NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       NULL },
 
