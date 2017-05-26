@@ -82,9 +82,6 @@ int
 ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
     u_char *err, size_t *err_len)
 {
-    int                 num;
-    size_t              n;
-    u_long              e;
     const char         *default_err;
 
 #ifdef LIBRESSL_VERSION_NUMBER
@@ -111,6 +108,9 @@ ngx_http_lua_ffi_ssl_ctx_set_cert(void *cdata_ctx, void *cdata_cert,
 #   else
     int                 i;
 #   endif
+    int                 num;
+    size_t              n;
+    u_long              e;
 
     num = sk_X509_num(cert);
     if (num < 1) {
