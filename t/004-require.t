@@ -208,3 +208,125 @@ GET /ndk
 GET /ndk
 --- response_body
 %20
+
+
+
+=== TEST 11: append package path
+--- http_config
+    append_lua_package_path "/opt/program/?.lua;";
+--- config
+    location /main {
+        content_by_lua '
+            local m = ngx.re.match(package.path, [[/opt/program/\?\.lua]])
+            if m then
+                ngx.say([[the "program" package path found]])
+            end
+        ';
+    }
+--- request
+GET /main
+--- response_body
+the "program" package path found
+
+
+
+=== TEST 12: append package path (multi)
+--- http_config
+    append_lua_package_path "/opt/program/?.lua;";
+    append_lua_package_path "/opt/program2/?.lua;";
+--- config
+    location /main {
+        content_by_lua '
+            local m = ngx.re.match(package.path, [[/opt/program/\?\.lua]])
+            if m then
+                ngx.say([[the "program" package path found]])
+            end
+
+            local m = ngx.re.match(package.path, [[/opt/program2/\?\.lua]])
+            if m then
+                ngx.say([[the "program2" package path found]])
+            end
+        ';
+    }
+--- request
+GET /main
+--- response_body
+the "program" package path found
+the "program2" package path found
+
+
+
+=== TEST 13: append package cpath
+--- http_config
+    append_lua_package_cpath "/opt/program/?.so;";
+--- config
+    location /main {
+        content_by_lua '
+            local m = ngx.re.match(package.cpath, [[/opt/program/\?\.so]])
+            if m then
+                ngx.say([[the "program" package cpath found]])
+            end
+        ';
+    }
+--- request
+GET /main
+--- response_body
+the "program" package cpath found
+
+
+
+=== TEST 14: append package cpath (multi)
+--- http_config
+    append_lua_package_cpath "/opt/program/?.so;";
+    append_lua_package_cpath "/opt/program2/?.so;";
+--- config
+    location /main {
+        content_by_lua '
+            local m = ngx.re.match(package.cpath, [[/opt/program/\?\.so]])
+            if m then
+                ngx.say([[the "program" package cpath found]])
+            end
+
+            local m = ngx.re.match(package.cpath, [[/opt/program2/\?\.so]])
+            if m then
+                ngx.say([[the "program2" package cpath found]])
+            end
+        ';
+    }
+--- request
+GET /main
+--- response_body
+the "program" package cpath found
+the "program2" package cpath found
+
+
+
+=== TEST 15: append package path (with lua_package_path)
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;;';
+    append_lua_package_path '/opt/program/?.lua;';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.path)
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: /opt/program/\?.lua;[^;]+/servroot/html/\?.lua;.+lua;$
+
+
+
+=== TEST 16: append package cpath (with lua_package_cpath)
+--- http_config eval
+    "lua_package_cpath '$::HtmlDir/?.so;;';
+    append_lua_package_cpath '/opt/program/?.so;';"
+--- config
+    location /main {
+        content_by_lua '
+            ngx.print(package.cpath)
+        ';
+    }
+--- request
+GET /main
+--- response_body_like: /opt/program/\?.so;[^;]+/servroot/html/\?.so;.+so;$

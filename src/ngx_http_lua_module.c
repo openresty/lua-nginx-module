@@ -643,7 +643,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_int_t                   rc;
     ngx_uint_t                  i;
     size_t                      len;
-    char                       *path;
+    u_char                     *path;
+    u_char                     *tmp;
     ngx_str_t                  *p;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
@@ -681,30 +682,29 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     len = lmcf->lua_cpath.len;
 
-    if (lmcf->requires_append_lua_path) {
+    if (lmcf->requires_append_lua_cpath) {
         for (i = 0; i < lmcf->append_lua_cpath->nelts; i++) {
             p = (ngx_str_t *) lmcf->append_lua_cpath->elts;
             len += p[i].len;
         }
 
-        path = (char *) ngx_palloc(cf->pool, len);
+        path = (u_char *) ngx_pcalloc(cf->pool, len);
         if (path == NULL) {
             return NGX_ERROR;
         }
 
-        ngx_memzero(path, len);
+        tmp = path;
 
         for (i = 0; i < lmcf->append_lua_cpath->nelts; i++) {
             p = (ngx_str_t *) lmcf->append_lua_cpath->elts;
-            path = strncat(path, (char *) p[i].data, p[i].len);
+            path = ngx_copy(path, p[i].data, p[i].len);
         }
 
         if (lmcf->lua_cpath.len) {
-            path = strncat(path, (char *) lmcf->lua_cpath.data,
-                           lmcf->lua_cpath.len);
+            path = ngx_copy(path, lmcf->lua_cpath.data, lmcf->lua_cpath.len);
         }
 
-        lmcf->lua_cpath.data = (u_char *) path;
+        lmcf->lua_cpath.data = tmp;
         lmcf->lua_cpath.len = len;
     }
 
@@ -716,24 +716,23 @@ ngx_http_lua_init(ngx_conf_t *cf)
             len += p[i].len;
         }
 
-        path = (char *) ngx_palloc(cf->pool, len);
+        path = (u_char *) ngx_pcalloc(cf->pool, len);
         if (path == NULL) {
             return NGX_ERROR;
         }
 
-        ngx_memzero(path, len);
+        tmp = path;
 
         for (i = 0; i < lmcf->append_lua_path->nelts; i++) {
             p = (ngx_str_t *) lmcf->append_lua_path->elts;
-            path = strncat(path, (char *) p[i].data, p[i].len);
+            path = ngx_copy(path, p[i].data, p[i].len);
         }
 
         if (lmcf->lua_path.len) {
-            path = strncat(path, (char *) lmcf->lua_path.data,
-                           lmcf->lua_path.len);
+            path = ngx_copy(path, lmcf->lua_path.data, lmcf->lua_path.len);
         }
 
-        lmcf->lua_path.data = (u_char *) path;
+        lmcf->lua_path.data = tmp;
         lmcf->lua_path.len = len;
     }
 
