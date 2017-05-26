@@ -237,6 +237,10 @@ ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+#if (nginx_version >= 1007005)
+    r->upstream->peer.tries = r->upstream->conf->next_upstream_tries;
+#endif
+
     r->upstream->peer.get = ngx_http_lua_balancer_get_peer;
     r->upstream->peer.free = ngx_http_lua_balancer_free_peer;
 
