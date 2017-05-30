@@ -860,7 +860,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 #if (NGX_DEBUG)
     {
-#   if defined(nginx_version) && nginx_version >= 1005008
+#   if defined(nginx_version) && nginx_version >= 1005003
     u_char      text[NGX_SOCKADDR_STRLEN];
     ngx_str_t   addr;
 #   else
@@ -868,7 +868,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 #   endif
     ngx_uint_t  i;
 
-#   if defined(nginx_version) && nginx_version >= 1005008
+#   if defined(nginx_version) && nginx_version >= 1005003
     addr.data = text;
 
     for (i = 0; i < ctx->naddrs; i++) {
