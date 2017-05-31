@@ -405,6 +405,28 @@ ngx_http_lua_ffi_errlog_get_msg(char **log, int *loglevel, u_char *err,
 #endif
 }
 
+
+int
+ngx_http_lua_ffi_errlog_get_sys_filter_level(ngx_http_request_t *r)
+{
+    ngx_log_t                   *log;
+    int                          log_level;
+
+    if (r && r->connection && r->connection->log) {
+        log = r->connection->log;
+
+    } else {
+        log = ngx_cycle->log;
+    }
+
+    log_level = log->log_level;
+    if (log_level == NGX_LOG_DEBUG_ALL) {
+        log_level = NGX_LOG_DEBUG;
+    }
+
+    return log_level;
+}
+
 #endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
