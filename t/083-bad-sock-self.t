@@ -136,4 +136,3 @@ bad argument #1 to 'close' (table expected, got number)
 --- error_code: 500
 --- error_log
 bad argument #1 to 'setkeepalive' (table expected, got number)
-

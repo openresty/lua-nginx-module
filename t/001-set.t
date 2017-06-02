@@ -795,4 +795,3 @@ GET /lua?a=1&b=2
 --- error_code: 500
 --- error_log eval
 qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
-

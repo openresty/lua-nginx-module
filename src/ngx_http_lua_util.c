@@ -51,6 +51,7 @@
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl.h"
+#include "ngx_http_lua_log_ringbuf.h"
 
 
 #if 1

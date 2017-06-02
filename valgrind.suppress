@@ -149,3 +149,18 @@ fun:main
    fun:__libc_res_nquerydomain
    fun:__libc_res_nsearch
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:ngx_alloc
+   fun:ngx_set_environment
+   fun:ngx_single_process_cycle
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   obj:*
+}

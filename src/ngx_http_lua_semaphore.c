@@ -387,8 +387,8 @@ ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    /* we keep the order, will resume the older waited firtly
-     * in ngx_http_lua_sema_handler
+    /* we keep the order, will first resume the thread waiting for the
+     * longest time in ngx_http_lua_sema_handler
      */
 
     if (ngx_queue_empty(&sem->wait_queue) && sem->resource_count > 0) {

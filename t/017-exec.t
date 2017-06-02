@@ -572,4 +572,3 @@ hello, bah
 ["dummy", "dummy"]
 --- no_error_log
 [error]
-

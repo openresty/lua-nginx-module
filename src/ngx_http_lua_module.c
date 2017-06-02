@@ -28,6 +28,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
+#include "ngx_http_lua_headers.h"
 
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
@@ -44,14 +45,6 @@ static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 #if (NGX_HTTP_SSL)
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
-#endif
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && (NGX_LINUX)
-/* we cannot use "static" for this function since it may lead to compiler
- * warnings */
-void ngx_http_lua_limit_data_segment(void);
-#   if !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
-static ngx_int_t ngx_http_lua_pre_config(ngx_conf_t *cf);
-#   endif
 #endif
 static char *ngx_http_lua_malloc_trim(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -97,6 +90,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("lua_shared_dict"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_http_lua_shared_dict,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("lua_capture_error_log"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_capture_error_log,
       0,
       0,
       NULL },
@@ -592,13 +592,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
 
 ngx_http_module_t ngx_http_lua_module_ctx = {
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)                                            \
-    && (NGX_LINUX)                                                           \
-    && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
-    ngx_http_lua_pre_config,          /*  preconfiguration */
-#else
     NULL,                             /*  preconfiguration */
-#endif
     ngx_http_lua_init,                /*  postconfiguration */
 
     ngx_http_lua_create_main_conf,    /*  create main configuration */
@@ -638,7 +632,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
-#ifndef NGX_LUA_NO_FFI_API
+#if !defined(NGX_LUA_NO_FFI_API) || nginx_version >= 1011011
     ngx_pool_cleanup_t         *cln;
 #endif
 
@@ -730,6 +724,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
     cln->handler = ngx_http_lua_sema_mm_cleanup;
 #endif
 
+#if nginx_version >= 1011011
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+
+    cln->data = lmcf;
+    cln->handler = ngx_http_lua_ngx_raw_header_cleanup;
+#endif
+
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
@@ -817,6 +821,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->running_timers = 0;
      *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
+     *      lmcf->jit_stack = NULL;
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
@@ -955,7 +960,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 #ifdef LIBRESSL_VERSION_NUMBER
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "LibreSSL does not support ssl_ceritificate_by_lua*");
+                      "LibreSSL does not support ssl_certificate_by_lua*");
         return NGX_CONF_ERROR;
 
 #else
@@ -967,7 +972,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 #   else
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "OpenSSL too old to support ssl_ceritificate_by_lua*");
+                      "OpenSSL too old to support ssl_certificate_by_lua*");
         return NGX_CONF_ERROR;
 
 #   endif
@@ -1265,37 +1270,6 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 }
 
 #endif  /* NGX_HTTP_SSL */
-
-
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK)                                            \
-    && (NGX_LINUX)                                                           \
-    && !(NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
-static ngx_int_t
-ngx_http_lua_pre_config(ngx_conf_t *cf)
-{
-    ngx_http_lua_limit_data_segment();
-    return NGX_OK;
-}
-#endif
-
-
-/*
- * we simply assume that LuaJIT is used. it does little harm when the
- * standard Lua 5.1 interpreter is used instead.
- */
-#if (NGX_HTTP_LUA_HAVE_MMAP_SBRK) && (NGX_LINUX)
-#   if (NGX_HTTP_LUA_HAVE_CONSTRUCTOR)
-__attribute__((constructor))
-#   endif
-void
-ngx_http_lua_limit_data_segment(void)
-{
-    if (sbrk(0) < (void *) 0x40000000LL) {
-        mmap(ngx_align_ptr(sbrk(0), getpagesize()), 1, PROT_READ,
-             MAP_FIXED|MAP_PRIVATE|MAP_ANON, -1, 0);
-    }
-}
-#endif
 
 
 static char *

@@ -67,9 +67,10 @@ ngx_int_t ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r,
 
 char *ngx_http_lua_rewrite_no_postpone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
-
 char *ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf,
     ngx_command_t *cmd);
+char *ngx_http_lua_capture_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 
 
 #endif /* _NGX_HTTP_LUA_DIRECTIVE_H_INCLUDED_ */

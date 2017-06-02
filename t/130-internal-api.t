@@ -47,4 +47,3 @@ content req=0x[a-f0-9]{4,}
 $
 --- no_error_log
 [error]
-

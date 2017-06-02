@@ -1395,4 +1395,3 @@ registered timer
 lua ngx.timer expired
 http lua close fake http connection
 trace: [m][f][g]
-

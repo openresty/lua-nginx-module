@@ -836,4 +836,3 @@ GET /lua
 --- error_code: 500
 --- error_log eval
 qr/failed to load inlined Lua code: /
-

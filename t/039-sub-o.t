@@ -578,4 +578,3 @@ a [b c] [b] [c] [] [] d
 --- response_body
 a [b c] [b] [c] d
 1
-
