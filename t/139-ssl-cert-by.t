@@ -1574,3 +1574,105 @@ qr/\[error\] .*? send\(\) failed/,
 --- no_error_log
 [alert]
 ssl_certificate_by_lua:1: ssl cert by lua is running!
+
+
+
+=== TEST 19: check the count of running timers
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /timers {
+            default_type 'text/plain';
+            content_by_lua_block {
+                ngx.timer.at(0.1, function() ngx.sleep(0.3) end)
+                ngx.timer.at(0.11, function() ngx.sleep(0.3) end)
+                ngx.timer.at(0.09, function() ngx.sleep(0.3) end)
+                ngx.sleep(0.2)
+                ngx.say(ngx.timer.running_count())
+            }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /timers HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 59 bytes.
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 2
+received: Connection: close
+received: 
+received: 3
+close: 1 nil
+
+--- error_log eval
+[
+'ssl_certificate_by_lua:1: ssl cert by lua is running!',
+'lua ssl server name: "test.com"',
+]
+--- no_error_log
+[error]
+[alert]

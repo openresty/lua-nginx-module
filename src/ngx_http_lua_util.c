@@ -919,7 +919,11 @@ ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible)
 #if 1
     if (r->connection->fd == (ngx_socket_t) -1) {
         /* being a fake request */
-        lmcf->running_timers--;
+
+        if (ctx->context == NGX_HTTP_LUA_CONTEXT_TIMER) {
+            /* being a timer handler */
+            lmcf->running_timers--;
+        }
     }
 #endif
 
