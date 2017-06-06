@@ -5432,7 +5432,7 @@ Inserts the specified (numerical or string) <code>value</code> at the head of th
 
 If <code>key</code> does not exist, it is created as an empty list before performing the push operation. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
-It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
+It never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return a false value and the string "no memory".
 
 This feature was first introduced in the <code>v0.10.6</code> release.
 
