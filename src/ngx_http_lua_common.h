@@ -268,6 +268,9 @@ typedef struct {
     ngx_uint_t              ssl_verify_depth;
     ngx_str_t               ssl_trusted_certificate;
     ngx_str_t               ssl_crl;
+    ngx_str_t               ssl_certificate;
+    ngx_str_t               ssl_certificate_key;
+    ngx_array_t            *ssl_passwords;
 #endif
 
     ngx_flag_t              force_read_body; /* whether force request body to
