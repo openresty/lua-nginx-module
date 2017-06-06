@@ -339,6 +339,7 @@ typedef struct {
     ngx_flag_t                       log_socket_errors;
     ngx_flag_t                       check_client_abort;
     ngx_flag_t                       use_default_type;
+    ngx_flag_t                       enter_body_filter_default;
 } ngx_http_lua_loc_conf_t;
 
 
@@ -551,6 +552,7 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         acquired_raw_req_socket:1;  /* whether a raw req socket
                                                     is acquired */
     unsigned         seen_body_data:1;
+    unsigned         enter_body_filter:1;
 } ngx_http_lua_ctx_t;
 
 

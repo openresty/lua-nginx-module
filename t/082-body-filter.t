@@ -837,3 +837,99 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of body_filter_by_lua*
+
+
+
+=== TEST 27: enter_body_filter off
+--- http_config
+    enter_body_filter_default off;
+
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say("ok")
+        }
+        body_filter_by_lua_block {
+            ngx.log(ngx.ERR, "in body filter")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 28: enter_body_filter on
+--- http_config
+    enter_body_filter_default on;
+
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say("ok")
+        }
+        body_filter_by_lua_block {
+            ngx.log(ngx.ERR, "in body filter")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+in body filter
+
+
+
+=== TEST 29: skip body-filter phase by lua
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+    enter_body_filter_default on;
+
+--- config
+    location = /t {
+        content_by_lua_block {
+            local b = require "ngx.bodyfilter"
+
+            b.skip_body_filter(true)
+            ngx.say("ok")
+        }
+        body_filter_by_lua_block {
+            ngx.log(ngx.ERR, "in body filter")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 30: enter body-filter phase by lua
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+    enter_body_filter_default off;
+
+--- config
+    location = /t {
+        content_by_lua_block {
+            local b = require "ngx.bodyfilter"
+
+            b.skip_body_filter(false)
+            ngx.say("ok")
+        }
+        body_filter_by_lua_block {
+            ngx.log(ngx.ERR, "in body filter")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- error_log
+in body filter
