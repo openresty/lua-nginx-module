@@ -376,12 +376,14 @@ ngx_http_lua_inject_req_socket_api(lua_State *L)
 static int
 ngx_http_lua_socket_tcp(lua_State *L)
 {
+    int                      n;
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
 
-    if (lua_gettop(L) != 0) {
-        return luaL_error(L, "expecting zero arguments, but got %d",
-                          lua_gettop(L));
+    n = lua_gettop(L);
+
+    if (n != 0) {
+        return luaL_error(L, "expecting zero arguments, but got %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -438,6 +440,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t      *u;
 
     n = lua_gettop(L);
+
     if (n != 2 && n != 3 && n != 4) {
         return luaL_error(L, "ngx.socket connect: expecting 2, 3, or 4 "
                           "arguments (including the object), but seen %d", n);
@@ -1218,6 +1221,7 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
        [,send_status_req] */
 
     n = lua_gettop(L);
+
     if (n < 1 || n > 5) {
         return luaL_error(L, "ngx.socket sslhandshake: expecting 1 ~ 5 "
                           "arguments (including the object), but seen %d", n);
@@ -1723,6 +1727,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
     ngx_http_lua_co_ctx_t               *coctx;
 
     n = lua_gettop(L);
+
     if (n != 1 && n != 2) {
         return luaL_error(L, "expecting 1 or 2 arguments "
                           "(including the object), but got %d", n);
@@ -2337,6 +2342,7 @@ success:
 static int
 ngx_http_lua_socket_tcp_send(lua_State *L)
 {
+    int                                  n;
     ngx_int_t                            rc;
     ngx_http_request_t                  *r;
     u_char                              *p;
@@ -2355,9 +2361,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* TODO: add support for the optional "i" and "j" arguments */
 
-    if (lua_gettop(L) != 2) {
+    n = lua_gettop(L);
+
+    if (n != 2) {
         return luaL_error(L, "expecting 2 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+                          "but got %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -2637,12 +2645,15 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
 static int
 ngx_http_lua_socket_tcp_close(lua_State *L)
 {
+    int                                  n;
     ngx_http_request_t                  *r;
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
-    if (lua_gettop(L) != 1) {
+    n = lua_gettop(L);
+
+    if (n != 1) {
         return luaL_error(L, "expecting 1 argument "
-                          "(including the object) but seen %d", lua_gettop(L));
+                          "(including the object) but seen %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -2706,7 +2717,7 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
 
     if (n != 2) {
         return luaL_error(L, "ngx.socket settimout: expecting 2 arguments "
-                          "(including the object) but seen %d", lua_gettop(L));
+                          "(including the object) but seen %d", n);
     }
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
@@ -2742,14 +2753,13 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
 {
     int                     n;
     ngx_int_t               connect_timeout, send_timeout, read_timeout;
-
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     n = lua_gettop(L);
 
     if (n != 4) {
         return luaL_error(L, "ngx.socket settimout: expecting 4 arguments "
-                          "(including the object) but seen %d", lua_gettop(L));
+                          "(including the object) but seen %d", n);
     }
 
     connect_timeout = (ngx_int_t) lua_tonumber(L, 2);
@@ -3616,6 +3626,7 @@ ngx_http_lua_socket_tcp_receiveuntil(lua_State *L)
     ngx_http_lua_socket_compiled_pattern_t     *cp;
 
     n = lua_gettop(L);
+
     if (n != 2 && n != 3) {
         return luaL_error(L, "expecting 2 or 3 arguments "
                           "(including the object), but got %d", n);
@@ -3708,6 +3719,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
     ngx_http_lua_socket_compiled_pattern_t     *cp;
 
     n = lua_gettop(L);
+
     if (n > 1) {
         return luaL_error(L, "expecting 0 or 1 arguments, "
                           "but seen %d", n);
@@ -4186,8 +4198,7 @@ ngx_http_lua_req_socket(lua_State *L)
         lua_pop(L, 1);
 
     } else {
-        return luaL_error(L, "expecting zero arguments, but got %d",
-                          lua_gettop(L));
+        return luaL_error(L, "expecting zero arguments, but got %d", n);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -4433,11 +4444,14 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 static int
 ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
 {
+    int                                    n;
     ngx_http_lua_socket_tcp_upstream_t    *u;
 
-    if (lua_gettop(L) != 1) {
+    n = lua_gettop(L);
+
+    if (n != 1) {
         return luaL_error(L, "expecting 1 argument "
-                          "(including the object), but got %d", lua_gettop(L));
+                          "(including the object), but got %d", n);
     }
 
     luaL_checktype(L, 1, LUA_TTABLE);
