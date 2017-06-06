@@ -302,11 +302,6 @@ ngx_http_lua_ffi_var_get(ngx_http_request_t *r, u_char *name_data,
     int                         *cap;
 #endif
 
-    if (r == NULL) {
-        *err = "no request object found";
-        return NGX_ERROR;
-    }
-
     if ((r)->connection->fd == (ngx_socket_t) -1) {
         *err = "API disabled in the current context";
         return NGX_ERROR;
@@ -371,11 +366,6 @@ ngx_http_lua_ffi_var_set(ngx_http_request_t *r, u_char *name_data,
     ngx_http_variable_t         *v;
     ngx_http_variable_value_t   *vv;
     ngx_http_core_main_conf_t   *cmcf;
-
-    if (r == NULL) {
-        ngx_snprintf(errbuf, errlen, "no request object found");
-        return NGX_ERROR;
-    }
 
     if ((r)->connection->fd == (ngx_socket_t) -1) {
         ngx_snprintf(errbuf, errlen, "API disabled in the current context");
