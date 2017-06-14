@@ -675,12 +675,12 @@ It is therefore *highly* recommended to always declare such within an appropriat
 
  -- Avoid
  foo = 123
- -- Recomended
+ -- Recommended
  local foo = 123
 
  -- Avoid
  function foo() return 123 end
- -- Recomended
+ -- Recommended
  local function foo() return 123 end
 ```
 
@@ -914,7 +914,7 @@ servers in Lua. For example,
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
-* cosocket: add client SSL certificiate support.
+* cosocket: add client SSL certificate support.
 
 [Back to TOC](#table-of-contents)
 

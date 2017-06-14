@@ -537,12 +537,12 @@ It is therefore *highly* recommended to always declare such within an appropriat
 <geshi lang="lua">
     -- Avoid
     foo = 123
-    -- Recomended
+    -- Recommended
     local foo = 123
 
     -- Avoid
     function foo() return 123 end
-    -- Recomended
+    -- Recommended
     local function foo() return 123 end
 </geshi>
 
@@ -745,7 +745,7 @@ servers in Lua. For example,
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add <code>stat</code> mode similar to [https://httpd.apache.org/docs/trunk/mod/mod_lua.html mod_lua].
-* cosocket: add client SSL certificiate support.
+* cosocket: add client SSL certificate support.
 
 = Changes =
 
