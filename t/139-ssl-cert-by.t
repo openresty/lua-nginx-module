@@ -1383,7 +1383,7 @@ uthread: done
 
 
 
-=== TEST 17: simple logging - use ssl_certificiate_by_lua* on the http {} level
+=== TEST 17: simple logging - use ssl_certificate_by_lua* on the http {} level
 GitHub openresty/lua-resty-core#42
 --- http_config
     ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
