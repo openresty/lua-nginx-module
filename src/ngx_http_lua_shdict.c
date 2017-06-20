@@ -2226,6 +2226,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     ngx_http_lua_shdict_node_t  *sd;
 
     if (zone == NULL) {
+        *errmsg = "no zone specified";
         return NGX_ERROR;
     }
 
@@ -2491,6 +2492,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     ngx_str_t                    value;
 
     if (zone == NULL) {
+        *err = "no zone specified";
         return NGX_ERROR;
     }
 
@@ -2538,6 +2540,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     if (*str_value_len < (size_t) value.len) {
         if (*value_type == SHDICT_TBOOLEAN) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
+            *err = "too small buffer";
             return NGX_ERROR;
         }
 
@@ -2545,6 +2548,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
             *str_value_buf = malloc(value.len);
             if (*str_value_buf == NULL) {
                 ngx_shmtx_unlock(&ctx->shpool->mutex);
+                *err = "can't allocate buffer";
                 return NGX_ERROR;
             }
         }
@@ -2565,6 +2569,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                           "bad lua number value size found for key %*s "
                           "in shared_dict %V: %z", key_len, key,
                           &name, value.len);
+            *err = "wrong value size";
             return NGX_ERROR;
         }
 
@@ -2580,6 +2585,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                           "bad lua boolean value size found for key %*s "
                           "in shared_dict %V: %z", key_len, key, &name,
                           value.len);
+            *err = "wrong value size";
             return NGX_ERROR;
         }
 
@@ -2600,6 +2606,7 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
                       "bad value type found for key %*s in "
                       "shared_dict %V: %d", key_len, key, &name,
                       *value_type);
+        *err = "bad value type";
         return NGX_ERROR;
     }
 
@@ -2636,6 +2643,7 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     ngx_queue_t                 *queue, *q;
 
     if (zone == NULL) {
+        *err = "no zone specified";
         return NGX_ERROR;
     }
 
@@ -2824,6 +2832,10 @@ ngx_http_lua_ffi_shdict_flush_all(ngx_shm_zone_t *zone)
     ngx_queue_t                 *q;
     ngx_http_lua_shdict_node_t  *sd;
     ngx_http_lua_shdict_ctx_t   *ctx;
+
+    if (zone == NULL) {
+        return NGX_ERROR;
+    }
 
     ctx = zone->data;
 
