@@ -314,7 +314,8 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
     if (ctx->exited && ctx->exit_code != NGX_OK) {
         rc = ctx->exit_code;
-        if (rc == NGX_ERROR || rc == NGX_BUSY || rc == NGX_DECLINED) {
+        if (rc == NGX_ERROR || rc == NGX_BUSY || rc == NGX_DECLINED
+            || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
 
