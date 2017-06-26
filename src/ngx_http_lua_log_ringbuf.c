@@ -10,6 +10,7 @@
 
 
 typedef struct {
+    double      time;
     unsigned    len:28;     /* :24 is big enough if the max log size is 4k */
     unsigned    log_level:4;
 } ngx_http_lua_log_ringbuf_header_t;
@@ -88,6 +89,7 @@ ngx_http_lua_log_ringbuf_append(ngx_http_lua_log_ringbuf_t *rb,
     int sentinel, int log_level, void *buf, int n)
 {
     ngx_http_lua_log_ringbuf_header_t        *head;
+    ngx_time_t                               *tp;
 
     if (sentinel) {
         rb->sentinel = rb->tail;
@@ -98,6 +100,9 @@ ngx_http_lua_log_ringbuf_append(ngx_http_lua_log_ringbuf_t *rb,
     head = (ngx_http_lua_log_ringbuf_header_t *) rb->tail;
     head->len = n;
     head->log_level = log_level;
+
+    tp = ngx_timeofday();
+    head->time = tp->sec + tp->msec / 1000.0L;
 
     rb->tail += HEADER_LEN;
     ngx_memcpy(rb->tail, buf, n);
@@ -171,7 +176,7 @@ ngx_http_lua_log_ringbuf_write(ngx_http_lua_log_ringbuf_t *rb, int log_level,
 /* read log from ring buffer, do reset if all of the logs were readed. */
 ngx_int_t
 ngx_http_lua_log_ringbuf_read(ngx_http_lua_log_ringbuf_t *rb, int *log_level,
-    void **buf, size_t *n)
+    void **buf, size_t *n, double *log_time)
 {
     ngx_http_lua_log_ringbuf_header_t       *head;
 
@@ -191,6 +196,11 @@ ngx_http_lua_log_ringbuf_read(ngx_http_lua_log_ringbuf_t *rb, int *log_level,
     rb->head += HEADER_LEN;
     *buf = rb->head;
     rb->head += head->len;
+
+    if (log_time) {
+        *log_time = head->time;
+    }
+
     rb->count--;
 
     if (rb->count == 0) {

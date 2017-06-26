@@ -375,7 +375,7 @@ ngx_http_lua_ffi_errlog_set_filter_level(int level, u_char *err, size_t *errlen)
 
 int
 ngx_http_lua_ffi_errlog_get_msg(char **log, int *loglevel, u_char *err,
-    size_t *errlen)
+    size_t *errlen, double *log_time)
 {
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
     ngx_uint_t           loglen;
@@ -395,7 +395,8 @@ ngx_http_lua_ffi_errlog_get_msg(char **log, int *loglevel, u_char *err,
         return NGX_DONE;
     }
 
-    ngx_http_lua_log_ringbuf_read(ringbuf, loglevel, (void **)log, &loglen);
+    ngx_http_lua_log_ringbuf_read(ringbuf, loglevel, (void **) log, &loglen,
+                                  log_time);
     return loglen;
 #else
     *errlen = ngx_snprintf(err, *errlen,
