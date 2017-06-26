@@ -413,14 +413,14 @@ Please note that the bytecode format used by LuaJIT 2.0/2.1 is not compatible wi
 
 ```bash
 
- /path/to/luajit/bin/luajit -b /path/to/input_file.lua /path/to/output_file.luac
+ /path/to/luajit/bin/luajit -b /path/to/input_file.lua /path/to/output_file.ljbc
 ```
 
 The `-bg` option can be used to include debug information in the LuaJIT bytecode file:
 
 ```bash
 
- /path/to/luajit/bin/luajit -bg /path/to/input_file.lua /path/to/output_file.luac
+ /path/to/luajit/bin/luajit -bg /path/to/input_file.lua /path/to/output_file.ljbc
 ```
 
 Please refer to the official LuaJIT documentation on the `-b` option for more details:
