@@ -58,8 +58,8 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
     }
 --- request
     GET /t
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body_like: 403 Forbidden
+--- error_code: 403
 --- error_log
 [lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
