@@ -464,7 +464,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
     } else {
@@ -481,7 +483,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua: failed to create new coroutine to handle request");
 
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        rc = NGX_ERROR;
+        ngx_http_lua_finalize_request(r, rc);
+        return rc;
     }
 
     /*  move code closure to new coroutine */
@@ -505,7 +509,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
