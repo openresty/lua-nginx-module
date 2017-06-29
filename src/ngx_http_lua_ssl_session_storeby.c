@@ -351,7 +351,9 @@ ngx_http_lua_ssl_sess_store_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
     } else {
