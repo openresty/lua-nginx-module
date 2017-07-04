@@ -7,13 +7,13 @@
 
 
 typedef struct {
-    ngx_uint_t filter_level;
-    char      *tail;              /*  writed point      */
-    char      *head;              /*  readed point      */
-    char      *data;              /*  buffer            */
-    char      *sentinel;
-    size_t     size;              /*  buffer total size */
-    size_t     count;             /*  count of logs     */
+    ngx_uint_t   filter_level;
+    char        *tail;              /* writed point */
+    char        *head;              /* readed point */
+    char        *data;              /* buffer */
+    char        *sentinel;
+    size_t       size;              /* buffer total size */
+    size_t       count;             /* count of logs */
 } ngx_http_lua_log_ringbuf_t;
 
 
