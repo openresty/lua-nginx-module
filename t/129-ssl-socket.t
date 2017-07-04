@@ -425,10 +425,11 @@ $::ComodoRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: handshake failed
+--- response_body_like chomp
+\Aconnected: 1
+failed to do SSL handshake: (?:handshake failed|certificate host mismatch)
 failed to send http request: closed
+\z
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
@@ -504,10 +505,11 @@ $::ComodoRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: handshake failed
+--- response_body_like chomp
+\Aconnected: 1
+failed to do SSL handshake: (?:handshake failed|certificate host mismatch)
 failed to send http request: closed
+\z
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
