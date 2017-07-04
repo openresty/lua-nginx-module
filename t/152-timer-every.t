@@ -267,6 +267,7 @@ growth1 == growth2: true
 [error]
 [alert]
 [crit]
+--- timeout: 8
 
 
 
