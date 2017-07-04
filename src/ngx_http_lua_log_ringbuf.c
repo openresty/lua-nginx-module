@@ -11,8 +11,8 @@
 
 typedef struct {
     double      time;
-    unsigned    len:28;     /* :24 is big enough if the max log size is 4k */
-    unsigned    log_level:4;
+    unsigned    len;
+    unsigned    log_level;
 } ngx_http_lua_log_ringbuf_header_t;
 
 
