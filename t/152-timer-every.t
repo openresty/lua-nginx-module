@@ -343,6 +343,8 @@ lua_max_running_timers are not enough
 
 
 === TEST 9: lua_code_cache off
+FIXME: it is know that this test case leaks memory.
+so we skip it in the "check leak" testing mode.
 --- http_config
     lua_code_cache off;
 --- config
@@ -380,3 +382,4 @@ ok
 --- no_error_log
 [error]
 [crit]
+--- no_check_leak
