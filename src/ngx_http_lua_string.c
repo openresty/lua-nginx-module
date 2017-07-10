@@ -762,6 +762,130 @@ ngx_http_lua_ffi_escape_uri(const u_char *src, size_t len, u_char *dst)
     ngx_http_lua_escape_uri(dst, (u_char *) src, len, NGX_ESCAPE_URI_COMPONENT);
 }
 
-#endif
+
+int
+ngx_http_lua_ffi_decode_args_helper(u_char *args, size_t len,
+    ngx_http_lua_ffi_table_elt_t *out, int count)
+{
+    int                          i, parsing_value = 0;
+    u_char                      *last, *p, *q;
+    u_char                      *src, *dst;
+
+    if (count <= 0) {
+        return NGX_OK;
+    }
+
+    i = 0;
+    p = args;
+    q = p;
+    last = args + len;
+
+    while (p != last) {
+        if (*p == '=' && !parsing_value) {
+            /* key data is between p and q */
+
+            src = q; dst = q;
+
+            ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                                      NGX_UNESCAPE_URI_COMPONENT);
+
+            dd("saving key %.*s", (int) (dst - q), q);
+
+            out[i].key.data = q;
+            out[i].key.len = (int) (dst - q);
+
+            /* skip the current '=' char */
+            p++;
+
+            q = p;
+            parsing_value = 1;
+
+        } else if (*p == '&') {
+            /* reached the end of a key or a value, just save it */
+            src = q; dst = q;
+
+            ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                                      NGX_UNESCAPE_URI_COMPONENT);
+
+            dd("pushing key or value %.*s", (int) (dst - q), q);
+
+            if (parsing_value) {
+                /* end of the current pair's value */
+                parsing_value = 0;
+
+                if (out[i].key.len) {
+                    out[i].value.data = q;
+                    out[i].value.len = (int) (dst - q);
+                    i++;
+                }
+
+            } else {
+                /* the current parsing pair takes no value,
+                 * just push the value "true" */
+                dd("pushing boolean true");
+
+                if (dst - q) {
+                    out[i].key.data = q;
+                    out[i].key.len = (int) (dst - q);
+                    out[i].value.len = -1;
+                    i++;
+                }
+            }
+
+            if (i == count) {
+                return i;
+            }
+
+            /* skip the current '&' char */
+            p++;
+
+            q = p;
+
+        } else {
+            p++;
+        }
+    }
+
+    if (p != q || parsing_value) {
+        src = q; dst = q;
+
+        ngx_http_lua_unescape_uri(&dst, &src, p - q,
+                                  NGX_UNESCAPE_URI_COMPONENT);
+
+        dd("pushing key or value %.*s", (int) (dst - q), q);
+
+        if (parsing_value) {
+            if (out[i].key.len) {
+                out[i].value.data = q;
+                out[i].value.len = (int) (dst - q);
+                i++;
+            }
+
+        } else {
+            if (dst - q) {
+                out[i].key.data = q;
+                out[i].key.len = (int) (dst - q);
+                out[i].value.len = (int) -1;
+                i++;
+            }
+        }
+    }
+
+    return i;
+}
+
+
+int
+ngx_http_lua_ffi_decode_args(u_char *buf, const u_char *args, size_t len,
+    ngx_http_lua_ffi_table_elt_t *out, int count)
+{
+    ngx_memcpy(buf, args, len);
+
+    return ngx_http_lua_ffi_decode_args_helper(buf, len, out, count);
+}
+
+
+#endif /* NGX_LUA_NO_FFI_API */
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
