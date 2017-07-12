@@ -13,17 +13,25 @@ plan tests => repeat_each() * (blocks() * 3) + blocks();
 no_long_string();
 #no_diff();
 
+add_block_preprocessor(sub {
+    my $block = shift;
+
+    my $http_config = $block->http_config || '';
+    $http_config .= <<'_EOC_';
+    lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
+
+    init_by_lua_block {
+        require "resty.core"
+    }
+_EOC_
+    $block->set_value("http_config", $http_config);
+});
+
 run_tests();
 
 __DATA__
 
 === TEST 1: timer + shutdown error log
---- http_config
-    lua_package_path "../lua-resty-core/lib/?.lua;;";
-
-    init_by_lua_block {
-        require "resty.core"
-    }
 --- config
     location /test {
         content_by_lua_block {
@@ -69,11 +77,6 @@ semaphore gc wait queue is not empty
 === TEST 2: timer + shutdown error log (lua code cache off)
 --- http_config
     lua_code_cache off;
-    lua_package_path "../lua-resty-core/lib/?.lua;;";
-
-    init_by_lua_block {
-        require "resty.core"
-    }
 --- config
     location /test {
         content_by_lua_block {
