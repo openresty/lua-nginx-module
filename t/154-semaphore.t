@@ -18,6 +18,12 @@ run_tests();
 __DATA__
 
 === TEST 1: timer + shutdown error log
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    init_by_lua_block {
+        require "resty.core"
+    }
 --- config
     location /test {
         content_by_lua_block {
@@ -62,7 +68,12 @@ semaphore gc wait queue is not empty
 
 === TEST 2: timer + shutdown error log (lua code cache off)
 --- http_config
-lua_code_cache off;
+    lua_code_cache off;
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    init_by_lua_block {
+        require "resty.core"
+    }
 --- config
     location /test {
         content_by_lua_block {

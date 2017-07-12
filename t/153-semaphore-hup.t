@@ -20,6 +20,7 @@ __DATA__
 === TEST 1: timer + reload
 --- http_config
     lua_shared_dict shdict 4m;
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     init_by_lua_block {
         require "resty.core"
@@ -120,6 +121,7 @@ created semaphore object
 === TEST 2: timer + reload (lua code cache off)
 --- http_config
     lua_shared_dict shdict 4m;
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
     lua_code_cache off;
 
     init_by_lua_block {
