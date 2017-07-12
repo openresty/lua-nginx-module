@@ -83,7 +83,7 @@ install:
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
   - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
-  - git clone https://github.com/openresty/lua-resty-lrucache.git
+  - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
 
 before_script:
@@ -106,7 +106,6 @@ script:
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
-  - cd lua-resty-lrucache && sudo make DESTDIR=$LUAJIT_PREFIX LUA_LIB_DIR=/share/lua/5.1 install && cd ..
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
   - if [ ! -f ../download-cache/openssl-1.0.2h-sess_set_get_cb_yield.patch ]; then wget -P ../download-cache https://raw.githubusercontent.com/openresty/openresty/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch; fi
