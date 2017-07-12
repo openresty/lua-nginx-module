@@ -557,7 +557,8 @@ ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem)
         return;
     }
 
-    if (!ngx_terminate && !ngx_quit
+    if (!ngx_terminate
+        && !ngx_quit
         && !ngx_queue_empty(&sem->wait_queue)) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                       "in lua semaphore gc wait queue is"
