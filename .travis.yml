@@ -64,7 +64,7 @@ install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
-  - git clone https://github.com/openresty/test-nginx.git
+  - git clone -b shutdown_error_log https://github.com/iresty/test-nginx
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
@@ -83,6 +83,7 @@ install:
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
   - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
+  - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
 
 before_script:
