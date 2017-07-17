@@ -4418,15 +4418,18 @@ ngx_http_lua_req_socket_rev_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
+        r->read_event_handler = ngx_http_block_reading;
         return;
     }
 
     u = ctx->downstream;
-    if (u) {
-        u->read_event_handler(r, u);
+    if (u == NULL || u->peer.connection == NULL) {
+        r->read_event_handler = ngx_http_block_reading;
+        return;
     }
-}
 
+    u->read_event_handler(r, u);
+}
 
 static int
 ngx_http_lua_socket_tcp_getreusedtimes(lua_State *L)
