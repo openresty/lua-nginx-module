@@ -69,8 +69,6 @@ static void ngx_http_lua_socket_dummy_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
-static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
-    ngx_http_lua_socket_tcp_upstream_t *u);
 static int ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_line(void *data, ssize_t bytes);
