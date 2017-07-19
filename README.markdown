@@ -5909,7 +5909,7 @@ The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos
 
  local ctx = { pos = 2 }
  local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
-      -- m[0] = "34"
+      -- m[0] = "234"
       -- ctx.pos == 5
 ```
 
