@@ -432,7 +432,8 @@ ngx_http_lua_on_abort(lua_State *L)
 
     ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
 
-    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_pushvalue(L, -2);
 

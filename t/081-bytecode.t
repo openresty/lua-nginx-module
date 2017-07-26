@@ -85,7 +85,7 @@ __DATA__
 --- response_body
 error
 --- error_log eval
-qr/failed to load external Lua file ".*?test\.lua": bad byte-code header/
+qr/failed to load external Lua file ".*?test\.lua": .* cannot load incompatible bytecode/
 
 
 
@@ -121,7 +121,7 @@ qr/failed to load external Lua file ".*?test\.lua": bad byte-code header/
 --- response_body
 error
 --- error_log
-bytecode format version unsupported
+cannot load incompatible bytecode
 
 
 
@@ -320,7 +320,7 @@ ngx.status = 201 ngx.say("hello from Lua!")
 --- config
     location = /t {
         content_by_lua_block {
-            local f = assert(loadstring("a = a and a + 1 or 1 ngx.say('a = ', a)", "=code"))
+            local f = assert(loadstring("local a = 1 ngx.say('a = ', a)", "=code"))
             local bc = string.dump(f)
             local f = assert(io.open("t/servroot/html/a.luac", "w"))
             f:write(bc)
@@ -349,7 +349,7 @@ a = 1
 --- config
     location = /t {
         content_by_lua_block {
-            local f = assert(loadstring("a = a and a + 1 or 1 ngx.say('a = ', a)", "=code"))
+            local f = assert(loadstring("local a = 1 ngx.say('a = ', a)", "=code"))
             local bc = string.dump(f, true)
             local f = assert(io.open("t/servroot/html/a.luac", "w"))
             f:write(bc)

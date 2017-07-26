@@ -362,6 +362,8 @@ ngx_http_lua_balancer_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /* init nginx context in Lua VM */
     ngx_http_lua_set_req(L, r);
+
+#ifndef OPENRESTY_LUAJIT
     ngx_http_lua_create_new_globals_table(L, 0 /* narr */, 1 /* nrec */);
 
     /*  {{{ make new env inheriting main thread's globals table */
@@ -372,6 +374,7 @@ ngx_http_lua_balancer_by_chunk(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
+#endif /* OPENRESTY_LUAJIT */
 
     lua_pushcfunction(L, ngx_http_lua_traceback);
     lua_insert(L, 1);  /* put it under chunk and args */

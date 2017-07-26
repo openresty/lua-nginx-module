@@ -15,11 +15,13 @@
 #include "ngx_http_lua_clfactory.h"
 
 
+#ifndef OPENRESTY_LUAJIT
 #define CLFACTORY_BEGIN_CODE "return function() "
 #define CLFACTORY_BEGIN_SIZE (sizeof(CLFACTORY_BEGIN_CODE) - 1)
 
 #define CLFACTORY_END_CODE "\nend"
 #define CLFACTORY_END_SIZE (sizeof(CLFACTORY_END_CODE) - 1)
+#endif
 
 
 /*
@@ -59,6 +61,7 @@
  * length(Instruction) = 4 or 8
  * little endian or big endian
 */
+#ifndef OPENRESTY_LUAJIT
 #define    LUA_LITTLE_ENDIAN_4BYTES_CODE                                     \
     "\x24\x00\x00\x00\x1e\x00\x00\x01\x1e\x00\x80\x00"
 #define    LUA_LITTLE_ENDIAN_8BYTES_CODE                                     \
@@ -75,6 +78,7 @@
 #define    LUA_BIG_ENDIAN_8BYTES_CODE_LEN           (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
 #define    LUAC_VERSION            0x51
+#endif /* OPENRESTY_LUAJIT */
 
 
 /*
@@ -147,6 +151,7 @@
  * ---------------------
 */
 
+#ifndef OPENRESTY_LUAJIT
 #define    POS_SOURCE_STR_LEN      LUAC_HEADERSIZE
 #define    POS_START_LINE          (POS_SOURCE_STR_LEN + sizeof(size_t))
 #define    POS_LAST_LINE           (POS_START_LINE + sizeof(int))
@@ -160,6 +165,7 @@
     (POS_BYTECODE + LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN                        \
     + sizeof(int) + sizeof(int))
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
+#endif /* OPENRESTY_LUAJIT */
 
 /*
  * taken from chaoslawful:
@@ -225,6 +231,7 @@
 
 /* bytecode for luajit 2.0 */
 
+#ifndef OPENRESTY_LUAJIT
 #define    LJ20_LITTLE_ENDIAN_CODE_STRIPPED                                  \
     "\x14\x03\x00\x01\x00\x01\x00\x03"                                       \
     "\x31\x00\x00\x00\x30\x00\x00\x80\x48\x00\x02\x00"                       \
@@ -275,6 +282,7 @@
 #define    LJ21_BCDUMP_VERSION        2
 #define    LJ20_BCDUMP_VERSION        1
 #define    LJ_SIGNATURE             "\x1b\x4c\x4a"
+#endif /* OPENRESTY_LUAJIT */
 
 
 typedef enum {
@@ -292,10 +300,11 @@ enum {
 typedef struct {
     ngx_http_lua_clfactory_file_type_e file_type;
 
-    int         sent_begin;
-    int         sent_end;
     int         extraline;
     FILE       *f;
+#ifndef OPENRESTY_LUAJIT
+    int         sent_begin;
+    int         sent_end;
     size_t      begin_code_len;
     size_t      end_code_len;
     size_t      rest_len;
@@ -307,13 +316,16 @@ typedef struct {
         char   *ptr;
         char    str[MAX_END_CODE_SIZE];
     }           end_code;
+#endif /* OPENRESTY_LUAJIT */
     char        buff[NGX_LUA_READER_BUFSIZE];
 } ngx_http_lua_clfactory_file_ctx_t;
 
 
 typedef struct {
+#ifndef OPENRESTY_LUAJIT
     int         sent_begin;
     int         sent_end;
+#endif
     const char *s;
     size_t      size;
 } ngx_http_lua_clfactory_buffer_ctx_t;
@@ -325,9 +337,12 @@ static int ngx_http_lua_clfactory_errfile(lua_State *L, const char *what,
     int fname_index);
 static const char *ngx_http_lua_clfactory_getS(lua_State *L, void *ud,
     size_t *size);
+#ifndef OPENRESTY_LUAJIT
 static long ngx_http_lua_clfactory_file_size(FILE *f);
+#endif
 
 
+#ifndef OPENRESTY_LUAJIT
 int
 ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
     ngx_http_lua_clfactory_file_ctx_t *lf, int fname_index)
@@ -593,6 +608,7 @@ error:
 
     return LUA_ERRFILE;
 }
+#endif /* OPENRESTY_LUAJIT */
 
 
 ngx_int_t
@@ -612,10 +628,12 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
     lf.extraline = 0;
     lf.file_type = NGX_LUA_TEXT_FILE;
 
+#ifndef OPENRESTY_LUAJIT
     lf.begin_code.ptr = CLFACTORY_BEGIN_CODE;
     lf.begin_code_len = CLFACTORY_BEGIN_SIZE;
     lf.end_code.ptr = CLFACTORY_END_CODE;
     lf.end_code_len = CLFACTORY_END_SIZE;
+#endif
 
     lua_pushfstring(L, "@%s", filename);
 
@@ -683,20 +701,27 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
             /* skip eventual `#!...' */
         }
 
+#ifndef OPENRESTY_LUAJIT
         status = ngx_http_lua_clfactory_bytecode_prepare(L, &lf, fname_index);
 
         if (status != 0) {
             return status;
         }
+#endif
 
         lf.extraline = 0;
     }
 
+#ifndef OPENRESTY_LUAJIT
     if (lf.file_type == NGX_LUA_TEXT_FILE) {
         ungetc(c, lf.f);
     }
 
     lf.sent_begin = lf.sent_end = 0;
+
+#else
+    ungetc(c, lf.f);
+#endif
     status = lua_load(L, ngx_http_lua_clfactory_getF, &lf,
                       lua_tostring(L, -1));
 
@@ -725,8 +750,10 @@ ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
 
     ls.s = buff;
     ls.size = size;
+#ifndef OPENRESTY_LUAJIT
     ls.sent_begin = 0;
     ls.sent_end = 0;
+#endif
 
     return lua_load(L, ngx_http_lua_clfactory_getS, &ls, name);
 }
@@ -735,7 +762,9 @@ ngx_http_lua_clfactory_loadbuffer(lua_State *L, const char *buff,
 static const char *
 ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
 {
+#ifndef OPENRESTY_LUAJIT
     char                        *buf;
+#endif
     size_t                       num;
 
     ngx_http_lua_clfactory_file_ctx_t        *lf;
@@ -748,6 +777,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
         return "\n";
     }
 
+#ifndef OPENRESTY_LUAJIT
     if (lf->sent_begin == 0) {
         lf->sent_begin = 1;
         *size = lf->begin_code_len;
@@ -761,12 +791,14 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
 
         return buf;
     }
+#endif /* OPENRESTY_LUAJIT */
 
     num = fread(lf->buff, 1, sizeof(lf->buff), lf->f);
 
     dd("fread returned %d", (int) num);
 
     if (num == 0) {
+#ifndef OPENRESTY_LUAJIT
         if (lf->sent_end == 0) {
             lf->sent_end = 1;
             *size = lf->end_code_len;
@@ -780,11 +812,13 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
 
             return buf;
         }
+#endif /* OPENRESTY_LUAJIT */
 
         *size = 0;
         return NULL;
     }
 
+#ifndef OPENRESTY_LUAJIT
     if (lf->file_type == NGX_LUA_BT_LJ) {
         /* skip the footer(\x00) in luajit */
 
@@ -800,6 +834,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
             }
         }
     }
+#endif /* OPENRESTY_LUAJIT */
 
     *size = num;
     return lf->buff;
@@ -833,19 +868,23 @@ ngx_http_lua_clfactory_getS(lua_State *L, void *ud, size_t *size)
 {
     ngx_http_lua_clfactory_buffer_ctx_t      *ls = ud;
 
+#ifndef OPENRESTY_LUAJIT
     if (ls->sent_begin == 0) {
         ls->sent_begin = 1;
         *size = CLFACTORY_BEGIN_SIZE;
 
         return CLFACTORY_BEGIN_CODE;
     }
+#endif
 
     if (ls->size == 0) {
+#ifndef OPENRESTY_LUAJIT
         if (ls->sent_end == 0) {
             ls->sent_end = 1;
             *size = CLFACTORY_END_SIZE;
             return CLFACTORY_END_CODE;
         }
+#endif
 
         return NULL;
     }
@@ -857,6 +896,7 @@ ngx_http_lua_clfactory_getS(lua_State *L, void *ud, size_t *size)
 }
 
 
+#ifndef OPENRESTY_LUAJIT
 static long
 ngx_http_lua_clfactory_file_size(FILE *f)
 {
@@ -882,6 +922,7 @@ ngx_http_lua_clfactory_file_size(FILE *f)
 
     return len;
 }
+#endif /* OPENRESTY_LUAJIT */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

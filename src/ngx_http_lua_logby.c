@@ -38,9 +38,9 @@ static ngx_int_t ngx_http_lua_log_by_chunk(lua_State *L, ngx_http_request_t *r);
 static void
 ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
 {
-    /*  set nginx request pointer to current lua thread's globals table */
     ngx_http_lua_set_req(L, r);
 
+#ifndef OPENRESTY_LUAJIT
     /**
      * we want to create empty environment for current script
      *
@@ -64,6 +64,7 @@ ngx_http_lua_log_by_lua_env(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
+#endif /* OPENRESTY_LUAJIT */
 }
 
 

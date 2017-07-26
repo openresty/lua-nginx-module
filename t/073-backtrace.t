@@ -37,7 +37,7 @@ GET /lua
 attempt to call global 'lua_concat'
 : in function 'bar'
 :5: in function 'foo'
-:7: in function
+:7: in main chunk
 
 
 
@@ -64,7 +64,7 @@ GET /lua
 " in function 'error'",
 ": in function 'bar'",
 ":5: in function 'foo'",
-qr/:7: in function <content_by_lua\(nginx\.conf:\d+\):1>/,
+qr/:7: in main chunk/,
 ]
 
 
@@ -125,7 +125,7 @@ probe process("$LIBLUA_PATH").function("lua_concat") {
 :63: in function 'func16'
 :67: in function 'func17'
 :71: in function 'func18'
-:74: in function
+:74: in main chunk
 
 
 

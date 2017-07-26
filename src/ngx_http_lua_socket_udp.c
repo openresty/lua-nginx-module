@@ -81,7 +81,8 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "udp"); /* ngx socket */
 
     /* udp socket object metatable */
-    lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          socket_udp_metatable_key));
     lua_createtable(L, 0 /* narr */, 6 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_setpeername);
@@ -105,7 +106,8 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
     /* }}} */
 
     /* udp socket object metatable */
-    lua_pushlightuserdata(L, &ngx_http_lua_udp_udata_metatable_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          udp_udata_metatable_key));
     lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
     lua_pushcfunction(L, ngx_http_lua_socket_udp_upstream_destroy);
     lua_setfield(L, -2, "__gc");
@@ -144,7 +146,8 @@ ngx_http_lua_socket_udp(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
-    lua_pushlightuserdata(L, &ngx_http_lua_socket_udp_metatable_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          socket_udp_metatable_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 
@@ -263,7 +266,8 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
         }
 
 #if 1
-        lua_pushlightuserdata(L, &ngx_http_lua_udp_udata_metatable_key);
+        lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                              udp_udata_metatable_key));
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
 #endif

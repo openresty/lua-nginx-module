@@ -17,7 +17,7 @@
 #include <setjmp.h>
 #include <stdint.h>
 
-#include <lua.h>
+#include <luajit.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
@@ -140,6 +140,10 @@ typedef struct {
 #endif
 
 
+#define ngx_http_lua_lightudata_mask(ludata)                                 \
+    ((void *) ((uintptr_t) (&ngx_http_lua_##ludata) & ((1UL << 47) - 1)))
+
+
 typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
 typedef union ngx_http_lua_srv_conf_u  ngx_http_lua_srv_conf_t;
 
@@ -208,9 +212,31 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t                            init_worker_src;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
-                    /* balancer_by_lua does not support yielding and
-                     * there cannot be any conflicts among concurrent requests,
-                     * thus it is safe to store the peer data in the main conf.
+                    /* neither yielding nor recursion is possible in
+                     * balancer_by_lua*, so there cannot be any races among
+                     * concurrent requests and it is safe to store the peer
+                     * data pointer in the main conf.
+                     */
+
+    ngx_chain_t                            *body_filter_chain;
+                    /* neither yielding nor recursion is possible in
+                     * body_filter_by_lua*, so there cannot be any races among
+                     * concurrent requests when storing the chain
+                     * data pointer in the main conf.
+                     */
+
+    ngx_http_variable_value_t              *setby_args;
+                    /* neither yielding nor recursion is possible in
+                     * set_by_lua*, so there cannot be any races among
+                     * concurrent requests when storing the args pointer
+                     * in the main conf.
+                     */
+
+    size_t                                  setby_nargs;
+                    /* neither yielding nor recursion is possible in
+                     * set_by_lua*, so there cannot be any races among
+                     * concurrent requests when storing the nargs in the
+                     * main conf.
                      */
 
     ngx_uint_t                      shm_zones_inited;
