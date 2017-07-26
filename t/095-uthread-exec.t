@@ -348,7 +348,7 @@ attempt to abort with pending subrequests
     location /lua {
         client_body_timeout 12000ms;
         content_by_lua '
-            function f()
+            local function f()
                 ngx.location.capture("/sleep")
                 ngx.say("end")
             end

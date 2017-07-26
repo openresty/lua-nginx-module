@@ -72,7 +72,7 @@ install:
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
-  - git clone https://github.com/openresty/lua-cjson.git
+  - git clone -b arm64 https://github.com/spacewander/lua-cjson.git lua-cjson
   - git clone https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
   - git clone https://github.com/openresty/echo-nginx-module.git ../echo-nginx-module
   - git clone https://github.com/openresty/nginx-eval-module.git ../nginx-eval-module
@@ -85,11 +85,11 @@ install:
   - git clone https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
-  - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
+  - git clone -b arm64 https://github.com/spacewander/lua-resty-core.git ../lua-resty-core
   - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
-  - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
-  - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
+  - git clone -b arm64 https://github.com/spacewander/stream-lua-nginx-module.git ../stream-lua-nginx-module
+  - git clone -b exdata https://github.com/spacewander/luajit2.git luajit2
 
 before_script:
   - mysql -uroot -e 'create database ngx_test; grant all on ngx_test.* to "ngx_test"@"%" identified by "ngx_test"; flush privileges;'

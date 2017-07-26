@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 5);
 
 #log_level("warn");
 no_long_string();
@@ -592,25 +592,29 @@ failed to run set_by_lua*: unknown reason
 
 
 
-=== TEST 37: globals get cleared for every single request
+=== TEST 37: globals are shared in all requests.
 --- config
     location /lua {
-        set_by_lua $res '
+        set_by_lua_block $res {
             if not foo then
                 foo = 1
             else
+                ngx.log(ngx.INFO, "old foo: ", foo)
                 foo = foo + 1
             end
             return foo
-        ';
+        }
         echo $res;
     }
 --- request
 GET /lua
---- response_body
-1
+--- response_body_like
+^[12]$
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log_out eval
+["", "old foo: 1\n"]
 
 
 

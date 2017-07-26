@@ -220,6 +220,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
+#ifndef OPENRESTY_LUAJIT
     lua_createtable(co, 0, 0);  /* the new globals table */
 
     /* co stack: global_tb */
@@ -232,6 +233,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     /* co stack: global_tb */
 
     ngx_http_lua_set_globals_table(co);
+#endif
 
     /* co stack: <empty> */
 
@@ -251,12 +253,15 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     /* L stack: time func [args] thread */
     /* co stack: func */
 
+#ifndef OPENRESTY_LUAJIT
     ngx_http_lua_get_globals_table(co);
     lua_setfenv(co, -2);
+#endif
 
     /* co stack: func */
 
-    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
 
     /* L stack: time func [args] thread coroutines */
@@ -358,7 +363,8 @@ nomem:
         ngx_free(ev);
     }
 
-    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     luaL_unref(L, -1, co_ref);
 
@@ -387,6 +393,7 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
 
     co = lua_newthread(vm);
 
+#ifndef OPENRESTY_LUAJIT
     lua_createtable(co, 0, 0);  /* the new globals table */
 
     /* co stack: global_tb */
@@ -399,6 +406,7 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
     /* co stack: global_tb */
 
     ngx_http_lua_set_globals_table(co);
+#endif
 
     /* co stack: <empty> */
 
@@ -418,12 +426,15 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
     /* L stack: func [args] thread */
     /* co stack: func */
 
+#ifndef OPENRESTY_LUAJIT
     ngx_http_lua_get_globals_table(co);
     lua_setfenv(co, -2);
+#endif
 
     /* co stack: func */
 
-    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
 
     /* L stack: func [args] thread coroutines */
@@ -512,7 +523,8 @@ nomem:
 
     /* L stack: func [args] */
 
-    lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     luaL_unref(L, -1, co_ref);
 
@@ -692,7 +704,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 failed:
 
     if (tctx.co_ref && tctx.co) {
-        lua_pushlightuserdata(tctx.co, &ngx_http_lua_coroutines_key);
+        lua_pushlightuserdata(tctx.co, ngx_http_lua_lightudata_mask(
+                              coroutines_key));
         lua_rawget(tctx.co, LUA_REGISTRYINDEX);
         luaL_unref(tctx.co, -1, tctx.co_ref);
         lua_settop(tctx.co, 0);

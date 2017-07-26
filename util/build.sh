@@ -22,10 +22,12 @@ force=$2
             #--without-http_referer_module \
             #--with-http_spdy_module \
 
+add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
+
 time ngx-build $force $version \
             --with-pcre-jit \
             --with-ipv6 \
-            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
+            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC -DNGX_LUA_DEBUG_ARM64" \
             --with-http_v2_module \
             --with-http_realip_module \
             --with-http_ssl_module \
@@ -55,7 +57,7 @@ time ngx-build $force $version \
                 --add-module=$root/../redis2-nginx-module \
                 --add-module=$root/../stream-lua-nginx-module \
                 --add-module=$root/t/data/fake-module \
-                --add-module=$root/t/data/fake-shm-module \
+                $add_fake_shm_module \
                 --add-module=$root/t/data/fake-delayed-load-module \
                 --with-http_gunzip_module \
                 --with-http_dav_module \
