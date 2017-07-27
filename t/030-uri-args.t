@@ -1403,6 +1403,6 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
+args: foo=%2C%24%40%7C%60&bar=-_.%21~%2A%27%28%29
 --- no_error_log
 [error]
