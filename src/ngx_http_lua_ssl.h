@@ -24,6 +24,9 @@ typedef struct {
 
     ngx_str_t                session_id;
 
+    ngx_str_t                psk_identity;
+    ngx_str_t                psk_key;
+
     int                      exit_code;  /* exit code for openssl's
                                             set_cert_cb callback */
 

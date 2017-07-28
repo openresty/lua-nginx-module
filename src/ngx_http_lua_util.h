@@ -91,6 +91,7 @@ extern char ngx_http_lua_headers_metatable_key;
                                                  "ssl_session_store_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH ?                          \
                                                  "ssl_session_fetch_by_lua*" \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_PSK ? "ssl_psk_by_lua*"               \
      : "(unknown)")
 
 
