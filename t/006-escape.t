@@ -193,7 +193,7 @@ GET /t
 --- request
 GET /lua
 --- response_body
--_.%21~%2A%27%28%29
+-_.!~*'()
 %2C%24%40%7C%60
 --- no_error_log
 [error]
