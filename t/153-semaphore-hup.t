@@ -124,6 +124,7 @@ created semaphore object
 created semaphore object
 --- skip_nginx: 3: < 1.11.2
 --- no_check_leak
+--- wait: 0.2
 
 
 
@@ -150,3 +151,4 @@ created semaphore object
 created semaphore object
 --- skip_nginx: 3: < 1.11.2
 --- no_check_leak
+--- wait: 0.2
