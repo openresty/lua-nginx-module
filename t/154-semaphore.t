@@ -75,6 +75,7 @@ semaphore gc wait queue is not empty
 
 
 === TEST 2: timer + shutdown error log (lua code cache off)
+FIXME: this test case leaks memory.
 --- http_config
     lua_code_cache off;
 --- config
@@ -116,3 +117,4 @@ hello, world
 --- shutdown_error_log
 --- no_shutdown_error_log
 semaphore gc wait queue is not empty
+--- SKIP
