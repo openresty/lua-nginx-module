@@ -1335,7 +1335,7 @@ Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua
 
 When Nginx receives the `HUP` signal and starts reloading the config file, the Lua VM will also be re-created and `init_by_lua` will run again on the new Lua VM. In case that the [lua_code_cache](#lua_code_cache) directive is turned off (default on), the `init_by_lua` handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
 
-Usually you can pre-load Lua modules at server start-up by means of this hook and take advantage of modern operating system's copy-on-write (COW) optimization. Here is an example for pre-loading Lua modules:
+Usually you can pre-load Lua modules at server start-up by means of this hook and take advantage of modern operating systems' copy-on-write (COW) optimization. Here is an example for pre-loading Lua modules:
 
 ```nginx
 
