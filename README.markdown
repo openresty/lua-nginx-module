@@ -1335,16 +1335,19 @@ Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua
 
 When Nginx receives the `HUP` signal and starts reloading the config file, the Lua VM will also be re-created and `init_by_lua` will run again on the new Lua VM. In case that the [lua_code_cache](#lua_code_cache) directive is turned off (default on), the `init_by_lua` handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
 
-Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
+Usually you can pre-load Lua modules at server start-up by means of this hook and take advantage of modern operating system's copy-on-write (COW) optimization. Here is an example for pre-loading Lua modules:
 
 ```nginx
 
- init_by_lua 'cjson = require "cjson"';
+ # this runs before forking out nginx worker processes:
+ init_by_lua_block { require "cjson" }
 
  server {
      location = /api {
          content_by_lua_block {
-             ngx.say(cjson.encode({dog = 5, cat = 6}))
+             -- the following require() will just  return
+             -- the alrady loaded module from package.loaded:
+             ngx.say(require "cjson".encode({dog = 5, cat = 6}))
          }
      }
  }
@@ -1356,10 +1359,10 @@ You can also initialize the [lua_shared_dict](#lua_shared_dict) shm storage at t
 
  lua_shared_dict dogs 1m;
 
- init_by_lua '
+ init_by_lua_block {
      local dogs = ngx.shared.dogs;
      dogs:set("Tom", 56)
- ';
+ }
 
  server {
      location = /api {
