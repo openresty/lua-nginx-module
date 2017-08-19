@@ -743,6 +743,9 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_RESOLVER;
 
+        coctx->cleanup = NULL;
+        coctx->data = NULL;
+
         u->resolved->ctx = NULL;
         lua_pushnil(L);
         lua_pushfstring(L, "%s could not be resolved", host.data);

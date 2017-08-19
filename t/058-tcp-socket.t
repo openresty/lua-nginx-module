@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 190;
+plan tests => repeat_each() * 193;
 
 our $HtmlDir = html_dir;
 
@@ -3690,3 +3690,40 @@ received: OK
 close: 1 nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 61: resolver send query failing immediately in connect()
+this case did not clear coctx->cleanup properly and would lead to memory invalid accesses.
+
+this test case requires the following iptables rule to work properly:
+
+sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
+
+--- config
+    location /t {
+        resolver 127.0.0.1:10086 ipv6=off;
+        resolver_timeout 10ms;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+
+            for i = 1, 3 do -- retry
+                local ok, err = sock:connect("www.google.com", 80)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                end
+            end
+
+            ngx.say("hello!")
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: www.google.com could not be resolved
+failed to connect: www.google.com could not be resolved
+failed to connect: www.google.com could not be resolved
+hello!
+--- error_log eval
+qr{\[alert\] .*? send\(\) failed \(\d+: Operation not permitted\) while resolving}
