@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 12);
+plan tests => repeat_each() * (blocks() * 4 + 11);
 
 our $HtmlDir = html_dir;
 
@@ -992,5 +992,34 @@ receive: nil timeout
 send failed: timeout
 close: 1 nil
 
+--- no_error_log
+[error]
+
+
+=== TEST 23: timeout overflow detection
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = pcall(sock.settimeout, sock, (2 ^ 31) - 1)
+            if not ok then
+                ngx.say("failed to set timeout: ", err)
+            else
+                ngx.say("settimeout: ok")
+            end
+
+            ok, err = pcall(sock.settimeout, sock, 2 ^ 31)
+            if not ok then
+                ngx.say("failed to set timeout: ", err)
+            else
+                ngx.say("settimeout: ok")
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+settimeout: ok
+failed to set timeout: lua tcp socket timeout 2147483648(?:\.\d+)? will overflow
 --- no_error_log
 [error]
