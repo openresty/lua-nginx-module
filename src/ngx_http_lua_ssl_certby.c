@@ -880,6 +880,30 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 #endif
 }
 
+int
+ngx_http_lua_ffi_ssl_client_addr(ngx_http_request_t *r, char **addr,
+    size_t *addrlen, char **err)
+{
+    ngx_ssl_conn_t *ssl_conn;
+    ngx_str_t      *addr_text;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    addr_text = &r->connection->addr_text;
+    *addr = (char *)addr_text->data;
+    *addrlen = addr_text->len;
+
+    return NGX_OK;
+}
 
 int
 ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
