@@ -898,6 +898,12 @@ ngx_http_lua_ffi_ssl_client_addr(ngx_http_request_t *r, char **addr,
         return NGX_ERROR;
     }
 
+#if (NGX_HAVE_UNIX_DOMAIN)
+    *addr = "";
+    *addrlen = 0;
+    return NGX_OK;
+#endif
+
     addr_text = &r->connection->addr_text;
     *addr = (char *) addr_text->data;
     *addrlen = addr_text->len;
