@@ -899,7 +899,7 @@ ngx_http_lua_ffi_ssl_client_addr(ngx_http_request_t *r, char **addr,
     }
 
     addr_text = &r->connection->addr_text;
-    *addr = (char *)addr_text->data;
+    *addr = (char *) addr_text->data;
     *addrlen = addr_text->len;
 
     return NGX_OK;
