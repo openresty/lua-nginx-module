@@ -1878,7 +1878,7 @@ qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
         ssl_certificate_by_lua_block { 
             local ssl = require "ngx.ssl"
             local addr, err = ssl.client_addr()
-            print("client ip: " .. addr) 
+            print("client addr: " .. addr) 
         }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
@@ -1959,11 +1959,12 @@ received: foo
 close: 1 nil
 
 --- error_log
-client ip: 127.0.0.1
+client addr: 127.0.0.1
 
 --- no_error_log
 [error]
 [alert]
+
 
 
 === TEST 23: get client_addr - unix domain socket
@@ -1975,7 +1976,7 @@ client ip: 127.0.0.1
         ssl_certificate_by_lua_block { 
             local ssl = require "ngx.ssl"
             local addr, err = ssl.client_addr()
-            print("client ip: " .. addr) 
+            print("client addr: " .. addr) 
         }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
@@ -2056,7 +2057,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-client ip: 
+client addr: 
 
 --- no_error_log
 [error]
