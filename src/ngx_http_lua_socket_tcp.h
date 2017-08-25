@@ -108,6 +108,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     unsigned                         ssl_verify:1;
     unsigned                         ssl_session_reuse:1;
 #endif
+    unsigned                         fulfill_partial:1;
 };
 
 
