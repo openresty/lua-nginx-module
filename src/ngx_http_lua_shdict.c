@@ -2983,6 +2983,33 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 
     return NGX_OK;
 }
+
+
+size_t
+ngx_http_lua_ffi_shdict_capacity(ngx_shm_zone_t *zone)
+{
+    return zone->shm.size;
+}
+
+
+#    if nginx_version >= 1011007
+size_t
+ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
+{
+    size_t                       bytes;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+
+    ctx = zone->data;
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+    bytes = ctx->shpool->pfree * ngx_pagesize;
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return bytes;
+}
+#    endif /* nginx_version >= 1011007 */
+
+
 #endif /* NGX_LUA_NO_FFI_API */
 
 
