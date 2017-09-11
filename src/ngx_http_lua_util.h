@@ -120,6 +120,13 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
 #endif
 
 
+static ngx_inline void
+ngx_http_lua_push_47bit_lightud(lua_State *L, void *ptr)
+{
+    lua_pushlightuserdata(L, (void *) ((uint64_t) ptr & ((1ULL << 47) - 1)));
+}
+
+
 #define ngx_http_lua_check_fake_request(L, r)                                \
     if ((r)->connection->fd == (ngx_socket_t) -1) {                          \
         return luaL_error(L, "API disabled in the current context");         \
