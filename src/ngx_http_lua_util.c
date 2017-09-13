@@ -3055,13 +3055,13 @@ ngx_http_lua_create_co_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 /* this is for callers other than the content handler */
 ngx_int_t
 ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
-    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx_uint_t nreqs)
 {
     ngx_int_t                        rc;
     ngx_http_lua_posted_thread_t    *pt;
 
     for ( ;; ) {
-        if (c->destroyed) {
+        if (c->destroyed || c->requests != nreqs) {
             return NGX_DONE;
         }
 
@@ -3461,6 +3461,7 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 {
     lua_State                   *vm;
     ngx_int_t                    rc;
+    ngx_uint_t                   nreqs;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
 
@@ -3480,6 +3481,7 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 
     c = r->connection;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, 0);
 
@@ -3487,12 +3489,12 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     if (ctx->entered_content_phase) {

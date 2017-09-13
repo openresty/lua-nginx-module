@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 4);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -570,5 +570,27 @@ hello, bah
 ["GET /t", "GET /t?foo"]
 --- response_body eval
 ["dummy", "dummy"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 25: pipelined requests
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.exec("@foo")
+        }
+    }
+
+    location @foo {
+        return 200;
+    }
+--- pipelined_requests eval
+["GET /t", "GET /t"]
+--- error_code eval
+[200, 200]
+--- response_body eval
+["", ""]
 --- no_error_log
 [error]
