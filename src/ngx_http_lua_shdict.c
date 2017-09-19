@@ -2898,6 +2898,7 @@ ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
 {
     uint32_t                     hash;
     uint64_t                     now;
+    uint64_t                     expires;
     ngx_int_t                    rc;
     ngx_time_t                  *tp;
     ngx_http_lua_shdict_ctx_t   *ctx;
@@ -2914,22 +2915,26 @@ ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
 
     rc = ngx_http_lua_shdict_peek(zone, hash, key, key_len, &sd);
 
-    ngx_shmtx_unlock(&ctx->shpool->mutex);
-
     if (rc == NGX_DECLINED) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
         return NGX_DECLINED;
     }
 
     /* rc == NGX_OK */
 
-    if (sd->expires == 0) {
+    expires = sd->expires;
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    if (expires == 0) {
         return 0;
     }
 
     tp = ngx_timeofday();
     now = (uint64_t) tp->sec * 1000 + tp->msec;
 
-    return sd->expires - now;
+    return expires - now;
 }
 
 
@@ -2954,9 +2959,9 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 
     rc = ngx_http_lua_shdict_peek(zone, hash, key, key_len, &sd);
 
-    ngx_shmtx_unlock(&ctx->shpool->mutex);
-
     if (rc == NGX_DECLINED) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
         return NGX_DECLINED;
     }
 
@@ -2970,6 +2975,8 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
     } else {
         sd->expires = 0;
     }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return NGX_OK;
 }
