@@ -1181,7 +1181,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
 lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-GCM-SHA384 TLSv1.2
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2
 --- no_error_log
 SSL reused session
 [error]
@@ -1261,7 +1261,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
 lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA 
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA SSLv3
 --- no_error_log
 SSL reused session
 [error]
@@ -1341,7 +1341,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
 lua ssl server name: "openresty.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA 
+SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA SSLv3
 --- no_error_log
 SSL reused session
 [error]
