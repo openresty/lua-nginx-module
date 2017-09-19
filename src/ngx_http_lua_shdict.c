@@ -2944,12 +2944,16 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 {
     uint32_t                     hash;
     ngx_int_t                    rc;
-    ngx_time_t                  *tp;
+    ngx_time_t                  *tp = NULL;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
 
     if (zone == NULL) {
         return NGX_ERROR;
+    }
+
+    if (exptime > 0) {
+        tp = ngx_timeofday();
     }
 
     ctx = zone->data;
@@ -2968,7 +2972,6 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
     /* rc == NGX_OK */
 
     if (exptime > 0) {
-        tp = ngx_timeofday();
         sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
                       + (uint64_t) exptime;
 
