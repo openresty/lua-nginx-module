@@ -3191,6 +3191,8 @@ Nginx API for Lua
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
 * [ngx.shared.DICT.rpop](#ngxshareddictrpop)
 * [ngx.shared.DICT.llen](#ngxshareddictllen)
+* [ngx.shared.DICT.ttl](#ngxshareddictttl)
+* [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
@@ -6198,6 +6200,8 @@ The resulting object `dict` has the following methods:
 * [lpop](#ngxshareddictlpop)
 * [rpop](#ngxshareddictrpop)
 * [llen](#ngxshareddictllen)
+* [ttl](#ngxshareddictttl)
+* [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
@@ -6538,6 +6542,82 @@ Returns the number of elements in the list named `key` in the shm-based dictiona
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
 
 This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.ttl
+-------------------
+**syntax:** *ttl, err = ngx.shared.DICT:ttl(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the remaining TTL (time-to-live in seconds) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the TTL as a number if the operation is successfully completed or `nil` and an error message otherwise.
+
+If the key does not exist (or has already expired), this method will return `nil` and the error string `"not found"`.
+
+The TTL is originally determined by the `exptime` argument of the [set](#ngxshareddictset), [add](#ngxshareddictadd), [replace](#ngxshareddictreplace) (and the likes) methods. It has a time resolution of `0.001` seconds. A value of `0` means that the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.5)
+
+ ngx.sleep(0.2)
+
+ local ttl, err = cats:ttl("Marry")
+ ngx.say(ttl) -- 0.3
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.expire
+----------------------
+**syntax:** *success, err = ngx.shared.DICT:expire(key, exptime)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Updates the `exptime` (in second) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns a boolean indicating success if the operation completes or `nil` and an error message otherwise.
+
+If the key does not exist, this method will return `nil` and the error string `"not found"`.
+
+The `exptime` argument has a resolution of `0.001` seconds. If `exptime` is `0`, then the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.1)
+
+ succ, err = cats:expire("Marry", 0.5)
+
+ ngx.sleep(0.2)
+
+ local val, err = cats:get("Marry")
+ ngx.say(val) -- "a nice cat"
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
