@@ -5196,6 +5196,8 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.lpop|lpop]]
 * [[#ngx.shared.DICT.rpop|rpop]]
 * [[#ngx.shared.DICT.llen|llen]]
+* [[#ngx.shared.DICT.ttl|ttl]]
+* [[#ngx.shared.DICT.expire|expire]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
 * [[#ngx.shared.DICT.get_keys|get_keys]]
@@ -5488,6 +5490,74 @@ Returns the number of elements in the list named <code>key</code> in the shm-bas
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 This feature was first introduced in the <code>v0.10.6</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.ttl ==
+'''syntax:''' ''ttl, err = ngx.shared.DICT:ttl(key)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''requires:''' <code>resty.core.shdict</code> or <code>resty.core</code>
+
+Retrieves the remaining TTL (time-to-live in seconds) of a key-value pair in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns the TTL as a number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
+
+If the key does not exist (or has already expired), this method will return <code>nil</code> and the error string <code>"not found"</code>.
+
+The TTL is originally determined by the <code>exptime</code> argument of the [[#ngx.shared.DICT.set|set]], [[#ngx.shared.DICT.add|add]], [[#ngx.shared.DICT.replace|replace]] (and the likes) methods. It has a time resolution of <code>0.001</code> seconds. A value of <code>0</code> means that the item will never expire.
+
+Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local succ, err = cats:set("Marry", "a nice cat", 0.5)
+
+    ngx.sleep(0.2)
+
+    local ttl, err = cats:ttl("Marry")
+    ngx.say(ttl) -- 0.3
+</geshi>
+
+This feature was first introduced in the <code>v0.10.11</code> release.
+
+'''Note:''' This method requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.expire ==
+'''syntax:''' ''success, err = ngx.shared.DICT:expire(key, exptime)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''requires:''' <code>resty.core.shdict</code> or <code>resty.core</code>
+
+Updates the <code>exptime</code> (in second) of a key-value pair in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]]. Returns a boolean indicating success if the operation completes or <code>nil</code> and an error message otherwise.
+
+If the key does not exist, this method will return <code>nil</code> and the error string <code>"not found"</code>.
+
+The <code>exptime</code> argument has a resolution of <code>0.001</code> seconds. If <code>exptime</code> is <code>0</code>, then the item will never expire.
+
+Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local succ, err = cats:set("Marry", "a nice cat", 0.1)
+
+    succ, err = cats:expire("Marry", 0.5)
+
+    ngx.sleep(0.2)
+
+    local val, err = cats:get("Marry")
+    ngx.say(val) -- "a nice cat"
+</geshi>
+
+This feature was first introduced in the <code>v0.10.11</code> release.
+
+'''Note:''' This method requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
