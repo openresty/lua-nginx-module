@@ -2279,7 +2279,7 @@ Note that: this directive is only allowed to used in '''http context''' from the
 
 '''context:''' ''http''
 
-'''phase:''' ''right-before-SSL-handshake''
+'''phase:''' ''right-after-SSL-handshake''
 
 Equivalent to [[#ssl_session_store_by_lua_block|ssl_session_store_by_lua_block]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code, or rather, the [[#Lua/LuaJIT bytecode support|Lua/LuaJIT bytecode]] to be executed.
 

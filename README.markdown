@@ -2694,7 +2694,7 @@ ssl_session_store_by_lua_file
 
 **context:** *http*
 
-**phase:** *right-before-SSL-handshake*
+**phase:** *right-after-SSL-handshake*
 
 Equivalent to [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or rather, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed.
 
