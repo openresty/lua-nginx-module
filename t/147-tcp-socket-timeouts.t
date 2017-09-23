@@ -560,7 +560,7 @@ failed to receive a line: closed []
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: timeout value too large
+failed to set timeouts: bad timeout value
 --- no_error_log
 [error]
 
@@ -591,7 +591,7 @@ failed to set timeouts: timeout value too large
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: timeout value too large
+failed to set timeouts: bad timeout value
 --- no_error_log
 [error]
 
@@ -622,6 +622,6 @@ failed to set timeouts: timeout value too large
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: timeout value too large
+failed to set timeouts: bad timeout value
 --- no_error_log
 [error]

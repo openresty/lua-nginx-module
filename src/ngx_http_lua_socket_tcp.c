@@ -2712,7 +2712,7 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
 
     timeout = (ngx_int_t) lua_tonumber(L, 2);
     if (timeout >> 31) {
-        return luaL_error(L, "timeout value too large");
+        return luaL_error(L, "bad timeout value");
     }
 
     lua_pushinteger(L, timeout);
@@ -2759,17 +2759,17 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
 
     connect_timeout = (ngx_int_t) lua_tonumber(L, 2);
     if (connect_timeout >> 31) {
-        return luaL_error(L, "timeout value too large");
+        return luaL_error(L, "bad timeout value");
     }
 
     send_timeout = (ngx_int_t) lua_tonumber(L, 3);
     if (send_timeout >> 31) {
-        return luaL_error(L, "timeout value too large");
+        return luaL_error(L, "bad timeout value");
     }
 
     read_timeout = (ngx_int_t) lua_tonumber(L, 4);
     if (read_timeout >> 31) {
-        return luaL_error(L, "timeout value too large");
+        return luaL_error(L, "bad timeout value");
     }
 
     lua_rawseti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
