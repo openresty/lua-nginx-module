@@ -590,7 +590,7 @@ ngx_http_lua_ssl_alpn_select(ngx_ssl_conn_t *ssl_conn,
 
     #if (NGX_DEBUG)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "SAE SSL ALPN selected: %*s", (size_t) *outlen, *out);
+                   "LUA SSL ALPN selected: %*s", (size_t) *outlen, *out);
     #endif
 
     return SSL_TLSEXT_ERR_OK;

@@ -975,11 +975,15 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
 #   ifdef TLSEXT_TYPE_application_layer_protocol_negotiation
         SSL_CTX_set_alpn_select_cb(sscf->ssl.ctx, ngx_http_lua_ssl_alpn_select, NULL);
+        ngx_log_error(NGX_LOG_DEBUG, cf->log, 0,
+                      "LUA set alpn callback");
 #   endif
 
 #   ifdef TLSEXT_TYPE_next_proto_neg
         SSL_CTX_set_next_protos_advertised_cb(sscf->ssl.ctx,
                                               ngx_http_lua_ssl_npn_advertised, NULL);
+        ngx_log_error(NGX_LOG_DEBUG, cf->log, 0,
+                      "LUA set npn callback");
 #   endif
 
 #endif
