@@ -560,7 +560,7 @@ failed to receive a line: closed []
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: lua tcp socket connect timeout 2147483648(?:\.\d+)? will overflow
+failed to set timeouts: timeout value too large
 --- no_error_log
 [error]
 
@@ -591,7 +591,7 @@ failed to set timeouts: lua tcp socket connect timeout 2147483648(?:\.\d+)? will
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: lua tcp socket send timeout 2147483648(?:\.\d+)? will overflow
+failed to set timeouts: timeout value too large
 --- no_error_log
 [error]
 
@@ -622,6 +622,6 @@ failed to set timeouts: lua tcp socket send timeout 2147483648(?:\.\d+)? will ov
 GET /t
 --- response_body_like
 settimeouts: ok
-failed to set timeouts: lua tcp socket read timeout 2147483648(?:\.\d+)? will overflow
+failed to set timeouts: timeout value too large
 --- no_error_log
 [error]
