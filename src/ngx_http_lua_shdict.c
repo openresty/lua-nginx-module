@@ -2984,6 +2984,7 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
     return NGX_OK;
 }
 
+
 #if nginx_version >= 1011007
 void
 ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
@@ -3000,6 +3001,7 @@ ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
     ctx = zone->data;
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
+
     slot_count = ngx_pagesize_shift - ctx->shpool->min_shift;
     stat = ctx->shpool->stats;
     slot_size = ctx->shpool->min_size;
