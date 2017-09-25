@@ -174,6 +174,7 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
 {
     lua_State                       *L;
     ngx_int_t                        rc;
+    ngx_uint_t                       reusable;
     ngx_connection_t                *c, *fc = NULL;
     ngx_http_request_t              *r = NULL;
     ngx_http_connection_t           *hc;
@@ -190,8 +191,18 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     dd("ssl sess_store handler, sess_store-ctx=%p", cctx);
 
     hc = c->data;
+    reusable = c->reusable;
+
+    if (reusable) {
+        ngx_reusable_connection(c, 0);
+    }
 
     fc = ngx_http_lua_create_fake_connection(NULL);
+
+    if (reusable) {
+        ngx_reusable_connection(c, 1);
+    }
+
     if (fc == NULL) {
         goto failed;
     }
