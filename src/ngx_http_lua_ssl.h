@@ -26,6 +26,7 @@ typedef struct {
 
     int                      exit_code;  /* exit code for openssl's
                                             set_cert_cb callback */
+    int                      http_version;
 
     unsigned                 done:1;
     unsigned                 aborted:1;

@@ -288,6 +288,11 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     cctx->session_id.len = len;
     cctx->entered_sess_fetch_handler = 1;
     cctx->done = 0;
+#if (NGX_HTTP_V2)
+    cctx->http_version = 2;
+#else
+    cctx->http_version = 0;
+#endif
 
     dd("setting cctx = %p", cctx);
 
