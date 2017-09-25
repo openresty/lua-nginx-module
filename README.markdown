@@ -3196,6 +3196,7 @@ Nginx API for Lua
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
+* [ngx.shared.DICT.stats](#ngxshareddictstats)
 * [ngx.socket.udp](#ngxsocketudp)
 * [udpsock:setpeername](#udpsocksetpeername)
 * [udpsock:send](#udpsocksend)
@@ -6205,6 +6206,7 @@ The resulting object `dict` has the following methods:
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
+* [stats](#ngxshareddictstats)
 
 All these methods are *atomic* operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same `lua_shared_dict` zone.
 
@@ -6666,6 +6668,34 @@ By default, only the first 1024 keys (if any) are returned. When the `<max_count
 **CAUTION** Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the `v0.7.3` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.stats
+---------------------
+**syntax:** *used, total = ngx.shared.DICT:stats()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieving the total used counts and total size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local used, total = cats:stats()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
