@@ -174,7 +174,7 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])
             local begin = ngx.now()
             local function f()
                 print("my lua timer handler")
-                ngx.sleep(0.02)
+                ngx.sleep(0.2)
                 print("elapsed: ", ngx.now() - begin)
             end
             local ok, err = ngx.timer.at(0.05, f)
@@ -199,7 +199,7 @@ delete thread 2
 --- response_body
 registered timer
 
---- wait: 0.12
+--- wait: 0.3
 --- no_error_log
 [error]
 [alert]
@@ -208,7 +208,7 @@ registered timer
 --- error_log eval
 [
 qr/\[lua\] .*? my lua timer handler/,
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:6[4-9]|7[0-6])/,
+qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.(?:1[4-9]|2[0-6]?)/,
 "lua ngx.timer expired",
 "http lua close fake http connection"
 ]
