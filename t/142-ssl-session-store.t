@@ -82,11 +82,16 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_session_store_by_lua_block:1: ssl session store by lua is running!
 
 --- no_error_log
 [error]
 [alert]
+--- grep_error_log eval: qr/ssl_session_store_by_lua_block:.*?,|\bssl session store: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log_out eval
+qr/^reusable connection: 0
+ssl session store: connection reusable: 0
+ssl_session_store_by_lua_block:1: ssl session store by lua is running!,
+/m,
 
 
 

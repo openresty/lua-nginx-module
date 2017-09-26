@@ -83,16 +83,21 @@ connected: 1
 ssl handshake: userdata
 close: 1 nil
 
---- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!/s
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 
 --- grep_error_log_out eval
 [
-'',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
-',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
-',
+qr/\A(?:reusable connection: [01]\n)+\z/s,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+/m,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+/m,
 ]
 
 --- no_error_log

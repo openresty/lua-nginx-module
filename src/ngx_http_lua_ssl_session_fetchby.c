@@ -191,7 +191,8 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "ssl session fetch: connection reusable: %ud", c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
@@ -223,6 +224,8 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     }
 
     dd("first time");
+
+    ngx_reusable_connection(c, 0);
 
     hc = c->data;
 

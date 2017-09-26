@@ -113,11 +113,17 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_certificate_by_lua:1: ssl cert by lua is running!
 
 --- no_error_log
 [error]
 [alert]
+--- grep_error_log eval: qr/ssl_certificate_by_lua:.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log_out eval
+qr/reusable connection: 1
+ssl cert: connection reusable: 1
+reusable connection: 0
+ssl_certificate_by_lua:1: ssl cert by lua is running!,
+/
 
 
 
