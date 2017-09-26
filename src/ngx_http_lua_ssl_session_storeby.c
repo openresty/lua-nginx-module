@@ -183,7 +183,7 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    dd("c = %p, reusable = %d", c, (int) c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 

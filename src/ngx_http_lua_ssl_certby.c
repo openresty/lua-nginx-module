@@ -197,7 +197,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    dd("c = %p, reusable = %d", c, (int) c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
@@ -219,6 +219,8 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     }
 
     dd("first time");
+
+    ngx_reusable_connection(c, 0);
 
     hc = c->data;
 
