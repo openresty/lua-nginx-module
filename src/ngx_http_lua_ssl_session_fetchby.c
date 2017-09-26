@@ -176,7 +176,6 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 {
     lua_State                       *L;
     ngx_int_t                        rc;
-    ngx_uint_t                       reusable;
     ngx_connection_t                *c, *fc = NULL;
     ngx_http_request_t              *r = NULL;
     ngx_pool_cleanup_t              *cln;
@@ -192,7 +191,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    dd("c = %p, reusable = %d", c, (int) c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
@@ -225,19 +224,11 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 
     dd("first time");
 
-    hc = c->data;
-    reusable = c->reusable;
+    ngx_reusable_connection(c, 0);
 
-    if (reusable) {
-        ngx_reusable_connection(c, 0);
-    }
+    hc = c->data;
 
     fc = ngx_http_lua_create_fake_connection(NULL);
-
-    if (reusable) {
-        ngx_reusable_connection(c, 1);
-    }
-
     if (fc == NULL) {
         goto failed;
     }
