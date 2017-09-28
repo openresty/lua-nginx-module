@@ -2988,36 +2988,17 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 #if nginx_version >= 1011007
 void
 ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
-    size_t *total_used, size_t *total_size)
+    size_t *free_page_bytes)
 {
     ngx_http_lua_shdict_ctx_t   *ctx;
-    ngx_slab_stat_t             *stat;
-    size_t                       slot_count;
-    size_t                       slot_size;
-    size_t                       i;
-    size_t                       sum_used = 0;
-    size_t                       sum_size = 0;
 
     ctx = zone->data;
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
 
-    slot_count = ngx_pagesize_shift - ctx->shpool->min_shift;
-    stat = ctx->shpool->stats;
-    slot_size = ctx->shpool->min_size;
-
-    for (i = 0; i < slot_count; i++) {
-        sum_used += stat->used;
-        sum_size += stat->used * slot_size;
-
-        stat++;
-        slot_size <<= 1;
-    }
+    *free_page_bytes = ctx->shpool->pfree * ngx_pagesize;
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
-
-    *total_used = sum_used;
-    *total_size = sum_size;
 }
 #endif /* nginx_version >= 1011007 */
 #endif /* NGX_LUA_NO_FFI_API */
