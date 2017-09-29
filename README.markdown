@@ -6681,7 +6681,7 @@ ngx.shared.DICT.capacity
 
 **requires:** `resty.core.shdict` or `resty.core`
 
-Retrieving the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
+Retrieves the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
 the [lua_shared_dict](#lua_shared_dict) directive.
 
 Example:
@@ -6712,7 +6712,7 @@ ngx.shared.DICT.free_space
 
 **requires:** `resty.core.shdict` or `resty.core`
 
-Retrieving the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+Retrieves the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
 
 **Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
 data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages are assigned to a slot if there
