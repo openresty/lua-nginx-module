@@ -6707,6 +6707,8 @@ This feature was first introduced in the `v0.10.11` release.
 
 **Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
+This feature requires at least nginx core version `1.11.7`.
+
 See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
