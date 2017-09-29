@@ -6719,7 +6719,7 @@ data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages ar
 is no room in already assigned pages for the slot.
 
 So even if the return value of the `free_space` method is zero, there may be room in already assigned pages, so
-you may successfully set a new key value pair to the shared dict without getting `true` for `forcieble` or
+you may successfully set a new key value pair to the shared dict without getting `true` for `forcible` or
 non nil `err` from the `ngx.shared.DICT.set`.
 
 On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
