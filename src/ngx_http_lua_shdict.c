@@ -2985,13 +2985,11 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 }
 
 
-#    if nginx_version >= 1011007
 size_t
 ngx_http_lua_ffi_shdict_capacity(ngx_shm_zone_t *zone)
 {
     return zone->shm.size;
 }
-#    endif /* nginx_version >= 1011007 */
 
 
 #    if nginx_version >= 1011007
