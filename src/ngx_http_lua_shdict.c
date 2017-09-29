@@ -2985,7 +2985,7 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 }
 
 
-#if nginx_version >= 1011007
+#    if nginx_version >= 1011007
 void
 ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
     size_t *free_page_bytes)
@@ -3000,7 +3000,9 @@ ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
 
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 }
-#endif /* nginx_version >= 1011007 */
+#    endif /* nginx_version >= 1011007 */
+
+
 #endif /* NGX_LUA_NO_FFI_API */
 
 
