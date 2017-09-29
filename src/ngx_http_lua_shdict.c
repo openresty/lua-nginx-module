@@ -2985,9 +2985,17 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 }
 
 
+void
+ngx_http_lua_ffi_shdict_capacity(ngx_shm_zone_t *zone,
+    size_t *capacity_bytes)
+{
+    *capacity_bytes = zone->shm.size;
+}
+
+
 #    if nginx_version >= 1011007
 void
-ngx_http_lua_ffi_shdict_get_stats(ngx_shm_zone_t *zone,
+ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone,
     size_t *free_page_bytes)
 {
     ngx_http_lua_shdict_ctx_t   *ctx;
