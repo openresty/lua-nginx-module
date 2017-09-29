@@ -6674,7 +6674,7 @@ This feature was first introduced in the `v0.7.3` release.
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.shared.DICT.capacity
----------------------
+------------------------
 **syntax:** *capacity_bytes = ngx.shared.DICT:capacity()*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
@@ -6683,7 +6683,6 @@ ngx.shared.DICT.capacity
 
 Retrieving the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
 the [lua_shared_dict](#lua_shared_dict) directive.
-
 
 Example:
 
@@ -6698,6 +6697,8 @@ Example:
 This feature was first introduced in the `v0.10.11` release.
 
 **Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `0.7.3`.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
