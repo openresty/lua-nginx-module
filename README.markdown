@@ -6673,13 +6673,25 @@ This feature was first introduced in the `v0.7.3` release.
 
 ngx.shared.DICT.stats
 ---------------------
-**syntax:** *used, total = ngx.shared.DICT:stats()*
+**syntax:** *free_page_bytes = ngx.shared.DICT:stats()*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
 **requires:** `resty.core.shdict` or `resty.core`
 
-Retrieving the total used counts and total size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+Retrieving the free pages size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+**Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
+data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages are assigned to a slot if there
+is no room in already assigned pages for the slot.
+
+So even if the return value of the `stats` method is zero, there may be room in already assigned pages, so
+you may successfully set a new key value pair to the shared dict without getting `true` for `forcieble` or
+non nil `err` from the `ngx.shared.DICT.set`.
+
+On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
+slot and there is no free page, you may get `true` for `forcible` or non nil `err` from the
+`ngx.shared.DICT.set` method.
 
 Example:
 
@@ -6687,8 +6699,8 @@ Example:
 
  require "resty.core"
 
- local cats = ngx.shared.cats
- local used, total = cats:stats()
+ local dogs = ngx.shared.cats
+ local free_page_bytes = dogs:stats()
 ```
 
 This feature was first introduced in the `v0.10.11` release.
