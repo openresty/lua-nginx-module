@@ -3196,6 +3196,8 @@ Nginx API for Lua
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
+* [ngx.shared.DICT.capacity](#ngxshareddictcapacity)
+* [ngx.shared.DICT.free_space](#ngxshareddictfree_space)
 * [ngx.socket.udp](#ngxsocketudp)
 * [udpsock:setpeername](#udpsocksetpeername)
 * [udpsock:send](#udpsocksend)
@@ -6205,6 +6207,8 @@ The resulting object `dict` has the following methods:
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
+* [capacity](#ngxshareddictcapacity)
+* [free_space](#ngxshareddictfree_space)
 
 All these methods are *atomic* operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same `lua_shared_dict` zone.
 
@@ -6666,6 +6670,79 @@ By default, only the first 1024 keys (if any) are returned. When the `<max_count
 **CAUTION** Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the `v0.7.3` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.capacity
+------------------------
+**syntax:** *capacity_bytes = ngx.shared.DICT:capacity()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
+the [lua_shared_dict](#lua_shared_dict) directive.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local capacity_bytes = cats:capacity()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `0.7.3`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.free_space
+--------------------------
+**syntax:** *free_page_bytes = ngx.shared.DICT:free_space()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+**Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
+data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages are assigned to a slot if there
+is no room in already assigned pages for the slot.
+
+So even if the return value of the `free_space` method is zero, there may be room in already assigned pages, so
+you may successfully set a new key value pair to the shared dict without getting `true` for `forcible` or
+non nil `err` from the `ngx.shared.DICT.set`.
+
+On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
+slot and there is no free page, you may get `true` for `forcible` or non nil `err` from the
+`ngx.shared.DICT.set` method.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local free_page_bytes = cats:free_space()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `1.11.7`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 

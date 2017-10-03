@@ -5201,6 +5201,8 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.flush_all|flush_all]]
 * [[#ngx.shared.DICT.flush_expired|flush_expired]]
 * [[#ngx.shared.DICT.get_keys|get_keys]]
+* [[#ngx.shared.DICT.capacity|capacity]]
+* [[#ngx.shared.DICT.free_space|free_space]]
 
 All these methods are ''atomic'' operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same <code>lua_shared_dict</code> zone.
 
@@ -5597,6 +5599,71 @@ By default, only the first 1024 keys (if any) are returned. When the <code><max_
 '''CAUTION''' Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the <code>v0.7.3</code> release.
+
+== ngx.shared.DICT.capacity ==
+'''syntax:''' ''capacity_bytes = ngx.shared.DICT:capacity()''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''requires:''' <code>resty.core.shdict</code> or <code>resty.core</code>
+
+Retrieves the capacity in bytes for the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] declared with
+the [[#lua_shared_dict|lua_shared_dict]] directive.
+
+Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local capacity_bytes = cats:capacity()
+</geshi>
+
+This feature was first introduced in the <code>v0.10.11</code> release.
+
+'''Note:''' This method requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
+
+This feature requires at least nginx core version <code>0.7.3</code>.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.free_space ==
+'''syntax:''' ''free_page_bytes = ngx.shared.DICT:free_space()''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''requires:''' <code>resty.core.shdict</code> or <code>resty.core</code>
+
+Retrieves the free page size in bytes for the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+'''Note:''' The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
+data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages are assigned to a slot if there
+is no room in already assigned pages for the slot.
+
+So even if the return value of the <code>free_space</code> method is zero, there may be room in already assigned pages, so
+you may successfully set a new key value pair to the shared dict without getting <code>true</code> for <code>forcible</code> or
+non nil <code>err</code> from the <code>ngx.shared.DICT.set</code>.
+
+On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
+slot and there is no free page, you may get <code>true</code> for <code>forcible</code> or non nil <code>err</code> from the
+<code>ngx.shared.DICT.set</code> method.
+
+Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local free_page_bytes = cats:free_space()
+</geshi>
+
+This feature was first introduced in the <code>v0.10.11</code> release.
+
+'''Note:''' This method requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
+
+This feature requires at least nginx core version <code>1.11.7</code>.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.socket.udp ==
 '''syntax:''' ''udpsock = ngx.socket.udp()''
