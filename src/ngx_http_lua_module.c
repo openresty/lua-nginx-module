@@ -1390,7 +1390,8 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
     }
 
     if (llcf->ssl_psk_identity.len && llcf->ssl_psk_key.len) {
-        dd("ssl psk identity: %.*s", (int) llcf->ssl_psk_identity.len, llcf->ssl_psk_identity.data);
+        dd("ssl psk identity: %.*s", (int) llcf->ssl_psk_identity.len,
+                                           llcf->ssl_psk_identity.data);
         dd("ssl psk key: %.*s", (int) llcf->ssl_psk_key.len,
                                       llcf->ssl_psk_key.data);
 

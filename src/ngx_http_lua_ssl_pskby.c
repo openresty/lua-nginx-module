@@ -435,11 +435,11 @@ new_ssl_psk_identity_hint:
 
     if (llcf->ssl_psk_identity.len) {
         if (llcf->ssl_psk_identity.len <= max_identity_len) {
-            ngx_snprintf((u_char *) identity, max_identity_len, "%V", 
+            ngx_snprintf((u_char *) identity, max_identity_len, "%V",
                          &llcf->ssl_psk_identity);
         }
         else {
-            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, 
+            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0,
                           "ssl_psk_identity.len: %i > max_identity_len: %i",
                           llcf->ssl_psk_identity.len, max_identity_len);
             goto failed;
