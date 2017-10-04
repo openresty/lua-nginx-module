@@ -881,7 +881,7 @@ lua ssl server name: "test.com"
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
 
-        lua_ssl_psk_identity psk_test_identity_hint;
+        ssl_psk_identity_hint psk_test_identity_hint;
 
         server_tokens off;
         location /foo {
