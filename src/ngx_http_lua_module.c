@@ -1072,7 +1072,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
      if (conf->srv.ssl_psk_identity_hint.len) {
          dd("ssl psk identity hint: %.*s", (int) conf->srv.ssl_psk_identity_hint.len, conf->srv.ssl_psk_identity_hint.data);
 
- #   if OPENSSL_VERSION_NUMBER >= 0x1000100fL
+ #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
          sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
          if (sscf == NULL || sscf->ssl.ctx == NULL) {
@@ -1121,7 +1121,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
 #else
 
-#   if OPENSSL_VERSION_NUMBER >= 0x1000100fL
+#   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
         SSL_CTX_set_psk_server_callback(sscf->ssl.ctx, ngx_http_lua_ssl_psk_server_handler);
 
@@ -1389,7 +1389,7 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
         dd("ssl psk identity: %.*s", (int) llcf->ssl_psk_identity.len, llcf->ssl_psk_identity.data);
         dd("ssl psk key: %.*s", (int) llcf->ssl_psk_key.len, llcf->ssl_psk_key.data);
 
-#   if OPENSSL_VERSION_NUMBER >= 0x1000100fL
+#   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
         SSL_CTX_set_psk_client_callback(llcf->ssl->ctx, ngx_http_lua_ssl_psk_client_handler);
 
