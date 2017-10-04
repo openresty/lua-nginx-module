@@ -894,7 +894,8 @@ lua ssl server name: "test.com"
     server_tokens off;
 
     location /t {
-        lua_ssl_ciphers PSK-AES256-CBC-SHA;
+        ssl_protocols TLSv1;
+        lua_ssl_ciphers PSK;
         lua_ssl_psk_identity psk_test_identity;
         lua_ssl_psk_key psk_test_key;
 
