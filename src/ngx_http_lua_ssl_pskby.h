@@ -29,9 +29,12 @@ char *ngx_http_lua_ssl_psk_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
 char *ngx_http_lua_ssl_psk_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
-unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn, const char *identity, unsigned char *psk, unsigned int max_psk_len);
+unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
+    const char *identity, unsigned char *psk, unsigned int max_psk_len);
 
-unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn, const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len);
+unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn,
+    const char *hint, char *identity, unsigned int max_identity_len,
+    unsigned char *psk, unsigned int max_psk_len);
 
 #endif  /* NGX_HTTP_SSL */
 

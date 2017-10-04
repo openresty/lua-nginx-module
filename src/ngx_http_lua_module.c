@@ -1070,7 +1070,9 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
      }
 
      if (conf->srv.ssl_psk_identity_hint.len) {
-         dd("ssl psk identity hint: %.*s", (int) conf->srv.ssl_psk_identity_hint.len, conf->srv.ssl_psk_identity_hint.data);
+         dd("ssl psk identity hint: %.*s", 
+             (int) conf->srv.ssl_psk_identity_hint.len,
+             conf->srv.ssl_psk_identity_hint.data);
 
  #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
@@ -1082,7 +1084,8 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
              return NGX_CONF_ERROR;
          }
 
-         if (SSL_CTX_use_psk_identity_hint(sscf->ssl.ctx, (const char *) conf->srv.ssl_psk_identity_hint.data) == 0) {
+         if (SSL_CTX_use_psk_identity_hint(sscf->ssl.ctx,
+               (const char *) conf->srv.ssl_psk_identity_hint.data) == 0) {
              ngx_ssl_error(NGX_LOG_EMERG, cf->log, 0,
                            "SSL_CTX_use_psk_identity_hint(\"%V\") failed",
                            &conf->srv.ssl_psk_identity_hint);
@@ -1123,7 +1126,8 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
 #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
-        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx, ngx_http_lua_ssl_psk_server_handler);
+        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx, 
+                                        ngx_http_lua_ssl_psk_server_handler);
 
 #   else
 
@@ -1387,11 +1391,13 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 
     if (llcf->ssl_psk_identity.len && llcf->ssl_psk_key.len) {
         dd("ssl psk identity: %.*s", (int) llcf->ssl_psk_identity.len, llcf->ssl_psk_identity.data);
-        dd("ssl psk key: %.*s", (int) llcf->ssl_psk_key.len, llcf->ssl_psk_key.data);
+        dd("ssl psk key: %.*s", (int) llcf->ssl_psk_key.len,
+                                      llcf->ssl_psk_key.data);
 
 #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
-        SSL_CTX_set_psk_client_callback(llcf->ssl->ctx, ngx_http_lua_ssl_psk_client_handler);
+        SSL_CTX_set_psk_client_callback(llcf->ssl->ctx,
+                                        ngx_http_lua_ssl_psk_client_handler);
 
 #   else
 

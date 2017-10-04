@@ -175,7 +175,8 @@ ngx_http_lua_ssl_psk_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
-unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn, const char *identity, unsigned char *psk, unsigned int max_psk_len)
+unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
+    const char *identity, unsigned char *psk, unsigned int max_psk_len)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -252,7 +253,8 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn, const
     }
 
     if (identity == NULL) {
-        ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "client did not send TLS-PSK identity");
+        ngx_ssl_error(NGX_LOG_ALERT, c->log, 0,
+            "client did not send TLS-PSK identity");
         goto failed;
     }
 
@@ -312,7 +314,9 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn, const
         }
 
         if (cctx->psk_key.len > (size_t) max_psk_len) {
-            ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "psk_key.len: %i > max_psk_len: %i", cctx->psk_key.len, max_psk_len);
+            ngx_ssl_error(NGX_LOG_ALERT, c->log, 0,
+                "psk_key.len: %i > max_psk_len: %i",
+                    cctx->psk_key.len, max_psk_len);
 
             return cctx->exit_code;
         }
@@ -341,7 +345,9 @@ failed:
 }
 
 
-unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn, const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len)
+unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn,
+    const char *hint, char *identity, unsigned int max_identity_len,
+    unsigned char *psk, unsigned int max_psk_len)
 {
     ngx_connection_t                *c;
     ngx_connection_t                *dc;  /* downstream connection */
@@ -382,7 +388,8 @@ unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn, const
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (llcf == NULL) {
-        ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, "getting module loc conf failed");
+        ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0,
+            "getting module loc conf failed");
         goto failed;
     }
 
@@ -411,11 +418,13 @@ unsigned int ngx_http_lua_ssl_psk_client_handler(ngx_ssl_conn_t *ssl_conn, const
 
 new_ssl_psk_identity_hint:
 
-            u->ssl_psk_identity_hint.data = ngx_alloc(hint_len + 1, ngx_cycle->log);
+            u->ssl_psk_identity_hint.data = ngx_alloc(hint_len + 1,
+                                                      ngx_cycle->log);
             if (u->ssl_psk_identity_hint.data == NULL) {
                 u->ssl_psk_identity_hint.len = 0;
 
-                ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, "could not allocate memory for ssl_psk_identity_hint");
+                ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0,
+                    "could not allocate memory for ssl_psk_identity_hint");
                 goto failed;
             }
 
@@ -426,15 +435,19 @@ new_ssl_psk_identity_hint:
 
     if (llcf->ssl_psk_identity.len) {
         if (llcf->ssl_psk_identity.len <= max_identity_len) {
-            ngx_snprintf((u_char *) identity, max_identity_len, "%V", &llcf->ssl_psk_identity);
+            ngx_snprintf((u_char *) identity, max_identity_len, "%V", 
+                         &llcf->ssl_psk_identity);
         }
         else {
-            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, "ssl_psk_identity.len: %i > max_identity_len: %i", llcf->ssl_psk_identity.len, max_identity_len);
+            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, 
+                          "ssl_psk_identity.len: %i > max_identity_len: %i",
+                          llcf->ssl_psk_identity.len, max_identity_len);
             goto failed;
         }
     }
     else {
-        ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, "no ssl_psk_identity defined");
+        ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0,
+                      "no ssl_psk_identity defined");
         goto failed;
     }
 
@@ -444,7 +457,9 @@ new_ssl_psk_identity_hint:
             return llcf->ssl_psk_key.len;
         }
         else {
-            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0, "ssl_psk_key.len: %i > max_psk_len: %i", llcf->ssl_psk_key.len, max_psk_len);
+            ngx_ssl_error(NGX_LOG_ALERT, dc->log, 0,
+                          "ssl_psk_key.len: %i > max_psk_len: %i",
+                          llcf->ssl_psk_key.len, max_psk_len);
             goto failed;
         }
     }

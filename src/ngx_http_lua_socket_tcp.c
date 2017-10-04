@@ -1633,7 +1633,8 @@ ngx_http_lua_socket_tcp_sslgetpskidhint(lua_State *L)
         return 1;
     }
 
-    lua_pushlstring(L, (char *) u->ssl_psk_identity_hint.data, u->ssl_psk_identity_hint.len);
+    lua_pushlstring(L, (char *) u->ssl_psk_identity_hint.data,
+                                u->ssl_psk_identity_hint.len);
     return 1;
 }
 
