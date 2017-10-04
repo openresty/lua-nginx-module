@@ -829,6 +829,9 @@ lua ssl server name: "test.com"
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
 
+        ssl_protocols TLSv1;
+        ssl_ciphers PSK;
+
         ssl_psk_by_lua_block {
             collectgarbage()
 
@@ -894,7 +897,6 @@ lua ssl server name: "test.com"
     server_tokens off;
 
     location /t {
-        ssl_protocols TLSv1;
         lua_ssl_ciphers PSK;
         lua_ssl_psk_identity psk_test_identity;
         lua_ssl_psk_key psk_test_key;
