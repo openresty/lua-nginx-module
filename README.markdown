@@ -2612,7 +2612,7 @@ at the same time:
  }
 ```
 
-See more complicated examples in the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
+See more complicated examples in the [ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md)
 Lua module's official documentation.
 
 Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does return call with an error code like `ngx.ERROR`.
