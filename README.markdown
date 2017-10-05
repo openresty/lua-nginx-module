@@ -2581,7 +2581,7 @@ ssl_psk_by_lua_block
 This directive runs user Lua code when NGINX is about to start the SSL handshake for the downstream
 SSL (https) connections using TLS-PSK and is meant for setting the TLS pre-shared key on a per-request basis.
 
-The [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
+The [ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md)
  Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
 library is particularly useful in this context. You can use the Lua API offered by this Lua module
 to set the TLS pre-shared key for the current SSL connection being initiated.
@@ -2603,7 +2603,25 @@ at the same time:
      ssl_psk_identity_hint Test_TLS-PSK_Identity_Hint;
 
      ssl_psk_by_lua_block {
-         print("About to initiate a new TLS-PSK handshake!")
+         local ssl = require "ngx.ssl"
+
+         local psk_identity, err = ssl.get_psk_identity()
+         if not psk_identity then
+             ngx.log(ngx.ERR, "Failed to get TLS-PSK Identity: ", err)
+             return ngx.ERROR
+         end
+
+         print("Client TLS-PSK Identity: ", psk_identity)
+
+         local psk_key = "psk_test_key"
+
+         local ok, err = ssl.set_psk_key(psk_key)
+         if not ok then
+             ngx.log(ngx.ERR, "Failed to set TLS-PSK key: ", err)
+             return ngx.ERROR
+         end
+
+         return ngx.OK
      }
 
      location / {
