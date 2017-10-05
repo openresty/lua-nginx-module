@@ -575,6 +575,14 @@ ngx_http_lua_ssl_psk_by_chunk(lua_State *L, ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    /* rc == 0 */
+    rc = (ngx_int_t) lua_tointeger(L, -1);
+    dd("got return value: %d", (int) rc);
+
+    if (rc != NGX_OK) {
+        rc = NGX_ERROR;
+    }
+
     lua_settop(L, 0); /*  clear remaining elems on stack */
     ngx_http_lua_finalize_request(r, rc);
     return rc;
