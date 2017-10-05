@@ -2591,7 +2591,7 @@ the SSL session via SSL session IDs or TLS session tickets for the current SSL c
 other words, this Lua handler only runs when NGINX has to initiate a full SSL handshake.
 
 Below is a trivial example using the
-[ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module
+[ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md) module
 at the same time:
 
 ```nginx
@@ -2615,8 +2615,7 @@ at the same time:
 See more complicated examples in the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md)
 Lua module's official documentation.
 
-Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
-[ngx.exit](#ngxexit) call with an error code like `ngx.ERROR`.
+Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does return call with an error code like `ngx.ERROR`.
 
 This Lua code execution context *does not* support yielding, so Lua APIs that may yield
 (like cosockets, sleeping, and "light threads")
