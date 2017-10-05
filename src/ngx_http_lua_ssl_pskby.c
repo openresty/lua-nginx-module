@@ -613,7 +613,7 @@ ngx_http_lua_ffi_ssl_set_psk_key(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    buf = ngx_palloc(r->pool, len);
+    buf = ngx_palloc(cctx->connection->pool, len);
     if (buf == NULL) {
         *err = "unable to alloc memory for buffer";
         return NGX_ERROR;
