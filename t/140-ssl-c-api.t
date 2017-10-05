@@ -879,6 +879,8 @@ lua ssl server name: "test.com"
                 ngx.log(ngx.ERR, "failed to set psk key: ", ffi.string(errmsg[0]))
                 return
             end
+
+            return ngx.OK
         }
 
         ssl_certificate ../../cert/test.crt;
