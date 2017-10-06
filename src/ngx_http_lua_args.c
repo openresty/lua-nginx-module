@@ -15,6 +15,7 @@
 #include "ngx_http_lua_util.h"
 
 
+
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
@@ -232,6 +233,7 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 }
 
 
+
 int
 ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
 {
@@ -359,6 +361,7 @@ ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
 
     return 1;
 }
+
 
 
 void
@@ -545,6 +548,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
     return i;
 }
 #endif /* NGX_LUA_NO_FFI_API */
+
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

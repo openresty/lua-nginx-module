@@ -16,10 +16,16 @@
 #include "ngx_http_lua_probe.h"
 
 
+
+
+
 typedef struct {
     void        **main_conf;
     void        **srv_conf;
+
+
     void        **loc_conf;
+
 
     lua_State    *co;
 
@@ -296,9 +302,15 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     tctx->premature = 0;
     tctx->co_ref = co_ref;
     tctx->co = co;
+
+
+
     tctx->main_conf = r->main_conf;
     tctx->srv_conf = r->srv_conf;
     tctx->loc_conf = r->loc_conf;
+
+
+
     tctx->lmcf = lmcf;
 
     tctx->pool = ngx_create_pool(128, ngx_cycle->log);
@@ -538,7 +550,13 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ngx_http_lua_timer_ctx_t         tctx;
     ngx_http_lua_main_conf_t        *lmcf;
-    ngx_http_core_loc_conf_t        *clcf;
+
+
+    ngx_http_core_loc_conf_t          *clcf;
+
+
+
+
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua ngx.timer expired");
@@ -561,7 +579,10 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     if (lmcf->running_timers >= lmcf->max_running_timers) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+
                       "%i lua_max_running_timers are not enough",
+
+
                       lmcf->max_running_timers);
         goto failed;
     }
@@ -577,10 +598,15 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     c->listening = tctx.listening;
     c->addr_text = tctx.client_addr_text;
 
+
+
+
     r = ngx_http_lua_create_fake_request(c);
     if (r == NULL) {
         goto failed;
     }
+
+
 
     r->main_conf = tctx.main_conf;
     r->srv_conf = tctx.srv_conf;
@@ -588,15 +614,22 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+
+
 #if defined(nginx_version) && nginx_version >= 1003014
 
 #   if nginx_version >= 1009000
 
+
     ngx_set_connection_log(r->connection, clcf->error_log);
+
+
 
 #   else
 
+
     ngx_http_set_connection_log(r->connection, clcf->error_log);
+
 
 #   endif
 
@@ -612,10 +645,15 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     dd("lmcf: %p", lmcf);
 
+
     ctx = ngx_http_lua_create_ctx(r);
+
+
     if (ctx == NULL) {
         goto failed;
     }
+
+
 
     if (tctx.vm_state) {
         ctx->vm_state = tctx.vm_state;

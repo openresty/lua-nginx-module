@@ -18,7 +18,9 @@
 #include "ngx_http_lua_probe.h"
 
 
+
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
+
 
 
 ngx_int_t
@@ -37,6 +39,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
@@ -48,6 +51,8 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_http_lua_reset_ctx(r, L, ctx);
     }
 
+
+
     ctx->entered_content_phase = 1;
 
     /*  {{{ new coroutine to handle request */
@@ -57,7 +62,10 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua: failed to create new coroutine to handle request");
 
+
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
+
+
     }
 
     /*  move code closure to new coroutine */
@@ -81,7 +89,10 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
+
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
+
+
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
@@ -94,12 +105,16 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
+
+
     if (llcf->check_client_abort) {
         r->read_event_handler = ngx_http_lua_rd_check_broken_connection;
+
 
 #if (NGX_HTTP_V2)
         if (!r->stream) {
 #endif
+
 
         rev = r->connection->read;
 
@@ -109,9 +124,11 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
             }
         }
 
+
 #if (NGX_HTTP_V2)
         }
 #endif
+
 
     } else {
         r->read_event_handler = ngx_http_block_reading;
@@ -145,8 +162,12 @@ ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
         return;
     }
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua ngx_http_lua_content_wev_handler");
+
     (void) ctx->resume_handler(r);
 }
+
 
 
 ngx_int_t
@@ -223,6 +244,9 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
 }
 
 
+
+
+
 /* post read callback for the content phase */
 static void
 ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
@@ -243,6 +267,7 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 }
 
 
+
 ngx_int_t
 ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 {
@@ -252,11 +277,14 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_str_t                        eval_src;
 
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (ngx_http_complex_value(r, &llcf->content_src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
+
+
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
                                            eval_src.len);
@@ -271,9 +299,11 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
                                      llcf->content_src_key);
     if (rc != NGX_OK) {
+
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
+
 
         return rc;
     }
@@ -292,7 +322,9 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
     ngx_int_t                    rc;
     ngx_http_lua_loc_conf_t     *llcf;
 
+
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
 
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
@@ -304,7 +336,10 @@ ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
                                        (const char *)
                                        llcf->content_chunkname);
     if (rc != NGX_OK) {
+
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
+
+
     }
 
     return ngx_http_lua_content_by_chunk(L, r);
@@ -371,7 +406,9 @@ done:
     }
 
     if (n == 0) {
+
         r->main->count++;
+
         return NGX_DONE;
     }
 

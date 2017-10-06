@@ -15,16 +15,9 @@
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_pcrefix.h"
-#include "ngx_http_lua_time.h"
-#include "ngx_http_lua_log.h"
-#include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_cache.h"
-#include "ngx_http_lua_headers.h"
-#include "ngx_http_lua_variable.h"
-#include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
-#include "ngx_http_lua_shdict.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_exception.h"
 #if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
@@ -71,7 +64,7 @@ ngx_int_t
 ngx_http_lua_log_handler(ngx_http_request_t *r)
 {
 #if (NGX_HTTP_LUA_HAVE_MALLOC_TRIM)
-    ngx_uint_t                   trim_cycle, trim_nreq;
+    ngx_uint_t                              trim_cycle, trim_nreq;
     ngx_http_lua_main_conf_t    *lmcf;
 #endif
     ngx_http_lua_loc_conf_t     *llcf;
@@ -113,12 +106,14 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
+
     if (llcf->log_handler == NULL) {
         dd("no log handler found");
         return NGX_DECLINED;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
 
     dd("ctx = %p", ctx);
 
@@ -132,15 +127,15 @@ ngx_http_lua_log_handler(ngx_http_request_t *r)
     ctx->context = NGX_HTTP_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
-    return llcf->log_handler(r);
+    return llcf->log_handler(ctx->request);
 }
 
 
 ngx_int_t
 ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
 {
-    lua_State                   *L;
-    ngx_int_t                    rc;
+    lua_State                              *L;
+    ngx_int_t                               rc;
     ngx_http_lua_loc_conf_t     *llcf;
 
     dd("log by lua inline");
@@ -166,11 +161,11 @@ ngx_http_lua_log_handler_inline(ngx_http_request_t *r)
 ngx_int_t
 ngx_http_lua_log_handler_file(ngx_http_request_t *r)
 {
-    lua_State                       *L;
-    ngx_int_t                        rc;
-    u_char                          *script_path;
+    lua_State                                  *L;
+    ngx_int_t                                   rc;
+    u_char                                     *script_path;
     ngx_http_lua_loc_conf_t         *llcf;
-    ngx_str_t                        eval_src;
+    ngx_str_t                                   eval_src;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -179,7 +174,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
     }
 
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
-                                           eval_src.len);
+                                                      eval_src.len);
 
     if (script_path == NULL) {
         return NGX_ERROR;
@@ -189,7 +184,7 @@ ngx_http_lua_log_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     llcf->log_src_key);
+                                                llcf->log_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
