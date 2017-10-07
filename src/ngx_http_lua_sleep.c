@@ -160,6 +160,8 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
         ctx->resume_handler = ngx_http_lua_sleep_resume;
         ngx_http_core_run_phases(r);
     }
+
+    ngx_http_run_posted_requests(c);
 }
 
 
