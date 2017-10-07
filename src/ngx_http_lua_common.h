@@ -349,7 +349,8 @@ typedef struct ngx_http_lua_loc_conf_s {
     ngx_http_complex_value_t     log_src;     /* log_by_lua inline script/script
                                                  file path */
 
-    u_char                                 *log_src_key; /* cached key for log_src */
+    u_char                                 *log_src_key;
+    /* cached key for log_src */
 
 
     ngx_http_complex_value_t header_filter_src;  /*  header_filter_by_lua

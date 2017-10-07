@@ -98,17 +98,18 @@ extern char ngx_http_lua_headers_metatable_key;
 
 
 
-#define ngx_http_lua_check_context(L, ctx, flags)                     \
-    if (!((ctx)->context & (flags))) {                                           \
-        return luaL_error(L, "API disabled in the context of %s",                \
-                          ngx_http_lua_context_name((ctx)->context)); \
+#define ngx_http_lua_check_context(L, ctx, flags)                   \
+    if (!((ctx)->context & (flags))) {                                         \
+        return luaL_error(L, "API disabled in the context of %s",              \
+                          ngx_http_lua_context_name((ctx)           \
+                                                                   ->context));\
     }
 
 
 #ifndef NGX_LUA_NO_FFI_API
 static ngx_inline ngx_int_t
-ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
-    u_char *err, size_t *errlen)
+ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx,
+    unsigned flags, u_char *err, size_t *errlen)
 {
     if (!(ctx->context & flags)) {
         *errlen = ngx_snprintf(err, *errlen,

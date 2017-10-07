@@ -2972,9 +2972,7 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     ngx_connection_t                *c;
     ngx_http_request_t              *r;
 
-
     ngx_http_log_ctx_t              *ctx;
-
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
@@ -2983,17 +2981,14 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
     r = u->request;
     c = r->connection;
 
-
     if (c->fd != (ngx_socket_t) -1) {  /* not a fake connection */
         ctx = c->log->data;
         ctx->current_request = r;
     }
 
-
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "stream lua tcp socket handler for \"%V?%V\", wev %d", (int) ev->write);
-
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "lua tcp socket handler for \"%V?%V\", wev %d", &r->uri,
+                   &r->args, (int) ev->write);
 
     if (ev->write) {
         u->write_event_handler(r, u);
@@ -3002,9 +2997,7 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
         u->read_event_handler(r, u);
     }
 
-
     ngx_http_run_posted_requests(c);
-
 }
 
 

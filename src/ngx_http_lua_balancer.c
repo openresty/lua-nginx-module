@@ -18,23 +18,23 @@
 
 struct ngx_http_lua_balancer_peer_data_s {
     /* the round robin data must be first */
-    ngx_http_upstream_rr_peer_data_t    rrp;
+    ngx_http_upstream_rr_peer_data_t  rrp;
 
-    ngx_http_lua_srv_conf_t            *conf;
-    ngx_http_request_t                                *request;
+    ngx_http_lua_srv_conf_t          *conf;
+    ngx_http_request_t                              *request;
 
-    ngx_uint_t                                     more_tries;
-    ngx_uint_t                                     total_tries;
+    ngx_uint_t                                   more_tries;
+    ngx_uint_t                                   total_tries;
 
-    struct sockaddr                               *sockaddr;
-    socklen_t                                      socklen;
+    struct sockaddr                             *sockaddr;
+    socklen_t                                    socklen;
 
-    ngx_str_t                                     *host;
-    in_port_t                                      port;
+    ngx_str_t                                   *host;
+    in_port_t                                    port;
 
-    int                                            last_peer_state;
+    int                                          last_peer_state;
 #if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
-    unsigned                                       cloned_upstream_conf;  /* :1 */
+    unsigned                                     cloned_upstream_conf;  /* :1 */
 #endif
 };
 
