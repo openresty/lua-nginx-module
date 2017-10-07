@@ -6715,7 +6715,7 @@ ngx.shared.DICT.free_space
 Retrieves the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
 
 **Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
-data size ranges like ~8, 9~16, 17~32, ..., 1025~2048, 2048~ bytes. And pages are assigned to a slot if there
+data size ranges like \~8, 9\~16, 17\~32, ..., 1025\~2048, 2048\~ bytes. And pages are assigned to a slot if there
 is no room in already assigned pages for the slot.
 
 So even if the return value of the `free_space` method is zero, there may be room in already assigned pages, so
