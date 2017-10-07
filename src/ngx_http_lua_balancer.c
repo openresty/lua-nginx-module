@@ -241,7 +241,8 @@ ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
 
     upstream->peer.data = &bp->rrp;
 
-    if (ngx_http_upstream_init_round_robin_peer(r, us) != NGX_OK) {        return NGX_ERROR;
+    if (ngx_http_upstream_init_round_robin_peer(r, us) != NGX_OK) {
+        return NGX_ERROR;
     }
 
     upstream->peer.get = ngx_http_lua_balancer_get_peer;
