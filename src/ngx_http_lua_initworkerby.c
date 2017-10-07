@@ -44,7 +44,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
 
     ngx_http_core_loc_conf_t      *clcf, *top_clcf;
-    ngx_http_lua_loc_conf_t       *llcf, *top_llcf;
+    ngx_http_lua_loc_conf_t       *top_llcf;
 
 
 
