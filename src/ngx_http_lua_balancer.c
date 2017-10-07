@@ -49,7 +49,7 @@ static ngx_int_t ngx_http_lua_balancer_init(ngx_conf_t *cf,
 
 
 
-static ngx_int_t ngx_stream_lua_balancer_init_peer(ngx_http_request_t *r,
+static ngx_int_t ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
     ngx_http_upstream_srv_conf_t *us);
 
 

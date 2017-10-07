@@ -2548,7 +2548,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* mimic ngx_http_upstream_init_request here */
 
-    clcf = ngx_http_get_module_loc_conf(r, ngx_stream_core_module);
+    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
     c = u->peer.connection;
 
     if (clcf->tcp_nodelay && c->tcp_nodelay == NGX_TCP_NODELAY_UNSET) {
