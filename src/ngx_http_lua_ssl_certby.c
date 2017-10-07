@@ -880,16 +880,17 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 #endif
 }
 
+
 int
 ngx_http_lua_ffi_ssl_raw_client_addr(ngx_http_request_t *r, char **addr,
     size_t *addrlen, int *addrtype, char **err)
 {
 #if (NGX_HAVE_UNIX_DOMAIN)
-    struct sockaddr_un *saun;
+    struct sockaddr_un  *saun;
 #endif
-    ngx_ssl_conn_t *ssl_conn;
-    ngx_connection_t *c;
-    struct sockaddr_in *sin;
+    ngx_ssl_conn_t      *ssl_conn;
+    ngx_connection_t    *c;
+    struct sockaddr_in  *sin;
 #if (NGX_HAVE_INET6)
     struct sockaddr_in6 *sin6;
 #endif
@@ -919,14 +920,14 @@ ngx_http_lua_ffi_ssl_raw_client_addr(ngx_http_request_t *r, char **addr,
         break;
 #endif
 
-# if(NGX_HAVE_UNIX_DOMAIN)
+# if (NGX_HAVE_UNIX_DOMAIN)
     case AF_UNIX:
         saun = (struct sockaddr_un *)c->sockaddr;
-        /* on Linux sockaddr might not include sun_path at all */ 
-        if(c->socklen <= (socklen_t) offsetof(struct sockaddr_un, sun_path))
-        {
+        /* on Linux sockaddr might not include sun_path at all */
+        if (c->socklen <= (socklen_t) offsetof(struct sockaddr_un, sun_path)) {
             *addr = "";
             *addrlen = 0;
+
         } else {
             *addr = saun->sun_path;
             *addrlen = ngx_strlen(saun->sun_path);
@@ -946,6 +947,7 @@ ngx_http_lua_ffi_ssl_raw_client_addr(ngx_http_request_t *r, char **addr,
 
     return NGX_OK;
 }
+
 
 int
 ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
