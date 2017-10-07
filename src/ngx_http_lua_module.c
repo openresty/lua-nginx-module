@@ -1070,7 +1070,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
      }
 
      if (conf->srv.ssl_psk_identity_hint.len) {
-         dd("ssl psk identity hint: %.*s", 
+         dd("ssl psk identity hint: %.*s",
              (int) conf->srv.ssl_psk_identity_hint.len,
              conf->srv.ssl_psk_identity_hint.data);
 
@@ -1126,7 +1126,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
 #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
 
-        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx, 
+        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx,
                                         ngx_http_lua_ssl_psk_server_handler);
 
 #   else

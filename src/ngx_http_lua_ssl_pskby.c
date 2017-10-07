@@ -2,7 +2,7 @@
 /*
  * Based on ngx_http_lua_ssl_certby.c and ngx_http_lua_ssl_session_storeby.c
  * by Yichun Zhang (agentzh)
- * 
+ *
  * Author: Tuure Vartiainen (vartiait)
  */
 
@@ -593,7 +593,7 @@ ngx_http_lua_ssl_psk_by_chunk(lua_State *L, ngx_http_request_t *r)
 
 /* set psk key from key to lua context. */
 int
-ngx_http_lua_ffi_ssl_set_psk_key(ngx_http_request_t *r, 
+ngx_http_lua_ffi_ssl_set_psk_key(ngx_http_request_t *r,
     const char *key, size_t len, char **err)
 {
     u_char                          *buf;

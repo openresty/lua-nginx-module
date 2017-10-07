@@ -2,7 +2,7 @@
 /*
  * Based on ngx_http_lua_ssl_certby.h and ngx_http_lua_ssl_session_storeby.h
  * by Yichun Zhang (agentzh)
- * 
+ *
  * Author: Tuure Vartiainen (vartiait)
  */
 
