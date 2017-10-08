@@ -1871,6 +1871,8 @@ qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
 
 === TEST 22: get raw_client_addr - IPv4
 --- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
     server {
         listen 127.0.0.1:12345 ssl;
         server_name   test.com;
@@ -1880,8 +1882,8 @@ qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
             local byte = string.byte
             local addr, addrtype, err = ssl.raw_client_addr()
             local ip = string.format("%d.%d.%d.%d", byte(addr, 1), byte(addr, 2),
-                       byte(addr, 3), byte(addr, 4)
-            print("client ip: " .. ip) 
+                       byte(addr, 3), byte(addr, 4))
+            print("client ip: ", ip)
         }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
@@ -1972,6 +1974,8 @@ client ip: 127.0.0.1
 
 === TEST 23: get raw_client_addr - unix domain socket
 --- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
@@ -1979,7 +1983,7 @@ client ip: 127.0.0.1
         ssl_certificate_by_lua_block { 
             local ssl = require "ngx.ssl"
             local addr, addrtyp, err = ssl.raw_client_addr()
-            print("client socket file: " .. addr) 
+            print("client socket file: ", addr)
         }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
