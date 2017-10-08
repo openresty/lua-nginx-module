@@ -1010,6 +1010,8 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
         SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
 
+        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx,
+                                        ngx_http_lua_ssl_psk_server_handler);
 #   else
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,

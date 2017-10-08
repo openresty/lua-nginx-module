@@ -263,6 +263,7 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
     cctx->request = r;
     cctx->psk_identity.data = (u_char *) identity;
     cctx->psk_identity.len = ngx_strlen(identity);
+    cctx->entered_psk_handler = 1;
     cctx->done = 0;
 
     dd("setting cctx = %p", cctx);
@@ -281,7 +282,7 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
 
     c->log->action = "setting SSL PSK by lua";
 
-    rc = lscf->srv.ssl_psk_handler(r, lscf, L);
+    rc = lscf->srv.ssl_cert_handler(r, lscf, L);
 
     if (rc >= NGX_OK || rc == NGX_ERROR) {
         cctx->done = 1;
@@ -291,26 +292,26 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
         }
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua_psk_by_lua: handler return value: %i, "
+                       "lua_certificate_by_lua: handler return value: %i, "
                        "psk server cb exit code: %d", rc, cctx->exit_code);
 
         c->log->action = "SSL handshaking";
 
-        if (rc == NGX_ERROR) {
+        if (rc == NGX_ERROR || cctx->exit_code != NGX_OK) {
             /* 0 == unknown_psk_identity */
-            return cctx->exit_code;
+            return 0;
         }
 
         if (cctx->psk_key.data == NULL) {
             ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "psk_key.data == NULL");
 
-            return cctx->exit_code;
+            return 0;
         }
 
         if (cctx->psk_key.len == 0) {
             ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "psk_key.len == 0");
 
-            return cctx->exit_code;
+            return 0;
         }
 
         if (cctx->psk_key.len > (size_t) max_psk_len) {
@@ -318,14 +319,13 @@ unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
                 "psk_key.len: %i > max_psk_len: %i",
                     cctx->psk_key.len, max_psk_len);
 
-            return cctx->exit_code;
+            return 0;
         }
 
         ngx_memcpy(psk, cctx->psk_key.data, cctx->psk_key.len);
-        cctx->exit_code = cctx->psk_key.len;
 
         /* return length of psk key */
-        return cctx->exit_code;
+        return cctx->psk_key.len;
     }
 
     /* impossible to reach here */

@@ -35,6 +35,7 @@ typedef struct {
 
     unsigned                 entered_cert_handler:1;
     unsigned                 entered_sess_fetch_handler:1;
+    unsigned                 entered_psk_handler:1;
 } ngx_http_lua_ssl_ctx_t;
 
 
