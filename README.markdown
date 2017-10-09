@@ -1076,8 +1076,6 @@ Directives
 * [lua_need_request_body](#lua_need_request_body)
 * [ssl_certificate_by_lua_block](#ssl_certificate_by_lua_block)
 * [ssl_certificate_by_lua_file](#ssl_certificate_by_lua_file)
-* [ssl_psk_by_lua_block](#ssl_psk_by_lua_block)
-* [ssl_psk_by_lua_file](#ssl_psk_by_lua_file)
 * [ssl_psk_identity_hint](#ssl_psk_identity_hint)
 * [ssl_session_fetch_by_lua_block](#ssl_session_fetch_by_lua_block)
 * [ssl_session_fetch_by_lua_file](#ssl_session_fetch_by_lua_file)
@@ -2566,109 +2564,6 @@ Equivalent to [ssl_certificate_by_lua_block](#ssl_certificate_by_lua_block), exc
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 This directive was first introduced in the `v0.10.0` release.
-
-[Back to TOC](#directives)
-
-ssl_psk_by_lua_block
---------------------
-
-**syntax:** *ssl_psk_by_lua_block { lua-script }*
-
-**context:** *server*
-
-**phase:** *right-before-SSL-handshake*
-
-This directive runs user Lua code when NGINX is about to start the SSL handshake for the downstream
-SSL (https) connections using TLS-PSK and is meant for setting the TLS pre-shared key on a per-request basis.
-
-The [ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md)
- Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
-library is particularly useful in this context. You can use the Lua API offered by this Lua module
-to set the TLS pre-shared key for the current SSL connection being initiated.
-
-This Lua handler does not run at all, however, when NGINX/OpenSSL successfully resumes
-the SSL session via SSL session IDs or TLS session tickets for the current SSL connection. In
-other words, this Lua handler only runs when NGINX has to initiate a full SSL handshake.
-
-Below is a trivial example using the
-[ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md) module
-at the same time:
-
-```nginx
-
- server {
-     listen 443 ssl;
-     server_name   test.com;
-
-     ssl_psk_identity_hint Test_TLS-PSK_Identity_Hint;
-
-     ssl_psk_by_lua_block {
-         local ssl = require "ngx.ssl"
-
-         local psk_identity, err = ssl.get_psk_identity()
-         if not psk_identity then
-             ngx.log(ngx.ERR, "Failed to get TLS-PSK Identity: ", err)
-             return ngx.ERROR
-         end
-
-         print("Client TLS-PSK Identity: ", psk_identity)
-
-         local psk_key = "psk_test_key"
-
-         local ok, err = ssl.set_psk_key(psk_key)
-         if not ok then
-             ngx.log(ngx.ERR, "Failed to set TLS-PSK key: ", err)
-             return ngx.ERROR
-         end
-
-         return ngx.OK
-     }
-
-     location / {
-         root html;
-     }
- }
-```
-
-See more complicated examples in the [ngx.ssl](https://github.com/vartiait/lua-resty-core/blob/ssl-psk/lib/ngx/ssl.md)
-Lua module's official documentation.
-
-Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does return call with an error code like `ngx.ERROR`.
-
-This Lua code execution context *does not* support yielding, so Lua APIs that may yield
-(like cosockets, sleeping, and "light threads")
-are disabled in this context.
-
-Note, however, you still need to configure the [ssl_certificate](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate) and
-[ssl_certificate_key](http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key)
-directives even though you will not use this static certificate and private key at all. This is
-because the NGINX core requires their appearance otherwise you are seeing the following error
-while starting NGINX:
-
-
-    nginx: [emerg] no ssl configured for the server
-
-
-Furthermore, one needs at least OpenSSL 1.0.0 for this directive to work.
-
-This directive was first introduced in the `v0.XX.YY` release.
-
-[Back to TOC](#directives)
-
-ssl_psk_by_lua_file
--------------------
-
-**syntax:** *ssl_psk_by_lua_file &lt;path-to-lua-script-file&gt;*
-
-**context:** *server*
-
-**phase:** *right-before-SSL-handshake*
-
-Equivalent to [ssl_psk_by_lua_block](#ssl_psk_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed.
-
-When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
-
-This directive was first introduced in the `v0.XX.YY` release.
 
 [Back to TOC](#directives)
 
