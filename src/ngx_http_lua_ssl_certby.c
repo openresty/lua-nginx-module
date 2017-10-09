@@ -535,8 +535,10 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_OK) {
-        /* do nothing */
-
+        /* copy ctx->exit_code to cctx->exit_code */
+        if (ctx->exited) {
+            cctx->exit_code = ctx->exit_code;
+        }
     } else if (rc == NGX_AGAIN) {
         rc = ngx_http_lua_content_run_posted_threads(L, r, ctx, 0);
 
