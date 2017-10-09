@@ -832,7 +832,7 @@ lua ssl server name: "test.com"
         ssl_protocols TLSv1;
         ssl_ciphers PSK;
 
-        ssl_psk_by_lua_block {
+        ssl_certificate_by_lua_block {
             collectgarbage()
 
             local ffi = require "ffi"
@@ -849,7 +849,12 @@ lua ssl server name: "test.com"
             local len = ffi.C.ngx_http_lua_ffi_ssl_get_psk_identity_size(r, errmsg)
 
             if len < 0 then
-                ngx.log(ngx.ERR, "failed to get psk identity size: ", ffi.string(errmsg[0]))
+                local error_msg = ffi.string(errmsg[0])
+                if error_msg and error_msg == "not in psk context" then
+                    -- handler was not called by TLS-PSK callback
+                    return
+                end
+                ngx.log(ngx.ERR, "failed to get psk identity size: ", error_msg)
                 return
             end
 
