@@ -28,151 +28,6 @@
 
 static u_char *ngx_http_lua_log_ssl_psk_error(ngx_log_t *log, u_char *buf,
     size_t len);
-static ngx_int_t ngx_http_lua_ssl_psk_by_chunk(lua_State *L,
-    ngx_http_request_t *r);
-
-
-ngx_int_t
-ngx_http_lua_ssl_psk_server_handler_file(ngx_http_request_t *r,
-    ngx_http_lua_srv_conf_t *lscf, lua_State *L)
-{
-    ngx_int_t           rc;
-
-    rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
-                                     lscf->srv.ssl_psk_src.data,
-                                     lscf->srv.ssl_psk_src_key);
-    if (rc != NGX_OK) {
-        return rc;
-    }
-
-    /*  make sure we have a valid code chunk */
-    ngx_http_lua_assert(lua_isfunction(L, -1));
-
-    return ngx_http_lua_ssl_psk_by_chunk(L, r);
-}
-
-
-ngx_int_t
-ngx_http_lua_ssl_psk_server_handler_inline(ngx_http_request_t *r,
-    ngx_http_lua_srv_conf_t *lscf, lua_State *L)
-{
-    ngx_int_t           rc;
-
-    rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       lscf->srv.ssl_psk_src.data,
-                                       lscf->srv.ssl_psk_src.len,
-                                       lscf->srv.ssl_psk_src_key,
-                                       "=ssl_psk_by_lua");
-    if (rc != NGX_OK) {
-        return rc;
-    }
-
-    /*  make sure we have a valid code chunk */
-    ngx_http_lua_assert(lua_isfunction(L, -1));
-
-    return ngx_http_lua_ssl_psk_by_chunk(L, r);
-}
-
-
-char *
-ngx_http_lua_ssl_psk_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
-{
-    char        *rv;
-    ngx_conf_t   save;
-
-    save = *cf;
-    cf->handler = ngx_http_lua_ssl_psk_by_lua;
-    cf->handler_conf = conf;
-
-    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
-
-    *cf = save;
-
-    return rv;
-}
-
-
-char *
-ngx_http_lua_ssl_psk_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
-{
-#if OPENSSL_VERSION_NUMBER < 0x1000100fL
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "at least OpenSSL 1.0.1 required but found "
-                  OPENSSL_VERSION_TEXT);
-
-    return NGX_CONF_ERROR;
-
-#else
-
-    u_char                      *p;
-    u_char                      *name;
-    ngx_str_t                   *value;
-    ngx_http_lua_srv_conf_t    *lscf = conf;
-
-    /*  must specify a concrete handler */
-    if (cmd->post == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    if (lscf->srv.ssl_psk_handler) {
-        return "is duplicate";
-    }
-
-    if (ngx_http_lua_ssl_init(cf->log) != NGX_OK) {
-        return NGX_CONF_ERROR;
-    }
-
-    value = cf->args->elts;
-
-    lscf->srv.ssl_psk_handler = (ngx_http_lua_srv_conf_handler_pt) cmd->post;
-
-    if (cmd->post == ngx_http_lua_ssl_psk_server_handler_file) {
-        /* Lua code in an external file */
-
-        name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
-                                        value[1].len);
-        if (name == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_psk_src.data = name;
-        lscf->srv.ssl_psk_src.len = ngx_strlen(name);
-
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
-        if (p == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_psk_src_key = p;
-
-        p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
-
-    } else {
-        /* inlined Lua code */
-
-        lscf->srv.ssl_psk_src = value[1];
-
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
-        if (p == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_psk_src_key = p;
-
-        p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
-    }
-
-    return NGX_CONF_OK;
-
-#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
-}
 
 
 unsigned int ngx_http_lua_ssl_psk_server_handler(ngx_ssl_conn_t *ssl_conn,
@@ -510,85 +365,6 @@ ngx_http_lua_log_ssl_psk_error(ngx_log_t *log, u_char *buf, size_t len)
 }
 
 
-static ngx_int_t
-ngx_http_lua_ssl_psk_by_chunk(lua_State *L, ngx_http_request_t *r)
-{
-    size_t                   len;
-    u_char                  *err_msg;
-    ngx_int_t                rc;
-    ngx_http_lua_ctx_t      *ctx;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-
-    if (ctx == NULL) {
-        ctx = ngx_http_lua_create_ctx(r);
-        if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-    } else {
-        dd("reset ctx");
-        ngx_http_lua_reset_ctx(r, L, ctx);
-    }
-
-    ctx->entered_content_phase = 1;
-    ctx->context = NGX_HTTP_LUA_CONTEXT_SSL_PSK;
-
-    /* init nginx context in Lua VM */
-    ngx_http_lua_set_req(L, r);
-    ngx_http_lua_create_new_globals_table(L, 0 /* narr */, 1 /* nrec */);
-
-    /*  {{{ make new env inheriting main thread's globals table */
-    lua_createtable(L, 0, 1 /* nrec */);   /* the metatable for the new env */
-    ngx_http_lua_get_globals_table(L);
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);    /*  setmetatable({}, {__index = _G}) */
-    /*  }}} */
-
-    lua_setfenv(L, -2);    /*  set new running env for the code closure */
-
-    lua_pushcfunction(L, ngx_http_lua_traceback);
-    lua_insert(L, 1);  /* put it under chunk and args */
-
-    /*  protected call user code */
-    rc = lua_pcall(L, 0, 1, 1);
-
-    lua_remove(L, 1);  /* remove traceback function */
-
-    dd("rc == %d", (int) rc);
-
-    if (rc != 0) {
-        /*  error occured when running loaded code */
-        err_msg = (u_char *) lua_tolstring(L, -1, &len);
-
-        if (err_msg == NULL) {
-            err_msg = (u_char *) "unknown reason";
-            len = sizeof("unknown reason") - 1;
-        }
-
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to run ssl_psk_by_lua*: %*s", len, err_msg);
-
-        lua_settop(L, 0); /*  clear remaining elems on stack */
-        ngx_http_lua_finalize_request(r, rc);
-
-        return NGX_ERROR;
-    }
-
-    /* rc == 0 */
-    rc = (ngx_int_t) lua_tointeger(L, -1);
-    dd("got return value: %d", (int) rc);
-
-    if (rc != NGX_OK) {
-        rc = NGX_ERROR;
-    }
-
-    lua_settop(L, 0); /*  clear remaining elems on stack */
-    ngx_http_lua_finalize_request(r, rc);
-    return rc;
-}
-
-
 #ifndef NGX_LUA_NO_FFI_API
 
 /* set psk key from key to lua context. */
@@ -667,6 +443,11 @@ ngx_http_lua_ffi_ssl_get_psk_identity(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+    if(!cctx->entered_psk_handler) {
+        *err = "not in psk context";
+        return NGX_ERROR;
+    }
+
     id = cctx->psk_identity.data;
     if (id == NULL) {
         *err = "uninitialized psk identity in lua context";
@@ -711,6 +492,11 @@ ngx_http_lua_ffi_ssl_get_psk_identity_size(ngx_http_request_t *r,
     cctx = ngx_http_lua_ssl_get_ctx(ssl_conn);
     if (cctx == NULL) {
         *err = "bad lua context";
+        return NGX_ERROR;
+    }
+
+    if(!cctx->entered_psk_handler) {
+        *err = "not in psk context";
         return NGX_ERROR;
     }
 

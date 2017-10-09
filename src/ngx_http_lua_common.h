@@ -250,9 +250,6 @@ union ngx_http_lua_srv_conf_u {
         ngx_str_t                            ssl_sess_fetch_src;
         u_char                              *ssl_sess_fetch_src_key;
 
-        ngx_http_lua_srv_conf_handler_pt     ssl_psk_handler;
-        ngx_str_t                            ssl_psk_src;
-        u_char                              *ssl_psk_src_key;
         ngx_str_t                            ssl_psk_identity_hint;
     } srv;
 #endif

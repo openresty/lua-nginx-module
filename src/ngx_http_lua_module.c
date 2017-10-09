@@ -565,20 +565,6 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_srv_conf_t, srv.ssl_psk_identity_hint),
       NULL },
 
-    { ngx_string("ssl_psk_by_lua_block"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
-      ngx_http_lua_ssl_psk_by_lua_block,
-      NGX_HTTP_SRV_CONF_OFFSET,
-      0,
-      (void *) ngx_http_lua_ssl_psk_server_handler_inline },
-
-    { ngx_string("ssl_psk_by_lua_file"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-      ngx_http_lua_ssl_psk_by_lua,
-      NGX_HTTP_SRV_CONF_OFFSET,
-      0,
-      (void *) ngx_http_lua_ssl_psk_server_handler_file },
-
     { ngx_string("lua_ssl_psk_identity"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
@@ -958,9 +944,6 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
      *      lscf->srv.ssl_session_fetch_src_key = NULL;
      *
-     *      lscf->srv.ssl_psk_handler = NULL;
-     *      lscf->srv.ssl_psk_src = { 0, NULL };
-     *      lscf->srv.ssl_psk_src_key = NULL;
      *      lscf->srv.ssl_psk_identity_hint = { 0, NULL };
      *
      *      lscf->balancer.handler = NULL;
@@ -1102,45 +1085,6 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
  #   endif
      }
-
-    if (conf->srv.ssl_psk_src.len == 0) {
-        conf->srv.ssl_psk_src = prev->srv.ssl_psk_src;
-        conf->srv.ssl_psk_src_key = prev->srv.ssl_psk_src_key;
-        conf->srv.ssl_psk_handler = prev->srv.ssl_psk_handler;
-    }
-
-    if (conf->srv.ssl_psk_src.len) {
-        sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
-        if (sscf == NULL || sscf->ssl.ctx == NULL) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                          "no ssl configured for the server");
-
-            return NGX_CONF_ERROR;
-        }
-
-#ifdef LIBRESSL_VERSION_NUMBER
-
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "LibreSSL does not support ssl_psk_by_lua*");
-        return NGX_CONF_ERROR;
-
-#else
-
-#   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
-
-        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx,
-                                        ngx_http_lua_ssl_psk_server_handler);
-
-#   else
-
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "OpenSSL too old to support ssl_psk_by_lua*");
-        return NGX_CONF_ERROR;
-
-#   endif
-
-#endif
-    }
 
 #endif  /* NGX_HTTP_SSL */
     return NGX_CONF_OK;
