@@ -23,6 +23,7 @@ force=$2
             #--with-http_spdy_module \
 
 time ngx-build $force $version \
+            --with-pcre-jit \
             --with-ipv6 \
             --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_v2_module \

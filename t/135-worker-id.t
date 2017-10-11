@@ -54,7 +54,7 @@ GET /lua
         content_by_lua_block {
             local counters = ngx.shared.counters
             local ok, c
-            for i = 1, 45 do
+            for i = 1, 100 do
                 c = counters:get("c")
                 if c >= 4 then
                     ok = true

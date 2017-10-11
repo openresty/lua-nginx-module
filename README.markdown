@@ -62,7 +62,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.8](https://github.com/openresty/lua-nginx-module/tags) released on 8 April 2017.
+This document describes ngx_lua [v0.10.10](https://github.com/openresty/lua-nginx-module/tags) released on 8 August 2017.
 
 Synopsis
 ========
@@ -413,14 +413,14 @@ Please note that the bytecode format used by LuaJIT 2.0/2.1 is not compatible wi
 
 ```bash
 
- /path/to/luajit/bin/luajit -b /path/to/input_file.lua /path/to/output_file.luac
+ /path/to/luajit/bin/luajit -b /path/to/input_file.lua /path/to/output_file.ljbc
 ```
 
 The `-bg` option can be used to include debug information in the LuaJIT bytecode file:
 
 ```bash
 
- /path/to/luajit/bin/luajit -bg /path/to/input_file.lua /path/to/output_file.luac
+ /path/to/luajit/bin/luajit -bg /path/to/input_file.lua /path/to/output_file.ljbc
 ```
 
 Please refer to the official LuaJIT documentation on the `-b` option for more details:
@@ -675,12 +675,12 @@ It is therefore *highly* recommended to always declare such within an appropriat
 
  -- Avoid
  foo = 123
- -- Recomended
+ -- Recommended
  local foo = 123
 
  -- Avoid
  function foo() return 123 end
- -- Recomended
+ -- Recommended
  local function foo() return 123 end
 ```
 
@@ -914,7 +914,7 @@ servers in Lua. For example,
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
-* cosocket: add client SSL certificiate support.
+* cosocket: add client SSL certificate support.
 
 [Back to TOC](#table-of-contents)
 
@@ -990,7 +990,7 @@ Copyright and License
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2016, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
+Copyright (C) 2009-2017, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
 Copyright (C) 2009-2017, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
 
@@ -1036,6 +1036,7 @@ See Also
 Directives
 ==========
 
+* [lua_capture_error_log](#lua_capture_error_log)
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_malloc_trim](#lua_malloc_trim)
 * [lua_code_cache](#lua_code_cache)
@@ -1110,6 +1111,56 @@ how the result will be used. Below is a diagram showing the order in which direc
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
 [Back to TOC](#table-of-contents)
+
+lua_capture_error_log
+---------------------
+**syntax:** *lua_capture_error_log size*
+
+**default:** *none*
+
+**context:** *http*
+
+Enables a buffer of the specified `size` for capturing all the nginx error log message data (not just those produced
+by this module or the nginx http subsystem, but everything) without touching files or disks.
+
+You can use units like `k` and `m` in the `size` value, as in
+
+```nginx
+
+ lua_capture_error_log 100k;
+```
+
+As a rule of thumb, a 4KB buffer can usually hold about 20 typical error log messages. So do the maths!
+
+This buffer never grows. If it is full, new error log messages will replace the oldest ones in the buffer.
+
+The size of the buffer must be bigger than the maximum length of a single error log message (which is 4K in OpenResty and 2K in stock NGINX).
+
+You can read the messages in the buffer on the Lua land via the
+[get_logs()](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#get_logs)
+function of the
+[ngx.errlog](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
+module of the [lua-resty-core](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#readme)
+library. This Lua API function will return the captured error log messages and
+also remove these already read from the global capturing buffer, making room
+for any new error log data. For this reason, the user should not configure this
+buffer to be too big if the user read the buffered error log data fast enough.
+
+Note that the log level specified in the standard [error_log](http://nginx.org/r/error_log) directive
+*does* have effect on this capturing facility. It only captures log
+messages of a level no lower than the specified log level in the [error_log](http://nginx.org/r/error_log) directive.
+The user can still choose to set an even higher filtering log level on the fly via the Lua API function
+[errlog.set_filter_level](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/errlog.md#set_filter_level).
+So it is more flexible than the static [error_log](http://nginx.org/r/error_log) directive.
+
+It is worth noting that there is no way to capture the debugging logs
+without building OpenResty or NGINX with the `./configure`
+option `--with-debug`. And enabling debugging logs is
+strongly discouraged in production builds due to high overhead.
+
+This directive was first introduced in the `v0.10.9` release.
+
+[Back to TOC](#directives)
 
 lua_use_default_type
 --------------------
@@ -1286,16 +1337,19 @@ Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua
 
 When Nginx receives the `HUP` signal and starts reloading the config file, the Lua VM will also be re-created and `init_by_lua` will run again on the new Lua VM. In case that the [lua_code_cache](#lua_code_cache) directive is turned off (default on), the `init_by_lua` handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
 
-Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
+Usually you can pre-load Lua modules at server start-up by means of this hook and take advantage of modern operating systems' copy-on-write (COW) optimization. Here is an example for pre-loading Lua modules:
 
 ```nginx
 
- init_by_lua 'cjson = require "cjson"';
+ # this runs before forking out nginx worker processes:
+ init_by_lua_block { require "cjson" }
 
  server {
      location = /api {
          content_by_lua_block {
-             ngx.say(cjson.encode({dog = 5, cat = 6}))
+             -- the following require() will just  return
+             -- the alrady loaded module from package.loaded:
+             ngx.say(require "cjson".encode{dog = 5, cat = 6})
          }
      }
  }
@@ -1307,10 +1361,10 @@ You can also initialize the [lua_shared_dict](#lua_shared_dict) shm storage at t
 
  lua_shared_dict dogs 1m;
 
- init_by_lua '
+ init_by_lua_block {
      local dogs = ngx.shared.dogs;
      dogs:set("Tom", 56)
- ';
+ }
 
  server {
      location = /api {
@@ -1422,8 +1476,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
          end
      end
 
-     local ok, err = new_timer(delay, check)
-     if not ok then
+     local hdl, err = new_timer(delay, check)
+     if not hdl then
          log(ERR, "failed to create timer: ", err)
          return
      end
@@ -2679,7 +2733,7 @@ ssl_session_store_by_lua_file
 
 **context:** *http*
 
-**phase:** *right-before-SSL-handshake*
+**phase:** *right-after-SSL-handshake*
 
 Equivalent to [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or rather, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed.
 
@@ -3176,9 +3230,13 @@ Nginx API for Lua
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
 * [ngx.shared.DICT.rpop](#ngxshareddictrpop)
 * [ngx.shared.DICT.llen](#ngxshareddictllen)
+* [ngx.shared.DICT.ttl](#ngxshareddictttl)
+* [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
+* [ngx.shared.DICT.capacity](#ngxshareddictcapacity)
+* [ngx.shared.DICT.free_space](#ngxshareddictfree_space)
 * [ngx.socket.udp](#ngxsocketudp)
 * [udpsock:setpeername](#udpsocksetpeername)
 * [udpsock:send](#udpsocksend)
@@ -3205,6 +3263,7 @@ Nginx API for Lua
 * [ngx.thread.kill](#ngxthreadkill)
 * [ngx.on_abort](#ngxon_abort)
 * [ngx.timer.at](#ngxtimerat)
+* [ngx.timer.every](#ngxtimerevery)
 * [ngx.timer.running_count](#ngxtimerrunning_count)
 * [ngx.timer.pending_count](#ngxtimerpending_count)
 * [ngx.config.subsystem](#ngxconfigsubsystem)
@@ -5646,7 +5705,7 @@ ngx.time
 
 Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library).
 
-Updates of the Nginx time cache an be forced by calling [ngx.update_time](#ngxupdate_time) first.
+Updates of the Nginx time cache can be forced by calling [ngx.update_time](#ngxupdate_time) first.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -5896,7 +5955,7 @@ The optional fourth argument, `ctx`, can be a Lua table holding an optional `pos
 
  local ctx = { pos = 2 }
  local m, err = ngx.re.match("1234, hello", "[0-9]+", "", ctx)
-      -- m[0] = "34"
+      -- m[0] = "234"
       -- ctx.pos == 5
 ```
 
@@ -6182,9 +6241,15 @@ The resulting object `dict` has the following methods:
 * [lpop](#ngxshareddictlpop)
 * [rpop](#ngxshareddictrpop)
 * [llen](#ngxshareddictllen)
+* [ttl](#ngxshareddictttl)
+* [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
+* [capacity](#ngxshareddictcapacity)
+* [free_space](#ngxshareddictfree_space)
+
+All these methods are *atomic* operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same `lua_shared_dict` zone.
 
 Here is an example:
 
@@ -6525,6 +6590,82 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.shared.DICT.ttl
+-------------------
+**syntax:** *ttl, err = ngx.shared.DICT:ttl(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the remaining TTL (time-to-live in seconds) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the TTL as a number if the operation is successfully completed or `nil` and an error message otherwise.
+
+If the key does not exist (or has already expired), this method will return `nil` and the error string `"not found"`.
+
+The TTL is originally determined by the `exptime` argument of the [set](#ngxshareddictset), [add](#ngxshareddictadd), [replace](#ngxshareddictreplace) (and the likes) methods. It has a time resolution of `0.001` seconds. A value of `0` means that the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.5)
+
+ ngx.sleep(0.2)
+
+ local ttl, err = cats:ttl("Marry")
+ ngx.say(ttl) -- 0.3
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.expire
+----------------------
+**syntax:** *success, err = ngx.shared.DICT:expire(key, exptime)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Updates the `exptime` (in second) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns a boolean indicating success if the operation completes or `nil` and an error message otherwise.
+
+If the key does not exist, this method will return `nil` and the error string `"not found"`.
+
+The `exptime` argument has a resolution of `0.001` seconds. If `exptime` is `0`, then the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.1)
+
+ succ, err = cats:expire("Marry", 0.5)
+
+ ngx.sleep(0.2)
+
+ local val, err = cats:get("Marry")
+ ngx.say(val) -- "a nice cat"
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
 ngx.shared.DICT.flush_all
 -------------------------
 **syntax:** *ngx.shared.DICT:flush_all()*
@@ -6568,6 +6709,79 @@ By default, only the first 1024 keys (if any) are returned. When the `<max_count
 **CAUTION** Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the `v0.7.3` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.capacity
+------------------------
+**syntax:** *capacity_bytes = ngx.shared.DICT:capacity()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
+the [lua_shared_dict](#lua_shared_dict) directive.
+
+Example:
+
+```lua
+
+ require "resty.core.shdict"
+
+ local cats = ngx.shared.cats
+ local capacity_bytes = cats:capacity()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `0.7.3`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.free_space
+--------------------------
+**syntax:** *free_page_bytes = ngx.shared.DICT:free_space()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+**Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
+data size ranges like \~8, 9\~16, 17\~32, ..., 1025\~2048, 2048\~ bytes. And pages are assigned to a slot if there
+is no room in already assigned pages for the slot.
+
+So even if the return value of the `free_space` method is zero, there may be room in already assigned pages, so
+you may successfully set a new key value pair to the shared dict without getting `true` for `forcible` or
+non nil `err` from the `ngx.shared.DICT.set`.
+
+On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
+slot and there is no free page, you may get `true` for `forcible` or non nil `err` from the
+`ngx.shared.DICT.set` method.
+
+Example:
+
+```lua
+
+ require "resty.core.shdict"
+
+ local cats = ngx.shared.cats
+ local free_page_bytes = cats:free_space()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `1.11.7`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -7556,7 +7770,7 @@ See also [lua_check_client_abort](#lua_check_client_abort).
 
 ngx.timer.at
 ------------
-**syntax:** *ok, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)*
+**syntax:** *hdl, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)*
 
 **context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
@@ -7582,7 +7796,7 @@ Premature timer expiration happens when the Nginx worker process is
 trying to shut down, as in an Nginx configuration reload triggered by
 the `HUP` signal or in an Nginx server shutdown. When the Nginx worker
 is trying to shut down, one can no longer call `ngx.timer.at` to
-create new timers with nonzero delays and in that case `ngx.timer.at` will return `nil` and
+create new timers with nonzero delays and in that case `ngx.timer.at` will return a "conditional false" value and
 a string describing the error, that is, "process exiting".
 
 Starting from the `v0.9.3` release, it is allowed to create zero-delay timers even when the Nginx worker process starts shutting down.
@@ -7641,6 +7855,9 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
  end
 ```
 
+It is recommended, however, to use the [ngx.timer.every](#ngxtimerevery) API function
+instead for creating recurring timers since it is more robust.
+
 Because timer callbacks run in the background and their running time
 will not add to any client request's response time, they can easily
 accumulate in the server and exhaust system resources due to either
@@ -7677,6 +7894,25 @@ this context.
 You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you *cannot* pass any thread objects returned by [coroutine.create](#coroutinecreate) and [ngx.thread.spawn](#ngxthreadspawn) or any cosocket objects returned by [ngx.socket.tcp](#ngxsockettcp), [ngx.socket.udp](#ngxsocketudp), and [ngx.req.socket](#ngxreqsocket) because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to create all these objects inside your timer callback.
 
 This API was first introduced in the `v0.8.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.every
+---------------
+**syntax:** *hdl, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)*
+
+**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Similar to the [ngx.timer.at](#ngxtimerat) API function, but
+
+1. `delay` *cannot* be zero,
+1. timer will be created every `delay` seconds until the current Nginx worker process starts exiting.
+
+When success, returns a "conditional true" value (but not a `true`). Otherwise, returns a "conditional false" value and a string describing the error.
+
+This API also respect the [lua_max_pending_timers](#lua_max_pending_timers) and [lua_max_running_timers](#lua_max_running_timers).
+
+This API was first introduced in the `v0.10.9` release.
 
 [Back to TOC](#nginx-api-for-lua)
 

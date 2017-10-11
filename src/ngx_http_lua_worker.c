@@ -13,6 +13,9 @@
 #include "ngx_http_lua_worker.h"
 
 
+#define NGX_PROCESS_PRIVILEGED_AGENT    99
+
+
 static int ngx_http_lua_ngx_worker_exiting(lua_State *L);
 static int ngx_http_lua_ngx_worker_pid(lua_State *L);
 static int ngx_http_lua_ngx_worker_id(lua_State *L);
@@ -129,5 +132,47 @@ ngx_http_lua_ffi_worker_count(void)
                                            ngx_core_module);
 
     return (int) ccf->worker_processes;
+}
+
+
+int
+ngx_http_lua_ffi_get_process_type(void)
+{
+#if defined(HAVE_PRIVILEGED_PROCESS_PATCH) && !NGX_WIN32
+    if (ngx_process == NGX_PROCESS_HELPER) {
+        if (ngx_is_privileged_agent) {
+            return NGX_PROCESS_PRIVILEGED_AGENT;
+        }
+    }
+#endif
+
+    return ngx_process;
+}
+
+
+int
+ngx_http_lua_ffi_enable_privileged_agent(char **err)
+{
+#ifdef HAVE_PRIVILEGED_PROCESS_PATCH
+    ngx_core_conf_t   *ccf;
+
+    ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx,
+                                           ngx_core_module);
+
+    ccf->privileged_agent = 1;
+
+    return NGX_OK;
+
+#else
+    *err = "missing privileged agent process patch in the nginx core";
+    return NGX_ERROR;
+#endif
+}
+
+
+void
+ngx_http_lua_ffi_process_signal_graceful_exit(void)
+{
+    ngx_quit = 1;
 }
 #endif

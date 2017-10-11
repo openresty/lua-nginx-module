@@ -532,3 +532,96 @@ received: ok
 failed to receive a line: closed []
 --- no_error_log
 [error]
+
+
+
+=== TEST 8: connection timeout overflow detection
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = pcall(sock.settimeouts, sock,
+                                  (2 ^ 31) - 1, 500, 500)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+
+            ok, err = pcall(sock.settimeouts, sock, 2 ^ 31, 500, 500)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+settimeouts: ok
+failed to set timeouts: bad timeout value
+--- no_error_log
+[error]
+
+
+
+=== TEST 9: send timeout overflow detection
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = pcall(sock.settimeouts, sock,
+                                  500, (2 ^ 31) - 1, 500)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+
+            ok, err = pcall(sock.settimeouts, sock, 500, 2 ^ 31, 500)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+settimeouts: ok
+failed to set timeouts: bad timeout value
+--- no_error_log
+[error]
+
+
+
+=== TEST 10: read timeout overflow detection
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = pcall(sock.settimeouts, sock,
+                                  500, 500, (2 ^ 31) - 1)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+
+            ok, err = pcall(sock.settimeouts, sock, 500, 500, 2 ^ 31)
+            if not ok then
+                ngx.say("failed to set timeouts: ", err)
+            else
+                ngx.say("settimeouts: ok")
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+settimeouts: ok
+failed to set timeouts: bad timeout value
+--- no_error_log
+[error]

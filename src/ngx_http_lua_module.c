@@ -95,6 +95,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+    { ngx_string("lua_capture_error_log"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_capture_error_log,
+      0,
+      0,
+      NULL },
+
 #if (NGX_PCRE)
     { ngx_string("lua_regex_cache_max_entries"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
@@ -829,6 +836,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->running_timers = 0;
      *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
+     *      lmcf->jit_stack = NULL;
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };

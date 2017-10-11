@@ -107,7 +107,7 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     dd("enter");
 
-    /*  must specifiy a content handler */
+    /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -191,7 +191,8 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "ssl session fetch: connection reusable: %ud", c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
@@ -223,6 +224,8 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     }
 
     dd("first time");
+
+    ngx_reusable_connection(c, 0);
 
     hc = c->data;
 
@@ -468,7 +471,9 @@ ngx_http_lua_ssl_sess_fetch_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
     } else {
@@ -485,7 +490,9 @@ ngx_http_lua_ssl_sess_fetch_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua: failed to create new coroutine to handle request");
 
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        rc = NGX_ERROR;
+        ngx_http_lua_finalize_request(r, rc);
+        return rc;
     }
 
     /*  move code closure to new coroutine */
@@ -509,7 +516,9 @@ ngx_http_lua_ssl_sess_fetch_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
