@@ -2034,7 +2034,7 @@ SSL reused session
         content_by_lua '
             local sock = ngx.socket.tcp()
 
-            sock:settimeout(2000)
+            sock:settimeout(3000)
 
             do
                 local ok, err = sock:connect("openresty.org", 443)
@@ -2103,7 +2103,7 @@ lua ssl server name: "openresty.org"
 SSL reused session
 [error]
 [alert]
---- timeout: 5
+--- timeout: 6
 
 
 
