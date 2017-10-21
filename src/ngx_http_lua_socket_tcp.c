@@ -474,6 +474,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         switch (lua_type(L, -1)) {
         case LUA_TNUMBER:
             lua_tostring(L, -1);
+            /* FALLTHROUGH */
 
         case LUA_TSTRING:
             custom_pool = 1;
