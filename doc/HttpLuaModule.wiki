@@ -706,6 +706,7 @@ Nginx may terminate a request early with (at least):
 * 400 (Bad Request)
 * 405 (Not Allowed)
 * 408 (Request Timeout)
+* 413 (Request Entity Too Large)
 * 414 (Request URI Too Large)
 * 494 (Request Headers Too Large)
 * 499 (Client Closed Request)
