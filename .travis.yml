@@ -49,7 +49,7 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.13.5
+    - NGINX_VERSION=1.13.6
 
 services:
  - memcache
