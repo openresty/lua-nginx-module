@@ -1,16 +1,16 @@
 {
-<insert_a_suppression_name_here>
-Memcheck:Addr1
-fun:ngx_init_cycle
-fun:ngx_master_process_cycle
-fun:main
+   <insert_a_suppression_name_here>
+   Memcheck:Addr1
+   fun:ngx_init_cycle
+   fun:ngx_master_process_cycle
+   fun:main
 }
 {
-<insert_a_suppression_name_here>
-Memcheck:Addr4
-fun:ngx_init_cycle
-fun:ngx_master_process_cycle
-fun:main
+   <insert_a_suppression_name_here>
+   Memcheck:Addr4
+   fun:ngx_init_cycle
+   fun:ngx_master_process_cycle
+   fun:main
 }
 {
    <insert_a_suppression_name_here>
@@ -104,11 +104,11 @@ fun:main
    fun:ngx_event_process_init
 }
 {
-    <insert_a_suppression_name_here>
-    Memcheck:Param
-    sendmsg(mmsg[0].msg_hdr)
-    fun:sendmmsg
-    fun:__libc_res_nsend
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   sendmsg(mmsg[0].msg_hdr)
+   fun:sendmmsg
+   fun:__libc_res_nsend
 }
 {
    <insert_a_suppression_name_here>
@@ -120,11 +120,11 @@ fun:main
    fun:ngx_start_cache_manager_processes
 }
 {
-    <insert_a_suppression_name_here>
-    Memcheck:Cond
-    fun:ngx_init_cycle
-    fun:ngx_master_process_cycle
-    fun:main
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:ngx_init_cycle
+   fun:ngx_master_process_cycle
+   fun:main
 }
 {
    <insert_a_suppression_name_here>
