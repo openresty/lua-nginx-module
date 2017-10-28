@@ -258,6 +258,7 @@ free request
 hello foo
 --- no_error_log
 [error]
+--- wait: 0.1
 
 
 
