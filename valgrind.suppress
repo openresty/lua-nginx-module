@@ -157,7 +157,6 @@
    fun:ngx_alloc
    fun:ngx_set_environment
    fun:ngx_single_process_cycle
-   fun:main
 }
 {
    <insert_a_suppression_name_here>
@@ -172,7 +171,6 @@
    fun:ngx_alloc
    fun:ngx_set_environment
    fun:ngx_worker_process_init
-   fun:ngx_worker_process_cycle
 }
 {
    <insert_a_suppression_name_here>
