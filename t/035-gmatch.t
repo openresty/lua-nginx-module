@@ -440,6 +440,7 @@ done
     location /main {
         content_by_lua '
             package.loaded.foo = nil
+            collectgarbage()
 
             local res = ngx.location.capture("/t")
             if res.status == 200 then
