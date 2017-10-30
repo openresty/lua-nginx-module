@@ -52,6 +52,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl.h"
 #include "ngx_http_lua_log_ringbuf.h"
+#include "ngx_http_lua_tcpcong.h"
 
 
 #if 1
@@ -2118,6 +2119,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_method_api(L);
     ngx_http_lua_inject_req_time_api(L);
     ngx_http_lua_inject_req_misc_api(L);
+    ngx_http_lua_inject_req_tcp_congestion_api(L);
 
     lua_setfield(L, -2, "req");
 }
