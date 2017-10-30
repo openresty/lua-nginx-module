@@ -23,7 +23,7 @@ static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 int
 ngx_socket_set_tcp_congestion(ngx_socket_t s, const char* cong_name) {
     u_char optval[16];
-    ngx_cpystrn(optval, (char *)cong_name, 15);
+    ngx_cpystrn(optval, (u_char *)cong_name, 16);
     return setsockopt(s, IPPROTO_TCP, TCP_CONGESTION,
                       (void *)optval, strlen((char *)optval));
 }
