@@ -3138,7 +3138,7 @@ Nginx API for Lua
 * [ngx.req.append_body](#ngxreqappend_body)
 * [ngx.req.finish_body](#ngxreqfinish_body)
 * [ngx.req.socket](#ngxreqsocket)
-* [ngx.req.set_cong](#ntxreqset_cong)
+* [ngx.req.set_cong](#ngxreqset_cong)
 * [ngx.exec](#ngxexec)
 * [ngx.redirect](#ngxredirect)
 * [ngx.send_headers](#ngxsend_headers)
