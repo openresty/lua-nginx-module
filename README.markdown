@@ -3138,6 +3138,7 @@ Nginx API for Lua
 * [ngx.req.append_body](#ngxreqappend_body)
 * [ngx.req.finish_body](#ngxreqfinish_body)
 * [ngx.req.socket](#ngxreqsocket)
+* [ngx.req.set_cong](#ntxreqsetcong)
 * [ngx.exec](#ngxexec)
 * [ngx.redirect](#ngxredirect)
 * [ngx.send_headers](#ngxsend_headers)
@@ -5009,6 +5010,15 @@ You can use the "raw request socket" returned by `ngx.req.socket(true)` to imple
 This function was first introduced in the `v0.5.0rc1` release.
 
 [Back to TOC](#nginx-api-for-lua)
+
+ngx.req.set\_cong
+-----------------
+
+**syntax:** ngx.req.set_cong(cong_name)*
+
+**context:** *access_by_lua&#42;, content_by_lua&#42;*
+
+Set TCP congestion control for each request connection. It only works on Linux platform and if target TCP congestion is not exists, it will generate a warning log.
 
 ngx.exec
 --------
