@@ -3138,7 +3138,7 @@ Nginx API for Lua
 * [ngx.req.append_body](#ngxreqappend_body)
 * [ngx.req.finish_body](#ngxreqfinish_body)
 * [ngx.req.socket](#ngxreqsocket)
-* [ngx.req.set_cong](#ntxreqsetcong)
+* [ngx.req.set_cong](#ntxreqset_cong)
 * [ngx.exec](#ngxexec)
 * [ngx.redirect](#ngxredirect)
 * [ngx.send_headers](#ngxsend_headers)
@@ -5019,6 +5019,8 @@ ngx.req.set\_cong
 **context:** *access_by_lua&#42;, content_by_lua&#42;*
 
 Set TCP congestion control for each request connection. It only works on Linux platform and if target TCP congestion is not exists, it will generate a warning log.
+
+[Back to TOC](#nginx-api-for-lua)
 
 ngx.exec
 --------
