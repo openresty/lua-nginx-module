@@ -12,7 +12,8 @@
 #include "ngx_http_lua_api.h"
 
 
-static int ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len);
+static int ngx_socket_set_tcp_congestion(ngx_socket_t s,
+    const char *cong_name, size_t cong_name_len);
 static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 
 
@@ -20,7 +21,8 @@ static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 
 
 static int
-ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len)
+ngx_socket_set_tcp_congestion(ngx_socket_t s,
+    const char *cong_name, size_t cong_name_len)
 {
     return setsockopt(s, IPPROTO_TCP, TCP_CONGESTION,
                       (void *) cong_name, (socklen_t) cong_name_len);
@@ -31,7 +33,8 @@ ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong
 
 
 static int
-ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len)
+ngx_socket_set_tcp_congestion(ngx_socket_t s,
+    const char *cong_name, size_t cong_name_len)
 {
     return EOSNOTSUPPORT;
 }
@@ -71,15 +74,17 @@ ngx_http_lua_ngx_set_tcp_congestion(lua_State *L)
 
     p = lua_tolstring(L, 1, &len);
     if (len > 16) {
-        return luaL_Error(L, "TCP congestion control algorithm name too large no more than 16 character");
+        return luaL_error(L,
+                          "TCP congestion control algorithm name too large, "
+                          "no more than 16 character");
     }
 
     ret = ngx_socket_set_tcp_congestion(r->connection->fd, p, len);
     if (ret < 0) {
         if (ret == EOSNOTSUPPORT) {
-            return luaL_Error(L, "OS not support");
+            return luaL_error(L, "OS not support");
         } else {
-            return luaL_Error(L, "set TCP congestion control algorithm failed");
+            return luaL_error(L, "set TCP congestion control algorithm failed");
         }
     }
 
