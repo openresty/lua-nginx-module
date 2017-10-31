@@ -4170,6 +4170,22 @@ You can use the "raw request socket" returned by <code>ngx.req.socket(true)</cod
 
 This function was first introduced in the <code>v0.5.0rc1</code> release.
 
+== ngx.req.set_cong ==
+
+'''syntax:''' ''ngx.req.set_cong(cong_name)''
+
+'''context:''' ''access_by_lua*, content_by_lua*''
+
+Set TCP congestion control algorithm for each request connection. It only works on Linux platform and if the target TCP congestion does not exists it will return an error.
+
+Below is Linux kernel supported TCP congestion control algorithm:
+
+* bic kernel version >= 2.6.8 and <= 2.6.18
+* cubic kernel version >= 2.6.19
+* bbr kernel version >= 4.9
+* reno
+
+
 == ngx.exec ==
 '''syntax:''' ''ngx.exec(uri, args?)''
 

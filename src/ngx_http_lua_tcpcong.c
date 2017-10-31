@@ -12,7 +12,7 @@
 #include "ngx_http_lua_api.h"
 
 
-static int ngx_socket_set_tcp_congestion(ngx_socket_t s,
+int ngx_socket_set_tcp_congestion(ngx_socket_t s,
     const char *cong_name, size_t cong_name_len);
 static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 
@@ -20,7 +20,7 @@ static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 #if (NGX_LINUX)
 
 
-static int
+int
 ngx_socket_set_tcp_congestion(ngx_socket_t s,
     const char *cong_name, size_t cong_name_len)
 {
@@ -32,7 +32,7 @@ ngx_socket_set_tcp_congestion(ngx_socket_t s,
 #else
 
 
-static int
+int
 ngx_socket_set_tcp_congestion(ngx_socket_t s,
     const char *cong_name, size_t cong_name_len)
 {
