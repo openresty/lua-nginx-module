@@ -1,12 +1,10 @@
-/*
- * Copyright (C) Rain Li (blacktear23)
- *
- */
-
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+
+
+#define EOSNOTSUPPORT -23
 
 
 #include "ngx_http_lua_tcpcong.h"
@@ -14,28 +12,33 @@
 #include "ngx_http_lua_api.h"
 
 
-int ngx_socket_set_tcp_congestion(ngx_socket_t s, const char* cong_name);
+static int ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len);
 static int ngx_http_lua_ngx_set_tcp_congestion(lua_State *L);
 
 
 #if (NGX_LINUX)
 
-int
-ngx_socket_set_tcp_congestion(ngx_socket_t s, const char* cong_name) {
-    u_char optval[16];
-    ngx_cpystrn(optval, (u_char *)cong_name, 16);
+
+static int
+ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len)
+{
     return setsockopt(s, IPPROTO_TCP, TCP_CONGESTION,
-                      (void *)optval, strlen((char *)optval));
+                      (void *) cong_name, (socklen_t) cong_name_len);
 }
+
 
 #else
 
-int
-ngx_socket_set_tcp_congestion(ngx_socket_t s, const char* cong_name) {
-    return 0;
+
+static int
+ngx_socket_set_tcp_congestion(ngx_socket_t s, const char *cong_name, size_t cong_name_len)
+{
+    return EOSNOTSUPPORT;
 }
 
+
 #endif
+
 
 /**
  * Set TCP Congestion
@@ -44,10 +47,10 @@ static int
 ngx_http_lua_ngx_set_tcp_congestion(lua_State *L)
 {
     ngx_http_request_t  *r;
-    int                 nargs;
-    int                 type;
-    int                 ret;
-    size_t              len;
+    int                  nargs;
+    int                  type;
+    int                  ret;
+    size_t               len;
     const char          *p;
 
     r = ngx_http_lua_get_request(L);
@@ -60,18 +63,29 @@ ngx_http_lua_ngx_set_tcp_congestion(lua_State *L)
         return luaL_error(L, "attempt to pass %d arguments, bug accepted 1",
                           nargs);
     }
+
     type = lua_type(L, 1);
     if (type != LUA_TSTRING) {
         return luaL_error(L, "require string parameter");
     }
+
     p = lua_tolstring(L, 1, &len);
-    ret = ngx_socket_set_tcp_congestion(r->connection->fd, p);
-    if (ret < 0) {
-        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                      "set tcp congestion %s failed: %d", p, ret);
+    if (len > 16) {
+        return luaL_Error(L, "TCP congestion control algorithm name too large no more than 16 character");
     }
+
+    ret = ngx_socket_set_tcp_congestion(r->connection->fd, p, len);
+    if (ret < 0) {
+        if (ret == EOSNOTSUPPORT) {
+            return luaL_Error(L, "OS not support");
+        } else {
+            return luaL_Error(L, "set TCP congestion control algorithm failed");
+        }
+    }
+
     return 1;
 }
+
 
 void
 ngx_http_lua_inject_req_tcp_congestion_api(lua_State *L)
@@ -79,3 +93,5 @@ ngx_http_lua_inject_req_tcp_congestion_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_set_tcp_congestion);
     lua_setfield(L, -2, "set_cong");
 }
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

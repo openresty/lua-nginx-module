@@ -5018,7 +5018,12 @@ ngx.req.set\_cong
 
 **context:** *access_by_lua&#42;, content_by_lua&#42;*
 
-Set TCP congestion control for each request connection. It only works on Linux platform and if target TCP congestion is not exists, it will generate a warning log.
+Set TCP congestion control algorithm for each request connection. It only works on Linux platform and if the target TCP congestion does not exists, it will generate a warning log. Below is Linux kernel supported TCP congestion control algorithm.
+
+* bic kernel version between 2.6.8 and 2.6.18
+* cubic kernel version >= 2.6.19
+* reno
+* bbr kernel version >= 4.9
 
 [Back to TOC](#nginx-api-for-lua)
 
