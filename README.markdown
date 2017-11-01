@@ -3138,7 +3138,6 @@ Nginx API for Lua
 * [ngx.req.append_body](#ngxreqappend_body)
 * [ngx.req.finish_body](#ngxreqfinish_body)
 * [ngx.req.socket](#ngxreqsocket)
-* [ngx.req.set_cong](#ngxreqset_cong)
 * [ngx.exec](#ngxexec)
 * [ngx.redirect](#ngxredirect)
 * [ngx.send_headers](#ngxsend_headers)
@@ -5008,22 +5007,6 @@ When the `raw` argument is `true`, it is required that no pending data from any 
 You can use the "raw request socket" returned by `ngx.req.socket(true)` to implement fancy protocols like [WebSocket](http://en.wikipedia.org/wiki/WebSocket), or just emit your own raw HTTP response header or body data. You can refer to the [lua-resty-websocket library](https://github.com/openresty/lua-resty-websocket) for a real world example.
 
 This function was first introduced in the `v0.5.0rc1` release.
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.req.set\_cong
------------------
-
-**syntax:** ngx.req.set_cong(cong_name)*
-
-**context:** *access_by_lua&#42;, content_by_lua&#42;*
-
-Set TCP congestion control algorithm for each request connection. It only works on Linux platform and if the target TCP congestion does not exists, it will generate a warning log. Below is Linux kernel supported TCP congestion control algorithm.
-
-* bic kernel version between 2.6.8 and 2.6.18
-* cubic kernel version >= 2.6.19
-* reno
-* bbr kernel version >= 4.9
 
 [Back to TOC](#nginx-api-for-lua)
 

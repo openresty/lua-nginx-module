@@ -21,6 +21,9 @@
 #endif
 
 
+#define EOSNOTSUPPORT -23
+
+
 int ngx_socket_set_tcp_congestion(ngx_socket_t s,
     const char *cong_name, size_t cong_name_len);
 void ngx_http_lua_inject_req_tcp_congestion_api(lua_State *L);

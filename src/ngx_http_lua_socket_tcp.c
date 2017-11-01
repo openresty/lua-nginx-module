@@ -16,6 +16,7 @@
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_probe.h"
+#include "ngx_http_lua_tcpcong.h"
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
@@ -2691,8 +2692,113 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
 static int
 ngx_http_lua_socket_tcp_setoption(lua_State *L)
 {
-    /* TODO */
-    return 0;
+    int                                  n;
+    int                                  type;
+    int                                  ret;
+    size_t                               len;
+    size_t                               optlen;
+    const char                          *opt;
+    const char                          *msg;
+    const char                          *congestion;
+    ngx_peer_connection_t               *pc;
+    ngx_http_request_t                  *r;
+    ngx_http_lua_loc_conf_t             *llcf;
+    ngx_http_lua_socket_tcp_upstream_t  *u;
+
+    n = lua_gettop(L);
+    if (n < 2 || n > 3 ) {
+        return luaL_error(L, "expecting 2 ~ 3 argument "
+                          "(including the object) but seen %d", lua_gettop(L));
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (u == NULL || u->peer.connection == NULL || u->write_closed) {
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "attempt to set option on a closed socket: u:%p, "
+                          "c:%p, ft:%d eof:%d",
+                          u, u ? u->peer.connection : NULL,
+                          u ? (int) u->ft_type : 0, u ? (int) u->eof : 0);
+        }
+
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
+    type = lua_type(L, 2);
+    switch (type) {
+        case LUA_TSTRING:
+            opt = lua_tolstring(L, 2, &optlen);
+            break;
+        default:
+            msg = lua_pushfstring(L, "string expect, got %s",
+                                  lua_typename(L, type));
+            return luaL_argerror(L, 2, msg);
+    }
+
+    if (optlen == 0) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+
+    // sock:setoption("congestion", "reno")
+    if (ngx_strncmp(opt, "congestion", sizeof("congestion") - 1) == 0) {
+        if (n != 3) {
+            return luaL_error(L, "expecting 3 argument "
+                              "(including the object) but seen %d",
+                              lua_gettop(L));
+        }
+        type = lua_type(L, 3);
+        switch (type) {
+            case LUA_TSTRING:
+                congestion = lua_tolstring(L, 3, &len);
+                break;
+            default:
+                msg = lua_pushfstring(L, "string expect, got %s",
+                                      lua_typename(L, type));
+                return luaL_argerror(L, 2, msg);
+        }
+
+        if (len == 0) {
+            msg = lua_pushfstring(L, "empty congestion name");
+            return luaL_argerror(L, 2, msg);
+        } else if (len > 16) {
+            return luaL_error(L,
+                              "TCP congestion control algorithm name "
+                              "too large, no more than 16 character");
+
+        }
+
+        pc = &u->peer;
+        ret = ngx_socket_set_tcp_congestion(pc->connection->fd, congestion, len);
+        if (ret < 0) {
+            if (ret == EOSNOTSUPPORT) {
+                return luaL_error(L, "OS not support");
+            } else {
+                return luaL_error(L, "set TCP congestion control algorithm %s "
+                                  "failed", congestion);
+            }
+        }
+    }
+
+    return luaL_error(L, "unknown option");
 }
 
 

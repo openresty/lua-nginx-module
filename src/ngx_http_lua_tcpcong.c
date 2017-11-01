@@ -4,9 +4,6 @@
 #include "ddebug.h"
 
 
-#define EOSNOTSUPPORT -23
-
-
 #include "ngx_http_lua_tcpcong.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_api.h"
