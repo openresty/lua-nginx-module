@@ -249,7 +249,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -265,6 +265,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_setoption);
+    lua_setfield(L, -2, "setoption");
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -2754,8 +2757,7 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
     }
 
     if (optlen == 0) {
-        lua_pushinteger(L, 0);
-        return 1;
+        return 0;
     }
 
     // sock:setoption("congestion", "reno")
@@ -2796,9 +2798,11 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
                                   "failed", congestion);
             }
         }
+    } else {
+        return luaL_error(L, "unknown option %s", opt);
     }
 
-    return luaL_error(L, "unknown option");
+    return 0;
 }
 
 
