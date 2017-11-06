@@ -2802,7 +2802,8 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
         }
 
     } else {
-        return luaL_error(L, "unknown option %s", opt);
+        // Unknown options just ignore it to prevent other fail.
+        return 0;
     }
 
     return 0;
