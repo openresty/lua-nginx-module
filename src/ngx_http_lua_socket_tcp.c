@@ -2767,6 +2767,7 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
                               "(including the object) but seen %d",
                               lua_gettop(L));
         }
+
         type = lua_type(L, 3);
         switch (type) {
             case LUA_TSTRING:
@@ -2785,11 +2786,11 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
             return luaL_error(L,
                               "TCP congestion control algorithm name "
                               "too large, no more than 16 character");
-
         }
 
         pc = &u->peer;
-        ret = ngx_socket_set_tcp_congestion(pc->connection->fd, congestion, len);
+        ret = ngx_socket_set_tcp_congestion(pc->connection->fd,
+                                            congestion, len);
         if (ret < 0) {
             if (ret == EOSNOTSUPPORT) {
                 return luaL_error(L, "OS not support");
@@ -2797,7 +2798,9 @@ ngx_http_lua_socket_tcp_setoption(lua_State *L)
                 return luaL_error(L, "set TCP congestion control algorithm %s "
                                   "failed", congestion);
             }
+
         }
+
     } else {
         return luaL_error(L, "unknown option %s", opt);
     }
