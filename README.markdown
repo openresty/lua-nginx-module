@@ -1487,6 +1487,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
 
 This directive was first introduced in the `v0.9.5` release.
 
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
+
 [Back to TOC](#directives)
 
 init_worker_by_lua_block
@@ -1514,6 +1516,8 @@ For instance,
 
 This directive was first introduced in the `v0.9.17` release.
 
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
+
 [Back to TOC](#directives)
 
 init_worker_by_lua_file
@@ -1528,6 +1532,8 @@ init_worker_by_lua_file
 Similar to [init_worker_by_lua](#init_worker_by_lua), but accepts the file path to a Lua source file or Lua bytecode file.
 
 This directive was first introduced in the `v0.9.5` release.
+
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
 
 [Back to TOC](#directives)
 
