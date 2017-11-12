@@ -1487,6 +1487,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
 
 This directive was first introduced in the `v0.9.5` release.
 
+After `v0.10.12` release, the specified Lua code doesn't run in cache processes anymore.
+
 [Back to TOC](#directives)
 
 init_worker_by_lua_block

@@ -16,8 +16,22 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 our $ServerRoot = server_root();
 
+add_block_preprocessor(sub {
+    my $block = shift;
+
+    my $http_config = $block->http_config || '';
+
+    $http_config .= <<_EOC_;
+
+     proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+_EOC_
+
+    $block->set_value("http_config", $http_config);
+});
+
 #no_diff();
 no_long_string();
+master_on();
 run_tests();
 
 __DATA__
@@ -754,5 +768,26 @@ This also affects merge_loc_conf
 GET /t
 --- response_body chomp
 ok
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: destory Lua VM in cache processes
+--- skip_eval
+2:
+# Nginx under Valgrind mode doesn't spawn cache processes.
+$ENV{TEST_NGINX_USE_VALGRIND} // 0 == 1
+--- config
+    location = /t {
+        return 200;
+    }
+--- request
+GET /t
+--- error_log eval
+[
+qr/lua close the global Lua VM .+ in cache process/,
+qr/lua close the global Lua VM .+ in cache process/,
+]
 --- no_error_log
 [error]
