@@ -66,7 +66,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 100
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
 --- timeout: 10
 
 
@@ -96,7 +96,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 150
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
 --- timeout: 10
 
 
@@ -125,7 +125,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
 
 
 
@@ -154,7 +154,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
 --- timeout: 10
 
 
@@ -707,7 +707,7 @@ GET /t
 2: connected: 1
 --- error_log
 lua tcp socket connect timeout: 100
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
 --- timeout: 10
 
 
