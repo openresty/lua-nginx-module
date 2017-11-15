@@ -183,10 +183,7 @@ failed to do SSL handshake: handshake failed
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
---- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl free session: ([0-9A-F]+)
-$/
+--- grep_error_log_out
 --- no_error_log
 lua ssl server name:
 SSL reused session
@@ -696,7 +693,7 @@ SSL reused session
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_ssl_verify_depth 1;
+    lua_ssl_verify_depth 0;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -751,17 +748,18 @@ $::DSTRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 20: unable to get local issuer certificate
+--- response_body eval
+qr{connected: 1
+failed to do SSL handshake: (22: certificate chain too long|20: unable to get local issuer certificate)
 failed to send http request: closed
+}
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl server name: "openresty.org"
-lua ssl certificate verify error: (20: unable to get local issuer certificate)
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/lua ssl certificate verify error: \((22: certificate chain too long|20: unable to get local issuer certificate)\)/]
 --- no_error_log
 SSL reused session
 [alert]
@@ -774,7 +772,7 @@ SSL reused session
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_ssl_verify_depth 1;
+    lua_ssl_verify_depth 0;
     lua_socket_log_errors off;
     location /t {
         #set $port 5000;
@@ -830,10 +828,11 @@ $::DSTRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 20: unable to get local issuer certificate
+--- response_body eval
+qr/connected: 1
+failed to do SSL handshake: (22: certificate chain too long|20: unable to get local issuer certificate)
 failed to send http request: closed
+/
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
@@ -1262,9 +1261,9 @@ close: 1 nil
 qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA SSLv3
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1342,9 +1341,9 @@ close: 1 nil
 qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA SSLv3
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1419,7 +1418,7 @@ failed to send http request: closed
 --- grep_error_log_out
 --- error_log eval
 [
-qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?unsupported protocol/,
+qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?(unsupported protocol|no protocols available)/,
 'lua ssl server name: "openresty.org"',
 ]
 --- no_error_log
