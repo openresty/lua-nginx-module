@@ -32,6 +32,8 @@ static int ngx_http_lua_socket_tcp_settimeouts(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc,
     void *data);
+static void ngx_http_lua_socket_init_peer_connection_addr_text(
+    ngx_peer_connection_t *pc);
 static void ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static void ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
@@ -999,6 +1001,49 @@ nomem:
         lua_pushnil(L);
         lua_pushliteral(L, "no memory");
     }
+}
+
+
+static void
+ngx_http_lua_socket_init_peer_connection_addr_text(ngx_peer_connection_t *pc)
+{
+    ngx_connection_t            *c;
+    size_t                       addr_text_max_len;
+
+    c = pc->connection;
+
+    switch (pc->sockaddr->sa_family) {
+
+#if (NGX_HAVE_INET6)
+    case AF_INET6:
+        addr_text_max_len = NGX_INET6_ADDRSTRLEN;
+        break;
+#endif
+#if (NGX_HAVE_UNIX_DOMAIN)
+
+    case AF_UNIX:
+        addr_text_max_len = NGX_UNIX_ADDRSTRLEN;
+        break;
+#endif
+    case AF_INET:
+        addr_text_max_len = NGX_INET_ADDRSTRLEN;
+        break;
+
+    default:
+        addr_text_max_len = NGX_SOCKADDR_STRLEN;
+        break;
+    }
+
+    c->addr_text.data = ngx_pnalloc(c->pool, addr_text_max_len);
+    if (c->addr_text.data == NULL) {
+        ngx_log_error(NGX_LOG_ERR, pc->log, 0,
+                      "init peer connection addr_text failed: no memory");
+        return;
+    }
+
+    c->addr_text.len = ngx_sock_ntop(pc->sockaddr, pc->socklen,
+                                     c->addr_text.data,
+                                     addr_text_max_len, 0);
 }
 
 
@@ -3268,8 +3313,11 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
+            ngx_http_lua_socket_init_peer_connection_addr_text(&u->peer);
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "lua tcp socket connect timed out");
+                          "lua tcp socket connect timed out,"
+                          " when connecting to %V:%ud",
+                          &c->addr_text, ngx_inet_get_port(u->peer.sockaddr));
         }
 
         ngx_http_lua_socket_handle_conn_error(r, u,
