@@ -346,7 +346,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
         if (r->header_sent) {
             dd("header already sent");
 
-            /* response header was already generated in access_by_lua*,
+            /* response header was already generated in rewrite_by_lua*,
              * so it is no longer safe to proceed to later phases
              * which may generate responses again */
 
