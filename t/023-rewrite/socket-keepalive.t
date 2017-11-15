@@ -241,7 +241,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -319,7 +319,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log eval
 ["[error]",
@@ -395,7 +395,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -475,7 +475,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -554,7 +554,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -636,7 +636,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -716,7 +716,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -795,7 +795,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 61
-received response of 156 bytes
+received response of 160 bytes
 done
 --- no_error_log
 [error]
@@ -883,10 +883,10 @@ end
 --- response_body_like
 ^connected: 1, reused: \d+
 request sent: 61
-received response of 119 bytes
+received response of 123 bytes
 connected: 1, reused: [1-9]\d*
 request sent: 61
-received response of 119 bytes
+received response of 123 bytes
 --- no_error_log eval
 ["[error]",
 "lua tcp socket keepalive: free connection pool for "]
