@@ -1013,12 +1013,14 @@ ngx_http_lua_socket_init_peer_connection_addr_text(ngx_peer_connection_t *pc)
     c = pc->connection;
 
     switch (pc->sockaddr->sa_family) {
+
 #if (NGX_HAVE_INET6)
     case AF_INET6:
         addr_text_max_len = NGX_INET6_ADDRSTRLEN;
         break;
 #endif
 #if (NGX_HAVE_UNIX_DOMAIN)
+
     case AF_UNIX:
         addr_text_max_len = NGX_UNIX_ADDRSTRLEN;
         break;
@@ -1026,6 +1028,7 @@ ngx_http_lua_socket_init_peer_connection_addr_text(ngx_peer_connection_t *pc)
     case AF_INET:
         addr_text_max_len = NGX_INET_ADDRSTRLEN;
         break;
+
     default:
         addr_text_max_len = NGX_SOCKADDR_STRLEN;
         break;
