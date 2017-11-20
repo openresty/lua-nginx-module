@@ -3251,7 +3251,7 @@ Nginx API for Lua
 * [coroutine.wrap](#coroutinewrap)
 * [coroutine.running](#coroutinerunning)
 * [coroutine.status](#coroutinestatus)
-
+* [ngx.run_worker_thread](#ngxrun_worker_thread)
 
 [Back to TOC](#table-of-contents)
 
@@ -8251,6 +8251,85 @@ Identical to the standard Lua [coroutine.status](http://www.lua.org/manual/5.1/m
 This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.run_worker_thread
+----------------
+**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module, arg, ...)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
+
+Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would block until the function returns.
+
+The first argument `threadpool`, specifies the nginx thread pool name.
+
+For example:
+```nginx
+thread_pool testpool threads=100;
+```
+
+The second argument `module`, specifies the lua module name to execute in the worker thread, which would returns a lua function when loaded.
+
+This API is useful when you need to execute below types of tasks:
+* CPU bound task, e.g. md5 calculation
+* File I/O task
+* Call `os.execute()` or blocking C API via `ffi`
+* Call external Lua library not based on cosocket or nginx
+
+Example Usage:
+
+```nginx
+location /calc_md5 {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok, md5_val = ngx.run_worker_thread("testpool", "calc_md5", ngx.var.arg_str)
+        ngx.say(md5_val)
+    }
+}
+
+location /write_log_file {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok = ngx.run_worker_thread("testpool", "write_log_file", ngx.var.arg_str)
+        ngx.say(ok)
+    }
+}
+```
+
+`calc_md5.lua`
+```lua
+local resty_md5 = require "resty.md5"
+local resty_str = require "resty.string"
+
+return function(str)
+    local md5 = resty_md5:new()
+    if not md5 then
+        return "fff"
+    end
+    
+    local ok = md5:update(str)
+    if not ok then
+        return "fffxxx"
+    end
+    
+    local digest = md5:final()
+    return resty_str.to_hex(digest)
+end
+```
+
+`write_log_file.lua`
+```lua
+local file = io.open("/tmp/tmp.log", "a")
+
+return function(str)
+    file:write(str)
+    file:flush()
+end
+```
+
 
 [Back to TOC](#nginx-api-for-lua)
 
