@@ -191,11 +191,12 @@ my_thread_completion(ngx_event_t *ev)
         nresults = 2;
     } else {
         // copying return values
-        lua_pushboolean(vm, 1);
+        lua_pushboolean(L, 1);
         nresults = lua_gettop(vm);
         for(int i = 1; i <= nresults; i++) {
             lauxh_xcopy(vm, L, i, 1);
         }
+        nresults += 1;
     }
 
     put_task_ctx(myctx->ctx);
