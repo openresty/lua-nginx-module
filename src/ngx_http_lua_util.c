@@ -3768,6 +3768,11 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
 
     cln->data = state;
 
+    /* this VM cleanup should only be called in the main vm */
+    if (lmcf->vm_cleanup == NULL) {
+        lmcf->vm_cleanup = cln;
+    }
+
     if (pcln) {
         *pcln = cln;
     }

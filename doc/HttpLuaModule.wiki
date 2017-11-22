@@ -1196,6 +1196,8 @@ This hook is often used to create per-worker reoccurring timers (via the [[#ngx.
 
 This directive was first introduced in the <code>v0.9.5</code> release.
 
+After <code>v0.10.12</code> release, the specified Lua code doesn't run in cache processes anymore.
+
 == init_worker_by_lua_block ==
 
 '''syntax:''' ''init_worker_by_lua_block { lua-script }''
