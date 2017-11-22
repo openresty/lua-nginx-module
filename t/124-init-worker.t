@@ -9,25 +9,12 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 3 + 20);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 our $ServerRoot = server_root();
-
-add_block_preprocessor(sub {
-    my $block = shift;
-
-    my $http_config = $block->http_config || '';
-
-    $http_config .= <<_EOC_;
-
-     proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
-_EOC_
-
-    $block->set_value("http_config", $http_config);
-});
 
 #no_diff();
 no_long_string();
@@ -773,11 +760,29 @@ ok
 
 
 
-=== TEST 20: destory Lua VM in cache processes
---- skip_eval
-2:
-# Nginx under Valgrind mode doesn't spawn cache processes.
-$ENV{TEST_NGINX_USE_VALGRIND} // 0 == 1
+=== TEST 20: disable init_worker_by_lua* in cache processes
+--- http_config
+    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+    init_worker_by_lua_block {
+        ngx.log(ngx.WARN, "running lua code in worker ", ngx.worker.id())
+    }
+--- config
+    location = /t {
+        return 200;
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- grep_error_log eval: qr/running lua code in worker [^,]+/
+--- grep_error_log_out
+running lua code in worker 0
+
+
+
+=== TEST 21: destory Lua VM in cache processes
+--- http_config
+    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
 --- config
     location = /t {
         return 200;
