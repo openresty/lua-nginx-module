@@ -40,11 +40,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
 
-    if (lmcf == NULL) {
-        return NGX_OK;
-    }
-
-    if (lmcf->lua != NULL) {
+    if (lmcf != NULL && lmcf->lua != NULL) {
         /* disable init_worker_by_lua* and destroy lua VM in cache processes */
         if (ngx_process == NGX_PROCESS_HELPER) {
 #if defined(HAVE_PRIVILEGED_PROCESS_PATCH) && !NGX_WIN32
@@ -61,12 +57,12 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
             }
 #endif
         }
-
-    } else {
-        return NGX_OK;
     }
 
-    if (lmcf->init_worker_handler == NULL) {
+    if (lmcf == NULL
+        || lmcf->init_worker_handler == NULL
+        || lmcf->lua == NULL)
+    {
         return NGX_OK;
     }
 
