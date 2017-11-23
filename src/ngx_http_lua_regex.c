@@ -2199,6 +2199,8 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
         goto error;
     }
 
+    pool->log = (ngx_log_t *) &ngx_cycle->new_log;
+
     re = ngx_palloc(pool, sizeof(ngx_http_lua_regex_t));
     if (re == NULL) {
         ngx_destroy_pool(pool);

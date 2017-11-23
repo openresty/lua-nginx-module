@@ -768,8 +768,9 @@ ok
     #lua_shared_dict dummy 500k;
 
     init_by_lua_block {
-        -- require "resty.core.regex"
-        -- assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        require "resty.core.regex"
+        assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        assert(ngx.re.match("hi, world", [[hi, \w+]], "ji"))
     }
 
 --- config
@@ -801,8 +802,9 @@ start privileged agent process
     lua_shared_dict dummy 500k;
 
     init_by_lua_block {
-        -- require "resty.core.regex"
-        -- assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        require "resty.core.regex"
+        assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        assert(ngx.re.match("hi, world", [[hi, \w+]], "ji"))
     }
 
 --- config
@@ -835,8 +837,9 @@ start privileged agent process
 
     init_by_lua_block {
         assert(require "ngx.process".enable_privileged_agent())
-        -- require "resty.core.regex"
-        -- assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        require "resty.core.regex"
+        assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        assert(ngx.re.match("hi, world", [[hi, \w+]], "ji"))
     }
 
 --- config
@@ -870,8 +873,9 @@ qr/start privileged agent process \d+/
 
     init_by_lua_block {
         assert(require "ngx.process".enable_privileged_agent())
-        -- require "resty.core.regex"
-        -- assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        require "resty.core.regex"
+        assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        assert(ngx.re.match("hi, world", [[hi, \w+]], "ji"))
     }
 
     init_worker_by_lua_block {
@@ -909,8 +913,9 @@ qr/lua close the global Lua VM ([0-9A-F]+)$/,
     proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
 
     init_by_lua_block {
-        -- require "resty.core.regex"
-        -- assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        require "resty.core.regex"
+        assert(ngx.re.match("hello, world", [[hello, \w+]], "joi"))
+        assert(ngx.re.match("hi, world", [[hi, \w+]], "ji"))
     }
 
     init_worker_by_lua_block {
