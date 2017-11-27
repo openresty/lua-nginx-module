@@ -147,7 +147,16 @@ ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
     prefix = lua_tostring(L, -1);
     tmp_path = luaL_gsub(L, tmp_path, "$prefix", prefix);
     tmp_path = luaL_gsub(L, tmp_path, "${prefix}", prefix);
-    lua_pop(L, 3);
+
+#ifdef NGX_PREFIX
+    tmp_path = luaL_gsub(L, tmp_path, "$installation_prefix", NGX_PREFIX);
+    tmp_path = luaL_gsub(L, tmp_path, "${installation_prefix}", NGX_PREFIX);
+#else
+    tmp_path = luaL_gsub(L, tmp_path, "$installation_prefix", prefix);
+    tmp_path = luaL_gsub(L, tmp_path, "${installation_prefix}", prefix);
+#endif
+
+    lua_pop(L, 5);
 
     dd("tmp_path path: %s", tmp_path);
 
