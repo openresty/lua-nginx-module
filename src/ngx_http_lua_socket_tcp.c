@@ -120,13 +120,11 @@ static ngx_int_t ngx_http_lua_socket_tcp_resume_helper(ngx_http_request_t *r,
     int socket_op);
 static void ngx_http_lua_tcp_resolve_cleanup(void *data);
 static void ngx_http_lua_coctx_cleanup(void *data);
-
 static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
     ngx_http_lua_socket_pool_t *spool);
 static int ngx_http_lua_socket_shutdown_pool(lua_State *L);
 static void ngx_http_lua_socket_shutdown_pool_helper(
     ngx_http_lua_socket_pool_t *spool);
-
 static void
     ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx);
 static int ngx_http_lua_socket_prepare_error_retvals(ngx_http_request_t *r,
@@ -5035,6 +5033,7 @@ ngx_http_lua_socket_shutdown_pool_helper(ngx_http_lua_socket_pool_t *spool)
     spool->active_connections = 0;
 }
 
+
 static int
 ngx_http_lua_socket_shutdown_pool(lua_State *L)
 {
@@ -5469,7 +5468,9 @@ ngx_http_lua_cleanup_conn_pools(lua_State *L)
     while (lua_next(L, -2) != 0) {
         /* tb key val */
         spool = lua_touserdata(L, -1);
+
         ngx_http_lua_socket_shutdown_pool_helper(spool);
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "lua tcp socket keepalive: free connection pool "
                        "for \"%s\"", spool->key);
