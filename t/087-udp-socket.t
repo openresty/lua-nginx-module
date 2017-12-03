@@ -1104,3 +1104,23 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 --- no_error_log
 [alert]
+
+
+
+=== TEST 20: the upper bound of port range should be 2^16 - 1
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.udp()
+            local ok, err = sock:setpeername("127.0.0.1", 65536)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: bad port number: 65536
+--- no_error_log
+[error]
