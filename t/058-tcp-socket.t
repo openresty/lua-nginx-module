@@ -3727,3 +3727,22 @@ failed to connect: www.google.com could not be resolved
 hello!
 --- error_log eval
 qr{\[alert\] .*? send\(\) failed \(\d+: Operation not permitted\) while resolving}
+
+
+
+=== TEST 62: the upper bound of port range should be 2^16 - 1
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock, err = ngx.socket.connect("127.0.0.1", 65536)
+            if not sock then
+                ngx.say("failed to connect: ", err)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: bad port number: 65536
+--- no_error_log
+[error]
