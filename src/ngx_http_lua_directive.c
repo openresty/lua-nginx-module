@@ -109,7 +109,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     size = ngx_parse_size(&value[2]);
 
-    if (size <= 8191) {
+    if (size <= NGX_HTTP_LUA_SHDICT_MINSIZE) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid lua shared dict size \"%V\"", &value[2]);
         return NGX_CONF_ERROR;
