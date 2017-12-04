@@ -18,27 +18,25 @@
 
 struct ngx_http_lua_balancer_peer_data_s {
     /* the round robin data must be first */
-    ngx_http_upstream_rr_peer_data_t    rrp;
+    ngx_http_upstream_rr_peer_data_t  rrp;
 
-    ngx_http_lua_srv_conf_t            *conf;
-    ngx_http_request_t                 *request;
+    ngx_http_lua_srv_conf_t          *conf;
+    ngx_http_request_t                              *request;
 
-    ngx_uint_t                          more_tries;
-    ngx_uint_t                          total_tries;
+    ngx_uint_t                                   more_tries;
+    ngx_uint_t                                   total_tries;
 
-    struct sockaddr                    *sockaddr;
-    socklen_t                           socklen;
+    struct sockaddr                             *sockaddr;
+    socklen_t                                    socklen;
 
-    ngx_str_t                          *host;
-    in_port_t                           port;
+    ngx_str_t                                   *host;
+    in_port_t                                    port;
 
-    int                                 last_peer_state;
-
+    int                                          last_peer_state;
 #if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
-    unsigned                            cloned_upstream_conf;  /* :1 */
+    unsigned                                     cloned_upstream_conf;  /* :1 */
 #endif
 };
-
 
 #if (NGX_HTTP_SSL)
 static ngx_int_t ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc,
@@ -48,8 +46,14 @@ static void ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc,
 #endif
 static ngx_int_t ngx_http_lua_balancer_init(ngx_conf_t *cf,
     ngx_http_upstream_srv_conf_t *us);
+
+
+
 static ngx_int_t ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
     ngx_http_upstream_srv_conf_t *us);
+
+
+
 static ngx_int_t ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc,
     void *data);
 static ngx_int_t ngx_http_lua_balancer_by_chunk(lua_State *L,
@@ -220,29 +224,33 @@ ngx_http_lua_balancer_init(ngx_conf_t *cf,
 
 
 static ngx_int_t
+
 ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
+
     ngx_http_upstream_srv_conf_t *us)
 {
     ngx_http_lua_srv_conf_t            *bcf;
     ngx_http_lua_balancer_peer_data_t  *bp;
+    ngx_http_upstream_t                *upstream;
+    upstream = r->upstream;
 
     bp = ngx_pcalloc(r->pool, sizeof(ngx_http_lua_balancer_peer_data_t));
     if (bp == NULL) {
         return NGX_ERROR;
     }
 
-    r->upstream->peer.data = &bp->rrp;
+    upstream->peer.data = &bp->rrp;
 
     if (ngx_http_upstream_init_round_robin_peer(r, us) != NGX_OK) {
         return NGX_ERROR;
     }
 
-    r->upstream->peer.get = ngx_http_lua_balancer_get_peer;
-    r->upstream->peer.free = ngx_http_lua_balancer_free_peer;
+    upstream->peer.get = ngx_http_lua_balancer_get_peer;
+    upstream->peer.free = ngx_http_lua_balancer_free_peer;
 
 #if (NGX_HTTP_SSL)
-    r->upstream->peer.set_session = ngx_http_lua_balancer_set_session;
-    r->upstream->peer.save_session = ngx_http_lua_balancer_save_session;
+    upstream->peer.set_session = ngx_http_lua_balancer_set_session;
+    upstream->peer.save_session = ngx_http_lua_balancer_save_session;
 #endif
 
     bcf = ngx_http_conf_upstream_srv_conf(us, ngx_http_lua_module);
@@ -278,6 +286,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
+
         if (ctx == NULL) {
             return NGX_ERROR;
         }
@@ -340,6 +349,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
         if (bp->more_tries) {
             r->upstream->peer.tries += bp->more_tries;
+
         }
 
         dd("tries: %d", (int) r->upstream->peer.tries);
@@ -427,9 +437,7 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
     ngx_http_upstream_free_round_robin_peer(pc, data, state);
 }
 
-
 #if (NGX_HTTP_SSL)
-
 static ngx_int_t
 ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc, void *data)
 {
@@ -462,7 +470,6 @@ ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc, void *data)
 
 
 #ifndef NGX_LUA_NO_FFI_API
-
 int
 ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     const u_char *addr, size_t addr_len, int port, char **err)
@@ -478,7 +485,6 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
         *err = "no request found";
         return NGX_ERROR;
     }
-
     u = r->upstream;
 
     if (u == NULL) {
@@ -544,7 +550,6 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
 
     return NGX_OK;
 }
-
 
 int
 ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
@@ -646,10 +651,11 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     int count, char **err)
 {
 #if (nginx_version >= 1007005)
-    ngx_uint_t             max_tries, total;
+
+    ngx_uint_t                                     max_tries, total;
 #endif
-    ngx_http_lua_ctx_t    *ctx;
-    ngx_http_upstream_t   *u;
+    ngx_http_lua_ctx_t                 *ctx;
+    ngx_http_upstream_t                *u;
 
     ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_balancer_peer_data_t  *bp;
@@ -658,7 +664,6 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
         *err = "no request found";
         return NGX_ERROR;
     }
-
     u = r->upstream;
 
     if (u == NULL) {
@@ -684,10 +689,9 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
         *err = "no upstream peer data found";
         return NGX_ERROR;
     }
-
 #if (nginx_version >= 1007005)
-    max_tries = r->upstream->conf->next_upstream_tries;
-    total = bp->total_tries + r->upstream->peer.tries - 1;
+    max_tries = u->conf->next_upstream_tries;
+    total = bp->total_tries + u->peer.tries - 1;
 
     if (max_tries && total + count > max_tries) {
         count = max_tries - total;
@@ -709,10 +713,10 @@ int
 ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
     int *status, char **err)
 {
-    ngx_http_lua_ctx_t         *ctx;
-    ngx_http_upstream_t        *u;
-    ngx_http_upstream_state_t  *state;
-
+    ngx_http_lua_ctx_t                 *ctx;
+    ngx_http_upstream_t                *u;
+    ngx_http_upstream_state_t          *state;
+    ngx_array_t                                   *upstream_states;
     ngx_http_lua_balancer_peer_data_t  *bp;
     ngx_http_lua_main_conf_t           *lmcf;
 
@@ -720,8 +724,8 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
         *err = "no request found";
         return NGX_ERROR;
     }
-
     u = r->upstream;
+    upstream_states = r->upstream_states;
 
     if (u == NULL) {
         *err = "no upstream found";
@@ -746,10 +750,9 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
         *err = "no upstream peer data found";
         return NGX_ERROR;
     }
-
-    if (r->upstream_states && r->upstream_states->nelts > 1) {
-        state = r->upstream_states->elts;
-        *status = (int) state[r->upstream_states->nelts - 2].status;
+    if (upstream_states && upstream_states->nelts > 1) {
+        state = upstream_states->elts;
+        *status = (int) state[upstream_states->nelts - 2].status;
 
     } else {
         *status = 0;
@@ -757,5 +760,4 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
 
     return bp->last_peer_state;
 }
-
 #endif  /* NGX_LUA_NO_FFI_API */

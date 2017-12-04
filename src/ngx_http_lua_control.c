@@ -16,8 +16,12 @@
 #include "ngx_http_lua_coroutine.h"
 
 
+
 static int ngx_http_lua_ngx_exec(lua_State *L);
 static int ngx_http_lua_ngx_redirect(lua_State *L);
+
+
+
 static int ngx_http_lua_ngx_exit(lua_State *L);
 static int ngx_http_lua_on_abort(lua_State *L);
 
@@ -25,6 +29,7 @@ static int ngx_http_lua_on_abort(lua_State *L);
 void
 ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
 {
+
     /* ngx.redirect */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_redirect);
@@ -38,6 +43,7 @@ ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
     lua_setfield(L, -2, "throw_error"); /* deprecated */
 
+
     /* ngx.exit */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_exit);
@@ -48,6 +54,7 @@ ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_on_abort);
     lua_setfield(L, -2, "on_abort");
 }
+
 
 
 static int
@@ -293,6 +300,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 }
 
 
+
 static int
 ngx_http_lua_ngx_exit(lua_State *L)
 {
@@ -314,17 +322,20 @@ ngx_http_lua_ngx_exit(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                | NGX_HTTP_LUA_CONTEXT_BALANCER
+                               | NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
+
+        );
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
 
     if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
@@ -376,6 +387,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
         rc = NGX_HTTP_OK;
     }
 
+
     dd("setting exit code: %d", (int) rc);
 
     ctx->exit_code = rc;
@@ -389,6 +401,7 @@ ngx_http_lua_ngx_exit(lua_State *L)
     {
         return 0;
     }
+
 
     dd("calling yield");
     return lua_yield(L, 0);
@@ -506,6 +519,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 #endif
     }
 
+
     if (ctx->no_abort
         && status != NGX_ERROR
         && status != NGX_HTTP_CLOSE
@@ -533,6 +547,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 
         status = NGX_HTTP_OK;
     }
+
 
     ctx->exit_code = status;
     ctx->exited = 1;

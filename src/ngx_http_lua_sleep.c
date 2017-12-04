@@ -52,12 +52,15 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_CONTENT
+
+                               | NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
+
+
+                               | NGX_HTTP_LUA_CONTEXT_TIMER);
 
     coctx = ctx->cur_co_ctx;
     if (coctx == NULL) {
@@ -102,16 +105,30 @@ ngx_http_lua_ngx_sleep(lua_State *L)
 void
 ngx_http_lua_sleep_handler(ngx_event_t *ev)
 {
+
+
     ngx_connection_t        *c;
+
+
+
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
+
+
     ngx_http_log_ctx_t      *log_ctx;
+
+
     ngx_http_lua_co_ctx_t   *coctx;
 
     coctx = ev->data;
 
     r = coctx->data;
+
+
+
     c = r->connection;
+
+
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -119,15 +136,20 @@ ngx_http_lua_sleep_handler(ngx_event_t *ev)
         return;
     }
 
+
     if (c->fd != (ngx_socket_t) -1) {  /* not a fake connection */
         log_ctx = c->log->data;
         log_ctx->current_request = r;
     }
 
+
     coctx->cleanup = NULL;
+
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua sleep timer expired: \"%V?%V\"", &r->uri, &r->args);
+
+
 
     ctx->cur_co_ctx = coctx;
 
@@ -177,10 +199,10 @@ ngx_http_lua_sleep_cleanup(void *data)
 static ngx_int_t
 ngx_http_lua_sleep_resume(ngx_http_request_t *r)
 {
-    lua_State                   *vm;
-    ngx_connection_t            *c;
-    ngx_int_t                    rc;
-    ngx_uint_t                   nreqs;
+    lua_State                              *vm;
+    ngx_connection_t                       *c;
+    ngx_int_t                               rc;
+    ngx_uint_t                              nreqs;
     ngx_http_lua_ctx_t          *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);

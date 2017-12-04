@@ -194,7 +194,10 @@ ngx_http_lua_ngx_req_start_time(lua_State *L)
         return luaL_error(L, "no request found");
     }
 
+
     lua_pushnumber(L, (lua_Number) (r->start_sec + r->start_msec / 1000.0L));
+
+
     return 1;
 }
 
@@ -263,7 +266,9 @@ ngx_http_lua_ffi_now(void)
 double
 ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r)
 {
+
     return r->start_sec + r->start_msec / 1000.0;
+
 }
 
 

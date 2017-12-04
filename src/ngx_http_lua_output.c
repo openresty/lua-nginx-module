@@ -14,7 +14,11 @@ static int ngx_http_lua_ngx_say(lua_State *L);
 static int ngx_http_lua_ngx_print(lua_State *L);
 static int ngx_http_lua_ngx_flush(lua_State *L);
 static int ngx_http_lua_ngx_eof(lua_State *L);
+
+
 static int ngx_http_lua_ngx_send_headers(lua_State *L);
+
+
 static int ngx_http_lua_ngx_echo(lua_State *L, unsigned newline);
 static void ngx_http_lua_flush_cleanup(void *data);
 
@@ -66,6 +70,8 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
+
+
     if (ctx->acquired_raw_req_socket) {
         lua_pushnil(L);
         lua_pushliteral(L, "raw request socket acquired");
@@ -77,6 +83,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         lua_pushliteral(L, "header only");
         return 2;
     }
+
 
     if (ctx->eof) {
         lua_pushnil(L);
@@ -147,12 +154,14 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     }
 
     if (size == 0) {
+
         rc = ngx_http_lua_send_header_if_needed(r, ctx);
         if (rc == NGX_ERROR || rc > NGX_OK) {
             lua_pushnil(L);
             lua_pushliteral(L, "nginx output filter error");
             return 2;
         }
+
 
         lua_pushinteger(L, 1);
         return 1;
@@ -232,7 +241,9 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
 
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+
         lua_pushnil(L);
         lua_pushliteral(L, "nginx output filter error");
         return 2;
@@ -461,7 +472,11 @@ ngx_http_lua_ngx_flush(lua_State *L)
     int                          n;
     unsigned                     wait = 0;
     ngx_event_t                 *wev;
-    ngx_http_core_loc_conf_t    *clcf;
+
+
+    ngx_http_core_loc_conf_t    *cllscf;
+
+
     ngx_http_lua_co_ctx_t       *coctx;
 
     n = lua_gettop(L);
@@ -472,7 +487,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     r = ngx_http_lua_get_req(L);
 
+
     if (n == 1 && r == r->main) {
+
         luaL_checktype(L, 1, LUA_TBOOLEAN);
         wait = lua_toboolean(L, 1);
     }
@@ -482,9 +499,13 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
+
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+
+
 
     if (ctx->acquired_raw_req_socket) {
         lua_pushnil(L);
@@ -492,10 +513,12 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return 2;
     }
 
+
     coctx = ctx->cur_co_ctx;
     if (coctx == NULL) {
         return luaL_error(L, "no co ctx found");
     }
+
 
     if (r->header_only) {
         lua_pushnil(L);
@@ -503,11 +526,13 @@ ngx_http_lua_ngx_flush(lua_State *L)
         return 2;
     }
 
+
     if (ctx->eof) {
         lua_pushnil(L);
         lua_pushliteral(L, "seen eof");
         return 2;
     }
+
 
     if (ctx->buffering) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -528,6 +553,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 #endif
 
+
     cl = ngx_http_lua_get_flush_chain(r, ctx);
     if (cl == NULL) {
         return luaL_error(L, "no memory");
@@ -537,7 +563,9 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     dd("send chain: %d", (int) rc);
 
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+
         lua_pushnil(L);
         lua_pushliteral(L, "nginx output filter error");
         return 2;
@@ -548,8 +576,10 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     wev = r->connection->write;
 
+
     if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED
                  || wev->delayed))
+
     {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua flush requires waiting: buffered 0x%uxd, "
@@ -567,13 +597,17 @@ ngx_http_lua_ngx_flush(lua_State *L)
             r->write_event_handler = ngx_http_core_run_phases;
         }
 
-        clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+
+        cllscf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+
 
         if (!wev->delayed) {
-            ngx_add_timer(wev, clcf->send_timeout);
+            ngx_add_timer(wev, cllscf->send_timeout);
         }
 
-        if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+
+        if (ngx_handle_write_event(wev, cllscf->send_lowat) != NGX_OK) {
             if (wev->timer_set) {
                 wev->delayed = 0;
                 ngx_del_timer(wev);
@@ -623,11 +657,13 @@ ngx_http_lua_ngx_eof(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
+
     if (ctx->acquired_raw_req_socket) {
         lua_pushnil(L);
         lua_pushliteral(L, "raw request socket acquired");
         return 2;
     }
+
 
     if (ctx->eof) {
         lua_pushnil(L);
@@ -635,9 +671,12 @@ ngx_http_lua_ngx_eof(lua_State *L)
         return 2;
     }
 
+
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
+
+
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua send eof");
@@ -646,7 +685,9 @@ ngx_http_lua_ngx_eof(lua_State *L)
 
     dd("send chain: %d", (int) rc);
 
+
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+
         lua_pushnil(L);
         lua_pushliteral(L, "nginx output filter error");
         return 2;
@@ -660,8 +701,10 @@ ngx_http_lua_ngx_eof(lua_State *L)
 void
 ngx_http_lua_inject_output_api(lua_State *L)
 {
+
     lua_pushcfunction(L, ngx_http_lua_ngx_send_headers);
     lua_setfield(L, -2, "send_headers");
+
 
     lua_pushcfunction(L, ngx_http_lua_ngx_print);
     lua_setfield(L, -2, "print");
@@ -675,6 +718,7 @@ ngx_http_lua_inject_output_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_eof);
     lua_setfield(L, -2, "eof");
 }
+
 
 
 /**
@@ -716,6 +760,7 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
     lua_pushinteger(L, 1);
     return 1;
 }
+
 
 
 ngx_int_t

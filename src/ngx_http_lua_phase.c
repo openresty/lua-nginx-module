@@ -56,10 +56,6 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "access");
         break;
 
-    case NGX_HTTP_LUA_CONTEXT_CONTENT:
-        lua_pushliteral(L, "content");
-        break;
-
     case NGX_HTTP_LUA_CONTEXT_LOG:
         lua_pushliteral(L, "log");
         break;
@@ -72,14 +68,6 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "body_filter");
         break;
 
-    case NGX_HTTP_LUA_CONTEXT_TIMER:
-        lua_pushliteral(L, "timer");
-        break;
-
-    case NGX_HTTP_LUA_CONTEXT_BALANCER:
-        lua_pushliteral(L, "balancer");
-        break;
-
     case NGX_HTTP_LUA_CONTEXT_SSL_CERT:
         lua_pushliteral(L, "ssl_cert");
         break;
@@ -90,6 +78,19 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
 
     case NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH:
         lua_pushliteral(L, "ssl_session_fetch");
+        break;
+
+
+    case NGX_HTTP_LUA_CONTEXT_CONTENT:
+        lua_pushliteral(L, "content");
+        break;
+
+    case NGX_HTTP_LUA_CONTEXT_TIMER:
+        lua_pushliteral(L, "timer");
+        break;
+
+    case NGX_HTTP_LUA_CONTEXT_BALANCER:
+        lua_pushliteral(L, "balancer");
         break;
 
     default:

@@ -18,7 +18,10 @@
 
 static int ngx_http_lua_ngx_get(lua_State *L);
 static int ngx_http_lua_ngx_set(lua_State *L);
+
+
 static int ngx_http_lua_ngx_req_is_internal(lua_State *L);
+
 
 
 void
@@ -32,6 +35,7 @@ ngx_http_lua_inject_misc_api(lua_State *L)
     lua_setfield(L, -2, "__newindex");
     lua_setmetatable(L, -2);
 }
+
 
 
 void
@@ -57,14 +61,15 @@ ngx_http_lua_ngx_req_is_internal(lua_State *L)
 }
 
 
+
 static int
 ngx_http_lua_ngx_get(lua_State *L)
 {
-    int                          status;
-    ngx_http_request_t          *r;
-    u_char                      *p;
-    size_t                       len;
-    ngx_http_lua_ctx_t          *ctx;
+    int                             status;
+    ngx_http_request_t                 *r;
+    u_char                         *p;
+    size_t                          len;
+    ngx_http_lua_ctx_t  *ctx;
 
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
@@ -100,6 +105,7 @@ ngx_http_lua_ngx_get(lua_State *L)
             status = 0;
         }
 
+
         lua_pushinteger(L, status);
         return 1;
     }
@@ -109,6 +115,7 @@ ngx_http_lua_ngx_get(lua_State *L)
     {
         return ngx_http_lua_ngx_get_ctx(L);
     }
+
 
     if (len == sizeof("is_subrequest") - 1
         && ngx_strncmp(p, "is_subrequest", sizeof("is_subrequest") - 1) == 0)
@@ -128,6 +135,7 @@ ngx_http_lua_ngx_get(lua_State *L)
         return 1;
     }
 
+
     dd("key %s not matched", p);
 
     lua_pushnil(L);
@@ -144,6 +152,7 @@ ngx_http_lua_ngx_set(lua_State *L)
 
     /* we skip the first argument that is the table */
     p = (u_char *) luaL_checklstring(L, 2, &len);
+
 
     if (len == sizeof("status") - 1
         && ngx_strncmp(p, "status", sizeof("status") - 1) == 0)
@@ -184,6 +193,7 @@ ngx_http_lua_ngx_set(lua_State *L)
         return 0;
     }
 
+
     if (len == sizeof("ctx") - 1
         && ngx_strncmp(p, "ctx", sizeof("ctx") - 1) == 0)
     {
@@ -201,6 +211,7 @@ ngx_http_lua_ngx_set(lua_State *L)
 
 
 #ifndef NGX_LUA_NO_FFI_API
+
 int
 ngx_http_lua_ffi_get_resp_status(ngx_http_request_t *r)
 {
@@ -286,6 +297,7 @@ ngx_http_lua_ffi_headers_sent(ngx_http_request_t *r)
 
     return r->header_sent ? 1 : 0;
 }
+
 #endif /* NGX_LUA_NO_FFI_API */
 
 

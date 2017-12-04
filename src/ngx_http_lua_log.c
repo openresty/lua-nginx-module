@@ -13,7 +13,10 @@
 
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
+
+
 #include "ngx_http_lua_log_ringbuf.h"
+
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -56,7 +59,10 @@ ngx_http_lua_ngx_log(lua_State *L)
     /* remove log-level param from stack */
     lua_remove(L, 1);
 
+
     return log_wrapper(log, "[lua] ", (ngx_uint_t) level, L);
+
+
 }
 
 
@@ -82,7 +88,10 @@ ngx_http_lua_print(lua_State *L)
         log = ngx_cycle->log;
     }
 
+
     return log_wrapper(log, "[lua] ", NGX_LOG_NOTICE, L);
+
+
 }
 
 
@@ -315,6 +324,7 @@ ngx_http_lua_inject_log_consts(lua_State *L)
 }
 
 
+
 #ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
 ngx_int_t
 ngx_http_lua_capture_log_handler(ngx_log_t *log,
@@ -429,5 +439,6 @@ ngx_http_lua_ffi_errlog_get_sys_filter_level(ngx_http_request_t *r)
 }
 
 #endif
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -50,6 +50,7 @@ static int ngx_http_lua_ngx_crc32_short(lua_State *L);
 static int ngx_http_lua_ngx_crc32_long(lua_State *L);
 static int ngx_http_lua_ngx_encode_args(lua_State *L);
 static int ngx_http_lua_ngx_decode_args(lua_State *L);
+
 #if (NGX_OPENSSL)
 static int ngx_http_lua_ngx_hmac_sha1(lua_State *L);
 #endif

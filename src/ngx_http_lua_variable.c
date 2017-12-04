@@ -19,6 +19,11 @@ static int ngx_http_lua_var_get(lua_State *L);
 static int ngx_http_lua_var_set(lua_State *L);
 
 
+
+    
+
+
+
 void
 ngx_http_lua_inject_variable_api(lua_State *L)
 {
@@ -53,6 +58,7 @@ ngx_http_lua_var_get(lua_State *L)
     ngx_str_t                    name;
     ngx_http_variable_value_t   *vv;
 
+
 #if (NGX_PCRE)
     u_char                      *val;
     ngx_uint_t                   n;
@@ -60,12 +66,14 @@ ngx_http_lua_var_get(lua_State *L)
     int                         *cap;
 #endif
 
+
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request object found");
     }
 
     ngx_http_lua_check_fake_request(L, r);
+
 
 #if (NGX_PCRE)
     if (lua_type(L, -1) == LUA_TNUMBER) {
@@ -104,6 +112,7 @@ ngx_http_lua_var_get(lua_State *L)
     }
 #endif
 
+
     if (lua_type(L, -1) != LUA_TSTRING) {
         return luaL_error(L, "bad variable name");
     }
@@ -117,7 +126,9 @@ ngx_http_lua_var_get(lua_State *L)
     name.len = len;
     name.data = lowcase;
 
+
     vv = ngx_http_get_variable(r, &name, hash);
+
 
     if (vv == NULL || vv->not_found) {
         lua_pushnil(L);
@@ -242,13 +253,17 @@ ngx_http_lua_var_set(lua_State *L)
                 vv->len = len;
             }
 
+
             v->set_handler(r, vv, v->data);
+
 
             return 0;
         }
 
         if (v->flags & NGX_HTTP_VAR_INDEXED) {
+
             vv = &r->variables[v->index];
+
 
             dd("set indexed variable");
 
@@ -350,7 +365,10 @@ ngx_http_lua_ffi_var_get(ngx_http_request_t *r, u_char *name_data,
 
     dd("variable name: %.*s", (int) name_len, lowcase_buf);
 
+
     vv = ngx_http_get_variable(r, &name, hash);
+
+
     if (vv == NULL || vv->not_found) {
         return NGX_DECLINED;
     }
