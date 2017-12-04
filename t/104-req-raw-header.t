@@ -876,3 +876,115 @@ Foo: bar\r
 --- no_error_log
 [error]
 --- timeout: 5
+
+
+
+=== TEST 30: large headers (using single LF as line break)
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.print(ngx.req.raw_header())
+        }
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.1
+Host: localhost
+Connection: close
+".
+(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- response_body eval
+qq{GET /t HTTP/1.1
+Host: localhost
+Connection: close
+}
+.(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 31: large headers without request line (using single LF as line break)
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.print(ngx.req.raw_header(true))
+        }
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.1
+Host: localhost
+Connection: close
+".
+(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- response_body eval
+qq{Host: localhost
+Connection: close
+}
+.(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 32: large headers with leading CRLF (using single LF as line break)
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.print(ngx.req.raw_header())
+        }
+    }
+
+--- raw_request eval
+"\r
+GET /t HTTP/1.1
+Host: localhost
+Connection: close
+".
+(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- response_body eval
+qq{GET /t HTTP/1.1
+Host: localhost
+Connection: close
+}
+.(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- no_error_log
+[error]
+--- timeout: 5
+
+
+
+=== TEST 33: large headers without request line but contains leading CRLF (using single LF as line break)
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.print(ngx.req.raw_header(true))
+        }
+    }
+
+--- raw_request eval
+"\r
+GET /t HTTP/1.1
+Host: localhost
+Connection: close
+".
+(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- response_body eval
+qq{Host: localhost
+Connection: close
+}
+.(CORE::join "\n", map { "Header$_: value-$_" } 1..512) . "\n\n"
+
+--- no_error_log
+[error]
+--- timeout: 5

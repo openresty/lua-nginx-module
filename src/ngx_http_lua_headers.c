@@ -245,7 +245,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
         if (b != mr->header_in) {
             /* skip truncated header entries (if any) */
-            while (last > data && last[-1] != LF) {
+            while (last > data && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
         }
@@ -315,7 +315,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if 1
             /* skip truncated header entries (if any) */
-            while (last > p && last[-1] != LF) {
+            while (last > p && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
 #endif
@@ -325,8 +325,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 if (*p == '\0') {
                     j++;
                     if (p + 1 == last) {
-                        /* XXX this should not happen */
-                        dd("found string end!!");
+                        *p = LF;
 
                     } else if (*(p + 1) == LF) {
                         *p = CR;
