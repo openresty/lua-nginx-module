@@ -26,7 +26,7 @@ sub read_file {
     $cert;
 }
 
-our $ComodoRootCertificate = read_file("t/cert/comodo-ca.crt");
+our $DSTRootCertificate = read_file("t/cert/dst-ca.crt");
 our $EquifaxRootCertificate = read_file("t/cert/equifax.crt");
 our $TestCertificate = read_file("t/cert/test.crt");
 our $TestCertificateKey = read_file("t/cert/test.key");
@@ -421,7 +421,7 @@ The certificate of "openresty.org" does not contain the name "blah.openresty.org
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -501,7 +501,7 @@ The certificate for "openresty.org" does not contain the name "blah.openresty.or
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -660,7 +660,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -744,7 +744,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -823,7 +823,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -1005,7 +1005,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -1083,7 +1083,7 @@ SSL reused session
 --- user_files eval
 ">>> trusted.crt
 $::EquifaxRootCertificate
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -1472,7 +1472,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -1548,7 +1548,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 GET /t
@@ -1607,7 +1607,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::ComodoRootCertificate"
+$::DSTRootCertificate"
 
 --- request
 POST /t
