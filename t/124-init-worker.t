@@ -759,7 +759,7 @@ ok
 
 
 
-=== TEST 20: destory Lua VM in cache processes (without privileged agent or shdict)
+=== TEST 20: destroy Lua VM in cache processes (without privileged agent or shdict)
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
@@ -797,7 +797,7 @@ start privileged agent process
 
 
 
-=== TEST 21: destory Lua VM in cache processes (without privileged agent but with shdict)
+=== TEST 21: destroy Lua VM in cache processes (without privileged agent but with shdict)
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
@@ -835,7 +835,7 @@ start privileged agent process
 
 
 
-=== TEST 22: destory Lua VM in cache processes (with privileged agent)
+=== TEST 22: destroy Lua VM in cache processes (with privileged agent)
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
@@ -875,7 +875,7 @@ qr/start privileged agent process \d+/
 
 
 
-=== TEST 23: destory Lua VM in cache processes (with init worker and privileged agent)
+=== TEST 23: destroy Lua VM in cache processes (with init worker and privileged agent)
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
@@ -916,7 +916,7 @@ qr/lua close the global Lua VM ([0-9A-F]+)$/,
 
 
 
-=== TEST 24: destory Lua VM in cache processes (with init worker but without privileged agent)
+=== TEST 24: destroy Lua VM in cache processes (with init worker but without privileged agent)
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
