@@ -30,13 +30,14 @@ __DATA__
                 void *ngx_http_lua_find_zone(char *data, size_t len);
             ]]
 
-            local buf = ffi.new("char[?]", 4)
-            ffi.copy(buf, "foo", 3)
-            local zone = ffi.C.ngx_http_lua_find_zone(buf, 3)
+            local buf = ffi.new("char[?]", 20)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "foo", 3)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 19)
             ngx.say("foo zone: ", tonumber(ffi.cast("long", zone)) ~= 0 and "defined" or "undef")
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
             ngx.say("dogs zone: ", tonumber(ffi.cast("long", zone)) ~= 0 and "defined" or "undef")
         ';
     }
@@ -83,10 +84,11 @@ dogs zone: defined
             dogs:set("foo", 1234567)
             dogs:set("bar", 3.14159)
 
-            local buf = ffi.new("char[?]", 4)
+            local buf = ffi.new("char[?]", 20)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -146,10 +148,11 @@ bar: rc=0, type=3, val=3.14159
             dogs:set("foo", true)
             dogs:set("bar", false)
 
-            local buf = ffi.new("char[?]", 4)
+            local buf = ffi.new("char[?]", 20)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -209,10 +212,11 @@ bar: rc=0, type=1, val=0
             local dogs = ngx.shared.dogs
             dogs:flush_all()
 
-            local buf = ffi.new("char[?]", 4)
+            local buf = ffi.new("char[?]", 20)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -269,10 +273,11 @@ bar: rc=-5
             dogs:set("foo", "hello world")
             dogs:set("bar", "")
 
-            local buf = ffi.new("char[?]", 4)
+            local buf = ffi.new("char[?]", 20)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
 
             local s = ffi.new("char[?]", 20)
 
@@ -341,10 +346,11 @@ bar: rc=0, type=4, val=, len=0
             local dogs = ngx.shared.dogs
             dogs:set("foo", nil)
 
-            local buf = ffi.new("char[?]", 4)
+            local buf = ffi.new("char[?]", 20)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -375,13 +381,14 @@ foo: rc=-5
                 void *ngx_http_lua_find_zone(char *data, size_t len);
             ]]
 
-            local buf = ffi.new("char[?]", 4)
-            ffi.copy(buf, "cats", 4)
-            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local buf = ffi.new("char[?]", 20)
+            ffi.copy(buf, "http_lua_shdict_", 16)
+            ffi.copy(buf + 16, "cats", 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
             local cats = tostring(zone)
 
-            ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            ffi.copy(buf + 16, "dogs", 4)
+            zone = ffi.C.ngx_http_lua_find_zone(buf, 20)
             local dogs = tostring(zone)
 
             ngx.say("dogs == cats ? ", dogs == cats)
