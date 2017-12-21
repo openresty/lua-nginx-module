@@ -31,6 +31,11 @@
 #include "ngx_http_lua_log.h"
 
 
+#define NGX_HTTP_LUA_SHDICT_ZONE_PREFIX     "http_lua_shdict_"
+#define NGX_HTTP_LUA_SHDICT_ZONE_PREFIX_LEN \
+    sizeof(NGX_HTTP_LUA_SHDICT_ZONE_PREFIX) - 1
+
+
 typedef struct ngx_http_lua_block_parser_ctx_s
     ngx_http_lua_block_parser_ctx_t;
 
@@ -75,11 +80,12 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_lua_main_conf_t   *lmcf = conf;
 
-    ngx_str_t                  *value, name;
+    ngx_str_t                  *value, name, zone_name;
     ngx_shm_zone_t             *zone;
     ngx_shm_zone_t            **zp;
     ngx_http_lua_shdict_ctx_t  *ctx;
     ssize_t                     size;
+    u_char                     *buf;
 
     if (lmcf->shdict_zones == NULL) {
         lmcf->shdict_zones = ngx_palloc(cf->pool, sizeof(ngx_array_t));
@@ -107,6 +113,18 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     name = value[1];
 
+    buf = ngx_palloc(cf->pool, NGX_HTTP_LUA_SHDICT_ZONE_PREFIX_LEN + name.len);
+    if (buf == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    ngx_memcpy(buf, NGX_HTTP_LUA_SHDICT_ZONE_PREFIX,
+               NGX_HTTP_LUA_SHDICT_ZONE_PREFIX_LEN);
+    ngx_memcpy(buf + NGX_HTTP_LUA_SHDICT_ZONE_PREFIX_LEN, name.data, name.len);
+
+    zone_name.data = buf;
+    zone_name.len = NGX_HTTP_LUA_SHDICT_ZONE_PREFIX_LEN + name.len;
+
     size = ngx_parse_size(&value[2]);
 
     if (size <= 8191) {
@@ -124,7 +142,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
 
-    zone = ngx_http_lua_shared_memory_add(cf, &name, (size_t) size,
+    zone = ngx_http_lua_shared_memory_add(cf, &zone_name, (size_t) size,
                                           &ngx_http_lua_module);
     if (zone == NULL) {
         return NGX_CONF_ERROR;
