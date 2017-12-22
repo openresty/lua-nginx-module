@@ -86,12 +86,15 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
      * to main Lua thread
      */
     co = lua_newthread(vm);
+    if (co == NULL) {
+        return luaL_error(L, "no memory");
+    }
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
     coctx = ngx_http_lua_get_co_ctx(co, ctx);
     if (coctx == NULL) {
-        coctx = ngx_http_lua_create_co_ctx(r, ctx);
+        coctx = ngx_http_lua_create_co_ctx(r, ctx, co);
         if (coctx == NULL) {
             return luaL_error(L, "no memory");
         }

@@ -440,6 +440,13 @@ typedef struct {
 } ngx_http_lua_vm_state_t;
 
 
+typedef struct ngx_http_user_co_ctx_s {
+    ngx_rbtree_t                  rbtree;
+    ngx_rbtree_node_t             sentinel;
+    ngx_pool_t                   *pool;
+} ngx_http_user_co_ctx_t;
+
+
 typedef struct ngx_http_lua_ctx_s {
     /* for lua_coce_cache off: */
     ngx_http_lua_vm_state_t  *vm_state;
@@ -449,8 +456,7 @@ typedef struct ngx_http_lua_ctx_s {
 
     ngx_http_lua_co_ctx_t   *cur_co_ctx; /* co ctx for the current coroutine */
 
-    /* FIXME: we should use rbtree here to prevent O(n) lookup overhead */
-    ngx_list_t              *user_co_ctx; /* coroutine contexts for user
+    ngx_http_user_co_ctx_t  *user_co_ctx; /* coroutine contexts for user
                                              coroutines */
 
     ngx_http_lua_co_ctx_t    entry_co_ctx; /* coroutine context for the
