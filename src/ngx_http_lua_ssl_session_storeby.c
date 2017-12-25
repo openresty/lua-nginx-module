@@ -269,8 +269,11 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "storing SSL session by lua";
-
-    rc = lscf->srv.ssl_sess_store_handler(r, lscf, L);
+    if(lscf->srv.ssl_sess_store_handler) {
+        rc = lscf->srv.ssl_sess_store_handler(r, lscf, L);
+    } else {
+        rc = 0;
+    }
 
     if (rc >= NGX_OK || rc == NGX_ERROR) {
         cctx->done = 1;

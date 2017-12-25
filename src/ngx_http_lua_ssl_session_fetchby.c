@@ -307,8 +307,12 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "fetching SSL session by lua";
-
-    rc = lscf->srv.ssl_sess_fetch_handler(r, lscf, L);
+    
+    if(lscf->srv.ssl_sess_fetch_handler) {
+        rc = lscf->srv.ssl_sess_fetch_handler(r, lscf, L);
+    } else {
+        rc = 0;
+    }
 
     if (rc >= NGX_OK || rc == NGX_ERROR) {
         cctx->done = 1;
