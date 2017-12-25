@@ -1079,6 +1079,7 @@ Directives
 * [lua_need_request_body](#lua_need_request_body)
 * [ssl_certificate_by_lua_block](#ssl_certificate_by_lua_block)
 * [ssl_certificate_by_lua_file](#ssl_certificate_by_lua_file)
+* [ssl_psk_identity_hint](#ssl_psk_identity_hint)
 * [ssl_session_fetch_by_lua_block](#ssl_session_fetch_by_lua_block)
 * [ssl_session_fetch_by_lua_file](#ssl_session_fetch_by_lua_file)
 * [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block)
@@ -1097,6 +1098,8 @@ Directives
 * [lua_ssl_protocols](#lua_ssl_protocols)
 * [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
+* [lua_ssl_psk_identity](#lua_ssl_psk_identity)
+* [lua_ssl_psk_key](#lua_ssl_psk_key)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
 * [access_by_lua_no_postpone](#access_by_lua_no_postpone)
@@ -2573,6 +2576,22 @@ This directive was first introduced in the `v0.10.0` release.
 
 [Back to TOC](#directives)
 
+ssl_psk_identity_hint
+---------------------
+
+**syntax:** *ssl_psk_identity_hint &lt;tls_psk_identity_hint&gt;*
+
+**default:** *no*
+
+**context:** *http, server*
+
+Specifies the TLS-PSK identity hint string which NGINX will send to a client during
+the SSL handshake for the downstream SSL (https) connections.
+
+This directive was first introduced in the `v0.XX.YY` release.
+
+[Back to TOC](#directives)
+
 ssl_session_fetch_by_lua_block
 ------------------------------
 
@@ -2964,6 +2983,36 @@ Sets the verification depth in the server certificates chain.
 This directive was first introduced in the `v0.9.11` release.
 
 See also [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
+
+[Back to TOC](#directives)
+
+lua_ssl_psk_identity
+--------------------
+
+**syntax:** *lua_ssl_psk_identity &lt;tls_psk_identity&gt;*
+
+**default:** *no*
+
+**context:** *http, server, location*
+
+Specifies the TLS-PSK identity string which NGINX will send to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive was first introduced in the `v0.XX.YY` release.
+
+[Back to TOC](#directives)
+
+lua_ssl_psk_key
+---------------
+
+**syntax:** *lua_ssl_psk_key &lt;tls_psk_key&gt;*
+
+**default:** *no*
+
+**context:** *http, server, location*
+
+Specifies the TLS-PSK key string which NGINX will try use with a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive was first introduced in the `v0.XX.YY` release.
 
 [Back to TOC](#directives)
 

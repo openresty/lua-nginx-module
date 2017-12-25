@@ -92,6 +92,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
+    ngx_str_t                        ssl_psk_identity_hint;
 #endif
 
     unsigned                         ft_type:16;

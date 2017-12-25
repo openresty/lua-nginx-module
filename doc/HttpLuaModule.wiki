@@ -2168,6 +2168,19 @@ When a relative path like <code>foo/bar.lua</code> is given, they will be turned
 
 This directive was first introduced in the <code>v0.10.0</code> release.
 
+== ssl_psk_identity_hint ==
+
+'''syntax:''' ''ssl_psk_identity_hint <tls_psk_identity_hint>''
+
+'''default:''' ''no''
+
+'''context:''' ''http, server''
+
+Specifies the TLS-PSK identity hint string which NGINX will send to a client during
+the SSL handshake for the downstream SSL (https) connections.
+
+This directive was first introduced in the <code>v0.XX.YY</code> release.
+
 == ssl_session_fetch_by_lua_block ==
 
 '''syntax:''' ''ssl_session_fetch_by_lua_block { lua-script }''
@@ -2506,6 +2519,30 @@ Sets the verification depth in the server certificates chain.
 This directive was first introduced in the <code>v0.9.11</code> release.
 
 See also [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]].
+
+== lua_ssl_psk_identity ==
+
+'''syntax:''' ''lua_ssl_psk_identity <tls_psk_identity>''
+
+'''default:''' ''no''
+
+'''context:''' ''http, server, location''
+
+Specifies the TLS-PSK identity string which NGINX will send to a SSL/TLS server in the [[#tcpsock:sslhandshake|tcpsock:sslhandshake]] method.
+
+This directive was first introduced in the <code>v0.XX.YY</code> release.
+
+== lua_ssl_psk_key ==
+
+'''syntax:''' ''lua_ssl_psk_key <tls_psk_key>''
+
+'''default:''' ''no''
+
+'''context:''' ''http, server, location''
+
+Specifies the TLS-PSK key string which NGINX will try use with a SSL/TLS server in the [[#tcpsock:sslhandshake|tcpsock:sslhandshake]] method.
+
+This directive was first introduced in the <code>v0.XX.YY</code> release.
 
 == lua_http10_buffering ==
 

@@ -129,6 +129,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x0400
 #define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE 0x0800
 #define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH 0x1000
+#define NGX_HTTP_LUA_CONTEXT_SSL_PSK        0x2000
 
 
 #ifndef NGX_LUA_NO_FFI_API
@@ -249,6 +250,8 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt     ssl_sess_fetch_handler;
         ngx_str_t                            ssl_sess_fetch_src;
         u_char                              *ssl_sess_fetch_src_key;
+
+        ngx_str_t                            ssl_psk_identity_hint;
     } srv;
 #endif
 
@@ -269,6 +272,8 @@ typedef struct {
     ngx_uint_t              ssl_verify_depth;
     ngx_str_t               ssl_trusted_certificate;
     ngx_str_t               ssl_crl;
+    ngx_str_t               ssl_psk_identity;
+    ngx_str_t               ssl_psk_key;
 #endif
 
     ngx_flag_t              force_read_body; /* whether force request body to

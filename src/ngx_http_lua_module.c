@@ -28,6 +28,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
+#include "ngx_http_lua_ssl_pskby.h"
 #include "ngx_http_lua_headers.h"
 
 
@@ -557,6 +558,27 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_ssl_sess_fetch_handler_file },
 
+    { ngx_string("ssl_psk_identity_hint"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      offsetof(ngx_http_lua_srv_conf_t, srv.ssl_psk_identity_hint),
+      NULL },
+
+    { ngx_string("lua_ssl_psk_identity"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_psk_identity),
+      NULL },
+
+    { ngx_string("lua_ssl_psk_key"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_psk_key),
+      NULL },
+
     { ngx_string("lua_ssl_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -922,6 +944,8 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
      *      lscf->srv.ssl_session_fetch_src_key = NULL;
      *
+     *      lscf->srv.ssl_psk_identity_hint = { 0, NULL };
+     *
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
      *      lscf->balancer.src_key = NULL;
@@ -969,6 +993,8 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
         SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_http_lua_ssl_cert_handler, NULL);
 
+        SSL_CTX_set_psk_server_callback(sscf->ssl.ctx,
+                                        ngx_http_lua_ssl_psk_server_handler);
 #   else
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
@@ -1024,6 +1050,42 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         }
     }
 
+     if (conf->srv.ssl_psk_identity_hint.len == 0) {
+         conf->srv.ssl_psk_identity_hint = prev->srv.ssl_psk_identity_hint;
+     }
+
+     if (conf->srv.ssl_psk_identity_hint.len) {
+         dd("ssl psk identity hint: %.*s",
+             (int) conf->srv.ssl_psk_identity_hint.len,
+             conf->srv.ssl_psk_identity_hint.data);
+
+ #   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
+
+         sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
+         if (sscf == NULL || sscf->ssl.ctx == NULL) {
+             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                           "no ssl configured for the server");
+
+             return NGX_CONF_ERROR;
+         }
+
+         if (SSL_CTX_use_psk_identity_hint(sscf->ssl.ctx,
+               (const char *) conf->srv.ssl_psk_identity_hint.data) == 0) {
+             ngx_ssl_error(NGX_LOG_EMERG, cf->log, 0,
+                           "SSL_CTX_use_psk_identity_hint(\"%V\") failed",
+                           &conf->srv.ssl_psk_identity_hint);
+             return NGX_CONF_ERROR;
+         }
+
+ #   else
+
+         ngx_log_error(NGX_LOG_CRIT, cf->log, 0,
+                       "OpenSSL too old to support ssl_psk_identity_hint");
+         return NGX_CONF_ERROR;
+
+ #   endif
+     }
+
 #endif  /* NGX_HTTP_SSL */
     return NGX_CONF_OK;
 }
@@ -1067,6 +1129,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->ssl_ciphers = { 0, NULL };
      *      conf->ssl_trusted_certificate = { 0, NULL };
      *      conf->ssl_crl = { 0, NULL };
+     *      conf->ssl_psk_identity = { 0, NULL };
+     *      conf->ssl_psk_key = {0, NULL };
      */
 
     conf->force_read_body    = NGX_CONF_UNSET;
@@ -1159,6 +1223,11 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
                              prev->ssl_trusted_certificate, "");
     ngx_conf_merge_str_value(conf->ssl_crl, prev->ssl_crl, "");
+
+    ngx_conf_merge_str_value(conf->ssl_psk_identity,
+                             prev->ssl_psk_identity, "");
+    ngx_conf_merge_str_value(conf->ssl_psk_key,
+                             prev->ssl_psk_key, "");
 
     if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
         return NGX_CONF_ERROR;
@@ -1264,6 +1333,26 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 
     if (ngx_ssl_crl(cf, llcf->ssl, &llcf->ssl_crl) != NGX_OK) {
         return NGX_ERROR;
+    }
+
+    if (llcf->ssl_psk_identity.len && llcf->ssl_psk_key.len) {
+        dd("ssl psk identity: %.*s", (int) llcf->ssl_psk_identity.len,
+                                           llcf->ssl_psk_identity.data);
+        dd("ssl psk key: %.*s", (int) llcf->ssl_psk_key.len,
+                                      llcf->ssl_psk_key.data);
+
+#   if OPENSSL_VERSION_NUMBER >= 0x1000000fL
+
+        SSL_CTX_set_psk_client_callback(llcf->ssl->ctx,
+                                        ngx_http_lua_ssl_psk_client_handler);
+
+#   else
+
+        ngx_log_error(NGX_LOG_CRIT, cf->log, 0,
+                      "OpenSSL too old to support ssl_psk_identity");
+        return NGX_ERROR;
+
+#   endif
     }
 
     return NGX_OK;

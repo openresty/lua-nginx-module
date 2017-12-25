@@ -22,6 +22,7 @@ static int ngx_http_lua_socket_tcp(lua_State *L);
 static int ngx_http_lua_socket_tcp_connect(lua_State *L);
 #if (NGX_HTTP_SSL)
 static int ngx_http_lua_socket_tcp_sslhandshake(lua_State *L);
+static int ngx_http_lua_socket_tcp_sslgetpskidhint(lua_State *L);
 #endif
 static int ngx_http_lua_socket_tcp_receive(lua_State *L);
 static int ngx_http_lua_socket_tcp_send(lua_State *L);
@@ -286,6 +287,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_sslhandshake);
     lua_setfield(L, -2, "sslhandshake");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_sslgetpskidhint);
+    lua_setfield(L, -2, "sslgetpskidhint");
 
 #endif
 
@@ -1645,6 +1649,41 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
         lua_setmetatable(L, -2);
     }
 
+    return 1;
+}
+
+
+static int
+ngx_http_lua_socket_tcp_sslgetpskidhint(lua_State *L)
+{
+    ngx_http_lua_socket_tcp_upstream_t    *u;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument "
+                          "(including the object), but got %d", lua_gettop(L));
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+
+    if (u == NULL
+        || u->peer.connection == NULL
+        || (u->read_closed && u->write_closed))
+    {
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->ssl_psk_identity_hint.len == 0) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+
+    lua_pushlstring(L, (char *) u->ssl_psk_identity_hint.data,
+                                u->ssl_psk_identity_hint.len);
     return 1;
 }
 
@@ -3544,6 +3583,11 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         ngx_free(u->ssl_name.data);
         u->ssl_name.data = NULL;
         u->ssl_name.len = 0;
+    }
+    if (u->ssl_psk_identity_hint.data) {
+        ngx_free(u->ssl_psk_identity_hint.data);
+        u->ssl_psk_identity_hint.data = NULL;
+        u->ssl_psk_identity_hint.len = 0;
     }
 #endif
 

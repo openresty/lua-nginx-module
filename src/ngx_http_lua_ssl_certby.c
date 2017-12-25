@@ -461,6 +461,7 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     lua_State               *co;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_cleanup_t      *cln;
+    ngx_http_lua_ssl_ctx_t  *cctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -522,13 +523,19 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
         ctx->cleanup = &cln->handler;
     }
 
-    ctx->context = NGX_HTTP_LUA_CONTEXT_SSL_CERT;
+    cctx = ngx_http_lua_ssl_get_ctx(r->connection->ssl->connection);
+
+    if (cctx != NULL && cctx->entered_psk_handler) {
+        ctx->context = NGX_HTTP_LUA_CONTEXT_SSL_PSK;
+    }
+    else {
+        ctx->context = NGX_HTTP_LUA_CONTEXT_SSL_CERT;
+    }
 
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_OK) {
         /* do nothing */
-
     } else if (rc == NGX_AGAIN) {
         rc = ngx_http_lua_content_run_posted_threads(L, r, ctx, 0);
 
