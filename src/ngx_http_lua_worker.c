@@ -18,6 +18,7 @@
 
 static int ngx_http_lua_ngx_worker_exiting(lua_State *L);
 static int ngx_http_lua_ngx_worker_pid(lua_State *L);
+static int ngx_http_lua_ngx_worker_parent_pid(lua_State *L);
 static int ngx_http_lua_ngx_worker_id(lua_State *L);
 static int ngx_http_lua_ngx_worker_count(lua_State *L);
 
@@ -25,13 +26,16 @@ static int ngx_http_lua_ngx_worker_count(lua_State *L);
 void
 ngx_http_lua_inject_worker_api(lua_State *L)
 {
-    lua_createtable(L, 0 /* narr */, 4 /* nrec */);    /* ngx.worker. */
+    lua_createtable(L, 0 /* narr */, 5 /* nrec */);    /* ngx.worker. */
 
     lua_pushcfunction(L, ngx_http_lua_ngx_worker_exiting);
     lua_setfield(L, -2, "exiting");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_worker_pid);
     lua_setfield(L, -2, "pid");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_worker_parent_pid);
+    lua_setfield(L, -2, "parent_pid");
 
     lua_pushcfunction(L, ngx_http_lua_ngx_worker_id);
     lua_setfield(L, -2, "id");
@@ -55,6 +59,19 @@ static int
 ngx_http_lua_ngx_worker_pid(lua_State *L)
 {
     lua_pushinteger(L, (lua_Integer) ngx_pid);
+    return 1;
+}
+
+
+static int
+ngx_http_lua_ngx_worker_parent_pid(lua_State *L)
+{
+#if (nginx_version >= 1013008)
+    lua_pushinteger(L, (lua_Integer) ngx_parent);
+#else
+    lua_pushinteger(L,
+        (lua_Integer) ((ngx_process == NGX_PROCESS_SINGLE) ? ngx_pid : getppid()));
+#endif
     return 1;
 }
 
@@ -96,6 +113,17 @@ int
 ngx_http_lua_ffi_worker_pid(void)
 {
     return (int) ngx_pid;
+}
+
+
+int
+ngx_http_lua_ffi_worker_parent_pid(void)
+{
+#if (nginx_version >= 1013008)
+    return (int) ngx_parent;
+#else
+    return (int) ((ngx_process == NGX_PROCESS_SINGLE) ? ngx_pid : getppid());
+#endif
 }
 
 
