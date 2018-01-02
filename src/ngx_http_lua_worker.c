@@ -105,7 +105,7 @@ ngx_http_lua_ffi_master_pid(void)
 #if (nginx_version >= 1013008)
     return (int) ngx_parent;
 #else
-    return (int) ((ngx_process == NGX_PROCESS_SINGLE) ? ngx_pid : getppid());
+    return -1;
 #endif
 }
 
