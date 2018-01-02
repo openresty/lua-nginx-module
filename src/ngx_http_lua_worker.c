@@ -100,6 +100,17 @@ ngx_http_lua_ffi_worker_pid(void)
 
 
 int
+ngx_http_lua_ffi_master_pid(void)
+{
+#if (nginx_version >= 1013008)
+    return (int) ngx_parent;
+#else
+    return -1;
+#endif
+}
+
+
+int
 ngx_http_lua_ffi_worker_id(void)
 {
 #if (nginx_version >= 1009001)
