@@ -221,7 +221,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     if (n == 3) {
         port = luaL_checkinteger(L, 3);
 
-        if (port < 0 || port > 65536) {
+        if (port < 0 || port > 65535) {
             lua_pushnil(L);
             lua_pushfstring(L, "bad port number: %d", port);
             return 2;
@@ -574,7 +574,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 #else
     /* for nginx older than 1.5.8 */
 
-    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
+    len = NGX_INET_ADDRSTRLEN + sizeof(":65535") - 1;
 
     p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
     if (p == NULL) {
