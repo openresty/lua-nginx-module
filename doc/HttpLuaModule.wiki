@@ -6660,7 +6660,7 @@ timers" here mean timers that have not yet been expired and "running
 timers" are those whose user callbacks are currently running.
 
 The maximal number of pending timers allowed in an Nginx
-worker is constrolled by the [[#lua_max_pending_timers|lua_max_pending_timers]]
+worker is controlled by the [[#lua_max_pending_timers|lua_max_pending_timers]]
 directive. The maximal number of running timers is controlled by the
 [[#lua_max_running_timers|lua_max_running_timers]] directive.
 
