@@ -1,0 +1,76 @@
+ngx_feature="Lua library"
+ngx_feature_libs="lua51.lib"
+ngx_feature_name=
+ngx_feature_run=no
+ngx_feature_incs="#include <lauxlib.h>"
+ngx_feature_path=
+ngx_feature_test="#if LUA_VERSION_NUM != 501
+#   error unsupported Lua language version
+#endif
+(void) luaL_newstate();"
+ngx_lua_opt_L=
+
+if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
+    # LuaJIT VM
+    ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (win32, msvc)"
+    ngx_feature_path="$LUAJIT_INC"
+    ngx_lua_opt_L="-LIBPATH:$LUAJIT_LIB"
+
+elif [ -n "$LUA_INC" -o -n "$LUA_LIB" ]; then
+    # Lua VM
+    ngx_feature="Lua library in $LUA_LIB and $LUA_INC (win32, msvc)"
+    ngx_feature_path="$LUA_INC"
+    ngx_lua_opt_L="-LIBPATH:$LUA_LIB"
+fi
+
+SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
+. auto/feature
+
+NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+
+if [ $ngx_found = no ]; then
+    cat << END
+    $0: error: ngx_http_lua_module requires the Lua or LuaJIT library but we cannot find them; check LUA_INC/LUA_LIB or LUAJIT_INC/LUAJIT_LIB environment variables.
+END
+    exit 1
+fi
+
+# set compiler options for ngx_lua module
+
+#CFLAGS="$ngx_lua_opt_I $CFLAGS"
+#NGX_LD_OPT="$ngx_lua_opt_L $NGX_LD_OPT"
+
+ngx_module_incs="$ngx_module_incs $ngx_feature_path"
+ngx_module_libs="$ngx_module_libs $ngx_feature_libs"
+
+CORE_LINK="$CORE_LINK $ngx_lua_opt_L"
+
+. $ngx_addon_dir/auto/sources;
+
+ngx_feature="SO_PASSCRED"
+ngx_feature_libs="Ws2_32.lib"
+ngx_feature_name="NGX_HTTP_LUA_HAVE_SO_PASSCRED"
+ngx_feature_run=no
+ngx_feature_incs="#include <winsock2.h>"
+ngx_feature_path=
+ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
+
+. auto/feature
+
+if test -n "$ngx_module_link"; then
+    ngx_module_type=HTTP_AUX_FILTER
+    ngx_module_name=$ngx_addon_name
+    ngx_module_deps="$HTTP_LUA_DEPS"
+    ngx_module_srcs="$HTTP_LUA_SRCS"
+    
+    . auto/module
+else
+    HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES $ngx_addon_name"
+    NGX_ADDON_SRCS="$NGX_ADDON_SRCS $HTTP_LUA_SRCS"
+    NGX_ADDON_DEPS="$NGX_ADDON_DEPS $HTTP_LUA_DEPS"
+
+    CORE_INCS="$CORE_INCS $ngx_module_incs"
+    CORE_LIBS="$CORE_LIBS $ngx_module_libs"
+fi

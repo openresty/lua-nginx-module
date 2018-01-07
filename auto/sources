@@ -1,0 +1,132 @@
+ngx_addon_name=ngx_http_lua_module
+HTTP_LUA_SRCS=" \
+            $ngx_addon_dir/src/ngx_http_lua_script.c \
+            $ngx_addon_dir/src/ngx_http_lua_log.c \
+            $ngx_addon_dir/src/ngx_http_lua_subrequest.c \
+            $ngx_addon_dir/src/ngx_http_lua_ndk.c \
+            $ngx_addon_dir/src/ngx_http_lua_control.c \
+            $ngx_addon_dir/src/ngx_http_lua_time.c \
+            $ngx_addon_dir/src/ngx_http_lua_misc.c \
+            $ngx_addon_dir/src/ngx_http_lua_variable.c \
+            $ngx_addon_dir/src/ngx_http_lua_string.c \
+            $ngx_addon_dir/src/ngx_http_lua_output.c \
+            $ngx_addon_dir/src/ngx_http_lua_headers.c \
+            $ngx_addon_dir/src/ngx_http_lua_req_body.c \
+            $ngx_addon_dir/src/ngx_http_lua_uri.c \
+            $ngx_addon_dir/src/ngx_http_lua_args.c \
+            $ngx_addon_dir/src/ngx_http_lua_ctx.c \
+            $ngx_addon_dir/src/ngx_http_lua_regex.c \
+            $ngx_addon_dir/src/ngx_http_lua_module.c \
+            $ngx_addon_dir/src/ngx_http_lua_headers_out.c \
+            $ngx_addon_dir/src/ngx_http_lua_headers_in.c \
+            $ngx_addon_dir/src/ngx_http_lua_directive.c \
+            $ngx_addon_dir/src/ngx_http_lua_consts.c \
+            $ngx_addon_dir/src/ngx_http_lua_exception.c \
+            $ngx_addon_dir/src/ngx_http_lua_util.c \
+            $ngx_addon_dir/src/ngx_http_lua_cache.c \
+            $ngx_addon_dir/src/ngx_http_lua_contentby.c \
+            $ngx_addon_dir/src/ngx_http_lua_rewriteby.c \
+            $ngx_addon_dir/src/ngx_http_lua_accessby.c \
+            $ngx_addon_dir/src/ngx_http_lua_setby.c \
+            $ngx_addon_dir/src/ngx_http_lua_capturefilter.c \
+            $ngx_addon_dir/src/ngx_http_lua_clfactory.c \
+            $ngx_addon_dir/src/ngx_http_lua_pcrefix.c \
+            $ngx_addon_dir/src/ngx_http_lua_headerfilterby.c \
+            $ngx_addon_dir/src/ngx_http_lua_shdict.c \
+            $ngx_addon_dir/src/ngx_http_lua_socket_tcp.c \
+            $ngx_addon_dir/src/ngx_http_lua_api.c \
+            $ngx_addon_dir/src/ngx_http_lua_logby.c \
+            $ngx_addon_dir/src/ngx_http_lua_sleep.c \
+            $ngx_addon_dir/src/ngx_http_lua_semaphore.c\
+            $ngx_addon_dir/src/ngx_http_lua_coroutine.c \
+            $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
+            $ngx_addon_dir/src/ngx_http_lua_initby.c \
+            $ngx_addon_dir/src/ngx_http_lua_initworkerby.c \
+            $ngx_addon_dir/src/ngx_http_lua_socket_udp.c \
+            $ngx_addon_dir/src/ngx_http_lua_req_method.c \
+            $ngx_addon_dir/src/ngx_http_lua_phase.c \
+            $ngx_addon_dir/src/ngx_http_lua_uthread.c \
+            $ngx_addon_dir/src/ngx_http_lua_timer.c \
+            $ngx_addon_dir/src/ngx_http_lua_config.c \
+            $ngx_addon_dir/src/ngx_http_lua_worker.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_certby.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_ocsp.c \
+            $ngx_addon_dir/src/ngx_http_lua_lex.c \
+            $ngx_addon_dir/src/ngx_http_lua_balancer.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_session_storeby.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_session_fetchby.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl.c \
+            $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.c \
+            "
+
+HTTP_LUA_DEPS=" \
+            $ngx_addon_dir/src/ddebug.h \
+            $ngx_addon_dir/src/ngx_http_lua_script.h \
+            $ngx_addon_dir/src/ngx_http_lua_log.h \
+            $ngx_addon_dir/src/ngx_http_lua_subrequest.h \
+            $ngx_addon_dir/src/ngx_http_lua_ndk.h \
+            $ngx_addon_dir/src/ngx_http_lua_control.h \
+            $ngx_addon_dir/src/ngx_http_lua_time.h \
+            $ngx_addon_dir/src/ngx_http_lua_string.h \
+            $ngx_addon_dir/src/ngx_http_lua_misc.h \
+            $ngx_addon_dir/src/ngx_http_lua_variable.h \
+            $ngx_addon_dir/src/ngx_http_lua_output.h \
+            $ngx_addon_dir/src/ngx_http_lua_headers.h \
+            $ngx_addon_dir/src/ngx_http_lua_uri.h \
+            $ngx_addon_dir/src/ngx_http_lua_req_body.h \
+            $ngx_addon_dir/src/ngx_http_lua_args.h \
+            $ngx_addon_dir/src/ngx_http_lua_ctx.h \
+            $ngx_addon_dir/src/ngx_http_lua_regex.h \
+            $ngx_addon_dir/src/ngx_http_lua_common.h \
+            $ngx_addon_dir/src/ngx_http_lua_directive.h \
+            $ngx_addon_dir/src/ngx_http_lua_headers_out.h \
+            $ngx_addon_dir/src/ngx_http_lua_headers_in.h \
+            $ngx_addon_dir/src/ngx_http_lua_consts.h \
+            $ngx_addon_dir/src/ngx_http_lua_exception.h \
+            $ngx_addon_dir/src/ngx_http_lua_util.h \
+            $ngx_addon_dir/src/ngx_http_lua_cache.h \
+            $ngx_addon_dir/src/ngx_http_lua_contentby.h \
+            $ngx_addon_dir/src/ngx_http_lua_rewriteby.h \
+            $ngx_addon_dir/src/ngx_http_lua_accessby.h \
+            $ngx_addon_dir/src/ngx_http_lua_setby.h \
+            $ngx_addon_dir/src/ngx_http_lua_capturefilter.h \
+            $ngx_addon_dir/src/ngx_http_lua_clfactory.h \
+            $ngx_addon_dir/src/ngx_http_lua_pcrefix.h \
+            $ngx_addon_dir/src/ngx_http_lua_headerfilterby.h \
+            $ngx_addon_dir/src/ngx_http_lua_shdict.h \
+            $ngx_addon_dir/src/ngx_http_lua_socket_tcp.h \
+            $ngx_addon_dir/src/api/ngx_http_lua_api.h \
+            $ngx_addon_dir/src/ngx_http_lua_logby.h \
+            $ngx_addon_dir/src/ngx_http_lua_sleep.h \
+            $ngx_addon_dir/src/ngx_http_lua_semaphore.h\
+            $ngx_addon_dir/src/ngx_http_lua_coroutine.h \
+            $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
+            $ngx_addon_dir/src/ngx_http_lua_initby.h \
+            $ngx_addon_dir/src/ngx_http_lua_initworkerby.h \
+            $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
+            $ngx_addon_dir/src/ngx_http_lua_req_method.h \
+            $ngx_addon_dir/src/ngx_http_lua_phase.h \
+            $ngx_addon_dir/src/ngx_http_lua_probe.h \
+            $ngx_addon_dir/src/ngx_http_lua_uthread.h \
+            $ngx_addon_dir/src/ngx_http_lua_timer.h \
+            $ngx_addon_dir/src/ngx_http_lua_config.h \
+            $ngx_addon_dir/src/ngx_http_lua_worker.h \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_certby.h \
+            $ngx_addon_dir/src/ngx_http_lua_lex.h \
+            $ngx_addon_dir/src/ngx_http_lua_balancer.h \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_session_storeby.h \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_session_fetchby.h \
+            $ngx_addon_dir/src/ngx_http_lua_ssl.h \
+            $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.h \
+            "
+
+#CFLAGS="$CFLAGS -DNDK_SET_VAR"
+have=NDK_SET_VAR . auto/have
+
+NGX_DTRACE_PROVIDERS="$NGX_DTRACE_PROVIDERS $ngx_addon_dir/dtrace/ngx_lua_provider.d"
+NGX_TAPSET_SRCS="$NGX_TAPSET_SRCS $ngx_addon_dir/tapset/ngx_lua.stp"
+
+USE_MD5=YES
+USE_SHA1=YES
+
+CORE_INCS="$CORE_INCS $ngx_addon_dir/src/api"
