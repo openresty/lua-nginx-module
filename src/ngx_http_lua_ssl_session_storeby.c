@@ -249,7 +249,12 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
         }
     }
 
+#if OPENSSL_VERSION_NUMBER >= 0x1000200fL
     sess_id = SSL_SESSION_get_id(sess, &sess_id_len);
+#else
+    sess_id = sess->session_id;
+    sess_id_len = sess->session_id_length;
+#endif
 
     cctx->connection = c;
     cctx->request = r;
