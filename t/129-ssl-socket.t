@@ -4,12 +4,13 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 217;
+plan tests => repeat_each() * 218;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+$ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 
 #log_level 'warn';
 log_level 'debug';
@@ -123,19 +124,27 @@ SSL reused session
 
 
 === TEST 2: no SNI, no verify
+--- http_config
+    server {
+        listen $TEST_NGINX_SERVER_SSL_PORT ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(201)
+            }
+        }
+    }
 --- config
-    server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
-        #set $port 5000;
-        set $port $TEST_NGINX_MEMCACHED_PORT;
-
-        content_by_lua '
-            local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
-
+        content_by_lua_block {
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_SSL_PORT)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -151,7 +160,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -172,21 +181,32 @@ SSL reused session
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             collectgarbage()
-        ';
+        }
     }
 
 --- request
 GET /t
 --- response_body
 connected: 1
-failed to do SSL handshake: handshake failed
+ssl handshake: userdata
+sent http request: 53 bytes.
+received: HTTP/1.1 201 Created
+close: 1 nil
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
 
---- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
---- grep_error_log_out
+--- grep_error_log_out eval
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+$/
 --- no_error_log
 lua ssl server name:
 SSL reused session
+[error]
 [alert]
 --- timeout: 5
 
