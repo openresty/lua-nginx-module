@@ -2921,13 +2921,15 @@ This directive was first introduced in the `v0.9.11` release.
 lua_ssl_protocols
 -----------------
 
-**syntax:** *lua_ssl_protocols \[SSLv2\] \[SSLv3\] \[TLSv1\] [TLSv1.1] [TLSv1.2]*
+**syntax:** *lua_ssl_protocols \[SSLv2\] \[SSLv3\] \[TLSv1\] [TLSv1.1] [TLSv1.2] [TLSv1.3]*
 
 **default:** *lua_ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2*
 
 **context:** *http, server, location*
 
 Enables the specified protocols for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+The support for the `TLSv1.3` parameter requires version `v0.10.12` *and* OpenSSL 1.1.1.
 
 This directive was first introduced in the `v0.9.11` release.
 

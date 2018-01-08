@@ -48,8 +48,10 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.0.2n OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.1.0g OPENSSL_PATCH_VER=1.1.0d
+    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.0.2n OPENSSL_OPT="" OPENSSL_PATCH_VER=1.0.2h
+    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.1.0g OPENSSL_OPT="" OPENSSL_PATCH_VER=1.1.0d
+    # TODO: when adding an OpenSSL version >= 1.1.1, please add "enable-tls1_3"
+    # to $OPENSSL_OPT.
 
 services:
  - memcache
@@ -113,7 +115,7 @@ script:
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
   - patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch
-  - ./config no-threads shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
+  - ./config no-threads shared enable-ssl3 enable-ssl3-method $OPENSSL_OPT -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
