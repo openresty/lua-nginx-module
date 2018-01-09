@@ -12,3 +12,6 @@ case $NGX_CC_NAME in
         . $ngx_addon_dir/auto/config.gcc;
     ;;
 esac
+
+#CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
+#CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
