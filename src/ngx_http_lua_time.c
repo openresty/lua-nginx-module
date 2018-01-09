@@ -282,7 +282,7 @@ ngx_http_lua_ffi_update_time(void)
 
 
 void
-ngx_http_lua_ffi_today(unsigned char *buf)
+ngx_http_lua_ffi_today(u_char *buf)
 {
     ngx_tm_t                 tm;
 
@@ -294,7 +294,7 @@ ngx_http_lua_ffi_today(unsigned char *buf)
 
 
 void
-ngx_http_lua_ffi_localtime(unsigned char *buf)
+ngx_http_lua_ffi_localtime(u_char *buf)
 {
     ngx_tm_t                 tm;
 
@@ -307,7 +307,7 @@ ngx_http_lua_ffi_localtime(unsigned char *buf)
 
 
 void
-ngx_http_lua_ffi_utctime(unsigned char *buf)
+ngx_http_lua_ffi_utctime(u_char *buf)
 {
     ngx_tm_t       tm;
 
@@ -320,7 +320,7 @@ ngx_http_lua_ffi_utctime(unsigned char *buf)
 
 
 int
-ngx_http_lua_ffi_cookie_time(unsigned char *buf, long t)
+ngx_http_lua_ffi_cookie_time(u_char *buf, long t)
 {
     u_char                              *p;
 
@@ -330,18 +330,18 @@ ngx_http_lua_ffi_cookie_time(unsigned char *buf, long t)
 
 
 void
-ngx_http_lua_ffi_http_time(unsigned char *buf, long t)
+ngx_http_lua_ffi_http_time(u_char *buf, long t)
 {
     ngx_http_time(buf, t);
 }
 
 
 void
-ngx_http_lua_ffi_parse_http_time(const unsigned char *str, size_t len,
+ngx_http_lua_ffi_parse_http_time(const u_char *str, size_t len,
     long *time)
 {
     /* ngx_http_parse_time doesn't modify 'str' actually */
-    *time = ngx_http_parse_time((unsigned char *) str, len);
+    *time = ngx_http_parse_time((u_char *) str, len);
 }
 #endif /* NGX_LUA_NO_FFI_API */
 
