@@ -338,7 +338,7 @@ ngx_http_lua_ffi_http_time(unsigned char *buf, long t)
 
 void
 ngx_http_lua_ffi_parse_http_time(const unsigned char *str, size_t len,
-    size_t *time)
+    long *time)
 {
     /* ngx_http_parse_time doesn't modify 'str' actually */
     *time = ngx_http_parse_time((unsigned char *) str, len);
