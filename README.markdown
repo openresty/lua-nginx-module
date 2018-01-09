@@ -840,7 +840,7 @@ As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives
  # nginx.conf
  location /test {
      content_by_lua_block {
-         local regex = "\d+"
+         local regex = [[\d+]]
          local m = ngx.re.match("hello, 1234", regex)
          if m then ngx.say(m[0]) else ngx.say("not matched!") end
      }
