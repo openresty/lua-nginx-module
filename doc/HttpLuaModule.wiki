@@ -2755,7 +2755,7 @@ This API requires a relatively expensive metamethod call and it is recommended t
   ngx.DECLINED (-5)
 </geshi>
 
-Note that only three of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>NGX_OK</code>, <code>NGX_ERROR</code>, and <code>NGX_DECLINED</code> as input).
+Note that only three of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>ngx.OK</code>, <code>ngx.ERROR</code>, and <code>ngx.DECLINED</code> as input).
 
 <geshi lang="lua">
   ngx.null
@@ -4449,7 +4449,7 @@ Number literals can be used directly as the argument, for instance,
     ngx.exit(501)
 </geshi>
 
-Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
+Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>ngx.OK</code> and <code>ngx.ERROR</code> of the [[#core constants|core constants]].
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exit(...)</code> be used to reinforce the fact that the request processing is being terminated.
 
