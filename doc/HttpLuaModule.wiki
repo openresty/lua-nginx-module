@@ -5412,9 +5412,11 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.shared.DICT.incr ==
-'''syntax:''' ''newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)''
+'''syntax:''' ''newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?, init_ttl?)''
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''optional requirement:''' <code>resty.core.shdict</code> or <code>resty.core</code>
 
 Increments the (numerical) value for <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] by the step value <code>value</code>. Returns the new resulting number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
 
@@ -5424,6 +5426,24 @@ When the key does not exist or has already expired in the shared dictionary,
 # if the <code>init</code> argument takes a number value, this method will create a new <code>key</code> with the value <code>init + value</code>.
 
 Like the [[#ngx.shared.DICT.add|add]] method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The optional <code>init_ttl</code> argument specifies expiration time (in seconds) of the value when it is initialized via the <code>init</code> argument. The time resolution is <code>0.001</code> seconds. If <code>init_ttl</code> takes the value <code>0</code> (which is the default), then the item will never expire. This argument cannot be provided without providing the <code>init</code> argument as well, and has no effect if the value already exists (e.g., if it was previously inserted via [[#ngx.shared.DICT.set|set]] or the likes).
+
+'''Note:''' Usage of the <code>init_ttl</code> argument requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library. Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local newval, err = cats:incr("black_cats", 1, 0, 0.1)
+
+    print(newval) -- 1
+
+    ngx.sleep(0.2)
+
+    local val, err = cats:get("black_cats")
+    print(val) -- nil
+</geshi>
 
 The <code>forcible</code> return value will always be <code>nil</code> when the <code>init</code> argument is not specified.
 
@@ -5436,6 +5456,8 @@ The <code>value</code> argument and <code>init</code> argument can be any valid 
 This method was first introduced in the <code>v0.3.1rc22</code> release.
 
 The optional <code>init</code> parameter was first added in the <code>v0.10.6</code> release.
+
+The optional <code>init_ttl</code> parameter was introduced in the <code>v0.10.12rc2</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
