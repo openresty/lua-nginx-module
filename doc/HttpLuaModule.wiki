@@ -3406,7 +3406,7 @@ The same applies to assigning an empty table:
     ngx.header["X-My-Header"] = {};
 </geshi>
 
-Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and similar) will throw out a Lua exception.
+Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and similar) will log an error message.
 
 Reading <code>ngx.header.HEADER</code> will return the value of the response header named <code>HEADER</code>.
 
