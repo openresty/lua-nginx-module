@@ -59,7 +59,7 @@ GET /t
 --- response_body
 timeout
 --- error_log
-lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 
 
 
