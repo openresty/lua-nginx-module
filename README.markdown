@@ -6451,9 +6451,11 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.incr
 --------------------
-**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)*
+**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?, init_ttl?)*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**optional requirement:** `resty.core.shdict` or `resty.core`
 
 Increments the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
 
@@ -6463,6 +6465,25 @@ When the key does not exist or has already expired in the shared dictionary,
 1. if the `init` argument takes a number value, this method will create a new `key` with the value `init + value`.
 
 Like the [add](#ngxshareddictadd) method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The optional `init_ttl` argument specifies expiration time (in seconds) of the value when it is initialized via the `init` argument. The time resolution is `0.001` seconds. If `init_ttl` takes the value `0` (which is the default), then the item will never expire. This argument cannot be provided without providing the `init` argument as well, and has no effect if the value already exists (e.g., if it was previously inserted via [set](#ngxshareddictset) or the likes).
+
+**Note:** Usage of the `init_ttl` argument requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library. Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local newval, err = cats:incr("black_cats", 1, 0, 0.1)
+
+ print(newval) -- 1
+
+ ngx.sleep(0.2)
+
+ local val, err = cats:get("black_cats")
+ print(val) -- nil
+```
 
 The `forcible` return value will always be `nil` when the `init` argument is not specified.
 
@@ -6475,6 +6496,8 @@ The `value` argument and `init` argument can be any valid Lua numbers, like nega
 This method was first introduced in the `v0.3.1rc22` release.
 
 The optional `init` parameter was first added in the `v0.10.6` release.
+
+The optional `init_ttl` parameter was introduced in the `v0.10.12rc2` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
