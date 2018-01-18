@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 5);
+plan tests => repeat_each() * (blocks() * 3 + 14);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -1318,3 +1318,397 @@ co yield: 2
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 32: coroutine.wrap propagates errors to parent coroutine
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co = coroutine.wrap(function()
+                print("in wrapped coroutine")
+                error("something went wrong")
+            end)
+
+            co()
+
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- error_code: 500
+--- response_body_unlike
+ok
+--- error_log eval
+[
+    qr/\[notice\] .*? in wrapped coroutine/,
+    qr/\[error\] .*? lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):\d+: something went wrong/,
+    "stack traceback:",
+    "coroutine 0:",
+    "coroutine 1:"
+]
+
+
+
+=== TEST 33: coroutine.wrap propagates nested errors to parent coroutine
+Note: in this case, both the error message and the traceback are constructed
+from co1's stack level.
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co1 = coroutine.wrap(function()
+                error("something went wrong in co1")
+            end)
+
+            local co2 = coroutine.wrap(function()
+                co1()
+            end)
+
+            co2()
+        }
+    }
+--- request
+GET /t
+--- error_code: 500
+--- ignore_response
+--- error_log eval
+[
+    qr/\[error\] .*? lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):\d+: something went wrong in co1/,
+    "stack traceback:",
+    "coroutine 0:",
+    "coroutine 1:",
+    "coroutine 2:"
+]
+
+
+
+=== TEST 34: coroutine.wrap propagates nested errors with stack level to parent coroutine
+Note: in this case, the error message is constructed at the entry thread stack
+level, and the traceback is constructed from co1's stack level.
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co1 = coroutine.wrap(function()
+                error("something went wrong in co1", 2)
+            end)
+
+            local co2 = coroutine.wrap(function()
+                co1()
+            end)
+
+            co2()
+        }
+    }
+--- request
+GET /t
+--- error_code: 500
+--- error_log eval
+[
+    qr/\[error\] .*? lua entry thread aborted: runtime error: something went wrong in co1/,
+    "stack traceback:",
+    "coroutine 0:",
+    "coroutine 1:",
+    "coroutine 2:"
+]
+
+
+
+=== TEST 35: coroutine.wrap runtime errors do not log errors
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co = coroutine.wrap(function()
+                print("in wrapped coroutine")
+                error("something went wrong")
+            end)
+
+            co()
+        }
+    }
+--- request
+GET /t
+--- error_code: 500
+--- ignore_response
+--- no_error_log eval
+[
+    qr/\[error\] .*? lua coroutine: runtime error:/,
+    "[crit]",
+    "[emerg]",
+    "[warn]",
+]
+
+
+
+=== TEST 36: coroutine.wrap does not return status boolean on yield
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co = coroutine.wrap(function()
+                coroutine.yield("ok", "err")
+            end)
+
+            local ret1, ret2 = co()
+
+            ngx.say(ret1, ", ", ret2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok, err
+--- no_error_log
+[error]
+
+
+
+=== TEST 37: coroutine.wrap does not return status boolean on done
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co = coroutine.wrap(function() end)
+
+            local ret1 = co()
+
+            ngx.say(ret1)
+        }
+    }
+--- request
+GET /t
+--- response_body
+nil
+--- no_error_log
+[error]g
+
+
+
+=== TEST 38: coroutine.wrap does not return status boolean on error
+--- SKIP: not supported
+--- config
+    location = /t {
+        content_by_lua_block {
+            local co = coroutine.wrap(function()
+                error("something went wrong")
+            end)
+
+            local ret1, ret2 = pcall(co)
+
+            ngx.say(ret1, ", ", ret2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+false, something went wrong
+--- no_error_log
+[error]
+
+
+
+=== TEST 39: coroutine.wrap creates different function refs
+--- config
+    location = /t {
+        content_by_lua_block {
+            local f = function() end
+            local co = coroutine.wrap(f)
+            local co2 = coroutine.wrap(f)
+
+            ngx.say("co == co2: ", co == co2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+co == co2: false
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: coroutine.wrap supports yielding and resuming
+--- config
+    location = /t {
+        content_by_lua_block {
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    ngx.say("co yield: ", cnt)
+                    coroutine.yield()
+                    cnt = cnt + 1
+                end
+            end
+
+            local f = coroutine.wrap(f)
+            for i = 1, 3 do
+                ngx.say("co resume")
+                f()
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+co resume
+co yield: 0
+co resume
+co yield: 1
+co resume
+co yield: 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: coroutine.wrap return values
+--- config
+    location = /t {
+        content_by_lua_block {
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    coroutine.yield(cnt, cnt + 1)
+                    cnt = cnt + 1
+                end
+            end
+
+            local f = coroutine.wrap(f)
+            for i = 1, 3 do
+                ngx.say("co resume")
+                local ret1, ret2 = f()
+                ngx.say("co yield: ", ret1, ", ", ret2)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+co resume
+co yield: 0, 1
+co resume
+co yield: 1, 2
+co resume
+co yield: 2, 3
+--- no_error_log
+[error]
+
+
+
+=== TEST 42: coroutine.wrap arguments
+--- config
+    location = /t {
+        content_by_lua_block {
+            function f(step)
+                local cnt = 0
+                for i = 1, 20 do
+                    ngx.say("co yield: ", cnt)
+                    coroutine.yield()
+                    cnt = cnt + step
+                end
+            end
+
+            local f = coroutine.wrap(f)
+            for i = 1, 3 do
+                ngx.say("co resume")
+                f(i)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+co resume
+co yield: 0
+co resume
+co yield: 1
+co resume
+co yield: 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 43: coroutine.wrap in header_filter_by_lua (orig coroutine.wrap)
+--- config
+    location = /t {
+        return 200;
+
+        header_filter_by_lua_block {
+            function f()
+                local cnt = 0
+                for i = 1, 20 do
+                    print("co yield: ", cnt)
+                    coroutine.yield()
+                    cnt = cnt + 1
+                end
+            end
+
+            local f = coroutine.wrap(f)
+            for i = 1, 3 do
+                print("co resume.")
+                f()
+            end
+        }
+    }
+--- request
+GET /t
+--- ignore_response
+--- grep_error_log eval: qr/co (?:yield: \d+|resume\.)/
+--- grep_error_log_out
+co resume.
+co yield: 0
+co resume.
+co yield: 1
+co resume.
+co yield: 2
+--- no_error_log
+[error]
+
+
+
+=== TEST 44: coroutine.wrap in header_filter_by_lua propagates errors (orig coroutine.wrap)
+--- config
+    location = /t {
+        return 200;
+
+        header_filter_by_lua_block {
+            local co = coroutine.wrap(function()
+                print("in wrapped coroutine")
+                error("something went wrong")
+            end)
+
+            local err = co()
+
+            ngx.log(ngx.CRIT, "err: ", err)
+        }
+    }
+--- request
+GET /t
+--- ignore_response
+--- error_log eval
+[
+    qr/\[notice\] .*? in wrapped coroutine/,
+    qr/\[error\] .*? failed to run header_filter_by_lua\*: header_filter_by_lua:\d+: header_filter_by_lua:\d+: something went wrong/,
+    "stack traceback:",
+    "in function 'co'"
+]
+
+
+
+=== TEST 45: coroutine.wrap in init_by_lua propagates errors (orig coroutine.wrap)
+--- http_config
+    init_by_lua_block {
+        local co = coroutine.wrap(function()
+            print("in wrapped coroutine")
+            error("something went wrong")
+        end)
+
+        local err = co()
+
+        ngx.log(ngx.CRIT, "err: ", err)
+    }
+--- config
+
+--- must_die
+--- grep_error_log eval: qr/init_by_lua error: .*? something went wrong/
+--- grep_error_log_out
+init_by_lua error: init_by_lua:7: init_by_lua:4: something went wrong

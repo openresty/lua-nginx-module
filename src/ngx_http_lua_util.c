@@ -1018,8 +1018,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
     /* set Lua VM panic handler */
     lua_atpanic(L, ngx_http_lua_atpanic);
 
-    dd("ctx = %p", ctx);
-
     NGX_LUA_EXCEPTION_TRY {
 
         if (ctx->cur_co_ctx->thread_spawn_yielded) {
@@ -1031,18 +1029,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
         for ( ;; ) {
 
-            dd("calling lua_resume: vm %p, nret %d", ctx->cur_co_ctx->co,
-               (int) nrets);
+            dd("ctx: %p, co: %p, co status: %d, co is_wrap: %d",
+               ctx, ctx->cur_co_ctx->co, ctx->cur_co_ctx->co_status,
+               ctx->cur_co_ctx->is_wrap);
 
 #if (NGX_PCRE)
             /* XXX: work-around to nginx regex subsystem */
             old_pool = ngx_http_lua_pcre_malloc_init(r->pool);
 #endif
-
-            /*  run code */
-            dd("ctx: %p", ctx);
-            dd("cur co: %p", ctx->cur_co_ctx->co);
-            dd("cur co status: %d", ctx->cur_co_ctx->co_status);
 
             orig_coctx = ctx->cur_co_ctx;
 
@@ -1055,9 +1049,18 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
 #if DDEBUG
             if (lua_gettop(orig_coctx->co) > 0) {
-                dd("top elem: %s", luaL_typename(orig_coctx->co, -1));
+                dd("co top elem: %s", luaL_typename(orig_coctx->co, -1));
+            }
+
+            if (orig_coctx->propagate_error) {
+                dd("co propagate_error: %d", orig_coctx->propagate_error);
             }
 #endif
+
+            if (orig_coctx->propagate_error) {
+                orig_coctx->propagate_error = 0;
+                goto propagate_error;
+            }
 
             ngx_http_lua_assert(orig_coctx->co_top + nrets
                                 == lua_gettop(orig_coctx->co));
@@ -1203,12 +1206,6 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                     next_coctx = ctx->cur_co_ctx->parent_co_ctx;
                     next_co = next_coctx->co;
 
-                    /*
-                     * prepare return values for coroutine.resume
-                     * (true plus any retvals)
-                     */
-                    lua_pushboolean(next_co, 1);
-
                     if (nrets) {
                         dd("moving %d return values to next co", nrets);
                         lua_xmove(ctx->cur_co_ctx->co, next_co, nrets);
@@ -1217,7 +1214,15 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 #endif
                     }
 
-                    nrets++;  /* add the true boolean value */
+                    if (!ctx->cur_co_ctx->is_wrap) {
+                        /*
+                         * prepare return values for coroutine.resume
+                         * (true plus any retvals)
+                         */
+                        lua_pushboolean(next_co, 1);
+                        lua_insert(next_co, 1);
+                        nrets++;  /* add the true boolean value */
+                    }
 
                     ctx->cur_co_ctx = next_coctx;
 
@@ -1328,12 +1333,6 @@ user_co_done:
 
                 next_co = next_coctx->co;
 
-                /*
-                 * ended successful, coroutine.resume returns true plus
-                 * any return values
-                 */
-                lua_pushboolean(next_co, success);
-
                 if (nrets) {
                     lua_xmove(ctx->cur_co_ctx->co, next_co, nrets);
                 }
@@ -1343,7 +1342,16 @@ user_co_done:
                     ctx->uthreads--;
                 }
 
-                nrets++;
+                if (!ctx->cur_co_ctx->is_wrap) {
+                    /*
+                     * ended successful, coroutine.resume returns true plus
+                     * any return values
+                     */
+                    lua_pushboolean(next_co, success);
+                    lua_insert(next_co, 1);
+                    nrets++;
+                }
+
                 ctx->cur_co_ctx = next_coctx;
 
                 ngx_http_lua_probe_info("set parent running");
@@ -1398,6 +1406,10 @@ user_co_done:
             ngx_http_lua_thread_traceback(L, ctx->cur_co_ctx->co,
                                           ctx->cur_co_ctx);
             trace = lua_tostring(L, -1);
+
+propagate_error:
+
+            ngx_http_lua_assert(err != NULL && msg != NULL && trace != NULL);
 
             if (ctx->cur_co_ctx->is_uthread) {
 
@@ -1488,15 +1500,24 @@ user_co_done:
 
             next_coctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
 
+            ctx->cur_co_ctx = next_coctx;
+
+            if (orig_coctx->is_wrap) {
+                /*
+                 * coroutine.wrap propagates errors
+                 * to the parent
+                 */
+                next_coctx->propagate_error = 1;
+                continue;
+            }
+
             /*
              * ended with error, coroutine.resume returns false plus
              * err msg
              */
             lua_pushboolean(next_co, 0);
-            lua_xmove(ctx->cur_co_ctx->co, next_co, 1);
+            lua_xmove(orig_coctx->co, next_co, 1);
             nrets = 2;
-
-            ctx->cur_co_ctx = next_coctx;
 
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "lua coroutine: %s: %s\n%s", err, msg, trace);

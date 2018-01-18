@@ -482,6 +482,13 @@ struct ngx_http_lua_co_ctx_s {
                                                         the ngx.thread.spawn()
                                                         call */
     unsigned                 sem_resume_status:1;
+
+    unsigned                 is_wrap:1; /* set when creating coroutines via
+                                           coroutine.wrap */
+
+    unsigned                 propagate_error:1; /* set when propagating an error
+                                                   from a coroutine to its
+                                                   parent */
 };
 
 
