@@ -250,9 +250,9 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
     ngx_http_cleanup_pt *cleanup);
 
 
-#define ngx_http_lua_check_if_abortable(L, ctx)                             \
-    if ((ctx)->no_abort) {                                                  \
-        return luaL_error(L, "attempt to abort with pending subrequests");  \
+#define ngx_http_lua_check_if_abortable(L, ctx)                              \
+    if ((ctx)->no_abort) {                                                   \
+        return luaL_error(L, "attempt to abort with pending subrequests");   \
     }
 
 
@@ -372,7 +372,7 @@ ngx_http_lua_set_globals_table(lua_State *L)
 }
 
 
-#define ngx_http_lua_hash_literal(s)                                        \
+#define ngx_http_lua_hash_literal(s)                                         \
     ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
 
 
