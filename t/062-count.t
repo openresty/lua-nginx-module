@@ -494,3 +494,77 @@ GET /test
 n = 6
 --- no_error_log
 [error]
+
+
+
+=== TEST 22: entries under the req raw sockets
+--- config
+        location = /test {
+            content_by_lua_block {
+                local narr = 0
+                local nrec = 0
+                ngx.req.read_body()
+                local sock, err = ngx.req.socket(true)
+                if not sock then
+                    ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
+                    return
+                end
+                sock:settimeouts(1, 2, 3)
+                for k, v in ipairs(sock) do
+                    narr = narr + 1
+                end
+                for k, v in pairs(sock) do
+                    nrec = nrec + 1
+                end
+                -- include '__index'
+                nrec = nrec - narr + 1
+
+                local ok, err = sock:send("HTTP/1.1 200 OK\r\n\r\nnarr = "..narr.."\nnrec = "..nrec.."\n")
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to send: ", err)
+                    return
+                end
+            }
+        }
+--- request
+GET /test
+--- response_body
+narr = 2
+nrec = 3
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: entries under the req sockets
+--- config
+        location = /test {
+            content_by_lua_block {
+                local narr = 0
+                local nrec = 0
+                local sock, err = ngx.req.socket()
+                if not sock then
+                    ngx.log(ngx.ERR, "server: failed to get req socket: ", err)
+                    return
+                end
+                sock:settimeouts(1, 2, 3)
+                for k, v in ipairs(sock) do
+                    narr = narr + 1
+                end
+                for k, v in pairs(sock) do
+                    nrec = nrec + 1
+                end
+                -- include '__index'
+                nrec = nrec - narr + 1
+
+                ngx.say("narr = "..narr.."\nnrec = "..nrec)
+            }
+        }
+--- request
+POST /test
+hello world
+--- response_body
+narr = 2
+nrec = 3
+--- no_error_log
+[error]
