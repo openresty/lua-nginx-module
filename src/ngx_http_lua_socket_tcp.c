@@ -4390,7 +4390,7 @@ ngx_http_lua_req_socket(lua_State *L)
         r->request_body = rb;
     }
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */); /* the object */
+    lua_createtable(L, 2 /* narr */, 3 /* nrec */); /* the object */
 
     if (raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
