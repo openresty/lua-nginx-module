@@ -204,7 +204,7 @@ It is *highly* recommended to use [http://openresty.org OpenResty releases] whic
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
 # Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuaJIT can be downloaded from the [http://luajit.org/download.html LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuaJIT and/or Lua.
-# Download the latest version of the ngx_devel_kit (NDK) module [https://github.com/simpl/ngx_devel_kit/tags HERE].
+# Download the latest version of the ngx_devel_kit (NDK) module [https://github.com/simplresty/ngx_devel_kit/tags HERE].
 # Download the latest version of ngx_lua [https://github.com/openresty/lua-nginx-module/tags HERE].
 # Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
 
@@ -766,7 +766,7 @@ The following dependencies are required to run the test suite:
 ** Test::Nginx: https://github.com/openresty/test-nginx
 
 * Nginx modules:
-** [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+** [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit]
 ** [https://github.com/openresty/set-misc-nginx-module ngx_set_misc]
 ** [http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz ngx_auth_request] (this is not needed if you're using Nginx 1.5.4+.
 ** [https://github.com/openresty/echo-nginx-module ngx_echo]
@@ -845,7 +845,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]
 * [https://github.com/openresty/lua-nginx-module/wiki/Introduction Introduction to ngx_lua]
-* [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+* [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit]
 * [[HttpEchoModule]]
 * [[HttpDrizzleModule]]
 * [https://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
@@ -1291,7 +1291,7 @@ This directive can be freely mixed with all directives of the [[HttpRewriteModul
 
 As from the <code>v0.5.0rc29</code> release, Nginx variable interpolation is disabled in the <code><lua-script-str></code> argument of this directive and therefore, the dollar sign character (<code>$</code>) can be used directly.
 
-This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This directive requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == set_by_lua_block ==
 
@@ -1337,7 +1337,7 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by
 switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid reloading Nginx.
 
-This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This directive requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == content_by_lua ==
 
@@ -6926,7 +6926,7 @@ This feature requires at least ngx_lua <code>v0.10.0</code>.
 
 '''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simpl/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
+This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simplresty/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
 
 For example, the following [[HttpSetMiscModule]] directives can be invoked this way:
 
@@ -6956,7 +6956,7 @@ Similarly, the following directives provided by [[HttpEncryptedSessionModule]] c
 * [[HttpEncryptedSessionModule#set_encrypt_session|set_encrypt_session]]
 * [[HttpEncryptedSessionModule#set_decrypt_session|set_decrypt_session]]
 
-This feature requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This feature requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == coroutine.create ==
 '''syntax:''' ''co = coroutine.create(f)''
@@ -7037,4 +7037,3 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
-
