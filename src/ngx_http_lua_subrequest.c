@@ -166,6 +166,12 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+#if (NGX_HTTP_V2)
+    if (r->main->stream) {
+        return luaL_error(L, "http2 requests not supported yet");
+    }
+#endif
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");

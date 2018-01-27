@@ -113,7 +113,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if (NGX_HTTP_V2)
     if (mr->stream) {
-        return luaL_error(L, "http v2 not supported yet");
+        return luaL_error(L, "http2 requests not supported yet");
     }
 #endif
 
