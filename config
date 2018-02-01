@@ -474,26 +474,6 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 
 . auto/feature
 
-ngx_feature="__attribute__(constructor)"
-ngx_feature_libs=
-ngx_feature_name="NGX_HTTP_LUA_HAVE_CONSTRUCTOR"
-ngx_feature_run=yes
-ngx_feature_incs="#include <stdlib.h>
-int a = 2;
-__attribute__((constructor))
-static void foo(void)
-{
-    a = 0;
-}
-"
-ngx_feature_test="exit(a);"
-SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
-
-. auto/feature
-
-CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
-
 # ----------------------------------------
 
 ngx_feature="malloc_trim"
