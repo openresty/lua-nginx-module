@@ -29,6 +29,7 @@ static int ngx_http_lua_socket_tcp_close(lua_State *L);
 static int ngx_http_lua_socket_tcp_setoption(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeouts(lua_State *L);
+static int ngx_http_lua_socket_tcp_gettimeouts(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc,
     void *data);
@@ -244,6 +245,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettimeouts);
+    lua_setfield(L, -2, "gettimeouts"); /* ngx socket mt */
+
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
@@ -268,6 +272,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettimeouts);
+    lua_setfield(L, -2, "gettimeouts"); /* ngx socket mt */
 
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
@@ -309,6 +316,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_gettimeouts);
+    lua_setfield(L, -2, "gettimeouts"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_getreusedtimes);
     lua_setfield(L, -2, "getreusedtimes");
@@ -2850,6 +2860,62 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     }
 
     return 0;
+}
+
+
+static int
+ngx_http_lua_socket_tcp_gettimeouts(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_loc_conf_t     *llcf;
+    int                          connect_timeout, send_timeout, read_timeout;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting 1 argument "
+                          "(including the object), but got %d", lua_gettop(L));
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
+    lua_rawgeti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);
+    lua_rawgeti(L, 1, SOCKET_READ_TIMEOUT_INDEX);
+
+    read_timeout = (ngx_int_t) lua_tointeger(L, -1);
+    send_timeout = (ngx_int_t) lua_tointeger(L, -2);
+    connect_timeout = (ngx_int_t) lua_tointeger(L, -3);
+
+    lua_pop(L, 3);
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (connect_timeout > 0) {
+        lua_pushinteger(L, connect_timeout);
+
+    } else {
+        lua_pushinteger(L, (ngx_msec_t) llcf->connect_timeout);
+    }
+
+    if (send_timeout > 0) {
+        lua_pushinteger(L, send_timeout);
+
+    } else {
+        lua_pushinteger(L, (ngx_msec_t) llcf->send_timeout);
+    }
+
+    if (read_timeout > 0) {
+        lua_pushinteger(L, read_timeout);
+
+    } else {
+        lua_pushinteger(L, (ngx_msec_t) llcf->read_timeout);
+    }
+
+    return 3;
 }
 
 
