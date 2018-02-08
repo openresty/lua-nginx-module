@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 3);
 
 #no_diff();
 #no_long_string();
@@ -304,7 +304,7 @@ Location: http://agentzh.org/foo?a=b&c=d
 
 
 
-=== TEST 15: explicit 308 with args
+=== TEST 17: explicit 308 with args
 --- config
     location /read {
         content_by_lua '
