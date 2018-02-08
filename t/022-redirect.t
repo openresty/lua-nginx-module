@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 #no_diff();
 #no_long_string();
@@ -282,6 +282,7 @@ Location: http://agentzh.org/foo?a=b&c=d
     }
 --- request
 GET /read
+--- response_body_like: 308 Permanent Redirect
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
 --- error_code: 308
@@ -298,6 +299,7 @@ Location: http://agentzh.org/foo?a=b&c=d
     }
 --- request
 GET /read
+--- response_body_like: 308 Permanent Redirect
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
 --- error_code: 308
@@ -314,6 +316,7 @@ Location: http://agentzh.org/foo?a=b&c=d
     }
 --- request
 GET /read
+--- response_body_like: 308 Permanent Redirect
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
 --- error_code: 308
