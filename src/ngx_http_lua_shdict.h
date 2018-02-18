@@ -58,6 +58,8 @@ typedef struct {
 } ngx_http_lua_shm_zone_ctx_t;
 
 
+ngx_int_t ngx_http_lua_shared_dict_add(ngx_conf_t *cf, ngx_str_t *name,
+    ssize_t size);
 ngx_int_t ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 void ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
