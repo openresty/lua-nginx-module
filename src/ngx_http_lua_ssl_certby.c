@@ -751,7 +751,7 @@ ngx_http_lua_ffi_ssl_set_der_private_key(ngx_http_request_t *r,
     }
 
     if (SSL_use_PrivateKey(ssl_conn, pkey) == 0) {
-        *err = "SSL_CTX_use_PrivateKey() failed";
+        *err = "SSL_use_PrivateKey() failed";
         goto failed;
     }
 
