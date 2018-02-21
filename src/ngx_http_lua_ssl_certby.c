@@ -553,13 +553,6 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 int
 ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 {
-#ifndef TLS1_get_version
-
-    *err = "no TLS1 support";
-    return NGX_ERROR;
-
-#else
-
     ngx_ssl_conn_t    *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -573,11 +566,9 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
         return NGX_ERROR;
     }
 
-    dd("tls1 ver: %d", (int) TLS1_get_version(ssl_conn));
+    dd("tls1 ver: %d", SSL_version(ssl_conn));
 
-    return (int) TLS1_get_version(ssl_conn);
-
-#endif
+    return SSL_version(ssl_conn);
 }
 
 
