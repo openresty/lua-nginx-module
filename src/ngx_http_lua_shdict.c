@@ -108,8 +108,8 @@ ngx_http_lua_shdict_free_list(ngx_http_lua_shdict_ctx_t *ctx,
 static ngx_inline ngx_http_lua_shdict_zset_t *
 ngx_http_lua_shdict_get_rbtree(ngx_http_lua_shdict_node_t *sd, size_t len)
 {
-    return (ngx_http_lua_shdict_zset_t *) ngx_align_ptr(((u_char *) &sd->data + len),
-                                         NGX_ALIGNMENT);
+    return (ngx_http_lua_shdict_zset_t *)
+        ngx_align_ptr(((u_char *) &sd->data + len), NGX_ALIGNMENT);
 }
 
 static ngx_inline void
@@ -125,7 +125,8 @@ ngx_http_lua_shdict_push_znode_value(lua_State *L,
 
         case SHDICT_TSTRING:
 
-            lua_pushlstring(L, (char *) zset_node->value.data, zset_node->value.len);
+            lua_pushlstring(L, (char *) zset_node->value.data,
+                            zset_node->value.len);
             break;
 
         case SHDICT_TNUMBER:
@@ -150,8 +151,8 @@ ngx_http_lua_shdict_push_znode_value(lua_State *L,
 
 
 void
-ngx_http_lua_shdict_zset_insert_value(ngx_rbtree_node_t *temp, ngx_rbtree_node_t *node,
-    ngx_rbtree_node_t *sentinel)
+ngx_http_lua_shdict_zset_insert_value(ngx_rbtree_node_t *temp,
+    ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
     ngx_rbtree_node_t               **p;
     ngx_http_lua_shdict_zset_node_t  *sdn, *sdnt;
