@@ -4,12 +4,13 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 217;
+plan tests => repeat_each() * 218;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
+$ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 
 #log_level 'warn';
 log_level 'debug';
@@ -108,10 +109,10 @@ sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -123,19 +124,27 @@ SSL reused session
 
 
 === TEST 2: no SNI, no verify
+--- http_config
+    server {
+        listen $TEST_NGINX_SERVER_SSL_PORT ssl;
+        server_name   test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(201)
+            }
+        }
+    }
 --- config
-    server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
-        #set $port 5000;
-        set $port $TEST_NGINX_MEMCACHED_PORT;
-
-        content_by_lua '
-            local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
-
+        content_by_lua_block {
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_SSL_PORT)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -151,7 +160,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -172,21 +181,32 @@ SSL reused session
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             collectgarbage()
-        ';
+        }
     }
 
 --- request
 GET /t
 --- response_body
 connected: 1
-failed to do SSL handshake: handshake failed
+ssl handshake: userdata
+sent http request: 53 bytes.
+received: HTTP/1.1 201 Created
+close: 1 nil
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
 
---- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
---- grep_error_log_out
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
+--- grep_error_log_out eval
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+$/
 --- no_error_log
 lua ssl server name:
 SSL reused session
+[error]
 [alert]
 --- timeout: 5
 
@@ -255,10 +275,10 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "openresty.org"
@@ -343,13 +363,13 @@ sent http request: 56 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl set session: \1:2
-lua ssl save session: \1:3
-lua ssl free session: \1:2
-lua ssl free session: \1:1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl set session: \1
+lua ssl save session: \1
+lua ssl free session: \1
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -432,7 +452,7 @@ failed to send http request: closed
 \z
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "blah.openresty.org"
@@ -512,7 +532,7 @@ failed to send http request: closed
 \z
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "blah.openresty.org"
@@ -587,10 +607,10 @@ received: HTTP/1.1 404 Not Found
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -672,10 +692,10 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]++/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -693,7 +713,7 @@ SSL reused session
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_ssl_verify_depth 1;
+    lua_ssl_verify_depth 0;
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -748,17 +768,18 @@ $::DSTRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 20: unable to get local issuer certificate
+--- response_body eval
+qr{connected: 1
+failed to do SSL handshake: (22: certificate chain too long|20: unable to get local issuer certificate)
 failed to send http request: closed
+}
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl server name: "openresty.org"
-lua ssl certificate verify error: (20: unable to get local issuer certificate)
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/lua ssl certificate verify error: \((22: certificate chain too long|20: unable to get local issuer certificate)\)/]
 --- no_error_log
 SSL reused session
 [alert]
@@ -771,7 +792,7 @@ SSL reused session
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_ssl_verify_depth 1;
+    lua_ssl_verify_depth 0;
     lua_socket_log_errors off;
     location /t {
         #set $port 5000;
@@ -827,13 +848,14 @@ $::DSTRootCertificate"
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 20: unable to get local issuer certificate
+--- response_body eval
+qr/connected: 1
+failed to do SSL handshake: (22: certificate chain too long|20: unable to get local issuer certificate)
 failed to send http request: closed
+/
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "openresty.org"
@@ -923,10 +945,10 @@ sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "www.google.com"
@@ -1013,7 +1035,7 @@ GET /t
 connected: 1
 failed to do SSL handshake: 20: unable to get local issuer certificate
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "www.google.com"
@@ -1095,10 +1117,10 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -1174,10 +1196,10 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "openresty.org"
@@ -1254,14 +1276,14 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA SSLv3
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1334,14 +1356,14 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA SSLv3
+--- error_log eval
+['lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1412,11 +1434,11 @@ failed to do SSL handshake: handshake failed
 failed to send http request: closed
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
 [
-qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?unsupported protocol/,
+qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?(unsupported protocol|no protocols available)/,
 'lua ssl server name: "openresty.org"',
 ]
 --- no_error_log
@@ -1488,10 +1510,10 @@ ssl handshake: userdata
 set keepalive: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: \1:2
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -1564,14 +1586,14 @@ ssl handshake: userdata
 set keepalive: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl save session: \1:3
-lua ssl save session: \1:4
-lua ssl free session: \1:4
-lua ssl free session: \1:3
-lua ssl free session: \1:2
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl save session: \1
+lua ssl save session: \1
+lua ssl free session: \1
+lua ssl free session: \1
+lua ssl free session: \1
 $/
 
 --- error_log
@@ -1615,7 +1637,7 @@ hello world
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 attempt to call method 'sslhandshake' (a nil value)
@@ -1714,10 +1736,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -1819,10 +1841,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "test.com"
@@ -1912,10 +1934,10 @@ failed to do SSL handshake: handshake failed
 ">>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
-qr/SSL_do_handshake\(\) failed .*?unknown protocol/
+qr/SSL_do_handshake\(\) failed .*?(unknown protocol|wrong version number)/
 --- no_error_log
 lua ssl server name:
 SSL reused session
@@ -2011,7 +2033,7 @@ $::TestCertificate
 >>> test.crl
 $::TestCRL"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "test.com"
@@ -2090,12 +2112,12 @@ received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl save session: ([0-9A-F]+):3
-lua ssl free session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 lua ssl server name: "openresty.org"
@@ -2149,7 +2171,7 @@ connected: 1
 failed to do SSL handshake: timeout
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl server name: "openresty.org"
@@ -2221,7 +2243,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- no_error_log
 lua ssl server name:
@@ -2292,10 +2314,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- no_error_log
 lua ssl server name:
@@ -2372,7 +2394,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- no_error_log
 lua ssl server name:
@@ -2474,10 +2496,10 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+):2
-lua ssl free session: ([0-9A-F]+):1
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log
 --- no_error_log
@@ -2570,7 +2592,7 @@ $::TestCertificateKey
 >>> test.crt
 $::TestCertificate"
 
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log
 lua ssl certificate verify error: (18: self signed certificate)

@@ -710,7 +710,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 116 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 117 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -1055,7 +1055,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                  * check if coroutine.resume or coroutine.yield called
                  * lua_yield()
                  */
-                switch(ctx->co_op) {
+                switch (ctx->co_op) {
+
                 case NGX_HTTP_LUA_USER_CORO_NOP:
                     dd("hit! it is the API yield");
 
@@ -2169,8 +2170,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 #endif
 
         rc = ngx_http_named_location(r, &ctx->exec_uri);
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
-        {
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
 

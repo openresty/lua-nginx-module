@@ -24,16 +24,6 @@
 }
 {
    <insert_a_suppression_name_here>
-   Memcheck:Cond
-   fun:ngx_vslprintf
-   fun:ngx_snprintf
-   fun:ngx_sock_ntop
-   fun:ngx_event_accept
-   fun:ngx_epoll_process_events
-   fun:ngx_process_events_and_timers
-}
-{
-   <insert_a_suppression_name_here>
    Memcheck:Addr1
    fun:ngx_vslprintf
    fun:ngx_snprintf
@@ -183,10 +173,37 @@
 }
 {
    <insert_a_suppression_name_here>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:ngx_alloc
-   fun:ngx_set_environment
-   fun:ngx_single_process_cycle
+   Memcheck:Param
+   epoll_pwait(sigmask)
+   fun:epoll_pwait
+   fun:epoll_wait
+   fun:ngx_epoll_process_events
+   fun:ngx_process_events_and_timers
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   epoll_pwait(sigmask)
+   fun:epoll_pwait
+   fun:epoll_wait
+   fun:ngx_epoll_test_rdhup
+   fun:ngx_epoll_init
+   fun:ngx_event_process_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   epoll_pwait(sigmask)
+   fun:epoll_pwait
+   fun:ngx_epoll_process_events
+   fun:ngx_process_events_and_timers
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Param
+   epoll_pwait(sigmask)
+   fun:epoll_pwait
+   fun:ngx_epoll_test_rdhup
+   fun:ngx_epoll_init
+   fun:ngx_event_process_init
 }
