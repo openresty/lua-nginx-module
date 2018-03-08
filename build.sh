@@ -77,8 +77,7 @@ function build_debug() {
               --add-module=../ngx_devel_kit \
               --add-module=../../../lua-nginx-module \
               --add-module=../echo-nginx-module \
-              --add-module=../memc-nginx-module > /dev/null 2>/dev/stderr
-#              --add-module=../drizzle-nginx-module \
+              --add-module=../memc-nginx-module >/dev/null 2>&1
   r=$?
   if [ $r -ne 0 ]; then
     exit $r
@@ -93,37 +92,6 @@ function build_debug() {
   fi
   make install > /dev/null
 
-  mv "$INSTALL_PREFIX/nginx-$VERSION$SUFFIX/sbin/nginx" "$INSTALL_PREFIX/nginx-$VERSION$SUFFIX/sbin/nginx.debug"
-  cd ..
-}
-
-function build_release() {
-  cd nginx-$VERSION$SUFFIX
-  echo "Configuring release nginx-$VERSION$SUFFIX"
-  ./configure --prefix="$INSTALL_PREFIX/nginx-$VERSION$SUFFIX" \
-              --with-pcre=$PCRE_PREFIX \
-              --with-http_stub_status_module \
-              --with-stream \
-              --with-http_auth_request_module \
-              --add-module=../ngx_devel_kit \
-              --add-module=../../../lua-nginx-module \
-              --add-module=../echo-nginx-module \
-              --add-module=../memc-nginx-module > /dev/null 2>/dev/stderr
-#              --add-module=../drizzle-nginx-module \
-
-  r=$?
-  if [ $r -ne 0 ]; then
-    exit $r
-  fi
-
-  echo "Build release nginx-$VERSION$SUFFIX"
-  make -j 8 > /dev/null 2>/dev/stderr
-
-  r=$?
-  if [ $r -ne 0 ]; then
-    exit $r
-  fi
-  make install > /dev/null
   cd ..
 }
 
@@ -208,7 +176,6 @@ function download() {
   download_module simpl       ngx_devel_kit                    master
   download_module openresty   lua-cjson                        master
   download_module openresty   echo-nginx-module                master
-  download_module openresty   drizzle-nginx-module             master
   download_module openresty   memc-nginx-module                master
 
   cd ..
@@ -242,9 +209,6 @@ function build() {
 
   make clean > /dev/null 2>&1
   build_debug
-
-  make clean > /dev/null 2>&1
-  build_release
 
   install_file  "$JIT_PREFIX/usr/local/lib"           .
   install_file  lua-cjson/cjson.so                    lib/lua/5.1
