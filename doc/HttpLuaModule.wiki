@@ -199,12 +199,12 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 
 = Installation =
 
-It is *highly* recommended to use [http://openresty.org OpenResty releases] which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower.
+It is *highly* recommended to use [http://openresty.org OpenResty releases] which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower. The same applies to LuaJIT as well. OpenResty includes its own version of LuaJIT which gets specifically optimized and enhanced for the OpenResty environment.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
 # Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuaJIT can be downloaded from the [http://luajit.org/download.html LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuaJIT and/or Lua.
-# Download the latest version of the ngx_devel_kit (NDK) module [https://github.com/simpl/ngx_devel_kit/tags HERE].
+# Download the latest version of the ngx_devel_kit (NDK) module [https://github.com/simplresty/ngx_devel_kit/tags HERE].
 # Download the latest version of ngx_lua [https://github.com/openresty/lua-nginx-module/tags HERE].
 # Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
 
@@ -684,7 +684,7 @@ As noted earlier, PCRE sequences presented within <code>*_by_lua_block {}</code>
     # nginx.conf
     location /test {
         content_by_lua_block {
-            local regex = "\d+"
+            local regex = [[\d+]]
             local m = ngx.re.match("hello, 1234", regex)
             if m then ngx.say(m[0]) else ngx.say("not matched!") end
         }
@@ -766,7 +766,7 @@ The following dependencies are required to run the test suite:
 ** Test::Nginx: https://github.com/openresty/test-nginx
 
 * Nginx modules:
-** [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+** [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit]
 ** [https://github.com/openresty/set-misc-nginx-module ngx_set_misc]
 ** [http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz ngx_auth_request] (this is not needed if you're using Nginx 1.5.4+.
 ** [https://github.com/openresty/echo-nginx-module ngx_echo]
@@ -817,7 +817,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2017, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2017, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
+Copyright (C) 2009-2018, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
 
 All rights reserved.
 
@@ -845,7 +845,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [http://openresty.org/#DynamicRoutingBasedOnRedis Dynamic Routing Based on Redis and Lua]
 * [http://openresty.org/#UsingLuaRocks Using LuaRocks with ngx_lua]
 * [https://github.com/openresty/lua-nginx-module/wiki/Introduction Introduction to ngx_lua]
-* [https://github.com/simpl/ngx_devel_kit ngx_devel_kit]
+* [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit]
 * [[HttpEchoModule]]
 * [[HttpDrizzleModule]]
 * [https://github.com/FRiCKLE/ngx_postgres postgres-nginx-module]
@@ -1291,7 +1291,7 @@ This directive can be freely mixed with all directives of the [[HttpRewriteModul
 
 As from the <code>v0.5.0rc29</code> release, Nginx variable interpolation is disabled in the <code><lua-script-str></code> argument of this directive and therefore, the dollar sign character (<code>$</code>) can be used directly.
 
-This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This directive requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == set_by_lua_block ==
 
@@ -1337,7 +1337,7 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by
 switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid reloading Nginx.
 
-This directive requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This directive requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == content_by_lua ==
 
@@ -2469,13 +2469,15 @@ This directive was first introduced in the <code>v0.9.11</code> release.
 
 == lua_ssl_protocols ==
 
-'''syntax:''' ''lua_ssl_protocols [SSLv2] [SSLv3] [TLSv1] [TLSv1.1] [TLSv1.2]''
+'''syntax:''' ''lua_ssl_protocols [SSLv2] [SSLv3] [TLSv1] [TLSv1.1] [TLSv1.2] [TLSv1.3]''
 
 '''default:''' ''lua_ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2''
 
 '''context:''' ''http, server, location''
 
 Enables the specified protocols for requests to a SSL/TLS server in the [[#tcpsock:sslhandshake|tcpsock:sslhandshake]] method.
+
+The support for the <code>TLSv1.3</code> parameter requires version <code>v0.10.12</code> *and* OpenSSL 1.1.1.
 
 This directive was first introduced in the <code>v0.9.11</code> release.
 
@@ -2755,7 +2757,7 @@ This API requires a relatively expensive metamethod call and it is recommended t
   ngx.DECLINED (-5)
 </geshi>
 
-Note that only three of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>NGX_OK</code>, <code>NGX_ERROR</code>, and <code>NGX_DECLINED</code> as input).
+Note that only three of these constants are utilized by the [[#Nginx API for Lua|Nginx API for Lua]] (i.e., [[#ngx.exit|ngx.exit]] accepts <code>ngx.OK</code>, <code>ngx.ERROR</code>, and <code>ngx.DECLINED</code> as input).
 
 <geshi lang="lua">
   ngx.null
@@ -2805,6 +2807,7 @@ These constants are usually used in [[#ngx.location.capture|ngx.location.capture
   value = ngx.HTTP_SEE_OTHER (303)
   value = ngx.HTTP_NOT_MODIFIED (304)
   value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
+  value = ngx.HTTP_PERMANENT_REDIRECT (308)
   value = ngx.HTTP_BAD_REQUEST (400)
   value = ngx.HTTP_UNAUTHORIZED (401)
   value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
@@ -3406,7 +3409,7 @@ The same applies to assigning an empty table:
     ngx.header["X-My-Header"] = {};
 </geshi>
 
-Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and similar) will throw out a Lua exception.
+Setting <code>ngx.header.HEADER</code> after sending out response headers (either explicitly with [[#ngx.send_headers|ngx.send_headers]] or implicitly with [[#ngx.print|ngx.print]] and similar) will log an error message.
 
 Reading <code>ngx.header.HEADER</code> will return the value of the response header named <code>HEADER</code>.
 
@@ -4251,6 +4254,7 @@ The optional <code>status</code> parameter specifies the HTTP status code to be 
 * <code>302</code> (default)
 * <code>303</code>
 * <code>307</code>
+* <code>308</code>
 
 It is <code>302</code> (<code>ngx.HTTP_MOVED_TEMPORARILY</code>) by default.
 
@@ -4449,7 +4453,7 @@ Number literals can be used directly as the argument, for instance,
     ngx.exit(501)
 </geshi>
 
-Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>NGX_OK</code> and <code>NGX_ERROR</code> of the [[#core constants|core constants]].
+Note that while this method accepts all [[#HTTP status constants|HTTP status constants]] as input, it only accepts <code>ngx.OK</code> and <code>ngx.ERROR</code> of the [[#core constants|core constants]].
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exit(...)</code> be used to reinforce the fact that the request processing is being terminated.
 
@@ -5412,9 +5416,11 @@ This feature was first introduced in the <code>v0.3.1rc22</code> release.
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 == ngx.shared.DICT.incr ==
-'''syntax:''' ''newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)''
+'''syntax:''' ''newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?, init_ttl?)''
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''optional requirement:''' <code>resty.core.shdict</code> or <code>resty.core</code>
 
 Increments the (numerical) value for <code>key</code> in the shm-based dictionary [[#ngx.shared.DICT|ngx.shared.DICT]] by the step value <code>value</code>. Returns the new resulting number if the operation is successfully completed or <code>nil</code> and an error message otherwise.
 
@@ -5424,6 +5430,24 @@ When the key does not exist or has already expired in the shared dictionary,
 # if the <code>init</code> argument takes a number value, this method will create a new <code>key</code> with the value <code>init + value</code>.
 
 Like the [[#ngx.shared.DICT.add|add]] method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The optional <code>init_ttl</code> argument specifies expiration time (in seconds) of the value when it is initialized via the <code>init</code> argument. The time resolution is <code>0.001</code> seconds. If <code>init_ttl</code> takes the value <code>0</code> (which is the default), then the item will never expire. This argument cannot be provided without providing the <code>init</code> argument as well, and has no effect if the value already exists (e.g., if it was previously inserted via [[#ngx.shared.DICT.set|set]] or the likes).
+
+'''Note:''' Usage of the <code>init_ttl</code> argument requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library. Example:
+
+<geshi lang="lua">
+    require "resty.core"
+
+    local cats = ngx.shared.cats
+    local newval, err = cats:incr("black_cats", 1, 0, 0.1)
+
+    print(newval) -- 1
+
+    ngx.sleep(0.2)
+
+    local val, err = cats:get("black_cats")
+    print(val) -- nil
+</geshi>
 
 The <code>forcible</code> return value will always be <code>nil</code> when the <code>init</code> argument is not specified.
 
@@ -5436,6 +5460,8 @@ The <code>value</code> argument and <code>init</code> argument can be any valid 
 This method was first introduced in the <code>v0.3.1rc22</code> release.
 
 The optional <code>init</code> parameter was first added in the <code>v0.10.6</code> release.
+
+The optional <code>init_ttl</code> parameter was introduced in the <code>v0.10.12rc2</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
@@ -6660,7 +6686,7 @@ timers" here mean timers that have not yet been expired and "running
 timers" are those whose user callbacks are currently running.
 
 The maximal number of pending timers allowed in an Nginx
-worker is constrolled by the [[#lua_max_pending_timers|lua_max_pending_timers]]
+worker is controlled by the [[#lua_max_pending_timers|lua_max_pending_timers]]
 directive. The maximal number of running timers is controlled by the
 [[#lua_max_running_timers|lua_max_running_timers]] directive.
 
@@ -6902,7 +6928,7 @@ This feature requires at least ngx_lua <code>v0.10.0</code>.
 
 '''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simpl/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
+This mechanism allows calling other nginx C modules' directives that are implemented by [https://github.com/simplresty/ngx_devel_kit Nginx Devel Kit] (NDK)'s set_var submodule's <code>ndk_set_var_value</code>.
 
 For example, the following [[HttpSetMiscModule]] directives can be invoked this way:
 
@@ -6932,7 +6958,7 @@ Similarly, the following directives provided by [[HttpEncryptedSessionModule]] c
 * [[HttpEncryptedSessionModule#set_encrypt_session|set_encrypt_session]]
 * [[HttpEncryptedSessionModule#set_decrypt_session|set_decrypt_session]]
 
-This feature requires the [https://github.com/simpl/ngx_devel_kit ngx_devel_kit] module.
+This feature requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
 == coroutine.create ==
 '''syntax:''' ''co = coroutine.create(f)''
@@ -7013,4 +7039,3 @@ This section is just holding obsolete documentation sections that have been eith
 == Special PCRE Sequences ==
 
 This section has been renamed to [[#Special Escaping Sequences|Special Escaping Sequences]].
-
