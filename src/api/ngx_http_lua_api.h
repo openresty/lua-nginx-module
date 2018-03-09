@@ -15,6 +15,7 @@
 #include <lua.h>
 #include <stdint.h>
 
+#include "ngx_http_lua_api_common.h"
 
 /* Public API for other Nginx modules */
 
