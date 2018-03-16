@@ -2212,7 +2212,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
-    size_t str_value_len, double num_value, int exptime, int user_flags,
+    size_t str_value_len, double num_value, uint64_t exptime, int user_flags,
     char **errmsg, int *forcible)
 {
     int                          i, n;
