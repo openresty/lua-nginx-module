@@ -2903,7 +2903,7 @@ ngx_http_lua_shdict_peek(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 }
 
 
-int
+uint64_t
 ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
     size_t key_len)
 {
@@ -2951,7 +2951,7 @@ ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
 
 int
 ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
-    size_t key_len, int exptime)
+    size_t key_len, uint64_t exptime)
 {
     uint32_t                     hash;
     ngx_int_t                    rc;
