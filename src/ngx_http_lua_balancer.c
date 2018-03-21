@@ -802,7 +802,11 @@ ngx_http_lua_ffi_balancer_set_ssl_ctx(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     if (!SSL_CTX_up_ref(ssl_ctx)) {
+#else
+    if (CRYPTO_add(&ssl_ctx->references, 1, CRYPTO_LOCK_SSL_CTX) < 2) {
+#endif
         *err = "unable to take reference to SSL_CTX*";
         return NGX_ERROR;
     }
