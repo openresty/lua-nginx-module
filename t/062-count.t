@@ -509,7 +509,7 @@ n = 6
                     ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
                     return
                 end
-                sock:settimeouts(1, 2, 3)
+                sock:settimeouts(1000, 2000, 3000)
                 for k, v in ipairs(sock) do
                     narr = narr + 1
                 end
@@ -547,7 +547,7 @@ nrec = 3
                     ngx.log(ngx.ERR, "server: failed to get req socket: ", err)
                     return
                 end
-                sock:settimeouts(1, 2, 3)
+                sock:settimeouts(1000, 2000, 3000)
                 for k, v in ipairs(sock) do
                     narr = narr + 1
                 end
