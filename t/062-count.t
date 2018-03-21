@@ -497,7 +497,7 @@ n = 6
 
 
 
-=== TEST 22: entries under the req raw sockets
+=== TEST 23: entries under the req raw sockets
 --- config
         location = /test {
             content_by_lua_block {
@@ -509,7 +509,7 @@ n = 6
                     ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
                     return
                 end
-                sock:settimeouts(1, 2, 3)
+                sock:settimeouts(1000, 2000, 3000)
                 for k, v in ipairs(sock) do
                     narr = narr + 1
                 end
@@ -536,7 +536,7 @@ nrec = 3
 
 
 
-=== TEST 23: entries under the req sockets
+=== TEST 24: entries under the req sockets
 --- config
         location = /test {
             content_by_lua_block {
@@ -547,7 +547,7 @@ nrec = 3
                     ngx.log(ngx.ERR, "server: failed to get req socket: ", err)
                     return
                 end
-                sock:settimeouts(1, 2, 3)
+                sock:settimeouts(1000, 2000, 3000)
                 for k, v in ipairs(sock) do
                     narr = narr + 1
                 end
