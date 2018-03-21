@@ -760,4 +760,84 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
     return bp->last_peer_state;
 }
 
+
+#if NGX_HTTP_SSL
+
+int
+ngx_http_lua_ffi_balancer_set_ssl_ctx(ngx_http_request_t *r,
+    SSL_CTX* ssl_ctx, char **err)
+{
+    ngx_http_lua_ctx_t   *ctx;
+    ngx_http_upstream_t  *u;
+    ngx_ssl_t            *ssl;
+    ngx_pool_cleanup_t   *cln;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        *err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    ssl = u->conf->ssl;
+
+    /* Early exit if SSL_CTX* is already correct value */
+    if (ssl != NULL && ssl->ctx == ssl_ctx) {
+        return NGX_OK;
+    }
+
+    if (!SSL_CTX_up_ref(ssl_ctx)) {
+        *err = "unable to take reference to SSL_CTX*";
+        return NGX_ERROR;
+    }
+
+    if (ssl != NULL) {
+        /* Free old SSL_CTX* */
+        ngx_ssl_cleanup_ctx(ssl);
+
+    } else {
+        ssl = ngx_pcalloc(ngx_cycle->pool, sizeof(ngx_ssl_t));
+        if (ssl == NULL) {
+            *err = "no memory";
+            SSL_CTX_free(ssl_ctx);
+            return NGX_ERROR;
+        }
+
+        cln = ngx_pool_cleanup_add(ngx_cycle->pool, 0);
+        if (cln == NULL) {
+            *err = "no memory";
+            SSL_CTX_free(ssl_ctx);
+            return NGX_ERROR;
+        }
+
+        cln->handler = ngx_ssl_cleanup_ctx;
+        cln->data = ssl;
+
+        u->conf->ssl = ssl;
+        ssl->log = ngx_cycle->log;
+    }
+
+    ssl->ctx = ssl_ctx;
+
+    return NGX_OK;
+}
+
+#endif /* NGX_HTTP_SSL */
+
 #endif  /* NGX_LUA_NO_FFI_API */
