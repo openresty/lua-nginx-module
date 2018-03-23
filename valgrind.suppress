@@ -173,6 +173,20 @@
 }
 {
    <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:ngx_alloc
+   fun:ngx_event_process_init
+   fun:ngx_worker_process_init
+   fun:ngx_cache_manager_process_cycle
+   fun:ngx_spawn_process
+   fun:ngx_start_cache_manager_processes
+   fun:ngx_master_process_cycle
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
    Memcheck:Param
    epoll_pwait(sigmask)
    fun:epoll_pwait
