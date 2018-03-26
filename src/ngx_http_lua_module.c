@@ -91,7 +91,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NULL },
 
     { ngx_string("lua_shared_dict"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE23,
       ngx_http_lua_shared_dict,
       0,
       0,

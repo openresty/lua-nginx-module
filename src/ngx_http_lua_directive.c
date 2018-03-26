@@ -124,6 +124,19 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
 
+    if (cf->args->nelts == 4 && ngx_strcmp(value[3].data, "rwlock") == 0) {
+        ctx->rlock = ngx_http_lua_shdict_rlock;
+        ctx->wlock = ngx_http_lua_shdict_wlock;
+        ctx->unlock = ngx_http_lua_shdict_rwunlock;
+        ctx->lock_downgrade = ngx_http_lua_shdict_rwdowngrade;
+
+    } else {
+        ctx->rlock = ngx_http_lua_shdict_shmtxlock;
+        ctx->wlock = ngx_http_lua_shdict_shmtxlock;
+        ctx->unlock = ngx_http_lua_shdict_shmtxunlock;
+        ctx->lock_downgrade = ngx_http_lua_shdict_shmtxdowngrade;
+    }
+
     zone = ngx_http_lua_shared_memory_add(cf, &name, (size_t) size,
                                           &ngx_http_lua_module);
     if (zone == NULL) {

@@ -11,6 +11,23 @@
 #include "ngx_http_lua_common.h"
 
 
+struct ngx_http_lua_shdict_ctx_s;
+typedef struct ngx_http_lua_shdict_ctx_s ngx_http_lua_shdict_ctx_t;
+typedef void (* memory_rlock)(ngx_http_lua_shdict_ctx_t *);
+typedef void (* memory_wlock)(ngx_http_lua_shdict_ctx_t *);
+typedef void (* memory_unlock)(ngx_http_lua_shdict_ctx_t *);
+typedef void (* memory_lock_downgrade)(ngx_http_lua_shdict_ctx_t *);
+
+
+void ngx_http_lua_shdict_rlock(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_wlock(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_rwunlock(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_rwdowngrade(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_shmtxlock(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_shmtxunlock(ngx_http_lua_shdict_ctx_t *ctx);
+void ngx_http_lua_shdict_shmtxdowngrade(ngx_http_lua_shdict_ctx_t *ctx);
+
+
 typedef struct {
     u_char                       color;
     uint8_t                      value_type;
@@ -38,13 +55,18 @@ typedef struct {
 } ngx_http_lua_shdict_shctx_t;
 
 
-typedef struct {
+struct ngx_http_lua_shdict_ctx_s {
     ngx_http_lua_shdict_shctx_t  *sh;
     ngx_slab_pool_t              *shpool;
+    ngx_atomic_t                  rwlock;
+    memory_rlock                  rlock;
+    memory_wlock                  wlock;
+    memory_unlock                 unlock;
+    memory_lock_downgrade         lock_downgrade;
     ngx_str_t                     name;
     ngx_http_lua_main_conf_t     *main_conf;
     ngx_log_t                    *log;
-} ngx_http_lua_shdict_ctx_t;
+};
 
 
 typedef struct {
