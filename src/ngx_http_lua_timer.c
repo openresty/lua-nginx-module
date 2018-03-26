@@ -16,6 +16,9 @@
 #include "ngx_http_lua_probe.h"
 
 
+#define MAX_DELAY 2147483648 /* 2 ^ 31 */
+
+
 typedef struct {
     void        **main_conf;
     void        **srv_conf;
@@ -134,6 +137,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     lua_State               *vm;  /* the main thread */
     lua_State               *co;
     ngx_msec_t               delay;
+    lua_Integer              arg;
     ngx_event_t             *ev = NULL;
     ngx_http_request_t      *r;
     ngx_connection_t        *saved_c = NULL;
@@ -154,7 +158,17 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
                           nargs);
     }
 
-    delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
+    arg = (lua_Integer) (luaL_checknumber(L, 1) * 1000);
+
+    if (arg < 0) {
+        return luaL_error(L, "delay must be a positive number");
+    }
+
+    if (arg >= MAX_DELAY) {
+        return luaL_error(L, "delay too large");
+    }
+
+    delay = (ngx_msec_t) arg;
 
     if (every && delay == 0) {
         return luaL_error(L, "delay cannot be zero");

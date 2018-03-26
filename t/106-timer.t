@@ -12,7 +12,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 72);
+plan tests => repeat_each() * (blocks() * 8 + 64);
 
 #no_diff();
 no_long_string();
@@ -2193,3 +2193,59 @@ ok
 --- error_log
 Bad bad bad
 --- skip_nginx: 4: < 1.7.1
+
+
+
+=== TEST 33: negative delay value
+--- config
+    location /t {
+        content_by_lua '
+            local function f(premature)
+                print("hello world")
+            end
+            local ok, err = ngx.timer.at(-1, f)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+        ';
+    }
+--- request
+GET /t
+--- wait: 0.1
+--- error_code: 500
+--- no_error_log
+[alert]
+[crit]
+--- error_log eval
+[
+qr/lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):\d+: delay must be a positive number/,
+]
+
+
+
+=== TEST 34: delay value overflow
+--- config
+    location /t {
+        content_by_lua '
+            local function f(premature)
+                print("hello world")
+            end
+            local ok, err = ngx.timer.at(2 ^ 31, f)
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+        ';
+    }
+--- request
+GET /t
+--- wait: 0.1
+--- error_code: 500
+--- no_error_log
+[alert]
+[crit]
+--- error_log eval
+[
+qr/lua entry thread aborted: runtime error: content_by_lua\(nginx\.conf:\d+\):\d+: delay too large/,
+]
