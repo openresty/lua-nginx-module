@@ -21,6 +21,8 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+#include "api/ngx_http_lua_api_common.h"
+
 
 #if (NGX_PCRE)
 
