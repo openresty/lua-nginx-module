@@ -172,7 +172,7 @@ ngx_http_lua_ngx_parse_http_time(lua_State *L)
 
     p = (u_char *) luaL_checklstring(L, 1, &len);
 
-    time = ngx_http_parse_time(p, len);
+    time = ngx_parse_http_time(p, len);
     if (time == NGX_ERROR) {
         lua_pushnil(L);
         return 1;
@@ -340,8 +340,8 @@ void
 ngx_http_lua_ffi_parse_http_time(const u_char *str, size_t len,
     long *time)
 {
-    /* ngx_http_parse_time doesn't modify 'str' actually */
-    *time = ngx_http_parse_time((u_char *) str, len);
+    /* ngx_parse_http_time doesn't modify 'str' actually */
+    *time = ngx_parse_http_time((u_char *) str, len);
 }
 #endif /* NGX_LUA_NO_FFI_API */
 
