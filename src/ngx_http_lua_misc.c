@@ -266,6 +266,7 @@ ngx_http_lua_ffi_is_internal(ngx_http_request_t *r)
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
+
     return r->internal;
 }
 
