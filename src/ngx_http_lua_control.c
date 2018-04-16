@@ -213,10 +213,12 @@ ngx_http_lua_ngx_redirect(lua_State *L)
         if (rc != NGX_HTTP_MOVED_TEMPORARILY
             && rc != NGX_HTTP_MOVED_PERMANENTLY
             && rc != NGX_HTTP_SEE_OTHER
+            && rc != NGX_HTTP_PERMANENT_REDIRECT
             && rc != NGX_HTTP_TEMPORARY_REDIRECT)
         {
             return luaL_error(L, "only ngx.HTTP_MOVED_TEMPORARILY, "
                               "ngx.HTTP_MOVED_PERMANENTLY, "
+                              "ngx.HTTP_PERMANENT_REDIRECT, "
                               "ngx.HTTP_SEE_OTHER, and "
                               "ngx.HTTP_TEMPORARY_REDIRECT are allowed");
         }

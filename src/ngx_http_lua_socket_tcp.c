@@ -1368,9 +1368,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
                     return 2;
                 }
 
-                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                               "lua ssl set session: %p:%d",
-                               *psession, (*psession)->references);
+                ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                               "lua ssl set session: %p", *psession);
             }
         }
 
@@ -1635,9 +1634,8 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
     } else {
         *ud = ssl_session;
 
-       ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                      "lua ssl save session: %p:%d", ssl_session,
-                      ssl_session->references);
+       ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                      "lua ssl save session: %p", ssl_session);
 
         /* set up the __gc metamethod */
         lua_pushlightuserdata(L, &ngx_http_lua_ssl_session_metatable_key);
@@ -2464,6 +2462,20 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
             len = ngx_http_lua_calc_strlen_in_table(L, 2, 2, 1 /* strict */);
             break;
 
+        case LUA_TNIL:
+            len = sizeof("nil") - 1;
+            break;
+
+        case LUA_TBOOLEAN:
+            if (lua_toboolean(L, 2)) {
+                len = sizeof("true") - 1;
+
+            } else {
+                len = sizeof("false") - 1;
+            }
+
+            break;
+
         default:
             msg = lua_pushfstring(L, "string, number, boolean, nil, "
                                   "or array table expected, got %s",
@@ -2497,6 +2509,29 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
         case LUA_TTABLE:
             b->last = ngx_http_lua_copy_str_in_table(L, -1, b->last);
+            break;
+
+        case LUA_TNIL:
+            *b->last++ = 'n';
+            *b->last++ = 'i';
+            *b->last++ = 'l';
+            break;
+
+        case LUA_TBOOLEAN:
+            if (lua_toboolean(L, 2)) {
+                *b->last++ = 't';
+                *b->last++ = 'r';
+                *b->last++ = 'u';
+                *b->last++ = 'e';
+
+            } else {
+                *b->last++ = 'f';
+                *b->last++ = 'a';
+                *b->last++ = 'l';
+                *b->last++ = 's';
+                *b->last++ = 'e';
+            }
+
             break;
 
         default:
@@ -4392,7 +4427,7 @@ ngx_http_lua_req_socket(lua_State *L)
         r->request_body = rb;
     }
 
-    lua_createtable(L, 3 /* narr */, 1 /* nrec */); /* the object */
+    lua_createtable(L, 2 /* narr */, 3 /* nrec */); /* the object */
 
     if (raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_raw_req_socket_metatable_key);
@@ -5444,9 +5479,8 @@ ngx_http_lua_ssl_free_session(lua_State *L)
 
     psession = lua_touserdata(L, 1);
     if (psession && *psession != NULL) {
-        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                       "lua ssl free session: %p:%d", *psession,
-                       (*psession)->references);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua ssl free session: %p", *psession);
 
         ngx_ssl_free_session(*psession);
     }

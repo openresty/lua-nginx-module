@@ -10,7 +10,9 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 3);
+plan tests => repeat_each() * (blocks() * 3 + 13);
+
+$ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 #no_diff();
 no_long_string();
@@ -604,3 +606,124 @@ GET /t
 --- response_body_like: }
 --- no_error_log
 [error]
+
+
+
+=== TEST 24: inline Lua code cache should not mess up across different phases
+--- http_config
+            # The indent is enforced to generate the same hash tags
+            ssl_session_fetch_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            ssl_session_store_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+
+        upstream backend {
+            server 0.0.0.1;
+            balancer_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+        }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+            ssl_certificate_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_session_tickets off;
+
+        location /foo {
+            set_by_lua_block $x {
+                ngx.log(ngx.INFO, "hello")
+            }
+            rewrite_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            access_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            content_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            header_filter_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            body_filter_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+            log_by_lua_block {
+                ngx.log(ngx.INFO, "hello")
+            }
+        }
+    }
+--- config
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location = /proxy {
+        proxy_pass http://backend;
+    }
+
+    location /t {
+        content_by_lua_block {
+            ngx.location.capture("/proxy")
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local sess, err = sock:sslhandshake(nil, "test.com", true)
+            if not sess then
+                ngx.say("failed to do SSL handshake: ", err)
+                return
+            end
+            package.loaded.session = sess
+            sock:close()
+
+            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+            if not sess then
+                ngx.say("failed to do SSL handshake: ", err)
+                return
+            end
+
+            local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send http request: ", err)
+                return
+            end
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- error_log eval
+[
+qr/balancer_by_lua:\d+: hello/,
+qr/ssl_session_fetch_by_lua_block:\d+: hello/,
+qr/ssl_certificate_by_lua:\d+: hello/,
+qr/ssl_session_store_by_lua_block:\d+: hello/,
+qr/set_by_lua:\d+: hello/,
+qr/rewrite_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/access_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/content_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/header_filter_by_lua:\d+: hello/,
+qr/body_filter_by_lua:\d+: hello/,
+qr/log_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+]

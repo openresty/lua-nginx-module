@@ -34,6 +34,13 @@ typedef struct {
 } ngx_http_lua_value_t;
 
 
+typedef struct {
+    int          len;
+    /* this padding hole on 64-bit systems is expected */
+    u_char      *data;
+} ngx_http_lua_ffi_str_t;
+
+
 lua_State *ngx_http_lua_get_global_state(ngx_conf_t *cf);
 
 ngx_http_request_t *ngx_http_lua_get_request(lua_State *L);

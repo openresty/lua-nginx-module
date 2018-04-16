@@ -2212,7 +2212,7 @@ ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
-    size_t str_value_len, double num_value, int exptime, int user_flags,
+    size_t str_value_len, double num_value, long exptime, int user_flags,
     char **errmsg, int *forcible)
 {
     int                          i, n;
@@ -2229,7 +2229,7 @@ ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
         return NGX_ERROR;
     }
 
-    dd("exptime: %d", exptime);
+    dd("exptime: %ld", exptime);
 
     ctx = zone->data;
 
@@ -2623,11 +2623,12 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
 int
 ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
     size_t key_len, double *value, char **err, int has_init, double init,
-    int *forcible)
+    long init_ttl, int *forcible)
 {
     int                          i, n;
     uint32_t                     hash;
     ngx_int_t                    rc;
+    ngx_time_t                  *tp = NULL;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
     double                       num;
@@ -2637,6 +2638,10 @@ ngx_http_lua_ffi_shdict_incr(ngx_shm_zone_t *zone, u_char *key,
 
     if (zone == NULL) {
         return NGX_ERROR;
+    }
+
+    if (init_ttl > 0) {
+        tp = ngx_timeofday();
     }
 
     ctx = zone->data;
@@ -2802,7 +2807,13 @@ setvalue:
 
     sd->user_flags = 0;
 
-    sd->expires = 0;
+    if (init_ttl > 0) {
+        sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
+                      + (uint64_t) init_ttl;
+
+    } else {
+        sd->expires = 0;
+    }
 
     dd("setting value type to %d", LUA_TNUMBER);
 
@@ -2892,7 +2903,7 @@ ngx_http_lua_shdict_peek(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 }
 
 
-int
+long
 ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
     size_t key_len)
 {
@@ -2940,7 +2951,7 @@ ngx_http_lua_ffi_shdict_get_ttl(ngx_shm_zone_t *zone, u_char *key,
 
 int
 ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
-    size_t key_len, int exptime)
+    size_t key_len, long exptime)
 {
     uint32_t                     hash;
     ngx_int_t                    rc;

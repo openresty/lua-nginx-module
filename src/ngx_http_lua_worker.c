@@ -136,6 +136,21 @@ ngx_http_lua_ffi_worker_count(void)
 
 
 int
+ngx_http_lua_ffi_master_pid(void)
+{
+#if (nginx_version >= 1013008)
+    if (ngx_process == NGX_PROCESS_SINGLE) {
+        return (int) ngx_pid;
+    }
+
+    return (int) ngx_parent;
+#else
+    return NGX_ERROR;
+#endif
+}
+
+
+int
 ngx_http_lua_ffi_get_process_type(void)
 {
 #if defined(HAVE_PRIVILEGED_PROCESS_PATCH) && !NGX_WIN32

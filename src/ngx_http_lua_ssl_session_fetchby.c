@@ -153,13 +153,17 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
         lscf->srv.ssl_sess_fetch_src = value[1];
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
+        p = ngx_palloc(cf->pool,
+                       sizeof("ssl_session_fetch_by_lua") +
+                       NGX_HTTP_LUA_INLINE_KEY_LEN);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
         lscf->srv.ssl_sess_fetch_src_key = p;
 
+        p = ngx_copy(p, "ssl_session_fetch_by_lua",
+                     sizeof("ssl_session_fetch_by_lua") - 1);
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
         *p = '\0';
@@ -171,8 +175,11 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 /* cached session fetching callback to be set with SSL_CTX_sess_set_get_cb */
 ngx_ssl_session_t *
-ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
-    int len, int *copy)
+ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+    const
+#endif
+    u_char *id, int len, int *copy)
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -287,7 +294,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn, u_char *id,
     cctx->exit_code = 1;  /* successful by default */
     cctx->connection = c;
     cctx->request = r;
-    cctx->session_id.data = id;
+    cctx->session_id.data = (u_char *) id;
     cctx->session_id.len = len;
     cctx->entered_sess_fetch_handler = 1;
     cctx->done = 0;
@@ -560,6 +567,7 @@ ngx_http_lua_ffi_ssl_set_serialized_session(ngx_http_request_t *r,
     ngx_ssl_conn_t                  *ssl_conn;
     ngx_connection_t                *c;
     ngx_ssl_session_t               *session = NULL;
+    ngx_ssl_session_t               *old_session;
     ngx_http_lua_ssl_ctx_t          *cctx;
 
     c = r->connection;
@@ -590,7 +598,12 @@ ngx_http_lua_ffi_ssl_set_serialized_session(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+    old_session = cctx->session;
     cctx->session = session;
+
+    if (old_session != NULL) {
+        ngx_ssl_free_session(old_session);
+    }
 
     return NGX_OK;
 }

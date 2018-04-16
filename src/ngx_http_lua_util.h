@@ -10,6 +10,7 @@
 
 
 #include "ngx_http_lua_common.h"
+#include "ngx_http_lua_api.h"
 
 
 #ifndef NGX_UNESCAPE_URI_COMPONENT
@@ -18,13 +19,6 @@
 
 
 #ifndef NGX_LUA_NO_FFI_API
-typedef struct {
-    int          len;
-    /* this padding hole on 64-bit systems is expected */
-    u_char      *data;
-} ngx_http_lua_ffi_str_t;
-
-
 typedef struct {
     ngx_http_lua_ffi_str_t   key;
     ngx_http_lua_ffi_str_t   value;
@@ -250,9 +244,9 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
     ngx_http_cleanup_pt *cleanup);
 
 
-#define ngx_http_lua_check_if_abortable(L, ctx)                             \
-    if ((ctx)->no_abort) {                                                  \
-        return luaL_error(L, "attempt to abort with pending subrequests");  \
+#define ngx_http_lua_check_if_abortable(L, ctx)                              \
+    if ((ctx)->no_abort) {                                                   \
+        return luaL_error(L, "attempt to abort with pending subrequests");   \
     }
 
 
@@ -372,7 +366,7 @@ ngx_http_lua_set_globals_table(lua_State *L)
 }
 
 
-#define ngx_http_lua_hash_literal(s)                                        \
+#define ngx_http_lua_hash_literal(s)                                         \
     ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
 
 

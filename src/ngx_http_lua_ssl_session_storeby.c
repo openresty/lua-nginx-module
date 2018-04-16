@@ -151,13 +151,17 @@ ngx_http_lua_ssl_sess_store_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
         lscf->srv.ssl_sess_store_src = value[1];
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
+        p = ngx_palloc(cf->pool,
+                       sizeof("ssl_session_store_by_lua") +
+                       NGX_HTTP_LUA_INLINE_KEY_LEN);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
         lscf->srv.ssl_sess_store_src_key = p;
 
+        p = ngx_copy(p, "ssl_session_store_by_lua",
+                     sizeof("ssl_session_store_by_lua") - 1);
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
         *p = '\0';
@@ -172,6 +176,8 @@ int
 ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_ssl_session_t *sess)
 {
+    const u_char                    *sess_id;
+    unsigned int                     sess_id_len;
     lua_State                       *L;
     ngx_int_t                        rc;
     ngx_connection_t                *c, *fc = NULL;
@@ -247,11 +253,18 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
         }
     }
 
+#if OPENSSL_VERSION_NUMBER >= 0x1000200fL
+    sess_id = SSL_SESSION_get_id(sess, &sess_id_len);
+#else
+    sess_id = sess->session_id;
+    sess_id_len = sess->session_id_length;
+#endif
+
     cctx->connection = c;
     cctx->request = r;
     cctx->session = sess;
-    cctx->session_id.data = sess->session_id;
-    cctx->session_id.len = sess->session_id_length;
+    cctx->session_id.data = (u_char *) sess_id;
+    cctx->session_id.len = sess_id_len;
     cctx->done = 0;
 
     dd("setting cctx");

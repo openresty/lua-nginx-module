@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 196;
+plan tests => repeat_each() * 199;
 
 our $HtmlDir = html_dir;
 
@@ -321,7 +321,7 @@ send: nil closed
 receive: nil closed
 close: nil closed
 --- error_log
-lua tcp socket connect timed out, when connecting to 106.184.1.99:12345
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
@@ -3744,5 +3744,67 @@ qr{\[alert\] .*? send\(\) failed \(\d+: Operation not permitted\) while resolvin
 GET /t
 --- response_body
 failed to connect: bad port number: 65536
+--- no_error_log
+[error]
+
+
+
+=== TEST 63: send boolean and nil
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local function send(data)
+                local bytes, err = sock:send(data)
+                if not bytes then
+                    ngx.say("failed to send request: ", err)
+                    return
+                end
+            end
+
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\nTest: "
+            send(req)
+            send(true)
+            send(false)
+            send(nil)
+            send("\r\n\r\n")
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+                else
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+        }
+    }
+
+    location /foo {
+        server_tokens off;
+        more_clear_headers Date;
+        echo $http_test;
+    }
+
+--- request
+GET /t
+--- response_body
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Connection: close
+received: 
+received: truefalsenil
 --- no_error_log
 [error]

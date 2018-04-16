@@ -113,7 +113,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if (NGX_HTTP_V2)
     if (mr->stream) {
-        return luaL_error(L, "http v2 not supported yet");
+        return luaL_error(L, "http2 requests not supported yet");
     }
 #endif
 
@@ -245,7 +245,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
         if (b != mr->header_in) {
             /* skip truncated header entries (if any) */
-            while (last > data && last[-1] != LF) {
+            while (last > data && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
         }
@@ -315,7 +315,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if 1
             /* skip truncated header entries (if any) */
-            while (last > p && last[-1] != LF) {
+            while (last > p && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
 #endif
@@ -325,8 +325,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 if (*p == '\0') {
                     j++;
                     if (p + 1 == last) {
-                        /* XXX this should not happen */
-                        dd("found string end!!");
+                        *p = LF;
 
                     } else if (*(p + 1) == LF) {
                         *p = CR;
@@ -1167,7 +1166,8 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
 int
 ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     size_t key_len, int is_nil, const u_char *sval, size_t sval_len,
-    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, char **errmsg)
+    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, int override,
+    char **errmsg)
 {
     u_char                      *p;
     ngx_str_t                    value, key;
@@ -1250,7 +1250,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
                 value.len = len;
 
                 rc = ngx_http_lua_set_output_header(r, key, value,
-                                                    i == 0 /* override */);
+                                                    override && i == 0);
 
                 if (rc == NGX_ERROR) {
                     *errmsg = "failed to set header";
@@ -1275,7 +1275,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     dd("key: %.*s, value: %.*s",
        (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
+    rc = ngx_http_lua_set_output_header(r, key, value, override);
 
     if (rc == NGX_ERROR) {
         *errmsg = "failed to set header";

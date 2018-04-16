@@ -428,6 +428,29 @@ ngx_http_lua_ffi_errlog_get_sys_filter_level(ngx_http_request_t *r)
     return log_level;
 }
 
+
+int
+ngx_http_lua_ffi_raw_log(ngx_http_request_t *r, int level, u_char *s,
+    size_t s_len)
+{
+    ngx_log_t           *log;
+
+    if (level > NGX_LOG_DEBUG || level < NGX_LOG_STDERR) {
+        return NGX_ERROR;
+    }
+
+    if (r && r->connection && r->connection->log) {
+        log = r->connection->log;
+
+    } else {
+        log = ngx_cycle->log;
+    }
+
+    ngx_log_error((unsigned) level, log, 0, "%*s", s_len, s);
+
+    return NGX_OK;
+}
+
 #endif
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
