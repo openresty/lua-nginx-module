@@ -8149,7 +8149,7 @@ This Lua module does not ship with this ngx_lua module itself rather it is shipp
 the
 [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
-Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/ocsp-cert-by-lua-2/lib/ngx/ocsp.md)
+Please refer to the [documentation](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ocsp.md)
 for this `ngx.ocsp` Lua module for more details.
 
 This feature requires at least ngx_lua `v0.10.0`.
