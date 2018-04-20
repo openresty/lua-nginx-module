@@ -24,7 +24,12 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -49,7 +54,12 @@ c = true
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -74,7 +84,12 @@ foo = true
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -87,7 +102,12 @@ foo = true
 
             ngx.say("again...")
 
-            args = ngx.req.get_uri_args()
+            args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -114,7 +134,12 @@ b r = 4a 2
 --- config
     location /t {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -139,7 +164,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -164,7 +194,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -195,7 +230,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -227,7 +267,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             -- ngx.say(args)
             for key, val in pairs(args) do
@@ -253,7 +298,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             -- ngx.say(args)
             for key, val in pairs(args) do
@@ -280,7 +330,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -305,7 +360,12 @@ done
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -320,7 +380,12 @@ done
 
             ngx.var.args = "a=3&b=4"
 
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -768,7 +833,12 @@ rc: false, err: bad argument #1 to '?' (table expected, got boolean)
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args(2)
+            local args, err = ngx.req.get_uri_args(2)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -783,6 +853,7 @@ rc: false, err: bad argument #1 to '?' (table expected, got boolean)
 --- request
 GET /lua?foo=3&bar=4&baz=2
 --- response_body
+err: truncated
 bar = 4
 foo = 3
 --- error_log
@@ -795,7 +866,12 @@ lua hit query args limit 2
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args(2)
+            local args, err = ngx.req.get_uri_args(2)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -810,6 +886,7 @@ lua hit query args limit 2
 --- request
 GET /lua?foo=3&bar&baz=2
 --- response_body
+err: truncated
 bar = true
 foo = 3
 --- error_log
@@ -822,7 +899,12 @@ lua hit query args limit 2
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args(2)
+            local args, err = ngx.req.get_uri_args(2)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -839,6 +921,7 @@ lua hit query args limit 2
 --- request
 GET /lua?foo=3&=hello&=world
 --- response_body
+err: truncated
 foo = 3
 done
 --- error_log
@@ -851,7 +934,12 @@ lua hit query args limit 2
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -887,7 +975,8 @@ for my $k (@k) {
         $k .= " = $&\n";
     }
 }
-CORE::join("", @k);
+
+"err: truncated\n" . CORE::join("", @k);
 --- timeout: 4
 --- error_log
 lua hit query args limit 100
@@ -899,7 +988,12 @@ lua hit query args limit 100
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args(102)
+            local args, err = ngx.req.get_uri_args(102)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -935,7 +1029,8 @@ for my $k (@k) {
         $k .= " = $&\n";
     }
 }
-CORE::join("", @k);
+
+"err: truncated\n" . CORE::join("", @k);
 --- timeout: 4
 --- error_log
 lua hit query args limit 102
@@ -947,7 +1042,12 @@ lua hit query args limit 102
 --- config
     location /lua {
         content_by_lua '
-            local args = ngx.req.get_uri_args(0)
+            local args, err = ngx.req.get_uri_args(0)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)
@@ -1013,7 +1113,12 @@ HTTP/1.0 a=3&b=5&b=6
     location /lua {
         content_by_lua '
             local args = "a=bar&b=foo"
-            args = ngx.decode_args(args)
+            args, err = ngx.decode_args(args)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", args.a)
             ngx.say("b = ", args.b)
         ';
@@ -1031,7 +1136,12 @@ b = foo
     location /lua {
         content_by_lua '
             local args = "a=bar&b=foo&a=baz"
-            args = ngx.decode_args(args)
+            args, err = ngx.decode_args(args)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", table.concat(args.a, ", "))
             ngx.say("b = ", args.b)
         ';
@@ -1049,7 +1159,11 @@ b = foo
     location /lua {
         content_by_lua '
             local args = ""
-            args = ngx.decode_args(args)
+            args, err = ngx.decode_args(args)
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("n = ", #args)
         ';
     }
@@ -1065,7 +1179,11 @@ n = 0
     location /lua {
         content_by_lua '
             local args = "a&b"
-            args = ngx.decode_args(args)
+            args, err = ngx.decode_args(args)
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", args.a)
             ngx.say("b = ", args.b)
         ';
@@ -1083,7 +1201,12 @@ b = true
     location /lua {
         content_by_lua '
             local args = "a=&b="
-            args = ngx.decode_args(args)
+            args, err = ngx.decode_args(args)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", args.a)
             ngx.say("b = ", args.b)
         ';
@@ -1101,7 +1224,11 @@ b =
     location /lua {
         content_by_lua '
             local args = "a=bar&b=foo"
-            args = ngx.decode_args(args, 1)
+            args, err = ngx.decode_args(args, 1)
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", args.a)
             ngx.say("b = ", args.b)
         ';
@@ -1109,6 +1236,7 @@ b =
 --- request
 GET /lua
 --- response_body
+err: truncated
 a = bar
 b = nil
 
@@ -1119,7 +1247,12 @@ b = nil
     location /lua {
         content_by_lua '
             local args = "a=bar&b=foo"
-            args = ngx.decode_args(args, -1)
+            args, err = ngx.decode_args(args, -1)
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
             ngx.say("a = ", args.a)
             ngx.say("b = ", args.b)
         ';
@@ -1137,7 +1270,11 @@ b = foo
     location /lua {
         content_by_lua '
             local s = "f+f=bar&B=foo"
-            args = ngx.decode_args(s)
+            args, err = ngx.decode_args(s)
+            if err then
+                ngx.say("err: ", err)
+            end
+
             local arr = {}
             for k, v in pairs(args) do
                 table.insert(arr, k)
@@ -1183,7 +1320,11 @@ s = f+f=bar&B=foo
             local commands = split(post_data, "||")
             for _, command in pairs(commands) do
                 --command = ngx.unescape_uri(command)
-                local request_args = ngx.decode_args(command, 0)
+                local request_args, err = ngx.decode_args(command, 0)
+                if err then
+                    ngx.say("err: ", err)
+                end
+
                 local arr = {}
                 for k, v in pairs(request_args) do
                     table.insert(arr, k)

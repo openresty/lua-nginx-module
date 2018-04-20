@@ -254,7 +254,11 @@ uid: 33
 
         header_filter_by_lua '
             local str = "";
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+            if err then
+                ngx.log(ngx.ERR, "err: ", err)
+                return ngx.exit(500)
+            end
             local keys = {}
             for key, val in pairs(args) do
                 table.insert(keys, key)

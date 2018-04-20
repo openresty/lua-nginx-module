@@ -160,7 +160,7 @@ qr/\[crit\] .* connect\(\) .*? failed/,
     upstream backend {
         server 0.0.0.1;
         balancer_by_lua_block {
-            print("arg foo: ", ngx.req.get_uri_args()["foo"])
+            print("arg foo: ", (ngx.req.get_uri_args())["foo"])
         }
     }
 --- config
