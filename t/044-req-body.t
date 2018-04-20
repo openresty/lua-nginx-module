@@ -727,7 +727,13 @@ hello, world"]
     }
 --- user_files
 >>> myscript.lua
-    local data, data2 = ngx.req.get_post_args(), {}
+    local data, err = ngx.req.get_post_args()
+    if err then
+        ngx.log(ngx.ERR, "err: ", err)
+        return ngx.exit(500)
+    end
+
+    local data2 = {}
     for k, v in pairs(data) do
         if type(v) == "table" then
             for i, val in ipairs(v) do

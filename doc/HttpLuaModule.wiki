@@ -10,7 +10,7 @@ Production ready.
 
 = Version =
 
-This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.11] released on 3 November 2017.
+This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/tags v0.10.12] released on 19 April 2018.
 
 = Synopsis =
 <geshi lang="nginx">
@@ -3453,20 +3453,27 @@ Note that <code>ngx.header</code> is not a normal Lua table and as such, it is n
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
 == ngx.resp.get_headers ==
-'''syntax:''' ''headers = ngx.resp.get_headers(max_headers?, raw?)''
+'''syntax:''' ''headers, err = ngx.resp.get_headers(max_headers?, raw?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, balancer_by_lua*''
 
 Returns a Lua table holding all the current response headers for the current request.
 
 <geshi lang="lua">
-local h = ngx.resp.get_headers()
+local h, err = ngx.resp.get_headers()
+
+if err == "truncated" then
+    -- one can choose to ignore or reject the current response here
+end
+
 for k, v in pairs(h) do
     ...
 end
 </geshi>
 
 This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_headers]] except getting response headers instead of request headers.
+
+Note that a maximum of 100 response headers are parsed by default (including those with the same name) and that additional response headers are silently discarded to guard against potential denial of service attacks. Since <code>v0.10.13</code>, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 This API was first introduced in the <code>v0.9.5</code> release.
 
@@ -3697,7 +3704,7 @@ This interface was first introduced in the <code>v0.3.1rc13</code> release.
 See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 
 == ngx.req.get_uri_args ==
-'''syntax:''' ''args = ngx.req.get_uri_args(max_args?)''
+'''syntax:''' ''args, err = ngx.req.get_uri_args(max_args?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, balancer_by_lua*''
 
@@ -3706,7 +3713,12 @@ Returns a Lua table holding all the current request URL query arguments.
 <geshi lang="nginx">
     location = /test {
         content_by_lua_block {
-            local args = ngx.req.get_uri_args()
+            local args, err = ngx.req.get_uri_args()
+
+            if err == "truncated" then
+                -- one can choose to ignore or reject the current request here
+            end
+
             for key, val in pairs(args) do
                 if type(val) == "table" then
                     ngx.say(key, ": ", table.concat(val, ", "))
@@ -3753,7 +3765,7 @@ Updating query arguments via the nginx variable <code>$args</code> (or <code>ngx
 
 <geshi lang="lua">
     ngx.var.args = "a=3&b=42"
-    local args = ngx.req.get_uri_args()
+    local args, err = ngx.req.get_uri_args()
 </geshi>
 
 Here the <code>args</code> table will always look like
@@ -3764,18 +3776,21 @@ Here the <code>args</code> table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks. Since <code>v0.10.13</code>, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional <code>max_args</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
-    local args = ngx.req.get_uri_args(10)
+    local args, err = ngx.req.get_uri_args(10)
+    if err == "truncated" then
+        -- one can choose to ignore or reject the current request here
+    end
 </geshi>
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
 <geshi lang="lua">
-    local args = ngx.req.get_uri_args(0)
+    local args, err = ngx.req.get_uri_args(0)
 </geshi>
 
 Removing the <code>max_args</code> cap is strongly discouraged.
@@ -3792,6 +3807,11 @@ Returns a Lua table holding all the current request POST query arguments (of the
         content_by_lua_block {
             ngx.req.read_body()
             local args, err = ngx.req.get_post_args()
+
+            if err == "truncated" then
+                -- one can choose to ignore or reject the current request here
+            end
+
             if not args then
                 ngx.say("failed to get post args: ", err)
                 return
@@ -3854,31 +3874,39 @@ That is, they will take Lua boolean values <code>true</code>. However, they are 
 
 Empty key arguments are discarded. <code>POST /test</code> with body <code>=hello&=world</code> will yield empty outputs for instance.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks. Since <code>v0.10.13</code>, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional <code>max_args</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
-    local args = ngx.req.get_post_args(10)
+    local args, err = ngx.req.get_post_args(10)
+    if err == "truncated" then
+        -- one can choose to ignore or reject the current request here
+    end
 </geshi>
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
 <geshi lang="lua">
-    local args = ngx.req.get_post_args(0)
+    local args, err = ngx.req.get_post_args(0)
 </geshi>
 
 Removing the <code>max_args</code> cap is strongly discouraged.
 
 == ngx.req.get_headers ==
-'''syntax:''' ''headers = ngx.req.get_headers(max_headers?, raw?)''
+'''syntax:''' ''headers, err = ngx.req.get_headers(max_headers?, raw?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
 
 Returns a Lua table holding all the current request headers.
 
 <geshi lang="lua">
-    local h = ngx.req.get_headers()
+    local h, err = ngx.req.get_headers()
+
+    if err == "truncated" then
+        -- one can choose to ignore or reject the current request here
+    end
+
     for k, v in pairs(h) do
         ...
     end
@@ -3906,18 +3934,22 @@ the value of <code>ngx.req.get_headers()["Foo"]</code> will be a Lua (array) tab
     {"foo", "bar", "baz"}
 </geshi>
 
-Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks. Since <code>v0.10.13</code>, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional <code>max_headers</code> function argument can be used to override this limit:
 
 <geshi lang="lua">
-    local headers = ngx.req.get_headers(10)
+    local headers, err = ngx.req.get_headers(10)
+
+    if err == "truncated" then
+        -- one can choose to ignore or reject the current request here
+    end
 </geshi>
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 <geshi lang="lua">
-    local headers = ngx.req.get_headers(0)
+    local headers, err = ngx.req.get_headers(0)
 </geshi>
 
 Removing the <code>max_headers</code> cap is strongly discouraged.
@@ -4582,13 +4614,13 @@ If the argument value is <code>false</code>, then the effect is equivalent to th
 This method was first introduced in the <code>v0.3.1rc27</code> release.
 
 == ngx.decode_args ==
-'''syntax:''' ''table = ngx.decode_args(str, max_args?)''
+'''syntax:''' ''table, err = ngx.decode_args(str, max_args?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [[#ngx.encode_args|ngx.encode_args]].
 
-The optional <code>max_args</code> argument can be used to specify the maximum number of arguments parsed from the <code>str</code> argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+The optional <code>max_args</code> argument can be used to specify the maximum number of arguments parsed from the <code>str</code> argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks. Since <code>v0.10.13</code>, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
