@@ -2196,14 +2196,14 @@ SSL session resumption can then get immediately initiated and bypass the full SS
 Please note that TLS session tickets are very different and it is the clients' responsibility
 to cache the SSL session state when session tickets are used. SSL session resumptions based on
 TLS session tickets would happen automatically without going through this hook (nor the
-[[#ssl_session_store_by_lua*|ssl_session_store_by_lua_block]] hook). This hook is mainly
+[[#ssl_session_store_by_lua_block|ssl_session_store_by_lua*]] hook). This hook is mainly
 for older or less capable SSL clients that can only do SSL sessions by session IDs.
 
 When [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua*]] is specified at the same time,
 this hook usually runs before [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua*]].
 When the SSL session is found and successfully loaded for the current SSL connection,
 SSL session resumption will happen and thus bypass the [[#ssl_certificate_by_lua_block|ssl_certificate_by_lua*]]
-hook completely. In this case, NGINX also bypasses the [[#ssl_session_store_by_lua*|ssl_session_store_by_lua_block]]
+hook completely. In this case, NGINX also bypasses the [[#ssl_session_store_by_lua_block|ssl_session_store_by_lua*]]
 hook, for obvious reasons.
 
 To easily test this hook locally with a modern web browser, you can temporarily put the following line
