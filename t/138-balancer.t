@@ -307,7 +307,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 
 === TEST 12: code cache off
 --- http_config
-    lua_package_path "t/servroot/html/?.lua;;";
+    lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
 
     lua_code_cache off;
 
@@ -327,7 +327,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
     location = /update {
         content_by_lua_block {
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("print('me: ', 101)")
             f:close()
             ngx.say("updated")
