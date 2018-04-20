@@ -484,24 +484,16 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
                        &header[i].key, &header[i].value);
 
         if (--count <= 0) {
-            if (truncated) {
-                goto truncated;
-            }
-
-            return 1;
+            break;
         }
-    }
+    }  /* for */
 
     if (truncated) {
-        goto truncated;
+        lua_pushliteral(L, "truncated");
+        return 2;
     }
 
     return 1;
-
-truncated:
-
-    lua_pushliteral(L, "truncated");
-    return 2;
 }
 
 
@@ -679,24 +671,16 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
                        &header[i].key, &header[i].value);
 
         if (--count <= 0) {
-            if (truncated) {
-                goto truncated;
-            }
-
-            return 1;
+            break;
         }
-    }
+    }  /* for */
 
     if (truncated) {
-        goto truncated;
+        lua_pushliteral(L, "truncated");
+        return 2;
     }
 
     return 1;
-
-truncated:
-
-    lua_pushliteral(L, "truncated");
-    return 2;
 }
 
 
