@@ -2057,7 +2057,7 @@ ngx_http_lua_socket_read_bsd(void *data, ssize_t bytes)
 
     dd("data read: %.*s", (int) bytes, b->pos);
 
-    u->buf_in->buf->last = ngx_cpymem(u->buf_in->buf->last, b->pos, bytes);
+    u->buf_in->buf->last += bytes;
     b->pos += bytes;
 
     return NGX_OK;
