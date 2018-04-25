@@ -2039,10 +2039,8 @@ ngx_http_lua_socket_read_bsd(void *data, ssize_t bytes)
 
     ngx_buf_t                   *b;
 
-#if (NGX_DEBUG)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
                    "lua tcp socket read bsd");
-#endif
 
     if (bytes == 0) {
         u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
