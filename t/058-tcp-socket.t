@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 203;
+plan tests => repeat_each() * 208;
 
 our $HtmlDir = html_dir;
 
@@ -3892,3 +3892,47 @@ hello world
 [error]
 --- error_log
 lua tcp socket read bsd
+
+
+
+=== TEST 65: *b pattern send data after read side closed
+--- config
+    server_tokens off;
+    location = /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", 7658))
+
+            while true do
+                local data, err = sock:receive('*b')
+                if err then
+                    if err ~= 'closed' then
+                        ngx.say('unexpected err: ', err)
+                        break
+                    end
+
+                    local data = "send data after read side closed"
+                    local bytes, err = sock:send(data)
+                    if not bytes then
+                        ngx.say(err)
+                    end
+
+                    break
+                end
+                ngx.say(data)
+            end
+
+            sock:close()
+        }
+    }
+
+--- request
+GET /t
+--- tcp_listen: 7658
+--- tcp_shutdown: 1
+--- tcp_query eval: "send data after read side closed"
+--- tcp_query_len: 32
+--- response_body
+--- no_error_log
+[error]
