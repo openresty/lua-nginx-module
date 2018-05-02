@@ -29,6 +29,8 @@
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_balancer_ssl_session_storeby.h"
+#include "ngx_http_lua_balancer_ssl_session_fetchby.h"
 
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
@@ -580,6 +582,34 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_lua_loc_conf_t, ssl_crl),
       NULL },
+
+    { ngx_string("balancer_ssl_session_fetch_by_lua_block"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_balancer_ssl_sess_fetch_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_ssl_sess_fetch_handler_inline },
+
+    { ngx_string("balancer_ssl_session_fetch_by_lua_file"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_balancer_ssl_sess_fetch_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_ssl_sess_fetch_handler_file },
+
+    { ngx_string("balancer_ssl_session_store_by_lua_block"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_balancer_ssl_sess_store_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_ssl_sess_store_handler_inline },
+
+    { ngx_string("balancer_ssl_session_store_by_lua_file"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_balancer_ssl_sess_store_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_balancer_ssl_sess_store_handler_file },
 
 #endif  /* NGX_HTTP_SSL */
 

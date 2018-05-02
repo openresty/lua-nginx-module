@@ -119,20 +119,21 @@ typedef struct {
 
 
 /* must be within 16 bit */
-#define NGX_HTTP_LUA_CONTEXT_SET            0x0001
-#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x0002
-#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x0004
-#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x0008
-#define NGX_HTTP_LUA_CONTEXT_LOG            0x0010
-#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x0020
-#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x0040
-#define NGX_HTTP_LUA_CONTEXT_TIMER          0x0080
-#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x0100
-#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x0200
-#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x0400
-#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE 0x0800
-#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH 0x1000
-
+#define NGX_HTTP_LUA_CONTEXT_SET                     0x0001
+#define NGX_HTTP_LUA_CONTEXT_REWRITE                 0x0002
+#define NGX_HTTP_LUA_CONTEXT_ACCESS                  0x0004
+#define NGX_HTTP_LUA_CONTEXT_CONTENT                 0x0008
+#define NGX_HTTP_LUA_CONTEXT_LOG                     0x0010
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER           0x0020
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER             0x0040
+#define NGX_HTTP_LUA_CONTEXT_TIMER                   0x0080
+#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER             0x0100
+#define NGX_HTTP_LUA_CONTEXT_BALANCER                0x0200
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT                0x0400
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE          0x0800
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH          0x1000
+#define NGX_HTTP_LUA_CONTEXT_BALANCER_SSL_SESS_STORE 0x2000
+#define NGX_HTTP_LUA_CONTEXT_BALANCER_SSL_SESS_FETCH 0x4000
 
 #ifndef NGX_LUA_NO_FFI_API
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -260,6 +261,14 @@ union ngx_http_lua_srv_conf_u {
         u_char             *src_key;
 
         ngx_http_lua_srv_conf_handler_pt  handler;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_sess_store_handler;
+        ngx_str_t                            ssl_sess_store_src;
+        u_char                              *ssl_sess_store_src_key;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_sess_fetch_handler;
+        ngx_str_t                            ssl_sess_fetch_src;
+        u_char                              *ssl_sess_fetch_src_key;
     } balancer;
 };
 
