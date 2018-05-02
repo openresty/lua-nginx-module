@@ -14,30 +14,8 @@
 #include "ngx_http_lua_balancer.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_directive.h"
-
-
-struct ngx_http_lua_balancer_peer_data_s {
-    /* the round robin data must be first */
-    ngx_http_upstream_rr_peer_data_t    rrp;
-
-    ngx_http_lua_srv_conf_t            *conf;
-    ngx_http_request_t                 *request;
-
-    ngx_uint_t                          more_tries;
-    ngx_uint_t                          total_tries;
-
-    struct sockaddr                    *sockaddr;
-    socklen_t                           socklen;
-
-    ngx_str_t                          *host;
-    in_port_t                           port;
-
-    int                                 last_peer_state;
-
-#if !(HAVE_NGX_UPSTREAM_TIMEOUT_FIELDS)
-    unsigned                            cloned_upstream_conf;  /* :1 */
-#endif
-};
+#include "ngx_http_lua_balancer_ssl_session_storeby.h"
+#include "ngx_http_lua_balancer_ssl_session_fetchby.h"
 
 
 #if (NGX_HTTP_SSL)
@@ -438,8 +416,11 @@ ngx_http_lua_balancer_set_session(ngx_peer_connection_t *pc, void *data)
     ngx_http_lua_balancer_peer_data_t  *bp = data;
 
     if (bp->sockaddr && bp->socklen) {
-        /* TODO */
-        return NGX_OK;
+        if (bp->conf->balancer.ssl_sess_fetch_handler) {
+            return ngx_http_lua_balancer_ssl_sess_fetch(pc, data);
+        } else {
+            return NGX_OK;
+        }
     }
 
     return ngx_http_upstream_set_round_robin_peer_session(pc, &bp->rrp);
@@ -452,7 +433,10 @@ ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc, void *data)
     ngx_http_lua_balancer_peer_data_t  *bp = data;
 
     if (bp->sockaddr && bp->socklen) {
-        /* TODO */
+        if (bp->conf->balancer.ssl_sess_store_handler) {
+            ngx_http_lua_balancer_ssl_sess_store(pc, data);
+        }
+
         return;
     }
 

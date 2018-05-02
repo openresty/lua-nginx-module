@@ -92,6 +92,14 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "ssl_session_fetch");
         break;
 
+    case NGX_HTTP_LUA_CONTEXT_BALANCER_SSL_SESS_STORE:
+        lua_pushliteral(L, "balancer_ssl_session_store");
+        break;
+
+    case NGX_HTTP_LUA_CONTEXT_BALANCER_SSL_SESS_FETCH:
+        lua_pushliteral(L, "balancer_ssl_session_fetch");
+        break;
+        
     default:
         return luaL_error(L, "unknown phase: %#x", (int) ctx->context);
     }
