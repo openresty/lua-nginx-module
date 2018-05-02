@@ -3825,15 +3825,20 @@ received: truefalsenil
                 'Host: localhost\r\n',
                 'Connection: close\r\n\r\n',
             }
-            sock:send(req)
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.say("send request failed: ", err)
+                return
+            end
 
             -- skip http header
             while true do
                 local data, err, _ = sock:receive('*l')
                 if err then
-                    ngx.say('unexpected error occurs when receiving http head: ' .. err)
+                    ngx.say('unexpected error occurs when receiving http head: ', err)
                     return
                 end
+
                 if #data == 0 then -- read last line of head
                     break
                 end
