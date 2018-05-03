@@ -143,16 +143,23 @@ static int
 ngx_http_lua_ngx_unescape_uri(lua_State *L)
 {
     size_t                   len, dlen;
+    ngx_uint_t               type   = NGX_UNESCAPE_URI_COMPONENT;
+    int                      n;
     u_char                  *p;
     u_char                  *src, *dst;
 
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one argument");
+    n = lua_gettop(L);
+
+    if (n != 1 && n != 2) {
+        return luaL_error(L, "expecting 1 or 2 arguments, but got %d", n);
     }
 
     if (lua_isnil(L, 1)) {
         lua_pushliteral(L, "");
         return 1;
+    }
+    if (n == 2 && lua_toboolean(L, 2)) {
+        type = NGX_UNESCAPE_URI_COMPONENT_RAW;
     }
 
     src = (u_char *) luaL_checklstring(L, 1, &len);
@@ -164,7 +171,7 @@ ngx_http_lua_ngx_unescape_uri(lua_State *L)
 
     dst = p;
 
-    ngx_http_lua_unescape_uri(&dst, &src, len, NGX_UNESCAPE_URI_COMPONENT);
+    ngx_http_lua_unescape_uri(&dst, &src, len, type);
 
     lua_pushlstring(L, (char *) p, dst - p);
 
@@ -602,17 +609,29 @@ ngx_http_lua_ngx_decode_args(lua_State *L)
     size_t                       len = 0;
     int                          n;
     int                          max;
+    int                          raw = 0;
 
     n = lua_gettop(L);
 
-    if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 or 2 arguments but seen %d", n);
+    if (n != 1 && n != 2 && n!= 3) {
+        return luaL_error(L, "expecting 1 or 2 or 3 arguments but seen %d", n);
     }
 
     buf = (u_char *) luaL_checklstring(L, 1, &len);
 
-    if (n == 2) {
-        max = luaL_checkint(L, 2);
+    if (n >= 2) {
+        if (lua_isnil(L, 2)) {
+            max = NGX_HTTP_LUA_MAX_ARGS;
+
+        } else {
+            max = luaL_checkinteger(L, 2);
+        }
+
+        if (n == 3) {
+            raw = lua_toboolean(L, 3);
+            lua_pop(L, 1);
+        }
+
         lua_pop(L, 1);
 
     } else {
@@ -624,7 +643,7 @@ ngx_http_lua_ngx_decode_args(lua_State *L)
 
     lua_createtable(L, 0, 4);
 
-    return ngx_http_lua_parse_args(L, tmp, tmp + len, max);
+    return ngx_http_lua_parse_args(L, tmp, tmp + len, max, raw);
 }
 
 
@@ -738,12 +757,14 @@ ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
 
 
 size_t
-ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len, u_char *dst)
+ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len, u_char *dst, int raw)
 {
-    u_char      *p = dst;
+    u_char          *p = dst;
+    ngx_uint_t       type;
 
-    ngx_http_lua_unescape_uri(&p, (u_char **) &src, len,
-                              NGX_UNESCAPE_URI_COMPONENT);
+    type = raw ? NGX_UNESCAPE_URI_COMPONENT_RAW : NGX_UNESCAPE_URI_COMPONENT;
+
+    ngx_http_lua_unescape_uri(&p, (u_char **) &src, len, type);
     return p - dst;
 }
 

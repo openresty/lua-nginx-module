@@ -1968,7 +1968,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
 }
 
 
-/* XXX we also decode '+' to ' ' */
+/* XXX we also decode '+' to ' ' when type not NGX_UNESCAPE_URI_COMPONENT_RAW */
 void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
@@ -2004,7 +2004,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
                 break;
             }
 
-            if (ch == '+') {
+            if (ch == '+' && !(type & NGX_UNESCAPE_URI_COMPONENT_RAW)) {
                 *d++ = ' ';
                 break;
             }

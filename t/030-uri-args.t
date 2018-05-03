@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 18);
+plan tests => repeat_each() * (blocks() * 2 + 19);
 
 no_root_location();
 
@@ -1547,3 +1547,154 @@ GET /lua
 args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
 --- no_error_log
 [error]
+
+
+
+=== TEST 58: ngx.decode_args raw is not set
+--- config
+    location /lua {
+        content_by_lua '
+            local args = "a=bar+%2B&b=foo"
+            args = ngx.decode_args(args)
+            ngx.say("a = ", args.a)
+            ngx.say("b = ", args.b)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a = bar +
+b = foo
+
+
+
+=== TEST 59: ngx.decode_args raw is true
+--- config
+    location /lua {
+        content_by_lua '
+            local args = "a=bar+%2B&b=foo"
+            args = ngx.decode_args(args, -1, true)
+            ngx.say("a = ", args.a)
+            ngx.say("b = ", args.b)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a = bar++
+b = foo
+
+
+
+=== TEST 60: ngx.decode_args raw is true work with max_args
+--- config
+    location /lua {
+        content_by_lua '
+            local args = "a=bar+%2B&b=foo"
+            args = ngx.decode_args(args, 1, true)
+            ngx.say("a = ", args.a)
+            ngx.say("b = ", args.b)
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+a = bar++
+b = nil
+
+
+
+=== TEST 61: get_uri_args raw is not set(decode '+' to ' ')
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_uri_args()
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+GET /lua?a=3+5&b=4&c
+--- response_body
+a = 3 5
+b = 4
+c = true
+
+
+
+=== TEST 62: get_uri_args raw is true with max_args
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_uri_args(2, true)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+GET /lua?a=3+5&b=4&c
+--- response_body
+a = 3+5
+b = 4
+
+
+
+=== TEST 63: get_uri_args raw is true with max_args is not set(default 100)
+--- config
+    location /lua {
+        content_by_lua '
+            local args = ngx.req.get_uri_args(nil, true)
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request eval
+my $s = "GET /lua?";
+my $i = 1;
+while ($i <= 102) {
+    if ($i != 1) {
+        $s .= '&';
+    }
+    $s .= "a$i=$i+$i";
+    $i++;
+}
+$s
+--- response_body eval
+my @k;
+my $i = 1;
+while ($i <= 100) {
+    push @k, "a$i";
+    $i++;
+}
+@k = sort @k;
+for my $k (@k) {
+    if ($k =~ /\d+/) {
+        $k .= " = $&+$&\n";
+    }
+}
+CORE::join("", @k);
+--- timeout: 4
+--- error_log
+lua hit query args limit 100
+--- log_level: debug
