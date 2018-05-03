@@ -251,7 +251,8 @@ ngx_http_lua_ngx_req_get_post_args(lua_State *L)
 
 
 int
-ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max, int raw)
+ngx_http_lua_parse_args(lua_State *L, u_char *buf, u_char *last,
+                        int max, int raw)
 {
     u_char                      *p, *q;
     u_char                      *src, *dst;

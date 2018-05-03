@@ -757,7 +757,8 @@ ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
 
 
 size_t
-ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len, u_char *dst, int raw)
+ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len,
+                              u_char *dst, int raw)
 {
     u_char          *p = dst;
     ngx_uint_t       type;
