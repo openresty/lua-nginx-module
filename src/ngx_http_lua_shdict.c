@@ -2312,14 +2312,13 @@ ngx_http_lua_shdict_hset(lua_State *L)
     lua_Number                         exptime = 0;
     ngx_time_t                        *tp;
     ngx_shm_zone_t                    *zone;
-    int32_t                            user_flags = 0;
     ngx_http_lua_shdict_hash_head_t   *head;
     ngx_http_lua_shdict_hash_node_t   *sh;
 
     n = lua_gettop(L);
 
-    if (n != 4 && n != 5 && n != 6) {
-        return luaL_error(L, "expecting 4, 5 or 6 arguments, "
+    if (n != 4 && n != 5) {
+        return luaL_error(L, "expecting 4, or 5 arguments, "
                           "but only seen %d", n);
     }
 
@@ -2408,15 +2407,11 @@ ngx_http_lua_shdict_hset(lua_State *L)
         return 2;
     }
 
-    if (n >= 5) {
+    if (n == 5) {
         exptime = luaL_checknumber(L, 5);
         if (exptime < 0) {
             return luaL_error(L, "bad \"exptime\" argument");
         }
-    }
-
-    if (n == 6) {
-        user_flags = (uint32_t) luaL_checkinteger(L, 6);
     }
 
     ngx_shmtx_lock(&ctx->shpool->mutex);
