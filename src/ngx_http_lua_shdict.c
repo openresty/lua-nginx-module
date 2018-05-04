@@ -2580,7 +2580,8 @@ init_hash:
 
 push_node:
 
-    rc = ngx_http_lua_shdict_hash_lookup(head, fhash, field.data, field.len, &sh);
+    rc = ngx_http_lua_shdict_hash_lookup(head, fhash, field.data, 
+                                         field.len, &sh);
 
     dd("shdict hash lookup returned %d", (int) rc);
 
@@ -2803,7 +2804,8 @@ ngx_http_lua_shdict_hget(lua_State *L)
 
     head = ngx_http_lua_shdict_get_hash_head(sd, key.len);
 
-    rc = ngx_http_lua_shdict_hash_lookup(head, fhash, field.data, field.len, &sh);
+    rc = ngx_http_lua_shdict_hash_lookup(head, fhash, field.data, 
+                                         field.len, &sh);
 
     dd("shdict hash lookup returns %d", (int) rc);
 
@@ -2835,9 +2837,9 @@ ngx_http_lua_shdict_hget(lua_State *L)
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-            return luaL_error(L, "bad lua number value size found for key %s field %s "
-                              "in shared_dict %s: %lu", key.data, field.data, name.data,
-                              (unsigned long) value.len);
+            return luaL_error(L, "bad lua number value size found for key %s "
+                                 "field %s in shared_dict %s: %lu", key.data, 
+                                 field.data, name.data, (unsigned long) value.len);
         }
 
         ngx_memcpy(&num, value.data, sizeof(double));
@@ -2851,9 +2853,9 @@ ngx_http_lua_shdict_hget(lua_State *L)
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-            return luaL_error(L, "bad lua boolean value size found for key %s field %s "
-                              "in shared_dict %s: %lu", key.data, field.data, name.data,
-                              (unsigned long) value.len);
+            return luaL_error(L, "bad lua boolean value size found for key %s "
+                                 "field %s in shared_dict %s: %lu", key.data, 
+                                 field.data, name.data, (unsigned long) value.len);
         }
 
         c = *value.data;
