@@ -32,6 +32,22 @@ typedef struct {
 
 
 typedef struct {
+    ngx_rbtree_t                 rbtree;
+    ngx_rbtree_node_t            sentinel;
+} ngx_http_lua_shdict_hash_head_t;
+
+
+typedef struct {
+    u_char                       color;
+    u_short                      len;
+    uint32_t                     value_len;
+    uint8_t                      value_type;
+    ngx_str_t                    value;
+    u_char                       data[1];
+} ngx_http_lua_shdict_hash_node_t;
+
+
+typedef struct {
     ngx_rbtree_t                  rbtree;
     ngx_rbtree_node_t             sentinel;
     ngx_queue_t                   lru_queue;
