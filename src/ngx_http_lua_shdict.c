@@ -2839,7 +2839,8 @@ ngx_http_lua_shdict_hget(lua_State *L)
 
             return luaL_error(L, "bad lua number value size found for key %s "
                                  "field %s in shared_dict %s: %lu", key.data, 
-                                 field.data, name.data, (unsigned long) value.len);
+                                 field.data, name.data, 
+                                 (unsigned long) value.len);
         }
 
         ngx_memcpy(&num, value.data, sizeof(double));
@@ -2855,7 +2856,8 @@ ngx_http_lua_shdict_hget(lua_State *L)
 
             return luaL_error(L, "bad lua boolean value size found for key %s "
                                  "field %s in shared_dict %s: %lu", key.data, 
-                                 field.data, name.data, (unsigned long) value.len);
+                                 field.data, name.data, 
+                                 (unsigned long) value.len);
         }
 
         c = *value.data;
