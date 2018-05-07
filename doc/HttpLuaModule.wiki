@@ -3264,7 +3264,7 @@ in gzipped responses that cannot be handled properly in Lua code. Original reque
 
 When the <code>body</code> option is not specified and the <code>always_forward_body</code> option is false (the default value), the <code>POST</code> and <code>PUT</code> subrequests will inherit the request bodies of the parent request (if any).
 
-There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was <code>50</code> concurrent subrequests and in more recent versions, Nginx <code>1.1.x</code> onwards, this was increased to <code>200</code> concurrent subrequests. When this limit is exceeded, the following error message is added to the <code>error.log</code> file:
+There is a hard-coded upper limit on the number of concurrent subrequests possible for every main request. In older versions of Nginx, the limit was <code>200</code> concurrent subrequests and in more recent versions, Nginx <code>1.1.x</code> onwards, this was decreased to <code>50</code> concurrent subrequests. When this limit is exceeded, the following error message is added to the <code>error.log</code> file:
 
 <geshi lang="text">
     [error] 13983#0: *1 subrequests cycle while processing "/uri"
