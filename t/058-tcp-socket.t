@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 199;
+plan tests => repeat_each() * 219;
 
 our $HtmlDir = html_dir;
 
@@ -3808,3 +3808,315 @@ received:
 received: truefalsenil
 --- no_error_log
 [error]
+
+
+
+=== TEST 64: receiveany method in cosocket
+--- config
+    server_tokens off;
+    location = /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", ngx.var.port))
+            local req = {
+                'GET /foo HTTP/1.0\r\n',
+                'Host: localhost\r\n',
+                'Connection: close\r\n\r\n',
+            }
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.say("send request failed: ", err)
+                return
+            end
+
+            -- skip http header
+            while true do
+                local data, err, _ = sock:receive('*l')
+                if err then
+                    ngx.say('unexpected error occurs when receiving http head: ', err)
+                    return
+                end
+
+                if #data == 0 then -- read last line of head
+                    break
+                end
+            end
+
+            -- receive http body
+            while true do
+                local data, err = sock:receiveany(1024)
+                if err then
+                    if err ~= 'closed' then
+                        ngx.say('unexpected err: ', err)
+                    end
+                    break
+                end
+                ngx.say(data)
+            end
+
+            sock:close()
+        }
+    }
+
+    location = /foo {
+        content_by_lua_block {
+            local resp = {
+                '1',
+                '22',
+                'hello world',
+            }
+
+            local length = 0
+            for _, v in ipairs(resp) do
+                length = length + #v
+            end
+
+            -- flush http header
+            ngx.header['Content-Length'] = length
+            ngx.flush(true)
+            ngx.sleep(0.01)
+
+            -- send http body
+            for _, v in ipairs(resp) do
+                ngx.print(v)
+                ngx.flush(true)
+                ngx.sleep(0.01)
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+1
+22
+hello world
+--- no_error_log
+[error]
+--- error_log
+lua tcp socket read any
+
+
+
+=== TEST 65: receiveany send data after read side closed
+--- config
+    server_tokens off;
+    location = /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", 7658))
+
+            while true do
+                local data, err = sock:receiveany(1024)
+                if err then
+                    if err ~= 'closed' then
+                        ngx.say('unexpected err: ', err)
+                        break
+                    end
+
+                    local data = "send data after read side closed"
+                    local bytes, err = sock:send(data)
+                    if not bytes then
+                        ngx.say(err)
+                    end
+
+                    break
+                end
+                ngx.say(data)
+            end
+
+            sock:close()
+        }
+    }
+
+--- request
+GET /t
+--- tcp_listen: 7658
+--- tcp_shutdown: 1
+--- tcp_query eval: "send data after read side closed"
+--- tcp_query_len: 32
+--- response_body
+--- no_error_log
+[error]
+
+
+
+=== TEST 66: receiveany with limited, max <= 0
+--- config
+    location = /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", ngx.var.port))
+
+            local function receiveany_say_err(...)
+                local ok, err = pcall(sock.receiveany, sock, ...)
+                if not ok then
+                    ngx.say(err)
+                end
+            end
+
+
+            receiveany_say_err(0)
+            receiveany_say_err(-1)
+            receiveany_say_err()
+            receiveany_say_err(nil)
+        }
+    }
+
+--- response_body
+bad argument #2 to '?' (bad max argument)
+bad argument #2 to '?' (bad max argument)
+expecting 2 arguments (including the object), but got 1
+bad argument #2 to '?' (bad max argument)
+--- request
+GET /t
+--- no_error_log
+[error]
+
+
+
+=== TEST 67: receiveany with limited, max is larger than data
+--- config
+    server_tokens off;
+    location = /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", ngx.var.port))
+            local req = {
+                'GET /foo HTTP/1.0\r\n',
+                'Host: localhost\r\n',
+                'Connection: close\r\n\r\n',
+            }
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.say("send request failed: ", err)
+                return
+            end
+
+            while true do
+                local data, err, _ = sock:receive('*l')
+                if err then
+                    ngx.say('unexpected error occurs when receiving http head: ', err)
+                    return
+                end
+
+                if #data == 0 then -- read last line of head
+                    break
+                end
+            end
+
+            local data, err = sock:receiveany(128)
+            if err then
+                if err ~= 'closed' then
+                    ngx.say('unexpected err: ', err)
+                end
+            else
+                ngx.say(data)
+            end
+
+            sock:close()
+        }
+    }
+
+    location = /foo {
+        content_by_lua_block {
+            local resp = 'hello world'
+            local length = #resp
+
+            ngx.header['Content-Length'] = length
+            ngx.flush(true)
+            ngx.sleep(0.01)
+
+            ngx.print(resp)
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+hello world
+--- no_error_log
+[error]
+--- error_log
+lua tcp socket calling receiveany() method to read at most 128 bytes
+
+
+
+=== TEST 68: receiveany with limited, max is smaller than data
+--- config
+    server_tokens off;
+    location = /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+            assert(sock:connect("127.0.0.1", ngx.var.port))
+            local req = {
+                'GET /foo HTTP/1.0\r\n',
+                'Host: localhost\r\n',
+                'Connection: close\r\n\r\n',
+            }
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.say("send request failed: ", err)
+                return
+            end
+
+            while true do
+                local data, err, _ = sock:receive('*l')
+                if err then
+                    ngx.say('unexpected error occurs when receiving http head: ', err)
+                    return
+                end
+
+                if #data == 0 then -- read last line of head
+                    break
+                end
+            end
+
+            while true do
+                local data, err = sock:receiveany(7)
+                if err then
+                    if err ~= 'closed' then
+                        ngx.say('unexpected err: ', err)
+                    end
+                    break
+
+                else
+                    ngx.say(data)
+                end
+            end
+
+            sock:close()
+        }
+    }
+
+    location = /foo {
+        content_by_lua_block {
+            local resp = 'hello world'
+            local length = #resp
+
+            ngx.header['Content-Length'] = length
+            ngx.flush(true)
+            ngx.sleep(0.01)
+
+            ngx.print(resp)
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+hello w
+orld
+--- no_error_log
+[error]
+--- error_log
+lua tcp socket calling receiveany() method to read at most 7 bytes
