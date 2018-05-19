@@ -444,7 +444,28 @@ worker: 4
 
 
 
-=== TEST 20: entries under the metatable of udp sockets
+=== TEST 20: entries under the metatable of tcp sockets
+--- config
+        location = /test {
+            content_by_lua_block {
+                local n = 0
+                local sock = ngx.socket.tcp()
+                for k, v in pairs(getmetatable(sock)) do
+                    n = n + 1
+                end
+                ngx.say("n = ", n)
+            }
+        }
+--- request
+GET /test
+--- response_body
+n = 13
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: entries under the metatable of udp sockets
 --- config
         location = /test {
             content_by_lua '
@@ -465,7 +486,7 @@ n = 6
 
 
 
-=== TEST 21: entries under the metatable of req raw sockets
+=== TEST 22: entries under the metatable of req raw sockets
 --- config
         location = /test {
             content_by_lua '
@@ -497,7 +518,7 @@ n = 6
 
 
 
-=== TEST 22: entries under the req raw sockets
+=== TEST 23: entries under the req raw sockets
 --- config
         location = /test {
             content_by_lua_block {
@@ -536,7 +557,7 @@ nrec = 3
 
 
 
-=== TEST 23: entries under the req sockets
+=== TEST 24: entries under the req sockets
 --- config
         location = /test {
             content_by_lua_block {

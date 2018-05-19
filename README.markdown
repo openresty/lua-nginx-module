@@ -3221,6 +3221,7 @@ Nginx API for Lua
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
 * [tcpsock:receive](#tcpsockreceive)
+* [tcpsock:receiveany](#tcpsockreceiveany)
 * [tcpsock:receiveuntil](#tcpsockreceiveuntil)
 * [tcpsock:close](#tcpsockclose)
 * [tcpsock:settimeout](#tcpsocksettimeout)
@@ -7002,6 +7003,7 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [settimeout](#tcpsocksettimeout)
 * [settimeouts](#tcpsocksettimeouts)
 * [setoption](#tcpsocksetoption)
+* [receiveany](#tcpsockreceiveany)
 * [receiveuntil](#tcpsockreceiveuntil)
 * [setkeepalive](#tcpsocksetkeepalive)
 * [getreusedtimes](#tcpsockgetreusedtimes)
@@ -7228,6 +7230,40 @@ It is important here to call the [settimeout](#tcpsocksettimeout) method *before
 Since the `v0.8.8` release, this method no longer automatically closes the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:receiveany
+------------------
+**syntax:** *data, err = tcpsock:receiveany(max)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
+
+Returns any data received by the connected socket, at most `max` bytes.
+
+This method is a synchronous operation just like the [send](#tcpsocksend) method and is 100% nonblocking.
+
+In case of success, it returns the data received; in case of error, it returns `nil` with a string describing the error.
+
+If the received data is more than this size, this method will return with exactly this size of data.
+The remaining data in the underlying receive buffer could be returned in the next reading operation.
+
+Timeout for the reading operation is controlled by the [lua_socket_read_timeout](#lua_socket_read_timeout) config directive and the [settimeouts](#tcpsocksettimeouts) method. And the latter takes priority. For example:
+
+```lua
+
+ sock:settimeouts(1000, 1000, 1000)  -- one second timeout for connect/read/write
+ local data, err = sock:receiveany(10 * 1024 * 1024) -- read any data, at most 10K
+ if not data then
+     ngx.say("failed to read any data: ", err)
+     return
+ end
+ ngx.say("successfully read: ", data)
+```
+
+This method doesn't automatically close the current connection when the read timeout error occurs. For other connection errors, this method always automatically closes the connection.
+
+This feature was first introduced in the `dev` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
