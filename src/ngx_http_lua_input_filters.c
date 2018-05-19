@@ -63,7 +63,10 @@ ngx_http_lua_read_any(ngx_buf_t *src, ngx_chain_t *buf_in, size_t *max,
         return NGX_ERROR;
     }
 
-    bytes = ((size_t) bytes >= *max) ? (ssize_t) *max : bytes;
+    if (bytes >= (ssize_t) *max) {
+        bytes = (ssize_t) *max;
+    }
+
     buf_in->buf->last += bytes;
     src->pos += bytes;
 

@@ -7246,7 +7246,7 @@ This method is a synchronous operation just like the [send](#tcpsocksend) method
 In case of success, it returns the data received; in case of error, it returns `nil` with a string describing the error.
 
 If the received data is more than this size, this method will return with exactly this size of data.
-The remain received data could be returned in the next `receiveany` call.
+The remaining data in the underlying receive buffer could be returned in the next reading operation.
 
 Timeout for the reading operation is controlled by the [lua_socket_read_timeout](#lua_socket_read_timeout) config directive and the [settimeouts](#tcpsocksettimeouts) method. And the latter takes priority. For example:
 
@@ -7261,7 +7261,7 @@ Timeout for the reading operation is controlled by the [lua_socket_read_timeout]
  ngx.say("successfully read: ", data)
 ```
 
-This method doesn't automatically close the current connection when the read timeout error happens. For other connection errors, this method always automatically closes the connection.
+This method doesn't automatically close the current connection when the read timeout error occurs. For other connection errors, this method always automatically closes the connection.
 
 This feature was first introduced in the `dev` release.
 
