@@ -79,7 +79,7 @@ __DATA__
 
             -- receive http body
             while true do
-                local data, err = sock:receiveany()
+                local data, err = sock:receiveany(1024)
                 if err then
                     if err ~= 'closed' then
                         ngx.say('unexpected err: ', err)

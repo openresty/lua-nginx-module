@@ -3846,7 +3846,7 @@ received: truefalsenil
 
             -- receive http body
             while true do
-                local data, err = sock:receiveany()
+                local data, err = sock:receiveany(1024)
                 if err then
                     if err ~= 'closed' then
                         ngx.say('unexpected err: ', err)
@@ -3910,7 +3910,7 @@ lua tcp socket read any
             assert(sock:connect("127.0.0.1", 7658))
 
             while true do
-                local data, err = sock:receiveany()
+                local data, err = sock:receiveany(1024)
                 if err then
                     if err ~= 'closed' then
                         ngx.say('unexpected err: ', err)
@@ -3953,20 +3953,25 @@ GET /t
             sock:settimeout(500)
             assert(sock:connect("127.0.0.1", ngx.var.port))
 
-            local ok, err = pcall(sock.receiveany, sock, 0)
-            if not ok then
-                ngx.say(err)
+            local function receiveany_say_err(...)
+                local ok, err = pcall(sock.receiveany, sock, ...)
+                if not ok then
+                    ngx.say(err)
+                end
             end
 
-            local ok, err = pcall(sock.receiveany, sock, 0)
-            if not ok then
-                ngx.say(err)
-            end
+
+            receiveany_say_err(0)
+            receiveany_say_err(-1)
+            receiveany_say_err()
+            receiveany_say_err(nil)
         }
     }
 
 --- response_body
 bad argument #2 to '?' (bad max argument)
+bad argument #2 to '?' (bad max argument)
+expecting 2 arguments (including the object), but got 1
 bad argument #2 to '?' (bad max argument)
 --- request
 GET /t

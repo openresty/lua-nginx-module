@@ -6105,17 +6105,17 @@ Since the <code>v0.8.8</code> release, this method no longer automatically close
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 == tcpsock:receiveany ==
-'''syntax:''' ''data, err = tcpsock:receiveany(max?)''
+'''syntax:''' ''data, err = tcpsock:receiveany(max)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*''
 
-Return any data received by the connected socket, at most <code>max</code> bytes if the <code>max</code> argument is specified.
+Returns any data received by the connected socket, at most <code>max</code> bytes.
 
 This method is a synchronous operation just like the [[#tcpsock:send|send]] method and is 100% nonblocking.
 
 In case of success, it returns the data received; in case of error, it returns <code>nil</code> with a string describing the error.
 
-If a number-like argument is specified, then it is interpreted as the max size. If the received data is more than this size, this method will return with exactly this size of data.
+If the received data is more than this size, this method will return with exactly this size of data.
 The remain received data could be returned in the next <code>receiveany</code> call.
 
 Timeout for the reading operation is controlled by the [[#lua_socket_read_timeout|lua_socket_read_timeout]] config directive and the [[#tcpsock:settimeouts|settimeouts]] method. And the latter takes priority. For example:

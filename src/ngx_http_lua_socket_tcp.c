@@ -1859,8 +1859,8 @@ ngx_http_lua_socket_tcp_receiveany(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     n = lua_gettop(L);
-    if (n != 1 && n != 2) {
-        return luaL_error(L, "expecting 1 or 2 arguments "
+    if (n != 2) {
+        return luaL_error(L, "expecting 2 arguments "
                           "(including the object), but got %d", n);
     }
 
@@ -1898,14 +1898,13 @@ ngx_http_lua_socket_tcp_receiveany(lua_State *L)
     ngx_http_lua_socket_check_busy_connecting(r, u, L);
     ngx_http_lua_socket_check_busy_reading(r, u, L);
 
-    if (n > 1 && lua_isnumber(L, 2)) {
-        bytes = lua_tointeger(L, 2);
-        if (bytes <= 0) {
-            return luaL_argerror(L, 2, "bad max argument");
-        }
+    if (!lua_isnumber(L, 2)) {
+        return luaL_argerror(L, 2, "bad max argument");
+    }
 
-    } else {
-        bytes = -1;
+    bytes = lua_tointeger(L, 2);
+    if (bytes <= 0) {
+        return luaL_argerror(L, 2, "bad max argument");
     }
 
     u->input_filter = ngx_http_lua_socket_read_any;
