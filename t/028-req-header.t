@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 43);
+plan tests => repeat_each() * (2 * blocks() + 44);
 
 #no_diff();
 no_long_string();
@@ -2007,4 +2007,26 @@ found 3 headers.
 --- timeout: 4
 --- no_error_log
 lua exceeding request header limit
+[error]
+
+
+
+=== TEST 61: setting Host header clears cached $host variable
+--- config
+    location /req-header {
+        # this makes $host indexed and cacheable
+        set $foo $host;
+
+        content_by_lua_block {
+            ngx.say(ngx.var.host)
+            ngx.req.set_header("Host", "new");
+            ngx.say(ngx.var.host)
+        }
+    }
+--- request
+GET /req-header
+--- response_body
+localhost
+new
+--- no_error_log
 [error]
