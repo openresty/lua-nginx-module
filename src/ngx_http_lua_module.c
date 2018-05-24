@@ -638,8 +638,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
 #if !defined(NGX_LUA_NO_FFI_API) || nginx_version >= 1011011
     ngx_pool_cleanup_t         *cln;
 #endif
+    ngx_str_t                   name = ngx_string("host");
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    lmcf->host_index = ngx_http_get_variable_index(cf, &name);
+    if (lmcf->host_index == NGX_ERROR) {
+        return NGX_ERROR;
+    }
 
     if (ngx_http_lua_prev_cycle != ngx_cycle) {
         ngx_http_lua_prev_cycle = ngx_cycle;
