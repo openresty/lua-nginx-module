@@ -453,8 +453,9 @@ ngx_http_set_host_header(ngx_http_request_t *r, ngx_http_lua_header_val_t *hv,
         r->headers_in.server = *value;
     }
 
-    var = &r->variables[lmcf->host_index];
-    var->valid = var->not_found = 0;
+    var = &r->variables[lmcf->host_var_index];
+    var->valid = 0;
+    var->not_found = 0;
 
     return ngx_http_set_builtin_header(r, hv, value);
 }
