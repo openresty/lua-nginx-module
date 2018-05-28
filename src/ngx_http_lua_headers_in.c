@@ -666,6 +666,9 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 
     if (value.len > 0) {
         hv.hash = ngx_hash_key_lc(key.data, key.len);
+
+    } else {
+        hv.hash = 0;
     }
 
     hv.key = key;
