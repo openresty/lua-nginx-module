@@ -4129,4 +4129,87 @@ ngx_http_lua_cleanup_free(ngx_http_request_t *r, ngx_http_cleanup_pt *cleanup)
 }
 
 
+ngx_int_t
+ngx_http_lua_decode_base64(ngx_str_t *dst, ngx_str_t *src)
+{
+    size_t          i;
+    u_char         *d, *s;
+    size_t          data_len = 0;
+    char            valid_data[4];
+    size_t          valid_data_len = 0;
+    static u_char   basis[] = {
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77, 77, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 77, 77, 77, 77, 77, 77,
+        77,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 77, 77, 77, 77, 77,
+        77, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 77, 77, 77, 77, 77,
+
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77
+    };
+
+    for (i = 0; i < src->len; i++) {
+        if (src->data[i] == '=') {
+            break;
+        }
+
+        if (src->data[i] == '\n') {
+            continue;
+        }
+
+        if (basis[src->data[i]] == 77) {
+            return NGX_ERROR;
+        }
+
+        data_len++;
+    }
+
+    if (data_len % 4 == 1) {
+        return NGX_ERROR;
+    }
+
+    s = src->data;
+    d = dst->data;
+
+    for(i = 0; i < src->len; i++) {
+        if (s[i] == '=') {
+            break;
+        }
+
+        if (s[i] == '\n') {
+            continue;
+        }
+
+        valid_data[valid_data_len++] = s[i];
+        if (valid_data_len == 4) {
+            *d++ = (u_char) (basis[valid_data[0]] << 2 | basis[valid_data[1]] >> 4);
+            *d++ = (u_char) (basis[valid_data[1]] << 4 | basis[valid_data[2]] >> 2);
+            *d++ = (u_char) (basis[valid_data[2]] << 6 | basis[valid_data[3]]);
+            valid_data_len = 0;
+        }
+    }
+
+    if (valid_data_len > 1) {
+        *d++ = (u_char) (basis[valid_data[0]] << 2 | basis[valid_data[1]] >> 4);
+    }
+
+    if (valid_data_len > 2) {
+        *d++ = (u_char) (basis[valid_data[1]] << 4 | basis[valid_data[2]] >> 2);
+    }
+
+    dst->len = d - dst->data;
+
+    return NGX_OK;
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

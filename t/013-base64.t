@@ -243,3 +243,31 @@ GET /t
 --- error_code: 500
 --- error_log eval
 qr/bad argument \#2 to 'encode_base64' \(boolean expected, got number\)|\[error\] .*? boolean argument only/
+
+
+
+=== TEST 19: base64 decode with newlines ('\n') inserted after every 76 characters
+--- config
+    location = /decode_base64 {
+        content_by_lua_block {
+            ngx.say(ngx.decode_base64("T3BlblJlc3R5IGlzIGEgZnVsbC1mbGVkZ2VkIHdlYiBwbGF0Zm9ybSB0aGF0IGludGVncmF0ZXMg\ndGhlIHN0YW5kYXJkIE5naW54IGNvcmUsIEx1YUpJVCwgbWFueSBjYXJlZnVsbHkgd3JpdHRlbiBM\ndWEgbGlicmFyaWVzLCBsb3RzIG9mIGhpZ2ggcXVhbGl0eSAzcmQtcGFydHkgTmdpbnggbW9kdWxl\ncywgYW5kIG1vc3Qgb2YgdGhlaXIgZXh0ZXJuYWwgZGVwZW5kZW5jaWVzLiBJdCBpcyBkZXNpZ25l\nZCB0byBoZWxwIGRldmVsb3BlcnMgZWFzaWx5IGJ1aWxkIHNjYWxhYmxlIHdlYiBhcHBsaWNhdGlv\nbnMsIHdlYiBzZXJ2aWNlcywgYW5kIGR5bmFtaWMgd2ViIGdhdGV3YXlzLg==\n"));
+        }
+    }
+--- request
+GET /decode_base64
+--- response_body
+OpenResty is a full-fledged web platform that integrates the standard Nginx core, LuaJIT, many carefully written Lua libraries, lots of high quality 3rd-party Nginx modules, and most of their external dependencies. It is designed to help developers easily build scalable web applications, web services, and dynamic web gateways.
+
+
+
+=== TEST 20: base64 decode with random newlines ('\n') inserted
+--- config
+    location = /decode_base64 {
+        content_by_lua_block {
+            ngx.say(ngx.decode_base64("T\n3BlblJ\nlc3R5IGlzIGEgZnVsbC1mbGVkZ2VkIHdlYiBwb\nGF0Zm9ybSB0aGF0IGludGVncmF0ZXMg\ndGhlIHN0YW5kYXJkIE5naW54IGNvcmUsIEx1YUpJVCwgbWFueSBjYXJlZnVsbHkgd3JpdHRlbiBM\ndWEgbGlicmFyaWVz\nLCBsb3RzIG9mIGhpZ2ggcXVhbGl0eSAzcmQtcGFydHkgTmdpbnggbW9kdWxl\ncywgYW5kIG1vc3Qgb2YgdGhlaXIgZXh0ZXJuYWwgZGVwZW5kZW5jaWVzLiBJdCBpcyBkZXNpZ25l\nZCB0byBoZWxwIGRldmVsb3BlcnMgZWFzaWx5IGJ1aWxkIHNjYWxhYmxlIHdlYiBhcHBsaWNhdGlv\nbnMsIHdlYiBzZXJ2aWNlc\nywgYW5kIGR5bmFtaWMgd2ViIGdhdGV3YXlzLg==\n"));
+        }
+    }
+--- request
+GET /decode_base64
+--- response_body
+OpenResty is a full-fledged web platform that integrates the standard Nginx core, LuaJIT, many carefully written Lua libraries, lots of high quality 3rd-party Nginx modules, and most of their external dependencies. It is designed to help developers easily build scalable web applications, web services, and dynamic web gateways.
