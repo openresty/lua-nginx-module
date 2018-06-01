@@ -4071,7 +4071,7 @@ This function returns <code>nil</code> if
 # the request body has been read into disk temporary files,
 # or the request body has zero size.
 
-If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turned on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however).
+If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turn on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however).
 
 If the request body has been read into disk files, try calling the [[#ngx.req.get_body_file|ngx.req.get_body_file]] function instead.
 
@@ -4092,7 +4092,7 @@ Retrieves the file name for the in-file request body data. Returns <code>nil</co
 
 The returned file is read only and is usually cleaned up by Nginx's memory pool. It should not be manually modified, renamed, or removed in Lua code.
 
-If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turned on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however).
+If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turn on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however).
 
 If the request body has been read into memory, try calling the [[#ngx.req.get_body_data|ngx.req.get_body_data]] function instead.
 
@@ -4109,7 +4109,9 @@ See also [[#ngx.req.get_body_data|ngx.req.get_body_data]].
 
 Set the current request's request body using the in-memory data specified by the <code>data</code> argument.
 
-If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
+If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turn on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however). Additionally, the request body must not have been previously discarded by [[#ngx.req.discard_body|ngx.req.discard_body]].
+
+Whether the previous request body has been read into memory or buffered into a disk file, it will be freed or the disk file will be cleaned up immediately, respectively.
 
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
@@ -4122,11 +4124,13 @@ See also [[#ngx.req.set_body_file|ngx.req.set_body_file]].
 
 Set the current request's request body using the in-file data specified by the <code>file_name</code> argument.
 
+If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turn on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however). Additionally, the request body must not have been previously discarded by [[#ngx.req.discard_body|ngx.req.discard_body]].
+
 If the optional <code>auto_clean</code> argument is given a <code>true</code> value, then this file will be removed at request completion or the next time this function or [[#ngx.req.set_body_data|ngx.req.set_body_data]] are called in the same request. The <code>auto_clean</code> is default to <code>false</code>.
 
 Please ensure that the file specified by the <code>file_name</code> argument exists and is readable by an Nginx worker process by setting its permission properly to avoid Lua exception errors.
 
-If the current request's request body has not been read, then it will be properly discarded. When the current request's request body has been read into memory or buffered into a disk file, then the old request body's memory will be freed or the disk file will be cleaned up immediately, respectively.
+Whether the previous request body has been read into memory or buffered into a disk file, it will be freed or the disk file will be cleaned up immediately, respectively.
 
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
