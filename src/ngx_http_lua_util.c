@@ -4135,8 +4135,8 @@ ngx_http_lua_decode_base64(ngx_str_t *dst, ngx_str_t *src)
     size_t          i;
     u_char         *d, *s;
     size_t          data_len = 0;
-    char            valid_data[4];
-    size_t          valid_data_len = 0;
+    u_char          buf[4];
+    size_t          buf_len = 0;
     static u_char   basis[] = {
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
         77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
@@ -4189,21 +4189,21 @@ ngx_http_lua_decode_base64(ngx_str_t *dst, ngx_str_t *src)
             continue;
         }
 
-        valid_data[valid_data_len++] = s[i];
-        if (valid_data_len == 4) {
-            *d++ = (u_char) (basis[valid_data[0]] << 2 | basis[valid_data[1]] >> 4);
-            *d++ = (u_char) (basis[valid_data[1]] << 4 | basis[valid_data[2]] >> 2);
-            *d++ = (u_char) (basis[valid_data[2]] << 6 | basis[valid_data[3]]);
-            valid_data_len = 0;
+        buf[buf_len++] = s[i];
+        if (buf_len == 4) {
+            *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
+            *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
+            *d++ = (u_char) (basis[buf[2]] << 6 | basis[buf[3]]);
+            buf_len = 0;
         }
     }
 
-    if (valid_data_len > 1) {
-        *d++ = (u_char) (basis[valid_data[0]] << 2 | basis[valid_data[1]] >> 4);
+    if (buf_len > 1) {
+        *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
     }
 
-    if (valid_data_len > 2) {
-        *d++ = (u_char) (basis[valid_data[1]] << 4 | basis[valid_data[2]] >> 2);
+    if (buf_len > 2) {
+        *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
     }
 
     dst->len = d - dst->data;
