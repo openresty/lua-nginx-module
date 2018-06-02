@@ -440,7 +440,7 @@ ngx_http_lua_ngx_decode_base64(lua_State *L)
 
     p.data = lua_newuserdata(L, p.len);
 
-    if (ngx_decode_base64(&p, &src) == NGX_OK) {
+    if (ngx_http_lua_decode_base64(&p, &src) == NGX_OK) {
         lua_pushlstring(L, (char *) p.data, p.len);
 
     } else {
@@ -729,7 +729,7 @@ ngx_http_lua_ffi_decode_base64(const u_char *src, size_t slen, u_char *dst,
 
     out.data = dst;
 
-    rc = ngx_decode_base64(&out, &in);
+    rc = ngx_http_lua_decode_base64(&out, &in);
 
     *dlen = out.len;
 
