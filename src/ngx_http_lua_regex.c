@@ -15,7 +15,6 @@
 #include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_script.h"
-#include "ngx_http_lua_pcrefix.h"
 #include "ngx_http_lua_util.h"
 
 
