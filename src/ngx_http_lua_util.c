@@ -4133,7 +4133,7 @@ ngx_int_t
 ngx_http_lua_decode_base64(ngx_str_t *dst, ngx_str_t *src)
 {
     size_t          i;
-    u_char         *d, *s;
+    u_char         *d, *s, ch;
     size_t          data_len = 0;
     u_char          buf[4];
     size_t          buf_len = 0;
@@ -4158,15 +4158,16 @@ ngx_http_lua_decode_base64(ngx_str_t *dst, ngx_str_t *src)
     };
 
     for (i = 0; i < src->len; i++) {
-        if (src->data[i] == '=') {
+        ch = src->data[i];
+        if (ch == '=') {
             break;
         }
 
-        if (src->data[i] == '\n') {
+        if (ch == '\n') {
             continue;
         }
 
-        if (basis[src->data[i]] == 77) {
+        if (basis[ch] == 77) {
             return NGX_ERROR;
         }
 
