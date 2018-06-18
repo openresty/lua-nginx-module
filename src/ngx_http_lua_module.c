@@ -746,12 +746,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
-        /* firstly set environment for lua vm */
-        if (ngx_set_environment(cf->cycle, NULL) == NULL) {
-            /* fatal */
-            exit(2);
-        }
-
         ngx_http_lua_content_length_hash =
                                   ngx_http_lua_hash_literal("content-length");
         ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
