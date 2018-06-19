@@ -16,10 +16,6 @@
 #include "ngx_http_lua_util.h"
 
 
-u_char *ngx_http_lua_ffi_os_getenv(ngx_cycle_t *cycle, ngx_http_request_t *r,
-    const char *varname);
-
-
 u_char *
 ngx_http_lua_ffi_os_getenv(ngx_cycle_t *cycle, ngx_http_request_t *r,
     const char *varname)
