@@ -43,10 +43,10 @@ ngx_http_lua_ffi_os_getenv(ngx_cycle_t *cycle, ngx_http_request_t *r,
                 break;
             }
         }
-    }
 
-    if (value) {
-        return value;
+        if (value) {
+            return value;
+        }
     }
 
     value = (u_char *) getenv(varname);
