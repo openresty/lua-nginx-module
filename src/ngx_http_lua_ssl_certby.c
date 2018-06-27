@@ -163,13 +163,17 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
         lscf->srv.ssl_cert_src = value[1];
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
+        p = ngx_palloc(cf->pool,
+                       sizeof("ssl_certificate_by_lua") +
+                       NGX_HTTP_LUA_INLINE_KEY_LEN);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
         lscf->srv.ssl_cert_src_key = p;
 
+        p = ngx_copy(p, "ssl_certificate_by_lua",
+                     sizeof("ssl_certificate_by_lua") - 1);
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
         *p = '\0';
@@ -193,10 +197,12 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     ngx_http_lua_srv_conf_t         *lscf;
     ngx_http_core_loc_conf_t        *clcf;
     ngx_http_lua_ssl_ctx_t          *cctx;
+    ngx_http_core_srv_conf_t        *cscf;
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-    dd("c = %p", c);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "ssl cert: connection reusable: %ud", c->reusable);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
 
@@ -218,6 +224,8 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     }
 
     dd("first time");
+
+    ngx_reusable_connection(c, 0);
 
     hc = c->data;
 
@@ -297,6 +305,16 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "loading SSL certificate by lua";
+
+    if (lscf->srv.ssl_cert_handler == NULL) {
+        cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+
+        ngx_log_error(NGX_LOG_ALERT, c->log, 0,
+                      "no ssl_certificate_by_lua* defined in "
+                      "server %V", &cscf->server_name);
+
+        goto failed;
+    }
 
     rc = lscf->srv.ssl_cert_handler(r, lscf, L);
 
@@ -453,7 +471,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx == NULL) {
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
     } else {
@@ -470,7 +490,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "lua: failed to create new coroutine to handle request");
 
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        rc = NGX_ERROR;
+        ngx_http_lua_finalize_request(r, rc);
+        return rc;
     }
 
     /*  move code closure to new coroutine */
@@ -494,7 +516,9 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     if (ctx->cleanup == NULL) {
         cln = ngx_http_cleanup_add(r, 0);
         if (cln == NULL) {
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            rc = NGX_ERROR;
+            ngx_http_lua_finalize_request(r, rc);
+            return rc;
         }
 
         cln->handler = ngx_http_lua_request_cleanup_handler;
@@ -529,13 +553,6 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 int
 ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 {
-#ifndef TLS1_get_version
-
-    *err = "no TLS1 support";
-    return NGX_ERROR;
-
-#else
-
     ngx_ssl_conn_t    *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -549,11 +566,9 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
         return NGX_ERROR;
     }
 
-    dd("tls1 ver: %d", (int) TLS1_get_version(ssl_conn));
+    dd("tls1 ver: %d", SSL_version(ssl_conn));
 
-    return (int) TLS1_get_version(ssl_conn);
-
-#endif
+    return SSL_version(ssl_conn);
 }
 
 
@@ -727,7 +742,7 @@ ngx_http_lua_ffi_ssl_set_der_private_key(ngx_http_request_t *r,
     }
 
     if (SSL_use_PrivateKey(ssl_conn, pkey) == 0) {
-        *err = "SSL_CTX_use_PrivateKey() failed";
+        *err = "SSL_use_PrivateKey() failed";
         goto failed;
     }
 
@@ -861,6 +876,74 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     return NGX_ERROR;
 
 #endif
+}
+
+
+int
+ngx_http_lua_ffi_ssl_raw_client_addr(ngx_http_request_t *r, char **addr,
+    size_t *addrlen, int *addrtype, char **err)
+{
+#if (NGX_HAVE_UNIX_DOMAIN)
+    struct sockaddr_un  *saun;
+#endif
+    ngx_ssl_conn_t      *ssl_conn;
+    ngx_connection_t    *c;
+    struct sockaddr_in  *sin;
+#if (NGX_HAVE_INET6)
+    struct sockaddr_in6 *sin6;
+#endif
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    c = ngx_ssl_get_connection(ssl_conn);
+
+    switch (c->sockaddr->sa_family) {
+
+#if (NGX_HAVE_INET6)
+    case AF_INET6:
+        sin6 = (struct sockaddr_in6 *) c->sockaddr;
+        *addrlen = 16;
+        *addr = (char *) &sin6->sin6_addr.s6_addr;
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_INET6;
+
+        break;
+#endif
+
+# if (NGX_HAVE_UNIX_DOMAIN)
+    case AF_UNIX:
+        saun = (struct sockaddr_un *)c->sockaddr;
+        /* on Linux sockaddr might not include sun_path at all */
+        if (c->socklen <= (socklen_t) offsetof(struct sockaddr_un, sun_path)) {
+            *addr = "";
+            *addrlen = 0;
+
+        } else {
+            *addr = saun->sun_path;
+            *addrlen = ngx_strlen(saun->sun_path);
+        }
+
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_UNIX;
+        break;
+#endif
+
+    default: /* AF_INET */
+        sin = (struct sockaddr_in *) c->sockaddr;
+        *addr = (char *) &sin->sin_addr.s_addr;
+        *addrlen = 4;
+        *addrtype = NGX_HTTP_LUA_ADDR_TYPE_INET;
+        break;
+    }
+
+    return NGX_OK;
 }
 
 

@@ -3,9 +3,8 @@
 use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
-#repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2 + 2);
 
 no_long_string();
 
@@ -180,3 +179,21 @@ GET /t
 GET /t
 --- response_body
 [32]
+
+
+
+=== TEST 14: reserved chars
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("-_.!~*'()"))
+            ngx.say(ngx.escape_uri(",$@|`"))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+-_.!~*'()
+%2C%24%40%7C%60
+--- no_error_log
+[error]

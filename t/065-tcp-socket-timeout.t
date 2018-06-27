@@ -28,7 +28,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 12);
+plan tests => repeat_each() * (blocks() * 4 + 6);
 
 our $HtmlDir = html_dir;
 
@@ -66,7 +66,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 100
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
@@ -96,7 +96,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 150
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
@@ -125,7 +125,7 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 
 
 
@@ -154,12 +154,12 @@ GET /t
 failed to connect: timeout
 --- error_log
 lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
 
-=== TEST 5: sock:settimeout(-1) does not override lua_socket_connect_timeout
+=== TEST 5: -1 is bad timeout value
 --- config
     server_tokens off;
     lua_socket_connect_timeout 102ms;
@@ -179,11 +179,11 @@ lua tcp socket connect timed out
     }
 --- request
 GET /t
---- response_body
-failed to connect: timeout
+--- response_body_like chomp
+500 Internal Server Error
 --- error_log
-lua tcp socket connect timeout: 102
-lua tcp socket connect timed out
+bad timeout value
+--- error_code: 500
 
 
 
@@ -342,7 +342,7 @@ lua tcp socket read timed out
 
 
 
-=== TEST 10: sock:settimeout(-1) does not override lua_socket_read_timeout
+=== TEST 10: -1 is bad timeout value
 --- config
     server_tokens off;
     lua_socket_read_timeout 102ms;
@@ -355,8 +355,6 @@ lua tcp socket read timed out
                 ngx.say("failed to connect: ", err)
                 return
             end
-
-            ngx.say("connected: ", ok)
 
             sock:settimeout(-1)
 
@@ -371,13 +369,11 @@ lua tcp socket read timed out
     }
 --- request
 GET /t
---- response_body
-connected: 1
-failed to receive: timeout
+--- response_body_like chomp
+500 Internal Server Error
+--- error_code: 500
 --- error_log
-lua tcp socket read timeout: 102
-lua tcp socket connect timeout: 60000
-lua tcp socket read timed out
+bad timeout value
 
 
 
@@ -563,8 +559,6 @@ lua tcp socket write timed out
                 return
             end
 
-            ngx.say("connected: ", ok)
-
             sock:settimeout(-1)
 
             local bytes
@@ -578,13 +572,11 @@ lua tcp socket write timed out
     }
 --- request
 GET /t
---- response_body
-connected: 1
-failed to send: timeout
+--- response_body_like chomp
+500 Internal Server Error
 --- error_log
-lua tcp socket send timeout: 102
-lua tcp socket connect timeout: 60000
-lua tcp socket write timed out
+bad timeout value
+--- error_code: 500
 
 
 
@@ -715,7 +707,7 @@ GET /t
 2: connected: 1
 --- error_log
 lua tcp socket connect timeout: 100
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
@@ -992,5 +984,35 @@ receive: nil timeout
 send failed: timeout
 close: 1 nil
 
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: timeout overflow detection
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = pcall(sock.settimeout, sock, (2 ^ 31) - 1)
+            if not ok then
+                ngx.say("failed to set timeout: ", err)
+            else
+                ngx.say("settimeout: ok")
+            end
+
+            ok, err = pcall(sock.settimeout, sock, 2 ^ 31)
+            if not ok then
+                ngx.say("failed to set timeout: ", err)
+            else
+                ngx.say("settimeout: ok")
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+settimeout: ok
+failed to set timeout: bad timeout value
 --- no_error_log
 [error]

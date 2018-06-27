@@ -173,13 +173,15 @@ ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
         lscf->balancer.src = value[1];
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_INLINE_KEY_LEN + 1);
+        p = ngx_palloc(cf->pool,
+                       sizeof("balancer_by_lua") + NGX_HTTP_LUA_INLINE_KEY_LEN);
         if (p == NULL) {
             return NGX_CONF_ERROR;
         }
 
         lscf->balancer.src_key = p;
 
+        p = ngx_copy(p, "balancer_by_lua", sizeof("balancer_by_lua") - 1);
         p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
         p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
         *p = '\0';
@@ -314,7 +316,13 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
 
     if (ctx->exited && ctx->exit_code != NGX_OK) {
         rc = ctx->exit_code;
-        if (rc == NGX_ERROR || rc == NGX_BUSY || rc == NGX_DECLINED) {
+        if (rc == NGX_ERROR
+            || rc == NGX_BUSY
+            || rc == NGX_DECLINED
+#ifdef HAVE_BALANCER_STATUS_CODE_PATCH
+            || rc >= NGX_HTTP_SPECIAL_RESPONSE
+#endif
+        ) {
             return rc;
         }
 

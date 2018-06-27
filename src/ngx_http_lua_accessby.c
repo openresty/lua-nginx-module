@@ -238,6 +238,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
     int                  co_ref;
     ngx_int_t            rc;
+    ngx_uint_t           nreqs;
     lua_State           *co;
     ngx_event_t         *rev;
     ngx_connection_t    *c;
@@ -329,6 +330,9 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
         r->read_event_handler = ngx_http_block_reading;
     }
 
+    c = r->connection;
+    nreqs = c->requests;
+
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     dd("returned %d", (int) rc);
@@ -337,10 +341,8 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
         return rc;
     }
 
-    c = r->connection;
-
     if (rc == NGX_AGAIN) {
-        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx, nreqs);
 
         if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
             return rc;
@@ -353,7 +355,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     } else if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
 
-        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx, nreqs);
 
         if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
             return rc;

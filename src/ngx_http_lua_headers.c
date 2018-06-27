@@ -113,7 +113,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if (NGX_HTTP_V2)
     if (mr->stream) {
-        return luaL_error(L, "http v2 not supported yet");
+        return luaL_error(L, "http2 requests not supported yet");
     }
 #endif
 
@@ -245,7 +245,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
         if (b != mr->header_in) {
             /* skip truncated header entries (if any) */
-            while (last > data && last[-1] != LF) {
+            while (last > data && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
         }
@@ -315,7 +315,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
 #if 1
             /* skip truncated header entries (if any) */
-            while (last > p && last[-1] != LF) {
+            while (last > p && last[-1] != LF && last[-1] != '\0') {
                 last--;
             }
 #endif
@@ -325,8 +325,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
                 if (*p == '\0') {
                     j++;
                     if (p + 1 == last) {
-                        /* XXX this should not happen */
-                        dd("found string end!!");
+                        *p = LF;
 
                     } else if (*(p + 1) == LF) {
                         *p = CR;
@@ -398,6 +397,7 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
     int                           max;
     int                           raw = 0;
     int                           count = 0;
+    int                           truncated = 0;
 
     n = lua_gettop(L);
 
@@ -426,15 +426,17 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
 
     part = &r->headers_in.headers.part;
     count = part->nelts;
-    while (part->next) {
+    while (part->next != NULL) {
         part = part->next;
         count += part->nelts;
     }
 
     if (max > 0 && count > max) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding request header limit %d > %d", count,
+                       max);
         count = max;
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua exceeding request header limit %d", max);
+        truncated = 1;
     }
 
     lua_createtable(L, 0, count);
@@ -481,9 +483,14 @@ ngx_http_lua_ngx_req_get_headers(lua_State *L)
                        "lua request header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
 
-        if (--count == 0) {
-            return 1;
+        if (--count <= 0) {
+            break;
         }
+    }  /* for */
+
+    if (truncated) {
+        lua_pushliteral(L, "truncated");
+        return 2;
     }
 
     return 1;
@@ -505,6 +512,8 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     int                 max;
     int                 raw = 0;
     int                 count = 0;
+    int                 truncated = 0;
+    int                 extra = 0;
 
     n = lua_gettop(L);
 
@@ -549,18 +558,12 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
 
     part = &r->headers_out.headers.part;
     count = part->nelts;
-    while (part->next) {
+    while (part->next != NULL) {
         part = part->next;
         count += part->nelts;
     }
 
-    if (max > 0 && count > max) {
-        count = max;
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua exceeding request header limit %d", max);
-    }
-
-    lua_createtable(L, 0, count);
+    lua_createtable(L, 0, count + 2);
 
     if (!raw) {
         lua_pushlightuserdata(L, &ngx_http_lua_headers_metatable_key);
@@ -570,6 +573,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
 
 #if 1
     if (r->headers_out.content_type.len) {
+        extra++;
         lua_pushliteral(L, "content-type");
         lua_pushlstring(L, (char *) r->headers_out.content_type.data,
                         r->headers_out.content_type.len);
@@ -579,11 +583,13 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     if (r->headers_out.content_length == NULL
         && r->headers_out.content_length_n >= 0)
     {
+        extra++;
         lua_pushliteral(L, "content-length");
         lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
         lua_rawset(L, -3);
     }
 
+    extra++;
     lua_pushliteral(L, "connection");
     if (r->headers_out.status == NGX_HTTP_SWITCHING_PROTOCOLS) {
         lua_pushliteral(L, "upgrade");
@@ -597,11 +603,20 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     lua_rawset(L, -3);
 
     if (r->chunked) {
+        extra++;
         lua_pushliteral(L, "transfer-encoding");
         lua_pushliteral(L, "chunked");
         lua_rawset(L, -3);
     }
 #endif
+
+    if (max > 0 && count + extra > max) {
+        truncated = 1;
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding response header limit %d > %d",
+                       count + extra, max);
+        count = max - extra;
+    }
 
     part = &r->headers_out.headers.part;
     header = part->elts;
@@ -655,9 +670,14 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
                        "lua response header: \"%V: %V\"",
                        &header[i].key, &header[i].value);
 
-        if (--count == 0) {
-            return 1;
+        if (--count <= 0) {
+            break;
         }
+    }  /* for */
+
+    if (truncated) {
+        lua_pushliteral(L, "truncated");
+        return 2;
     }
 
     return 1;
@@ -1084,7 +1104,8 @@ ngx_http_lua_create_headers_metatable(ngx_log_t *log, lua_State *L)
 
 #ifndef NGX_LUA_NO_FFI_API
 int
-ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max)
+ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
+    int *truncated)
 {
     int                           count;
     ngx_list_part_t              *part;
@@ -1093,21 +1114,26 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max)
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
+    *truncated = 0;
+
     if (max < 0) {
         max = NGX_HTTP_LUA_MAX_HEADERS;
     }
 
     part = &r->headers_in.headers.part;
     count = part->nelts;
-    while (part->next) {
+    while (part->next != NULL) {
         part = part->next;
         count += part->nelts;
     }
 
     if (max > 0 && count > max) {
+        *truncated = 1;
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua exceeding request header limit %d > %d", count,
+                       max);
         count = max;
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua exceeding request header limit %d", max);
     }
 
     return count;
@@ -1167,7 +1193,8 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
 int
 ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     size_t key_len, int is_nil, const u_char *sval, size_t sval_len,
-    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, char **errmsg)
+    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, int override,
+    char **errmsg)
 {
     u_char                      *p;
     ngx_str_t                    value, key;
@@ -1250,7 +1277,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
                 value.len = len;
 
                 rc = ngx_http_lua_set_output_header(r, key, value,
-                                                    i == 0 /* override */);
+                                                    override && i == 0);
 
                 if (rc == NGX_ERROR) {
                     *errmsg = "failed to set header";
@@ -1275,7 +1302,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     dd("key: %.*s, value: %.*s",
        (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
+    rc = ngx_http_lua_set_output_header(r, key, value, override);
 
     if (rc == NGX_ERROR) {
         *errmsg = "failed to set header";

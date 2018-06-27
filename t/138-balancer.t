@@ -58,8 +58,8 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
     }
 --- request
     GET /t
---- response_body_like: 500 Internal Server Error
---- error_code: 500
+--- response_body_like: 403 Forbidden
+--- error_code: 403
 --- error_log
 [lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
@@ -160,7 +160,7 @@ qr/\[crit\] .* connect\(\) .*? failed/,
     upstream backend {
         server 0.0.0.1;
         balancer_by_lua_block {
-            print("arg foo: ", ngx.req.get_uri_args()["foo"])
+            print("arg foo: ", (ngx.req.get_uri_args())["foo"])
         }
     }
 --- config
@@ -307,7 +307,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 
 === TEST 12: code cache off
 --- http_config
-    lua_package_path "t/servroot/html/?.lua;;";
+    lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
 
     lua_code_cache off;
 
@@ -327,7 +327,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
     location = /update {
         content_by_lua_block {
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("print('me: ', 101)")
             f:close()
             ngx.say("updated")

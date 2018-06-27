@@ -166,6 +166,12 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         return luaL_error(L, "no request object found");
     }
 
+#if (NGX_HTTP_V2)
+    if (r->main->stream) {
+        return luaL_error(L, "http2 requests not supported yet");
+    }
+#endif
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
@@ -1587,6 +1593,7 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
 {
     lua_State                   *vm;
     ngx_int_t                    rc;
+    ngx_uint_t                   nreqs;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_lua_co_ctx_t       *coctx;
@@ -1620,6 +1627,7 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
 
     c = r->connection;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, coctx->nsubreqs);
 
@@ -1627,12 +1635,12 @@ ngx_http_lua_subrequest_resume(ngx_http_request_t *r)
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     /* rc == NGX_ERROR || rc >= NGX_OK */

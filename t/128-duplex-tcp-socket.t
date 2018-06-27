@@ -396,7 +396,7 @@ F(ngx_http_lua_socket_tcp_finalize_write_part) {
             end
 
             sock:settimeout(300)
-            local ok, err = sock:connect("106.184.1.99", 12345)
+            local ok, err = sock:connect("172.105.207.225", 12345)
             ngx.say("connect: ", ok, " ", err)
 
             local ok, err = sock:close()

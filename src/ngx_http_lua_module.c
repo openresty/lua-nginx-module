@@ -65,6 +65,9 @@ static ngx_conf_bitmask_t  ngx_http_lua_ssl_protocols[] = {
     { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
     { ngx_string("TLSv1.1"), NGX_SSL_TLSv1_1 },
     { ngx_string("TLSv1.2"), NGX_SSL_TLSv1_2 },
+#ifdef NGX_SSL_TLSv1_3
+    { ngx_string("TLSv1.3"), NGX_SSL_TLSv1_3 },
+#endif
     { ngx_null_string, 0 }
 };
 
@@ -90,6 +93,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("lua_shared_dict"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_http_lua_shared_dict,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("lua_capture_error_log"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_capture_error_log,
       0,
       0,
       NULL },
@@ -628,8 +638,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
 #if !defined(NGX_LUA_NO_FFI_API) || nginx_version >= 1011011
     ngx_pool_cleanup_t         *cln;
 #endif
+    ngx_str_t                   name = ngx_string("host");
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    lmcf->host_var_index = ngx_http_get_variable_index(cf, &name);
+    if (lmcf->host_var_index == NGX_ERROR) {
+        return NGX_ERROR;
+    }
 
     if (ngx_http_lua_prev_cycle != ngx_cycle) {
         ngx_http_lua_prev_cycle = ngx_cycle;
@@ -814,6 +830,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->running_timers = 0;
      *      lmcf->watcher = NULL;
      *      lmcf->regex_cache_entries = 0;
+     *      lmcf->jit_stack = NULL;
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };

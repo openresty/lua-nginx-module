@@ -35,6 +35,7 @@ __DATA__
     location /load {
         content_by_lua '
             package.loaded.foo = nil;
+            collectgarbage()
             local foo = require "foo";
             foo.hi()
         ';

@@ -19,7 +19,7 @@
 /* Public API for other Nginx modules */
 
 
-#define ngx_http_lua_version  10008
+#define ngx_http_lua_version  10014
 
 
 typedef struct {
@@ -32,6 +32,13 @@ typedef struct {
     } value;
 
 } ngx_http_lua_value_t;
+
+
+typedef struct {
+    int          len;
+    /* this padding hole on 64-bit systems is expected */
+    u_char      *data;
+} ngx_http_lua_ffi_str_t;
 
 
 lua_State *ngx_http_lua_get_global_state(ngx_conf_t *cf);

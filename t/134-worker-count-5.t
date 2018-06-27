@@ -3,7 +3,7 @@
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
-#master_on();
+master_on();
 workers(5);
 #log_level('warn');
 

@@ -22,6 +22,19 @@
 #include <lauxlib.h>
 
 
+#if (NGX_PCRE)
+
+#include <pcre.h>
+
+#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
+#   define LUA_HAVE_PCRE_JIT 1
+#else
+#   define LUA_HAVE_PCRE_JIT 0
+#endif
+
+#endif
+
+
 #if !defined(nginx_version) || (nginx_version < 1006000)
 #error at least nginx 1.6.0 is required but found an older version
 #endif
@@ -41,6 +54,9 @@
 #   define NGX_HTTP_LUA_USE_OCSP 1
 #endif
 
+#ifndef NGX_HTTP_PERMANENT_REDIRECT
+#   define NGX_HTTP_PERMANENT_REDIRECT  308
+#endif
 
 #ifndef NGX_HAVE_SHA1
 #   if (nginx_version >= 1011002)
@@ -66,20 +82,20 @@
 
 #define NGX_HTTP_LUA_INLINE_TAG "nhli_"
 
-#define NGX_HTTP_LUA_INLINE_TAG_LEN \
+#define NGX_HTTP_LUA_INLINE_TAG_LEN                                          \
     (sizeof(NGX_HTTP_LUA_INLINE_TAG) - 1)
 
-#define NGX_HTTP_LUA_INLINE_KEY_LEN \
+#define NGX_HTTP_LUA_INLINE_KEY_LEN                                          \
     (NGX_HTTP_LUA_INLINE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
 
 /* Nginx HTTP Lua File tag prefix */
 
 #define NGX_HTTP_LUA_FILE_TAG "nhlf_"
 
-#define NGX_HTTP_LUA_FILE_TAG_LEN \
+#define NGX_HTTP_LUA_FILE_TAG_LEN                                            \
     (sizeof(NGX_HTTP_LUA_FILE_TAG) - 1)
 
-#define NGX_HTTP_LUA_FILE_KEY_LEN \
+#define NGX_HTTP_LUA_FILE_KEY_LEN                                            \
     (NGX_HTTP_LUA_FILE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
 
 
@@ -149,6 +165,7 @@ typedef struct {
 
 struct ngx_http_lua_main_conf_s {
     lua_State           *lua;
+    ngx_pool_cleanup_t  *vm_cleanup;
 
     ngx_str_t            lua_path;
     ngx_str_t            lua_cpath;
@@ -168,6 +185,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
     ngx_int_t            regex_match_limit;
+
+#if (LUA_HAVE_PCRE_JIT)
+    pcre_jit_stack      *jit_stack;
+#endif
+
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
@@ -205,6 +227,8 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            busy_buf_ptr_count;
 #endif
 
+    ngx_int_t            host_var_index;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
@@ -212,6 +236,7 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_access:1;
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
+    unsigned             requires_capture_log:1;
 };
 
 

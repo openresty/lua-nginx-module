@@ -110,7 +110,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
             if (r->header_sent) {
                 dd("header already sent");
 
-                /* response header was already generated in access_by_lua*,
+                /* response header was already generated in rewrite_by_lua*,
                  * so it is no longer safe to proceed to later phases
                  * which may generate responses again */
 
@@ -126,6 +126,11 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 
                 return NGX_HTTP_OK;
             }
+
+            r->write_event_handler = ngx_http_core_run_phases;
+            ctx->entered_rewrite_phase = 0;
+
+            return NGX_DECLINED;
         }
 
         return rc;
@@ -235,6 +240,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     int                      co_ref;
     lua_State               *co;
     ngx_int_t                rc;
+    ngx_uint_t               nreqs;
     ngx_event_t             *rev;
     ngx_connection_t        *c;
     ngx_http_lua_ctx_t      *ctx;
@@ -324,27 +330,28 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
         r->read_event_handler = ngx_http_block_reading;
     }
 
+    c = r->connection;
+    nreqs = c->requests;
+
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc > NGX_OK) {
         return rc;
     }
 
-    c = r->connection;
-
     if (rc == NGX_AGAIN) {
-        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx, nreqs);
 
     } else if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx);
+        rc = ngx_http_lua_run_posted_threads(c, L, r, ctx, nreqs);
     }
 
     if (rc == NGX_OK || rc == NGX_DECLINED) {
         if (r->header_sent) {
             dd("header already sent");
 
-            /* response header was already generated in access_by_lua*,
+            /* response header was already generated in rewrite_by_lua*,
              * so it is no longer safe to proceed to later phases
              * which may generate responses again */
 
@@ -360,6 +367,9 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
             return NGX_HTTP_OK;
         }
+
+        r->write_event_handler = ngx_http_core_run_phases;
+        ctx->entered_rewrite_phase = 0;
 
         return NGX_DECLINED;
     }

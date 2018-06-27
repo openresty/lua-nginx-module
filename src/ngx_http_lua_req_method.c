@@ -158,15 +158,16 @@ ngx_http_lua_ffi_req_get_method(ngx_http_request_t *r)
 
 
 int
-ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r, char *buf,
+ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r, u_char **name,
     size_t *len)
 {
     if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
     }
 
-    *len = ngx_min(r->method_name.len, *len);
-    ngx_memcpy(buf, r->method_name.data, *len);
+    *name = r->method_name.data;
+    *len = r->method_name.len;
+
     return NGX_OK;
 }
 

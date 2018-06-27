@@ -40,10 +40,33 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
 
-    if (lmcf == NULL
-        || lmcf->init_worker_handler == NULL
-        || lmcf->lua == NULL)
+    if (lmcf == NULL || lmcf->lua == NULL) {
+        return NGX_OK;
+    }
+
+    /* lmcf != NULL && lmcf->lua != NULL */
+
+#if !(NGX_WIN32)
+    if (ngx_process == NGX_PROCESS_HELPER
+#   ifdef HAVE_PRIVILEGED_PROCESS_PATCH
+        && !ngx_is_privileged_agent
+#   endif
+       )
     {
+        /* disable init_worker_by_lua* and destroy lua VM in cache processes */
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua close the global Lua VM %p in the "
+                       "cache helper process %P", lmcf->lua, ngx_pid);
+
+        lmcf->vm_cleanup->handler(lmcf->vm_cleanup->data);
+        lmcf->vm_cleanup->handler = NULL;
+
+        return NGX_OK;
+    }
+#endif  /* NGX_WIN32 */
+
+    if (lmcf->init_worker_handler == NULL) {
         return NGX_OK;
     }
 

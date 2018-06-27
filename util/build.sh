@@ -23,6 +23,7 @@ force=$2
             #--with-http_spdy_module \
 
 time ngx-build $force $version \
+            --with-pcre-jit \
             --with-ipv6 \
             --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_v2_module \
@@ -35,6 +36,8 @@ time ngx-build $force $version \
             --without-mail_imap_module \
             --with-http_image_filter_module \
             --without-mail_smtp_module \
+            --with-stream \
+            --with-stream_ssl_module \
             --without-http_upstream_ip_hash_module \
             --without-http_memcached_module \
             --without-http_auth_basic_module \
@@ -50,6 +53,7 @@ time ngx-build $force $version \
                 --add-module=$root/../rds-json-nginx-module \
                 --add-module=$root/../coolkit-nginx-module \
                 --add-module=$root/../redis2-nginx-module \
+                --add-module=$root/../stream-lua-nginx-module \
                 --add-module=$root/t/data/fake-module \
                 --add-module=$root/t/data/fake-shm-module \
                 --add-module=$root/t/data/fake-delayed-load-module \

@@ -154,14 +154,15 @@ invalid referer: 1
 
 
 
-=== TEST 8: $proxy_host & $proxy_port
+=== TEST 8: $proxy_host & $proxy_port & $proxy_add_x_forwarded_for
 --- config
     location = /t {
         proxy_pass http://127.0.0.1:$server_port/back;
-        header_filter_by_lua '
+        header_filter_by_lua_block {
             ngx.header["Proxy-Host"] = ngx.var.proxy_host
             ngx.header["Proxy-Port"] = ngx.var.proxy_port
-        ';
+            ngx.header["Proxy-Add-X-Forwarded-For"] = ngx.var.proxy_add_x_forwarded_for
+        }
     }
 
     location = /back {
@@ -172,6 +173,7 @@ GET /t
 --- raw_response_headers_like
 Proxy-Host: 127.0.0.1\:\d+\r
 Proxy-Port: \d+\r
+Proxy-Add-X-Forwarded-For: 127.0.0.1\r
 --- response_body
 hello
 --- no_error_log
