@@ -166,6 +166,13 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     conf.pool = fake_cycle->pool;
     conf.log = cycle->log;
 
+    conf.conf_file = ngx_pcalloc(cycle->pool, sizeof(ngx_conf_file_t));
+    if (conf.conf_file == NULL) {
+        goto failed;
+    }
+
+    conf.conf_file->file.name = cycle->conf_file;
+
     http_ctx.loc_conf = ngx_pcalloc(conf.pool,
                                     sizeof(void *) * ngx_http_max_module);
     if (http_ctx.loc_conf == NULL) {
