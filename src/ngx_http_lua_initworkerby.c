@@ -25,6 +25,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     void                        *cur, *prev;
     ngx_uint_t                   i;
     ngx_conf_t                   conf;
+    ngx_conf_file_t              cf_file;
     ngx_cycle_t                 *fake_cycle;
     ngx_module_t               **modules;
     ngx_open_file_t             *file, *ofile;
@@ -165,6 +166,10 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     conf.cycle = fake_cycle;
     conf.pool = fake_cycle->pool;
     conf.log = cycle->log;
+
+    ngx_memzero(&cf_file, sizeof(cf_file));
+    cf_file.file.name = cycle->conf_file;
+    conf.conf_file = &cf_file;
 
     http_ctx.loc_conf = ngx_pcalloc(conf.pool,
                                     sizeof(void *) * ngx_http_max_module);
