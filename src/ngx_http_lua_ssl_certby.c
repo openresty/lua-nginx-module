@@ -201,6 +201,20 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     c = ngx_ssl_get_connection(ssl_conn);
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+
+#if !defined SSL_OP_NO_RENEGOTIATION || nginx_version < 1015002
+
+    if (c->ssl->renegotiation) {
+        ngx_log_error(NGX_LOG_WARN, c->log, 0,
+                      "lua_certificate_by_lua: SSL renegotiation refused");
+        return 0;
+    }
+
+#endif
+
+#endif
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "ssl cert: connection reusable: %ud", c->reusable);
 

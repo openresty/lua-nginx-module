@@ -6,16 +6,17 @@ repeat_each(3);
 
 # All these tests need to have new openssl
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
-my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+our $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
 } else {
-    plan tests => repeat_each() * (blocks() * 6 + 4);
+    plan tests => repeat_each() * (blocks() * 6 + 3);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 4443;
 
 #log_level 'warn';
 log_level 'debug';
@@ -2075,3 +2076,50 @@ client socket file:
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 24: refused SSL renegotiation explictly for the specific Nginx and OpenSSL combination
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+    server {
+        listen $TEST_NGINX_SERVER_SSL_PORT ssl http2;
+        server_name test.com;
+
+        ssl_certificate_by_lua_block {
+            return
+        }
+
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+    }
+--- config
+    location = /t {
+        content_by_lua_block {
+            local cmd = "echo R | timeout 4s openssl s_client -connect 127.0.0.1:$TEST_NGINX_SERVER_SSL_PORT -reconnect -nextprotoneg h2"
+            local f, err = io.popen(cmd)
+            if not f then
+                ngx.say(err)
+                return
+            end
+
+            ngx.sleep(4)
+            f:close()
+            ngx.say("ok")
+        }
+    }
+
+--- timeout: 10
+--- request
+GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+[alert]
+--- grep_error_log: lua_certificate_by_lua: SSL renegotiation refused
+--- grep_error_log_out
+lua_certificate_by_lua: SSL renegotiation refused
+
+--- skip_eval
+5: $::openssl_version =~ m/built with OpenSSL 1\.0\..*/ || ($NginxVersion >= "1.015002" && $::openssl_version =~ m/built with OpenSSL 1\.1\.(?:0h|[1-9]\d*.*)/)
