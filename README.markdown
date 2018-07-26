@@ -3165,6 +3165,7 @@ Nginx API for Lua
 * [ngx.decode_args](#ngxdecode_args)
 * [ngx.encode_base64](#ngxencode_base64)
 * [ngx.decode_base64](#ngxdecode_base64)
+* [ngx.decode_base64mime](#ngxdecode_base64mime)
 * [ngx.crc32_short](#ngxcrc32_short)
 * [ngx.crc32_long](#ngxcrc32_long)
 * [ngx.hmac_sha1](#ngxhmac_sha1)
@@ -5565,7 +5566,24 @@ ngx.decode_base64
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
-Decodes the `str` argument as a base64 digest to the raw form. Returns `nil` if `str` is not well formed.
+Decodes the `str` argument as a base64 digest to the raw form.
+The `str` should be standard 'base64' encoding for RFC 3548 or RFC 4648, and will returns `nil` if is not well formed or any characters not in the base encoding alphabet.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.decode_base64mime
+---------------------
+**syntax:** *newstr = ngx.decode_base64mime(str)*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.base64` or `resty.core`
+
+Decodes the `str` argument as a base64 digest to the raw form.
+The `str` follows base64 transfer encoding for MIME (RFC 2045), and will discard characters outside the base encoding alphabet.
+Returns `nil` if `str` is not well formed.
+
+ '''Note:''' This method requires the <code>resty.core.base64</code> or <code>resty.core</code> modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
 [Back to TOC](#nginx-api-for-lua)
 

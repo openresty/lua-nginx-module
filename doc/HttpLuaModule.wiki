@@ -4650,7 +4650,21 @@ Since the <code>0.9.16</code> release, an optional boolean-typed <code>no_paddin
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-Decodes the <code>str</code> argument as a base64 digest to the raw form. Returns <code>nil</code> if <code>str</code> is not well formed.
+Decodes the <code>str</code> argument as a base64 digest to the raw form.
+The <code>str</code> should be standard 'base64' encoding for RFC 3548 or RFC 4648, and will returns <code>nil</code> if is not well formed or any characters not in the base encoding alphabet.
+
+== ngx.decode_base64mime ==
+'''syntax:''' ''newstr = ngx.decode_base64mime(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+'''requires:''' <code>resty.core.base64</code> or <code>resty.core</code>
+
+Decodes the <code>str</code> argument as a base64 digest to the raw form.
+The <code>str</code> follows base64 transfer encoding for MIME (RFC 2045), and will discard characters outside the base encoding alphabet.
+Returns <code>nil</code> if <code>str</code> is not well formed.
+
+ '''Note:''' This method requires the <code>resty.core.base64</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
 
 == ngx.crc32_short ==
 '''syntax:''' ''intval = ngx.crc32_short(str)''
