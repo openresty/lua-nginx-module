@@ -60,7 +60,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 #endif
 
         if (cur_ph < last_ph) {
-            dd("swaping the contents of cur_ph and last_ph...");
+            dd("swapping the contents of cur_ph and last_ph...");
 
             tmp = *cur_ph;
 
