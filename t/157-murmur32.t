@@ -24,7 +24,7 @@ __DATA__
 --- request
 GET /murmur32
 --- response_body
-613153351
+3848350155
 
 
 
@@ -61,7 +61,7 @@ GET /murmur32
 --- request
 GET /murmur32
 --- response_body
-613153351
+3848350155
 
 
 
@@ -99,4 +99,4 @@ GET /murmur32
 --- request
 GET /murmur32
 --- response_body
-1360744857
+2259123405
