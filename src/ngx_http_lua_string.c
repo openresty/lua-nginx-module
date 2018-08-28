@@ -400,7 +400,7 @@ ngx_http_lua_ngx_murmur32(lua_State *L)
     u_char                  *src;
     size_t                   slen;
     uint32_t                 murmur32;
-    u_char                   murmur_buf[11];
+    u_char                   murmur_buf[11] = { 0 };
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting one argument");
