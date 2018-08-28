@@ -20,6 +20,7 @@
 #endif
 
 #include "ngx_md5.h"
+#include "ngx_murmurhash.h"
 
 #if (NGX_OPENSSL)
 #include <openssl/evp.h>
@@ -39,6 +40,8 @@ static int ngx_http_lua_ngx_unescape_uri(lua_State *L);
 static int ngx_http_lua_ngx_quote_sql_str(lua_State *L);
 static int ngx_http_lua_ngx_md5(lua_State *L);
 static int ngx_http_lua_ngx_md5_bin(lua_State *L);
+static int ngx_http_lua_ngx_murmur32(lua_State *L);
+static int ngx_http_lua_ngx_murmur32_bin(lua_State *L);
 
 #if (NGX_HAVE_SHA1)
 static int ngx_http_lua_ngx_sha1_bin(lua_State *L);
@@ -84,6 +87,12 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_md5);
     lua_setfield(L, -2, "md5");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_murmur32_bin);
+    lua_setfield(L, -2, "murmur32_bin");
+
+    lua_pushcfunction(L, ngx_http_lua_ngx_murmur32);
+    lua_setfield(L, -2, "murmur32");
 
 #if (NGX_HAVE_SHA1)
     lua_pushcfunction(L, ngx_http_lua_ngx_sha1_bin);
@@ -381,6 +390,56 @@ ngx_http_lua_ngx_md5_bin(lua_State *L)
     ngx_md5_final(md5_buf, &md5);
 
     lua_pushlstring(L, (char *) md5_buf, sizeof(md5_buf));
+
+    return 1;
+}
+
+static int
+ngx_http_lua_ngx_murmur32(lua_State *L)
+{
+    u_char                  *src;
+    size_t                   slen;
+    uint32_t                 murmur32;
+    u_char                   murmur_buf[11];
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    if (lua_isnil(L, 1)) {
+        src     = (u_char *) "";
+        slen    = 0;
+    } else {
+        src = (u_char *) luaL_checklstring(L, 1, &slen);
+    }
+
+    murmur32 = ngx_murmur_hash2(src, slen);
+
+    ngx_sprintf(murmur_buf, "%uD", murmur32);
+
+    lua_pushlstring(L, (char *) murmur_buf, sizeof(murmur_buf));
+
+    return 1;
+}
+
+static int
+ngx_http_lua_ngx_murmur32_bin(lua_State *L)
+{
+    u_char                  *src;
+    size_t                   slen;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    if (lua_isnil(L, 1)) {
+        src     = (u_char *) "";
+        slen    = 0;
+    } else {
+        src = (u_char *) luaL_checklstring(L, 1, &slen);
+    }
+
+    lua_pushnumber(L, (lua_Number) ngx_murmur_hash2(src, slen));
 
     return 1;
 }

@@ -4738,6 +4738,38 @@ Returns the binary form of the MD5 digest of the <code>str</code> argument.
 
 See [[#ngx.md5|ngx.md5]] if the hexadecimal form of the MD5 digest is required.
 
+== ngx.murmur32 ==
+'''syntax:''' ''digest = ngx.murmur32(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Returns the string representation of the murmur 32 digest of the <code>str</code> argument.
+
+For example,
+
+<geshi lang="nginx">
+    location = /murmur32 {
+        content_by_lua_block { ngx.say(ngx.murmur32("hello")) }
+    }
+</geshi>
+
+yields the output
+
+<geshi lang="text">
+    613153351
+</geshi>
+
+See [[#ngx.murmur32_bin|ngx.murmur32_bin]] if the raw binary murmur32 digest is required.
+
+== ngx.murmur32_bin ==
+'''syntax:''' ''digest = ngx.murmur32_bin(str)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Returns the binary form of the murmur 32 digest of the <code>str</code> argument.
+
+See [[#ngx.murmur32|ngx.murmur32]] if the string form of the murmur 32 digest is required.
+
 == ngx.sha1_bin ==
 '''syntax:''' ''digest = ngx.sha1_bin(str)''
 
