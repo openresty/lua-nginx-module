@@ -99,4 +99,4 @@ GET /murmur32
 --- request
 GET /murmur32
 --- response_body
-2259123405
+424794893

@@ -22,14 +22,15 @@ __DATA__
 === TEST 1: set murmur32_bin hello ????xxoo
 --- config
     location = /murmur32_bin {
-        content_by_lua 'local a = string.gsub(ngx.murmur32_bin("hello"), ".", function (c)
-                    return string.format("%ud", string.byte(c))
-                end); ngx.say(a)';
+        content_by_lua '
+            local a = ngx.murmur32_bin("hello")
+            ngx.say(a)
+        ';
     }
 --- request
 GET /murmur32_bin
 --- response_body
-5d41402abc4b2a76b9719d911017c592
+3848350155
 
 
 
@@ -41,7 +42,7 @@ GET /murmur32_bin
 --- request
 GET /murmur32_bin
 --- response_body
-16
+10
 
 
 
@@ -49,17 +50,14 @@ GET /murmur32_bin
 --- config
     location = /murmur32_bin {
         content_by_lua '
-            local s = ngx.murmur32_bin("hello")
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
+            s = string.format("%08x", ngx.murmur32_bin("hello"))
             ngx.say(s)
         ';
     }
 --- request
 GET /murmur32_bin
 --- response_body
-5d41402abc4b2a76b9719d911017c592
+e56129cb
 
 
 
@@ -68,16 +66,13 @@ GET /murmur32_bin
     location = /murmur32_bin {
         content_by_lua '
             local s = ngx.murmur32_bin(nil)
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
             ngx.say(s)
         ';
     }
 --- request
 GET /murmur32_bin
 --- response_body
-d41d8cd98f00b204e9800998ecf8427e
+0
 
 
 
@@ -86,69 +81,52 @@ d41d8cd98f00b204e9800998ecf8427e
     location /murmur32_bin {
         content_by_lua '
             local s = ngx.murmur32_bin("")
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
             ngx.say(s)
         ';
     }
 --- request
 GET /murmur32_bin
 --- response_body
-d41d8cd98f00b204e9800998ecf8427e
+0
 
 
 
 === TEST 6: use ngx.murmur32_bin in set_by_lua
 --- config
     location = /murmur32_bin {
-        set_by_lua $a 'return string.gsub(ngx.murmur32_bin("hello"), ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)';
+        set_by_lua $a 'return string.format("%08x", ngx.murmur32_bin("hello"))';
         echo $a;
     }
 --- request
 GET /murmur32_bin
 --- response_body
-5d41402abc4b2a76b9719d911017c592
+e56129cb
 
 
 
 === TEST 7: use ngx.murmur32_bin in set_by_lua (nil)
 --- config
     location = /murmur32_bin {
-        set_by_lua $a '
-            local s = ngx.murmur32_bin(nil)
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
-            return s
-        ';
+        set_by_lua $a 'return string.format("%08x", ngx.murmur32_bin(nil))';
         echo $a;
     }
 --- request
 GET /murmur32_bin
 --- response_body
-d41d8cd98f00b204e9800998ecf8427e
+00000000
 
 
 
 === TEST 8: use ngx.murmur32_bin in set_by_lua (null string)
 --- config
     location /murmur32_bin {
-        set_by_lua $a '
-            local s = ngx.murmur32_bin("")
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
-            return s
-        ';
+        set_by_lua $a 'return string.format("%08x", ngx.murmur32_bin(""))';
         echo $a;
     }
 --- request
 GET /murmur32_bin
 --- response_body
-d41d8cd98f00b204e9800998ecf8427e
+00000000
 
 
 
@@ -156,15 +134,11 @@ d41d8cd98f00b204e9800998ecf8427e
 --- config
     location = /t {
         content_by_lua '
-            s = ngx.murmur32_bin(45)
-            s = string.gsub(s, ".", function (c)
-                    return string.format("%02x", string.byte(c))
-                end)
+            s = string.format("%08x", ngx.murmur32_bin(45))
             ngx.say(s)
-
         ';
     }
 --- request
 GET /t
 --- response_body
-6c8349cc7260ae62e3b1396831a8398f
+1951db0d
