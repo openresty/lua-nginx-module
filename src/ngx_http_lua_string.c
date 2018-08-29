@@ -417,7 +417,7 @@ ngx_http_lua_ngx_murmur32(lua_State *L)
 
     ngx_sprintf(murmur_buf, "%uD", murmur32);
 
-    lua_pushlstring(L, (char *) murmur_buf, sizeof(murmur_buf));
+    lua_pushlstring(L, (char *) murmur_buf, ngx_strlen(murmur_buf));
 
     return 1;
 }
