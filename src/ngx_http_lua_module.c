@@ -647,6 +647,10 @@ ngx_http_lua_init(ngx_conf_t *cf)
 #endif
     ngx_str_t                   name = ngx_string("host");
 
+    if (ngx_process == NGX_PROCESS_SIGNALLER || ngx_test_config) {
+        return NGX_OK;
+    }
+
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
     lmcf->host_var_index = ngx_http_get_variable_index(cf, &name);
