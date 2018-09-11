@@ -9,6 +9,12 @@
 #define _NGX_HTTP_LUA_UTIL_H_INCLUDED_
 
 
+#ifndef DDEBUG
+#define DDEBUG 0
+#endif
+#include "ddebug.h"
+
+
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_api.h"
 
