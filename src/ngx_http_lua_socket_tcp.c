@@ -4690,6 +4690,14 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         return 2;
     }
 
+    if (ngx_terminate || ngx_exiting) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
+                       "lua tcp socket set keepalive while process exiting, "
+                       "closing connection %p", c);
+
+        goto finalize;
+    }
+
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                    "lua tcp socket set keepalive: saving connection %p", c);
 
@@ -4853,6 +4861,8 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
             return 2;
         }
     }
+
+finalize:
 
 #if 1
     ngx_http_lua_socket_tcp_finalize(r, u);
