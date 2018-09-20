@@ -6300,6 +6300,8 @@ Idle connections in the pool will be monitored for any exceptional events like c
 
 In case of success, this method returns <code>1</code>; otherwise, it returns <code>nil</code> and a string describing the error.
 
+When the Nginx worker is trying to shut down, one can no longer call setkeepalive to put the connection to a pool and in that case setkeepalive will return <code>nil</code> and a string describing the error, that is, "process exiting", and it will close the connection actually.
+
 When the system receive buffer for the current connection has unread data, then this method will return the "connection in dubious state" error message (as the second return value) because the previous session has unread data left behind for the next session and the connection is not safe to be reused.
 
 This method also makes the current cosocket object enter the "closed" state, so there is no need to manually call the [[#tcpsock:close|close]] method on it afterwards.
