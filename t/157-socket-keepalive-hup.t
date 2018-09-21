@@ -85,7 +85,7 @@ registered timer
 [error]
 [alert]
 [crit]
-setkeepalive successfully
 --- error_log
 timer prematurely expired: true
-failed to setkeepalive: process exiting
+setkeepalive successfully
+lua tcp socket set keepalive while process exiting, closing connection
