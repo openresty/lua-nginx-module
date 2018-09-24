@@ -13,6 +13,7 @@
 #include "ngx_http_lua_phase.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_ctx.h"
+#include "ngx_http_lua_configureby.h"
 
 
 static int ngx_http_lua_ngx_get_phase(lua_State *L);
@@ -30,6 +31,11 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
      * phase. */
 
     if (r == NULL) {
+        if (ngx_http_lua_is_configure_phase(L)) {
+            lua_pushliteral(L, "configure");
+            return 1;
+        }
+
         lua_pushliteral(L, "init");
         return 1;
     }

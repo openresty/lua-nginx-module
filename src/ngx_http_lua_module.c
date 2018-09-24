@@ -20,6 +20,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_headerfilterby.h"
 #include "ngx_http_lua_bodyfilterby.h"
+#include "ngx_http_lua_configureby.h"
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_probe.h"
@@ -165,6 +166,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_lua_loc_conf_t, log_socket_errors),
       NULL },
+
+    { ngx_string("configure_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_configure_by_lua_block,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_configure_handler_inline },
+
+    { ngx_string("configure_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_configure_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_configure_handler_file },
 
     { ngx_string("init_by_lua_block"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
@@ -758,6 +773,13 @@ ngx_http_lua_init(ngx_conf_t *cf)
             return NGX_ERROR;
         }
 
+        if (lmcf->configure_handler) {
+            rc = lmcf->configure_handler(cf, lmcf);
+            if (rc != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
+
         if (!lmcf->requires_shm && lmcf->init_handler) {
             saved_cycle = ngx_cycle;
             ngx_cycle = cf->cycle;
@@ -832,6 +854,8 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->regex_cache_entries = 0;
      *      lmcf->jit_stack = NULL;
      *      lmcf->shm_zones = NULL;
+     *      lmcf->configure_handler = NULL;
+     *      lmcf->configure_src = { 0, NULL };
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
      *      lmcf->shm_zones_inited = 0;

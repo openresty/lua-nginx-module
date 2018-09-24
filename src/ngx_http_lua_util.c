@@ -44,6 +44,7 @@
 #include "ngx_http_lua_phase.h"
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_uthread.h"
+#include "ngx_http_lua_configureby.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_timer.h"
 #include "ngx_http_lua_config.h"

@@ -151,6 +151,8 @@ typedef struct ngx_http_lua_balancer_peer_data_s
 typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
 
 
+typedef ngx_int_t (*ngx_http_lua_configure_handler_pt)(ngx_conf_t *cf,
+    ngx_http_lua_main_conf_t *lmcf);
 typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
@@ -200,6 +202,9 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
+
+    ngx_http_lua_configure_handler_pt    configure_handler;
+    ngx_str_t                            configure_src;
 
     ngx_http_lua_main_conf_handler_pt    init_handler;
     ngx_str_t                            init_src;

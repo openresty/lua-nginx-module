@@ -91,7 +91,6 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
     ngx_shm_zone_t              **zp;
     ngx_shm_zone_t               *zone;
     ngx_http_lua_shm_zone_ctx_t  *ctx;
-    ngx_int_t                     n;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
     if (lmcf == NULL) {
@@ -122,9 +121,7 @@ ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size,
         return &ctx->zone;
     }
 
-    n = sizeof(ngx_http_lua_shm_zone_ctx_t);
-
-    ctx = ngx_pcalloc(cf->pool, n);
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_lua_shm_zone_ctx_t));
     if (ctx == NULL) {
         return NULL;
     }

@@ -8,6 +8,9 @@
 #define _NGX_HTTP_LUA_SHDICT_H_INCLUDED_
 
 
+#define NGX_HTTP_LUA_SHDICT_MINSIZE 8191
+
+
 #include "ngx_http_lua_common.h"
 
 
@@ -55,9 +58,14 @@ typedef struct {
 } ngx_http_lua_shm_zone_ctx_t;
 
 
+ngx_int_t ngx_http_lua_shared_dict_add(ngx_conf_t *cf, ngx_str_t *name,
+    ssize_t size);
 ngx_int_t ngx_http_lua_shdict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 void ngx_http_lua_shdict_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
+void ngx_http_lua_attach_shdict(lua_State *L, ngx_str_t *name,
+    ngx_shm_zone_t *zone);
+void ngx_http_lua_create_shdict_mt(lua_State *L);
 void ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf,
     lua_State *L);
 
