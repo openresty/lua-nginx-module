@@ -21,6 +21,8 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
     lua_package_cpath '/bar/baz/?.so;/blah/blah/?.so;;';
 
     server {
+        listen 1984;
+
         location /lua_content {
             # MIME type determined by default_type:
             default_type 'text/plain';
