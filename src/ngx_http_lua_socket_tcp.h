@@ -22,6 +22,9 @@
 #define NGX_HTTP_LUA_SOCKET_FT_SSL           0x0100
 
 
+typedef struct ngx_http_lua_socket_tcp_server_s
+        ngx_http_lua_socket_tcp_server_t;
+
 typedef struct ngx_http_lua_socket_tcp_upstream_s
         ngx_http_lua_socket_tcp_upstream_t;
 
@@ -29,6 +32,10 @@ typedef struct ngx_http_lua_socket_tcp_upstream_s
 typedef
     int (*ngx_http_lua_socket_tcp_retval_handler)(ngx_http_request_t *r,
         ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
+
+typedef
+    int (*ngx_http_lua_socket_tcp_server_retval_handler)(ngx_http_request_t *r,
+        ngx_http_lua_socket_tcp_server_t *s, lua_State *L);
 
 
 typedef void (*ngx_http_lua_socket_tcp_upstream_handler_pt)
@@ -50,6 +57,21 @@ typedef struct {
 
 } ngx_http_lua_socket_pool_t;
 
+struct ngx_http_lua_socket_tcp_server_s {
+    ngx_http_lua_socket_tcp_server_retval_handler   prepare_retvals;
+
+    ngx_str_t                       host;
+    int                             port;
+    ngx_listening_t                 *listening;
+    ngx_http_request_t              *request;
+    ngx_connection_t                *connection;
+    ngx_http_cleanup_pt             *cleanup;
+
+    ngx_http_lua_co_ctx_t           *co_ctx;
+
+    unsigned                         ft_type:16;
+    unsigned                         accept_waiting:1;
+};
 
 struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_socket_tcp_retval_handler          read_prepare_retvals;
