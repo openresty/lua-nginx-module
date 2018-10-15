@@ -27,7 +27,7 @@ add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
 time ngx-build $force $version \
             --with-pcre-jit \
             --with-ipv6 \
-            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC -DNGX_LUA_DEBUG_ARM64" \
+            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_v2_module \
             --with-http_realip_module \
             --with-http_ssl_module \

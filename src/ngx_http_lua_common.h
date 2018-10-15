@@ -140,13 +140,8 @@ typedef struct {
 #endif
 
 
-#if defined(__aarch64__) || defined(NGX_LUA_DEBUG_ARM64)
 #define ngx_http_lua_lightudata_mask(ludata)                                 \
     ((void *) ((uintptr_t) (&ngx_http_lua_##ludata) & ((1UL << 47) - 1)))
-
-#else
-#define ngx_http_lua_lightudata_mask(ludata)    (&ngx_http_lua_##ludata)
-#endif
 
 
 typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
@@ -234,10 +229,10 @@ struct ngx_http_lua_main_conf_s {
                      * thus it is safe to store the args point in the main conf.
                      */
 
-    size_t                                  setby_args_num;
+    size_t                                  setby_nargs;
                     /* set_by_lua does not support yielding and
                      * there cannot be any conflicts among concurrent requests,
-                     * thus it is safe to store the args num in the main conf.
+                     * thus it is safe to store the nargs in the main conf.
                      */
 
     ngx_uint_t                      shm_zones_inited;

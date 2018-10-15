@@ -141,7 +141,7 @@ ngx_http_lua_setby_param_get(lua_State *L, ngx_http_request_t *r)
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
     /*  get number of args from lmcf */
-    n = lmcf->setby_args_num;
+    n = lmcf->setby_nargs;
 
     /*  get args from lmcf */
     v = lmcf->setby_args;
@@ -178,7 +178,7 @@ ngx_http_lua_set_by_lua_env(lua_State *L, ngx_http_request_t *r, size_t nargs,
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    lmcf->setby_args_num = nargs;
+    lmcf->setby_nargs = nargs;
     lmcf->setby_args = args;
 
 #ifndef OPENRESTY_LUAJIT

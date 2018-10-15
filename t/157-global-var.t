@@ -59,9 +59,9 @@ __DATA__
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -80,9 +80,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -101,9 +101,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -122,9 +122,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -145,9 +145,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/^(nil|1)$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -168,9 +168,10 @@ qr/^(nil|1)$/
     }
 --- response_body_like eval
 qr/^(nil|2)$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["old foo: 1\n", "old foo: 2\nold foo: 3\n"]
+["setting global variable, key: foo,
+old foo: 1\n", "old foo: 2\nold foo: 3\n"]
 
 
 
@@ -191,9 +192,9 @@ qr/^(nil|2)$/
     }
 --- response_body_like eval
 qr/^(nil|1)$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -281,9 +282,9 @@ qr/^(nil|1)$/
 
 --- response_body_like eval
 qr/^(1|2)done$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -310,9 +311,9 @@ qr/^(1|2)done$/
     }
 --- response_body_like eval
 qr/^(1|2)$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -479,9 +480,9 @@ setting global variable
     }
 --- response_body_like eval
 qr/^(1|2)$/
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
 
 
 
@@ -506,6 +507,6 @@ qr/^(1|2)$/
 --- error_code: 502
 --- error_log
 connect() to 0.0.0.1:80 failed
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["setting global variable, key: foo,\n", "old foo: 1\n"]
