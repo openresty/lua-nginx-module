@@ -218,9 +218,10 @@ struct ngx_http_lua_main_conf_s {
                      */
 
     ngx_chain_t                            *body_filter_chain;
-                    /* body_filter_by_lua does not support yielding and
-                     * there cannot be any conflicts among concurrent requests,
-                     * thus it is safe to store the chain data in the main conf.
+                    /* body_filter_by_lua does not support yielding/recursive
+                     * calling and there cannot be any conflicts among
+                     * concurrent requests, thus it is safe to store the
+                     * chain data in the main conf.
                      */
 
     ngx_http_variable_value_t              *setby_args;
