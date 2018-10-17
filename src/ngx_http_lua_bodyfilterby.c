@@ -77,7 +77,7 @@ ngx_http_lua_body_filter_by_lua_env(lua_State *L, ngx_http_request_t *r,
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
-#endif
+#endif /* OPENRESTY_LUAJIT */
 }
 
 

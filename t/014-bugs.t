@@ -594,7 +594,7 @@ $s
 --- pipelined_requests eval
 ["GET /test", "GET /test", "GET /test"]
 --- response_body_like eval
-[qr/^(0|3|6)$/, qr/^(1|4|7)$/, qr/^(2|5|8)$/]
+[qr/\A[036]\z/, qr/\A[147]\z/, qr/\A[258]\z/]
 
 
 
@@ -614,7 +614,7 @@ $s
 --- pipelined_requests eval
 ["GET /test", "GET /test", "GET /test"]
 --- response_body_like eval
-[qr/^(0|3|6)$/, qr/^(1|4|7)$/, qr/^(2|5|8)$/]
+[qr/\A[036]\z/, qr/\A[147]\z/, qr/\A[258]\z/]
 
 
 
@@ -641,7 +641,7 @@ $s
 --- pipelined_requests eval
 ["GET /test", "GET /test", "GET /test"]
 --- response_body_like eval
-[qr/^(0|3|6)$/, qr/^(1|4|7)$/, qr/^(2|5|8)$/]
+[qr/\A[036]\z/, qr/\A[147]\z/, qr/\A[258]\z/]
 
 
 
@@ -664,7 +664,7 @@ $s
 --- pipelined_requests eval
 ["GET /test", "GET /test", "GET /test"]
 --- response_body_like eval
-[qr/^(0|3|6)$/, qr/^(1|4|7)$/, qr/^(2|5|8)$/]
+[qr/\A[036]\z/, qr/\A[147]\z/, qr/\A[258]\z/]
 
 
 
@@ -687,7 +687,8 @@ $s
 --- request
 GET /test
 --- response_body_like eval
-qr/^(a0|a3|a6)$/
+qr/\Aa[036]
+\z/
 --- no_error_log
 [error]
 

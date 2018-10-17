@@ -212,26 +212,26 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t                            init_worker_src;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
-                    /* balancer_by_lua does not support yielding and
+                    /* balancer_by_lua* does not support yielding and
                      * there cannot be any conflicts among concurrent requests,
                      * thus it is safe to store the peer data in the main conf.
                      */
 
     ngx_chain_t                            *body_filter_chain;
-                    /* body_filter_by_lua does not support yielding/recursive
+                    /* body_filter_by_lua* does not support yielding/recursive
                      * calling and there cannot be any conflicts among
                      * concurrent requests, thus it is safe to store the
                      * chain data in the main conf.
                      */
 
     ngx_http_variable_value_t              *setby_args;
-                    /* set_by_lua does not support yielding and
+                    /* set_by_lua* does not support yielding and
                      * there cannot be any conflicts among concurrent requests,
                      * thus it is safe to store the args point in the main conf.
                      */
 
     size_t                                  setby_nargs;
-                    /* set_by_lua does not support yielding and
+                    /* set_by_lua* does not support yielding and
                      * there cannot be any conflicts among concurrent requests,
                      * thus it is safe to store the nargs in the main conf.
                      */

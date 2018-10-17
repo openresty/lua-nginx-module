@@ -6,7 +6,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 15);
+plan tests => repeat_each() * (blocks() * 3 + 14);
 
 our $HtmlDir = html_dir;
 
@@ -59,9 +59,9 @@ __DATA__
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -80,9 +80,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -101,9 +101,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -122,9 +122,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/[12]/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -145,9 +145,9 @@ qr/[12]/
     }
 --- response_body_like eval
 qr/^(nil|1)$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -168,9 +168,9 @@ qr/^(nil|1)$/
     }
 --- response_body_like eval
 qr/^(nil|2)$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,
+["write to the lua global variable 'foo'
 old foo: 1\n", "old foo: 2\nold foo: 3\n"]
 
 
@@ -192,9 +192,9 @@ old foo: 1\n", "old foo: 2\nold foo: 3\n"]
     }
 --- response_body_like eval
 qr/^(nil|1)$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -282,9 +282,9 @@ qr/^(nil|1)$/
 
 --- response_body_like eval
 qr/^(1|2)done$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -311,9 +311,9 @@ qr/^(1|2)done$/
     }
 --- response_body_like eval
 qr/^(1|2)$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
@@ -410,30 +410,7 @@ qr/^(3|4)$/
 
 
 
-=== TEST 13: warn messages for polluting _G table when handling request
---- config
-    location /t {
-        rewrite_by_lua_block {
-            if not foo then
-                foo = 0
-
-            elseif not foo1 then
-                _G[1] = 2
-            end
-
-            ngx.say(foo)
-        }
-    }
---- response_body
-0
---- grep_error_log eval: qr/setting global variable, key[\w: ]+,/
---- grep_error_log_out eval
-["setting global variable, key: foo,\n",
-"setting global variable, key type: number,\n"]
-
-
-
-=== TEST 14: don't show warn messages in init/init_worker
+=== TEST 13: don't show warn messages in init/init_worker
 --- http_config
     init_by_lua_block {
         foo = 1
@@ -457,7 +434,7 @@ setting global variable
 
 
 
-=== TEST 15: uthread
+=== TEST 14: uthread
 --- config
     location /t {
         content_by_lua_block {
@@ -480,13 +457,13 @@ setting global variable
     }
 --- response_body_like eval
 qr/^(1|2)$/
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 
-=== TEST 16: balancer_by_lua
+=== TEST 15: balancer_by_lua
 --- http_config
     upstream backend {
         server 0.0.0.1;
@@ -507,6 +484,6 @@ qr/^(1|2)$/
 --- error_code: 502
 --- error_log
 connect() to 0.0.0.1:80 failed
---- grep_error_log eval: qr/(old foo: \d+|setting global variable, key[\w: ]+,)/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["setting global variable, key: foo,\n", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]

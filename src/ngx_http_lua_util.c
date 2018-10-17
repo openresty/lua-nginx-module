@@ -186,7 +186,7 @@ ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec)
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "_G");
 }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 
 static lua_State *
@@ -336,7 +336,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
     ngx_http_lua_set_globals_table(co);
     /*  }}} */
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
     *ref = luaL_ref(L, -2);
 
@@ -717,10 +717,6 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-#ifdef OPENRESTY_LUAJIT
-    int         rc;
-#endif
-
     lua_createtable(L, 0 /* narr */, 117 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
@@ -770,6 +766,8 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
 #ifdef OPENRESTY_LUAJIT
     {
+        int         rc;
+
         const char buf[] =
             "local ngx_log = ngx.log\n"
             "local ngx_WARN = ngx.WARN\n"
@@ -782,40 +780,31 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
                 "if phase == 'init_worker' or phase == 'init' then\n"
                     "return\n"
                 "end\n"
-                "local key_type = type(key)\n"
-                "if key_type == 'string' then\n"
-                    "ngx_log(ngx_WARN, 'lua http setting global variable, "
-                                       "key: ', key, "
-                                       "', value type: ', type(value), '\\n', "
-                                       "traceback())\n"
-                "else\n"
-                    "ngx_log(ngx_WARN, 'lua http setting global variable, "
-                                       "key type: ', key_type, "
-                                       "', value type: ', type(value), '\\n', "
-                                       "traceback())\n"
-                "end\n"
+                "ngx_log(ngx_WARN, 'lua http attempting to write to the lua "
+                                   "global variable \\'', tostring(key), "
+                                   "'\\'\\n', traceback())\n"
             "end\n"
-            "setmetatable(_G, { __newindex  = newindex })\n"
+            "setmetatable(_G, { __newindex = newindex })\n"
             ;
 
         rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "=_G write guard");
-    }
 
-    if (rc != 0) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to load Lua code for _G write guard: %i: %s",
-                      rc, lua_tostring(L, -1));
+        if (rc != 0) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "failed to load Lua code for the _G write guard: ",
+                          "%i: %s", rc, lua_tostring(L, -1));
 
-        lua_pop(L, 1);
-        return;
-    }
+            lua_pop(L, 1);
+            return;
+        }
 
-    rc = lua_pcall(L, 0, 0, 0);
-    if (rc != 0) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to run Lua code for _G write guard: %s",
-                      rc, lua_tostring(L, -1));
-        lua_pop(L, 1);
+        rc = lua_pcall(L, 0, 0, 0);
+        if (rc != 0) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "failed to run Lua code for the _G write guard: %s",
+                          rc, lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
     }
 #endif
 }

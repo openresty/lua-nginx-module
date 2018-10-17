@@ -608,13 +608,14 @@ failed to run set_by_lua*: unknown reason
     }
 --- request
 GET /lua
---- response_body_like
-^[12]$
+--- response_body_like chomp
+\A[12]
+\z
 --- no_error_log
 [error]
---- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log eval: qr/(old foo: \d+|write to the lua global variable '\w+')/
 --- grep_error_log_out eval
-["", "old foo: 1\n"]
+["write to the lua global variable 'foo'\n", "old foo: 1\n"]
 
 
 

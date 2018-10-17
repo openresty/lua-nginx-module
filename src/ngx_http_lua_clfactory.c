@@ -78,7 +78,7 @@
 #define    LUA_BIG_ENDIAN_8BYTES_CODE_LEN           (8 + 8 + 8)
 #define    LUAC_HEADERSIZE         12
 #define    LUAC_VERSION            0x51
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 
 /*
@@ -165,7 +165,7 @@
     (POS_BYTECODE + LUA_LITTLE_ENDIAN_8BYTES_CODE_LEN                        \
     + sizeof(int) + sizeof(int))
 #define    MAX_END_CODE_SIZE       (sizeof(int) + sizeof(int) + sizeof(int))
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 /*
  * taken from chaoslawful:
@@ -282,7 +282,7 @@
 #define    LJ21_BCDUMP_VERSION        2
 #define    LJ20_BCDUMP_VERSION        1
 #define    LJ_SIGNATURE             "\x1b\x4c\x4a"
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 
 typedef enum {
@@ -316,7 +316,7 @@ typedef struct {
         char   *ptr;
         char    str[MAX_END_CODE_SIZE];
     }           end_code;
-#endif
+#endif /* OPENRESTY_LUAJIT */
     char        buff[NGX_LUA_READER_BUFSIZE];
 } ngx_http_lua_clfactory_file_ctx_t;
 
@@ -608,7 +608,7 @@ error:
 
     return LUA_ERRFILE;
 }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 
 ngx_int_t
@@ -791,7 +791,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
 
         return buf;
     }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
     num = fread(lf->buff, 1, sizeof(lf->buff), lf->f);
 
@@ -812,7 +812,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
 
             return buf;
         }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
         *size = 0;
         return NULL;
@@ -834,7 +834,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
             }
         }
     }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
     *size = num;
     return lf->buff;
@@ -922,7 +922,7 @@ ngx_http_lua_clfactory_file_size(FILE *f)
 
     return len;
 }
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

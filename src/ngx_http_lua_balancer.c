@@ -374,7 +374,7 @@ ngx_http_lua_balancer_by_chunk(lua_State *L, ngx_http_request_t *r)
     /*  }}} */
 
     lua_setfenv(L, -2);    /*  set new running env for the code closure */
-#endif
+#endif /* OPENRESTY_LUAJIT */
 
     lua_pushcfunction(L, ngx_http_lua_traceback);
     lua_insert(L, 1);  /* put it under chunk and args */

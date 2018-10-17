@@ -80,7 +80,7 @@ ngx_http_lua_cache_load_code(ngx_log_t *log, lua_State *L,
                       key, err);
         lua_pop(L, 2);
         return NGX_ERROR;
-#endif
+#endif /* OPENRESTY_LUAJIT */
     }
 
     dd("Value associated with given key in code cache table is not code "
