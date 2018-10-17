@@ -188,7 +188,9 @@ ngx_int_t ngx_http_lua_open_and_stat_file(u_char *name,
 ngx_chain_t *ngx_http_lua_chain_get_free_buf(ngx_log_t *log, ngx_pool_t *p,
     ngx_chain_t **free, size_t len);
 
+#ifndef OPENRESTY_LUAJIT
 void ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec);
+#endif
 
 int ngx_http_lua_traceback(lua_State *L);
 
@@ -334,6 +336,9 @@ ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 static ngx_inline ngx_http_request_t *
 ngx_http_lua_get_req(lua_State *L)
 {
+#ifdef OPENRESTY_LUAJIT
+    return lua_getexdata(L);
+#else
     ngx_http_request_t    *r;
 
     lua_getglobal(L, ngx_http_lua_req_key);
@@ -341,14 +346,19 @@ ngx_http_lua_get_req(lua_State *L)
     lua_pop(L, 1);
 
     return r;
+#endif
 }
 
 
 static ngx_inline void
 ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 {
+#ifdef OPENRESTY_LUAJIT
+    lua_setexdata(L, (void *) r);
+#else
     lua_pushlightuserdata(L, r);
     lua_setglobal(L, ngx_http_lua_req_key);
+#endif
 }
 
 

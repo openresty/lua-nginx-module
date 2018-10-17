@@ -186,6 +186,47 @@ ngx_http_lua_inject_ndk_api(lua_State *L)
 }
 
 
+int
+ngx_http_lua_ffi_ndk_lookup_directive(const u_char *var_data,
+    size_t var_len, ndk_set_var_value_pt *func)
+{
+    *func = ngx_http_lookup_ndk_set_var_directive((u_char *) var_data, var_len);
+
+    if (*func == NULL) {
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_ndk_set_var_get(ngx_http_request_t *r,
+    ndk_set_var_value_pt func, const u_char *arg_data, size_t arg_len,
+    ngx_http_lua_ffi_str_t *value)
+{
+    ngx_int_t                            rc;
+    ngx_str_t                            res;
+    ngx_http_variable_value_t            arg;
+
+    ngx_memzero(&arg, sizeof(ngx_http_variable_value_t));
+    arg.valid = 1;
+
+    arg.data = (u_char *) arg_data;
+    arg.len = arg_len;
+
+    rc = func(r, &res, &arg);
+
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    value->data = res.data;
+    value->len = res.len;
+    return NGX_OK;
+}
+
+
 #endif /* defined(NDK) && NDK */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

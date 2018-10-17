@@ -104,11 +104,15 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     coctx->co = co;
     coctx->co_status = NGX_HTTP_LUA_CO_SUSPENDED;
 
+#ifdef OPENRESTY_LUAJIT
+    ngx_http_lua_set_req(co, r);
+#else
     /* make new coroutine share globals of the parent coroutine.
      * NOTE: globals don't have to be separated! */
     ngx_http_lua_get_globals_table(L);
     lua_xmove(L, co, 1);
     ngx_http_lua_set_globals_table(co);
+#endif
 
     lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
 
@@ -288,15 +292,27 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     {
         const char buf[] =
             "local keys = {'create', 'yield', 'resume', 'status'}\n"
+#ifdef OPENRESTY_LUAJIT
+            "local get_req = require 'thread.exdata'\n"
+#else
             "local getfenv = getfenv\n"
+#endif
             "for _, key in ipairs(keys) do\n"
                "local std = coroutine['_' .. key]\n"
                "local ours = coroutine['__' .. key]\n"
                "local raw_ctx = ngx._phase_ctx\n"
                "coroutine[key] = function (...)\n"
+#ifdef OPENRESTY_LUAJIT
+                    "local r = get_req()\n"
+#else
                     "local r = getfenv(0).__ngx_req\n"
-                    "if r then\n"
+#endif
+                    "if r ~= nil then\n"
+#ifdef OPENRESTY_LUAJIT
+                        "local ctx = raw_ctx()\n"
+#else
                         "local ctx = raw_ctx(r)\n"
+#endif
                         /* ignore header and body filters */
                         "if ctx ~= 0x020 and ctx ~= 0x040 then\n"
                             "return ours(...)\n"

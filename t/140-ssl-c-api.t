@@ -10,6 +10,7 @@ my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
+
 } else {
     plan tests => repeat_each() * (blocks() * 5 + 1);
 }
@@ -68,7 +69,7 @@ _EOC_
 
     my $http_config = $block->http_config || '';
     $http_config .= <<'_EOC_';
-lua_package_path "$prefix/html/?.lua;;";
+lua_package_path "$prefix/html/?.lua;../lua-resty-core/lib/?.lua;;";
 _EOC_
     $block->set_value("http_config", $http_config);
 });
@@ -91,8 +92,8 @@ __DATA__
 
             local errmsg = ffi.new("char *[1]")
 
-            local r = getfenv(0).__ngx_req
-            if not r then
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
@@ -245,8 +246,8 @@ lua ssl server name: "test.com"
 
             local errmsg = ffi.new("char *[1]")
 
-            local r = getfenv(0).__ngx_req
-            if not r then
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
@@ -399,8 +400,8 @@ lua ssl server name: "test.com"
 
             local errmsg = ffi.new("char *[1]")
 
-            local r = getfenv(0).__ngx_req
-            if not r then
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
@@ -528,8 +529,8 @@ failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 
             local errmsg = ffi.new("char *[1]")
 
-            local r = getfenv(0).__ngx_req
-            if not r then
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
@@ -678,8 +679,8 @@ lua ssl server name: "test.com"
 
             local errmsg = ffi.new("char *[1]")
 
-            local r = getfenv(0).__ngx_req
-            if not r then
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
                 ngx.log(ngx.ERR, "no request found")
                 return
             end
