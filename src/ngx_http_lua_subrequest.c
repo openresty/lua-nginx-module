@@ -139,6 +139,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
     unsigned                         vars_action;
     ngx_uint_t                       nsubreqs;
     ngx_uint_t                       index;
+    u_char                          *lua_method_name;
+    size_t                           lua_method_name_len;
     size_t                           sr_statuses_len;
     size_t                           sr_headers_len;
     size_t                           sr_bodies_len;
@@ -389,15 +391,28 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
 
             type = lua_type(L, -1);
 
-            if (type == LUA_TNIL) {
+            switch (type) {
+            case LUA_TNIL:
                 method = NGX_HTTP_GET;
+                break;
 
-            } else {
-                if (type != LUA_TNUMBER) {
+            case LUA_TNUMBER:
+                method = (ngx_uint_t) lua_tonumber(L, -1);
+                break;
+
+            case LUA_TSTRING:
+                lua_method_name = (u_char *)
+                                  lua_tolstring(L, -1, &lua_method_name_len);
+                method = ngx_http_lua_parse_method_name(lua_method_name,
+                                                        lua_method_name_len);
+                
+                if (method == NGX_HTTP_UNKNOWN) {
                     return luaL_error(L, "Bad http request method");
                 }
+                break;
 
-                method = (ngx_uint_t) lua_tonumber(L, -1);
+            default:
+                return luaL_error(L, "Bad http request method");
             }
 
             lua_pop(L, 1);
@@ -682,71 +697,71 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
     sr->method = method;
 
     switch (method) {
-        case NGX_HTTP_GET:
-            sr->method_name = ngx_http_lua_get_method;
-            break;
+    case NGX_HTTP_GET:
+        sr->method_name = ngx_http_lua_get_method;
+        break;
 
-        case NGX_HTTP_POST:
-            sr->method_name = ngx_http_lua_post_method;
-            break;
+    case NGX_HTTP_POST:
+        sr->method_name = ngx_http_lua_post_method;
+        break;
 
-        case NGX_HTTP_PUT:
-            sr->method_name = ngx_http_lua_put_method;
-            break;
+    case NGX_HTTP_PUT:
+        sr->method_name = ngx_http_lua_put_method;
+        break;
 
-        case NGX_HTTP_HEAD:
-            sr->method_name = ngx_http_lua_head_method;
-            break;
+    case NGX_HTTP_HEAD:
+        sr->method_name = ngx_http_lua_head_method;
+        break;
 
-        case NGX_HTTP_DELETE:
-            sr->method_name = ngx_http_lua_delete_method;
-            break;
+    case NGX_HTTP_DELETE:
+        sr->method_name = ngx_http_lua_delete_method;
+        break;
 
-        case NGX_HTTP_OPTIONS:
-            sr->method_name = ngx_http_lua_options_method;
-            break;
+    case NGX_HTTP_OPTIONS:
+        sr->method_name = ngx_http_lua_options_method;
+        break;
 
-        case NGX_HTTP_MKCOL:
-            sr->method_name = ngx_http_lua_mkcol_method;
-            break;
+    case NGX_HTTP_MKCOL:
+        sr->method_name = ngx_http_lua_mkcol_method;
+        break;
 
-        case NGX_HTTP_COPY:
-            sr->method_name = ngx_http_lua_copy_method;
-            break;
+    case NGX_HTTP_COPY:
+        sr->method_name = ngx_http_lua_copy_method;
+        break;
 
-        case NGX_HTTP_MOVE:
-            sr->method_name = ngx_http_lua_move_method;
-            break;
+    case NGX_HTTP_MOVE:
+        sr->method_name = ngx_http_lua_move_method;
+        break;
 
-        case NGX_HTTP_PROPFIND:
-            sr->method_name = ngx_http_lua_propfind_method;
-            break;
+    case NGX_HTTP_PROPFIND:
+        sr->method_name = ngx_http_lua_propfind_method;
+        break;
 
-        case NGX_HTTP_PROPPATCH:
-            sr->method_name = ngx_http_lua_proppatch_method;
-            break;
+    case NGX_HTTP_PROPPATCH:
+        sr->method_name = ngx_http_lua_proppatch_method;
+        break;
 
-        case NGX_HTTP_LOCK:
-            sr->method_name = ngx_http_lua_lock_method;
-            break;
+    case NGX_HTTP_LOCK:
+        sr->method_name = ngx_http_lua_lock_method;
+        break;
 
-        case NGX_HTTP_UNLOCK:
-            sr->method_name = ngx_http_lua_unlock_method;
-            break;
+    case NGX_HTTP_UNLOCK:
+        sr->method_name = ngx_http_lua_unlock_method;
+        break;
 
-        case NGX_HTTP_PATCH:
-            sr->method_name = ngx_http_lua_patch_method;
-            break;
+    case NGX_HTTP_PATCH:
+        sr->method_name = ngx_http_lua_patch_method;
+        break;
 
-        case NGX_HTTP_TRACE:
-            sr->method_name = ngx_http_lua_trace_method;
-            break;
+    case NGX_HTTP_TRACE:
+        sr->method_name = ngx_http_lua_trace_method;
+        break;
 
-        default:
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "unsupported HTTP method: %u", (unsigned) method);
+    default:
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "unsupported HTTP method: %u", (unsigned) method);
 
-            return NGX_ERROR;
+        return NGX_ERROR;
     }
 
     if (!(vars_action & NGX_HTTP_LUA_SHARE_ALL_VARS)) {

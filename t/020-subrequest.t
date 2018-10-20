@@ -11,7 +11,7 @@ use Test::Nginx::Socket::Lua;
 no_root_location;
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 23);
+plan tests => repeat_each() * (blocks() * 3 + 100);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
@@ -2877,3 +2877,124 @@ DELETE /file.txt, response status: 204
 --- no_error_log
 [error]
 --- error_code: 200
+
+
+
+=== TEST 77: methods as strings, besides TRACE
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request eval
+["GET /lua", 
+"PUT /lua",
+"POST /lua",
+"HEAD /lua",
+"DELETE /lua",
+"OPTIONS /lua",
+"COPY /lua",
+"MOVE /lua",
+"LOCK /lua",
+"MKCOL /lua",
+"PROPFIND /lua",
+"PROPPATCH /lua",
+"UNLOCK /lua",
+"PATCH /lua"]
+--- response_body eval
+["GET\n", 
+"PUT\n",
+"POST\n",
+"",    # HEAD will always return only headers, no body
+"DELETE\n",
+"OPTIONS\n",
+"COPY\n",
+"MOVE\n",
+"LOCK\n",
+"MKCOL\n",
+"PROPFIND\n",
+"PROPPATCH\n",
+"UNLOCK\n",
+"PATCH\n"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 78: methods as strings, besides TRACE
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request eval
+["GET /lua", 
+"PUT /lua",
+"POST /lua",
+"HEAD /lua",
+"DELETE /lua",
+"OPTIONS /lua",
+"COPY /lua",
+"MOVE /lua",
+"LOCK /lua",
+"MKCOL /lua",
+"PROPFIND /lua",
+"PROPPATCH /lua",
+"UNLOCK /lua",
+"PATCH /lua"]
+--- response_body eval
+["GET\n", 
+"PUT\n",
+"POST\n",
+"",    # HEAD will always return only headers, no body
+"DELETE\n",
+"OPTIONS\n",
+"COPY\n",
+"MOVE\n",
+"LOCK\n",
+"MKCOL\n",
+"PROPFIND\n",
+"PROPPATCH\n",
+"UNLOCK\n",
+"PATCH\n"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 79: TRACE method as string
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+TRACE /lua
+--- error_code: 405
+--- no_error_log
+[error]
+
