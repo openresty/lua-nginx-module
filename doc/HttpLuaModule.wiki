@@ -3563,7 +3563,7 @@ This method does not work in HTTP/2 requests yet.
 == ngx.req.get_method ==
 '''syntax:''' ''method_name = ngx.req.get_method()''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, balancer_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, balancer_by_lua*, log_by_lua*''
 
 Retrieves the current request's request method name. Strings like <code>"GET"</code> and <code>"POST"</code> are returned instead of numerical [[#HTTP method constants|method constants]].
 
