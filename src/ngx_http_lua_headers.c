@@ -955,9 +955,13 @@ nomem:
 
 
 int
-ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
-    const u_char *key, size_t key_len, const u_char *value, size_t value_len)
+ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
+    const u_char *key, size_t key_len, const u_char *value, size_t value_len,
+    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, int override)
 {
+    u_char                      *p;
+    size_t                       len;
+    ngx_uint_t                   i;
     ngx_str_t                    k;
     ngx_str_t                    v;
 
@@ -978,22 +982,51 @@ ngx_http_lua_ffi_req_header_set_single_value(ngx_http_request_t *r,
 
     k.len = key_len;
 
-    if (value_len == 0) {
-        v.data = NULL;
-        v.len = 0;
+    if (mvals) {
+        if (mvals_len > 0) {
+            for (i = 0; i < mvals_len; i++) {
+                p = mvals[i].data;
+                len = mvals[i].len;
 
-    } else {
+                v.data = ngx_palloc(r->pool, len + 1);
+                if (v.data == NULL) {
+                    return NGX_ERROR;
+                }
+
+                ngx_memcpy(v.data, p, len);
+                v.data[len] = '\0';
+                v.len = len;
+
+                if (ngx_http_lua_set_input_header(r, k, v, override)
+                    != NGX_OK)
+                {
+                    return NGX_ERROR;
+                }
+            }
+
+            return NGX_OK;
+
+        } else {
+            v.data = NULL;
+            v.len = 0;
+        }
+
+    } else if (value) {
         v.data = ngx_palloc(r->pool, value_len + 1);
         if (v.data == NULL) {
             return NGX_ERROR;
         }
+
         ngx_memcpy(v.data, value, value_len);
         v.data[value_len] = '\0';
+        v.len = value_len;
+
+    } else {
+        v.data = NULL;
+        v.len = 0;
     }
 
-    v.len = value_len;
-
-    if (ngx_http_lua_set_input_header(r, k, v, 1 /* override */)
+    if (ngx_http_lua_set_input_header(r, k, v, override)
         != NGX_OK)
     {
         return NGX_ERROR;
