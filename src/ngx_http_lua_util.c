@@ -771,7 +771,6 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
         const char buf[] =
             "local ngx_log = ngx.log\n"
             "local ngx_WARN = ngx.WARN\n"
-            "local type = type\n"
             "local ngx_get_phase = ngx.get_phase\n"
             "local traceback = require 'debug'.traceback\n"
             "local function newindex(table, key, value)\n"
