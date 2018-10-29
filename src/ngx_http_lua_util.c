@@ -771,7 +771,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
         const char buf[] =
             "local ngx_log = ngx.log\n"
             "local ngx_WARN = ngx.WARN\n"
-            "local type = type\n"
+            "local tostring = tostring\n"
             "local ngx_get_phase = ngx.get_phase\n"
             "local traceback = require 'debug'.traceback\n"
             "local function newindex(table, key, value)\n"
@@ -780,9 +780,11 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
                 "if phase == 'init_worker' or phase == 'init' then\n"
                     "return\n"
                 "end\n"
-                "ngx_log(ngx_WARN, 'http lua attempting to write to the lua "
-                                   "global variable \\'', tostring(key), "
-                                   "'\\'\\n', traceback())\n"
+                "ngx_log(ngx_WARN, 'writing a global lua variable "
+                         "(\\'', tostring(key), '\\') which may lead to "
+                         "race conditions between concurrent requests, so "
+                         "prefer the use of \\'local\\' variables', "
+                         "traceback('', 2))\n"
             "end\n"
             "setmetatable(_G, { __newindex = newindex })\n"
             ;
@@ -791,8 +793,8 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
         if (rc != 0) {
             ngx_log_error(NGX_LOG_ERR, log, 0,
-                          "failed to load Lua code for the _G write guard: ",
-                          "%i: %s", rc, lua_tostring(L, -1));
+                          "failed to load Lua code (%i): %s",
+                          rc, lua_tostring(L, -1));
 
             lua_pop(L, 1);
             return;
@@ -801,7 +803,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
         rc = lua_pcall(L, 0, 0, 0);
         if (rc != 0) {
             ngx_log_error(NGX_LOG_ERR, log, 0,
-                          "failed to run Lua code for the _G write guard: %s",
+                          "failed to run Lua code (%i): %s",
                           rc, lua_tostring(L, -1));
             lua_pop(L, 1);
         }
