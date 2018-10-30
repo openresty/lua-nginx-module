@@ -153,6 +153,8 @@ ngx_http_lua_ffi_master_pid(void)
 int
 ngx_http_lua_ffi_get_process_type(void)
 {
+    ngx_core_conf_t  *ccf;
+
 #if defined(HAVE_PRIVILEGED_PROCESS_PATCH) && !NGX_WIN32
     if (ngx_process == NGX_PROCESS_HELPER) {
         if (ngx_is_privileged_agent) {
@@ -160,6 +162,15 @@ ngx_http_lua_ffi_get_process_type(void)
         }
     }
 #endif
+
+    if (ngx_process == NGX_PROCESS_SINGLE) {
+        ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx,
+                                               ngx_core_module);
+
+        if (ccf->master) {
+            return NGX_PROCESS_MASTER;
+        }
+    }
 
     return ngx_process;
 }
