@@ -7051,6 +7051,9 @@ Similar to the [[#ngx.timer.at|ngx.timer.at]] API function, but
 # <code>delay</code> ''cannot'' be zero,
 # timer will be created every <code>delay</code> seconds until the current Nginx worker process starts exiting.
 
+Like [[#ngx.timer.at|ngx.timer.at]], the <code>callback</code> argument will be called
+automatically with the arguments <code>premature</code>, <code>user_arg1</code>, <code>user_arg2</code>, etc.
+
 When success, returns a "conditional true" value (but not a <code>true</code>). Otherwise, returns a "conditional false" value and a string describing the error.
 
 This API also respect the [[#lua_max_pending_timers|lua_max_pending_timers]] and [[#lua_max_running_timers|lua_max_running_timers]].
