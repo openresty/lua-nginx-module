@@ -746,6 +746,19 @@ ngx_http_lua_init(ngx_conf_t *cf)
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
+#ifndef OPENRESTY_LUAJIT
+        if (ngx_process != NGX_PROCESS_SIGNALLER && !ngx_test_config) {
+            ngx_log_error(NGX_LOG_ALERT, cf->log, 0,
+                          "detected a LuaJIT version which is not OpenResty's"
+                          "; many optimizations will be disabled and "
+                          "performance will be compromised (see "
+                          "https://github.com/openresty/luajit2 for "
+                          "OpenResty's LuaJIT or, even better, consider using "
+                          "the OpenResty releases from https://openresty.org/"
+                          "en/download.html)");
+        }
+#endif
+
         ngx_http_lua_content_length_hash =
                                   ngx_http_lua_hash_literal("content-length");
         ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
