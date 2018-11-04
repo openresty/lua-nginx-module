@@ -156,7 +156,7 @@ d41d8cd98f00b204e9800998ecf8427e
 --- config
     location = /t {
         content_by_lua '
-            s = ngx.md5_bin(45)
+            local s = ngx.md5_bin(45)
             s = string.gsub(s, ".", function (c)
                     return string.format("%02x", string.byte(c))
                 end)

@@ -326,7 +326,7 @@ hello
 --- config
     location /main {
         rewrite_by_lua '
-            res = ngx.location.capture("/test_loc");
+            local res = ngx.location.capture("/test_loc");
             ngx.print("hello, ", res.body)
         ';
         content_by_lua return;
@@ -354,7 +354,7 @@ hello, bah
 --- config
     location /main {
         rewrite_by_lua '
-            res = ngx.location.capture("/test_loc");
+            local res = ngx.location.capture("/test_loc");
             ngx.print("hello, ", res.body)
         ';
         content_by_lua return;

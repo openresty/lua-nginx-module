@@ -21,10 +21,10 @@ __DATA__
 --- config
     location /lua {
         content_by_lua
-        '   function bar()
+        '   local function bar()
                 return lua_concat(3)
             end
-            function foo()
+            local function foo()
                 bar()
             end
             foo()
@@ -45,10 +45,10 @@ attempt to call global 'lua_concat'
 --- config
     location /lua {
         content_by_lua
-        '   function bar()
+        '   local function bar()
                 error(nil)
             end
-            function foo()
+            local function foo()
                 bar()
             end
             foo()

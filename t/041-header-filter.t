@@ -734,7 +734,8 @@ hello world
 --- config
     location /t {
         header_filter_by_lua '
-            function foo()
+            local bar
+            local function foo()
                 bar()
             end
 

@@ -46,7 +46,7 @@ helloworld
 === TEST 3: internal only
 --- config
     location /lua {
-        set_by_lua $res "function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(10)";
+        set_by_lua $res "local function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(10)";
         echo $res;
     }
 --- request
@@ -76,7 +76,7 @@ GET /lua?a=1&b=2
 === TEST 5: fib by arg
 --- config
     location /fib {
-        set_by_lua $res "function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(tonumber(ngx.arg[1]))" $arg_n;
+        set_by_lua $res "local function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(tonumber(ngx.arg[1]))" $arg_n;
         echo $res;
     }
 --- request
@@ -760,6 +760,8 @@ GET /lua?name=jim
 --- config
     location /t {
         set_by_lua $a '
+            local bar
+            local foo
             function foo()
                 bar()
             end

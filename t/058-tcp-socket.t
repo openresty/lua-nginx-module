@@ -914,7 +914,7 @@ close: 1 nil
                 end
             end
 
-            ok, err = sock:close()
+            local ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
         ';
     }
@@ -961,7 +961,7 @@ close: 1 nil
             line, err = sock:receive()
             ngx.say("receive: ", line, " ", err)
 
-            ok, err = sock:close()
+            local ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
         ';
     }
@@ -2611,7 +2611,7 @@ close: 1 nil
             local ready = false
             local fatal = false
 
-            function f()
+            local function f()
                 local line, err, part = sock:receive()
                 if not line then
                     ngx.say("failed to receive the 1st line: ", err, " [", part, "]")
@@ -3464,7 +3464,7 @@ lua http cleanup reuse
                 ngx.say("failed to create timer: ", err)
             end
 
-            i = 1
+            local i = 1
             while not done do
                 local time = 0.005 * i
                 if time > 0.1 then
@@ -3545,7 +3545,7 @@ lua http cleanup reuse
                 ngx.say("failed to create timer: ", err)
             end
 
-            i = 1
+            local i = 1
             while not done do
                 local time = 0.005 * i
                 if time > 0.1 then

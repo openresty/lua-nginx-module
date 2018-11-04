@@ -363,7 +363,7 @@ lua found 100 pending timers
                 local line, err = sock:receive("*l")
             until not line or string.find(line, "^%s*$")
 
-            function foo()
+            local function foo()
                 repeat
                     -- Get and read chunk
                     local line, err = sock:receive("*l")
@@ -379,7 +379,7 @@ lua found 100 pending timers
                 until len == 0
             end
 
-            co = coroutine.create(foo)
+            local co = coroutine.create(foo)
             repeat
                 local chunk = select(2,coroutine.resume(co))
             until chunk == nil

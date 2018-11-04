@@ -546,7 +546,7 @@ client prematurely closed connection
                 return
             end
 
-            ok, err = sock:connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_REDIS_PORT)
             if not ok then
                 ngx.log(ngx.ERR, "failed to connect: ", err)
                 return

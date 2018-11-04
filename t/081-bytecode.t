@@ -24,7 +24,7 @@ __DATA__
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             if jit then
                 if not string.find(jit.version, "LuaJIT 2.0") then
@@ -35,7 +35,8 @@ __DATA__
             else
                 f:write(string.sub(b, 1, 147));
             end
-            f:close(); res = ngx.location.capture("/call");
+            f:close();
+            local res = ngx.location.capture("/call");
             ngx.print(res.body)
         ';
     }
@@ -60,14 +61,15 @@ __DATA__
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             if not package.loaded["jit"] then
                 f:write(string.sub(b, 149));
             else
                 f:write(string.sub(b, 1, 147));
             end
-            f:close(); res = ngx.location.capture("/call");
+            f:close();
+            local res = ngx.location.capture("/call");
             if res.status == 200 then
                 ngx.print(res.body)
             else
@@ -96,14 +98,15 @@ qr/failed to load external Lua file ".*?test\.lua": .* cannot load incompatible 
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             if package.loaded["jit"] then
                 f:write(string.sub(b, 149));
             else
                 f:write(string.sub(b, 1, 147));
             end
-            f:close(); res = ngx.location.capture("/call");
+            f:close();
+            local res = ngx.location.capture("/call");
             if res.status == 200 then
                 ngx.print(res.body)
             else
@@ -132,7 +135,7 @@ cannot load incompatible bytecode
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             local do_jit
             if jit then
@@ -176,7 +179,7 @@ cannot load incompatible bytecode
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             local jit;
             if package.loaded["jit"] then
@@ -220,7 +223,7 @@ error
         content_by_lua '
             ngx.req.read_body();
             local b = ngx.req.get_body_data();
-            f = io.open(ngx.var.realpath_root.."/test.lua", "w");
+            local f = io.open(ngx.var.realpath_root.."/test.lua", "w");
             -- luajit bytecode: sub(149,-1), lua bytecode: sub(1,147)
             if jit then
                 if not string.find(jit.version, "LuaJIT 2.0") then

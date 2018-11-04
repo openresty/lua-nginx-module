@@ -586,7 +586,7 @@ hello
         #set $args 'hello';
         set $err '';
         access_by_lua '
-            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            local res, err = pcall(ngx.req.set_uri, "/bar", true);
             ngx.var.err = err
         ';
         echo "err: $err";
@@ -626,7 +626,7 @@ uri: /bar
     location /foo {
         #set $args 'hello';
         content_by_lua '
-            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            local res, err = pcall(ngx.req.set_uri, "/bar", true);
             ngx.say("err: ", err)
         ';
     }
@@ -665,7 +665,7 @@ uri: /bar
     location /foo {
         #set $args 'hello';
         set_by_lua $err '
-            res, err = pcall(ngx.req.set_uri, "/bar", true);
+            local res, err = pcall(ngx.req.set_uri, "/bar", true);
             return err
         ';
         echo "err: $err";
@@ -788,7 +788,7 @@ GET /lua
     location /lua {
         content_by_lua '
             local t = {bar = ngx.shared.dogs, foo = 3}
-            rc, err = pcall(ngx.encode_args, t)
+            local rc, err = pcall(ngx.encode_args, t)
             ngx.say("rc: ", rc, ", err: ", err)
         ';
     }
@@ -1112,6 +1112,7 @@ HTTP/1.0 a=3&b=5&b=6
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a=bar&b=foo"
             args, err = ngx.decode_args(args)
 
@@ -1135,6 +1136,7 @@ b = foo
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a=bar&b=foo&a=baz"
             args, err = ngx.decode_args(args)
 
@@ -1158,6 +1160,7 @@ b = foo
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = ""
             args, err = ngx.decode_args(args)
             if err then
@@ -1178,6 +1181,7 @@ n = 0
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a&b"
             args, err = ngx.decode_args(args)
             if err then
@@ -1200,6 +1204,7 @@ b = true
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a=&b="
             args, err = ngx.decode_args(args)
 
@@ -1223,6 +1228,7 @@ b =
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a=bar&b=foo"
             args, err = ngx.decode_args(args, 1)
             if err then
@@ -1246,6 +1252,7 @@ b = nil
 --- config
     location /lua {
         content_by_lua '
+            local err
             local args = "a=bar&b=foo"
             args, err = ngx.decode_args(args, -1)
 
@@ -1270,7 +1277,7 @@ b = foo
     location /lua {
         content_by_lua '
             local s = "f+f=bar&B=foo"
-            args, err = ngx.decode_args(s)
+            local args, err = ngx.decode_args(s)
             if err then
                 ngx.say("err: ", err)
             end
@@ -1302,7 +1309,7 @@ s = f+f=bar&B=foo
     lua_need_request_body on;
     location /t {
         content_by_lua '
-            function split(s, delimiter)
+            local function split(s, delimiter)
                 local result = {}
                 local from = 1
                 local delim_from, delim_to = string.find(s, delimiter, from)

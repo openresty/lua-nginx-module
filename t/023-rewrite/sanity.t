@@ -69,7 +69,7 @@ GET /lua
     location /lua {
         # NOTE: the newline escape sequence must be double-escaped, as nginx config
         # parser will unescape first!
-        rewrite_by_lua 'v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
+        rewrite_by_lua 'local v = ngx.var["request_uri"] ngx.print("request_uri: ", v, "\\n")';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
@@ -87,7 +87,7 @@ request_uri: /lua?a=1&b=2
     }
 --- user_files
 >>> test.lua
-v = ngx.var["request_uri"]
+local v = ngx.var["request_uri"]
 ngx.print("request_uri: ", v, "\n")
 --- request
 GET /lua?a=1&b=2
@@ -140,7 +140,7 @@ result: -0.4090441561579
 === TEST 7: read $arg_xxx
 --- config
     location = /lua {
-        rewrite_by_lua 'who = ngx.var.arg_who
+        rewrite_by_lua 'local who = ngx.var.arg_who
             ngx.print("Hello, ", who, "!")';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
@@ -159,7 +159,7 @@ Hello, agentzh!
 
     location /lua {
         rewrite_by_lua '
-res = ngx.location.capture("/other")
+local res = ngx.location.capture("/other")
 ngx.print("status=", res.status, " ")
 ngx.print("body=", res.body)
 ';
@@ -175,7 +175,7 @@ status=200 body=hello, world
 === TEST 9: capture non-existed location
 --- config
     location /lua {
-        rewrite_by_lua 'res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
+        rewrite_by_lua 'local res = ngx.location.capture("/other"); ngx.print("status=", res.status)';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
@@ -187,7 +187,7 @@ GET /lua
 === TEST 10: invalid capture location (not as expected...)
 --- config
     location /lua {
-        rewrite_by_lua 'res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
+        rewrite_by_lua 'local res = ngx.location.capture("*(#*"); ngx.say("res=", res.status)';
         content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- request
@@ -270,7 +270,7 @@ end
            ngx.print("num is: ", num, "\\n");
 
            if (num > 0) then
-               res = ngx.location.capture("/recur?num="..tostring(num - 1));
+               local res = ngx.location.capture("/recur?num="..tostring(num - 1));
                ngx.print("status=", res.status, " ");
                ngx.print("body=", res.body);
            else
@@ -359,7 +359,7 @@ location /sub {
 }
 location /parent {
     set $a 12;
-    rewrite_by_lua 'res = ngx.location.capture("/sub"); ngx.print(res.body)';
+    rewrite_by_lua 'local res = ngx.location.capture("/sub"); ngx.print(res.body)';
     content_by_lua 'ngx.exit(ngx.OK)';
 }
 --- request
@@ -377,7 +377,7 @@ location /parent {
     set $a '';
     rewrite_by_lua '
         ngx.var.a = 12;
-        res = ngx.location.capture(
+        local res = ngx.location.capture(
             "/sub",
             { share_all_vars = true }
         );
@@ -399,7 +399,7 @@ location /sub {
 }
 location /parent {
     rewrite_by_lua '
-        res = ngx.location.capture("/sub", { share_all_vars = true });
+        local res = ngx.location.capture("/sub", { share_all_vars = true });
         ngx.say(ngx.var.a)
     ';
 
@@ -421,7 +421,7 @@ location /sub {
 
 location /parent {
     rewrite_by_lua '
-        res = ngx.location.capture("/sub", { share_all_vars = false });
+        local res = ngx.location.capture("/sub", { share_all_vars = false });
         ngx.say(ngx.var.a)
     ';
     content_by_lua return;
@@ -441,7 +441,7 @@ GET /parent
 
     location /lua {
         rewrite_by_lua '
-            res = ngx.location.capture("/other");
+            local res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
         ';
 
@@ -466,7 +466,7 @@ type: foo/bar
 
     location /lua {
         rewrite_by_lua '
-            res = ngx.location.capture("/other");
+            local res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
             ngx.say("Bar: ", res.header["Bar"]);
         ';
@@ -494,7 +494,7 @@ Bar: Bah
 
     location /lua {
         rewrite_by_lua '
-            res = ngx.location.capture("/other");
+            local res = ngx.location.capture("/other");
             ngx.say("type: ", res.header["Content-Type"]);
             ngx.say("Bar: ", res.header["Bar"] or "nil");
         ';

@@ -420,7 +420,7 @@ ngx_slab_alloc() failed: no memory in lua_shared_dict zone
             ngx.say(dogs:get(key))
 
             key = string.rep("a", 65536)
-            ok, err = dogs:set(key, "world")
+            local ok, err = dogs:set(key, "world")
             if not ok then
                 ngx.say("not ok: ", err)
                 return
@@ -2048,7 +2048,7 @@ get_stale ok: false, stale: false
                 ngx.say("get not ok: ", err)
                 return
             end
-            flags = err
+            local flags = err
             ngx.say("get_stale ok: ", data, ", flags: ", flags,
                     ", stale: ", stale)
 
