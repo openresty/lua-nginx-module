@@ -414,6 +414,8 @@ GET /log
 --- config
     location /log {
         content_by_lua '
+            local foo
+            local bar
             function foo()
                 bar()
             end
@@ -431,7 +433,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):7: bar\(\): hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):9: bar\(\): hello, log12343.14159/
 
 
 
@@ -439,6 +441,8 @@ qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):7: bar\(\): hell
 --- config
     location /log {
         content_by_lua '
+            local foo
+            local bar
             function foo()
                 return bar(5)
             end
@@ -461,7 +465,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):8:(?: foo\(\):)? hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):10:(?: foo\(\):)? hello, log12343.14159/
 
 
 
@@ -472,6 +476,8 @@ qr/\[error\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):8:(?: foo\(\):)?
     }
 --- user_files
 >>> test.lua
+local foo
+local bar
 function foo()
     bar()
 end
@@ -488,7 +494,7 @@ GET /log
 --- response_body
 done
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] test.lua:6: bar\(\): hello, log12343.14159/
+qr/\[error\] \S+: \S+ \[lua\] test.lua:8: bar\(\): hello, log12343.14159/
 
 
 

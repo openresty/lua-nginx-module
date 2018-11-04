@@ -86,7 +86,7 @@ dogs zone: defined
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -149,7 +149,7 @@ bar: rc=0, type=3, val=3.14159
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -212,7 +212,7 @@ bar: rc=0, type=1, val=0
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 
@@ -272,7 +272,7 @@ bar: rc=-5
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local s = ffi.new("char[?]", 20)
 
@@ -344,7 +344,7 @@ bar: rc=0, type=4, val=, len=0
             local buf = ffi.new("char[?]", 4)
 
             ffi.copy(buf, "dogs", 4)
-            zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
+            local zone = ffi.C.ngx_http_lua_find_zone(buf, 4)
 
             local val = ffi.new("ngx_http_lua_value_t[?]", 1)
 

@@ -1278,7 +1278,7 @@ lua ssl server name: "test.com"
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
-            function f()
+            local function f()
                 ngx.sleep(0.01)
                 print("uthread: hello in thread")
                 return "done"

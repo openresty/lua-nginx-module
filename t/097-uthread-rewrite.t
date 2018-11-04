@@ -23,7 +23,7 @@ __DATA__
 --- config
     location /lua {
         rewrite_by_lua '
-            function f()
+            local function f()
                 ngx.req.set_uri("/foo", true)
             end
 
@@ -58,7 +58,7 @@ i am foo
 --- config
     location /lua {
         rewrite_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.req.set_uri("/foo", true)
             end
@@ -93,7 +93,7 @@ i am foo
 --- config
     location /lua {
         rewrite_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.req.set_uri("/foo", true)
             end
@@ -175,12 +175,12 @@ hello foo
 --- config
     location /lua {
         rewrite_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.req.set_uri("/foo", true)
             end
 
-            function g()
+            local function g()
                 ngx.sleep(1)
             end
 
@@ -267,7 +267,7 @@ hello foo
     location /lua {
         client_body_timeout 12000ms;
         rewrite_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.req.set_uri("/foo", true)
             end

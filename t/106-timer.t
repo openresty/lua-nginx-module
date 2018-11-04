@@ -1023,7 +1023,7 @@ qr/go\(\): connected: 1, reused: \d+/,
         content_by_lua '
             local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
             local function f()
-                function f()
+                local function f()
                     local cnt = 0
                     for i = 1, 20 do
                         print("cnt = ", cnt)
@@ -1090,7 +1090,7 @@ registered timer
                 ngx.log(ngx.ERR, ...)
             end
             local function handle()
-                function f()
+                local function f()
                     print("hello in thread")
                     return "done"
                 end

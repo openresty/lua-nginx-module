@@ -26,7 +26,7 @@ __DATA__
 --- config
         location = /test {
             content_by_lua '
-                function f(a, b)
+                local function f(a, b)
                     if a == 0 and b == 0 then
                         error("zero error")
                     end
@@ -62,7 +62,7 @@ $/s
 --- config
         location = /test {
             content_by_lua '
-                function f(a, b)
+                local function f(a, b)
                     if a == 0 and b == 0 then
                         error("zero error")
                     end
@@ -70,15 +70,15 @@ $/s
                     return 23, "hello", true
                 end
 
-                function g()
+                local function g()
                     return f(0, 0)
                 end
 
-                function h()
+                local function h()
                     return f(0)
                 end
 
-                function err(...)
+                local function err(...)
                     ngx.say("error handler called: ", ...)
                     return "this is the new err"
                 end

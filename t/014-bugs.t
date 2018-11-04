@@ -112,7 +112,7 @@ GET /report/listBidwordPrices4lzExtra.htm?words=123,156,2532
     }
     location = /main {
         content_by_lua '
-            res = ngx.location.capture("/memc?c=get&k=foo&v=")
+            local res = ngx.location.capture("/memc?c=get&k=foo&v=")
             ngx.say("1: ", res.body)
 
             res = ngx.location.capture("/memc?c=set&k=foo&v=bar");
@@ -204,7 +204,7 @@ https://github.com/chaoslawful/lua-nginx-module/issues/37
         content_by_lua '
             -- local yajl = require "yajl"
             ngx.header["Set-Cookie"] = {}
-            res = ngx.location.capture("/sub")
+            local res = ngx.location.capture("/sub")
 
             for i,j in pairs(res.header) do
                 ngx.header[i] = j
@@ -231,7 +231,7 @@ Set-Cookie: TestCookie2=bar.*"
     }
 --- user_files
 >>> foo.lua
-res = {}
+local res = {}
 res = {'good 1', 'good 2', 'good 3'}
 return ngx.redirect("/somedir/" .. ngx.escape_uri(res[math.random(1,#res)]))
 --- request

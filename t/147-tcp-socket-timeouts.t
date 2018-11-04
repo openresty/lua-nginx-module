@@ -411,7 +411,7 @@ lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 
             local chunk = 4
 
-            function read()
+            local function read()
                 sock:settimeout(200) -- read: 200 ms
 
                 local data, err = sock:receive(content_length)
@@ -506,7 +506,7 @@ failed to receive data: timeout
 
             local chunk = 4
 
-            function read()
+            local function read()
                 local data, err = sock:receive(content_length)
                 if not data then
                     ngx.log(ngx.ERR, "failed to receive data: ", err)

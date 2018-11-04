@@ -497,7 +497,8 @@ API disabled in the context of log_by_lua*
     location /t {
         echo ok;
         log_by_lua '
-            function foo()
+            local bar
+            local function foo()
                 bar()
             end
 

@@ -20,7 +20,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello", "(he|hell)", "d")
+            local m = ngx.re.match("hello", "(he|hell)", "d")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -43,7 +43,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello", "(he|hell)", "do")
+            local m = ngx.re.match("hello", "(he|hell)", "do")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -66,7 +66,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello", "(he|hell)", "jd")
+            local m = ngx.re.match("hello", "(he|hell)", "jd")
             if m then
                 ngx.say(m[0])
             else
@@ -85,7 +85,7 @@ hell
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("world", "(he|hell)", "d")
+            local m = ngx.re.match("world", "(he|hell)", "d")
             if m then
                 ngx.say(m[0])
             else
@@ -104,7 +104,7 @@ not matched!
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello", "he|hell", "do")
+            local m = ngx.re.match("hello", "he|hell", "do")
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -127,7 +127,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("world", "([0-9]+)", "do")
+            local m = ngx.re.match("world", "([0-9]+)", "do")
             if m then
                 ngx.say(m[0])
             else
