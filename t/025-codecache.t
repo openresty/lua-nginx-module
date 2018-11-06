@@ -27,7 +27,7 @@ __DATA__
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("ngx.say(101)")
             f:close()
             ngx.say("updated")
@@ -61,7 +61,7 @@ updated
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("ngx.say(101)")
             f:close()
             ngx.say("updated")
@@ -95,7 +95,7 @@ updated
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("ngx.say(101)")
             f:close()
             ngx.say("updated")
@@ -130,7 +130,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("ngx.say(101)")
             f:close()
             ngx.say("updated")
@@ -166,7 +166,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("ngx.say(101)")
             f:close()
             ngx.say("updated")
@@ -204,7 +204,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/foo.lua", "w"))
             f:write("module(..., package.seeall); ngx.say(102);")
             f:close()
             ngx.say("updated")
@@ -240,7 +240,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/foo.lua", "w"))
             f:write("module(..., package.seeall); ngx.say(102);")
             f:close()
             ngx.say("updated")
@@ -279,7 +279,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/foo.lua", "w"))
             f:write("module(..., package.seeall); return 102;")
             f:close()
             ngx.say("updated")
@@ -318,7 +318,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/foo.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/foo.lua", "w"))
             f:write("module(..., package.seeall); return 102;")
             f:close()
             ngx.say("updated")
@@ -355,7 +355,7 @@ updated
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("return 101")
             f:close()
             ngx.say("updated")
@@ -390,7 +390,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
     location /update {
         content_by_lua '
             -- os.execute("(echo HERE; pwd) > /dev/stderr")
-            local f = assert(io.open("t/servroot/html/test.lua", "w"))
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
             f:write("return 101")
             f:close()
             ngx.say("updated")

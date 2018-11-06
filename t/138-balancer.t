@@ -362,8 +362,6 @@ me: 101
 
 === TEST 13: lua subrequests
 --- http_config
-    lua_package_path "t/servroot/html/?.lua;;";
-
     lua_code_cache off;
 
     upstream backend {
