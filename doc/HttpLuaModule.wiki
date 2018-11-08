@@ -130,7 +130,7 @@ This document describes ngx_lua [https://github.com/openresty/lua-nginx-module/t
 
 = Description =
 
-This module embeds Lua, via the standard Lua 5.1 interpreter or [http://luajit.org/luajit.html LuaJIT 2.0/2.1], into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
+This module embeds Lua, via [http://luajit.org/luajit.html LuaJIT 2.0/2.1], into Nginx and by leveraging Nginx's subrequests, allows the integration of the powerful Lua threads (Lua coroutines) into the Nginx event model.
 
 Unlike [https://httpd.apache.org/docs/trunk/mod/mod_lua.html Apache's mod_lua] and [http://redmine.lighttpd.net/wiki/1/Docs:ModMagnet Lighttpd's mod_magnet], Lua code executed using this module can be ''100% non-blocking'' on network traffic as long as the [[#Nginx API for Lua|Nginx API for Lua]] provided by this module is used to handle
 requests to upstream services such as MySQL, PostgreSQL, Memcached, Redis, or upstream HTTP web services.
@@ -199,11 +199,11 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 
 = Installation =
 
-It is *highly* recommended to use [http://openresty.org OpenResty releases] which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower. The same applies to LuaJIT as well. OpenResty includes its own version of LuaJIT which gets specifically optimized and enhanced for the OpenResty environment.
+It is *highly* recommended to use [http://openresty.org OpenResty releases] which integrate Nginx, ngx_lua, OpenResty's LuaJIT 2.1 branch version, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower. The same applies to LuaJIT as well. OpenResty includes its own version of LuaJIT which gets specifically optimized and enhanced for the OpenResty environment.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-# Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is ''not'' supported yet). LuaJIT can be downloaded from the [http://luajit.org/download.html LuaJIT project website] and Lua 5.1, from the [http://www.lua.org/ Lua project website].  Some distribution package managers also distribute LuaJIT and/or Lua.
+# LuaJIT can be downloaded from the [https://github.com/openresty/luajit2/releases latest release of OpenResty's LuaJIT branch version]. The official LuaJIT 2.0 and 2.1 releases are also supported, although the performance will be significantly lower in many cases.
 # Download the latest version of the ngx_devel_kit (NDK) module [https://github.com/simplresty/ngx_devel_kit/tags HERE].
 # Download the latest version of ngx_lua [https://github.com/openresty/lua-nginx-module/tags HERE].
 # Download the latest version of Nginx [http://nginx.org/ HERE] (See [[#Nginx Compatibility|Nginx Compatibility]])
@@ -271,24 +271,6 @@ To enable one or more of these macros, just pass extra C compiler options to the
     ./configure --with-cc-opt="-DNGX_LUA_USE_ASSERT -DNGX_LUA_ABORT_AT_PANIC"
 </geshi>
 
-== Installation on Ubuntu 11.10 ==
-
-Note that it is recommended to use LuaJIT 2.0 or LuaJIT 2.1 instead of the standard Lua 5.1 interpreter wherever possible.
-
-If the standard Lua 5.1 interpreter is required however, run the following command to install it from the Ubuntu repository:
-
-<geshi lang="bash">
-apt-get install -y lua5.1 liblua5.1-0 liblua5.1-0-dev
-</geshi>
-
-Everything should be installed correctly, except for one small tweak.
-
-Library name <code>liblua.so</code> has been changed in liblua5.1 package, it only comes with <code>liblua5.1.so</code>, which needs to be symlinked to <code>/usr/lib</code> so it could be found during the configuration process.
-
-<geshi lang="bash">
-ln -s /usr/lib/x86_64-linux-gnu/liblua5.1.so /usr/lib/liblua.so
-</geshi>
-
 = Community =
 
 == English Mailing List ==
@@ -314,7 +296,7 @@ Please submit bug reports, wishlists, or patches by
 
 As from the <code>v0.5.0rc32</code> release, all <code>*_by_lua_file</code> configure directives (such as [[#content_by_lua_file|content_by_lua_file]]) support loading Lua 5.1 and LuaJIT 2.0/2.1 raw bytecode files directly.
 
-Please note that the bytecode format used by LuaJIT 2.0/2.1 is not compatible with that used by the standard Lua 5.1 interpreter. So if using LuaJIT 2.0/2.1 with ngx_lua, LuaJIT compatible bytecode files must be generated as shown:
+Please note that the bytecode format used by LuaJIT 2.0/2.1 is not compatible with that used by the standard Lua 5.1 interpreter. So if you are using LuaJIT 2.0/2.1 with ngx_lua, LuaJIT compatible bytecode files must be generated as shown:
 
 <geshi lang="bash">
     /path/to/luajit/bin/luajit -b /path/to/input_file.lua /path/to/output_file.ljbc
@@ -331,18 +313,6 @@ Please refer to the official LuaJIT documentation on the <code>-b</code> option 
 http://luajit.org/running.html#opt_b
 
 Also, the bytecode files generated by LuaJIT 2.1 is ''not'' compatible with LuaJIT 2.0, and vice versa. The support for LuaJIT 2.1 bytecode was first added in ngx_lua v0.9.3.
-
-Similarly, if using the standard Lua 5.1 interpreter with ngx_lua, Lua compatible bytecode files must be generated using the <code>luac</code> commandline utility as shown:
-
-<geshi lang="bash">
-    luac -o /path/to/output_file.luac /path/to/input_file.lua
-</geshi>
-
-Unlike as with LuaJIT, debug information is included in standard Lua 5.1 bytecode files by default. This can be striped out by specifying the <code>-s</code> option as shown:
-
-<geshi lang="bash">
-    luac -s -o /path/to/output_file.luac /path/to/input_file.lua
-</geshi>
 
 Attempts to load standard Lua 5.1 bytecode files into ngx_lua instances linked to LuaJIT 2.0/2.1 or vice versa, will result in an error message, such as that below, being logged into the Nginx <code>error.log</code> file:
 
@@ -510,8 +480,7 @@ However, later attempts to manipulate the cosocket object will fail and return t
 This issue is due to limitations in the Nginx event model and only appears to affect Mac OS X.
 
 == Lua Coroutine Yielding/Resuming ==
-* Because Lua's <code>dofile</code> and <code>require</code> builtins are currently implemented as C functions in both Lua 5.1 and LuaJIT 2.0/2.1, if the Lua file being loaded by <code>dofile</code> or <code>require</code> invokes [[#ngx.location.capture|ngx.location.capture*]], [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]], or other API functions requiring yielding in the *top-level* scope of the Lua file, then the Lua error "attempt to yield across C-call boundary" will be raised. To avoid this, put these calls requiring yielding into your own Lua functions in the Lua file instead of the top-level scope of the file.
-* As the standard Lua 5.1 interpreter's VM is not fully resumable, the methods [[#ngx.location.capture|ngx.location.capture]], [[#ngx.location.capture_multi|ngx.location.capture_multi]], [[#ngx.redirect|ngx.redirect]], [[#ngx.exec|ngx.exec]], and [[#ngx.exit|ngx.exit]] cannot be used within the context of a Lua [http://www.lua.org/manual/5.1/manual.html#pdf-pcall pcall()] or [http://www.lua.org/manual/5.1/manual.html#pdf-xpcall xpcall()] or even the first line of the <code>for ... in ...</code> statement when the standard Lua 5.1 interpreter is used and the <code>attempt to yield across metamethod/C-call boundary</code> error will be produced. Please use LuaJIT 2.x, which supports a fully resumable VM, to avoid this.
+* Because Lua's <code>dofile</code> and <code>require</code> builtins are currently implemented as C functions in LuaJIT 2.0/2.1, if the Lua file being loaded by <code>dofile</code> or <code>require</code> invokes [[#ngx.location.capture|ngx.location.capture*]], [[#ngx.exec|ngx.exec]], [[#ngx.exit|ngx.exit]], or other API functions requiring yielding in the *top-level* scope of the Lua file, then the Lua error "attempt to yield across C-call boundary" will be raised. To avoid this, put these calls requiring yielding into your own Lua functions in the Lua file instead of the top-level scope of the file.
 
 == Lua Variable Scope ==
 Care must be taken when importing modules and this form should be used:
