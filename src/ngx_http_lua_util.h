@@ -9,6 +9,11 @@
 #define _NGX_HTTP_LUA_UTIL_H_INCLUDED_
 
 
+#ifdef DDEBUG
+#include "ddebug.h"
+#endif
+
+
 #include "ngx_http_lua_common.h"
 #include "ngx_http_lua_api.h"
 
@@ -284,7 +289,9 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     if (!llcf->enable_code_cache && r->connection->fd != (ngx_socket_t) -1) {
         lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
+#ifdef DDEBUG
         dd("lmcf: %p", lmcf);
+#endif
 
         L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
                                  r->connection->log, &cln);
@@ -325,7 +332,11 @@ ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
     }
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+#ifdef DDEBUG
     dd("lmcf->lua: %p", lmcf->lua);
+#endif
+
     return lmcf->lua;
 }
 
