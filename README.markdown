@@ -23,7 +23,6 @@ Table of Contents
 * [Installation](#installation)
     * [Building as a dynamic module](#building-as-a-dynamic-module)
     * [C Macro Configurations](#c-macro-configurations)
-    * [Installation on Ubuntu 11.10](#installation-on-ubuntu-1110)
 * [Community](#community)
     * [English Mailing List](#english-mailing-list)
     * [Chinese Mailing List](#chinese-mailing-list)
@@ -269,7 +268,7 @@ It is *highly* recommended to use [OpenResty releases](http://openresty.org) whi
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-1. LuaJIT can be downloaded the [latest release of OpenResty's LuaJIT branch version](https://github.com/openresty/luajit2/releases). The official LuaJIT 2.0 and 2.1 releases are also supported though the performance will be signficantly lower in many cases.
+1. LuaJIT can be downloaded from the [latest release of OpenResty's LuaJIT branch version](https://github.com/openresty/luajit2/releases). The official LuaJIT 2.0 and 2.1 releases are also supported, although the performance will be significantly lower in many cases.
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags).
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
