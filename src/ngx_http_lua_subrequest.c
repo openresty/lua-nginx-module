@@ -1031,6 +1031,14 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
     dd("pr_coctx status: %d", (int) pr_coctx->sr_statuses[ctx->index]);
 
     /* copy subrequest response headers */
+    if (ctx->headers_set) {
+        rc = ngx_http_lua_set_content_type(r);
+        if (rc != NGX_OK) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "failed to set default content type: %i", rc);
+            return NGX_ERROR;
+        }
+    }
 
     pr_coctx->sr_headers[ctx->index] = &r->headers_out;
 

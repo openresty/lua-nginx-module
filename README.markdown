@@ -4147,6 +4147,25 @@ to be returned when reading `ngx.header.Foo`.
 
 Note that `ngx.header` is not a normal Lua table and as such, it is not possible to iterate through it using the Lua `ipairs` function.
 
+Note: if the current response does not have a Content-Type header, but you use
+`ngx.header` to attempt retrieving it, a side effect will be that a
+Content-Type header will be created and returned according to your nginx
+configuration.
+
+For example:
+
+```nginx
+
+ location = /t {
+     default_type text/html;
+     content_by_lua_block {
+         -- even if the response had no Content-Type header,
+         -- it will now have: Content-Type: text/html
+         ngx.say(ngx.header['Content-Type'])
+     }
+ }
+```
+
 For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers) function instead.
 
 [Back to TOC](#nginx-api-for-lua)
@@ -4170,6 +4189,24 @@ Returns a Lua table holding all the current response headers for the current req
  for k, v in pairs(h) do
      ...
  end
+```
+
+Note: if the current response does not have a Content-Type header, but you use
+`ngx.resp.get_headers` to attempt retrieving it, a side effect will
+be that a Content-Type header will be created and returned according to your
+nginx configuration.
+
+For example:
+
+```nginx
+
+ location = /t {
+     default_type text/html;
+     content_by_lua_block {
+         -- the Content-Type header will be text/html
+         ngx.say(ngx.resp.get_headers()['Content-Type'])
+     }
+ }
 ```
 
 This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
