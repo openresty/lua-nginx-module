@@ -476,6 +476,17 @@ ngx_feature_test='setsockopt(1, SOL_SOCKET, SO_PASSCRED, NULL, 0);'
 
 . auto/feature
 
+ngx_feature="SA_RESTART"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_SA_RESTART"
+ngx_feature_run=no
+ngx_feature_incs="#include <signal.h>"
+ngx_feature_path=
+ngx_feature_test='struct sigaction act;
+                  act.sa_flags |= SA_RESTART;'
+
+. auto/feature
+
 ngx_feature="__attribute__(constructor)"
 ngx_feature_libs=
 ngx_feature_name="NGX_HTTP_LUA_HAVE_CONSTRUCTOR"

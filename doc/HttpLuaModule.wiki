@@ -2595,6 +2595,20 @@ When exceeding this limit, Nginx will stop running the callbacks of newly expire
 
 This directive was first introduced in the <code>v0.8.0</code> release.
 
+== lua_sa_restart ==
+
+'''syntax:''' ''lua_sa_restart on|off''
+
+'''default:''' ''lua_sa_restart on''
+
+'''context:''' ''http''
+
+When enabled, this module will set the `SA_RESTART` flag on nginx workers signal dispositions.
+
+This allows Lua I/O primitives to not be interrupted by nginx's handling of various signals.
+
+This directive was first introduced in the <code>v0.10.14</code> release.
+
 = Nginx API for Lua =
 
 <!-- inline-toc -->

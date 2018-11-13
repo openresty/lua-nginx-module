@@ -67,6 +67,12 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     }
 #endif  /* NGX_WIN32 */
 
+#if (NGX_HTTP_LUA_HAVE_SA_RESTART)
+    if (lmcf->set_sa_restart) {
+        ngx_http_lua_set_sa_restart(ngx_cycle->log);
+    }
+#endif
+
     if (lmcf->init_worker_handler == NULL) {
         return NGX_OK;
     }

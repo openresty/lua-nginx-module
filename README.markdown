@@ -1065,6 +1065,7 @@ Directives
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
 * [lua_max_running_timers](#lua_max_running_timers)
+* [lua_sa_restart](#lua_sa_restart)
 
 
 The basic building blocks of scripting Nginx with Lua are directives. Directives are used to specify when the user Lua code is run and
@@ -3066,6 +3067,23 @@ Running timers are those timers whose user callback functions are still running.
 When exceeding this limit, Nginx will stop running the callbacks of newly expired timers and log an error message "N lua_max_running_timers are not enough" where "N" is the current value of this directive.
 
 This directive was first introduced in the `v0.8.0` release.
+
+[Back to TOC](#directives)
+
+lua_sa_restart
+--------------
+
+**syntax:** *lua_sa_restart on|off*
+
+**default:** *lua_sa_restart on*
+
+**context:** *http*
+
+When enabled, this module will set the `SA_RESTART` flag on nginx workers signal dispositions.
+
+This allows Lua I/O primitives to not be interrupted by nginx's handling of various signals.
+
+This directive was first introduced in the `v0.10.14` release.
 
 [Back to TOC](#directives)
 
