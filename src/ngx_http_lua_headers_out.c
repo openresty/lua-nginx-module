@@ -528,10 +528,11 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
 
 int
 ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
-    ngx_str_t *key)
+    ngx_http_lua_ctx_t *ctx, ngx_str_t *key)
 {
     ngx_table_elt_t            *h;
     ngx_list_part_t            *part;
+    ngx_int_t                   rc;
     ngx_uint_t                  i;
     unsigned                    found;
 
@@ -550,12 +551,24 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
         break;
 
     case 12:
-        if (r->headers_out.content_type.len
-            && ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0)
+        if (ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0)
         {
-            lua_pushlstring(L, (char *) r->headers_out.content_type.data,
-                            r->headers_out.content_type.len);
-            return 1;
+            if (!r->headers_out.content_type.len) {
+                rc = ngx_http_lua_set_content_type(r);
+                if (rc != NGX_OK) {
+                    return luaL_error(L,
+                                      "failed to set default content type: %d",
+                                      (int) rc);
+                }
+
+                ctx->headers_set = 1;
+            }
+
+            if (r->headers_out.content_type.len) {
+                lua_pushlstring(L, (char *) r->headers_out.content_type.data,
+                                r->headers_out.content_type.len);
+                return 1;
+            }
         }
 
         break;

@@ -3433,6 +3433,21 @@ to be returned when reading <code>ngx.header.Foo</code>.
 
 Note that <code>ngx.header</code> is not a normal Lua table and as such, it is not possible to iterate through it using the Lua <code>ipairs</code> function.
 
+When you use <code>ngx.header</code> to get the Content-Type header, if the header is not existed,
+the header will be generated and returned according to the current configuration.
+
+For example:
+
+<geshi lang="nginx">
+    location = /t {
+        default_type text/html;
+        content_by_lua_block {
+            -- the Content-Type header will be text/html
+            ngx.say(ngx.header['Content-Type'])
+        }
+    }
+</geshi>
+
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
 == ngx.resp.get_headers ==
@@ -3452,6 +3467,21 @@ end
 for k, v in pairs(h) do
     ...
 end
+</geshi>
+
+Note that if the Content-Type header is not existed when <code>ngx.resp.get_headers</code> is called,
+the header will be generated and returned according to the current configuration.
+
+For example:
+
+<geshi lang="nginx">
+    location = /t {
+        default_type text/html;
+        content_by_lua_block {
+            -- the Content-Type header will be text/html
+            ngx.say(ngx.resp.get_headers()['Content-Type'])
+        }
+    }
 </geshi>
 
 This function has the same signature as [[#ngx.req.get_headers|ngx.req.get_headers]] except getting response headers instead of request headers.

@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 46);
+plan tests => repeat_each() * (blocks() * 3 + 51);
 
 #no_diff();
 no_long_string();
@@ -781,7 +781,10 @@ GET /read
 --- more_headers
 Accept-Encoding: gzip
 --- response_headers
-Content-Type: text/plain
+Content-Encoding: gzip
+--- no_error_log
+[error]
+http gzip filter
 --- response_body
 Hello, world, my dear friend!
 
@@ -1699,3 +1702,62 @@ found 3 resp headers
 --- no_error_log
 [error]
 lua exceeding response header limit
+
+
+
+=== TEST 76: don't generate Content-Type header when setting other response headers
+--- config
+    location = /t {
+        default_type text/html;
+        rewrite_by_lua_block {
+            ngx.header.blah = "foo"
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
+    }
+
+    location = /backend {
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        header_filter_by_lua_block {
+            ngx.header.content_type = nil
+        }
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+blah: foo
+Content-Type:
+--- no_error_log
+[error]
+
+
+
+=== TEST 77: don't generate Content-Type header when getting other response headers
+--- config
+    location = /t {
+        default_type text/html;
+        rewrite_by_lua_block {
+            local h = ngx.header.content_length
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
+    }
+
+    location = /backend {
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        header_filter_by_lua_block {
+            ngx.header.content_type = nil
+        }
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+Content-Type:
+--- no_error_log
+[error]

@@ -85,7 +85,7 @@ install:
   - git clone https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
   - git clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
   - git clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
-  - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
+  - git clone -b local_avoid_generating_content_type_header https://github.com/spacewander/lua-resty-core.git ../lua-resty-core
   - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
   - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
