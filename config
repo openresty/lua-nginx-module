@@ -362,6 +362,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl.c \
             $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.c \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.c \
+            $ngx_addon_dir/src/ngx_http_lua_pipe.c \
             "
 
 HTTP_LUA_DEPS=" \
@@ -424,6 +425,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl.h \
             $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.h \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.h \
+            $ngx_addon_dir/src/ngx_http_lua_pipe.h \
             "
 
 CFLAGS="$CFLAGS -DNDK_SET_VAR"
@@ -516,6 +518,36 @@ ngx_feature_run=yes
 ngx_feature_incs="#include <malloc.h>
 #include <stdio.h>"
 ngx_feature_test="int rc = malloc_trim((size_t) 0); printf(\"%d\", rc);"
+SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
+
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
+# ----------------------------------------
+
+ngx_feature="pipe2"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_PIPE2"
+ngx_feature_run=no
+ngx_feature_incs="#include <fcntl.h>"
+ngx_feature_test="int fd[2]; pipe2(fd, O_CLOEXEC|O_NONBLOCK);"
+SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
+
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
+# ----------------------------------------
+
+ngx_feature="signalfd"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_SIGNALFD"
+ngx_feature_run=no
+ngx_feature_incs="#include <sys/signalfd.h>"
+ngx_feature_test="sigset_t set; signalfd(-1, &set, SFD_NONBLOCK|SFD_CLOEXEC);"
 SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
 CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
 

@@ -29,6 +29,7 @@
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_pipe.h"
 
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
@@ -742,6 +743,11 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     cln->data = lmcf;
     cln->handler = ngx_http_lua_sema_mm_cleanup;
+
+#ifdef HAVE_NGX_LUA_PIPE
+    ngx_http_lua_pipe_init();
+#endif
+
 #endif
 
 #if nginx_version >= 1011011
