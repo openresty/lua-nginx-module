@@ -286,6 +286,33 @@ ngx_http_lua_ffi_headers_sent(ngx_http_request_t *r)
 
     return r->header_sent ? 1 : 0;
 }
+
+
+int
+ngx_http_lua_ffi_get_conf_env(u_char *name, u_char **env_buf, size_t *name_len)
+{
+    ngx_uint_t            i;
+    ngx_str_t            *var;
+    ngx_core_conf_t      *ccf;
+
+    ccf = (ngx_core_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx,
+                                           ngx_core_module);
+
+    var = ccf->env.elts;
+
+    for (i = 0; i < ccf->env.nelts; i++) {
+        if (var[i].data[var[i].len] == '='
+            && ngx_strncmp(name, var[i].data, var[i].len) == 0)
+        {
+            *env_buf = var[i].data;
+            *name_len = var[i].len;
+
+            return NGX_OK;
+        }
+    }
+
+    return NGX_DECLINED;
+}
 #endif /* NGX_LUA_NO_FFI_API */
 
 
