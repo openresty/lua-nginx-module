@@ -12,6 +12,7 @@
 
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_pipe.h"
 
 
 static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
@@ -65,6 +66,13 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
         return NGX_OK;
     }
+
+#ifdef HAVE_NGX_LUA_PIPE
+    if (ngx_http_lua_pipe_add_signal_handler(cycle) != NGX_OK) {
+        return NGX_ERROR;
+    }
+#endif
+
 #endif  /* NGX_WIN32 */
 
 #if (NGX_HTTP_LUA_HAVE_SA_RESTART)
