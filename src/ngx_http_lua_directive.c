@@ -1276,7 +1276,7 @@ static u_char *
 ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
     size_t *chunkname_len)
 {
-    u_char      *p, *out;
+    u_char      *out;
     size_t       len;
 
     len = sizeof("=(:)") - 1 + tag_len + cf->conf_file->file.name.len
@@ -1287,27 +1287,10 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
         return NULL;
     }
 
-    if (cf->conf_file->file.name.len) {
-        p = cf->conf_file->file.name.data + cf->conf_file->file.name.len;
-        while (--p >= cf->conf_file->file.name.data) {
-            if (*p == '/' || *p == '\\') {
-                p++;
-                goto found;
-            }
-        }
-
-        p++;
-
-    } else {
-        p = cf->conf_file->file.name.data;
-    }
-
-found:
-
     ngx_snprintf(out, len, "=%*s(%*s:%d)%Z",
-                 tag_len, tag, cf->conf_file->file.name.data
-                               + cf->conf_file->file.name.len - p,
-                 p, cf->conf_file->line);
+                 tag_len, tag, cf->conf_file->file.name.len,
+                 cf->conf_file->file.name.data,
+                 cf->conf_file->line);
     *chunkname_len = len;
 
     return out;
