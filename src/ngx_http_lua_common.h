@@ -140,7 +140,7 @@ typedef struct {
 #endif
 
 
-#if (NGX_PTR_SIZE >= 8)
+#if (NGX_PTR_SIZE >= 8 && !defined(_WIN64))
 #define ngx_http_lua_lightudata_mask(ludata)                                 \
     ((void *) ((uintptr_t) (&ngx_http_lua_##ludata) & ((1UL << 47) - 1)))
 
