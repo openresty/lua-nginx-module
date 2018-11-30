@@ -470,7 +470,7 @@ ngx_http_lua_shdict_get_helper(lua_State *L, int get_stale)
 
     if (n != 2) {
         return luaL_error(L, "expecting exactly two arguments, "
-                          "but only seen %d", n);
+                          "but received %d", n);
     }
 
     if (lua_type(L, 1) != LUA_TTABLE) {
