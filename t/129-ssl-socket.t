@@ -301,7 +301,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
+            sock:settimeout(7000)
 
             do
 
@@ -380,7 +380,7 @@ lua ssl free session
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -2508,7 +2508,7 @@ SSL reused session
 
         content_by_lua_block {
             local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
+            sock:settimeout(7000)
 
             local ok, err = sock:connect("openresty.org", 443)
             if not ok then
@@ -2529,4 +2529,4 @@ GET /t
 qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including the object\), but seen 0/
 --- no_error_log
 [alert]
---- timeout: 5
+--- timeout: 10
