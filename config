@@ -283,7 +283,7 @@ END
         fi
 
         if [ $ngx_found = no ]; then
-            # SLES 11/12 with LuaJIT luajit-2.0.4
+            # SLES 12 with LuaJIT 2.0 (lua51-luajit-devel-2.0.4-7.1.x86_64.rpm, lua51-luajit-2.0.4-7.1.x86_64.rpm, libluajit-5_1-2-2.0.4-7.1.x86_64.rpm)
             ngx_feature="LuaJIT library in /usr/"
             ngx_feature_path="/usr/include/luajit-5_1-2.0"
             if [ $NGX_RPATH = YES ]; then
