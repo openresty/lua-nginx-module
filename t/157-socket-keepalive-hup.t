@@ -32,7 +32,7 @@ __DATA__
         set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua_block {
-            local f, err = io.open("t/servroot/logs/nginx.pid", "r")
+            local f, err = io.open("$TEST_NGINX_SERVER_ROOT/logs/nginx.pid", "r")
             if not f then
                 ngx.say("failed to open nginx.pid: ", err)
                 return
