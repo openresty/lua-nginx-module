@@ -1405,8 +1405,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
         break;
 
     case 12:
-        if (ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0)
-        {
+        if (ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0) {
             if (!r->headers_out.content_type.len) {
                 if (ngx_http_lua_set_content_type(r) != NGX_OK) {
                     *errmsg = "failed to set default content type";

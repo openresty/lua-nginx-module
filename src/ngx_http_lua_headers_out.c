@@ -551,8 +551,7 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
         break;
 
     case 12:
-        if (ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0)
-        {
+        if (ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0) {
             if (!r->headers_out.content_type.len) {
                 rc = ngx_http_lua_set_content_type(r);
                 if (rc != NGX_OK) {
