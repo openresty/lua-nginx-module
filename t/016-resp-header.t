@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 55);
+plan tests => repeat_each() * (blocks() * 3 + 58);
 
 #no_diff();
 no_long_string();
@@ -1501,84 +1501,11 @@ test
 
 
 
-=== TEST 69: return the matched content-type instead of default_type
---- http_config
-types {
-    image/png png;
-}
---- config
-location /set/ {
-     default_type text/html;
-     content_by_lua_block {
-       ngx.say(ngx.header["content-type"])
-   }
-}
---- request
-GET /set/hello.png
---- response_headers
-Content-Type: image/png
---- response_body
-image/png
---- no_error_log
-[error]
-
-
-
-=== TEST 70: always return the matched content-type
---- config
-    location /set/ {
-        default_type "image/png";
-        content_by_lua_block {
-            ngx.say(ngx.header["content-type"])
-            ngx.say(ngx.header["content-type"])
-        }
-    }
---- request
-GET /set/hello.png
---- response_headers
-Content-Type: image/png
---- response_body
-image/png
-image/png
---- no_error_log
-[error]
-
-
-
-=== TEST 71: return the matched content-type after ngx.resp.get_headers()
---- http_config
-types {
-    image/png png;
-}
---- config
-    location /set/ {
-        default_type text/html;
-        content_by_lua_block {
-            local h, err = ngx.resp.get_headers()
-            if err then
-                ngx.log(ngx.ERR, "err: ", err)
-                return ngx.exit(500)
-            end
-
-            ngx.say(h["content-type"])
-        }
-    }
---- request
-GET /set/hello.png
---- response_headers
-Content-Type: image/png
---- response_body
-image/png
---- no_error_log
-[error]
-
-
-
-=== TEST 72: exceeding max header limit (default 100)
+=== TEST 69: exceeding max header limit (default 100)
 --- config
     location /resp-header {
         content_by_lua_block {
-            for i = 1, 99 do
+            for i = 1, 100 do
                 ngx.header["Foo" .. i] = "Foo"
             end
 
@@ -1608,11 +1535,11 @@ lua exceeding response header limit 101 > 100
 
 
 
-=== TEST 73: NOT exceeding max header limit (default 100)
+=== TEST 70: NOT exceeding max header limit (default 100)
 --- config
     location /resp-header {
         content_by_lua_block {
-            for i = 1, 98 do
+            for i = 1, 99 do
                 ngx.header["Foo" .. i] = "Foo"
             end
 
@@ -1640,11 +1567,11 @@ lua exceeding response header limit
 
 
 
-=== TEST 74: exceeding max header limit (custom limit, 3)
+=== TEST 71: exceeding max header limit (custom limit, 3)
 --- config
     location /resp-header {
         content_by_lua_block {
-            for i = 1, 2 do
+            for i = 1, 3 do
                 ngx.header["Foo" .. i] = "Foo"
             end
 
@@ -1674,11 +1601,11 @@ lua exceeding response header limit 4 > 3
 
 
 
-=== TEST 75: NOT exceeding max header limit (custom limit, 3)
+=== TEST 72: NOT exceeding max header limit (custom limit, 3)
 --- config
     location /resp-header {
         content_by_lua_block {
-            for i = 1, 1 do
+            for i = 1, 2 do
                 ngx.header["Foo" .. i] = "Foo"
             end
 
@@ -1705,7 +1632,29 @@ lua exceeding response header limit
 
 
 
-=== TEST 76: don't generate Content-Type when setting other response header
+=== TEST 73: return nil if Content-Type is not set yet
+--- config
+    location /t {
+        default_type text/html;
+        content_by_lua_block {
+            ngx.log(ngx.WARN, "Content-Type: ", ngx.header["content-type"])
+            ngx.say("Content-Type: ", ngx.header["content-type"])
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Content-Type: text/html
+--- response_body
+Content-Type: nil
+--- no_error_log
+[error]
+--- error_log
+Content-Type: nil
+
+
+
+=== TEST 74: don't generate Content-Type when setting other response header
 --- config
     location = /backend {
         content_by_lua_block {
@@ -1735,7 +1684,7 @@ blah: foo
 
 
 
-=== TEST 77: don't generate Content-Type when getting other response header
+=== TEST 75: don't generate Content-Type when getting other response header
 --- config
     location = /backend {
         content_by_lua_block {
@@ -1764,7 +1713,37 @@ foo
 
 
 
-=== TEST 78: generate default Content-Type when setting other response header
+=== TEST 76: don't generate Content-Type when getting it
+--- config
+    location = /backend {
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        header_filter_by_lua_block {
+            ngx.header.content_type = nil
+        }
+    }
+
+    location /t {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
+        header_filter_by_lua_block {
+            ngx.log(ngx.WARN, "Content-Type: ", ngx.header["content-type"])
+        }
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+!Content-Type
+--- no_error_log
+[error]
+--- error_log
+Content-Type: nil
+
+
+
+=== TEST 77: generate default Content-Type when setting other response header
 --- config
     location = /t {
         default_type text/html;
@@ -1782,6 +1761,42 @@ blah: foo
 Content-Type: text/html
 --- no_error_log
 [error]
+
+
+
+=== TEST 78: don't generate Content-Type when calling ngx.resp.get_headers()
+--- config
+    location = /backend {
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        header_filter_by_lua_block {
+            ngx.header.content_type = nil
+        }
+    }
+
+    location /t {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
+        header_filter_by_lua_block {
+            local h, err = ngx.resp.get_headers()
+            if err then
+                ngx.log(ngx.ERR, "err: ", err)
+                return
+            end
+
+            ngx.log(ngx.WARN, "Content-Type: ", h["content-type"])
+        }
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+!Content-Type
+--- no_error_log
+[error]
+--- error_log
+Content-Type: nil
 
 
 
