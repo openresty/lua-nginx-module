@@ -505,7 +505,6 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     ngx_table_elt_t    *header;
     ngx_http_request_t *r;
     ngx_http_lua_ctx_t *ctx;
-    ngx_int_t           rc;
     u_char             *lowcase_key = NULL;
     size_t              lowcase_key_sz = 0;
     ngx_uint_t          i;
@@ -560,17 +559,6 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
                               headers_metatable_key));
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_setmetatable(L, -2);
-    }
-
-    if (!r->headers_out.content_type.len) {
-        rc = ngx_http_lua_set_content_type(r, ctx);
-        if (rc != NGX_OK) {
-            return luaL_error(L,
-                              "failed to set default content type: %d",
-                              (int) rc);
-        }
-
-        ctx->headers_set = 1;
     }
 
 #if 1
@@ -1405,21 +1393,12 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
         break;
 
     case 12:
-        if (ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0) {
-            if (!r->headers_out.content_type.len) {
-                if (ngx_http_lua_set_content_type(r, ctx) != NGX_OK) {
-                    *errmsg = "failed to set default content type";
-                    return NGX_ERROR;
-                }
-
-                ctx->headers_set = 1;
-            }
-
-            if (r->headers_out.content_type.len) {
-                values[0].data = r->headers_out.content_type.data;
-                values[0].len = r->headers_out.content_type.len;
-                return 1;
-            }
+        if (ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0
+            && r->headers_out.content_type.len)
+        {
+            values[0].data = r->headers_out.content_type.data;
+            values[0].len = r->headers_out.content_type.len;
+            return 1;
         }
 
         break;
