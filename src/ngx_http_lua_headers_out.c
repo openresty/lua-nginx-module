@@ -476,8 +476,8 @@ ngx_http_clear_builtin_header(ngx_http_request_t *r,
 
 
 ngx_int_t
-ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
-    ngx_str_t value, unsigned override)
+ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
+    ngx_str_t key, ngx_str_t value, unsigned override)
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
@@ -507,6 +507,10 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_str_t key,
 
         hv.offset = handlers[i].offset;
         hv.handler = handlers[i].handler;
+
+        if (hv.handler == ngx_http_set_content_type_header) {
+            ctx->mime_set = 1;
+        }
 
         break;
     }
@@ -552,8 +556,8 @@ ngx_http_lua_get_output_header(lua_State *L, ngx_http_request_t *r,
 
     case 12:
         if (ngx_strncasecmp(key->data, (u_char *) "Content-Type", 12) == 0) {
-            if (!r->headers_out.content_type.len) {
-                rc = ngx_http_lua_set_content_type(r);
+            if (r->headers_out.content_type.len == 0) {
+                rc = ngx_http_lua_set_content_type(r, ctx);
                 if (rc != NGX_OK) {
                     return luaL_error(L,
                                       "failed to set default content type: %d",

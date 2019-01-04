@@ -563,7 +563,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     }
 
     if (!r->headers_out.content_type.len) {
-        rc = ngx_http_lua_set_content_type(r);
+        rc = ngx_http_lua_set_content_type(r, ctx);
         if (rc != NGX_OK) {
             return luaL_error(L,
                               "failed to set default content type: %d",
@@ -826,7 +826,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
                 ngx_memcpy(value.data, p, len);
                 value.len = len;
 
-                rc = ngx_http_lua_set_output_header(r, key, value,
+                rc = ngx_http_lua_set_output_header(r, ctx, key, value,
                                                     i == 1 /* override */);
 
                 if (rc == NGX_ERROR) {
@@ -853,7 +853,7 @@ ngx_http_lua_ngx_header_set(lua_State *L)
     dd("key: %.*s, value: %.*s",
        (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_output_header(r, key, value, 1 /* override */);
+    rc = ngx_http_lua_set_output_header(r, ctx, key, value, 1 /* override */);
 
     if (rc == NGX_ERROR) {
         return luaL_error(L, "failed to set header %s (error: %d)",
@@ -1250,7 +1250,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
                 ngx_memcpy(value.data, p, len);
                 value.len = len;
 
-                rc = ngx_http_lua_set_output_header(r, key, value,
+                rc = ngx_http_lua_set_output_header(r, ctx, key, value,
                                                     override && i == 0);
 
                 if (rc == NGX_ERROR) {
@@ -1276,7 +1276,7 @@ ngx_http_lua_ffi_set_resp_header(ngx_http_request_t *r, const u_char *key_data,
     dd("key: %.*s, value: %.*s",
        (int) key.len, key.data, (int) value.len, value.data);
 
-    rc = ngx_http_lua_set_output_header(r, key, value, override);
+    rc = ngx_http_lua_set_output_header(r, ctx, key, value, override);
 
     if (rc == NGX_ERROR) {
         *errmsg = "failed to set header";
@@ -1407,7 +1407,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
     case 12:
         if (ngx_strncasecmp(key_buf, (u_char *) "Content-Type", 12) == 0) {
             if (!r->headers_out.content_type.len) {
-                if (ngx_http_lua_set_content_type(r) != NGX_OK) {
+                if (ngx_http_lua_set_content_type(r, ctx) != NGX_OK) {
                     *errmsg = "failed to set default content type";
                     return NGX_ERROR;
                 }
