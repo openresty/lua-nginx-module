@@ -411,9 +411,11 @@ ngx_http_lua_hash_str(u_char *src, size_t n)
 
 
 static ngx_inline ngx_int_t
-ngx_http_lua_set_content_type(ngx_http_request_t *r)
+ngx_http_lua_set_content_type(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {
     ngx_http_lua_loc_conf_t     *llcf;
+
+    ctx->mime_set = 1;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     if (llcf->use_default_type

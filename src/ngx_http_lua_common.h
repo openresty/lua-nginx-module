@@ -566,6 +566,8 @@ typedef struct ngx_http_lua_ctx_s {
 
     unsigned         headers_set:1; /* whether the user has set custom
                                        response headers */
+    unsigned         mime_set:1;    /* whether the user has set Content-Type
+                                       response header */
 
     unsigned         entered_rewrite_phase:1;
     unsigned         entered_access_phase:1;

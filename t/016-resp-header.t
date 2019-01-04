@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 51);
+plan tests => repeat_each() * (blocks() * 3 + 55);
 
 #no_diff();
 no_long_string();
@@ -1705,8 +1705,17 @@ lua exceeding response header limit
 
 
 
-=== TEST 76: don't generate Content-Type header when setting other response headers
+=== TEST 76: don't generate Content-Type when setting other response header
 --- config
+    location = /backend {
+        content_by_lua_block {
+            ngx.say("foo")
+        }
+        header_filter_by_lua_block {
+            ngx.header.content_type = nil
+        }
+    }
+
     location = /t {
         default_type text/html;
         rewrite_by_lua_block {
@@ -1714,13 +1723,54 @@ lua exceeding response header limit
         }
         proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
     }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+blah: foo
+!Content-Type
+--- no_error_log
+[error]
 
+
+
+=== TEST 77: don't generate Content-Type when getting other response header
+--- config
     location = /backend {
         content_by_lua_block {
             ngx.say("foo")
         }
         header_filter_by_lua_block {
             ngx.header.content_type = nil
+        }
+    }
+
+    location = /t {
+        default_type text/html;
+        rewrite_by_lua_block {
+            local h = ngx.header.content_length
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+!Content-Type
+--- no_error_log
+[error]
+
+
+
+=== TEST 78: generate default Content-Type when setting other response header
+--- config
+    location = /t {
+        default_type text/html;
+        content_by_lua_block {
+            ngx.header.blah = "foo"
+            ngx.say("foo")
         }
     }
 --- request
@@ -1729,28 +1779,19 @@ GET /t
 foo
 --- response_headers
 blah: foo
-Content-Type:
+Content-Type: text/html
 --- no_error_log
 [error]
 
 
 
-=== TEST 77: don't generate Content-Type header when getting other response headers
+=== TEST 79: don't generate default Content-Type when Content-Type is cleared
 --- config
     location = /t {
         default_type text/html;
-        rewrite_by_lua_block {
-            local h = ngx.header.content_length
-        }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend;
-    }
-
-    location = /backend {
         content_by_lua_block {
+            ngx.header["Content-Type"] = nil
             ngx.say("foo")
-        }
-        header_filter_by_lua_block {
-            ngx.header.content_type = nil
         }
     }
 --- request
@@ -1758,6 +1799,26 @@ GET /t
 --- response_body
 foo
 --- response_headers
-Content-Type:
+!Content-Type
+--- no_error_log
+[error]
+
+
+
+=== TEST 80: don't generate default Content-Type when Content-Type is set
+--- config
+    location = /t {
+        default_type text/html;
+        content_by_lua_block {
+            ngx.header["Content-Type"] = "application/json"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_body
+foo
+--- response_headers
+Content-Type: application/json
 --- no_error_log
 [error]
