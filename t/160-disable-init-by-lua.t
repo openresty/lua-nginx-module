@@ -5,6 +5,7 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 2);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
+
 my $html_dir = $ENV{TEST_NGINX_HTML_DIR};
 my $http_config = <<_EOC_;
     init_by_lua_block {
@@ -15,16 +16,15 @@ my $http_config = <<_EOC_;
                 }
                 http {
                     init_by_lua_block {
-                        -- if the code in the init_by_lua* is run, there
-                        -- will be a string contains the 'error'
                         ngx.log(ngx.ERR, "run init_by_lua")
                     }
                 }
             ]]
 
             assert(os.execute("mkdir -p $html_dir/logs"))
+
             local conf_file = "$html_dir/nginx.conf"
-            local f, err = io.open(conf_file, 'w')
+            local f, err = io.open(conf_file, "w")
             if not f then
                 ngx.log(ngx.ERR, err)
                 return
@@ -53,10 +53,9 @@ add_block_preprocessor(sub {
     if (!defined $block->request) {
         $block->set_value("request", "GET /t");
     }
-
 });
 
-log_level("debug");
+log_level("warn");
 no_long_string();
 run_tests();
 
@@ -76,7 +75,7 @@ __DATA__
                 return
             end
 
-            local out, err = p:read('*a')
+            local out, err = p:read("*a")
             if not out then
                 ngx.log(ngx.ERR, err)
 
@@ -86,11 +85,11 @@ __DATA__
         }
     }
 --- no_error_log eval
-qr/\[error\] .+ (?!:nginx.pid" failed \(2: No such file or directory\))$/
+qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
 
 
 
-=== TEST 2: ensure init_by_lua* is not run when testing Nginx configuration
+=== TEST 2: init_by_lua* does not run when testing Nginx configuration
 --- config
     location = /t {
         content_by_lua_block {
@@ -104,7 +103,7 @@ qr/\[error\] .+ (?!:nginx.pid" failed \(2: No such file or directory\))$/
                 return
             end
 
-            local out, err = p:read('*a')
+            local out, err = p:read("*a")
             if not out then
                 ngx.log(ngx.ERR, err)
 
@@ -119,7 +118,7 @@ qr/\[error\] .+ (?!:nginx.pid" failed \(2: No such file or directory\))$/
                 return
             end
 
-            local out, err = p:read('*a')
+            local out, err = p:read("*a")
             if not out then
                 ngx.log(ngx.ERR, err)
 
@@ -128,5 +127,5 @@ qr/\[error\] .+ (?!:nginx.pid" failed \(2: No such file or directory\))$/
             end
         }
     }
---- no_error_log
-[error]
+--- no_error_log eval
+qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
