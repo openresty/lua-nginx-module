@@ -186,6 +186,7 @@ body_filter_by_lua:3: in main chunk,
 old foo: 1\n\z/, "old foo: 2\nold foo: 3\n"]
 
 
+
 === TEST 7: log_by_lua
 --- config
     location /t {
@@ -208,7 +209,6 @@ qr/(old foo: \d+|\[\w+\].*?writing a global lua variable \('[^'\s]+'\)|\w+_by_lu
 --- grep_error_log_out eval
 [qr/\A\[warn\] .*?writing a global lua variable \('foo'\)
 log_by_lua\(nginx\.conf:50\):3: in main chunk\n\z/, "old foo: 1\n"]
-
 
 
 
@@ -304,7 +304,6 @@ ssl_certificate_by_lua:3: in main chunk\n\z/, "old foo: 1\n"]
 
 
 
-
 === TEST 9: timer
 --- config
     location /t {
@@ -333,7 +332,6 @@ qr/(old foo: \d+|\[\w+\].*?writing a global lua variable \('[^'\s]+'\)|\w+_by_lu
 --- grep_error_log_out eval
 [qr/\A\[warn\] .*?writing a global lua variable \('foo'\)
 content_by_lua\(nginx\.conf:56\):4: in\n\z/, "old foo: 1\n"]
-
 
 
 
