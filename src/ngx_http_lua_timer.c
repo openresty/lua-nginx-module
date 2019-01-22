@@ -350,6 +350,9 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     ngx_add_timer(ev, delay);
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "created timer (co: %p delay: %M ms)", tctx->co, delay);
+
     lua_pushinteger(L, 1);
     return 1;
 
@@ -509,6 +512,10 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
 
     ngx_add_timer(ev, tctx->delay);
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "created next timer (co: %p delay: %M ms)", tctx->co,
+                   tctx->delay);
+
     return NGX_OK;
 
 nomem:
@@ -580,6 +587,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     c = ngx_http_lua_create_fake_connection(tctx.pool);
     if (c == NULL) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "failed to create fake connection to run timer (co: %p)",
+                      tctx.co);
         goto failed;
     }
 
@@ -591,6 +601,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     r = ngx_http_lua_create_fake_request(c);
     if (r == NULL) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "failed to create fake request to run timer (co: %p)",
+                      tctx.co);
         goto failed;
     }
 
@@ -626,6 +639,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     ctx = ngx_http_lua_create_ctx(r);
     if (ctx == NULL) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "failed to create ctx to run timer (co: %p)", tctx.co);
         goto failed;
     }
 
@@ -634,6 +649,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
         pcln = ngx_pool_cleanup_add(r->pool, 0);
         if (pcln == NULL) {
+            ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                          "failed to add vm cleanup to run timer (co: %p)",
+                          tctx.co);
             goto failed;
         }
 
@@ -647,6 +665,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "failed to add request cleanup to run timer (co: %p)",
+                      tctx.co);
         goto failed;
     }
 
