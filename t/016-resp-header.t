@@ -1837,3 +1837,45 @@ foo
 Content-Type: application/json
 --- no_error_log
 [error]
+
+
+
+=== TEST 81: set single value to link header
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header.link = "</foo.jpg>; rel=preload"
+            ngx.say("Link: ", ngx.var.sent_http_link)
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Link: </foo.jpg>; rel=preload
+--- response_body
+Link: </foo.jpg>; rel=preload
+--- skip_nginx
+3: < 1.13.10
+
+
+
+=== TEST 82: set multi values to link header
+--- config
+    location = /t {
+        content_by_lua '
+            ngx.header.link = {
+                "</foo.jpg>; rel=preload",
+                "</bar.css>; rel=preload; as=style",
+            }
+
+            ngx.say("Link: ", ngx.var.sent_http_link)
+        ';
+    }
+--- request
+GET /t
+--- response_headers
+Link: </foo.jpg>; rel=preload, </bar.css>; rel=preload; as=style
+--- response_body_like chop
+^Link: </foo.jpg>; rel=preload[;,] </bar.css>; rel=preload; as=style$
+--- skip_nginx
+3: < 1.13.10
