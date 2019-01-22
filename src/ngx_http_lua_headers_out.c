@@ -106,6 +106,14 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  offsetof(ngx_http_headers_out_t, cache_control),
                  ngx_http_set_builtin_multi_header },
 
+#if nginx_version >= 1013010
+
+    { ngx_string("Link"),
+                 offsetof(ngx_http_headers_out_t, link),
+                 ngx_http_set_builtin_multi_header },
+
+#endif
+
     { ngx_null_string, 0, ngx_http_set_header }
 };
 
