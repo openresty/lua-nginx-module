@@ -665,7 +665,7 @@ GET /t
 Link: </foo.jpg>; rel=preload, </bar.css>; rel=preload; as=style
 --- response_body_like chop
 ^Link: </foo.jpg>; rel=preload[;,] </bar.css>; rel=preload; as=style$
---- skip_nginx: 3: < 1.13.10
+--- skip_nginx: 3: < 1.13.9
 
 
 
@@ -760,7 +760,7 @@ Link: </foo.jpg>; rel=preload, </hello.css>; rel=preload, </bar.css>; rel=preloa
 Link: </foo.jpg>; rel=preload[;,] </hello.css>; rel=preload[;,] </bar.css>; rel=preload; as=style$
 --- no_error_log
 [error]
---- skip_nginx: 4: < 1.13.10
+--- skip_nginx: 4: < 1.13.9
 
 
 
