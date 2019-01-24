@@ -28,6 +28,7 @@ static int ngx_http_lua_socket_tcp_receive(lua_State *L);
 static int ngx_http_lua_socket_tcp_receiveany(lua_State *L);
 static int ngx_http_lua_socket_tcp_send(lua_State *L);
 static int ngx_http_lua_socket_tcp_close(lua_State *L);
+static int ngx_http_lua_socket_tcp_info(lua_State *L);
 static int ngx_http_lua_socket_tcp_setoption(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeouts(lua_State *L);
@@ -236,7 +237,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{req socket object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           req_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 5 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -250,6 +251,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_info);
+    lua_setfield(L, -2, "info"); /* ngx socket tcp_info*/
+
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
@@ -259,7 +263,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           raw_req_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
@@ -276,6 +280,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
 
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_info);
+    lua_setfield(L, -2, "info"); /* ngx socket tcp_info*/
+
     lua_pushvalue(L, -1);
     lua_setfield(L, -2, "__index");
 
@@ -285,7 +292,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{tcp object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           tcp_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 12 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 13 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -320,6 +327,9 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeouts);
     lua_setfield(L, -2, "settimeouts"); /* ngx socket mt */
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_info);
+    lua_setfield(L, -2, "info"); /* ngx socket tcp_info */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_getreusedtimes);
     lua_setfield(L, -2, "getreusedtimes");
@@ -2750,7 +2760,6 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     return 1;
 }
 
-
 static int
 ngx_http_lua_socket_tcp_close(lua_State *L)
 {
@@ -2800,6 +2809,108 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
 
     lua_pushinteger(L, 1);
     return 1;
+}
+
+static int
+ngx_http_lua_socket_tcp_info(lua_State *L) {
+   ngx_http_request_t * r;
+   ngx_http_lua_socket_tcp_upstream_t *u;
+
+   if (lua_gettop(L) != 1) {
+       return luaL_error(L, "expecting 1 argument "
+               "(including the object) but seen %d", lua_gettop(L));
+   }
+
+   r = ngx_http_lua_get_req(L);
+   if (r == NULL) {
+       return luaL_error(L, "no request found");
+   }
+
+   luaL_checktype(L, 1, LUA_TTABLE);
+
+   lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+   u = lua_touserdata(L, -1);
+   lua_pop(L, 1);
+
+   if (u == NULL || u->peer.connection == NULL) {
+       lua_pushnil(L);
+       lua_pushliteral(L, "closed");
+       return 2;
+   }
+
+   if (u->request != r) {
+       return luaL_error(L, "bad request");
+   }
+
+   struct tcp_info info;
+   int length = sizeof(struct tcp_info);
+
+   if (getsockopt(u->peer.connection->fd, IPPROTO_TCP, TCP_INFO, (void *) &info, (socklen_t * ) & length) != 0)
+   {
+       lua_pushnil(L);
+       lua_pushliteral(L, "getsockopt error");
+       return 2;
+   }
+   lua_pushstring(L, "test");
+   lua_createtable(L, 0 /* narr */, 23 /* nrec */);
+
+   lua_pushinteger(L, info.tcpi_state);
+   lua_setfield(L, -2, "state");
+   lua_pushinteger(L, info.tcpi_ca_state);
+   lua_setfield(L, -2, "ca_state");
+   lua_pushinteger(L, info.tcpi_retransmits);
+   lua_setfield(L, -2, "retransmits");
+   lua_pushinteger(L, info.tcpi_probes);
+   lua_setfield(L, -2, "probes");
+   lua_pushinteger(L, info.tcpi_backoff);
+   lua_setfield(L, -2, "backoff");
+   lua_pushinteger(L, info.tcpi_options);
+   lua_setfield(L, -2, "options");
+   lua_pushinteger(L, info.tcpi_snd_wscale);
+   lua_setfield(L, -2, "snd_wscale");
+   lua_pushinteger(L, info.tcpi_rto);
+   lua_setfield(L, -2, "rto");
+   lua_pushinteger(L, info.tcpi_ato);
+   lua_setfield(L, -2, "ato");
+   lua_pushinteger(L, info.tcpi_snd_mss);
+   lua_setfield(L, -2, "snd_mss");
+   lua_pushinteger(L, info.tcpi_rcv_mss);
+   lua_setfield(L, -2, "rcv_mss");
+   lua_pushinteger(L, info.tcpi_unacked);
+   lua_setfield(L, -2, "unacked");
+   lua_pushinteger(L, info.tcpi_sacked);
+   lua_setfield(L, -2, "sacked");
+   lua_pushinteger(L, info.tcpi_lost);
+   lua_setfield(L, -2, "lost");
+   lua_pushinteger(L, info.tcpi_retrans);
+   lua_setfield(L, -2, "retrans");
+   lua_pushinteger(L, info.tcpi_fackets);
+   lua_setfield(L, -2, "fackets");
+   lua_pushinteger(L,  info.tcpi_last_data_sent);
+   lua_setfield(L, -2, "last_data_sent");
+   lua_pushinteger(L,  info.tcpi_last_ack_sent);
+   lua_setfield(L, -2, "last_ack_sent");
+   lua_pushinteger(L,  info.tcpi_last_data_recv);
+   lua_setfield(L, -2, "last_data_recv");
+   lua_pushinteger(L,  info.tcpi_last_ack_recv);
+   lua_setfield(L, -2, "last_ack_recv");
+   lua_pushinteger(L,  info.tcpi_pmtu);
+   lua_setfield(L, -2, "ptmu");
+   lua_pushinteger(L,  info.tcpi_rcv_ssthresh);
+   lua_setfield(L, -2, "rcv_ssthresh");
+   lua_pushinteger(L,  info.tcpi_rtt);
+   lua_setfield(L, -2, "rtt");
+   lua_pushinteger(L,  info.tcpi_rttvar);
+   lua_setfield(L, -2, "rttvar");
+   lua_pushinteger(L,  info.tcpi_snd_ssthresh);
+   lua_setfield(L, -2, "snd_ssthresh");
+   lua_pushinteger(L,  info.tcpi_snd_cwnd);
+   lua_setfield(L, -2, "snd_cwnd");
+   lua_pushinteger(L,  info.tcpi_advmss);
+   lua_setfield(L, -2, "advmss");
+   lua_pushinteger(L,  info.tcpi_reordering);
+   lua_setfield(L, -2, "reordering");
+   return 1;
 }
 
 
