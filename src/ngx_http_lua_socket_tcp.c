@@ -2845,7 +2845,8 @@ ngx_http_lua_socket_tcp_info(lua_State *L) {
    struct tcp_info info;
    int length = sizeof(struct tcp_info);
 
-   if (getsockopt(u->peer.connection->fd, IPPROTO_TCP, TCP_INFO, (void *) &info, (socklen_t * ) & length) != 0)
+   if (getsockopt(u->peer.connection->fd, IPPROTO_TCP,
+       TCP_INFO, (void *) &info, (socklen_t * ) & length) != 0)
    {
        lua_pushnil(L);
        lua_pushliteral(L, "getsockopt error");
