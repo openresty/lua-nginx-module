@@ -3720,10 +3720,10 @@ sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
     }
 --- request
 GET /t
---- response_body
-failed to connect: www.google.com could not be resolved
-failed to connect: www.google.com could not be resolved
-failed to connect: www.google.com could not be resolved
+--- response_body_like
+failed to connect: www.google.com could not be resolved(?: \(\d+: Operation timed out\))?
+failed to connect: www.google.com could not be resolved(?: \(\d+: Operation timed out\))?
+failed to connect: www.google.com could not be resolved(?: \(\d+: Operation timed out\))?
 hello!
 --- error_log eval
 qr{\[alert\] .*? send\(\) failed \(\d+: Operation not permitted\) while resolving}
