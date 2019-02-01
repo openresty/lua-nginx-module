@@ -2,7 +2,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2);
+plan tests => repeat_each() * (blocks() * 3);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -57,6 +57,7 @@ add_block_preprocessor(sub {
     }
 });
 
+env_to_nginx("PATH");
 log_level("warn");
 no_long_string();
 run_tests();
@@ -86,6 +87,8 @@ __DATA__
             end
         }
     }
+--- error_log
+failed (2: No such file or directory)
 --- no_error_log eval
 qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
 
@@ -129,6 +132,8 @@ qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
             end
         }
     }
+--- error_log
+test is successful
 --- no_error_log eval
 qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
 
@@ -183,5 +188,7 @@ qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
             end
         }
     }
+--- error_log
+test is successful
 --- no_error_log eval
 qr/\[error\] .*? init_by_lua:\d+: run init_by_lua with lua_shared_dict/
