@@ -11,7 +11,7 @@ add_block_preprocessor(sub {
     init_by_lua_block {
         function test_sa_restart()
             local signals = {
-                "HUP",
+                --"HUP",
                 --"INFO",
                 --"XCPU",
                 --"USR1",
