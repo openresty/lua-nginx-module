@@ -491,7 +491,7 @@ GET /lua
 --- config
     location /lua {
         content_by_lua '
-            ngx.exit(ngx.HTTP_METHOD_NOT_IMPLEMENTED)
+            ngx.exit(ngx.HTTP_NOT_IMPLEMENTED)
         ';
     }
 --- request
