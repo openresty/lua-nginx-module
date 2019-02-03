@@ -491,6 +491,22 @@ GET /lua
 --- config
     location /lua {
         content_by_lua '
+            ngx.exit(ngx.HTTP_METHOD_NOT_IMPLEMENTED)
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 501
+--- response_body_like: 501 (?:Method )?Not Implemented
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: 501 Method Not Implemented
+--- config
+    location /lua {
+        content_by_lua '
             ngx.exit(ngx.HTTP_NOT_IMPLEMENTED)
         ';
     }
@@ -503,7 +519,7 @@ GET /lua
 
 
 
-=== TEST 14: throw 403 after sending out headers with 200
+=== TEST 15: throw 403 after sending out headers with 200
 --- config
     location /lua {
         rewrite_by_lua '
@@ -523,7 +539,7 @@ attempt to set status 403 via ngx.exit after sending out the response status 200
 
 
 
-=== TEST 15: throw 403 after sending out headers with 403
+=== TEST 16: throw 403 after sending out headers with 403
 --- config
     location /lua {
         rewrite_by_lua '
@@ -544,7 +560,7 @@ Hello World
 
 
 
-=== TEST 16: throw 403 after sending out headers with 403 (HTTP 1.0 buffering)
+=== TEST 17: throw 403 after sending out headers with 403 (HTTP 1.0 buffering)
 --- config
     location /t {
         rewrite_by_lua '
@@ -564,7 +580,7 @@ Hello World
 
 
 
-=== TEST 17: throw 444 after sending out responses (HTTP 1.0)
+=== TEST 18: throw 444 after sending out responses (HTTP 1.0)
 --- config
     location /lua {
         content_by_lua "
@@ -582,7 +598,7 @@ lua sending HTTP 1.0 response headers
 
 
 
-=== TEST 18: throw 499 after sending out responses (HTTP 1.0)
+=== TEST 19: throw 499 after sending out responses (HTTP 1.0)
 --- config
     location /lua {
         content_by_lua "
@@ -600,7 +616,7 @@ lua sending HTTP 1.0 response headers
 
 
 
-=== TEST 19: throw 408 after sending out responses (HTTP 1.0)
+=== TEST 20: throw 408 after sending out responses (HTTP 1.0)
 --- config
     location /lua {
         content_by_lua "
@@ -618,7 +634,7 @@ lua sending HTTP 1.0 response headers
 
 
 
-=== TEST 20: exit(201) with custom response body
+=== TEST 21: exit(201) with custom response body
 --- config
     location = /t {
         content_by_lua "
@@ -638,7 +654,7 @@ lua sending HTTP 1.0 response headers
 
 
 
-=== TEST 21: exit 403 in header filter
+=== TEST 22: exit 403 in header filter
 --- config
     location = /t {
         content_by_lua "ngx.say('hi');";
@@ -655,7 +671,7 @@ GET /t
 
 
 
-=== TEST 22: exit 201 in header filter
+=== TEST 23: exit 201 in header filter
 --- config
     lingering_close always;
     location = /t {
@@ -673,7 +689,7 @@ GET /t
 
 
 
-=== TEST 23: exit both in header filter and content handler
+=== TEST 24: exit both in header filter and content handler
 --- config
     location = /t {
         content_by_lua "ngx.status = 201 ngx.say('hi') ngx.exit(201)";
@@ -709,7 +725,7 @@ F(ngx_http_lua_header_filter_by_chunk).return {
 
 
 
-=== TEST 24: exit 444 in header filter
+=== TEST 25: exit 444 in header filter
 --- config
     location = /t {
         content_by_lua "ngx.say('hello world');";

@@ -116,13 +116,8 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_pushinteger(L, NGX_HTTP_MOVED_PERMANENTLY);
     lua_setfield(L, -2, "HTTP_MOVED_PERMANENTLY");
 
-    /* nginx defines 302 as HTTP_MOVED_TEMPORARILY */
     lua_pushinteger(L, NGX_HTTP_MOVED_TEMPORARILY);
     lua_setfield(L, -2, "HTTP_MOVED_TEMPORARILY");
-
-    /* HTTP specification defines 302 as HTTP_FOUND */
-    lua_pushinteger(L, 302);
-    lua_setfield(L, -2, "HTTP_FOUND");
 
 #if defined(nginx_version) && nginx_version >= 8042
     lua_pushinteger(L, NGX_HTTP_SEE_OTHER);
