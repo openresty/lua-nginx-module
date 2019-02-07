@@ -2005,7 +2005,7 @@ continue to handle cosocket
 
             local sock = ngx.socket.tcp()
             sock:settimeouts(100, 3000, 3000)
-            local ok, err = sock:connect("agentzh.org", 12345, opts)
+            local ok, err = sock:connect("127.0.0.2", 12345, opts)
             if not ok then
                 ngx.say(err)
             end
@@ -2610,7 +2610,7 @@ ok
                 local ok, err
                 if should_timeout then
                     sock:settimeouts(100, 3000, 3000)
-                    ok, err = sock:connect("agentzh.org", 12345, opts)
+                    ok, err = sock:connect("127.0.0.2", 12345, opts)
                 else
                     ok, err = sock:connect("127.0.0.1", port, opts)
                 end
@@ -2644,7 +2644,7 @@ lua tcp socket connect timed out, when connecting to
 
 === TEST 46: conn queuing: resume connect operation if resumed connect failed (could not be resolved)
 --- config
-    resolver agentzh.org:12345 ipv6=off;
+    resolver 127.0.0.2:12345 ipv6=off;
     resolver_timeout 1s;
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -2658,7 +2658,7 @@ lua tcp socket connect timed out, when connecting to
                 local ok, err
                 if should_timeout then
                     sock:settimeouts(1, 3000, 3000)
-                    ok, err = sock:connect("agentzh.org", 12345, opts)
+                    ok, err = sock:connect("agentzh.org", 80, opts)
                 else
                     ok, err = sock:connect("127.0.0.1", port, opts)
                 end
