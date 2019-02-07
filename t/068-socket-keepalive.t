@@ -2644,8 +2644,8 @@ lua tcp socket connect timed out, when connecting to
 
 === TEST 46: conn queuing: resume connect operation if resumed connect failed (could not be resolved)
 --- config
-    resolver 127.0.0.1 ipv6=off;
-    resolver_timeout 100ms;
+    resolver agentzh.org:12345 ipv6=off;
+    resolver_timeout 1s;
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
@@ -2657,7 +2657,7 @@ lua tcp socket connect timed out, when connecting to
                 local sock = ngx.socket.tcp()
                 local ok, err
                 if should_timeout then
-                    sock:settimeouts(100, 3000, 3000)
+                    sock:settimeouts(1, 3000, 3000)
                     ok, err = sock:connect("agentzh.org", 12345, opts)
                 else
                     ok, err = sock:connect("127.0.0.1", port, opts)
