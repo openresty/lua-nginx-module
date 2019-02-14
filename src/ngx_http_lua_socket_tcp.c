@@ -5304,12 +5304,6 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
         ngx_http_lua_socket_tcp_create_socket_pool(L, r, key, pool_size, -1,
                                                    &spool);
-        /* we should always increase connections after getting connected,
-         * and decrease connections after getting closed.
-         * however, we don't create connection pool in previous connect method.
-         * so we increase connections here for backward compatibility.
-         */
-        spool->connections++;
     }
 
     if (ngx_queue_empty(&spool->free)) {
@@ -5320,13 +5314,26 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
 
         ngx_http_lua_socket_tcp_close_connection(item->connection);
-        spool->connections--;
+
+        /* only decrease the counter for connections which were counted */
+        if (u->socket_pool != NULL) {
+            u->socket_pool->connections--;
+        }
 
     } else {
         q = ngx_queue_head(&spool->free);
         ngx_queue_remove(q);
 
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
+
+        /* we should always increase connections after getting connected,
+         * and decrease connections after getting closed.
+         * however, we don't create connection pool in previous connect method.
+         * so we increase connections here for backward compatibility.
+         */
+        if (u->socket_pool == NULL) {
+            spool->connections++;
+        }
     }
 
     item->connection = c;
