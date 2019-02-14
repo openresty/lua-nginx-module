@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 #repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 33);
+plan tests => repeat_each() * (blocks() * 4 + 31);
 
 our $HtmlDir = html_dir;
 
@@ -2835,3 +2835,77 @@ GET /t
 [alert]
 --- error_log
 resume success
+
+
+
+=== TEST 50: conn queuing: count connections created before creating pool when setkeepalive
+--- config
+    set $port $TEST_NGINX_MEMCACHED_PORT;
+
+    location /t {
+        content_by_lua_block {
+            local function connect()
+                local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port)
+                if not sock then
+                    error("connect failed: " .. err)
+                end
+
+                return sock
+            end
+
+            local sock1 = connect()
+            local sock2 = connect()
+            assert(sock1:setkeepalive())
+            assert(sock2:setkeepalive())
+
+            local sock1 = connect()
+            local sock2 = connect()
+            assert(sock1:close())
+            assert(sock2:close())
+
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+ok
+
+
+
+=== TEST 51: conn queuing: only decrease the counter for connections which were counted
+--- config
+    set $port $TEST_NGINX_MEMCACHED_PORT;
+
+    location /t {
+        content_by_lua_block {
+            local function connect()
+                local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port)
+                if not sock then
+                    error("connect failed: " .. err)
+                end
+
+                return sock
+            end
+
+            local sock1 = connect()
+            local sock2 = connect()
+            assert(sock1:setkeepalive(1000, 1))
+            assert(sock2:setkeepalive(1000, 1))
+
+            local sock1 = connect()
+            local sock2 = connect()
+            assert(sock1:close())
+            assert(sock2:close())
+
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+ok
