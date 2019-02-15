@@ -2909,3 +2909,42 @@ GET /t
 [error]
 --- response_body
 ok
+
+
+
+=== TEST 52: conn queuing: clean up pending connect operations which are in queue
+--- config
+    set $port $TEST_NGINX_MEMCACHED_PORT;
+
+    location /t {
+        content_by_lua_block {
+            local opts = {pool = "test", pool_size = 1, backlog = 1}
+            local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port, opts)
+            if not sock then
+                ngx.say("connect failed: " .. err)
+                return
+            end
+
+            local function f()
+                assert(ngx.socket.connect("127.0.0.1", ngx.var.port, opts))
+            end
+
+            local th = ngx.thread.spawn(f)
+            local ok, err = ngx.thread.kill(th)
+            if not ok then
+                ngx.log(ngx.ERR, "kill thread failed: ", err)
+                return
+            end
+
+            sock:close()
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- error_log
+lua tcp socket abort queueing
+--- response_body
+ok
