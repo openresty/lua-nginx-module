@@ -4132,6 +4132,7 @@ static void
 ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
+    lua_State                      *L;
     ngx_connection_t               *c;
     ngx_http_lua_socket_pool_t     *spool;
 
@@ -4181,6 +4182,19 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         u->conn_closed = 1;
 
         spool = u->socket_pool;
+        if (spool == NULL) {
+            return;
+        }
+
+        L = spool->lua_vm;
+
+        lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(socket_pool_key));
+        lua_rawget(L, LUA_REGISTRYINDEX);
+        lua_pushstring(L, (char *) spool->key);
+        lua_rawget(L, -2);
+        spool = lua_touserdata(L, -1);
+        lua_pop(L, 1);
+
         if (spool == NULL) {
             return;
         }
