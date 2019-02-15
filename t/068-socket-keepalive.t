@@ -2916,7 +2916,7 @@ ok
 --- config
     set $port $TEST_NGINX_MEMCACHED_PORT;
 
-    location /t {
+    location /sub {
         content_by_lua_block {
             local opts = {pool = "test", pool_size = 1, backlog = 1}
             local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port, opts)
@@ -2937,6 +2937,14 @@ ok
             end
 
             sock:close()
+        }
+    }
+
+    location /t {
+        content_by_lua_block {
+            ngx.location.capture("/sub")
+            -- let pending connect operation resumes first
+            ngx.sleep(0)
             ngx.say("ok")
         }
     }
