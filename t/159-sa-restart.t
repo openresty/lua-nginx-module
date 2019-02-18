@@ -20,7 +20,7 @@ add_block_preprocessor(sub {
                 --"INT",
                 "IO",
                 "CHLD",
-                "WINCH",
+                --"WINCH",
             }
 
             for _, signame in ipairs(signals) do
