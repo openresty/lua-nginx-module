@@ -36,6 +36,7 @@
 #include "ngx_http_lua_coroutine.h"
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_socket_udp.h"
+#include "ngx_http_lua_resolve.h"
 #include "ngx_http_lua_sleep.h"
 #include "ngx_http_lua_setby.h"
 #include "ngx_http_lua_headerfilterby.h"
@@ -768,6 +769,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_shdict_api(lmcf, L);
     ngx_http_lua_inject_socket_tcp_api(log, L);
     ngx_http_lua_inject_socket_udp_api(log, L);
+    ngx_http_lua_inject_resolve_api(L);
     ngx_http_lua_inject_uthread_api(log, L);
     ngx_http_lua_inject_timer_api(L);
     ngx_http_lua_inject_config_api(L);

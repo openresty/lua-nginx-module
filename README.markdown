@@ -7539,6 +7539,63 @@ This feature was first introduced in the `v0.5.0rc1` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.resolve
+------------------
+**syntax:** *addr, err = ngx.resolve(host, options?)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
+
+Resolves the given host name into IP address by using Nginx core's dynamic resolver. 
+
+An optional `options` table can be fed as the second argument, which supports the options:
+
+* `ipv4`
+    consider IPv4 addresses (A Record) - `true` by default
+* `ipv6`
+    consider IPv6 addresses (AAAA Record)
+    
+If multiple A/AAAA records were retrieved by Nginx core's dynamic resolver then this method will randomly choose and return only one address.
+
+It is required to configure the [resolver](http://nginx.org/en/docs/http/ngx_http_core_module.html#resolver) directive in the `nginx.conf`.
+
+```nginx
+ http {
+     resolver 8.8.8.8;
+
+     upstream backend {
+         server 0.0.0.0;
+
+         balancer_by_lua_block {
+             local balancer = require 'ngx.balancer'
+
+             local ok, err = balancer.set_current_peer(ngx.ctx.peer_addr, ngx.ctx.peer_port)
+             if not ok then
+                 ngx.log(ngx.ERR, "failed to set the peer: ", err)
+                 ngx.exit(500)
+             end
+         }
+     }
+
+     server {
+         listen 8080;
+
+         access_by_lua_block {
+             local addr, err = ngx.resolve('google.com', { ipv4 = true })
+             if addr then
+                 ngx.ctx.peer_addr = addr
+                 ngx.ctx.peer_port = 80
+             end
+         }
+
+         location / {
+             proxy_pass http://backend;
+         }
+     }
+ }
+```
+
+[Back to TOC](#nginx-api-for-lua)
+
 ngx.get_phase
 -------------
 **syntax:** *str = ngx.get_phase()*
