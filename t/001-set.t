@@ -562,7 +562,33 @@ GET /lua?a=5&b=2
 
 
 
-=== TEST 35: lua error (string)
+=== TEST 35: variables in set_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        set_by_lua_file $res html/$1.lua;
+        echo $res;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+return "a"
+>>> b.lua
+return "b"
+--- request
+GET /main
+--- response_body
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 36: lua error (string)
 --- config
     location /lua {
         set_by_lua $res 'error("Bad")';
@@ -577,7 +603,7 @@ failed to run set_by_lua*: set_by_lua:1: Bad
 
 
 
-=== TEST 36: lua error (nil)
+=== TEST 37: lua error (nil)
 --- config
     location /lua {
         set_by_lua $res 'error(nil)';
@@ -592,7 +618,7 @@ failed to run set_by_lua*: unknown reason
 
 
 
-=== TEST 37: globals are shared in all requests.
+=== TEST 38: globals are shared in all requests.
 --- config
     location /lua {
         set_by_lua_block $res {
@@ -619,7 +645,7 @@ GET /lua
 
 
 
-=== TEST 38: user modules using ngx.arg
+=== TEST 39: user modules using ngx.arg
 --- http_config
     lua_package_path "$prefix/html/?.lua;;";
 --- config
@@ -643,7 +669,7 @@ GET /lua?a=1&b=2
 
 
 
-=== TEST 39: server scope (inline)
+=== TEST 40: server scope (inline)
 --- config
     location /lua {
         set $a "[$res]";
@@ -659,7 +685,7 @@ GET /lua
 
 
 
-=== TEST 40: server if scope (inline)
+=== TEST 41: server if scope (inline)
 --- config
     location /lua {
         set $a "[$res]";
@@ -677,7 +703,7 @@ GET /lua?name=jim
 
 
 
-=== TEST 41: location if scope (inline)
+=== TEST 42: location if scope (inline)
 --- config
     location /lua {
         if ($arg_name = "jim") {
@@ -695,7 +721,7 @@ GET /lua?name=jim
 
 
 
-=== TEST 42: server scope (file)
+=== TEST 43: server scope (file)
 --- config
     location /lua {
         set $a "[$res]";
@@ -714,7 +740,7 @@ GET /lua
 
 
 
-=== TEST 43: server if scope (file)
+=== TEST 44: server if scope (file)
 --- config
     location /lua {
         set $a "[$res]";
@@ -735,7 +761,7 @@ return 1+1
 
 
 
-=== TEST 44: location if scope (file)
+=== TEST 45: location if scope (file)
 --- config
     location /lua {
         if ($arg_name = "jim") {
@@ -756,7 +782,7 @@ GET /lua?name=jim
 
 
 
-=== TEST 45: backtrace
+=== TEST 46: backtrace
 --- config
     location /t {
         set_by_lua $a '
@@ -787,7 +813,7 @@ in function 'foo'
 
 
 
-=== TEST 46: Lua file does not exist
+=== TEST 47: Lua file does not exist
 --- config
     location /lua {
         set_by_lua_file $a html/test2.lua;

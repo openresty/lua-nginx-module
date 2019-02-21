@@ -46,7 +46,7 @@ ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
 
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
                                      lscf->srv.ssl_cert_src.data,
-                                     lscf->srv.ssl_cert_src_key);
+                                     &lscf->srv.ssl_cert_src_ref);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -67,7 +67,7 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        lscf->srv.ssl_cert_src.data,
                                        lscf->srv.ssl_cert_src.len,
-                                       lscf->srv.ssl_cert_src_key,
+                                       &lscf->srv.ssl_cert_src_ref,
                                        "=ssl_certificate_by_lua");
     if (rc != NGX_OK) {
         return rc;
@@ -113,7 +113,6 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 #else
 
-    u_char                      *p;
     u_char                      *name;
     ngx_str_t                   *value;
     ngx_http_lua_srv_conf_t    *lscf = conf;
@@ -147,36 +146,10 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         lscf->srv.ssl_cert_src.data = name;
         lscf->srv.ssl_cert_src.len = ngx_strlen(name);
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
-        if (p == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_cert_src_key = p;
-
-        p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
-
     } else {
         /* inlined Lua code */
 
         lscf->srv.ssl_cert_src = value[1];
-
-        p = ngx_palloc(cf->pool,
-                       sizeof("ssl_certificate_by_lua") +
-                       NGX_HTTP_LUA_INLINE_KEY_LEN);
-        if (p == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_cert_src_key = p;
-
-        p = ngx_copy(p, "ssl_certificate_by_lua",
-                     sizeof("ssl_certificate_by_lua") - 1);
-        p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
     }
 
     return NGX_CONF_OK;

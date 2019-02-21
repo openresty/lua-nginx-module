@@ -162,7 +162,7 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->body_filter_src.value.data,
                                        llcf->body_filter_src.value.len,
-                                       llcf->body_filter_src_key,
+                                       &llcf->body_filter_src_ref,
                                        "=body_filter_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -209,7 +209,7 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     llcf->body_filter_src_key);
+                                     &llcf->body_filter_src_ref);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
