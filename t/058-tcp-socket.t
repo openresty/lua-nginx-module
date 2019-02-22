@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 219;
+plan tests => repeat_each() * 222;
 
 our $HtmlDir = html_dir;
 
@@ -4120,3 +4120,75 @@ orld
 [error]
 --- error_log
 lua tcp socket calling receiveany() method to read at most 7 bytes
+
+
+
+=== TEST 69: tcp socket, ffi send, sanity
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua '
+            local ffi = require "ffi"
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local len = #req
+            local cdata = ffi.new("char[?]", len)
+            ffi.copy(cdata, req, len)
+            -- req = "OK"
+
+            local bytes, err = sock:ffi_send(cdata, len)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+                else
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        ';
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 57
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+failed to receive a line: closed []
+close: 1 nil
+--- no_error_log
+[error]
