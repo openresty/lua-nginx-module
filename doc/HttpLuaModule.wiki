@@ -5232,6 +5232,7 @@ The resulting object <code>dict</code> has the following methods:
 * [[#ngx.shared.DICT.lpop|lpop]]
 * [[#ngx.shared.DICT.rpop|rpop]]
 * [[#ngx.shared.DICT.llen|llen]]
+* [[#ngx.shared.DICT.lindex|lindex]]
 * [[#ngx.shared.DICT.ttl|ttl]]
 * [[#ngx.shared.DICT.expire|expire]]
 * [[#ngx.shared.DICT.flush_all|flush_all]]
@@ -5550,6 +5551,22 @@ Returns the number of elements in the list named <code>key</code> in the shm-bas
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
 
 This feature was first introduced in the <code>v0.10.6</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.lindex ==
+
+'''syntax:''' ''val, err = ngx.shared.DICT:lindex(key, index)''
+
+'''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+
+Returns the element which at the index <code>index</code> of the list named <code>key</code> in the shm-base dictionary [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+The index is zero-based, so <code>0</code> means the first element, <code>1</code> for the second element and so forth. Also, negative index can be used to designate elements starting at the tail of the list, here <code>-1</code> means the last element and <code>-2</code> means the penultimate and so on.
+
+If <code>key</code> does not exist or <code>index</code> is out of the list bound, it will return <code>nil</code>. When the <code>key</code> already takes a value that is not a list, it will return <code>nil</code> and <code>"value not a list"</code>.
+
+'''Note:''' This method requires the <code>resty.core.shdict</code> or <code>resty.core</code> modules from the [https://github.com/openresty/lua-resty-core lua-resty-core] library.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 

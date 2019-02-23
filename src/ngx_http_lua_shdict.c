@@ -3021,6 +3021,139 @@ ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
 #    endif /* nginx_version >= 1011007 */
 
 
+int
+ngx_http_lua_ffi_shdict_lindex(ngx_shm_zone_t *zone, u_char *key,
+    size_t key_len, int *value_type, u_char **str_value_buf,
+    size_t *str_value_len, double *num_value, int index, char **err)
+{
+    int                               i;
+    uint32_t                          hash;
+    ngx_int_t                         rc;
+    ngx_str_t                         name, value;
+    ngx_queue_t                      *queue;
+    ngx_http_lua_shdict_ctx_t        *ctx;
+    ngx_http_lua_shdict_node_t       *sd;
+    ngx_http_lua_shdict_list_node_t  *lnode;
+
+    ctx = zone->data;
+    name = ctx->name;
+
+    hash = ngx_crc32_short(key, key_len);
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+#if 1
+    ngx_http_lua_shdict_expire(ctx, 1);
+#endif
+
+    rc = ngx_http_lua_shdict_lookup(zone, hash, key, key_len, &sd);
+
+    dd("shdict lookup returned %d", (int) rc);
+
+    if (rc == NGX_DECLINED || rc == NGX_DONE) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        *value_type = LUA_TNIL;
+        return NGX_OK;
+    }
+
+    /* rc == NGX_OK */
+
+    if (sd->value_type != SHDICT_TLIST) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        *err = "value not a list";
+        return NGX_ERROR;
+    }
+
+    ngx_queue_remove(&sd->queue);
+    ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
+
+    if (index >= (int) sd->value_len || -index > (int) sd->value_len) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        *value_type = LUA_TNIL;
+        return NGX_OK;
+    }
+
+    queue = ngx_http_lua_shdict_get_list_head(sd, key_len);
+
+    if (index >= 0) { /* forward */
+
+        for (i = 0; i <= index; i++) {
+            queue = ngx_queue_next(queue);
+        }
+
+    } else { /* backward */
+
+        for (i = -1; i >= index; i--) {
+            queue = ngx_queue_prev(queue);
+        }
+    }
+
+    lnode = ngx_queue_data(queue, ngx_http_lua_shdict_list_node_t, queue);
+
+    *value_type = lnode->value_type;
+
+    dd("data: %p", lnode->data);
+    dd("value len: %d", (int) lnode->value_len);
+
+    value.data = lnode->data;
+    value.len = (size_t) lnode->value_len;
+
+    if (*str_value_len < (size_t) value.len) {
+        if (*value_type == SHDICT_TSTRING) {
+            *str_value_buf = malloc(value.len);
+            if (*str_value_buf == NULL) {
+                ngx_shmtx_unlock(&ctx->shpool->mutex);
+                return NGX_ERROR;
+            }
+        }
+    }
+
+    switch (*value_type) {
+
+    case SHDICT_TSTRING:
+        *str_value_len = value.len;
+        ngx_memcpy(*str_value_buf, lnode->data, value.len);
+        break;
+
+    case SHDICT_TNUMBER:
+
+        if (value.len != sizeof(double)) {
+            ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                          "bad lua list node number value size found "
+                          "for key %*s in shared_dict %V: %z",
+                          key_len, key, &name, value.len);
+
+            return NGX_ERROR;
+        }
+
+        *str_value_len = value.len;
+        ngx_memcpy(num_value, value.data, sizeof(double));
+
+        break;
+
+    default:
+
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                      "bad list node value type found "
+                      "for key %*s in shared_dict %V: %d",
+                      key_len, key, &name, *value_type);
+
+        return NGX_ERROR;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+
+    return NGX_OK;
+}
+
+
 #endif /* NGX_LUA_NO_FFI_API */
 
 
