@@ -521,12 +521,11 @@ warn(): Thu, 01 Jan 1970 01:34:38 GMT
     }
 --- request
 GET /t
---- response_body
-timer created
+--- response_body_like
 connected: 1
 request sent: 56
-first line received: HTTP/1.1 200 OK
-second line received: Server: openresty
+first line received: HTTP\/1\.1 200 OK
+second line received: (?:Date|Server): .*?
 --- no_error_log
 [error]
 --- timeout: 10
