@@ -178,7 +178,7 @@ cc3: 2
 
             local urls = {
                 "agentzh.org",
-                "iscribblet.org",
+                "openresty.com",
                 "openresty.org"
             }
 
@@ -204,7 +204,7 @@ cc3: 2
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: iscribblet.org
+successfully connected to: openresty.com
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
@@ -377,7 +377,7 @@ GET /lua
 
             local urls = {
                 "agentzh.org",
-                "iscribblet.org",
+                "openresty.com",
                 "openresty.org"
             }
 
@@ -398,7 +398,7 @@ GET /lua
 GET /lua
 --- response_body
 successfully connected to: agentzh.org
-successfully connected to: iscribblet.org
+successfully connected to: openresty.com
 successfully connected to: openresty.org
 *** All Done ***
 --- no_error_log
