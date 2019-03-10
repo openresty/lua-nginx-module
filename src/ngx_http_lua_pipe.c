@@ -703,8 +703,8 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
                           "pipe fd");
         }
 
-        errlog_fd = ngx_cycle->log->file->fd;
-        if (errlog_fd == STDERR_FILENO) {
+        if (ngx_cycle->log->file && ngx_cycle->log->file->fd == STDERR_FILENO) {
+            errlog_fd = ngx_cycle->log->file->fd;
             temp_errlog_fd = dup(errlog_fd);
 
             if (temp_errlog_fd == -1) {
