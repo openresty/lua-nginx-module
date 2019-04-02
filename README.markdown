@@ -1004,6 +1004,7 @@ See Also
 Directives
 ==========
 
+* [lua_load_resty_core](#lua_load_resty_core)
 * [lua_capture_error_log](#lua_capture_error_log)
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_malloc_trim](#lua_malloc_trim)
@@ -1078,6 +1079,38 @@ how the result will be used. Below is a diagram showing the order in which direc
 ![Lua Nginx Modules Directives](https://cloud.githubusercontent.com/assets/2137369/15272097/77d1c09e-1a37-11e6-97ef-d9767035fc3e.png)
 
 [Back to TOC](#table-of-contents)
+
+lua_load_resty_core
+-------------------
+
+**syntax:** *lua_load_resty_core on|off*
+
+**default:** *lua_load_resty_core on*
+
+**context:** *http*
+
+Controls whether the `resty.core` module (from
+[lua-resty-core](https://github.com/openresty/lua-resty-core)) should be loaded
+or not. When enabled, this directive is equivalent to executing the following
+when the Lua VM is created:
+
+```lua
+
+ require "resty.core"
+```
+
+Note that usage of the `resty.core` module is recommended, as its
+FFI implementation is both faster, safer, and more complete than the Lua C API
+of the ngx_lua module.
+
+It must also be noted that the Lua C API of the ngx_lua module will eventually
+be removed, and usage of the FFI-based API (i.e. the `resty.core`
+module) will become mandatory. This directive only aims at providing a
+temporary backwards-compatibility mode in case of edge-cases.
+
+This directive was first introduced in the `v0.10.15` release.
+
+[Back to TOC](#directives)
 
 lua_capture_error_log
 ---------------------
