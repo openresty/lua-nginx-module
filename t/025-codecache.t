@@ -193,7 +193,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 6: code cache explicitly off (affects require) + content_by_lua
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /lua {
         lua_code_cache off;
@@ -231,7 +231,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 7: code cache explicitly off (affects require) + content_by_lua_file
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /lua {
         lua_code_cache off;
@@ -269,7 +269,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 8: code cache explicitly off (affects require) + set_by_lua_file
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /lua {
         lua_code_cache off;
@@ -308,7 +308,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 9: code cache explicitly on (affects require) + set_by_lua_file
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /lua {
         lua_code_cache on;
@@ -468,7 +468,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 14: no clear builtin lib "string"
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     lua_code_cache off;
     location /lua {
@@ -504,7 +504,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 15: do not skip luarocks
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
      lua_code_cache off;"
 --- config
     location /main {
@@ -554,7 +554,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 16: do not skip luarocks*
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
      lua_code_cache off;"
 --- config
     location /main {
@@ -604,7 +604,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/
 
 === TEST 17: clear _G table
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     lua_code_cache off;
     location /t {
@@ -1050,7 +1050,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 
 === TEST 29: cosocket connection pool timeout (after Lua VM destroys)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     lua_code_cache off;
     location = /t {
@@ -1118,7 +1118,7 @@ qr/\blua tcp socket keepalive: free connection pool [0-9A-F]+ for "127.0.0.1:/,
 
 === TEST 30: cosocket connection pool timeout (before Lua VM destroys)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     lua_code_cache off;
     location = /t {
